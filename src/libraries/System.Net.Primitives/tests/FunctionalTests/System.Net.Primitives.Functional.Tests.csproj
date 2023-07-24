@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
   <ItemGroup>
@@ -15,9 +15,9 @@
     <Compile Include="EndPointTest.cs" />
     <Compile Include="IPAddressMappingTest.cs" />
     <Compile Include="IPAddressParsing.cs" />
-    <Compile Include="IPAddressParsingSpan.cs" />
     <Compile Include="IPAddressSpanTest.cs" />
     <Compile Include="IPAddressTest.cs" />
+    <Compile Include="IPNetworkTest.cs" />
     <Compile Include="IPEndPointParsing.cs" />
     <Compile Include="IPEndPointTest.cs" />
     <Compile Include="NetworkCredentialTest.cs" />

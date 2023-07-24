@@ -102,11 +102,15 @@ void Phase::PostPhase(PhaseStatus status)
 
 #ifdef DEBUG
 
+#if DUMP_FLOWGRAPHS
+    comp->fgDumpFlowGraph(m_phase, Compiler::PhasePosition::PostPhase);
+#endif // DUMP_FLOWGRAPHS
+
     // Don't dump or check post phase unless the phase made changes.
     //
     const bool madeChanges       = (status != PhaseStatus::MODIFIED_NOTHING);
     const bool doPostPhase       = madeChanges;
-    const bool doPostPhaseChecks = (comp->activePhaseChecks == PhaseChecks::CHECK_ALL);
+    const bool doPostPhaseChecks = (comp->activePhaseChecks != PhaseChecks::CHECK_NONE);
     const bool doPostPhaseDumps  = (comp->activePhaseDumps == PhaseDumps::DUMP_ALL);
 
     const char* const statusMessage = madeChanges ? "" : " [no changes]";
@@ -132,30 +136,40 @@ void Phase::PostPhase(PhaseStatus status)
 
     if (doPostPhase && doPostPhaseChecks)
     {
-        comp->fgDebugCheckBBlist();
-        comp->fgDebugCheckLinks();
-        comp->fgDebugCheckNodesUniqueness();
-        comp->fgVerifyHandlerTab();
-        comp->fgDebugCheckLoopTable();
-    }
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_UNIQUE) == PhaseChecks::CHECK_UNIQUE)
+        {
+            comp->fgDebugCheckNodesUniqueness();
+        }
 
-    // Optionally check profile data, if we have any.
-    //
-    // There's no point checking until we've built pred lists, as
-    // we can't easily reason about consistency without them.
-    //
-    // Bypass the "doPostPhase" filter until we're sure all
-    // phases that mess with profile counts set their phase status
-    // appropriately.
-    //
-    if ((JitConfig.JitProfileChecks() > 0) && comp->fgHaveProfileWeights() && comp->fgComputePredsDone)
-    {
-        comp->fgDebugCheckProfileWeights();
-    }
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_FG) == PhaseChecks::CHECK_FG)
+        {
+            comp->fgDebugCheckBBlist();
+        }
 
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_IR) == PhaseChecks::CHECK_IR)
+        {
+            comp->fgDebugCheckLinks();
+        }
+
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_EH) == PhaseChecks::CHECK_EH)
+        {
+            comp->fgVerifyHandlerTab();
+        }
+
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_LOOPS) == PhaseChecks::CHECK_LOOPS)
+        {
+            comp->fgDebugCheckLoopTable();
+        }
+
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
+        {
+            comp->fgDebugCheckProfileWeights();
+        }
+
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_LINKED_LOCALS) == PhaseChecks::CHECK_LINKED_LOCALS)
+        {
+            comp->fgDebugCheckLinkedLocals();
+        }
+    }
 #endif // DEBUG
-
-#if DUMP_FLOWGRAPHS
-    comp->fgDumpFlowGraph(m_phase, Compiler::PhasePosition::PostPhase);
-#endif // DUMP_FLOWGRAPHS
 }

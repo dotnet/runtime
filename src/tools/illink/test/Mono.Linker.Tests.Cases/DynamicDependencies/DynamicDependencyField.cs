@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {
@@ -9,12 +8,12 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 	{
 		public static void Main ()
 		{
-			var b = new B ();
-			b.field = 3;
+			DirectReference.Test ();
+			ReferenceViaReflection.Test ();
 		}
 
 		[KeptMember (".ctor()")]
-		class B
+		class DirectReference
 		{
 			[Kept]
 			[DynamicDependency ("ExtraMethod1")]
@@ -23,6 +22,31 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			[Kept]
 			static void ExtraMethod1 ()
 			{
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				var b = new DirectReference ();
+				b.field = 3;
+			}
+		}
+
+		class ReferenceViaReflection
+		{
+			[Kept]
+			[DynamicDependency ("TargetMethod")]
+			public static int source;
+
+			[Kept]
+			static void TargetMethod ()
+			{
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				typeof (ReferenceViaReflection).RequiresPublicFields ();
 			}
 		}
 	}

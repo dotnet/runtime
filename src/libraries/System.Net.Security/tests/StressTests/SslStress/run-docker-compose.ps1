@@ -15,6 +15,13 @@ Param(
 $REPO_ROOT_DIR = $(git -C "$PSScriptRoot" rev-parse --show-toplevel)
 $COMPOSE_FILE = "$PSScriptRoot/docker-compose.yml"
 
+# This is a workaround for an issue with 1es-windows-2022-open, which should be eventually removed.
+# See comments in <repo>/eng/pipelines/libraries/stress/ssl.yml for more info.
+$dockerComposeCmd = $env:DOCKER_COMPOSE_CMD
+if (!(Test-Path $dockerComposeCmd)) {
+    $dockerComposeCmd = "docker-compose"
+}
+
 # Build runtime libraries and place in a docker image
 
 if ($buildCurrentLibraries)
@@ -50,7 +57,7 @@ if ($useWindowsContainers)
 $originalErrorPreference = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
-	docker-compose --log-level DEBUG --file "$COMPOSE_FILE" build $BUILD_ARGS.Split() 2>&1 | ForEach-Object { "$_" }
+	& $dockerComposeCmd --log-level DEBUG --file "$COMPOSE_FILE" build $BUILD_ARGS.Split() 2>&1 | ForEach-Object { "$_" }
 	if ($LASTEXITCODE -ne 0) {
 		throw "docker-compose exited with error code $LASTEXITCODE"
 	}
@@ -65,5 +72,5 @@ if (!$buildOnly)
 {
     $env:SSLSTRESS_CLIENT_ARGS = $clientStressArgs
     $env:SSLSTRESS_SERVER_ARGS = $serverStressArgs
-    docker-compose --file "$COMPOSE_FILE" up --abort-on-container-exit
+    & $dockerComposeCmd --file "$COMPOSE_FILE" up --abort-on-container-exit
 }

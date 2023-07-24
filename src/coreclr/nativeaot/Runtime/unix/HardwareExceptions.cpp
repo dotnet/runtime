@@ -11,7 +11,7 @@
 #include "HardwareExceptions.h"
 #include "UnixSignals.h"
 
-#if defined(HOST_OSX)
+#if defined(HOST_APPLE)
 #include <mach/mach.h>
 #include <mach/mach_error.h>
 #include <mach/exception.h>
@@ -594,7 +594,8 @@ bool InitializeHardwareExceptionHandling()
         return false;
     }
 
-#if defined(HOST_OSX)
+#if defined(HOST_APPLE)
+#ifndef HOST_TVOS // task_set_exception_ports is not supported on tvOS
 	// LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
 	// exceptions first to any registered "activation" handler and then to
 	// any registered task handler before dispatching the exception to a
@@ -613,6 +614,7 @@ bool InitializeHardwareExceptionHandling()
 		EXCEPTION_STATE_IDENTITY,
 		MACHINE_THREAD_STATE);
     ASSERT(kr == KERN_SUCCESS);
+#endif
 #endif
 
     return true;

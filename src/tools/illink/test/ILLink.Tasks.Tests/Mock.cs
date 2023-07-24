@@ -178,7 +178,7 @@ namespace ILLink.Tasks.Tests
 		protected override List<BaseStep> CreateDefaultResolvers ()
 		{
 			return new List<BaseStep> () {
-				new RootAssemblyInput (null, AssemblyRootMode.Default)
+				new RootAssemblyInput (null, AssemblyRootMode.EntryPoint)
 			};
 		}
 	}

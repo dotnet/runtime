@@ -2,15 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
+import { ENVIRONMENT_IS_NODE, Module, loaderHelpers, mono_assert } from "./globals";
 import { MemoryViewType, Span } from "./marshal";
-import { mono_assert } from "./types";
-import { VoidPtr } from "./types/emscripten";
+import type { VoidPtr } from "./types/emscripten";
+
+
+function verifyEnvironment() {
+    if (typeof globalThis.fetch !== "function" || typeof globalThis.AbortController !== "function") {
+        const message = ENVIRONMENT_IS_NODE
+            ? "Please install `node-fetch` and `node-abort-controller` npm packages to enable HTTP client support."
+            : "This browser doesn't support fetch API. Please use a modern browser.";
+        throw new Error(message);
+    }
+}
 
 export function http_wasm_supports_streaming_response(): boolean {
     return typeof Response !== "undefined" && "body" in Response.prototype && typeof ReadableStream === "function";
 }
 
 export function http_wasm_create_abort_controler(): AbortController {
+    verifyEnvironment();
     return new AbortController();
 }
 
@@ -21,7 +32,12 @@ export function http_wasm_abort_request(abort_controller: AbortController): void
 export function http_wasm_abort_response(res: ResponseExtension): void {
     res.__abort_controller.abort();
     if (res.__reader) {
-        res.__reader.cancel();
+        res.__reader.cancel().catch((err) => {
+            if (err && err.name !== "AbortError") {
+                Module.err("Error in http_wasm_abort_response: " + err);
+            }
+            // otherwise, it's expected
+        });
     }
 }
 
@@ -33,6 +49,7 @@ export function http_wasm_fetch_bytes(url: string, header_names: string[], heade
 }
 
 export function http_wasm_fetch(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: string | Uint8Array | null): Promise<ResponseExtension> {
+    verifyEnvironment();
     mono_assert(url && typeof url === "string", "expected url string");
     mono_assert(header_names && header_values && Array.isArray(header_names) && Array.isArray(header_values) && header_names.length === header_values.length, "expected headerNames and headerValues arrays");
     mono_assert(option_names && option_values && Array.isArray(option_names) && Array.isArray(option_values) && option_names.length === option_values.length, "expected headerNames and headerValues arrays");
@@ -50,7 +67,7 @@ export function http_wasm_fetch(url: string, header_names: string[], header_valu
     }
 
     return wrap_as_cancelable_promise(async () => {
-        const res = await fetch(url, options) as ResponseExtension;
+        const res = await loaderHelpers.fetch_like(url, options) as ResponseExtension;
         res.__abort_controller = abort_controller;
         return res;
     });
@@ -60,11 +77,13 @@ function get_response_headers(res: ResponseExtension): void {
     if (!res.__headerNames) {
         res.__headerNames = [];
         res.__headerValues = [];
-        const entries: Iterable<string[]> = (<any>res.headers).entries();
+        if (res.headers && (<any>res.headers).entries) {
+            const entries: Iterable<string[]> = (<any>res.headers).entries();
 
-        for (const pair of entries) {
-            res.__headerNames.push(pair[0]);
-            res.__headerValues.push(pair[1]);
+            for (const pair of entries) {
+                res.__headerNames.push(pair[0]);
+                res.__headerValues.push(pair[1]);
+            }
         }
     }
 }
@@ -100,42 +119,33 @@ export function http_wasm_get_response_bytes(res: ResponseExtension, view: Span)
     return bytes_read;
 }
 
-export async function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<number> {
+export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<number> {
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrap_as_cancelable_promise(async () => {
-        if (!res.__chunk && res.body) {
-            res.__reader = res.body.getReader();
+        if (!res.__reader) {
+            res.__reader = res.body!.getReader();
+        }
+        if (!res.__chunk) {
             res.__chunk = await res.__reader.read();
             res.__source_offset = 0;
         }
-
-        let target_offset = 0;
-        let bytes_read = 0;
-        // loop until end of browser stream or end of C# buffer
-        while (res.__reader && res.__chunk && !res.__chunk.done) {
-            const remaining_source = res.__chunk.value.byteLength - res.__source_offset;
-            if (remaining_source === 0) {
-                res.__chunk = await res.__reader.read();
-                res.__source_offset = 0;
-                continue;// are we done yet
-            }
-
-            const remaining_target = view.byteLength - target_offset;
-            const bytes_copied = Math.min(remaining_source, remaining_target);
-            const source_view = res.__chunk.value.subarray(res.__source_offset, res.__source_offset + bytes_copied);
-
-            // copy available bytes
-            view.set(source_view, target_offset);
-            target_offset += bytes_copied;
-            bytes_read += bytes_copied;
-            res.__source_offset += bytes_copied;
-
-            if (target_offset == view.byteLength) {
-                return bytes_read;
-            }
+        if (res.__chunk.done) {
+            return 0;
         }
-        return bytes_read;
+
+        const remaining_source = res.__chunk.value.byteLength - res.__source_offset;
+        mono_assert(remaining_source > 0, "expected remaining_source to be greater than 0");
+
+        const bytes_copied = Math.min(remaining_source, view.byteLength);
+        const source_view = res.__chunk.value.subarray(res.__source_offset, res.__source_offset + bytes_copied);
+        view.set(source_view, 0);
+        res.__source_offset += bytes_copied;
+        if (remaining_source == bytes_copied) {
+            res.__chunk = undefined;
+        }
+
+        return bytes_copied;
     });
 }
 

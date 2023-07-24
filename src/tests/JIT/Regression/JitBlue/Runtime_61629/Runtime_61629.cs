@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_61629
 {
-    public static int Main() => 
+    [Fact]
+    public static int TestEntryPoint() => 
         Test(100, 200.0) + Test(Math.PI, Math.PI) - 72;
 
     [MethodImpl(MethodImplOptions.NoInlining)]

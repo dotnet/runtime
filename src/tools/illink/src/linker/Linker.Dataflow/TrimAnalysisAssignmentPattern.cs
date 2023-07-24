@@ -17,8 +17,8 @@ namespace Mono.Linker.Dataflow
 
 		public TrimAnalysisAssignmentPattern (MultiValue source, MultiValue target, MessageOrigin origin)
 		{
-			Source = source.Clone ();
-			Target = target.Clone ();
+			Source = source.DeepCopy ();
+			Target = target.DeepCopy ();
 			Origin = origin;
 		}
 
@@ -34,7 +34,7 @@ namespace Mono.Linker.Dataflow
 
 		public void MarkAndProduceDiagnostics (ReflectionMarker reflectionMarker, LinkContext context)
 		{
-			bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (Origin.Provider);
+			bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (Origin.Provider, out _);
 			var diagnosticContext = new DiagnosticContext (Origin, diagnosticsEnabled, context);
 
 			foreach (var sourceValue in Source) {

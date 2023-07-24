@@ -1,8 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <!-- AssemblyVersion is frozen to that which originally shipped in 2.1 -->
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
   </PropertyGroup>
 </Project>

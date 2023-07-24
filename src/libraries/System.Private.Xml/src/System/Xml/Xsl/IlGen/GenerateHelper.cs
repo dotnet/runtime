@@ -24,6 +24,7 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// List of all XmlIL runtime constructors.
     /// </summary>
+    [RequiresDynamicCode("Calls MakeGenericType on value types")]
     internal sealed class XmlILStorageMethods
     {
         // Aggregates
@@ -165,6 +166,7 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// List of all XmlIL runtime methods.
     /// </summary>
+    [RequiresDynamicCode("Calls MakeGenericType on value types")]
     internal static class XmlILMethods
     {
         // Iterators
@@ -471,6 +473,7 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// Contains helper methods used during the code generation phase.
     /// </summary>
+    [RequiresDynamicCode("Creates DynamicMethods")]
     internal sealed class GenerateHelper
     {
         private MethodBase? _methInfo;

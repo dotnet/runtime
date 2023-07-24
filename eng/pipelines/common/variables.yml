@@ -18,7 +18,7 @@ variables:
 - name: isNotExtraPlatformsBuild
   value: ${{ ne(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
 - name: isWasmOnlyBuild
-  value: ${{ in(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests') }}
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-wasm-dbgtests', 'runtime-wasm-optional') }}
 - name: isiOSLikeOnlyBuild
   value: ${{ in(variables['Build.DefinitionName'], 'runtime-ioslike') }}
 - name: isiOSLikeSimulatorOnlyBuild
@@ -36,10 +36,10 @@ variables:
 - name: isNotSpecificPlatformOnlyBuild
   value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic') }}
 
-# We only run evaluate paths on runtime, runtime-staging and runtime-community pipelines on PRs
+# We only run evaluate paths on runtime and runtime-community pipelines on PRs
 # keep in sync with /eng/pipelines/common/xplat-setup.yml
 - name: dependOnEvaluatePaths
-  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic', 'dotnet-linker-tests', 'runtime-dev-innerloop', 'runtime-coreclr superpmi-replay', 'runtime-coreclr superpmi-diffs')) }}
+  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic', 'dotnet-linker-tests', 'runtime-dev-innerloop', 'runtime-coreclr superpmi-replay', 'runtime-coreclr superpmi-diffs')) }}
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release

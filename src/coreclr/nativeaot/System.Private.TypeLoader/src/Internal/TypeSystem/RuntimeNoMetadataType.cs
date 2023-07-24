@@ -34,13 +34,46 @@ namespace Internal.TypeSystem.NoMetadata
         // "_baseType == this" means "base type was not initialized yet"
         private DefType _baseType;
 
-        public NoMetadataType(TypeSystemContext context, RuntimeTypeHandle genericTypeDefinition, DefType genericTypeDefinitionAsDefType, Instantiation instantiation, int hashcode)
+        public unsafe NoMetadataType(TypeSystemContext context, RuntimeTypeHandle genericTypeDefinition, int instantiationLength, ReadOnlySpan<Runtime.GenericVariance> runtimeVarianceData, int hashcode)
+        {
+            TypeDesc[] genericParameters;
+            if (instantiationLength == 0)
+            {
+                genericParameters = Array.Empty<TypeDesc>();
+            }
+            else
+            {
+                genericParameters = new TypeDesc[instantiationLength];
+                for (int i = 0; i < genericParameters.Length; i++)
+                {
+                    GenericVariance variance = runtimeVarianceData.Length == 0 ? GenericVariance.None : runtimeVarianceData[i] switch
+                    {
+                        Runtime.GenericVariance.Contravariant => GenericVariance.Contravariant,
+                        Runtime.GenericVariance.Covariant => GenericVariance.Covariant,
+                        Runtime.GenericVariance.NonVariant or Runtime.GenericVariance.ArrayCovariant => GenericVariance.None,
+                        _ => throw new NotImplementedException()
+                    };
+                    genericParameters[i] = new RuntimeGenericParameterDesc(GenericParameterKind.Type, i, this, variance);
+                }
+            }
+
+            Instantiation instantiation = new Instantiation(genericParameters);
+            Init(context, genericTypeDefinition, null, instantiation, hashcode);
+        }
+
+        public unsafe NoMetadataType(TypeSystemContext context, RuntimeTypeHandle genericTypeDefinition, DefType genericTypeDefinitionAsDefType, Instantiation instantiation, int hashcode)
+        {
+            Init(context, genericTypeDefinition, genericTypeDefinitionAsDefType, instantiation, hashcode);
+        }
+
+        private void Init(TypeSystemContext context, RuntimeTypeHandle genericTypeDefinition, DefType genericTypeDefinitionAsDefType, Instantiation instantiation, int hashcode)
         {
             _hashcode = hashcode;
             _context = context;
             _genericTypeDefinition = genericTypeDefinition;
             _genericTypeDefinitionAsDefType = genericTypeDefinitionAsDefType;
             _genericTypeDefinitionAsDefType ??= this;
+
             _instantiation = instantiation;
 
             // Instantiation must either be:
@@ -187,6 +220,17 @@ namespace Internal.TypeSystem.NoMetadata
                 }
             }
 
+            if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
+            {
+                flags |= TypeFlags.HasGenericVarianceComputed;
+
+                unsafe
+                {
+                    if (_genericTypeDefinition.ToEETypePtr()->HasGenericVariance)
+                        flags |= TypeFlags.HasGenericVariance;
+                }
+            }
+
             return flags;
         }
 
@@ -212,7 +256,7 @@ namespace Internal.TypeSystem.NoMetadata
             if (needsChange)
             {
                 TypeDesc openType = GetTypeDefinition();
-                return openType.InstantiateSignature(canonInstantiation, new Instantiation());
+                return Context.ResolveGenericInstantiation((DefType)openType, canonInstantiation);
             }
 
             return this;
@@ -285,24 +329,16 @@ namespace Internal.TypeSystem.NoMetadata
             Debug.Assert(!genericDefinitionHandle.IsNull());
 
 #if DEBUG
-            TypeReferenceHandle typeRefHandle;
             QTypeDefinition qTypeDefinition;
-            MetadataReader reader;
 
             string enclosingDummy;
 
             // Try to get the name from metadata
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(genericDefinitionHandle, out qTypeDefinition))
+            if (TypeLoaderEnvironment.TryGetMetadataForNamedType(genericDefinitionHandle, out qTypeDefinition))
             {
                 TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
                 typeDefHandle.GetFullName(qTypeDefinition.NativeFormatReader, out name, out enclosingDummy, out nsName);
                 assemblyName = typeDefHandle.GetContainingModuleName(qTypeDefinition.NativeFormatReader);
-            }
-            // Try to get the name from diagnostic metadata
-            else if (TypeLoaderEnvironment.TryGetTypeReferenceForNamedType(genericDefinitionHandle, out reader, out typeRefHandle))
-            {
-                typeRefHandle.GetFullName(reader, out name, out enclosingDummy, out nsName);
-                assemblyName = typeRefHandle.GetContainingModuleName(reader);
             }
             else
 #endif

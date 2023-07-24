@@ -10,6 +10,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class My
 {
@@ -30,7 +31,8 @@ public class My
         return null;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Object o = new Object();
         foo(o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, bar(o), o);

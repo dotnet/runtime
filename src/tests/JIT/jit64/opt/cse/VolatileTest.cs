@@ -6,10 +6,12 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
+using Xunit;
 
-internal class Program
+public class Program
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("this test is designed to hang if jit cse doesnt honor volatile");
         if (TestCSE.Test()) return 100;

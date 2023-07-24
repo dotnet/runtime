@@ -17,6 +17,7 @@ namespace ILCompiler
         protected DictionaryLayoutProvider _dictionaryLayoutProvider = new LazyDictionaryLayoutProvider();
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
+        protected InlinedThreadStatics _inlinedThreadStatics = new InlinedThreadStatics();
         protected MethodImportationErrorProvider _methodImportationErrorProvider = new MethodImportationErrorProvider();
         protected IInliningPolicy _inliningPolicy;
         protected bool _methodBodyFolding;
@@ -109,6 +110,12 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UseInlinedThreadStatics(InlinedThreadStatics inlinedThreadStatics)
+        {
+            _inlinedThreadStatics = inlinedThreadStatics;
+            return this;
+        }
+
         public CompilationBuilder UseDwarf5(bool value)
         {
             _useDwarf5 = value;
@@ -118,7 +125,7 @@ namespace ILCompiler
         protected PreinitializationManager GetPreinitializationManager()
         {
             if (_preinitializationManager == null)
-                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), enableInterpreter: false);
+                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy());
             return _preinitializationManager;
         }
 

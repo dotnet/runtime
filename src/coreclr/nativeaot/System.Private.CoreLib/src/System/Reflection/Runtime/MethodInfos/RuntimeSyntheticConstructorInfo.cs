@@ -80,7 +80,7 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             object ctorAllocatedObject = this.MethodInvoker.Invoke(null, parameters, binder, invokeAttr, culture)!;
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return ctorAllocatedObject;
         }
 
@@ -102,8 +102,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             // This logic is written to match CoreCLR's behavior.
             return other is ConstructorInfo && other is IRuntimeMemberInfoWithNoMetadataDefinition;
@@ -159,7 +158,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        protected sealed override MethodInvoker UncachedMethodInvoker => new CustomMethodInvoker(_declaringType, _runtimeParameterTypes, _options, _action);
+        protected sealed override MethodBaseInvoker UncachedMethodInvoker => new CustomMethodInvoker(_declaringType, _runtimeParameterTypes, _options, _action);
 
         private volatile RuntimeParameterInfo[] _lazyParameters;
 

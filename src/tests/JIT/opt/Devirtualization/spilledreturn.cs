@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Examples where methods potentially return multiple types
 // but the jit can prune the set down to one type during
@@ -74,10 +75,9 @@ public class Test
         }
     }
 
-    public static int Main(string[] args)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int TestEntry(bool vague)
     {
-        vague = args.Length > 0;
-
         M(0).Foo();
         M(0).Bar();
         M(1).Foo();
@@ -91,6 +91,12 @@ public class Test
         G<string>().Foo();
 
         return 100;
+    }
+
+    [Fact]
+    public static int TestEntryPoint()
+    {
+        return TestEntry(false);
     }
 }
 

@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static IChainPal? BuildChainCore(
+        private static OpenSslX509ChainProcessor? BuildChainCore(
             bool useMachineContext,
             ICertificatePal cert,
             X509Certificate2Collection? extraStore,

@@ -140,7 +140,7 @@ namespace ILCompiler
         /// <param name="origName">Name to check for uniqueness.</param>
         /// <param name="set">Set of names already used.</param>
         /// <returns>A name based on <param name="origName"/> that is not part of <param name="set"/>.</returns>
-        private static string DisambiguateName(string origName, ISet<string> set)
+        private static string DisambiguateName(string origName, HashSet<string> set)
         {
             int iter = 0;
             string result = origName;
@@ -290,9 +290,8 @@ namespace ILCompiler
                     mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + NestMangledName("Pointer");
                     break;
                 case TypeFlags.FunctionPointer:
-                    // TODO: need to also encode calling convention (or all modopts?)
                     var fnPtrType = (FunctionPointerType)type;
-                    mangledName = "__FnPtr" + EnterNameScopeSequence;
+                    mangledName = "__FnPtr_" + ((int)fnPtrType.Signature.Flags).ToString("X2") + EnterNameScopeSequence;
                     mangledName += GetMangledTypeName(fnPtrType.Signature.ReturnType);
 
                     mangledName += EnterNameScopeSequence;
@@ -354,8 +353,7 @@ namespace ILCompiler
             lock (this)
             {
                 // Ensure that name is unique and update our tables accordingly.
-                if (!_mangledTypeNames.ContainsKey(type))
-                    _mangledTypeNames.Add(type, mangledName);
+                _mangledTypeNames.TryAdd(type, mangledName);
             }
 
             return mangledName;
@@ -387,8 +385,7 @@ namespace ILCompiler
 
                 lock (this)
                 {
-                    if (!_mangledMethodNames.ContainsKey(method))
-                        _mangledMethodNames.Add(method, utf8MangledName);
+                    _mangledMethodNames.TryAdd(method, utf8MangledName);
                 }
 
                 return utf8MangledName;
@@ -558,8 +555,7 @@ namespace ILCompiler
             {
                 lock (this)
                 {
-                    if (!_unqualifiedMangledMethodNames.ContainsKey(method))
-                        _unqualifiedMangledMethodNames.Add(method, utf8MangledName);
+                    _unqualifiedMangledMethodNames.TryAdd(method, utf8MangledName);
                 }
             }
 
@@ -623,8 +619,7 @@ namespace ILCompiler
 
             lock (this)
             {
-                if (!_mangledFieldNames.ContainsKey(field))
-                    _mangledFieldNames.Add(field, utf8MangledName);
+                _mangledFieldNames.TryAdd(field, utf8MangledName);
             }
 
             return utf8MangledName;
@@ -645,8 +640,7 @@ namespace ILCompiler
 
             lock (this)
             {
-                if (!_mangledStringLiterals.ContainsKey(literal))
-                    _mangledStringLiterals.Add(literal, mangledName);
+                _mangledStringLiterals.TryAdd(literal, mangledName);
             }
 
             return mangledName;

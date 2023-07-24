@@ -23,9 +23,15 @@ class ReaderGen : CsWriter
         WriteLine("#pragma warning disable CA1066 // IEquatable<T> implementations aren't used");
         WriteLine("#pragma warning disable CA1822");
         WriteLine("#pragma warning disable IDE0059");
+        WriteLine("#pragma warning disable SA1121");
+        WriteLine("#pragma warning disable IDE0036, SA1129");
         WriteLine();
 
+        WriteLine("using System;");
+        WriteLine("using System.Diagnostics;");
         WriteLine("using System.Reflection;");
+        WriteLine("using System.Collections.Generic;");
+        WriteLine("using System.Runtime.CompilerServices;");
         WriteLine("using Internal.NativeFormat;");
         WriteLine();
 
@@ -133,8 +139,7 @@ class ReaderGen : CsWriter
 
         OpenScope($"internal {handleName}(int value)");
         WriteLine("HandleType hType = (HandleType)(value >> 24);");
-        WriteLine($"if (!(hType == 0 || hType == HandleType.{record.Name} || hType == HandleType.Null))");
-        WriteLine("    throw new ArgumentException();");
+        WriteLine($"Debug.Assert(hType == 0 || hType == HandleType.{record.Name} || hType == HandleType.Null);");
         WriteLine($"_value = (value & 0x00FFFFFF) | (((int)HandleType.{record.Name}) << 24);");
         WriteLine("_Validate();");
         CloseScope();
@@ -263,7 +268,7 @@ class ReaderGen : CsWriter
             if (record.Name == "ConstantStringValue")
             {
                 WriteLine("if (IsNull(handle))");
-                WriteLine("    return default(ConstantStringValue);");
+                WriteLine("    return new ConstantStringValue();");
             }
             WriteLine($"{record.Name} record;");
             WriteLine("record._reader = this;");

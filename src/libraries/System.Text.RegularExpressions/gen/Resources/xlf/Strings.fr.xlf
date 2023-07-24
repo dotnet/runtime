@@ -88,8 +88,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
-        <source>Insufficient hexadecimal digits.</source>
-        <target state="translated">Chiffres hexadécimaux insuffisants.</target>
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">Chiffres hexadécimaux insuffisants ou non valides.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -113,8 +113,8 @@
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
-        <source>Incomplete \\p{X} character escape.</source>
-        <target state="translated">Échappement de caractère \\p{X} incomplet.</target>
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">Échappement de caractère \p{X} incomplet.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -138,13 +138,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
-        <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="translated">Référence arrière nommée \\k&lt;...&gt; maformée.</target>
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">Référence arrière nommée \k&lt;...&gt; incorrecte.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
-        <source>Malformed \\p{X} character escape.</source>
-        <target state="translated">Échappement de caractère \\p{X} malformé.</target>
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">Échappement de caractère \p{X} malformé.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -167,11 +167,6 @@
         <target state="translated">Le résultat ne peut pas être appelé sur un Match ayant échoué.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">Les remplacements d'expressions régulières avec des substitutions de groupes ne sont pas pris en charge avec RegexOptions.NonBacktracking.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">La collection est en lecture seule.</target>
@@ -193,8 +188,8 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="translated">Le délai d'attente du moteur RegEx a expiré pendant la tentative d'appariement d'un modèle avec une chaîne d'entrée. Ce problème peut se produire pour de nombreuses raisons, notamment en cas d'entrées volumineuses ou de retour sur trace excessif causé par les quantificateurs imbriqués, les références arrière et d'autres facteurs.</target>
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">Le délai d’attente du moteur Regex a expiré pendant la tentative de mise en correspondance d’un modèle avec une chaîne d’entrée. Ce problème peut se produire pour de nombreuses raisons, notamment en cas d’entrées volumineuses ou de retour sur trace excessif causé par les quantificateurs imbriqués, les références arrière et d’autres facteurs.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -213,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
-        <source>Cannot include class \\{0} in character range.</source>
-        <target state="translated">Impossible d'inclure la classe \\{0} dans la plage de caractères.</target>
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">Impossible d’inclure la classe \{0} dans la plage de caractères.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -228,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
-        <source>Illegal \\ at end of pattern.</source>
-        <target state="translated">\\ non conforme à la fin du modèle.</target>
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">\ non conforme à la fin du modèle.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -238,8 +233,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
-        <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="translated">Séquence d'échappement non reconnue \\{0}.</target>
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">Séquence d’échappement non reconnue \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

@@ -13,8 +13,8 @@ namespace ILCompiler
     {
         internal abstract void Begin();
         internal abstract void End();
-        void IObjectDumper.DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData) => DumpObjectNode(mangler, node, objectData);
-        protected abstract void DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData);
+        void IObjectDumper.DumpObjectNode(NodeFactory factory, ObjectNode node, ObjectData objectData) => DumpObjectNode(factory, node, objectData);
+        protected abstract void DumpObjectNode(NodeFactory factory, ObjectNode node, ObjectData objectData);
 
         protected static string GetObjectNodeName(ObjectNode node)
         {
@@ -53,10 +53,10 @@ namespace ILCompiler
 
             public ComposedObjectDumper(ObjectDumper[] dumpers) => _dumpers = dumpers;
 
-            protected override void DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData)
+            protected override void DumpObjectNode(NodeFactory factory, ObjectNode node, ObjectData objectData)
             {
                 foreach (var d in _dumpers)
-                    d.DumpObjectNode(mangler, node, objectData);
+                    d.DumpObjectNode(factory, node, objectData);
             }
             internal override void Begin()
             {

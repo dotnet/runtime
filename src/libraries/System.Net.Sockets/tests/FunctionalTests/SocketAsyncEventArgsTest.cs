@@ -122,27 +122,25 @@ namespace System.Net.Sockets.Tests
                 using (Socket server = await acceptTask)
                 using (var receiveSaea = new SocketAsyncEventArgs())
                 {
-                    if (suppressed)
+                    using (suppressed ? ExecutionContext.SuppressFlow() : default)
                     {
-                        ExecutionContext.SuppressFlow();
+                        var local = new AsyncLocal<int>();
+                        local.Value = 42;
+                        int threadId = Environment.CurrentManagedThreadId;
+
+                        var mres = new ManualResetEventSlim();
+                        receiveSaea.SetBuffer(new byte[1], 0, 1);
+                        receiveSaea.Completed += delegate
+                        {
+                            Assert.NotEqual(threadId, Environment.CurrentManagedThreadId);
+                            Assert.Equal(suppressed ? 0 : 42, local.Value);
+                            mres.Set();
+                        };
+
+                        Assert.True(client.ReceiveAsync(receiveSaea));
+                        server.Send(new byte[1]);
+                        mres.Wait();
                     }
-
-                    var local = new AsyncLocal<int>();
-                    local.Value = 42;
-                    int threadId = Environment.CurrentManagedThreadId;
-
-                    var mres = new ManualResetEventSlim();
-                    receiveSaea.SetBuffer(new byte[1], 0, 1);
-                    receiveSaea.Completed += delegate
-                    {
-                        Assert.NotEqual(threadId, Environment.CurrentManagedThreadId);
-                        Assert.Equal(suppressed ? 0 : 42, local.Value);
-                        mres.Set();
-                    };
-
-                    Assert.True(client.ReceiveAsync(receiveSaea));
-                    server.Send(new byte[1]);
-                    mres.Wait();
                 }
             }
         }

@@ -30,7 +30,7 @@ namespace Mono.Linker.Dataflow
 
 			MultiValue genericArgumentValue = _context.Annotations.FlowAnnotations.GetTypeValueFromGenericArgument (genericArgument);
 
-			var diagnosticContext = new DiagnosticContext (_origin, !_context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (_origin.Provider), _context);
+			var diagnosticContext = new DiagnosticContext (_origin, !_context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (_origin.Provider, out _), _context);
 			RequireDynamicallyAccessedMembers (diagnosticContext, genericArgumentValue, genericParameterValue);
 		}
 

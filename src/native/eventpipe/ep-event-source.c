@@ -14,12 +14,12 @@
 
 #if defined(HOST_WINDOWS) || defined(HOST_WIN32)
 const ep_char8_t* _ep_os_info = "Windows";
+#elif defined(HOST_TVOS)
+const ep_char8_t* _ep_os_info = "tvOS";
 #elif defined(HOST_IOS)
 const ep_char8_t* _ep_os_info = "iOS";
 #elif defined(HOST_WATCHOS)
 const ep_char8_t* _ep_os_info = "WatchOS";
-#elif defined(HOST_TVOS)
-const ep_char8_t* _ep_os_info = "tvOS";
 #elif defined(__APPLE__)
 const ep_char8_t* _ep_os_info = "macOS";
 #elif defined(HOST_ANDROID)
@@ -98,7 +98,7 @@ ep_event_source_init (EventPipeEventSource *event_source)
 
 	EP_ASSERT (event_source != NULL);
 
-	event_source->provider = ep_create_provider (ep_provider_get_default_name_utf8 (), NULL, NULL, NULL);
+	event_source->provider = ep_create_provider (ep_provider_get_default_name_utf8 (), NULL, NULL);
 	ep_raise_error_if_nok (event_source->provider != NULL);
 
 	event_source->provider_name = ep_provider_get_default_name_utf8 ();

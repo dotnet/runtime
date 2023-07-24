@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Optimize>True</Optimize>
+    <!-- Move it out of CI for 78899 -->
+    <CLRTestPriority>1</CLRTestPriority>
 
     <!-- This test needs GCStress mode but it doesn't take long to execute
          so is fine to keep it in the inner loop -->

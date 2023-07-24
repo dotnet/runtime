@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 namespace DefaultNamespace
 {
     public class RootMem
@@ -11,7 +12,8 @@ namespace DefaultNamespace
         internal static GCHandle[] root;
         internal static int n;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int iSize = 1000;
             root = new GCHandle[iSize];

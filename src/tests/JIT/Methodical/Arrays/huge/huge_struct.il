@@ -19,7 +19,7 @@
            
   
 }
-.assembly 'huge_struct'
+.assembly ASSEMBLY_NAME
 {
 
 

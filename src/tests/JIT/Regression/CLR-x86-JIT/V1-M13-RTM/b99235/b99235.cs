@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public struct A
 {
@@ -29,7 +30,8 @@ public class TestApp
     {
         return 0;
     }
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         AA loc_x = new AA(0, 100);
         test_26((uint)&loc_x.m_b);

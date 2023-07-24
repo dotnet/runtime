@@ -761,67 +761,39 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 
 #endif // TARGET_ARM64
 
-bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs)
+bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t format, unw_word_t unwind_info)
 {
-#if defined(TARGET_AMD64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace);
-#elif defined(TARGET_ARM)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm_rt> uc(_addressSpace, regs);
-#elif defined(TARGET_ARM64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64> uc(_addressSpace, regs);
-#elif defined(HOST_X86)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86> uc(_addressSpace, regs);
-#else
-    #error "Unwinding is not implemented for this architecture yet."
-#endif
-
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-    uint32_t dwarfOffsetHint = 0;
 
 #if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
-    // If there is a compact unwind encoding table, look there first.
-    if (uwInfoSections.compact_unwind_section != 0 && uc.getInfoFromCompactEncodingSection(pc, uwInfoSections)) {
-        unw_proc_info_t procInfo;
-        uc.getInfo(&procInfo);
 
 #if defined(TARGET_ARM64)
-        if ((procInfo.format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
-            CompactUnwinder_arm64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
-            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, procInfo.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
-            return stepRet == UNW_STEP_SUCCESS;
-        } else {
-            dwarfOffsetHint = procInfo.format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
-        }
+    if ((format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
+        CompactUnwinder_arm64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
+        int stepRet = compactInst.stepWithCompactEncoding(format, start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
+        return stepRet == UNW_STEP_SUCCESS;
+    }
 #elif defined(TARGET_AMD64)
-        if ((procInfo.format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
-            CompactUnwinder_x86_64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
-            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, procInfo.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
-            return stepRet == UNW_STEP_SUCCESS;
-        } else {
-            dwarfOffsetHint = procInfo.format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
-        }
+    if ((format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
+        CompactUnwinder_x86_64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
+        int stepRet = compactInst.stepWithCompactEncoding(format, start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
+        return stepRet == UNW_STEP_SUCCESS;
+    }
 #else
-        PORTABILITY_ASSERT("DoTheStep");
-#endif
-    }
+    PORTABILITY_ASSERT("DoTheStep");
 #endif
 
-    bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, dwarfOffsetHint);
-    if (!retVal)
-    {
-        return false;
-    }
+#endif
 
-    unw_proc_info_t procInfo;
-    uc.getInfo(&procInfo);
+    uintptr_t pc = regs->GetIP();
     bool isSignalFrame = false;
 
 #if defined(TARGET_ARM)
     DwarfInstructions<LocalAddressSpace, Registers_arm_rt> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm_rt*)regs, isSignalFrame);
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, unwind_info, *(Registers_arm_rt*)regs, isSignalFrame, /* stage2 */ false);
 #else
     DwarfInstructions<LocalAddressSpace, Registers_REGDISPLAY> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_REGDISPLAY*)regs, isSignalFrame);
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, unwind_info, *(Registers_REGDISPLAY*)regs, isSignalFrame, /* stage2 */ false);
 #endif
 
     if (stepRet != UNW_STEP_SUCCESS)
@@ -834,32 +806,80 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 #endif
 
 #elif defined(_LIBUNWIND_ARM_EHABI)
-    uc.setInfoBasedOnIPRegister(true);
+    // If there is ARM EHABI unwind info, look there next.
+    if (uwInfoSections.arm_section == 0 || !this->getInfoFromEHABISection(pc, uwInfoSections))
+    {
+        return false;
+    }
+
     int stepRet = uc.step();
     if ((stepRet != UNW_STEP_SUCCESS) && (stepRet != UNW_STEP_END))
     {
         return false;
     }
+#else
+    PORTABILITY_ASSERT("StepFrame");
 #endif
 
     return true;
 }
 
-bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
+bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo)
 {
-    UnwindInfoSections uwInfoSections;
+#if defined(TARGET_AMD64)
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace);
+#elif defined(TARGET_ARM)
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm_rt> uc(_addressSpace);
+#elif defined(TARGET_ARM64)
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64> uc(_addressSpace);
+#elif defined(HOST_X86)
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86> uc(_addressSpace);
+#else
+    #error "Unwinding is not implemented for this architecture yet."
+#endif
+
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-    uintptr_t pc = regs->GetIP();
-    if (!_addressSpace.findUnwindSections(pc, uwInfoSections))
+    uint32_t dwarfOffsetHint = 0;
+
+#if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
+    // If there is a compact unwind encoding table, look there first.
+    if (uwInfoSections.compact_unwind_section != 0 && uc.getInfoFromCompactEncodingSection(pc, uwInfoSections)) {
+        uc.getInfo(procInfo);
+
+#if defined(TARGET_ARM64)
+        if ((procInfo->format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
+            return true;
+        } else {
+            dwarfOffsetHint = procInfo->format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
+        }
+#elif defined(TARGET_AMD64)
+        if ((procInfo->format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
+            return true;
+        } else {
+            dwarfOffsetHint = procInfo->format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
+        }
+#else
+        PORTABILITY_ASSERT("GetUnwindProcInfo");
+#endif
+    }
+#endif
+
+    bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, dwarfOffsetHint);
+    if (!retVal)
     {
         return false;
     }
-    return DoTheStep(pc, uwInfoSections, regs);
+
 #elif defined(_LIBUNWIND_ARM_EHABI)
-    // unwind section is located later for ARM
-    // pc will be taked from regs parameter
-    return DoTheStep(0, uwInfoSections, regs);
+    // If there is ARM EHABI unwind info, look there next.
+    if (uwInfoSections.arm_section == 0 || !this->getInfoFromEHABISection(pc, uwInfoSections))
+    {
+        return false;
+    }
 #else
-    PORTABILITY_ASSERT("StepFrame");
+    PORTABILITY_ASSERT("GetUnwindProcInfo");
 #endif
+
+    uc.getInfo(procInfo);
+    return true;
 }

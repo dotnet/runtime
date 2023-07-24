@@ -395,7 +395,7 @@ namespace System.ComponentModel
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
             Type[]? argTypes,
-            object[]? args)
+            object?[]? args)
         {
             ArgumentNullException.ThrowIfNull(objectType);
 
@@ -1136,7 +1136,7 @@ namespace System.ComponentModel
                     name = component.Site.Name;
                 }
 
-                if (name == null || name.Length == 0)
+                if (string.IsNullOrEmpty(name))
                 {
                     int ci = System.Threading.Interlocked.Increment(ref s_collisionIndex) - 1;
                     name = ci.ToString(CultureInfo.InvariantCulture);
@@ -2423,8 +2423,7 @@ namespace System.ComponentModel
         {
             ArgumentNullException.ThrowIfNull(primary);
 
-            Hashtable assocTable = AssociationTable;
-            assocTable?.Remove(primary);
+            AssociationTable?.Remove(primary);
         }
 
         /// <summary>
@@ -3015,7 +3014,7 @@ namespace System.ComponentModel
                 IServiceProvider? provider,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
                 Type[]? argTypes,
-                object[]? args)
+                object?[]? args)
             {
                 ArgumentNullException.ThrowIfNull(objectType);
 

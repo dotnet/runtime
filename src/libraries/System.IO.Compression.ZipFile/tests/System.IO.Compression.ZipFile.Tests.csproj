@@ -1,12 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 shell because https://bugs.chromium.org/p/v8/issues/detail?id=12541 -->
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
@@ -16,7 +16,10 @@
 
   <ItemGroup>
     <Compile Include="ZipFile.Create.cs" />
+    <Compile Include="ZipFile.Create.Stream.cs" />
     <Compile Include="ZipFile.Extract.cs" />
+    <Compile Include="ZipFile.Extract.Stream.cs" />
+    <Compile Include="ZipFile.Open.cs" />
     <Compile Include="ZipFileExtensions.ZipArchive.Create.cs" />
     <Compile Include="ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
     <Compile Include="ZipFileExtensions.ZipArchive.Extract.cs" />
@@ -26,6 +29,8 @@
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
              Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\WrappedStream.cs"
+             Link="Common\System\IO\WrappedStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs"
              Link="Common\System\IO\Compression\CRC.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\FileData.cs"
@@ -37,7 +42,7 @@
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs"
              Link="Common\System\IO\Compression\ZipTestHelper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="ZipFile.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Interop\Unix\System.Native\Interop.Stat.cs" />

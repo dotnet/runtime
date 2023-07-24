@@ -9,6 +9,9 @@
 #ifndef REG_SEL_DEF
 #error  Must define REG_SEL_DEF macro before including this file
 #endif
+#ifndef BUSY_REG_SEL_DEF
+#error  Must define BUSY_REG_SEL_DEF macro before including this file
+#endif
 
 // Register selection stats
 // Each register will receive a score which takes into account the scoring criteria below.
@@ -35,12 +38,13 @@ REG_SEL_DEF(BEST_FIT,           0x00040,    "BSFIT",        'K')   // The availa
 REG_SEL_DEF(IS_PREV_REG,        0x00020,    "PRVRG",        'L')   // This register was previously assigned to the interval.
 REG_SEL_DEF(REG_ORDER,          0x00010,    "ORDER",        'M')   // Tie-breaker
 
-// These are the original criteria for comparing registers that are in use.
-REG_SEL_DEF(SPILL_COST,         0x00008,    "SPILL",        'N')   // It has the lowest cost of all the candidates.
-REG_SEL_DEF(FAR_NEXT_REF,       0x00004,    "FNREF",        'O')   // It has a farther next reference than the best candidate thus far.
-REG_SEL_DEF(PREV_REG_OPT,       0x00002,    "PRGOP",        'P')   // The previous RefPosition of its current assigned interval is RegOptional.
+BUSY_REG_SEL_DEF(SPILL_COST,         0x00008,    "SPILL",        'N')   // It has the lowest cost of all the candidates.
+BUSY_REG_SEL_DEF(FAR_NEXT_REF,       0x00004,    "FNREF",        'O')   // It has a farther next reference than the best candidate thus far.
+BUSY_REG_SEL_DEF(PREV_REG_OPT,       0x00002,    "PRGOP",        'P')   // The previous RefPosition of its current assigned interval is RegOptional.
 
 // TODO-CQ: Consider using REG_ORDER as a tie-breaker even for busy registers.
-REG_SEL_DEF(REG_NUM,            0x00001,    "RGNUM",        'Q')   // It has a lower register number.
+BUSY_REG_SEL_DEF(REG_NUM,            0x00001,    "RGNUM",        'Q')   // It has a lower register number.
 
 // clang-format on
+#undef BUSY_REG_SEL_DEF
+#undef REG_SEL_DEF

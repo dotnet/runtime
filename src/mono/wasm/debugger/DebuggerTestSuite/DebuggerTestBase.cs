@@ -24,8 +24,10 @@ namespace DebuggerTests
     DebuggerTestFirefox
 #endif
     {
-        public DebuggerTests(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
-                : base(testOutput, driver)
+        public const string WebcilInWasmExtension = ".wasm";
+
+        public DebuggerTests(ITestOutputHelper testOutput, string locale = "en-US", string driver = "debugger-driver.html")
+                : base(testOutput, locale, driver)
         {}
     }
 
@@ -37,7 +39,14 @@ namespace DebuggerTests
 #else
             => WasmHost.Firefox;
 #endif
+
+        public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
+
+        public static bool WasmSingleThreaded => !WasmMultiThreaded;
+
         public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
+
+        public static bool RunningOnChromeAndLinux => RunningOn == WasmHost.Chrome && PlatformDetection.IsLinux;
 
         public const int FirefoxProxyPort = 6002;
 
@@ -52,12 +61,14 @@ namespace DebuggerTests
         private const int DefaultTestTimeoutMs = 1 * 60 * 1000;
         protected TimeSpan TestTimeout = TimeSpan.FromMilliseconds(DefaultTestTimeoutMs);
         protected ITestOutputHelper _testOutput;
+        protected readonly TestEnvironment _env;
 
         static string s_debuggerTestAppPath;
         static int s_idCounter = -1;
 
-        public int Id { get; init; }
-
+        public int Id { get; set; }
+        public string driver;
+        
         public static string DebuggerTestAppPath
         {
             get
@@ -115,41 +126,71 @@ namespace DebuggerTests
             }
         }
 
-        public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
+        public static string TempPath => Path.Combine(Path.GetTempPath(), "dbg-tests-tmp");
+        static DebuggerTestBase()
         {
+            if (Directory.Exists(TempPath))
+                Directory.Delete(TempPath, recursive: true);
+        }
+
+        public DebuggerTestBase(ITestOutputHelper testOutput, string locale, string _driver = "debugger-driver.html")
+        {
+            _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;
             Id = Interlocked.Increment(ref s_idCounter);
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
             // we want the test to mach it. We are also starting chrome with --lang=en-US
-            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(locale);
 
             insp = new Inspector(Id, _testOutput);
             cli = insp.Client;
+            driver = _driver;
             scripts = SubscribeToScripts(insp);
-            startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput);
+            startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput, locale);
         }
 
         public virtual async Task InitializeAsync()
         {
+            bool retry = true;
             Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
              {
-                 Func<string, (string, Task<Result>)> getInitCmdFn = (cmd) => (cmd, client.SendCommand(cmd, null, token));
+                 Func<string, JObject, (string, Task<Result>)> getInitCmdFn = (cmd, args) => (cmd, client.SendCommand(cmd, args, token));
                  var init_cmds = new List<(string, Task<Result>)>
                  {
-                    getInitCmdFn("Profiler.enable"),
-                    getInitCmdFn("Runtime.enable"),
-                    getInitCmdFn("Debugger.enable"),
-                    getInitCmdFn("Runtime.runIfWaitingForDebugger")
+                    getInitCmdFn("Profiler.enable", null),
+                    getInitCmdFn("Runtime.enable", null),
+                    getInitCmdFn("Debugger.enable", null),
+                    getInitCmdFn("Runtime.runIfWaitingForDebugger", null),
+                    getInitCmdFn("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })),
+                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))
+                    //getInitCmdFn("ServiceWorker.enable", null)
                  };
-
                  return init_cmds;
              };
 
             await Ready();
-            await insp.OpenSessionAsync(fn, TestTimeout);
+            try {
+                await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
+            }
+            catch (TaskCanceledException exc) //if timed out for some reason let's try again
+            {
+                if (!retry)
+                    throw exc;
+                retry = false;
+                _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
+                Id = Interlocked.Increment(ref s_idCounter);
+                insp = new Inspector(Id, _testOutput);
+                cli = insp.Client;
+                scripts = SubscribeToScripts(insp);
+                await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
+            }
         }
 
-        public virtual async Task DisposeAsync() => await insp.ShutdownAsync().ConfigureAwait(false);
+        public virtual async Task DisposeAsync()
+        {
+            await insp.ShutdownAsync().ConfigureAwait(false);
+            _env.Dispose();
+        }
 
         public Task Ready() => startTask;
 
@@ -167,6 +208,7 @@ namespace DebuggerTests
         {
             var script_id = args?["scriptId"]?.Value<string>();
             var url = args["url"]?.Value<string>();
+            script_id += args["sessionId"]?.Value<string>();
             if (script_id.StartsWith("dotnet://"))
             {
                 var dbgUrl = args["dotNetUrl"]?.Value<string>();
@@ -229,7 +271,38 @@ namespace DebuggerTests
         {
             return await insp.WaitFor(what);
         }
+        public async Task WaitForConsoleMessage(string message)
+        {
+            object llock = new();
+            var tcs = new TaskCompletionSource();
+            insp.On("Runtime.consoleAPICalled", async (args, c) =>
+            {
+                (string line, string type) = insp.FormatConsoleAPICalled(args);
+                if (string.IsNullOrEmpty(line))
+                    return await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
 
+                lock (llock)
+                {
+                    try
+                    {
+                        if (line == message)
+                        {
+                            tcs.SetResult();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        tcs.SetException(ex);
+                    }
+                }
+
+                return tcs.Task.IsCompleted
+                            ? await Task.FromResult(ProtocolEventHandlerReturn.RemoveHandler)
+                            : await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
+            });
+
+            await tcs.Task;
+        }
         public async Task WaitForScriptParsedEventsAsync(params string[] paths)
         {
             object llock = new();
@@ -273,7 +346,7 @@ namespace DebuggerTests
 
         // sets breakpoint by method name and line offset
         internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
-            Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
+            Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test", int col = 0)
         {
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -307,7 +380,7 @@ namespace DebuggerTests
 
         internal virtual void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
         {
-            var loc_str = $"{ scripts[location["scriptId"].Value<string>()] }" +
+            var loc_str = $"{ scripts[location["scriptId"].Value<string>()+cli.CurrentSessionId.sessionId] }" +
                 $"#{ location["lineNumber"].Value<int>() }" +
                 $"#{ location["columnNumber"].Value<int>() }";
 
@@ -1140,9 +1213,19 @@ namespace DebuggerTests
 
         internal virtual async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
         {
-            var bp1_req = !use_regex ?
+            JObject bp1_req;
+            if (column != -1)
+            {
+                bp1_req = !use_regex ?
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition }) :
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition });
+            }
+            else
+            {
+                bp1_req = !use_regex ?
+                JObject.FromObject(new { lineNumber = line, url = dicFileToUrl[url_key], condition }) :
+                JObject.FromObject(new { lineNumber = line, urlRegex = url_key, condition });
+            }
 
             var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(expect_ok ? bp1_res.IsOk : !bp1_res.IsOk);
@@ -1196,6 +1279,17 @@ namespace DebuggerTests
                 }
             }
         }
+
+        protected async Task EvaluateOnCallFrameFail(string call_frame_id, params (string expression, string class_name)[] args)
+        {
+            foreach (var arg in args)
+            {
+                var (_, res) = await EvaluateOnCallFrame(call_frame_id, arg.expression, expect_ok: false);
+                if (arg.class_name != null)
+                    AssertEqual(arg.class_name, res.Error["result"]?["className"]?.Value<string>(), $"Error className did not match for expression '{arg.expression}'");
+            }
+        }
+
 
         internal void AssertEqual(object expected, object actual, string label)
         {
@@ -1493,6 +1587,13 @@ namespace DebuggerTests
             var res = await cli.SendCommand("DotnetDebugger.setDebuggerProperty", req, token);
             Assert.True(res.IsOk);
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
+        }
+
+
+        internal async Task SetSymbolOptions(JObject param)
+        {
+            var res = await cli.SendCommand("DotnetDebugger.setSymbolOptions", param, token);
+            Assert.True(res.IsOk);
         }
 
         internal async Task CheckEvaluateFail(string id, params (string expression, string message)[] args)

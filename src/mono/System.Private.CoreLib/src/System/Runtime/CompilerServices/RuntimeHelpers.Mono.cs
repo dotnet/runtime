@@ -39,9 +39,33 @@ namespace System.Runtime.CompilerServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int InternalGetHashCode(object? o);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetHashCode(object? o)
         {
+            // NOTE: the interpreter does not run this code.  It intrinsifies the whole RuntimeHelpers.GetHashCode function
+            if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
+                return hash;
             return InternalGetHashCode(o);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern int InternalTryGetHashCode(object? o);
+
+        /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        /// <remarks>
+        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
+        /// code to the object if it does not already have one.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int TryGetHashCode(object? o)
+        {
+            // NOTE: the interpreter does not run this code.  It intrinsifies the whole RuntimeHelpers.TryGetHashCode function
+            if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
+                return hash;
+            return InternalTryGetHashCode(o);
         }
 
         public static new bool Equals(object? o1, object? o2)
@@ -143,22 +167,6 @@ namespace System.Runtime.CompilerServices
             // TODO: Missing intrinsic in interpreter
             return RuntimeTypeHandle.HasReferences((obj.GetType() as RuntimeType)!);
         }
-
-        // A conservative GC already scans the stack looking for potential object-refs or by-refs.
-        // Mono uses a conservative GC so there is no need for this API to be full implemented.
-        internal unsafe ref struct GCFrameRegistration
-        {
-#pragma warning disable IDE0060
-            public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
-            {
-            }
-#pragma warning restore IDE0060
-        }
-
-        [Conditional("unnecessary")]
-        internal static unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
-        [Conditional("unnecessary")]
-        internal static unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
 
         public static object GetUninitializedObject(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.

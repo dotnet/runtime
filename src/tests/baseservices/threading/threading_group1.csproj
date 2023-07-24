@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NumberOfStripesToUseInStress>10</NumberOfStripesToUseInStress>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="commitstackonlyasneeded/**/*.??proj" />
+    <MergedWrapperProjectReference Include="coverage/**/*.??proj" />
+    <MergedWrapperProjectReference Include="DeadThreads/**/*.??proj" />
+    <MergedWrapperProjectReference Include="delegate/**/*.??proj" />
+    <MergedWrapperProjectReference Include="generics/threadstart/*.??proj" />
+    <MergedWrapperProjectReference Include="generics/syncdelegate/*.??proj" />
+    <MergedWrapperProjectReference Include="regressions/**/*.??proj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

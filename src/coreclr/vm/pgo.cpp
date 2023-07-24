@@ -920,7 +920,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromText(MethodDesc* pMD, BYTE**
                             if (kind == ICorJitInfo::PgoInstrumentationKind::TypeHandle)
                             {
                                 StackSString ts(SString::Utf8, string);
-                                TypeHandle th = TypeName::GetTypeManaged(ts.GetUnicode(), NULL, FALSE, FALSE, FALSE, NULL, NULL);
+                                TypeHandle th = TypeName::GetTypeFromAsmQualifiedName(ts.GetUnicode());
                                 newPtr = (INT_PTR)th.AsPtr();
                             }
                             else
@@ -933,7 +933,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromText(MethodDesc* pMD, BYTE**
                                 {
                                     StackSString typeString(SString::Utf8, sep + 3);
                                     StackSString methodString(SString::Utf8, string, (COUNT_T)(sep - string));
-                                    TypeHandle th = TypeName::GetTypeManaged(typeString.GetUnicode(), NULL, FALSE, FALSE, FALSE, NULL, NULL);
+                                    TypeHandle th = TypeName::GetTypeFromAsmQualifiedName(typeString.GetUnicode());
 
                                     if (!th.IsNull())
                                     {

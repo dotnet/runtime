@@ -88,8 +88,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
-        <source>Insufficient hexadecimal digits.</source>
-        <target state="translated">十六進位數字不足。</target>
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">十六進位數字不足或無效。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -113,8 +113,8 @@
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
-        <source>Incomplete \\p{X} character escape.</source>
-        <target state="translated">不完整的 \\p{X} 逸出字元。</target>
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">不完整的 \p{X} 逸出字元。</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -138,13 +138,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
-        <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="translated">格式錯誤 \\k&lt;...&gt; 命名的反向參考。</target>
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">以 \k&lt;...&gt; 命名的反向參考語式錯誤。</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
-        <source>Malformed \\p{X} character escape.</source>
-        <target state="translated">格式錯誤的 \\p{X} 逸出字元。</target>
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">格式錯誤的 \p{X} 逸出字元。</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -167,11 +167,6 @@
         <target state="translated">無法在已失敗的對應 (Match) 上呼叫結果。</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">RegexOptions.NonBacktracking 不支援以替代群組取代 Regex。</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">集合是唯讀的。</target>
@@ -193,8 +188,8 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="translated">嘗試將模式對應至輸入字串時，RegEx 引擎發生逾時。有很多原因會導致這個情形，其中包括巢狀數量詞、反向參考及其他因素所造成的極大量輸入或過度使用回溯法。</target>
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">嘗試將模式對應至輸入字串時，Regex 引擎發生逾時。有很多原因會導致這個情形，其中包括巢狀數量詞、反向參考及其他因素所造成的極大量輸入或過度使用回溯法。</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -213,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
-        <source>Cannot include class \\{0} in character range.</source>
-        <target state="translated">無法在字元範圍內包含類別 \\{0}。</target>
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">無法在字元範圍內包含類別 \{0}。</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -228,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
-        <source>Illegal \\ at end of pattern.</source>
-        <target state="translated">模式結尾有不合法的 \\。</target>
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">模式結尾有不合法的 \。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -238,8 +233,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
-        <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="translated">無法識別的逸出序列 \\{0}。</target>
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">無法辨認的逸出序列 \{0}。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

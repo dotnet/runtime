@@ -7,11 +7,15 @@
 enum class SimdAsHWIntrinsicClassId
 {
     Unknown,
+    Plane,
+    Quaternion,
     Vector2,
     Vector3,
     Vector4,
+    Vector,
     VectorT128,
     VectorT256,
+    VectorT512,
 };
 
 enum class SimdAsHWIntrinsicFlag : unsigned int
@@ -24,8 +28,7 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
     // Indicates the intrinsic is for an instance method.
     InstanceMethod = 0x02,
 
-    // Indicates the operands should be swapped in importation.
-    NeedsOperandsSwapped = 0x04,
+    /* UnusedFlag = 0x04, */
 
     // Base type should come from the this argument
     BaseTypeFromThisArg = 0x08,
@@ -75,11 +78,11 @@ struct SimdAsHWIntrinsicInfo
                                    CORINFO_SIG_INFO* sig,
                                    const char*       className,
                                    const char*       methodName,
-                                   const char*       enclosingClassName,
-                                   int               sizeOfVectorT);
-    static SimdAsHWIntrinsicClassId lookupClassId(const char* className,
-                                                  const char* enclosingClassName,
-                                                  int         sizeOfVectorT);
+                                   const char*       enclosingClassName);
+
+    static SimdAsHWIntrinsicClassId lookupClassId(Compiler*   comp,
+                                                  const char* className,
+                                                  const char* enclosingClassName);
 
     // Member lookup
 
@@ -130,12 +133,6 @@ struct SimdAsHWIntrinsicInfo
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
         return (flags & SimdAsHWIntrinsicFlag::InstanceMethod) == SimdAsHWIntrinsicFlag::InstanceMethod;
-    }
-
-    static bool NeedsOperandsSwapped(NamedIntrinsic id)
-    {
-        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & SimdAsHWIntrinsicFlag::NeedsOperandsSwapped) == SimdAsHWIntrinsicFlag::NeedsOperandsSwapped;
     }
 
     static bool BaseTypeFromThisArg(NamedIntrinsic id)

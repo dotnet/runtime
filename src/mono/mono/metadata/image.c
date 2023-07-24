@@ -46,6 +46,7 @@
 #include <mono/metadata/metadata-update.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mono-private-unstable.h>
+#include <mono/metadata/webcil-loader.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -258,6 +259,10 @@ mono_images_init (void)
 	debug_assembly_unload = g_hasenv ("MONO_DEBUG_ASSEMBLY_UNLOAD");
 
 	install_pe_loader ();
+
+#ifdef ENABLE_WEBCIL
+	mono_webcil_loader_install ();
+#endif
 
 	mutex_inited = TRUE;
 }
@@ -923,26 +928,44 @@ do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
 	return offset;
 }
 
-mono_bool
-mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
+static int32_t
+try_load_pe_cli_header (char *raw_data, uint32_t raw_data_len, MonoDotNetHeader *cli_header)
 {
-	MonoDotNetHeader cli_header;
 	MonoMSDOSHeader msdos;
-	guint8 *data;
 
 	int offset = 0;
 	memcpy (&msdos, raw_data + offset, sizeof (msdos));
 
 	if (!(msdos.msdos_sig [0] == 'M' && msdos.msdos_sig [1] == 'Z')) {
-		return FALSE;
+		return -1;
 	}
 
 	msdos.pe_offset = GUINT32_FROM_LE (msdos.pe_offset);
 
 	offset = msdos.pe_offset;
 
-	int ret = do_load_header_internal (raw_data, raw_data_len, &cli_header, offset, FALSE);
-	if ( ret >= 0 ) {
+	int32_t ret = do_load_header_internal (raw_data, raw_data_len, cli_header, offset, FALSE);
+	return ret;
+}
+
+mono_bool
+mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
+{
+	guint8 *data;
+	MonoDotNetHeader cli_header;
+	gboolean is_pe = TRUE;
+
+	int32_t ret = try_load_pe_cli_header (raw_data, raw_data_len, &cli_header);
+
+#ifdef ENABLE_WEBCIL
+	int32_t webcil_section_adjustment = 0;
+	if (ret == -1) {
+		ret = mono_webcil_load_cli_header (raw_data, raw_data_len, 0, &cli_header, &webcil_section_adjustment);
+		is_pe = FALSE;
+	}
+#endif
+
+	if (ret > 0) {
 		MonoPEDirEntry *debug_dir_entry = (MonoPEDirEntry *) &cli_header.datadir.pe_debug;
 		ImageDebugDirectory debug_dir;
 		if (!debug_dir_entry->size)
@@ -951,28 +974,39 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 			const int top = cli_header.coff.coff_sections;
 			guint32 addr = debug_dir_entry->rva;
 			int i = 0;
+			gboolean found = FALSE;
 			for (i = 0; i < top; i++){
-				MonoSectionTable t;
+				MonoSectionTable t = {0,};
 
-				if (ret + sizeof (MonoSectionTable) > raw_data_len) {
-					return FALSE;
-				}
+				if (G_LIKELY (is_pe)) {
+					if (ret + sizeof (MonoSectionTable) > raw_data_len)
+						return FALSE;
 
-				memcpy (&t, raw_data + ret, sizeof (MonoSectionTable));
-				ret += sizeof (MonoSectionTable);
+					memcpy (&t, raw_data + ret, sizeof (MonoSectionTable));
+					ret += sizeof (MonoSectionTable);
 
 		#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-				t.st_virtual_address = GUINT32_FROM_LE (t.st_virtual_address);
-				t.st_raw_data_size = GUINT32_FROM_LE (t.st_raw_data_size);
-				t.st_raw_data_ptr = GUINT32_FROM_LE (t.st_raw_data_ptr);
+					t.st_virtual_address = GUINT32_FROM_LE (t.st_virtual_address);
+					t.st_raw_data_size = GUINT32_FROM_LE (t.st_raw_data_size);
+					t.st_raw_data_ptr = GUINT32_FROM_LE (t.st_raw_data_ptr);
 		#endif
+				}
+#ifdef ENABLE_WEBCIL
+				else {
+					ret = mono_webcil_load_section_table (raw_data, raw_data_len, ret, webcil_section_adjustment, &t);
+					if (ret == -1)
+						return FALSE;
+				}
+#endif
 				/* consistency checks here */
 				if ((addr >= t.st_virtual_address) &&
 					(addr < t.st_virtual_address + t.st_raw_data_size)){
 					addr = addr - t.st_virtual_address + t.st_raw_data_ptr;
+					found = TRUE;
 					break;
 				}
 			}
+			g_assert (found);
 			for (guint32 idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
 				data = (guint8 *) ((ImageDebugDirectory *) (raw_data + addr) + idx);
 				debug_dir.characteristics = read32(data);
@@ -1315,7 +1349,7 @@ mono_image_storage_dtor (gpointer self)
 		}
 	}
 	if (storage->raw_data_allocated) {
-		g_free (storage->raw_data);
+		g_free (storage->raw_data_handle);
 	}
 
 	g_free (storage->key);
@@ -1396,6 +1430,7 @@ mono_image_storage_new_raw_data (char *datac, guint32 data_len, gboolean raw_dat
 	storage->raw_data = datac;
 	storage->raw_data_len = data_len;
 	storage->raw_data_allocated = !!raw_data_allocated;
+	storage->raw_data_handle = datac;
 
 	storage->key = key;
 	MonoImageStorage *other_storage = NULL;

@@ -4,8 +4,11 @@
 using System;
 using System.Reflection;
 
+#pragma warning disable CS8500
+
 unsafe class Program
 {
+
     public static void AsTypedReference<T>(ref T value, TypedReference* output)
     {
         *output = __makeref(value);
@@ -27,3 +30,5 @@ unsafe class Program
         return 100;
     }
 }
+
+#pragma warning restore CS8500

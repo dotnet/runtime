@@ -9,8 +9,11 @@
 #pragma warning disable CA1066 // IEquatable<T> implementations aren't used
 #pragma warning disable CA1822
 #pragma warning disable IDE0059
+#pragma warning disable SA1121
+#pragma warning disable IDE0036, SA1129
 
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -20,7 +23,6 @@ namespace Internal.Metadata.NativeFormat
 {
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ArraySignature
     {
@@ -34,7 +36,7 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public Handle ElementType
         {
@@ -79,7 +81,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ArraySignatureHandle
     {
@@ -117,8 +118,7 @@ namespace Internal.Metadata.NativeFormat
         internal ArraySignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ArraySignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ArraySignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ArraySignature) << 24);
             _Validate();
         }
@@ -166,7 +166,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ByReferenceSignature
     {
@@ -180,7 +179,7 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public Handle Type
         {
@@ -195,7 +194,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ByReferenceSignatureHandle
     {
@@ -233,8 +231,7 @@ namespace Internal.Metadata.NativeFormat
         internal ByReferenceSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ByReferenceSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ByReferenceSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ByReferenceSignature) << 24);
             _Validate();
         }
@@ -282,7 +279,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBooleanArray
     {
@@ -310,7 +306,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBooleanArrayHandle
     {
@@ -348,8 +343,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantBooleanArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantBooleanArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantBooleanArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantBooleanArray) << 24);
             _Validate();
         }
@@ -397,7 +391,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBooleanValue
     {
@@ -425,7 +418,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBooleanValueHandle
     {
@@ -463,8 +455,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantBooleanValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantBooleanValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantBooleanValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantBooleanValue) << 24);
             _Validate();
         }
@@ -512,7 +503,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBoxedEnumValue
     {
@@ -552,7 +542,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBoxedEnumValueHandle
     {
@@ -590,8 +579,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantBoxedEnumValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantBoxedEnumValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantBoxedEnumValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantBoxedEnumValue) << 24);
             _Validate();
         }
@@ -639,7 +627,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantByteArray
     {
@@ -667,7 +654,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantByteArrayHandle
     {
@@ -705,8 +691,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantByteArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantByteArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantByteArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantByteArray) << 24);
             _Validate();
         }
@@ -754,7 +739,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantByteValue
     {
@@ -782,7 +766,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantByteValueHandle
     {
@@ -820,8 +803,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantByteValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantByteValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantByteValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantByteValue) << 24);
             _Validate();
         }
@@ -869,7 +851,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantCharArray
     {
@@ -897,7 +878,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantCharArrayHandle
     {
@@ -935,8 +915,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantCharArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantCharArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantCharArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantCharArray) << 24);
             _Validate();
         }
@@ -984,7 +963,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantCharValue
     {
@@ -1012,7 +990,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantCharValueHandle
     {
@@ -1050,8 +1027,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantCharValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantCharValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantCharValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantCharValue) << 24);
             _Validate();
         }
@@ -1099,7 +1075,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantDoubleArray
     {
@@ -1127,7 +1102,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantDoubleArrayHandle
     {
@@ -1165,8 +1139,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantDoubleArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantDoubleArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantDoubleArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantDoubleArray) << 24);
             _Validate();
         }
@@ -1214,7 +1187,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantDoubleValue
     {
@@ -1242,7 +1214,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantDoubleValueHandle
     {
@@ -1280,8 +1251,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantDoubleValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantDoubleValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantDoubleValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantDoubleValue) << 24);
             _Validate();
         }
@@ -1329,7 +1299,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantEnumArray
     {
@@ -1367,7 +1336,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantEnumArrayHandle
     {
@@ -1405,8 +1373,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantEnumArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantEnumArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantEnumArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantEnumArray) << 24);
             _Validate();
         }
@@ -1454,7 +1421,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantHandleArray
     {
@@ -1482,7 +1448,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantHandleArrayHandle
     {
@@ -1520,8 +1485,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantHandleArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantHandleArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantHandleArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantHandleArray) << 24);
             _Validate();
         }
@@ -1569,7 +1533,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt16Array
     {
@@ -1597,7 +1560,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt16ArrayHandle
     {
@@ -1635,8 +1597,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt16ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt16Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt16Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt16Array) << 24);
             _Validate();
         }
@@ -1684,7 +1645,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt16Value
     {
@@ -1712,7 +1672,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt16ValueHandle
     {
@@ -1750,8 +1709,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt16ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt16Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt16Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt16Value) << 24);
             _Validate();
         }
@@ -1799,7 +1757,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt32Array
     {
@@ -1827,7 +1784,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt32ArrayHandle
     {
@@ -1865,8 +1821,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt32ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt32Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt32Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt32Array) << 24);
             _Validate();
         }
@@ -1914,7 +1869,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt32Value
     {
@@ -1942,7 +1896,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt32ValueHandle
     {
@@ -1980,8 +1933,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt32ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt32Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt32Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt32Value) << 24);
             _Validate();
         }
@@ -2029,7 +1981,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt64Array
     {
@@ -2057,7 +2008,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt64ArrayHandle
     {
@@ -2095,8 +2045,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt64ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt64Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt64Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt64Array) << 24);
             _Validate();
         }
@@ -2144,7 +2093,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt64Value
     {
@@ -2172,7 +2120,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt64ValueHandle
     {
@@ -2210,8 +2157,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt64ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt64Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt64Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt64Value) << 24);
             _Validate();
         }
@@ -2259,7 +2205,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantReferenceValue
     {
@@ -2277,7 +2222,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantReferenceValueHandle
     {
@@ -2315,8 +2259,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantReferenceValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantReferenceValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantReferenceValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantReferenceValue) << 24);
             _Validate();
         }
@@ -2364,7 +2307,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSByteArray
     {
@@ -2392,7 +2334,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSByteArrayHandle
     {
@@ -2430,8 +2371,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantSByteArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantSByteArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantSByteArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSByteArray) << 24);
             _Validate();
         }
@@ -2479,7 +2419,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSByteValue
     {
@@ -2507,7 +2446,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSByteValueHandle
     {
@@ -2545,8 +2483,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantSByteValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantSByteValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantSByteValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSByteValue) << 24);
             _Validate();
         }
@@ -2594,7 +2531,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSingleArray
     {
@@ -2622,7 +2558,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSingleArrayHandle
     {
@@ -2660,8 +2595,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantSingleArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantSingleArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantSingleArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSingleArray) << 24);
             _Validate();
         }
@@ -2709,7 +2643,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSingleValue
     {
@@ -2737,7 +2670,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSingleValueHandle
     {
@@ -2775,8 +2707,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantSingleValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantSingleValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantSingleValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSingleValue) << 24);
             _Validate();
         }
@@ -2824,7 +2755,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantStringArray
     {
@@ -2853,7 +2783,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantStringArrayHandle
     {
@@ -2891,8 +2820,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantStringArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantStringArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantStringArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantStringArray) << 24);
             _Validate();
         }
@@ -2940,7 +2868,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantStringValue
     {
@@ -2968,7 +2895,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantStringValueHandle
     {
@@ -3006,8 +2932,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantStringValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantStringValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantStringValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantStringValue) << 24);
             _Validate();
         }
@@ -3055,7 +2980,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt16Array
     {
@@ -3083,7 +3007,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt16ArrayHandle
     {
@@ -3121,8 +3044,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt16ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt16Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt16Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt16Array) << 24);
             _Validate();
         }
@@ -3170,7 +3092,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt16Value
     {
@@ -3198,7 +3119,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt16ValueHandle
     {
@@ -3236,8 +3156,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt16ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt16Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt16Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt16Value) << 24);
             _Validate();
         }
@@ -3285,7 +3204,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt32Array
     {
@@ -3313,7 +3231,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt32ArrayHandle
     {
@@ -3351,8 +3268,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt32ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt32Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt32Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt32Array) << 24);
             _Validate();
         }
@@ -3400,7 +3316,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt32Value
     {
@@ -3428,7 +3343,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt32ValueHandle
     {
@@ -3466,8 +3380,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt32ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt32Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt32Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt32Value) << 24);
             _Validate();
         }
@@ -3515,7 +3428,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt64Array
     {
@@ -3543,7 +3455,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt64ArrayHandle
     {
@@ -3581,8 +3492,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt64ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt64Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt64Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt64Array) << 24);
             _Validate();
         }
@@ -3630,7 +3540,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt64Value
     {
@@ -3658,7 +3567,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt64ValueHandle
     {
@@ -3696,8 +3604,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt64ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt64Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt64Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt64Value) << 24);
             _Validate();
         }
@@ -3745,7 +3652,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct CustomAttribute
     {
@@ -3795,7 +3701,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct CustomAttributeHandle
     {
@@ -3833,8 +3738,7 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.CustomAttribute || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.CustomAttribute || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.CustomAttribute) << 24);
             _Validate();
         }
@@ -3882,7 +3786,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Event
     {
@@ -3951,7 +3854,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct EventHandle
     {
@@ -3989,8 +3891,7 @@ namespace Internal.Metadata.NativeFormat
         internal EventHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.Event || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.Event || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.Event) << 24);
             _Validate();
         }
@@ -4038,7 +3939,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Field
     {
@@ -4117,7 +4017,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FieldHandle
     {
@@ -4155,8 +4054,7 @@ namespace Internal.Metadata.NativeFormat
         internal FieldHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.Field || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.Field || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.Field) << 24);
             _Validate();
         }
@@ -4204,7 +4102,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FieldSignature
     {
@@ -4233,7 +4130,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FieldSignatureHandle
     {
@@ -4271,8 +4167,7 @@ namespace Internal.Metadata.NativeFormat
         internal FieldSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.FieldSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.FieldSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.FieldSignature) << 24);
             _Validate();
         }
@@ -4320,7 +4215,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FunctionPointerSignature
     {
@@ -4348,7 +4242,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FunctionPointerSignatureHandle
     {
@@ -4386,8 +4279,7 @@ namespace Internal.Metadata.NativeFormat
         internal FunctionPointerSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.FunctionPointerSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.FunctionPointerSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.FunctionPointerSignature) << 24);
             _Validate();
         }
@@ -4435,7 +4327,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct GenericParameter
     {
@@ -4514,7 +4405,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct GenericParameterHandle
     {
@@ -4552,8 +4442,7 @@ namespace Internal.Metadata.NativeFormat
         internal GenericParameterHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.GenericParameter || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.GenericParameter || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.GenericParameter) << 24);
             _Validate();
         }
@@ -4601,7 +4490,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MemberReference
     {
@@ -4651,7 +4539,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MemberReferenceHandle
     {
@@ -4689,8 +4576,7 @@ namespace Internal.Metadata.NativeFormat
         internal MemberReferenceHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.MemberReference || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.MemberReference || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.MemberReference) << 24);
             _Validate();
         }
@@ -4738,7 +4624,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Method
     {
@@ -4826,7 +4711,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodHandle
     {
@@ -4864,8 +4748,7 @@ namespace Internal.Metadata.NativeFormat
         internal MethodHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.Method || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.Method || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.Method) << 24);
             _Validate();
         }
@@ -4913,7 +4796,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodInstantiation
     {
@@ -4938,7 +4820,7 @@ namespace Internal.Metadata.NativeFormat
         } // Method
 
         internal Handle _method;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public HandleCollection GenericTypeArguments
         {
@@ -4953,7 +4835,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodInstantiationHandle
     {
@@ -4991,8 +4872,7 @@ namespace Internal.Metadata.NativeFormat
         internal MethodInstantiationHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.MethodInstantiation || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.MethodInstantiation || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodInstantiation) << 24);
             _Validate();
         }
@@ -5040,7 +4920,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodSemantics
     {
@@ -5078,7 +4957,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodSemanticsHandle
     {
@@ -5116,8 +4994,7 @@ namespace Internal.Metadata.NativeFormat
         internal MethodSemanticsHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.MethodSemantics || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.MethodSemantics || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodSemantics) << 24);
             _Validate();
         }
@@ -5165,7 +5042,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodSignature
     {
@@ -5180,7 +5056,7 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public CallingConventions CallingConvention
+        public SignatureCallingConvention CallingConvention
         {
             get
             {
@@ -5188,7 +5064,7 @@ namespace Internal.Metadata.NativeFormat
             }
         } // CallingConvention
 
-        internal CallingConventions _callingConvention;
+        internal SignatureCallingConvention _callingConvention;
 
         public int GenericParameterCount
         {
@@ -5236,7 +5112,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodSignatureHandle
     {
@@ -5274,8 +5149,7 @@ namespace Internal.Metadata.NativeFormat
         internal MethodSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.MethodSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.MethodSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodSignature) << 24);
             _Validate();
         }
@@ -5323,7 +5197,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodTypeVariableSignature
     {
@@ -5351,7 +5224,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodTypeVariableSignatureHandle
     {
@@ -5389,8 +5261,7 @@ namespace Internal.Metadata.NativeFormat
         internal MethodTypeVariableSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.MethodTypeVariableSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.MethodTypeVariableSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodTypeVariableSignature) << 24);
             _Validate();
         }
@@ -5438,7 +5309,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ModifiedType
     {
@@ -5488,7 +5358,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ModifiedTypeHandle
     {
@@ -5526,8 +5395,7 @@ namespace Internal.Metadata.NativeFormat
         internal ModifiedTypeHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ModifiedType || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ModifiedType || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ModifiedType) << 24);
             _Validate();
         }
@@ -5575,7 +5443,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamedArgument
     {
@@ -5635,7 +5502,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamedArgumentHandle
     {
@@ -5673,8 +5539,7 @@ namespace Internal.Metadata.NativeFormat
         internal NamedArgumentHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.NamedArgument || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.NamedArgument || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.NamedArgument) << 24);
             _Validate();
         }
@@ -5722,7 +5587,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamespaceDefinition
     {
@@ -5791,7 +5655,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamespaceDefinitionHandle
     {
@@ -5829,8 +5692,7 @@ namespace Internal.Metadata.NativeFormat
         internal NamespaceDefinitionHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.NamespaceDefinition || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.NamespaceDefinition || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.NamespaceDefinition) << 24);
             _Validate();
         }
@@ -5878,7 +5740,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamespaceReference
     {
@@ -5917,7 +5778,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamespaceReferenceHandle
     {
@@ -5955,8 +5815,7 @@ namespace Internal.Metadata.NativeFormat
         internal NamespaceReferenceHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.NamespaceReference || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.NamespaceReference || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.NamespaceReference) << 24);
             _Validate();
         }
@@ -6004,7 +5863,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Parameter
     {
@@ -6073,7 +5931,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ParameterHandle
     {
@@ -6111,8 +5968,7 @@ namespace Internal.Metadata.NativeFormat
         internal ParameterHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.Parameter || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.Parameter || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.Parameter) << 24);
             _Validate();
         }
@@ -6160,7 +6016,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PointerSignature
     {
@@ -6189,7 +6044,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PointerSignatureHandle
     {
@@ -6227,8 +6081,7 @@ namespace Internal.Metadata.NativeFormat
         internal PointerSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.PointerSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.PointerSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.PointerSignature) << 24);
             _Validate();
         }
@@ -6276,7 +6129,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Property
     {
@@ -6355,7 +6207,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PropertyHandle
     {
@@ -6393,8 +6244,7 @@ namespace Internal.Metadata.NativeFormat
         internal PropertyHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.Property || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.Property || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.Property) << 24);
             _Validate();
         }
@@ -6442,7 +6292,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PropertySignature
     {
@@ -6492,7 +6341,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PropertySignatureHandle
     {
@@ -6530,8 +6378,7 @@ namespace Internal.Metadata.NativeFormat
         internal PropertySignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.PropertySignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.PropertySignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.PropertySignature) << 24);
             _Validate();
         }
@@ -6579,7 +6426,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct QualifiedField
     {
@@ -6617,7 +6463,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct QualifiedFieldHandle
     {
@@ -6655,8 +6500,7 @@ namespace Internal.Metadata.NativeFormat
         internal QualifiedFieldHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.QualifiedField || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.QualifiedField || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.QualifiedField) << 24);
             _Validate();
         }
@@ -6704,7 +6548,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct QualifiedMethod
     {
@@ -6742,7 +6585,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct QualifiedMethodHandle
     {
@@ -6780,8 +6622,7 @@ namespace Internal.Metadata.NativeFormat
         internal QualifiedMethodHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.QualifiedMethod || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.QualifiedMethod || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.QualifiedMethod) << 24);
             _Validate();
         }
@@ -6829,7 +6670,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct SZArraySignature
     {
@@ -6858,7 +6698,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct SZArraySignatureHandle
     {
@@ -6896,8 +6735,7 @@ namespace Internal.Metadata.NativeFormat
         internal SZArraySignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.SZArraySignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.SZArraySignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.SZArraySignature) << 24);
             _Validate();
         }
@@ -6945,7 +6783,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ScopeDefinition
     {
@@ -7123,7 +6960,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ScopeDefinitionHandle
     {
@@ -7161,8 +6997,7 @@ namespace Internal.Metadata.NativeFormat
         internal ScopeDefinitionHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ScopeDefinition || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ScopeDefinition || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ScopeDefinition) << 24);
             _Validate();
         }
@@ -7210,7 +7045,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ScopeReference
     {
@@ -7308,7 +7142,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ScopeReferenceHandle
     {
@@ -7346,8 +7179,7 @@ namespace Internal.Metadata.NativeFormat
         internal ScopeReferenceHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ScopeReference || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ScopeReference || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ScopeReference) << 24);
             _Validate();
         }
@@ -7395,7 +7227,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeDefinition
     {
@@ -7565,7 +7396,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeDefinitionHandle
     {
@@ -7603,8 +7433,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeDefinitionHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeDefinition || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeDefinition || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeDefinition) << 24);
             _Validate();
         }
@@ -7652,7 +7481,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeForwarder
     {
@@ -7700,7 +7528,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeForwarderHandle
     {
@@ -7738,8 +7565,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeForwarderHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeForwarder || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeForwarder || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeForwarder) << 24);
             _Validate();
         }
@@ -7787,7 +7613,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeInstantiationSignature
     {
@@ -7812,7 +7637,7 @@ namespace Internal.Metadata.NativeFormat
         } // GenericType
 
         internal Handle _genericType;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public HandleCollection GenericTypeArguments
         {
@@ -7827,7 +7652,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeInstantiationSignatureHandle
     {
@@ -7865,8 +7689,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeInstantiationSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeInstantiationSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeInstantiationSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeInstantiationSignature) << 24);
             _Validate();
         }
@@ -7914,7 +7737,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeReference
     {
@@ -7953,7 +7775,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeReferenceHandle
     {
@@ -7991,8 +7812,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeReferenceHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeReference || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeReference || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeReference) << 24);
             _Validate();
         }
@@ -8040,7 +7860,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeSpecification
     {
@@ -8069,7 +7888,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeSpecificationHandle
     {
@@ -8107,8 +7925,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeSpecificationHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeSpecification || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeSpecification || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeSpecification) << 24);
             _Validate();
         }
@@ -8156,7 +7973,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeVariableSignature
     {
@@ -8184,7 +8000,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeVariableSignatureHandle
     {
@@ -8222,8 +8037,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeVariableSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeVariableSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeVariableSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeVariableSignature) << 24);
             _Validate();
         }
@@ -8271,7 +8085,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamedArgumentHandleCollection
     {
@@ -8301,7 +8114,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8342,7 +8154,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodSemanticsHandleCollection
     {
@@ -8372,7 +8183,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8413,7 +8223,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct CustomAttributeHandleCollection
     {
@@ -8443,7 +8252,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8484,7 +8292,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ParameterHandleCollection
     {
@@ -8514,7 +8321,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8555,7 +8361,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct GenericParameterHandleCollection
     {
@@ -8585,7 +8390,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8626,7 +8430,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeDefinitionHandleCollection
     {
@@ -8656,7 +8459,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8697,7 +8499,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeForwarderHandleCollection
     {
@@ -8727,7 +8528,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8768,7 +8568,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamespaceDefinitionHandleCollection
     {
@@ -8798,7 +8597,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8839,7 +8637,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodHandleCollection
     {
@@ -8869,7 +8666,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8910,7 +8706,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FieldHandleCollection
     {
@@ -8940,7 +8735,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8981,7 +8775,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PropertyHandleCollection
     {
@@ -9011,7 +8804,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9052,7 +8844,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct EventHandleCollection
     {
@@ -9082,7 +8873,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9123,7 +8913,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ScopeDefinitionHandleCollection
     {
@@ -9153,7 +8942,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9194,7 +8982,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct BooleanCollection
     {
@@ -9224,7 +9011,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9265,7 +9051,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct CharCollection
     {
@@ -9295,7 +9080,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9336,7 +9120,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ByteCollection
     {
@@ -9366,7 +9149,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9407,7 +9189,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct SByteCollection
     {
@@ -9437,7 +9218,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9478,7 +9258,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Int16Collection
     {
@@ -9508,7 +9287,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9549,7 +9327,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct UInt16Collection
     {
@@ -9579,7 +9356,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9620,7 +9396,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Int32Collection
     {
@@ -9650,7 +9425,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9691,7 +9465,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct UInt32Collection
     {
@@ -9721,7 +9494,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9762,7 +9534,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Int64Collection
     {
@@ -9792,7 +9563,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9833,7 +9603,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct UInt64Collection
     {
@@ -9863,7 +9632,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9904,7 +9672,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct SingleCollection
     {
@@ -9934,7 +9701,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9975,7 +9741,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct DoubleCollection
     {
@@ -10005,7 +9770,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -10046,7 +9810,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Handle
     {
@@ -10368,7 +10131,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct HandleCollection
     {
@@ -10398,7 +10160,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -10439,7 +10200,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial class MetadataReader
     {
@@ -10700,7 +10460,7 @@ namespace Internal.Metadata.NativeFormat
         public ConstantStringValue GetConstantStringValue(ConstantStringValueHandle handle)
         {
             if (IsNull(handle))
-                return default(ConstantStringValue);
+                return new ConstantStringValue();
             ConstantStringValue record;
             record._reader = this;
             record._handle = handle;

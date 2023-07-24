@@ -3,18 +3,20 @@ parameters:
 
 steps:
   - script: >-
-      ./dotnet.sh build -p:TargetOS=Browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
+      ./dotnet.sh build -p:TargetOS=browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
       /p:Configuration=${{ parameters.configForBuild }}
       /p:ContinuousIntegrationBuild=true
       /t:InstallWorkloadUsingArtifacts
+      /bl:$(Build.SourcesDirectory)/artifacts/log/${{ parameters.configForBuild }}/InstallWorkloadUsingArtifacts.binlog
       $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
     displayName: "Install workload using artifacts"
 
   - script: >-
-      mkdir -p $(Build.SourcesDirectory)/artifacts/staging &&
-      cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-net7+latest $(Build.SourcesDirectory)/artifacts/staging &&
+      mkdir -p $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
+      cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-latest $(Build.SourcesDirectory)/artifacts/staging &&
       cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
-      cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
+      cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging &&
+      cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
     displayName: "Prepare artifacts staging directory"
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -23,5 +25,6 @@ steps:
       includeRootFolder: true
       displayName: Browser Wasm Artifacts
       artifactName: BrowserWasm
-      archiveType: zip
-      archiveExtension: .zip
+      archiveType: tar
+      tarCompression: gz
+      archiveExtension: '.tar.gz'

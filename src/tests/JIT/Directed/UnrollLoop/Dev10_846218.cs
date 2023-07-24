@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Test
 {
@@ -30,7 +31,7 @@ namespace Test
         }
     }
 
-    internal class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Test(IDoSomething oDoesSomething)
@@ -46,7 +47,8 @@ namespace Test
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             DoSomething doSomething = new DoSomething();
             Test(doSomething);

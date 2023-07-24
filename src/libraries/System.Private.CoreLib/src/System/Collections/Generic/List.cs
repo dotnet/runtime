@@ -306,7 +306,7 @@ namespace System.Collections.Generic
             if (_size - index < count)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-            return Array.BinarySearch<T>(_items, index, count, item, comparer);
+            return Array.BinarySearch(_items, index, count, item, comparer);
         }
 
         public int BinarySearch(T item)
@@ -439,7 +439,6 @@ namespace System.Collections.Generic
             if (_items.Length < capacity)
             {
                 Grow(capacity);
-                _version++;
             }
 
             return _items.Length;
@@ -626,14 +625,13 @@ namespace System.Collections.Generic
         // while an enumeration is in progress, the MoveNext and
         // GetObject methods of the enumerator will throw an exception.
         //
-        public Enumerator GetEnumerator()
-            => new Enumerator(this);
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-            => new Enumerator(this);
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
+            Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
+            GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-            => new Enumerator(this);
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         public List<T> GetRange(int index, int count)
         {
@@ -1076,7 +1074,7 @@ namespace System.Collections.Generic
 
             if (count > 1)
             {
-                Array.Sort<T>(_items, index, count, comparer);
+                Array.Sort(_items, index, count, comparer);
             }
             _version++;
         }
@@ -1146,6 +1144,8 @@ namespace System.Collections.Generic
 
         public struct Enumerator : IEnumerator<T>, IEnumerator
         {
+            internal static IEnumerator<T>? s_emptyEnumerator;
+
             private readonly List<T> _list;
             private int _index;
             private readonly int _version;

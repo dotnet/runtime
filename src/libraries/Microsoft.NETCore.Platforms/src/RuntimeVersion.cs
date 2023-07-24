@@ -11,9 +11,9 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
     /// </summary>
     public sealed class RuntimeVersion : IComparable, IComparable<RuntimeVersion>, IEquatable<RuntimeVersion>
     {
-        private string versionString;
-        private Version version;
-        private bool hasMinor;
+        private readonly string versionString;
+        private readonly Version version;
+        private readonly bool hasMinor;
 
         public RuntimeVersion(string versionString)
         {

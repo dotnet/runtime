@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -24,6 +25,57 @@ namespace System.Runtime.InteropServices
     /// </summary>
     public abstract partial class ComWrappers
     {
+        /// <summary>
+        /// Given a managed object, determine if it is a <see cref="ComWrappers" />-created
+        /// managed wrapper and if so, return the wrapped unmanaged pointer.
+        /// </summary>
+        /// <param name="obj">A managed wrapper</param>
+        /// <param name="unknown">An unmanaged COM object</param>
+        /// <returns>True if the wrapper was resolved to an external COM object, otherwise false.</returns>
+        /// <remarks>
+        /// If a COM object is returned, the caller is expected to call Release() on the object.
+        /// This can be done through an API like <see cref="Marshal.Release(IntPtr)"/>.
+        /// Since this API is required to interact directly with the external COM object, QueryInterface(),
+        /// it is important for the caller to understand the COM object may have apartment affinity and therefore
+        /// if the current thread is not in the correct apartment or the COM object is not a proxy this call may fail.
+        /// </remarks>
+        public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
+        {
+            if (obj == null)
+            {
+                unknown = IntPtr.Zero;
+                return false;
+            }
+
+            return TryGetComInstanceInternal(ObjectHandleOnStack.Create(ref obj), out unknown);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetComInstance")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool TryGetComInstanceInternal(ObjectHandleOnStack wrapperMaybe, out IntPtr externalComObject);
+
+        /// <summary>
+        /// Given a COM object, determine if it is a <see cref="ComWrappers" />-created
+        /// unmanaged wrapper and if so, return the wrapped managed object.
+        /// </summary>
+        /// <param name="unknown">An unmanaged wrapper</param>
+        /// <param name="obj">A managed object</param>
+        /// <returns>True if the wrapper was resolved to a managed object, otherwise false.</returns>
+        public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
+        {
+            obj = null;
+            if (unknown == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            return TryGetObjectInternal(unknown, ObjectHandleOnStack.Create(ref obj));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetObject")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool TryGetObjectInternal(IntPtr wrapperMaybe, ObjectHandleOnStack instance);
+
         /// <summary>
         /// ABI for function dispatch of a COM interface.
         /// </summary>
@@ -183,7 +235,7 @@ namespace System.Runtime.InteropServices
         /// <param name="wrapper">The <see cref="object"/> to be used as the wrapper for the external object</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         /// <remarks>
-        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
+        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="NotSupportedException"/> will be thrown.
         /// </remarks>
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper)
         {
@@ -204,7 +256,7 @@ namespace System.Runtime.InteropServices
         /// in an unknown apartment state. If the supplied inner is not known to be a free-threaded instance then
         /// it is advised to not supply the inner.
         ///
-        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
+        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="NotSupportedException"/> will be thrown.
         /// </remarks>
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper, IntPtr inner)
         {
@@ -263,7 +315,7 @@ namespace System.Runtime.InteropServices
         /// <param name="instance">Instance to register</param>
         /// <remarks>
         /// This function can only be called a single time. Subsequent calls to this function will result
-        /// in a <see cref="System.InvalidOperationException"/> being thrown.
+        /// in a <see cref="InvalidOperationException"/> being thrown.
         ///
         /// Scenarios where this global instance may be used are:
         ///  * Object tracking via the <see cref="CreateComInterfaceFlags.TrackerSupport" /> and <see cref="CreateObjectFlags.TrackerObject" /> flags.
@@ -291,7 +343,7 @@ namespace System.Runtime.InteropServices
         /// <param name="instance">Instance to register</param>
         /// <remarks>
         /// This function can only be called a single time. Subsequent calls to this function will result
-        /// in a <see cref="System.InvalidOperationException"/> being thrown.
+        /// in a <see cref="InvalidOperationException"/> being thrown.
         ///
         /// Scenarios where this global instance may be used are:
         ///  * Usage of COM-related Marshal APIs
@@ -324,7 +376,7 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        public static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
             => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
@@ -10,17 +12,12 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class NativeBuildTests : BuildTestBase
+    public class NativeBuildTests : TestMainJsTestBase
     {
         public NativeBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
         }
-
-        // TODO:     - check dotnet.wasm, js have changed
-        //           - icall? pinvoke?
-        //           - test defaults
-        //
 
         [Theory]
         [BuildAndRun]
@@ -38,7 +35,7 @@ namespace Wasm.Build.Tests
                                 DotnetWasmFromRuntimePack: false));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
-                        test: output => {},
+                        test: output => { },
                         host: host, id: id);
         }
 
@@ -101,37 +98,5 @@ namespace Wasm.Build.Tests
                                             + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
         }
 
-        [Theory]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public void BlazorWasm_CanRunMonoAOTCross_WithNoTrimming(string config)
-        {
-            string id = $"blazorwasm_{config}_aot_{Path.GetRandomFileName()}";
-            CreateBlazorWasmTemplateProject(id);
-
-            // We don't want to emcc compile, and link ~180 assemblies!
-            // So, stop once `mono-aot-cross` part of the build is done
-            string target = @"<Target Name=""StopAfterWasmAOT"" AfterTargets=""_WasmAotCompileApp"">
-                <Error Text=""Stopping after AOT"" Condition=""'$(WasmBuildingForNestedPublish)' == 'true'"" />
-            </Target>
-            ";
-            AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
-                                        extraItems: null,
-                                        extraProperties: null,
-                                        atTheEnd: target);
-
-            string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
-            CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!)
-                                        .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                        .ExecuteWithCapturedOutput("publish",
-                                                                   $"-bl:{publishLogPath}",
-                                                                   "-p:RunAOTCompilation=true",
-                                                                   "-p:PublishTrimmed=false",
-                                                                   $"-p:Configuration={config}");
-
-            Assert.True(res.ExitCode != 0, "Expected publish to fail");
-            Assert.Contains("Stopping after AOT", res.Output);
-        }
     }
 }

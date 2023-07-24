@@ -4,8 +4,9 @@
 
 using System.Runtime.CompilerServices;
 using System;
+using Xunit;
 
-class SP2a
+public class SP2a
 {
 
     // Struct in reg (long, int)
@@ -30,7 +31,8 @@ class SP2a
         return Foo(i2, s);  // r0 <= r3; r2/r3 <= r0/r1; outarg[0] <= r3
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         long res = M(2, 3, 1);
         Console.WriteLine("M(2, 3, 1) is {0}.", res);

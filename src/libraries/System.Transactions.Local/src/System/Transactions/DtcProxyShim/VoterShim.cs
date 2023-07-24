@@ -7,7 +7,7 @@ namespace System.Transactions.DtcProxyShim;
 
 internal sealed class VoterBallotShim
 {
-    private VoterNotifyShim _voterNotifyShim;
+    private readonly VoterNotifyShim _voterNotifyShim;
 
     internal ITransactionVoterBallotAsync2? VoterBallotAsync2 { get; set; }
 

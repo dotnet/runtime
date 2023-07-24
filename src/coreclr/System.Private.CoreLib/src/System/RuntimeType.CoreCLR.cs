@@ -154,18 +154,11 @@ namespace System
             {
                 private readonly MdUtf8String m_name;
                 private readonly MemberListType m_listType;
-                private readonly uint m_nameHash;
 
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
                     m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
                     m_listType = listType;
-                    m_nameHash = 0;
-
-                    if (RequiresStringComparison())
-                    {
-                        m_nameHash = m_name.HashCaseInsensitive();
-                    }
                 }
 
                 public bool Match(MdUtf8String name)
@@ -186,7 +179,6 @@ namespace System
 
                 // Does the current match type require a string comparison?
                 // If not, we know Match will always return true and the call can be skipped
-                // If so, we know we can have a valid hash to check against from GetHashToMatch
                 public bool RequiresStringComparison()
                 {
                     return (m_listType == MemberListType.CaseSensitive) ||
@@ -194,13 +186,6 @@ namespace System
                 }
 
                 public bool CaseSensitive() => m_listType == MemberListType.CaseSensitive;
-
-                public uint GetHashToMatch()
-                {
-                    Debug.Assert(RequiresStringComparison());
-
-                    return m_nameHash;
-                }
             }
 
             private sealed class MemberInfoCache<T> where T : MemberInfo
@@ -622,12 +607,6 @@ namespace System
                         {
                             if (filter.RequiresStringComparison())
                             {
-                                if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
-                                {
-                                    Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
-                                    continue;
-                                }
-
                                 if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                     continue;
                             }
@@ -684,12 +663,6 @@ namespace System
                             {
                                 if (filter.RequiresStringComparison())
                                 {
-                                    if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
-                                    {
-                                        Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
-                                        continue;
-                                    }
-
                                     if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                         continue;
                                 }
@@ -793,12 +766,6 @@ namespace System
                     {
                         if (filter.RequiresStringComparison())
                         {
-                            if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
-                            {
-                                Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
-                                continue;
-                            }
-
                             if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                 continue;
                         }
@@ -922,12 +889,6 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
-                            if (!RuntimeFieldHandle.MatchesNameHash(runtimeFieldHandle, filter.GetHashToMatch()))
-                            {
-                                Debug.Assert(!filter.Match(RuntimeFieldHandle.GetUtf8Name(runtimeFieldHandle)));
-                                continue;
-                            }
-
                             if (!filter.Match(RuntimeFieldHandle.GetUtf8Name(runtimeFieldHandle)))
                                 continue;
                         }
@@ -1010,7 +971,7 @@ namespace System
                             #endregion
 
                             RuntimeFieldInfo runtimeFieldInfo =
-                            new MdFieldInfo(tkField, fieldAttributes, declaringType.TypeHandle, m_runtimeTypeCache, bindingFlags);
+                                new MdFieldInfo(tkField, fieldAttributes, declaringType.TypeHandle, m_runtimeTypeCache, bindingFlags);
 
                             list.Add(runtimeFieldInfo);
                         }
@@ -1153,7 +1114,7 @@ namespace System
                         {
                             nestedType = moduleHandle.ResolveTypeHandle(tkNestedClasses[i]).GetRuntimeType();
                         }
-                        catch (System.TypeLoadException)
+                        catch (TypeLoadException)
                         {
                             // In a reflection emit scenario, we may have a token for a class which
                             // has not been baked and hence cannot be loaded.
@@ -1513,7 +1474,7 @@ namespace System
             private T[] GetMemberList<T>(ref MemberInfoCache<T>? m_cache, MemberListType listType, string? name, CacheType cacheType)
                 where T : MemberInfo
             {
-                MemberInfoCache<T> existingCache = GetMemberCache<T>(ref m_cache);
+                MemberInfoCache<T> existingCache = GetMemberCache(ref m_cache);
                 return existingCache.GetMemberList(listType, name, cacheType);
             }
 
@@ -1535,10 +1496,31 @@ namespace System
 
             #region Internal Members
 
+
+            /// <summary>
+            /// Generic cache for rare scenario specific data. It is used to cache either Enum names, Enum values,
+            /// the Activator cache or function pointer parameters.
+            /// </summary>
             internal object? GenericCache
             {
                 get => m_genericCache;
                 set => m_genericCache = value;
+            }
+
+            internal Type[] FunctionPointerReturnAndParameterTypes
+            {
+                get
+                {
+                    Debug.Assert(m_runtimeType.IsFunctionPointer);
+                    Type[]? value = (Type[]?)GenericCache;
+                    if (value == null)
+                    {
+                        GenericCache = value = RuntimeTypeHandle.GetArgumentTypesFromFunctionPointer(m_runtimeType);
+                        Debug.Assert(value.Length > 0);
+                    }
+
+                    return value;
+                }
             }
 
             internal bool DomainInitialized
@@ -1564,6 +1546,11 @@ namespace System
                         if (!m_runtimeType.GetRootElementType().IsGenericTypeDefinition && m_runtimeType.ContainsGenericParameters)
                             return null;
 
+                        // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
+                        // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
+                        if (m_runtimeType.IsFunctionPointer)
+                            return null;
+
                         // No assembly.
                         return ConstructName(ref m_fullname, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst);
 
@@ -1576,12 +1563,16 @@ namespace System
                 }
             }
 
-            internal string GetNameSpace()
+            internal string? GetNameSpace()
             {
                 // @Optimization - Use ConstructName to populate m_namespace
                 if (m_namespace == null)
                 {
                     Type type = m_runtimeType;
+
+                    if (type.IsFunctionPointer)
+                        return null;
+
                     type = type.GetRootElementType();
 
                     while (type.IsNested)
@@ -1730,54 +1721,54 @@ namespace System
 
             internal RuntimeMethodInfo[] GetMethodList(MemberListType listType, string? name)
             {
-                return GetMemberList<RuntimeMethodInfo>(ref m_methodInfoCache, listType, name, CacheType.Method);
+                return GetMemberList(ref m_methodInfoCache, listType, name, CacheType.Method);
             }
 
             internal RuntimeConstructorInfo[] GetConstructorList(MemberListType listType, string? name)
             {
-                return GetMemberList<RuntimeConstructorInfo>(ref m_constructorInfoCache, listType, name, CacheType.Constructor);
+                return GetMemberList(ref m_constructorInfoCache, listType, name, CacheType.Constructor);
             }
 
             internal RuntimePropertyInfo[] GetPropertyList(MemberListType listType, string? name)
             {
-                return GetMemberList<RuntimePropertyInfo>(ref m_propertyInfoCache, listType, name, CacheType.Property);
+                return GetMemberList(ref m_propertyInfoCache, listType, name, CacheType.Property);
             }
 
             internal RuntimeEventInfo[] GetEventList(MemberListType listType, string? name)
             {
-                return GetMemberList<RuntimeEventInfo>(ref m_eventInfoCache, listType, name, CacheType.Event);
+                return GetMemberList(ref m_eventInfoCache, listType, name, CacheType.Event);
             }
 
             internal RuntimeFieldInfo[] GetFieldList(MemberListType listType, string? name)
             {
-                return GetMemberList<RuntimeFieldInfo>(ref m_fieldInfoCache, listType, name, CacheType.Field);
+                return GetMemberList(ref m_fieldInfoCache, listType, name, CacheType.Field);
             }
 
             internal RuntimeType[] GetInterfaceList(MemberListType listType, string? name)
             {
-                return GetMemberList<RuntimeType>(ref m_interfaceCache, listType, name, CacheType.Interface);
+                return GetMemberList(ref m_interfaceCache, listType, name, CacheType.Interface);
             }
 
             internal RuntimeType[] GetNestedTypeList(MemberListType listType, string? name)
             {
-                return GetMemberList<RuntimeType>(ref m_nestedClassesCache, listType, name, CacheType.NestedType);
+                return GetMemberList(ref m_nestedClassesCache, listType, name, CacheType.NestedType);
             }
 
             internal MethodBase GetMethod(RuntimeType declaringType, RuntimeMethodHandleInternal method)
             {
-                GetMemberCache<RuntimeMethodInfo>(ref m_methodInfoCache);
+                GetMemberCache(ref m_methodInfoCache);
                 return m_methodInfoCache!.AddMethod(declaringType, method, CacheType.Method);
             }
 
             internal MethodBase GetConstructor(RuntimeType declaringType, RuntimeMethodHandleInternal constructor)
             {
-                GetMemberCache<RuntimeConstructorInfo>(ref m_constructorInfoCache);
+                GetMemberCache(ref m_constructorInfoCache);
                 return m_constructorInfoCache!.AddMethod(declaringType, constructor, CacheType.Constructor);
             }
 
             internal FieldInfo GetField(RuntimeFieldHandleInternal field)
             {
-                GetMemberCache<RuntimeFieldInfo>(ref m_fieldInfoCache);
+                GetMemberCache(ref m_fieldInfoCache);
                 return m_fieldInfoCache!.AddField(field);
             }
 
@@ -1788,15 +1779,6 @@ namespace System
         #region Static Members
 
         #region Internal
-        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
-            ref StackCrawlMark stackMark)
-        {
-            ArgumentNullException.ThrowIfNull(typeName);
-
-            return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark);
-        }
-
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
         {
@@ -1817,7 +1799,7 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "The code in this method looks up the method by name, but it always starts with a method handle." +
-                            "To get here something somwhere had to get the method handle and thus the method must exist.")]
+                            "To get here something somewhere had to get the method handle and thus the method must exist.")]
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, RuntimeMethodHandleInternal methodHandle)
         {
             Debug.Assert(!methodHandle.IsNullHandle());
@@ -1913,8 +1895,8 @@ namespace System
                 else if (!declaredType.IsAssignableFrom(reflectedType))
                 {
                     // declaredType is not Array, not generic, and not assignable from reflectedType
-                    throw new ArgumentException(string.Format(
-                        CultureInfo.CurrentCulture, SR.Argument_ResolveMethodHandle,
+                    throw new ArgumentException(SR.Format(
+                        SR.Argument_ResolveMethodHandle,
                         reflectedType.ToString(), declaredType.ToString()));
                 }
             }
@@ -1995,7 +1977,7 @@ namespace System
         }
 
         // Called internally
-        private static PropertyInfo GetPropertyInfo(RuntimeType reflectedType, int tkProperty)
+        private static RuntimePropertyInfo GetPropertyInfo(RuntimeType reflectedType, int tkProperty)
         {
             RuntimePropertyInfo property;
             RuntimePropertyInfo[] candidates =
@@ -2413,7 +2395,7 @@ namespace System
         private IntPtr m_cache;
         internal IntPtr m_handle;
 
-        internal static readonly RuntimeType ValueType = (RuntimeType)typeof(System.ValueType);
+        internal static readonly RuntimeType ValueType = (RuntimeType)typeof(ValueType);
 
         private static readonly RuntimeType ObjectType = (RuntimeType)typeof(object);
         private static readonly RuntimeType StringType = (RuntimeType)typeof(string);
@@ -2840,9 +2822,7 @@ namespace System
                     {
                         MethodInfo methodInfo = candidates[j];
                         if (!System.DefaultBinder.CompareMethodSig(methodInfo, firstCandidate))
-                        {
-                            throw new AmbiguousMatchException();
-                        }
+                            throw ThrowHelper.GetAmbiguousMatchException(firstCandidate);
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
@@ -2896,10 +2876,10 @@ namespace System
             if (types == null || types.Length == 0)
             {
                 // no arguments
+                PropertyInfo firstCandidate = candidates[0];
+
                 if (candidates.Count == 1)
                 {
-                    PropertyInfo firstCandidate = candidates[0];
-
                     if (returnType is not null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                         return null;
 
@@ -2909,7 +2889,7 @@ namespace System
                 {
                     if (returnType is null)
                         // if we are here we have no args or property type to select over and we have more than one property with that name
-                        throw new AmbiguousMatchException();
+                        throw ThrowHelper.GetAmbiguousMatchException(firstCandidate);
                 }
             }
 
@@ -2938,7 +2918,7 @@ namespace System
                 if ((bindingAttr & eventInfo.BindingFlags) == eventInfo.BindingFlags)
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException();
+                        throw ThrowHelper.GetAmbiguousMatchException(match);
 
                     match = eventInfo;
                 }
@@ -2968,7 +2948,7 @@ namespace System
                     if (match != null)
                     {
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(match);
 
                         if ((match.DeclaringType!.IsInterface) && (fieldInfo.DeclaringType!.IsInterface))
                             multipleStaticFieldMatches = true;
@@ -2980,7 +2960,7 @@ namespace System
             }
 
             if (multipleStaticFieldMatches && match!.DeclaringType!.IsInterface)
-                throw new AmbiguousMatchException();
+                throw ThrowHelper.GetAmbiguousMatchException(match);
 
             return match;
         }
@@ -3016,7 +2996,7 @@ namespace System
                 if (FilterApplyType(iface, bindingAttr, name, false, ns))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException();
+                        throw ThrowHelper.GetAmbiguousMatchException(match);
 
                     match = iface;
                 }
@@ -3045,7 +3025,7 @@ namespace System
                 if (FilterApplyType(nestedType, bindingAttr, name, false, ns))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException();
+                        throw ThrowHelper.GetAmbiguousMatchException(match);
 
                     match = nestedType;
                 }
@@ -3166,7 +3146,7 @@ namespace System
             throw CreateGetMemberWithSameMetadataDefinitionAsNotFoundException(member);
         }
 
-        private static MemberInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo method)
+        private static RuntimeMethodInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo method)
         {
             RuntimeMethodInfo[] cache = runtimeType.Cache.GetMethodList(MemberListType.CaseSensitive, method.Name);
 
@@ -3182,7 +3162,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructor)
+        private static RuntimeConstructorInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructor)
         {
             RuntimeConstructorInfo[] cache = runtimeType.Cache.GetConstructorList(MemberListType.CaseSensitive, constructor.Name);
 
@@ -3198,7 +3178,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo property)
+        private static RuntimePropertyInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo property)
         {
             RuntimePropertyInfo[] cache = runtimeType.Cache.GetPropertyList(MemberListType.CaseSensitive, property.Name);
 
@@ -3214,7 +3194,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo field)
+        private static RuntimeFieldInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo field)
         {
             RuntimeFieldInfo[] cache = runtimeType.Cache.GetFieldList(MemberListType.CaseSensitive, field.Name);
 
@@ -3230,7 +3210,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
+        private static RuntimeEventInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
         {
             RuntimeEventInfo[] cache = runtimeType.Cache.GetEventList(MemberListType.CaseSensitive, eventInfo.Name);
 
@@ -3246,7 +3226,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
+        private static RuntimeType? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
         {
             RuntimeType[] cache = runtimeType.Cache.GetNestedTypeList(MemberListType.CaseSensitive, nestedType.Name);
 
@@ -3350,7 +3330,8 @@ namespace System
             {
                 string? fullname = FullName;
 
-                // FullName is null if this type contains generic parameters but is not a generic type definition.
+                // FullName is null if this type contains generic parameters but is not a generic type definition
+                // or if it is a function pointer.
                 if (fullname == null)
                     return null;
 
@@ -3362,7 +3343,7 @@ namespace System
         {
             get
             {
-                string ns = Cache.GetNameSpace();
+                string? ns = Cache.GetNameSpace();
                 if (string.IsNullOrEmpty(ns))
                 {
                     return null;
@@ -3412,7 +3393,7 @@ namespace System
                 if (th.IsTypeDesc)
                     return IsSubclassOf(typeof(Enum));
 
-                bool isEnum = th.AsMethodTable()->ParentMethodTable == System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<Enum>().AsMethodTable();
+                bool isEnum = th.AsMethodTable()->ParentMethodTable == Runtime.CompilerServices.TypeHandle.TypeHandleOf<Enum>().AsMethodTable();
                 GC.KeepAlive(this);
                 return isEnum;
             }
@@ -3426,7 +3407,7 @@ namespace System
             {
                 TypeHandle th = GetNativeTypeHandle();
 
-                bool isEnum = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<Enum>().AsMethodTable();
+                bool isEnum = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == Runtime.CompilerServices.TypeHandle.TypeHandleOf<Enum>().AsMethodTable();
                 GC.KeepAlive(this);
                 return isEnum;
             }
@@ -3436,7 +3417,7 @@ namespace System
         {
             TypeHandle th = GetNativeTypeHandle();
 
-            bool isDelegate = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<MulticastDelegate>().AsMethodTable();
+            bool isDelegate = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == Runtime.CompilerServices.TypeHandle.TypeHandleOf<MulticastDelegate>().AsMethodTable();
             GC.KeepAlive(this);
             return isDelegate;
         }
@@ -3518,7 +3499,7 @@ namespace System
         public override Type[] GetGenericArguments()
         {
             Type[] types = GetRootElementType().TypeHandle.GetInstantiationPublic();
-            return types ?? Type.EmptyTypes;
+            return types ?? EmptyTypes;
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
@@ -3576,7 +3557,7 @@ namespace System
                 if (foundSigType)
                     return new SignatureConstructedGenericType(this, instantiation);
 
-                return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, (Type[])(instantiation.Clone()));
+                return Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, (Type[])(instantiation.Clone()));
             }
 
             SanityCheckGenericArguments(instantiationRuntimeType, genericParameters);
@@ -3615,7 +3596,7 @@ namespace System
                 throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
             Type[] constraints = new RuntimeTypeHandle(this).GetConstraints();
-            return constraints ?? Type.EmptyTypes;
+            return constraints ?? EmptyTypes;
         }
         #endregion
 
@@ -3658,39 +3639,79 @@ namespace System
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object AllocateValueType(RuntimeType type, object? value);
+        internal static extern object AllocateValueType(RuntimeType type, object? value);
 
-        private CheckValueStatus TryChangeTypeSpecial(
-            ref object value,
-            out bool isValueType)
+        private CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
-                Pointer? pointer = value as Pointer;
-                RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
+            Pointer? pointer = value as Pointer;
+            RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
 
-                if (!CanValueSpecialCast(srcType, this))
-                {
-                    isValueType = false;
-                    return CheckValueStatus.ArgumentException;
-                }
+            if (!CanValueSpecialCast(srcType, this))
+            {
+                return CheckValueStatus.ArgumentException;
+            }
 
-                if (pointer != null)
+            if (pointer != null)
+            {
+                value = pointer.GetPointerValue(); // Convert source pointer to IntPtr
+            }
+            else
+            {
+                CorElementType srcElementType = GetUnderlyingType(srcType);
+                CorElementType dstElementType = GetUnderlyingType(this);
+                if (dstElementType != srcElementType)
                 {
-                    value = pointer.GetPointerValue(); // Convert source pointer to IntPtr
+                    value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);
                 }
-                else
-                {
-                    CorElementType srcElementType = GetUnderlyingType(srcType);
-                    CorElementType dstElementType = GetUnderlyingType(this);
-                    if (dstElementType != srcElementType)
-                    {
-                        value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);
-                    }
-                }
+            }
 
-                isValueType = true;
-                return CheckValueStatus.Success;
+            return CheckValueStatus.Success;
         }
 
+        #endregion
+
+        #region Function Pointer
+        public override bool IsFunctionPointer => RuntimeTypeHandle.IsFunctionPointer(this);
+        public override bool IsUnmanagedFunctionPointer => RuntimeTypeHandle.IsUnmanagedFunctionPointer(this);
+
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            if (!IsFunctionPointer)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+            }
+
+            // Requires a modified type to return the modifiers.
+            return EmptyTypes;
+        }
+
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            if (!IsFunctionPointer)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+            }
+
+            Type[] parameters = Cache.FunctionPointerReturnAndParameterTypes;
+            Debug.Assert(parameters.Length > 0);
+
+            if (parameters.Length == 1)
+            {
+                return EmptyTypes;
+            }
+
+            return parameters.AsSpan(1).ToArray();
+        }
+
+        public override Type GetFunctionPointerReturnType()
+        {
+            if (!IsFunctionPointer)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+            }
+
+            return Cache.FunctionPointerReturnAndParameterTypes[0];
+        }
         #endregion
 
         #endregion
@@ -4121,9 +4142,6 @@ namespace System
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
-        private static partial uint HashCaseInsensitive(void* sz, int cSz);
-
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;
 
@@ -4172,11 +4190,6 @@ namespace System
             {
                 return (m_StringHeapByteLength == 0) || EqualsCaseInsensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
             }
-        }
-
-        internal uint HashCaseInsensitive()
-        {
-            return HashCaseInsensitive(m_pStringHeap, m_StringHeapByteLength);
         }
 
         public override string ToString()

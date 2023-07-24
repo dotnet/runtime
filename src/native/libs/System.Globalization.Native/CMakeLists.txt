@@ -1,6 +1,10 @@
 project(System.Globalization.Native C)
 
-if(CLR_CMAKE_TARGET_UNIX)
+if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
+    if (ANDROID_FORCE_ICU_DATA_DIR)
+        add_definitions(-DANDROID_FORCE_ICU_DATA_DIR)
+    endif()
+
     add_compile_options(-Wno-switch-enum)
     add_compile_options(-Wno-covered-switch-default)
 
@@ -8,13 +12,14 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_options(-Wno-reserved-id-macro)
     add_compile_options(-Wno-documentation)
     add_compile_options(-Wno-documentation-unknown-command)
+    add_compile_options(-Wno-reserved-identifier)
 
     # Workaround for https://unicode-org.atlassian.net/browse/ICU-20601
     add_compile_options(-Wno-extra-semi-stmt)
     add_compile_options(-Wno-unknown-warning-option)
 
-    if (NOT CLR_CMAKE_TARGET_ANDROID)
-        if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
+    if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT DEFINED CMAKE_ICU_DIR)
+        if (CLR_CMAKE_TARGET_OSX)
             execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
             set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
         endif()
@@ -25,7 +30,7 @@ if(CLR_CMAKE_TARGET_UNIX)
             return()
         endif()
 
-        if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
+        if(CLR_CMAKE_TARGET_OSX)
             add_definitions(-DOSX_ICU_LIBRARY_PATH="/usr/lib/libicucore.dylib")
             add_definitions(-DU_DISABLE_RENAMING)
         else()
@@ -59,7 +64,19 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_normalization.c
 )
 
+if (DEFINED CMAKE_ICU_DIR)
+    include_directories(${CMAKE_ICU_DIR}/include)
+    link_libraries(${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
+    link_libraries(stdc++)
+endif()
+
+if (CMAKE_USE_PTHREADS)
+    add_compile_options(-pthread)
+    add_linker_flag(-pthread)
+endif()
+
 if (LOCAL_BUILD)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim_static.c)
     add_definitions(-DLOCAL_BUILD)
     add_definitions(-DSTATIC_ICU)
@@ -68,21 +85,20 @@ if (LOCAL_BUILD)
     # For minipal files
     include_directories(../../)
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
+elseif (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+    add_definitions(-DSTATIC_ICU)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim_static.c)
 else()
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim.c)
 endif()
 
-if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_locale.m)
+if (CLR_CMAKE_TARGET_APPLE)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_locale.m pal_collation.m pal_casing.m)
 endif()
 
 # time zone names are filtered out of icu data for the browser and associated functionality is disabled
-if (NOT CLR_CMAKE_TARGET_BROWSER)
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)
-endif()
-
-if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
-    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} entrypoints.c)
 endif()
 
 if (MSVC)
@@ -92,7 +108,7 @@ endif()
 include_directories("../Common")
 
 if (GEN_SHARED_LIB)
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR  CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE)
         include(CMakeFindFrameworks)
         find_library(FOUNDATION Foundation REQUIRED)
     endif()
@@ -104,6 +120,7 @@ if (GEN_SHARED_LIB)
     )
 
     target_link_libraries(System.Globalization.Native
+        PRIVATE
         dl
         ${FOUNDATION}
     )
@@ -114,15 +131,16 @@ endif()
 add_library(System.Globalization.Native-Static
     STATIC
     ${NATIVEGLOBALIZATION_SOURCES}
+    entrypoints.c
 )
 
-if(CLR_CMAKE_TARGET_UNIX)
+if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 endif()
 
 install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"
@@ -148,9 +166,6 @@ if(CLR_CMAKE_TARGET_WIN32)
             ${NATIVEGLOBALIZATION_SOURCES}
         )
         target_compile_options(System.Globalization.Native.Aot.GuardCF PRIVATE /GL-)
-
-        target_link_libraries(System.Globalization.Native.Aot ${__LinkLibraries})
-        target_link_libraries(System.Globalization.Native.Aot.GuardCF ${__LinkLibraries})
 
         install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
         install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)

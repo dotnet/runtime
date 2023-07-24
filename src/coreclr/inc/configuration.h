@@ -21,12 +21,12 @@ public:
 
     // Returns (in priority order):
     //    - The value of the ConfigDWORDInfo if it's set
-    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcstoul).
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a u16_strtoul).
     //    - The default set in the ConfigDWORDInfo
     static DWORD GetKnobDWORDValue(LPCWSTR name, const CLRConfig::ConfigDWORDInfo& dwordInfo);
 
     // Returns (in priority order):
-    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcstoul)
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a u16_strtoul)
     //    - The default value passed in
     static DWORD GetKnobDWORDValue(LPCWSTR name, DWORD defaultValue);
 
@@ -34,7 +34,7 @@ public:
     // in the traditional way separately if you need to.
     //
     // Returns (in priority order):
-    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a _wcstoui64)
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a u16_strtoui64)
     //    - The default value passed in
     static ULONGLONG GetKnobULONGLONGValue(LPCWSTR name, ULONGLONG defaultValue);
 
@@ -51,18 +51,18 @@ public:
 
     // Returns (in priority order):
     //    - The value of the ConfigDWORDInfo if it's set (0 is false, anything else is true)
-    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcscmp with "true").
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a u16_strcmp with "true").
     //    - The default set in the ConfigDWORDInfo (0 is false, anything else is true)
     static bool GetKnobBooleanValue(LPCWSTR name, const CLRConfig::ConfigDWORDInfo& dwordInfo);
 
     // Returns (in priority order):
     //    - The value of the ConfigDWORDInfo if it's set (0 is false, anything else is true)
-    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcscmp with "true").
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a u16_strcmp with "true").
     //    - The default value passed in
     static bool GetKnobBooleanValue(LPCWSTR name, const CLRConfig::ConfigDWORDInfo& dwordInfo, bool defaultValue);
 
     // Returns (in priority order):
-    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcscmp with "true").
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a u16_strcmp with "true").
     //    - The default value passed in
     static bool GetKnobBooleanValue(LPCWSTR name, bool defaultValue);
 };

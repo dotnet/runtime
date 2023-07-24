@@ -104,10 +104,7 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
-            if (_key is null)
-            {
-                throw new ObjectDisposedException(nameof(ECDiffieHellmanOpenSslPublicKey));
-            }
+            ObjectDisposedException.ThrowIf(_key is null, this);
         }
 
         private SafeEcKeyHandle GetKey()

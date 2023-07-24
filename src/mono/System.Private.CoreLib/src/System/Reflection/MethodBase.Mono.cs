@@ -59,17 +59,6 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
-        internal virtual Type[] GetParameterTypes()
-        {
-            ParameterInfo[] paramInfo = GetParametersNoCopy();
-
-            Type[] parameterTypes = new Type[paramInfo.Length];
-            for (int i = 0; i < paramInfo.Length; i++)
-                parameterTypes[i] = paramInfo[i].ParameterType;
-
-            return parameterTypes;
-        }
-
         internal virtual int get_next_table_index(int table, int count)
         {
             throw new NotImplementedException();

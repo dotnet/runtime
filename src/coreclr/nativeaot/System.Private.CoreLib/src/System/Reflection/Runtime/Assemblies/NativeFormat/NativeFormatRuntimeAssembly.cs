@@ -1,26 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection;
+using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
-using System.Reflection.Runtime.Modules;
 using System.Reflection.Runtime.Modules.NativeFormat;
-using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
-using System.Reflection.Runtime.TypeParsing;
-using System.Reflection.Runtime.CustomAttributes;
-using System.Collections.Generic;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.Assemblies.NativeFormat
 {

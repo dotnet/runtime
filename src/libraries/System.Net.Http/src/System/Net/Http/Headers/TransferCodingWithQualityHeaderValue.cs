@@ -41,7 +41,7 @@ namespace System.Net.Http.Headers
             return new TransferCodingWithQualityHeaderValue(this);
         }
 
-        public static new TransferCodingWithQualityHeaderValue Parse(string? input)
+        public static new TransferCodingWithQualityHeaderValue Parse(string input)
         {
             int index = 0;
             return (TransferCodingWithQualityHeaderValue)TransferCodingHeaderParser.SingleValueWithQualityParser

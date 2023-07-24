@@ -17,8 +17,10 @@
 
 #include <sal.h>
 #include <stdarg.h>
-#include "gcenv.structs.h"
-#include "IntrinsicConstants.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
+#include "gcenv.structs.h" // CRITICAL_SECTION
+#include "PalRedhawkCommon.h"
 
 #ifndef PAL_REDHAWK_INCLUDED
 #define PAL_REDHAWK_INCLUDED
@@ -50,7 +52,6 @@
 #endif // !_MSC_VER
 
 #ifndef _INC_WINDOWS
-//#ifndef DACCESS_COMPILE
 
 // There are some fairly primitive type definitions below but don't pull them into the rest of Redhawk unless
 // we have to (in which case these definitions will move to CommonTypes.h).
@@ -65,13 +66,12 @@ typedef void *              LPOVERLAPPED;
 
 #ifdef TARGET_UNIX
 #define __stdcall
+typedef char TCHAR;
+#define _T(s) s
+#else
+typedef wchar_t TCHAR;
+#define _T(s) L##s
 #endif
-
-#ifndef __GCENV_BASE_INCLUDED__
-#define CALLBACK            __stdcall
-#define WINAPI              __stdcall
-#define WINBASEAPI          __declspec(dllimport)
-#endif //!__GCENV_BASE_INCLUDED__
 
 #ifdef TARGET_UNIX
 #define DIRECTORY_SEPARATOR_CHAR '/'
@@ -92,17 +92,7 @@ typedef union _LARGE_INTEGER {
     int64_t QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER;
 
-typedef struct _GUID {
-    uint32_t Data1;
-    uint16_t Data2;
-    uint16_t Data3;
-    uint8_t Data4[8];
-} GUID;
-
 #define DECLARE_HANDLE(_name) typedef HANDLE _name
-
-// defined in gcrhenv.cpp
-bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount);
 
 struct FILETIME
 {
@@ -111,6 +101,11 @@ struct FILETIME
 };
 
 #ifdef HOST_AMD64
+
+#define CONTEXT_AMD64   0x00100000L
+
+#define CONTEXT_CONTROL         (CONTEXT_AMD64 | 0x00000001L)
+#define CONTEXT_INTEGER         (CONTEXT_AMD64 | 0x00000002L)
 
 typedef struct DECLSPEC_ALIGN(16) _XSAVE_FORMAT {
     uint16_t  ControlWord;
@@ -232,6 +227,11 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 } CONTEXT, *PCONTEXT;
 #elif defined(HOST_ARM)
 
+#define CONTEXT_ARM   0x00200000L
+
+#define CONTEXT_CONTROL (CONTEXT_ARM | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_ARM | 0x2L)
+
 #define ARM_MAX_BREAKPOINTS     8
 #define ARM_MAX_WATCHPOINTS     1
 
@@ -275,6 +275,12 @@ typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
 } CONTEXT, *PCONTEXT;
 
 #elif defined(HOST_X86)
+
+#define CONTEXT_i386    0x00010000L
+
+#define CONTEXT_CONTROL         (CONTEXT_i386 | 0x00000001L) // SS:SP, CS:IP, FLAGS, BP
+#define CONTEXT_INTEGER         (CONTEXT_i386 | 0x00000002L) // AX, BX, CX, DX, SI, DI
+
 #define SIZE_OF_80387_REGISTERS      80
 #define MAXIMUM_SUPPORTED_EXTENSION  512
 
@@ -328,6 +334,11 @@ typedef struct _CONTEXT {
 #include "poppack.h"
 
 #elif defined(HOST_ARM64)
+
+#define CONTEXT_ARM64   0x00400000L
+
+#define CONTEXT_CONTROL (CONTEXT_ARM64 | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_ARM64 | 0x2L)
 
 // Specify the number of breakpoints and watchpoints that the OS
 // will track. Architecturally, ARM64 supports up to 16. In practice,
@@ -481,7 +492,6 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define NULL_AREA_SIZE                   (64*1024)
 #endif
 
-//#endif // !DACCESS_COMPILE
 #endif // !_INC_WINDOWS
 
 
@@ -489,10 +499,12 @@ typedef enum _EXCEPTION_DISPOSITION {
 #ifndef DACCESS_COMPILE
 #ifndef _INC_WINDOWS
 
-#ifndef __GCENV_BASE_INCLUDED__
+#ifndef TRUE
 #define TRUE                    1
+#endif
+#ifndef FALSE
 #define FALSE                   0
-#endif // !__GCENV_BASE_INCLUDED__
+#endif
 
 #define INVALID_HANDLE_VALUE    ((HANDLE)(intptr_t)-1)
 
@@ -614,6 +626,11 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx);
 
+// For platforms that have segment registers in the CONTEXT_CONTROL set that
+// are not saved in PAL_LIMITED_CONTEXT, this captures them from the current
+// thread and saves them in `pContext`.
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext);
+
 REDHAWK_PALIMPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount();
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
@@ -708,6 +725,7 @@ struct UNIX_CONTEXT;
 #endif
 
 #ifdef TARGET_UNIX
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize();
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #else
 REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler);
@@ -716,6 +734,7 @@ REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t f
 typedef uint32_t (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 
 typedef void (*PalHijackCallback)(_In_ NATIVE_CONTEXT* pThreadContext, _In_opt_ void* pThreadToHijack);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack);
@@ -723,9 +742,10 @@ REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
 
 #ifdef FEATURE_ETW
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor);
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventRegister(const GUID * arg1, void * arg2, void * arg3, REGHANDLE * arg4);
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventUnregister(REGHANDLE arg1);
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4);
 #endif
-
-REDHAWK_PALIMPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer);
 
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress);
@@ -742,48 +762,18 @@ REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
 
-REDHAWK_PALIMPORT uint64_t PalGetCurrentThreadIdForLogging();
+REDHAWK_PALIMPORT uint64_t PalGetCurrentOSThreadId();
 
 REDHAWK_PALIMPORT uint64_t PalQueryPerformanceCounter();
 REDHAWK_PALIMPORT uint64_t PalQueryPerformanceFrequency();
 
 REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 
+REDHAWK_PALIMPORT char* PalCopyTCharAsChar(const TCHAR* toCopy);
+
 #ifdef TARGET_UNIX
 REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
-
-#ifdef UNICODE
-#define _tcsicmp _wcsicmp
-#define _tcscat wcscat
-#define _tcslen wcslen
-#else
-#define _tcsicmp _stricmp
-#define _tcscat strcat
-#define _tcslen strlen
-#endif
-
-#if defined(HOST_X86) || defined(HOST_AMD64)
-
-#ifdef TARGET_UNIX
-// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
-// We define matching signatures for use on Unix platforms.
-REDHAWK_PALIMPORT void __cpuid(int cpuInfo[4], int function_id);
-REDHAWK_PALIMPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
-#else
-#include <intrin.h>
-#endif
-
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport();
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI avx512StateSupport();
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalIsAvxEnabled();
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalIsAvx512Enabled();
-
-#endif // defined(HOST_X86) || defined(HOST_AMD64)
-
-#if defined(HOST_ARM64)
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags);
-#endif //defined(HOST_ARM64)
 
 #include "PalRedhawkInline.h"
 

@@ -3,6 +3,11 @@
 
 #pragma once
 
+// libunwind headers
+#include <libunwind.h>
+#include <external/llvm-libunwind/src/config.h>
+#include <external/llvm-libunwind/src/AddressSpace.hpp>
+
 class UnixNativeCodeManager : public ICodeManager
 {
     TADDR m_moduleBase;
@@ -12,6 +17,10 @@ class UnixNativeCodeManager : public ICodeManager
 
     PTR_PTR_VOID m_pClasslibFunctions;
     uint32_t m_nClasslibFunctions;
+
+    libunwind::UnwindInfoSections m_UnwindInfoSections;
+
+    bool VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet);
 
 public:
     UnixNativeCodeManager(TADDR moduleBase,
@@ -45,15 +54,16 @@ public:
                     bool            isActiveStackFrame);
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
+                          uint32_t        flags,
                           REGDISPLAY *    pRegisterSet,                 // in/out
                           PInvokeTransitionFrame**      ppPreviousTransitionFrame);   // out
 
     uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
-                                                        REGDISPLAY *   pRegisterSet);
+                                                       REGDISPLAY *   pRegisterSet);
 
     bool IsUnwindable(PTR_VOID pvAddress);
 
-    int TrailingEpilogueInstructionsCount(PTR_VOID pvAddress); 
+    int TrailingEpilogueInstructionsCount(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,       // in

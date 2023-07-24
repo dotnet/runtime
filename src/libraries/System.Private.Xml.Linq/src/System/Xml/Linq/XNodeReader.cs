@@ -1068,9 +1068,9 @@ namespace System.Xml.Linq
             get { return _state == ReadState.Interactive; }
         }
 
-        private static XmlNameTable CreateNameTable()
+        private static NameTable CreateNameTable()
         {
-            XmlNameTable nameTable = new NameTable();
+            var nameTable = new NameTable();
             nameTable.Add(string.Empty);
             nameTable.Add(XNamespace.xmlnsPrefixNamespace);
             nameTable.Add(XNamespace.xmlPrefixNamespace);

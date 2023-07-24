@@ -11,12 +11,12 @@ namespace System.Globalization
 {
     internal static partial class OrdinalCasing
     {
-        // s_noCasingPage means the Unicode page doesn't support any casing and no case translation is needed.
-        private static ushort [] s_noCasingPage = Array.Empty<ushort>();
+        // NoCasingPage means the Unicode page doesn't support any casing and no case translation is needed.
+        private static ushort[] NoCasingPage => Array.Empty<ushort>();
 
         // s_basicLatin is covering the casing for the Basic Latin & C0 Controls range.
         // we are not lazy initializing this range because it is the most common used range and we'll cache it anyway very early.
-        private static ushort [] s_basicLatin =
+        private static readonly ushort[] s_basicLatin =
         {
             // Upper Casing
 
@@ -41,48 +41,48 @@ namespace System.Globalization
         // s_casingTable is covering the Unicode BMP plane only. Surrogate casing is handled separately.
         // Every cell in the table is covering the casing of 256 characters in the BMP.
         // Every cell is array of 512 character for uppercasing mapping.
-        private static ushort []?[] s_casingTable = InitCasingTable();
+        private static readonly ushort[]?[] s_casingTable = InitCasingTable();
 
         /*
          The table is initialized to:
         {
             // 0000-07FF //       s_basicLatin,            null,            null,            null,            null,            null,            null,            null,
             // 0800-0FFF //               null,            null,            null,            null,            null,            null,            null,            null,
-            // 1000-17FF //               null,  s_noCasingPage,            null,            null,  s_noCasingPage,  s_noCasingPage,            null,            null,
+            // 1000-17FF //               null,    NoCasingPage,            null,            null,    NoCasingPage,    NoCasingPage,            null,            null,
             // 1800-1FFF //               null,            null,            null,            null,            null,            null,            null,            null,
-            // 2000-27FF //               null,            null,  s_noCasingPage,  s_noCasingPage,            null,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 2800-2FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,            null,            null,            null,            null,
-            // 3000-37FF //               null,            null,            null,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 3800-3FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 4000-47FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 4800-4FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 5000-57FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 5800-5FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 6000-67FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 6800-6FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 7000-77FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 7800-7FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 8000-87FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 8800-8FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 9000-97FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // 9800-9FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,
-            // A000-A7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,  s_noCasingPage,            null,            null,
-            // A800-AFFF //               null,            null,            null,            null,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // B000-B7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // B800-BFFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // C000-C7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // C800-CFFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // D000-D7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,
-            // D800-DFFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // E000-E7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // E800-EFFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // F000-F7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            // F800-FFFF //     s_noCasingPage,  s_noCasingPage,            null,            null,  s_noCasingPage,            null,            null,            null,
+            // 2000-27FF //               null,            null,    NoCasingPage,    NoCasingPage,            null,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 2800-2FFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,            null,            null,            null,            null,            null,
+            // 3000-37FF //               null,            null,            null,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 3800-3FFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 4000-47FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 4800-4FFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 5000-57FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 5800-5FFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 6000-67FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 6800-6FFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 7000-77FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 7800-7FFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 8000-87FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 8800-8FFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 9000-97FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // 9800-9FFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,            null,
+            // A000-A7FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,            null,    NoCasingPage,            null,            null,
+            // A800-AFFF //               null,            null,            null,            null,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // B000-B7FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // B800-BFFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // C000-C7FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // C800-CFFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // D000-D7FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,            null,
+            // D800-DFFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // E000-E7FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // E800-EFFF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // F000-F7FF //       NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,    NoCasingPage,
+            // F800-FFFF //       NoCasingPage,    NoCasingPage,            null,            null,    NoCasingPage,            null,            null,            null,
         };
 */
 
         // 0 - null
-        // 1 - s_noCasingPage
+        // 1 - NoCasingPage
         // The bits are in reverse order for readability, i.e. the highest order bit refers to
         // the lowest index.
         private static ReadOnlySpan<byte> s_casingTableInit => new byte[32]
@@ -132,7 +132,7 @@ namespace System.Globalization
 
             ushort[]? casingTable = s_casingTable[pageNumber];
 
-            if (casingTable == s_noCasingPage)
+            if (casingTable == NoCasingPage)
             {
                 return c;
             }
@@ -217,8 +217,8 @@ namespace System.Globalization
                             continue;
                         }
 
-                        char aUpper = OrdinalCasing.ToUpper(a);
-                        char bUpper = OrdinalCasing.ToUpper(b);
+                        char aUpper = ToUpper(a);
+                        char bUpper = ToUpper(b);
 
                         if (aUpper == bUpper)
                         {
@@ -420,7 +420,7 @@ namespace System.Globalization
                 // The bits are in reverse order
                 byte val = (byte)(s_casingTableInit[i / 8] >> (7 - (i % 8)));
                 if ((val & 1) == 1)
-                    table[i] = s_noCasingPage;
+                    table[i] = NoCasingPage;
             }
             table[0] = s_basicLatin;
             return table;

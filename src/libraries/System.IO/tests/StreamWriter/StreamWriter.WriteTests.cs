@@ -12,6 +12,8 @@ namespace System.IO.Tests
 {
     public partial class WriteTests
     {
+        private const string LowerAlpha = "abcdefghijklmnopqrstuvwxyz";
+
         protected virtual Stream CreateStream()
         {
             return new MemoryStream();
@@ -250,12 +252,8 @@ namespace System.IO.Tests
             using (var s = new MemoryStream())
             using (var writer = new StreamWriter(s, Encoding.ASCII, writerBufferSize) { AutoFlush = autoFlush })
             {
-                var data = new char[length];
                 var rand = new Random(42);
-                for (int i = 0; i < data.Length; i++)
-                {
-                    data[i] = (char)(rand.Next(0, 26) + 'a');
-                }
+                char[] data = rand.GetItems<char>(LowerAlpha, length);
 
                 Span<char> source = data;
                 while (source.Length > 0)
@@ -283,12 +281,8 @@ namespace System.IO.Tests
             using (var s = new MemoryStream())
             using (var writer = new StreamWriter(s, Encoding.ASCII, writerBufferSize) { AutoFlush = autoFlush })
             {
-                var data = new char[length];
                 var rand = new Random(42);
-                for (int i = 0; i < data.Length; i++)
-                {
-                    data[i] = (char)(rand.Next(0, 26) + 'a');
-                }
+                char[] data = rand.GetItems<char>(LowerAlpha, length);
 
                 ReadOnlyMemory<char> source = data;
                 while (source.Length > 0)
@@ -316,12 +310,8 @@ namespace System.IO.Tests
             using (var s = new MemoryStream())
             using (var writer = new StreamWriter(s, Encoding.ASCII, writerBufferSize) { AutoFlush = autoFlush })
             {
-                var data = new char[length];
                 var rand = new Random(42);
-                for (int i = 0; i < data.Length; i++)
-                {
-                    data[i] = (char)(rand.Next(0, 26) + 'a');
-                }
+                char[] data = rand.GetItems<char>(LowerAlpha, length);
 
                 Span<char> source = data;
                 while (source.Length > 0)
@@ -349,12 +339,8 @@ namespace System.IO.Tests
             using (var s = new MemoryStream())
             using (var writer = new StreamWriter(s, Encoding.ASCII, writerBufferSize) { AutoFlush = autoFlush })
             {
-                var data = new char[length];
                 var rand = new Random(42);
-                for (int i = 0; i < data.Length; i++)
-                {
-                    data[i] = (char)(rand.Next(0, 26) + 'a');
-                }
+                char[] data = rand.GetItems<char>(LowerAlpha, length);
 
                 ReadOnlyMemory<char> source = data;
                 while (source.Length > 0)

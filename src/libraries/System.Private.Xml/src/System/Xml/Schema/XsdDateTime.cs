@@ -82,8 +82,8 @@ namespace System.Xml.Schema
         private const int ZoneHourShift = 8;
 
         // Maximum number of fraction digits;
-        private const short maxFractionDigits = 7;
-        private const int ticksToFractionDivisor = 10000000;
+        private const short MaxFractionDigits = 7;
+        private const int TicksToFractionDivisor = 10000000;
 
         private static readonly int s_lzyyyy = "yyyy".Length;
         private static readonly int s_lzyyyy_ = "yyyy-".Length;
@@ -127,10 +127,12 @@ namespace System.Xml.Schema
         // Number of days in 400 years
         private const int DaysPer400Years = DaysPer100Years * 4 + 1; // 146097
 
-        private static readonly int[] DaysToMonth365 = {
+        private static ReadOnlySpan<int> DaysToMonth365 => new int[] {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
-        private static readonly int[] DaysToMonth366 = {
+        private static ReadOnlySpan<int> DaysToMonth366 => new int[] {
             0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
+
+        private const int CharStackBufferSize = 64;
 
         /// <summary>
         /// Constructs an XsdDateTime from a string using specific format.
@@ -329,7 +331,7 @@ namespace System.Xml.Schema
         /// </summary>
         public int Fraction
         {
-            get { return (int)(_dt.Ticks % ticksToFractionDivisor); }
+            get { return (int)(_dt.Ticks % TicksToFractionDivisor); }
         }
 
         /// <summary>
@@ -495,7 +497,17 @@ namespace System.Xml.Schema
         /// </summary>
         public override string ToString()
         {
-            var vsb = new ValueStringBuilder(stackalloc char[64]);
+            Span<char> destination = stackalloc char[CharStackBufferSize];
+            bool success = TryFormat(destination, out int charsWritten);
+            Debug.Assert(success);
+
+            return destination.Slice(0, charsWritten).ToString();
+        }
+
+        public bool TryFormat(Span<char> destination, out int charsWritten)
+        {
+            var vsb = new ValueStringBuilder(destination);
+
             switch (InternalTypeCode)
             {
                 case DateTimeTypeCode.DateTime:
@@ -534,7 +546,9 @@ namespace System.Xml.Schema
                     break;
             }
             PrintZone(ref vsb);
-            return vsb.ToString();
+
+            charsWritten = vsb.Length;
+            return destination.Length >= vsb.Length;
         }
 
         // Serialize year, month and day
@@ -592,7 +606,7 @@ namespace System.Xml.Schema
             // Leap year calculation looks different from IsLeapYear since y1, y4,
             // and y100 are relative to year 1, not year 0
             bool leapYear = y1 == 3 && (y4 != 24 || y100 == 3);
-            int[] days = leapYear ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<int> days = leapYear ? DaysToMonth366 : DaysToMonth365;
             // All months have less than 32 days, so n >> 5 is a good conservative
             // estimate for the month
             month = (n >> 5) + 1;
@@ -615,7 +629,7 @@ namespace System.Xml.Schema
             int fraction = Fraction;
             if (fraction != 0)
             {
-                int fractionDigits = maxFractionDigits;
+                int fractionDigits = MaxFractionDigits;
                 while (fraction % 10 == 0)
                 {
                     fractionDigits--;
@@ -910,7 +924,7 @@ namespace System.Xml.Schema
                 return false;
             }
 
-            private static readonly int[] s_power10 = new int[maxFractionDigits] { -1, 10, 100, 1000, 10000, 100000, 1000000 };
+            private static ReadOnlySpan<int> Power10 => new int[MaxFractionDigits] { -1, 10, 100, 1000, 10000, 100000, 1000000 };
             private bool ParseTime(ref int start)
             {
                 if (
@@ -936,11 +950,11 @@ namespace System.Xml.Schema
                             { // d < 0 || 9 < d
                                 break;
                             }
-                            if (fractionDigits < maxFractionDigits)
+                            if (fractionDigits < MaxFractionDigits)
                             {
                                 this.fraction = (this.fraction * 10) + d;
                             }
-                            else if (fractionDigits == maxFractionDigits)
+                            else if (fractionDigits == MaxFractionDigits)
                             {
                                 if (5 < d)
                                 {
@@ -957,13 +971,13 @@ namespace System.Xml.Schema
                             }
                             fractionDigits++;
                         }
-                        if (fractionDigits < maxFractionDigits)
+                        if (fractionDigits < MaxFractionDigits)
                         {
                             if (fractionDigits == 0)
                             {
                                 return false; // cannot end with .
                             }
-                            fraction *= s_power10[maxFractionDigits - fractionDigits];
+                            fraction *= Power10[MaxFractionDigits - fractionDigits];
                         }
                         else
                         {

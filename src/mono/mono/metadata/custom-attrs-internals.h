@@ -33,9 +33,11 @@ typedef struct _MonoDecodeCustomAttr {
 } MonoDecodeCustomAttr;
 
 MonoCustomAttrInfo*
-mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray *cattrs);
+mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray *cattrs, gboolean respect_cattr_visibility);
 
-typedef gboolean (*MonoAssemblyMetadataCustomAttrIterFunc) (MonoImage *image, guint32 typeref_scope_token, const gchar* nspace, const gchar* name, guint32 method_token, gpointer user_data);
+typedef gboolean (*MonoAssemblyMetadataCustomAttrIterFunc) (MonoImage *image, guint32 typeref_scope_token, const gchar* nspace, const gchar* name, guint32 method_token, guint32 *cols, gpointer user_data);
+
+typedef void (*MonoHasValueCallback) (MonoImage *image, uint32_t method_token, uint32_t *cols, gpointer user_data);
 
 void
 mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssemblyMetadataCustomAttrIterFunc func, gpointer user_data);

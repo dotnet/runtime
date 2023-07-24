@@ -3,7 +3,7 @@
 
 namespace System.Data
 {
-    internal struct Range
+    internal readonly struct Range
     {
         private readonly int _min;
         private readonly int _max;

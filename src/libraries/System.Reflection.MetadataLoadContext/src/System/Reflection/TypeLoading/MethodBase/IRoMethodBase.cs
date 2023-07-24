@@ -10,7 +10,6 @@ namespace System.Reflection.TypeLoading
         MethodBase MethodBase { get; }
         MetadataLoadContext Loader { get; }
         TypeContext TypeContext { get; }
-        Type[] GetCustomModifiers(int position, bool isRequired);
         string GetMethodSigString(int position);
     }
 }

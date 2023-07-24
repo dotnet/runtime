@@ -12,6 +12,9 @@ using System.Resources;
 using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections;
 
 [assembly:NeutralResourcesLanguage("en")]
 
@@ -84,7 +87,6 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(CultureResourceData))]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))] // satellite assemblies
         public static void GetString_CultureFallback(string key, string cultureName, string expectedValue)
         {
             Type resourceType = typeof(Resources.TestResx);
@@ -95,7 +97,6 @@ namespace System.Resources.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))] //satellite assemblies
         public static void GetString_FromTestClassWithoutNeutralResources()
         {
             // This test is designed to complement the GetString_FromCulutureAndResourceType "fr" & "fr-CA" cases
@@ -233,6 +234,52 @@ namespace System.Resources.Tests
             Assert.Equal(expectedValue, manager.GetString(key.ToLower(), culture));
         }
 
+        /// <summary>
+        /// This test has multiple threads simultaneously loop over the keys of a moderately-sized resx using
+        /// <see cref="ResourceManager"/> and call <see cref="ResourceManager.GetString(string)"/> for each key.
+        /// This has historically been prone to thread-safety bugs because of the shared cache state and internal
+        /// method calls between RuntimeResourceSet and <see cref="ResourceReader"/>.
+        ///
+        /// Running with <paramref name="useEnumeratorEntry"/> TRUE replicates https://github.com/dotnet/runtime/issues/74868,
+        /// while running with FALSE replicates the error from https://github.com/dotnet/runtime/issues/74052.
+        /// </summary>
+        /// <param name="useEnumeratorEntry">
+        /// Whether to use <see cref="IDictionaryEnumerator.Entry"/> vs. <see cref="IDictionaryEnumerator.Key"/> when enumerating;
+        /// these follow fairly different code paths.
+        /// </param>
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestResourceManagerIsSafeForConcurrentAccessAndEnumeration(bool useEnumeratorEntry)
+        {
+            ResourceManager manager = new("System.Resources.Tests.Resources.AToZResx", typeof(ResourceManagerTests).GetTypeInfo().Assembly);
+
+            const int Threads = 10;
+            using Barrier barrier = new(Threads);
+            Task[] tasks = Enumerable.Range(0, Threads)
+                .Select(_ => Task.Factory.StartNew(
+                    WaitForBarrierThenEnumerateResources,
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default))
+                .ToArray();
+
+            Assert.True(Task.WaitAll(tasks, TimeSpan.FromSeconds(30)));
+
+            void WaitForBarrierThenEnumerateResources()
+            {
+                barrier.SignalAndWait();
+
+                ResourceSet set = manager.GetResourceSet(CultureInfo.InvariantCulture, createIfNotExists: true, tryParents: true);
+                IDictionaryEnumerator enumerator = set.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    object key = useEnumeratorEntry ? enumerator.Entry.Key : enumerator.Key;
+                    manager.GetObject((string)key);
+                    Thread.Sleep(1);
+                }
+            }
+        }
 
         public static IEnumerable<object[]> EnglishNonStringResourceData()
         {

@@ -30,7 +30,6 @@ namespace System.Runtime.Intrinsics
     [DebuggerTypeProxy(typeof(Vector128DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = Vector128.Size)]
     public readonly struct Vector128<T> : IEquatable<Vector128<T>>
-        where T : struct
     {
         internal readonly Vector64<T> _lower;
         internal readonly Vector64<T> _upper;
@@ -64,6 +63,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
         public static bool IsSupported
         {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
@@ -198,15 +198,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator /(Vector128<T> left, T right)
         {
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right);
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
+            return Vector128.Create(
+                left._lower / right,
+                left._upper / right
+            );
         }
 
         /// <summary>Compares two vectors to determine if all elements are equal.</summary>
@@ -258,15 +253,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator <<(Vector128<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
+            return Vector128.Create(
+                value._lower << shiftCount,
+                value._upper << shiftCount
+            );
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
@@ -330,15 +320,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator >>(Vector128<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
+            return Vector128.Create(
+                value._lower >> shiftCount,
+                value._upper >> shiftCount
+            );
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
@@ -390,15 +375,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator >>>(Vector128<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
+            return Vector128.Create(
+                value._lower >>> shiftCount,
+                value._upper >>> shiftCount
+            );
         }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>
@@ -407,6 +387,16 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector128<T> other) && Equals(other);
+
+        // Account for floating-point equality around NaN
+        // This is in a separate method so it can be optimized by the mono interpreter/jiterpreter
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool EqualsFloatingPoint (Vector128<T> lhs, Vector128<T> rhs)
+        {
+            Vector128<T> result = Vector128.Equals(lhs, rhs) | ~(Vector128.Equals(lhs, lhs) | Vector128.Equals(rhs, rhs));
+            return result.AsInt32() == Vector128<int>.AllBitsSet;
+        }
 
         /// <summary>Determines whether the specified <see cref="Vector128{T}" /> is equal to the current instance.</summary>
         /// <param name="other">The <see cref="Vector128{T}" /> to compare with the current instance.</param>
@@ -421,8 +411,7 @@ namespace System.Runtime.Intrinsics
             {
                 if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
                 {
-                    Vector128<T> result = Vector128.Equals(this, other) | ~(Vector128.Equals(this, this) | Vector128.Equals(other, other));
-                    return result.AsInt32() == Vector128<int>.AllBitsSet;
+                    return EqualsFloatingPoint(this, other);
                 }
                 else
                 {

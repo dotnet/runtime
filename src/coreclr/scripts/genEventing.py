@@ -188,11 +188,10 @@ class Template:
     def __repr__(self):
         return "<Template " + self.name + ">"
 
-    def __init__(self, templateName, fnPrototypes, dependencies, structSizes, structTypes, arrays):
+    def __init__(self, templateName, fnPrototypes, dependencies, structSizes, arrays):
         self.name = templateName
         self.signature = FunctionSignature()
         self.structs = structSizes
-        self.structTypes = structTypes
         self.arrays = arrays
 
         for variable in fnPrototypes.paramlist:
@@ -274,7 +273,6 @@ def parseTemplateNodes(templateNodes):
 
     for templateNode in templateNodes:
         structCounts = {}
-        structTypes  = {}
         arrays = {}
         templateName    = templateNode.getAttribute('tid')
         var_Dependencies = {}
@@ -339,12 +337,11 @@ def parseTemplateNodes(templateNodes):
             types = [x.attributes['inType'].value for x in structToBeMarshalled.getElementsByTagName("data")]
 
             structCounts[structName] = countVarName
-            structTypes[structName] = types
             var_Dependencies[structName] = [countVarName, structName]
             fnparam_pointer = FunctionParameter("win:Struct", structName, "win:count", countVarName)
             fnPrototypes.append(structName, fnparam_pointer)
 
-        allTemplates[templateName] = Template(templateName, fnPrototypes, var_Dependencies, structCounts, structTypes, arrays)
+        allTemplates[templateName] = Template(templateName, fnPrototypes, var_Dependencies, structCounts, arrays)
 
     return allTemplates
 
@@ -734,7 +731,7 @@ typedef struct _DOTNET_TRACE_CONTEXT
 
             eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
             if is_windows:
-                Clrallevents.write(('constexpr ' if target_cpp else '') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+                Clrallevents.write(('constexpr ' if target_cpp else 'static const ') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
 
             if not is_windows and not write_xplatheader:
                 Clrallevents.write('__attribute__((weak)) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
@@ -785,14 +782,14 @@ typedef struct _EVENT_DESCRIPTOR
                     symbolName = eventNode.getAttribute('symbol')
                     keywords = eventNode.getAttribute('keywords')
                     level = convertToLevelId(levelName)
-                    Clrproviders.write(("constexpr " if target_cpp else "const ") + "EVENT_DESCRIPTOR " + symbolName + " = { " + str(level) + ", " + hex(getKeywordsMaskCombined(keywords, keywordsToMask)) + " };\n")
+                    Clrproviders.write(("constexpr " if target_cpp else "static const ") + "EVENT_DESCRIPTOR " + symbolName + " = { " + str(level) + ", " + hex(getKeywordsMaskCombined(keywords, keywordsToMask)) + " };\n")
 
                 allProviders.append("&" + providerSymbol + "_LTTNG_Context")
 
             # define and initialize runtime providers' DOTNET_TRACE_CONTEXT depending on the platform
             if not is_windows:
                 Clrproviders.write('#define NB_PROVIDERS ' + str(nbProviders) + '\n')
-                Clrproviders.write(('constexpr ' if target_cpp else 'const ') + 'LTTNG_TRACE_CONTEXT * ALL_LTTNG_PROVIDERS_CONTEXT[NB_PROVIDERS] = { ')
+                Clrproviders.write(('constexpr ' if target_cpp else 'static const ') + 'LTTNG_TRACE_CONTEXT * ALL_LTTNG_PROVIDERS_CONTEXT[NB_PROVIDERS] = { ')
                 Clrproviders.write(', '.join(allProviders))
                 Clrproviders.write(' };\n')
 

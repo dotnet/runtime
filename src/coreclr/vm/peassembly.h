@@ -136,8 +136,8 @@ public:
 
 #ifdef LOGGING
     // This is useful for log messages
-    LPCWSTR GetDebugName();
-#endif
+    LPCUTF8 GetDebugName();
+#endif // LOGGING
 
     // ------------------------------------------------------------
     // Checks
@@ -391,10 +391,10 @@ private:
  // Instance fields
  // ------------------------------------------------------------
 
-#ifdef _DEBUG
-    LPCWSTR                 m_pDebugName;
+#ifdef LOGGING
+    LPCUTF8                 m_pDebugName;
     SString                 m_debugName;
-#endif
+#endif // LOGGING
 
     // IL image, NULL if dynamic
     PTR_PEImage              m_PEImage;

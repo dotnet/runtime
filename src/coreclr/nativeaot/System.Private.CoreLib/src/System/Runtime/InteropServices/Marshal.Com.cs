@@ -7,8 +7,6 @@ using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Versioning;
 
-using Internal.Reflection.Augments;
-
 namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
@@ -50,6 +48,7 @@ namespace System.Runtime.InteropServices
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [return: NotNullIfNotNull(nameof(o))]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -77,15 +76,8 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr GetComInterfaceForObject(object o, Type T)
         {
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
-
-            if (T is null)
-            {
-                throw new ArgumentNullException(nameof(T));
-            }
+            ArgumentNullException.ThrowIfNull(o);
+            ArgumentNullException.ThrowIfNull(T);
 
             return ComWrappers.ComInterfaceForObject(o, T.GUID);
         }
@@ -112,10 +104,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static IntPtr GetIDispatchForObject(object o)
         {
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
+            ArgumentNullException.ThrowIfNull(o);
 
             return ComWrappers.ComInterfaceForObject(o, new Guid(0x00020400, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46) /* IID_IDispatch */);
         }
@@ -130,10 +119,7 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe void GetNativeVariantForObject(object? obj, IntPtr pDstNativeVariant)
         {
-            if (pDstNativeVariant == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(pDstNativeVariant));
-            }
+            ArgumentNullException.ThrowIfNull(pDstNativeVariant);
 
             Variant* data = (Variant*)pDstNativeVariant;
             if (obj == null)
@@ -315,10 +301,7 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe object? GetObjectForNativeVariant(IntPtr pSrcNativeVariant)
         {
-            if (pSrcNativeVariant == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(pSrcNativeVariant));
-            }
+            ArgumentNullException.ThrowIfNull(pSrcNativeVariant);
 
             Variant* data = (Variant*)pSrcNativeVariant;
 
@@ -393,10 +376,12 @@ namespace System.Runtime.InteropServices
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
+#pragma warning disable IDE0060
         internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
-            return ReflectionAugments.ReflectionCoreCallbacks.GetTypeFromCLSID(clsid, server, throwOnError);
+            throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
+#pragma warning restore
 
         [SupportedOSPlatform("windows")]
         public static string GetTypeInfoName(ITypeInfo typeInfo)
@@ -412,20 +397,13 @@ namespace System.Runtime.InteropServices
 
         public static bool IsComObject(object o)
         {
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
-
+            ArgumentNullException.ThrowIfNull(o);
             return false;
         }
 
         public static bool IsTypeVisibleFromCom(Type t)
         {
-            if (t is null)
-            {
-                throw new ArgumentNullException(nameof(t));
-            }
+            ArgumentNullException.ThrowIfNull(t);
             return false;
         }
 

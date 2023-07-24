@@ -327,7 +327,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 
 	mono_mem_manager_init_reflection_hashes (mem_manager);
 
-	/* 
+	/*
 	 * If the initializing thread was rudely aborted, the exception is not stored
 	 * in the hash.
 	 */
@@ -701,7 +701,6 @@ mono_release_type_locks (MonoInternalThread *thread)
 	mono_type_initialization_unlock ();
 }
 
-static MonoImtTrampolineBuilder imt_trampoline_builder;
 static gboolean always_build_imt_trampolines;
 
 #if (MONO_IMT_SIZE > 32)
@@ -718,12 +717,6 @@ MonoRuntimeCallbacks*
 mono_get_runtime_callbacks (void)
 {
 	return &callbacks;
-}
-
-void
-mono_install_imt_trampoline_builder (MonoImtTrampolineBuilder func)
-{
-	imt_trampoline_builder = func;
 }
 
 void
@@ -773,15 +766,6 @@ mono_compile_method_checked (MonoMethod *method, MonoError *error)
 	g_assert (callbacks.compile_method);
 	res = callbacks.compile_method (method, error);
 	return res;
-}
-
-gpointer
-mono_runtime_create_delegate_trampoline (MonoClass *klass)
-{
-	MONO_REQ_GC_NEUTRAL_MODE
-
-	g_assert (callbacks.create_delegate_trampoline);
-	return callbacks.create_delegate_trampoline (klass);
 }
 
 /**
@@ -850,6 +834,11 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 		while ((field = mono_class_get_fields_internal (p, &iter))) {
 			MonoType *type;
 
+			/* metadata-update: added fields aren't stored in the object, don't
+			 * contribute to the GC descriptor. */
+			if (m_field_is_from_update (field))
+				continue;
+
 			if (static_fields) {
 				if (!(field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA)))
 					continue;
@@ -863,73 +852,83 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			if (m_type_is_byref (field->type))
 				break;
 
-			/* metadadta-update: added fields aren't stored in the object, don't
-			 * contribute to the GC descriptor. */
-			if (m_field_is_from_update (field))
-				continue;
-
 			int field_offset = m_field_get_offset (field);
 
 			if (static_fields && (field->offset == -1 || field->offset == -2))
 				/* special/collectible static */
 				continue;
 
-			pos = field_offset / TARGET_SIZEOF_VOID_P;
-			pos += offset;
+			guint32 field_iter = 1;
+			guint32 field_instance_offset = field_offset;
+			// If struct has InlineArray attribute, iterate `length` times to set a bitmap
+			if (m_class_is_inlinearray (p))
+				field_iter = m_class_inlinearray_value (p);
 
-			type = mono_type_get_underlying_type (field->type);
-			switch (type->type) {
-			case MONO_TYPE_U:
-			case MONO_TYPE_I:
-			case MONO_TYPE_PTR:
-			case MONO_TYPE_FNPTR:
-				break;
-			case MONO_TYPE_STRING:
-			case MONO_TYPE_SZARRAY:
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_ARRAY:
-				g_assert ((m_field_get_offset (field) % wordsize) == 0);
+			if (field_iter > 500)
+				g_warning ("Large number of iterations detected when creating a GC bitmap, might affect performance.");
 
-				g_assert (pos < GINT_TO_UINT32(size) || pos <= GINT_TO_UINT32(max_size));
-				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
-				*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
-				break;
-			case MONO_TYPE_GENERICINST:
-				if (!mono_type_generic_inst_is_valuetype (type)) {
+			while (field_iter) {
+				pos = field_instance_offset / TARGET_SIZEOF_VOID_P;
+				pos += offset;
+
+				type = mono_type_get_underlying_type (field->type);
+
+				switch (type->type) {
+				case MONO_TYPE_U:
+				case MONO_TYPE_I:
+				case MONO_TYPE_PTR:
+				case MONO_TYPE_FNPTR:
+					break;
+				case MONO_TYPE_STRING:
+				case MONO_TYPE_SZARRAY:
+				case MONO_TYPE_CLASS:
+				case MONO_TYPE_OBJECT:
+				case MONO_TYPE_ARRAY:
 					g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
+					g_assert (pos < GINT_TO_UINT32(size) || pos <= GINT_TO_UINT32(max_size));
 					bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
 					*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
 					break;
-				} else {
-					/* fall through */
+				case MONO_TYPE_GENERICINST:
+					if (!mono_type_generic_inst_is_valuetype (type)) {
+						g_assert ((m_field_get_offset (field) % wordsize) == 0);
+
+						bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
+						*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
+						break;
+					} else {
+						/* fall through */
+					}
+				case MONO_TYPE_TYPEDBYREF:
+				case MONO_TYPE_VALUETYPE: {
+					MonoClass *fclass = mono_class_from_mono_type_internal (field->type);
+					if (m_class_has_references (fclass)) {
+						/* remove the object header */
+						compute_class_bitmap (fclass, bitmap, size, pos - MONO_OBJECT_HEADER_BITS, max_set, FALSE);
+					}
+					break;
 				}
-			case MONO_TYPE_TYPEDBYREF:
-			case MONO_TYPE_VALUETYPE: {
-				MonoClass *fclass = mono_class_from_mono_type_internal (field->type);
-				if (m_class_has_references (fclass)) {
-					/* remove the object header */
-					compute_class_bitmap (fclass, bitmap, size, pos - MONO_OBJECT_HEADER_BITS, max_set, FALSE);
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+				case MONO_TYPE_R4:
+				case MONO_TYPE_R8:
+				case MONO_TYPE_BOOLEAN:
+				case MONO_TYPE_CHAR:
+					break;
+				default:
+					g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (m_field_get_parent (field)), field->name);
+					break;
 				}
-				break;
-			}
-			case MONO_TYPE_I1:
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_I4:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-			case MONO_TYPE_BOOLEAN:
-			case MONO_TYPE_CHAR:
-				break;
-			default:
-				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (m_field_get_parent (field)), field->name);
-				break;
+
+				field_instance_offset += field_offset;
+				field_iter--;
 			}
 		}
 		if (static_fields)
@@ -1474,7 +1473,7 @@ initialize_imt_slot (MonoVTable *vtable, MonoImtBuilderEntry *imt_builder_entry,
 			/* Collision, build the trampoline */
 			GPtrArray *imt_ir = imt_sort_slot_entries (imt_builder_entry);
 			gpointer result;
-			result = imt_trampoline_builder (vtable,
+			result = mono_get_runtime_callbacks ()->build_imt_trampoline (vtable,
 				(MonoIMTCheckItem**)imt_ir->pdata, imt_ir->len, fail_tramp);
 			for (guint i = 0; i < imt_ir->len; ++i)
 				g_free (g_ptr_array_index (imt_ir, i));
@@ -1823,8 +1822,8 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 
 			sorted = imt_sort_slot_entries (entries);
 
-			*vtable_slot = imt_trampoline_builder (vtable, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
-												   vtable_trampoline);
+			*vtable_slot = mono_get_runtime_callbacks ()->build_imt_trampoline (vtable, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
+																				vtable_trampoline);
 
 			while (entries) {
 				MonoImtBuilderEntry *next = entries->next;
@@ -2212,12 +2211,12 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
+		if (m_field_is_from_update (field))
+			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 		if (mono_field_is_deleted (field))
-			continue;
-		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
-		if (m_field_is_from_update (field))
 			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
 			gint32 special_static = m_class_has_no_special_static_fields (klass) ? SPECIAL_STATIC_NONE : field_is_special_static (klass, field);
@@ -2517,13 +2516,11 @@ mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, MonoError *
 		} else {
 			res = vtable [method->slot];
 		}
-    }
-
-	{
-		if (method->is_inflated) {
-			/* Have to inflate the result */
-			res = mono_class_inflate_generic_method_checked (res, &((MonoMethodInflated*)method)->context, error);
-		}
+	}
+	// res can be null if klass is abstract and doesn't implement method
+	if (res && method->is_inflated) {
+		/* Have to inflate the result */
+		res = mono_class_inflate_generic_method_checked (res, &((MonoMethodInflated*)method)->context, error);
 	}
 
 	return res;
@@ -6364,7 +6361,7 @@ mono_string_new_utf8_len (const char *text, guint length, MonoError *error)
 	gunichar2 *ut = NULL;
 	glong items_written;
 
-	ut = eg_utf8_to_utf16_with_nuls (text, length, NULL, &items_written, &eg_error);
+	ut = g_utf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
 
 	if (eg_error) {
 		o = NULL_HANDLE_STRING;
@@ -8122,6 +8119,29 @@ mono_runtime_get_managed_cmd_line (void)
 
 	GString *cmd_line = format_cmd_line (num_main_args, main_args);
 	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
+}
+
+void
+mono_runtime_run_startup_hooks (void)
+{
+	if (mono_runtime_get_no_exec ())
+		return;
+
+	MonoClass *klass = mono_class_try_load_from_name (mono_defaults.corlib, "System", "StartupHookProvider");
+	if (!klass)
+		return; // Linked away
+	ERROR_DECL (error);
+	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "ProcessStartupHooks", -1, 0, error);
+	mono_error_cleanup (error);
+	if (!method)
+		return;
+
+	gpointer args [1];
+	args[0] = mono_string_empty_internal (mono_domain_get ());
+
+	mono_runtime_invoke_checked (method, NULL, args, error);
+	// runtime hooks design doc says not to catch exceptions from the hooks
+	mono_error_raise_exception_deprecated (error);
 }
 
 #if NEVER_DEFINED

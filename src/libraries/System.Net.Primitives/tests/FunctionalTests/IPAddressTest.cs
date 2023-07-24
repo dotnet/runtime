@@ -304,8 +304,8 @@ namespace System.Net.Primitives.Functional.Tests
 
         public static IEnumerable<object[]> GetValidIPAddresses()
         {
-            return IPAddressParsing.ValidIpv4Addresses
-                .Concat(IPAddressParsing.ValidIpv6Addresses)
+            return IPAddressParsingFormatting.ValidIpv4Addresses
+                .Concat(IPAddressParsingFormatting.ValidIpv6Addresses)
                 .Select(array => new object[] {IPAddress.Parse((string)array[0])});
         }
 

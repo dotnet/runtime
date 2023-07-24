@@ -54,10 +54,10 @@ namespace System.Speech.Internal.SrgsCompiler
                 CultureInfo culture;
                 StringBuilder innerCode = new();
                 ISrgsParser srgsParser = new XmlParser(xmlReaders[iReader], uri);
-                object cg = CompileStream(iReader + 1, srgsParser, srgsPath, filename, stream, fOutputCfg, innerCode, cfgResources, out culture, referencedAssemblies, keyFile);
+                CustomGrammar cg = CompileStream(iReader + 1, srgsParser, srgsPath, filename, stream, fOutputCfg, innerCode, cfgResources, out culture, referencedAssemblies, keyFile);
                 if (!fOutputCfg)
                 {
-                    cgCombined.Combine((CustomGrammar)cg, innerCode.ToString());
+                    cgCombined.Combine(cg, innerCode.ToString());
                 }
             }
 
@@ -100,7 +100,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        private static object CompileStream(int iCfg, ISrgsParser srgsParser, string srgsPath, string filename, Stream stream, bool fOutputCfg, StringBuilder innerCode, object cfgResources, out CultureInfo culture, string[] referencedAssemblies, string keyFile)
+        private static CustomGrammar CompileStream(int iCfg, ISrgsParser srgsParser, string srgsPath, string filename, Stream stream, bool fOutputCfg, StringBuilder innerCode, object cfgResources, out CultureInfo culture, string[] referencedAssemblies, string keyFile)
         {
             Backend backend = new();
             CustomGrammar cg = new();

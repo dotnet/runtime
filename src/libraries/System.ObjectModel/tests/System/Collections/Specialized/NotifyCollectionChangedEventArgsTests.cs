@@ -157,9 +157,9 @@ namespace System.Collections.Specialized.Tests
         [Theory]
         [InlineData(NotifyCollectionChangedAction.Add, -2)]
         [InlineData(NotifyCollectionChangedAction.Remove, -2)]
-        public void Ctor_ChangedIndexLessThanMinusOneForAddOrRemove_ThrowsArgumentException(NotifyCollectionChangedAction action, int startingIndex)
+        public void Ctor_ChangedIndexLessThanMinusOneForAddOrRemove_ThrowsArgumentOutOfRangeException(NotifyCollectionChangedAction action, int startingIndex)
         {
-            AssertExtensions.Throws<ArgumentException>("startingIndex", () => new NotifyCollectionChangedEventArgs(action, new object[0], startingIndex));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startingIndex", () => new NotifyCollectionChangedEventArgs(action, new object[0], startingIndex));
         }
 
         [Theory]
@@ -332,10 +332,10 @@ namespace System.Collections.Specialized.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(-2)]
-        public void Ctor_LessThanZeroIndexForMove_ThrowsArgumentException(int index)
+        public void Ctor_LessThanZeroIndexForMove_ThrowsArgumentOutOfRangeException(int index)
         {
-            AssertExtensions.Throws<ArgumentException>("index", () => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, "item", index, 1));
-            AssertExtensions.Throws<ArgumentException>("index", () => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, new object[] { "item" }, index, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, "item", index, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, new object[] { "item" }, index, 1));
         }
 
         [Fact]

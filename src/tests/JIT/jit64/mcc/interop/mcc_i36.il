@@ -11,7 +11,7 @@
 
 .namespace MCCTest
 {
-  .class MyClass
+  .class public MyClass
   {
     .method assembly static pinvokeimpl("native_i3s" as "#1" stdcall)
         valuetype MCCTest.VType3 Sum(unsigned int64, valuetype MCCTest.VType3, float64,	valuetype MCCTest.VType3, float32, valuetype MCCTest.VType3,
@@ -114,7 +114,7 @@
       ret
     } // end of method MyClass::.ctor
 
-    .method private static int32 Main()
+    .method public static int32 Main()
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

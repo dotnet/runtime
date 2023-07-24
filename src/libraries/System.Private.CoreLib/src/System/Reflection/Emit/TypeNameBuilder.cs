@@ -15,13 +15,13 @@ namespace System.Reflection.Emit
 {
     internal sealed class TypeNameBuilder
     {
-        private StringBuilder _str = new StringBuilder();
+        private readonly StringBuilder _str = new StringBuilder();
         private int _instNesting;
         private bool _firstInstArg;
         private bool _nestedName;
         private bool _hasAssemblySpec;
         private bool _useAngleBracketsForGenerics;
-        private List<int> _stack = new List<int>();
+        private readonly List<int> _stack = new List<int>();
         private int _stackIdx;
 
         private TypeNameBuilder()
@@ -316,7 +316,7 @@ namespace System.Reflection.Emit
                 Type enclosingType = nestings[i];
                 string name = enclosingType.Name;
 
-                if (i == nestings.Count - 1 && enclosingType.Namespace != null && enclosingType.Namespace.Length != 0)
+                if (i == nestings.Count - 1 && !string.IsNullOrEmpty(enclosingType.Namespace))
                     name = enclosingType.Namespace + "." + name;
 
                 AddName(name);

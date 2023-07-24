@@ -15,6 +15,7 @@ parameters:
   steps: []
   dependsOn: []
   dependOnEvaluatePaths: false
+  disableComponentGovernance: false
   variables: {}
   name: ''
   displayName: ''
@@ -40,8 +41,8 @@ jobs:
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
 
-      # Component governance does not work on musl machines
-      ${{ if eq(parameters.osSubGroup, '_musl') }}:
+      # Disable component governance if requested or on musl machines where it does not work well
+      ${{ if or(eq(parameters.disableComponentGovernance, true), eq(parameters.osSubGroup, '_musl')) }}:
         disableComponentGovernance: true
 
       variables:
@@ -70,7 +71,7 @@ jobs:
           - _crossBuildPropertyArg: /p:CrossBuild=true
 
         # force a value for OS when cross-building
-        - ${{ if in(parameters.osGroup, 'Browser', 'iOS', 'tvOS', 'Android', 'FreeBSD') }}:
+        - ${{ if in(parameters.osGroup, 'browser', 'ios', 'tvos', 'android', 'freebsd') }}:
           - _osArg: -os ${{ parameters.osGroup }}
 
         - ${{ if ne(parameters.framework, '') }}:

@@ -168,12 +168,7 @@ namespace System.IO.Packaging
             private bool RelationshipTypeMatches()
             {
                 PackageRelationship r = _enumerator.Current;
-
-                //Case-sensitive comparison
-                if (string.CompareOrdinal(r.RelationshipType, _filter) == 0)
-                    return true;
-                else
-                    return false;
+                return _filter == r.RelationshipType; // Case-sensitive comparison
             }
 
             #endregion Private Methods

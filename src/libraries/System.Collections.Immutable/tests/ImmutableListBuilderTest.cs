@@ -24,7 +24,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void ToBuilder()
         {
-            var builder = ImmutableList<int>.Empty.ToBuilder();
+            ImmutableList<int>.Builder builder = ImmutableList<int>.Empty.ToBuilder();
             builder.Add(3);
             builder.Add(5);
             builder.Add(5);
@@ -33,7 +33,7 @@ namespace System.Collections.Immutable.Tests
             Assert.True(builder.Contains(5));
             Assert.False(builder.Contains(7));
 
-            var list = builder.ToImmutable();
+            ImmutableList<int> list = builder.ToImmutable();
             Assert.Equal(builder.Count, list.Count);
             builder.Add(8);
             Assert.Equal(4, builder.Count);
@@ -45,8 +45,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void BuilderFromList()
         {
-            var list = ImmutableList<int>.Empty.Add(1);
-            var builder = list.ToBuilder();
+            ImmutableList<int> list = ImmutableList<int>.Empty.Add(1);
+            ImmutableList<int>.Builder builder = list.ToBuilder();
             Assert.True(builder.Contains(1));
             builder.Add(3);
             builder.Add(5);
@@ -56,7 +56,7 @@ namespace System.Collections.Immutable.Tests
             Assert.True(builder.Contains(5));
             Assert.False(builder.Contains(7));
 
-            var list2 = builder.ToImmutable();
+            ImmutableList<int> list2 = builder.ToImmutable();
             Assert.Equal(builder.Count, list2.Count);
             Assert.True(list2.Contains(1));
             builder.Add(8);
@@ -71,12 +71,12 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void SeveralChanges()
         {
-            var mutable = ImmutableList<int>.Empty.ToBuilder();
-            var immutable1 = mutable.ToImmutable();
+            ImmutableList<int>.Builder mutable = ImmutableList<int>.Empty.ToBuilder();
+            ImmutableList<int> immutable1 = mutable.ToImmutable();
             Assert.Same(immutable1, mutable.ToImmutable()); //, "The Immutable property getter is creating new objects without any differences.");
 
             mutable.Add(1);
-            var immutable2 = mutable.ToImmutable();
+            ImmutableList<int> immutable2 = mutable.ToImmutable();
             Assert.NotSame(immutable1, immutable2); //, "Mutating the collection did not reset the Immutable property.");
             Assert.Same(immutable2, mutable.ToImmutable()); //, "The Immutable property getter is creating new objects without any differences.");
             Assert.Equal(1, immutable2.Count);
@@ -85,10 +85,10 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void EnumerateBuilderWhileMutating()
         {
-            var builder = ImmutableList<int>.Empty.AddRange(Enumerable.Range(1, 10)).ToBuilder();
+            ImmutableList<int>.Builder builder = ImmutableList<int>.Empty.AddRange(Enumerable.Range(1, 10)).ToBuilder();
             Assert.Equal(Enumerable.Range(1, 10), builder);
 
-            var enumerator = builder.GetEnumerator();
+            ImmutableList<int>.Enumerator enumerator = builder.GetEnumerator();
             Assert.True(enumerator.MoveNext());
             builder.Add(11);
 
@@ -107,12 +107,12 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void BuilderReusesUnchangedImmutableInstances()
         {
-            var collection = ImmutableList<int>.Empty.Add(1);
-            var builder = collection.ToBuilder();
+            ImmutableList<int> collection = ImmutableList<int>.Empty.Add(1);
+            ImmutableList<int>.Builder builder = collection.ToBuilder();
             Assert.Same(collection, builder.ToImmutable()); // no changes at all.
             builder.Add(2);
 
-            var newImmutable = builder.ToImmutable();
+            ImmutableList<int> newImmutable = builder.ToImmutable();
             Assert.NotSame(collection, newImmutable); // first ToImmutable with changes should be a new instance.
             Assert.Same(newImmutable, builder.ToImmutable()); // second ToImmutable without changes should be the same instance.
         }
@@ -120,7 +120,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Insert()
         {
-            var mutable = ImmutableList<int>.Empty.ToBuilder();
+            ImmutableList<int>.Builder mutable = ImmutableList<int>.Empty.ToBuilder();
             mutable.Insert(0, 1);
             mutable.Insert(0, 0);
             mutable.Insert(2, 3);
@@ -133,7 +133,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void InsertRange()
         {
-            var mutable = ImmutableList<int>.Empty.ToBuilder();
+            ImmutableList<int>.Builder mutable = ImmutableList<int>.Empty.ToBuilder();
             mutable.InsertRange(0, new[] { 1, 4, 5 });
             Assert.Equal(new[] { 1, 4, 5 }, mutable);
             mutable.InsertRange(1, new[] { 2, 3 });
@@ -150,7 +150,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddRange()
         {
-            var mutable = ImmutableList<int>.Empty.ToBuilder();
+            ImmutableList<int>.Builder mutable = ImmutableList<int>.Empty.ToBuilder();
             mutable.AddRange(new[] { 1, 4, 5 });
             Assert.Equal(new[] { 1, 4, 5 }, mutable);
             mutable.AddRange(new[] { 2, 3 });
@@ -164,7 +164,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Remove()
         {
-            var mutable = ImmutableList<int>.Empty.ToBuilder();
+            ImmutableList<int>.Builder mutable = ImmutableList<int>.Empty.ToBuilder();
             Assert.False(mutable.Remove(5));
 
             mutable.Add(1);
@@ -183,11 +183,11 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void RemoveAllBugTest()
         {
-            var builder = ImmutableList.CreateBuilder<int>();
+            ImmutableList<int>.Builder builder = ImmutableList.CreateBuilder<int>();
             var elemsToRemove = new[]{0, 1, 2, 3, 4, 5}.ToImmutableHashSet();
             // NOTE: this uses Add instead of AddRange because AddRange doesn't exhibit the same issue due to a different order of tree building.
             // Don't change it without testing with the bug repro from https://github.com/dotnet/runtime/issues/22093.
-            foreach (var elem in new[]{0, 1, 2, 3, 4, 5, 6})
+            foreach (int elem in new[]{0, 1, 2, 3, 4, 5, 6})
                 builder.Add(elem);
             builder.RemoveAll(elemsToRemove.Contains);
             Assert.Equal(new[]{ 6 }, builder);
@@ -196,7 +196,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Remove_EqualityComparer()
         {
-            var mutable = ImmutableList<double>.Empty.ToBuilder();
+            ImmutableList<double>.Builder mutable = ImmutableList<double>.Empty.ToBuilder();
             mutable.Add(1.5);
             mutable.Add(2.4);
             mutable.Add(3.6);
@@ -215,7 +215,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void RemoveRange()
         {
-            var mutable = ImmutableList<double>.Empty.ToBuilder();
+            ImmutableList<double>.Builder mutable = ImmutableList<double>.Empty.ToBuilder();
             mutable.Add(1.5);
             mutable.Add(2.4);
             mutable.Add(3.6);
@@ -239,7 +239,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void RemoveAt()
         {
-            var mutable = ImmutableList<int>.Empty.ToBuilder();
+            ImmutableList<int>.Builder mutable = ImmutableList<int>.Empty.ToBuilder();
             mutable.Add(1);
             mutable.Add(2);
             mutable.Add(3);
@@ -261,7 +261,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Replace()
         {
-            var mutable = ImmutableList<double>.Empty.ToBuilder();
+            ImmutableList<double>.Builder mutable = ImmutableList<double>.Empty.ToBuilder();
             mutable.Add(1.5);
             mutable.Add(2.4);
             mutable.Add(3.6);
@@ -277,7 +277,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Reverse()
         {
-            var mutable = ImmutableList.CreateRange(Enumerable.Range(1, 3)).ToBuilder();
+            ImmutableList<int>.Builder mutable = ImmutableList.CreateRange(Enumerable.Range(1, 3)).ToBuilder();
             mutable.Reverse();
             Assert.Equal(Enumerable.Range(1, 3).Reverse(), mutable);
         }
@@ -285,7 +285,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Clear()
         {
-            var mutable = ImmutableList.CreateRange(Enumerable.Range(1, 3)).ToBuilder();
+            ImmutableList<int>.Builder mutable = ImmutableList.CreateRange(Enumerable.Range(1, 3)).ToBuilder();
             mutable.Clear();
             Assert.Equal(0, mutable.Count);
 
@@ -304,7 +304,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Indexer()
         {
-            var mutable = ImmutableList.CreateRange(Enumerable.Range(1, 3)).ToBuilder();
+            ImmutableList<int>.Builder mutable = ImmutableList.CreateRange(Enumerable.Range(1, 3)).ToBuilder();
             Assert.Equal(2, mutable[1]);
             mutable[1] = 5;
             Assert.Equal(5, mutable[1]);
@@ -345,7 +345,7 @@ namespace System.Collections.Immutable.Tests
         public void GetEnumeratorExplicit()
         {
             ICollection<int> builder = ImmutableList.Create<int>().ToBuilder();
-            var enumerator = builder.GetEnumerator();
+            IEnumerator<int> enumerator = builder.GetEnumerator();
             Assert.NotNull(enumerator);
         }
 
@@ -416,7 +416,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(builder, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableList.CreateBuilder<string>());
@@ -430,8 +430,8 @@ namespace System.Collections.Immutable.Tests
             var list = new[] { 1, 2, 3 }.ToImmutableList();
             var builder = new ImmutableList<int>.Builder(list);
 
-            ref readonly var safeRef = ref builder.ItemRef(1);
-            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref readonly int safeRef = ref builder.ItemRef(1);
+            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
 
             Assert.Equal(2, builder.ItemRef(1));
 
@@ -457,7 +457,7 @@ namespace System.Collections.Immutable.Tests
             builder.Add(1);
             builder.Add(2);
 
-            var list = builder.ToImmutableList();
+            ImmutableList<int> list = builder.ToImmutableList();
             Assert.Equal(0, builder[0]);
             Assert.Equal(1, builder[1]);
             Assert.Equal(2, builder[2]);
@@ -476,25 +476,25 @@ namespace System.Collections.Immutable.Tests
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
-            return ImmutableList<T>.Empty.AddRange(contents).ToBuilder();
+            return ImmutableList<T>.Empty.AddRange((ReadOnlySpan<T>)contents).ToBuilder();
         }
 
         protected override void RemoveAllTestHelper<T>(ImmutableList<T> list, Predicate<T> test)
         {
-            var builder = list.ToBuilder();
-            var bcl = list.ToList();
+            ImmutableList<T>.Builder builder = list.ToBuilder();
+            List<T> bcl = list.ToList();
 
             int expected = bcl.RemoveAll(test);
-            var actual = builder.RemoveAll(test);
+            int actual = builder.RemoveAll(test);
             Assert.Equal(expected, actual);
             Assert.Equal<T>(bcl, builder.ToList());
         }
 
         protected override void ReverseTestHelper<T>(ImmutableList<T> list, int index, int count)
         {
-            var expected = list.ToList();
+            List<T> expected = list.ToList();
             expected.Reverse(index, count);
-            var builder = list.ToBuilder();
+            ImmutableList<T>.Builder builder = list.ToBuilder();
             builder.Reverse(index, count);
             Assert.Equal<T>(expected, builder.ToList());
         }
@@ -506,28 +506,28 @@ namespace System.Collections.Immutable.Tests
 
         protected override List<T> SortTestHelper<T>(ImmutableList<T> list)
         {
-            var builder = list.ToBuilder();
+            ImmutableList<T>.Builder builder = list.ToBuilder();
             builder.Sort();
             return builder.ToImmutable().ToList();
         }
 
         protected override List<T> SortTestHelper<T>(ImmutableList<T> list, Comparison<T> comparison)
         {
-            var builder = list.ToBuilder();
+            ImmutableList<T>.Builder builder = list.ToBuilder();
             builder.Sort(comparison);
             return builder.ToImmutable().ToList();
         }
 
         protected override List<T> SortTestHelper<T>(ImmutableList<T> list, IComparer<T> comparer)
         {
-            var builder = list.ToBuilder();
+            ImmutableList<T>.Builder builder = list.ToBuilder();
             builder.Sort(comparer);
             return builder.ToImmutable().ToList();
         }
 
         protected override List<T> SortTestHelper<T>(ImmutableList<T> list, int index, int count, IComparer<T> comparer)
         {
-            var builder = list.ToBuilder();
+            ImmutableList<T>.Builder builder = list.ToBuilder();
             builder.Sort(index, count, comparer);
             return builder.ToImmutable().ToList();
         }

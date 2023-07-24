@@ -73,22 +73,7 @@ public:
           m_pAllocMemTracker(pAllocMemTracker)
     {
         LIMITED_METHOD_CONTRACT;
-        SetBMTData(
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL);
+        SetBMTData();
     }
 public:
     //==========================================================================
@@ -131,20 +116,6 @@ private:
     {
         METHOD_IMPL_NOT,
         METHOD_IMPL
-    };
-
-    enum METHOD_TYPE
-    {
-        // The values of the enum are in sync with MethodClassification.
-        // GetMethodClassification depends on this
-        METHOD_TYPE_NORMAL  = 0,
-        METHOD_TYPE_FCALL   = 1,
-        METHOD_TYPE_NDIRECT = 2,
-        METHOD_TYPE_EEIMPL  = 3,
-        METHOD_TYPE_INSTANTIATED = 5,
-#ifdef FEATURE_COMINTEROP
-        METHOD_TYPE_COMINTEROP = 6,
-#endif
     };
 
 private:
@@ -233,7 +204,6 @@ private:
     // we create the EEClass object, and thus set the flags immediately at the point
     // we create that object.</NICE>
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
-    void SetCannotBeBlittedByObjectCloner() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetCannotBeBlittedByObjectCloner(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
     void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
     void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); }
@@ -936,14 +906,14 @@ private:
         // Constructor. This takes all the information already extracted from metadata interface
         // because the place that creates these types already has this data. Alternatively,
         // a constructor could be written to take a token and metadata scope instead. Also,
-        // it might be interesting to move METHOD_TYPE and METHOD_IMPL_TYPE to setter functions.
+        // it might be interesting to move MethodClassification and METHOD_IMPL_TYPE to setter functions.
         bmtMDMethod(
             bmtMDType * pOwningType,
             mdMethodDef tok,
             DWORD dwDeclAttrs,
             DWORD dwImplAttrs,
             DWORD dwRVA,
-            METHOD_TYPE type,
+            MethodClassification type,
             METHOD_IMPL_TYPE implType);
 
         //-----------------------------------------------------------------------------------------
@@ -972,7 +942,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Returns the method type (normal, fcall, etc.) that this type was constructed with.
-        METHOD_TYPE
+        MethodClassification
         GetMethodType() const
             { LIMITED_METHOD_CONTRACT; return m_type; }
 
@@ -1053,7 +1023,7 @@ private:
         DWORD             m_dwDeclAttrs;
         DWORD             m_dwImplAttrs;
         DWORD             m_dwRVA;
-        METHOD_TYPE       m_type;               // Specific MethodDesc flavour
+        MethodClassification  m_type;               // Specific MethodDesc flavour
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
 
@@ -2026,7 +1996,9 @@ private:
         DWORD NumInstanceGCPointerFields;   // does not include inherited pointer fields
         DWORD NumGCPointerSeries;
         DWORD NumInstanceFieldBytes;
+        DWORD NumInlineArrayElements;
 
+        bool  fIsAllGCPointers;
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;
         bool  fHasSelfReferencingStaticValueTypeField_WithRVA;
@@ -2226,21 +2198,21 @@ private:
     bmtEnumFieldInfo *bmtEnumFields;
 
     void SetBMTData(
-        LoaderAllocator *bmtAllocator,
-        bmtErrorInfo *bmtError,
-        bmtProperties *bmtProp,
-        bmtVtable *bmtVT,
-        bmtParentInfo *bmtParent,
-        bmtInterfaceInfo *bmtInterface,
-        bmtMetaDataInfo *bmtMetaData,
-        bmtMethodInfo *bmtMethod,
-        bmtMethAndFieldDescs *bmtMFDescs,
-        bmtFieldPlacement *bmtFP,
-        bmtInternalInfo *bmtInternal,
-        bmtGCSeriesInfo *bmtGCSeries,
-        bmtMethodImplInfo *bmtMethodImpl,
-        const bmtGenericsInfo *bmtGenerics,
-        bmtEnumFieldInfo *bmtEnumFields);
+        LoaderAllocator *bmtAllocator = NULL,
+        bmtErrorInfo *bmtError = NULL,
+        bmtProperties *bmtProp = NULL,
+        bmtVtable *bmtVT = NULL,
+        bmtParentInfo *bmtParent = NULL,
+        bmtInterfaceInfo *bmtInterface = NULL,
+        bmtMetaDataInfo *bmtMetaData = NULL,
+        bmtMethodInfo *bmtMethod = NULL,
+        bmtMethAndFieldDescs *bmtMFDescs = NULL,
+        bmtFieldPlacement *bmtFP = NULL,
+        bmtInternalInfo *bmtInternal = NULL,
+        bmtGCSeriesInfo *bmtGCSeries = NULL,
+        bmtMethodImplInfo *bmtMethodImpl = NULL,
+        const bmtGenericsInfo *bmtGenerics = NULL,
+        bmtEnumFieldInfo *bmtEnumFields = NULL);
 
     // --------------------------------------------------------------------------------------------
     // Returns the parent bmtRTType pointer. Can be null if no parent exists.
@@ -2293,7 +2265,7 @@ private:
         inline PCCOR_SIGNATURE  GetSig(DWORD *pcbSig);
         inline METHOD_IMPL_TYPE MethodImpl();
         inline BOOL             IsMethodImpl();
-        inline METHOD_TYPE      MethodType();
+        inline MethodClassification MethodType();
         inline bmtMDMethod     *GetMDMethod() const;
         inline MethodDesc      *GetIntroducingMethodDesc();
         inline bmtMDMethod *    operator->();
@@ -2513,8 +2485,7 @@ public:
     //
     static void
     CopyExactParentSlots(
-        MethodTable *pMT,
-        MethodTable *pApproxParentMT);
+        MethodTable *pMT);
 
     // --------------------------------------------------------------------------------------------
     // This is used at load time, using metadata-based comparisons. It returns the array of dispatch
@@ -2646,11 +2617,6 @@ private:
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodName)
         COMMA_INDEBUG(LPCUTF8             pszDebugClassName)
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodSignature));
-
-    // --------------------------------------------------------------------------------------------
-    // Convert code:MethodTableBuilder::METHOD_TYPE to code:MethodClassification
-    static DWORD
-    GetMethodClassification(METHOD_TYPE type);
 
     // --------------------------------------------------------------------------------------------
     // Essentially, this is a helper method that combines calls to InitMethodDesc and
@@ -2939,7 +2905,7 @@ private:
 
 #ifdef UNIX_AMD64_ABI
     // checks whether the struct is enregisterable.
-    void SystemVAmd64CheckForPassStructInRegister();
+    void SystemVAmd64CheckForPassStructInRegister(MethodTable** pByValueClassCache);
     // Store the eightbyte classification into the EEClass
     void StoreEightByteClassification(SystemVStructRegisterPassingHelper* helper);
 

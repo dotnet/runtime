@@ -149,8 +149,8 @@
   <data name="PrincipalCantDeleteUnpersisted" xml:space="preserve">
     <value>Unpersisted Principal objects can not be deleted.</value>
   </data>
-  <data name="PrincipalDeleted" xml:space="preserve">
-    <value>Cannot delete an already deleted object</value>
+  <data name="PrincipalAccessedAfterBeingDeleted" xml:space="preserve">
+    <value>Cannot access an already deleted object</value>
   </data>
   <data name="PrincipalNotSupportedOnFakePrincipal" xml:space="preserve">
     <value>This Principal object represents a well-known SID and does not correspond to an actual store object.  This operation is not supported on it.</value>

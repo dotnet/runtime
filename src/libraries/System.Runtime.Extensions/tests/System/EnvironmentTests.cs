@@ -368,6 +368,7 @@ namespace System.Tests
         [InlineData(Environment.SpecialFolder.MyPictures)]
         [InlineData(Environment.SpecialFolder.MyVideos)]
         [InlineData(Environment.SpecialFolder.Templates)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void GetFolderPath_Unix_SpecialFolderDoesNotExist_CreatesSuccessfully(Environment.SpecialFolder folder)
         {
             string path = Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify);
@@ -381,17 +382,6 @@ namespace System.Tests
         [Fact]
         public void GetSystemDirectory()
         {
-            if (PlatformDetection.IsWindowsNanoServer)
-            {
-                // https://github.com/dotnet/runtime/issues/21430
-                // On Windows Nano, ShGetKnownFolderPath currently doesn't give
-                // the correct result for SystemDirectory.
-                // Assert that it's wrong, so that if it's fixed, we don't forget to
-                // enable this test for Nano.
-                Assert.NotEqual(Environment.GetFolderPath(Environment.SpecialFolder.System), Environment.SystemDirectory);
-                return;
-            }
-
             Assert.Equal(Environment.GetFolderPath(Environment.SpecialFolder.System), Environment.SystemDirectory);
         }
 

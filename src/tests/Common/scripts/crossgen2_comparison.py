@@ -22,15 +22,15 @@
 # The following command
 #
 #  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_corelib
-#  --crossgen artifacts/bin/coreclr/Linux.arm.Checked/crossgen
-#  --il_corelib artifacts/bin/coreclr/Linux.arm.Checked/IL/System.Private.CoreLib.dll
-#  --result_dir Linux.arm_arm.Checked
+#  --crossgen artifacts/bin/coreclr/linux.arm.Checked/crossgen
+#  --il_corelib artifacts/bin/coreclr/linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --result_dir linux.arm_arm.Checked
 #
 # runs Hostarm/arm crossgen on System.Private.CoreLib.dll and puts all the
-# information in files Linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
+# information in files linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
 # and System.Private.CoreLib-DebuggingFile.json
 #
-#  ~/git/coreclr$ cat Linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
+#  ~/git/coreclr$ cat linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
 #  {
 #    "AssemblyName": "System.Private.CoreLib",
 #    "ReturnCode": 0,
@@ -43,7 +43,7 @@
 #    "OutputFileSizeInBytes": 9564160
 #  }
 #
-#  ~/git/coreclr$ cat Linux.x64_arm.Checked/System.Private.CoreLib-DebuggingFile.json
+#  ~/git/coreclr$ cat linux.x64_arm.Checked/System.Private.CoreLib-DebuggingFile.json
 #  {
 #    "ReturnCode": 0,
 #    "StdOut": [
@@ -59,16 +59,16 @@
 # The following command
 #
 #  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_dotnet_sdk
-#  --crossgen artifacts/bin/coreclr/Linux.arm.Checked/x64/crossgen
-#  --il_corelib artifacts/bin/coreclr/Linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --crossgen artifacts/bin/coreclr/linux.arm.Checked/x64/crossgen
+#  --il_corelib artifacts/bin/coreclr/linux.arm.Checked/IL/System.Private.CoreLib.dll
 #  --dotnet_sdk dotnet-sdk-latest-linux-arm.tar.gz
-#  --result_dir Linux.x64_arm.Checked
+#  --result_dir linux.x64_arm.Checked
 #
 #  runs Hostx64/arm crossgen on System.Private.CoreLib.dll in artifacts/Product and on
 #  all the assemblies inside dotnet-sdk-latest-linux-arm.tar.gz and stores the
-#  collected information in directory Linux.x64_arm.Checked
+#  collected information in directory linux.x64_arm.Checked
 #
-#  ~/git/coreclr$ ls Linux.x64_arm.Checked | head
+#  ~/git/coreclr$ ls linux.x64_arm.Checked | head
 #   Microsoft.AI.DependencyCollector.dll.json
 #   Microsoft.ApplicationInsights.AspNetCore.dll.json
 #   Microsoft.ApplicationInsights.dll.json
@@ -83,8 +83,8 @@
 # The following command
 #
 #  ~/git/coreclr$ python -u tests/scripts/crossgen_comparison.py compare
-#  --base_dir Linux.x64_arm.Checked
-#  --diff_dir Linux.x86_arm.Checked
+#  --base_dir linux.x64_arm.Checked
+#  --diff_dir linux.x86_arm.Checked
 #
 # compares the results of Hostx64/arm crossgen and Hostx86/arm crossgen.
 ################################################################################
@@ -351,7 +351,6 @@ g_Framework_Assemblies = [
     'System.DirectoryServices.dll',
     'System.DirectoryServices.Protocols.dll',
     'System.dll',
-    'System.Drawing.Common.dll',
     'System.Drawing.dll',
     'System.Drawing.Primitives.dll',
     'System.Dynamic.Runtime.dll',
@@ -529,6 +528,9 @@ class CrossGenRunner:
         args.append('-r')
         args.append('"' + platform_assemblies_paths + self.platform_directory_sep + '*.dll"' )
         args.append('-O')
+        args.append('--determinism-stress')
+        args.append('6')
+        args.append('--map')
         args.append('--out')
         args.append(ni_filename)
         args.append('--targetos ')
@@ -719,6 +721,7 @@ def add_ni_extension(filename):
 
 def crossgen_framework(args):
     ni_files_dirname, debugging_files_dirname = create_output_folders()
+    ni_files_dirname = args.result_dirname
 
     async def run_crossgen_helper(print_prefix, assembly_name):
         global g_frameworkcompile_failed
@@ -736,7 +739,6 @@ def crossgen_framework(args):
     helper = AsyncSubprocessHelper(g_Framework_Assemblies, verbose=True)
     helper.run_to_completion(run_crossgen_helper)
 
-    shutil.rmtree(ni_files_dirname, ignore_errors=True)
     if g_frameworkcompile_failed:
         sys.exit(1)
 
@@ -954,7 +956,7 @@ def compare_results(args):
 
             base_result_string = json.dumps(base_result, cls=CrossGenResultEncoder, indent=2)
             diff_result_string = json.dumps(diff_result, cls=CrossGenResultEncoder, indent=2)
-            message = 'Expected {0} got {1}'.format(base_result_string, diff_result_string)
+            message = 'Expected {0} got {1} Attached to this helix job will be the binary produced during the helix run and you can find the binary to compare to in the artifacts for the pipeline.'.format(base_result_string, diff_result_string)
             testresult = root.createElement('test')
             testresult.setAttribute('name', 'CrossgenCompile_{3}_Target_{0}_{1}_vs_{2}'.format(args.target_arch_os, base_result.compiler_arch_os, diff_result.compiler_arch_os, assembly_name))
             testresult.setAttribute('type', 'Target_{0}'.format(args.target_arch_os))

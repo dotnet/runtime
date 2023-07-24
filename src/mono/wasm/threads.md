@@ -1,12 +1,13 @@
 # Threaded runtime #
 
-## Building ##
+## Building the runtime ##
 
-Build with `/p:WasmEnableThreads=true` to enable support for multi-threading.
+Build the runtime with `/p:MonoWasmBuildVariant=multithread` to enable support for multi-threading.
 
-Build with `/p:WasmEnablePerfTracing=true` to enable support for EventPipe diagnostics - this enabled threading, but only for "internal" utility threads.  User code is not allowed to start threads.
+## Building sample apps ##
 
-Do not combine these options, just turn on one or the other.
+Sample apps use the "public" properties `WasmEnableThreads` to enable the relevant functionality.
+This also works with released versions of .NET 7 or later and the `wasmbrowser` template.
 
 ## Libraries feature defines ##
 
@@ -50,10 +51,6 @@ In `src/mono/mono` and `src/mono/wasm` `DISABLE_THREADS` is defined for single-t
 as mono's existing `-DENABLE_MINIMAL=threads` option).  In multi-threaded builds, `DISABLE_THREADS`
 is _not_ defined.
 
-For `WasmEnablePerfTracing`, `DISABLE_THREADS` is undefined (ie threading is enabled), but starting
-user threads is not supported and `DISABLE_WASM_USER_THREADS` is defined (ie there is a
-`-DENABLE_MINIMAL=wasm-user-threads` option)
-
 Additionally, `__EMSCRIPTEN_THREADS__` is defined by emscripten if threading is enabled.
 
 ## Browser thread, main thread ##
@@ -73,8 +70,22 @@ Mono exposes these functions as `mono_threads_wasm_async_run_in_main_thread`, et
 
 ## Background tasks ##
 
-The runtime has a number of tasks that are scheduled with `mono_threads_schedule_background_job`
+The runtime has a number of tasks that are scheduled with `mono_main_thread_schedule_background_job`
 (pumping the threadpool task queue, running GC finalizers, etc).
 
-The background tasks will run on the main thread.  Calling `mono_threads_schedule_background_job` on
+The background tasks will run on the main thread.  Calling `mono_main_thread_schedule_background_job` on
 a worker thread will use `async_run_in_main_thread` to queue up work for the main thread.
+
+## Debugger tests ##
+
+To run the debugger tests in the runtime [built with enabled support for multi-threading](#building-the-runtime) we use:
+```
+dotnet test src/mono/wasm/debugger/DebuggerTestSuite -e RuntimeConfiguration=Debug -e Configuration=Debug -e DebuggerHost=chrome -e WasmEnableThreads=true -e WASM_TESTS_USING_VARIANT=multithreaded
+```
+
+## JS interop on dedicated threads ##
+FIXME: better documentation, better public API.
+The JavaScript objects have thread (web worker) affinity. You can't use DOM, WebSocket or their promises on any other web worker than the original one.
+Therefore we have JSSynchronizationContext which is helping the user code to stay on that thread. Instead of finishing the `await` continuation on any threadpool thread.
+Because browser events (for example incoming web socket message) could be fired after any synchronous code of the thread finished, we have to treat threads (web workers) which want to do JS interop as un-managed resource. It's lifetime should be managed by the user.
+As we are prototyping it, we have [WebWorker](..\..\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\WebWorker.cs) as tentative API which should be used to start such dedicated threads.

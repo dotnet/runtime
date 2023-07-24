@@ -85,10 +85,7 @@ namespace System.Formats.Tar
 
         protected void ThrowIfDisposed()
         {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString(), SR.IO_StreamDisposed);
-            }
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
         private void ThrowIfBeyondEndOfStream()

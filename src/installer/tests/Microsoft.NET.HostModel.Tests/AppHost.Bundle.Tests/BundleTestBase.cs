@@ -19,11 +19,8 @@ namespace AppHost.Bundle.Tests
         // removing them requires deps.json update.
         public static string UseSingleFileSelfContainedHost(TestProjectFixture testFixture)
         {
-            var singleFileHost = Path.Combine(
-                testFixture.RepoDirProvider.HostArtifacts,
-                RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("singlefilehost"));
             var publishedHostPath = BundleHelper.GetHostPath(testFixture);
-            HostWriter.CreateAppHost(singleFileHost,
+            HostWriter.CreateAppHost(Binaries.SingleFileHost.FilePath,
                                      publishedHostPath,
                                      BundleHelper.GetAppName(testFixture));
             return publishedHostPath;
@@ -31,11 +28,8 @@ namespace AppHost.Bundle.Tests
 
         public static string UseFrameworkDependentHost(TestProjectFixture testFixture)
         {
-            var appHost = Path.Combine(
-                testFixture.RepoDirProvider.HostArtifacts,
-                RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost"));
             var publishedHostPath = BundleHelper.GetHostPath(testFixture);
-            HostWriter.CreateAppHost(appHost,
+            HostWriter.CreateAppHost(Binaries.AppHost.FilePath,
                                      publishedHostPath,
                                      BundleHelper.GetAppName(testFixture));
             return publishedHostPath;
@@ -83,6 +77,7 @@ namespace AppHost.Bundle.Tests
                 testFixture
                     .EnsureRestoredForRid(testFixture.CurrentRid)
                     .PublishProject(runtime: testFixture.CurrentRid,
+                                    selfContained: true,
                                     outputDirectory: BundleHelper.GetPublishPath(testFixture),
                                     extraArgs: extraArgs);
 

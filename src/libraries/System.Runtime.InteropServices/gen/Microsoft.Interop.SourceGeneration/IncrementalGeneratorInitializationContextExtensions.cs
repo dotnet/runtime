@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
@@ -14,12 +16,38 @@ namespace Microsoft.Interop
     {
         public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)
         {
-            return context.CompilationProvider.Select(static (comp, ct) => comp.CreateStubEnvironment());
+            var tfmVersion = context.AnalyzerConfigOptionsProvider
+                .Select((options, ct) => options.GlobalOptions.GetTargetFrameworkSettings());
+
+            var isModuleSkipLocalsInit = context.SyntaxProvider
+                .ForAttributeWithMetadataName(
+                    TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata,
+                    (node, ct) => node is ICompilationUnitSyntax,
+                    // If SkipLocalsInit is applied at the top level, it is either applied to the module
+                    // or is invalid syntax. As a result, we just need to know if there's any top-level
+                    // SkipLocalsInit attributes. So the result we return here is meaningless.
+                    (context, ct) => true)
+                .Collect()
+                .Select((topLevelAttrs, ct) => !topLevelAttrs.IsEmpty);
+
+            return tfmVersion
+                .Combine(isModuleSkipLocalsInit)
+                .Combine(context.CompilationProvider)
+                .Select((data, ct) =>
+                    new StubEnvironment(data.Right, data.Left.Left.TargetFramework, data.Left.Left.Version, data.Left.Right));
+        }
+
+        public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<DiagnosticInfo> diagnostics)
+        {
+            context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
+            {
+                context.ReportDiagnostic(diagnostic.ToDiagnostic());
+            });
         }
 
         public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)
         {
-            context.RegisterSourceOutput(diagnostics, (context, diagnostic) =>
+            context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
             {
                 context.ReportDiagnostic(diagnostic);
             });

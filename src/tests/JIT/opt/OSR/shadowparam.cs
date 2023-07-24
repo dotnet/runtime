@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // F is an OSR method with parameter shadowing
 
@@ -28,7 +29,8 @@ public unsafe struct ShadowParam
         return x + y + u.a + u.b + sb.Length - sa.Length;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var u = new ShadowParam();
         u.data[0] = 1;

@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class P
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[,] x = new int[5, 5];
         for (int i = 0; i < 5; ++i)

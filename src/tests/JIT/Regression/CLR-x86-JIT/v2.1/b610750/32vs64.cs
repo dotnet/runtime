@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class RandomTwister64
 {
@@ -73,7 +74,8 @@ public class RandomTwister64
 
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i;
         int countZero = 0;

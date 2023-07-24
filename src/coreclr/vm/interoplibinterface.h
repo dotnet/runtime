@@ -48,6 +48,14 @@ extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
     _Out_ void** fpAddRef,
     _Out_ void** fpRelease);
 
+extern "C" BOOL QCALLTYPE ComWrappers_TryGetComInstance(
+    _In_ QCall::ObjectHandleOnStack wrapperMaybe,
+    _Out_ void** externalComObject);
+
+extern "C" BOOL QCALLTYPE ComWrappers_TryGetObject(
+    _In_ void* wrapperMaybe,
+    _Inout_ QCall::ObjectHandleOnStack instance);
+
 extern "C" BOOL QCALLTYPE ComWrappers_TryGetOrCreateComInterfaceForObject(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ INT64 wrapperId,
@@ -63,6 +71,7 @@ extern "C" BOOL QCALLTYPE ComWrappers_TryGetOrCreateObjectForComInstance(
     _In_ INT32 flags,
     _In_ QCall::ObjectHandleOnStack wrapperMaybe,
     _Inout_ QCall::ObjectHandleOnStack retValue);
+
 // Native QCall for the ComWrappers managed type to indicate a global instance
 // is registered for marshalling. This should be set if the private static member
 // representing the global instance for marshalling on ComWrappers is non-null.

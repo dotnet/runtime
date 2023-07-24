@@ -19,14 +19,12 @@ namespace System.Collections.Immutable.Tests
         {
             Requires.NotNull(dictionary, nameof(dictionary));
 
-            var hashDictionary = dictionary as ImmutableDictionary<TKey, TValue>;
-            if (hashDictionary != null)
+            if (dictionary is ImmutableDictionary<TKey, TValue> hashDictionary)
             {
                 return hashDictionary.ToBuilder();
             }
 
-            var sortedDictionary = dictionary as ImmutableSortedDictionary<TKey, TValue>;
-            if (sortedDictionary != null)
+            if (dictionary is ImmutableSortedDictionary<TKey, TValue> sortedDictionary)
             {
                 return sortedDictionary.ToBuilder();
             }

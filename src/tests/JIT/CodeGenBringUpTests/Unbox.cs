@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class BringUpTest_Unbox
 {
@@ -17,7 +18,8 @@ public class BringUpTest_Unbox
         return (int)o;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int r = 3;
         object o = r;

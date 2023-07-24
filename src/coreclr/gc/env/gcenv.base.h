@@ -86,6 +86,7 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT    0x8013200B
 #define CLR_E_GC_BAD_HARD_LIMIT                0x8013200D
 #define CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT 0x8013200E
+#define CLR_E_GC_BAD_REGION_SIZE               0x8013200F
 
 #define NOERROR                 0x0
 #define ERROR_TIMEOUT           1460
@@ -120,12 +121,8 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #endif
 
 #ifdef UNICODE
-#define _tcslen wcslen
-#define _tcscpy wcscpy
 #define _tfopen _wfopen
 #else
-#define _tcslen strlen
-#define _tcscpy strcpy
 #define _tfopen fopen
 #endif
 
@@ -224,6 +221,11 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define YieldProcessor() __asm__ volatile( "dbar 0; \n")
  #define MemoryBarrier __sync_synchronize
 #endif // __loongarch64
+
+#ifdef __riscv
+ #define YieldProcessor() asm volatile( ".word 0x0100000f");
+ #define MemoryBarrier __sync_synchronize
+#endif // __riscv
 
 #endif // _MSC_VER
 
@@ -402,7 +404,7 @@ typedef struct _PROCESSOR_NUMBER {
 
 // -----------------------------------------------------------------------------------------------------------
 //
-// The subset of the contract code required by the GC/HandleTable sources. If Redhawk moves to support
+// The subset of the contract code required by the GC/HandleTable sources. If NativeAOT moves to support
 // contracts these local definitions will disappear and be replaced by real implementations.
 //
 
@@ -484,8 +486,6 @@ class MethodTable;
 class Object;
 class ArrayBase;
 
-// Various types used to refer to object references or handles. This will get more complex if we decide
-// Redhawk wants to wrap object references in the debug build.
 typedef DPTR(Object) PTR_Object;
 typedef DPTR(PTR_Object) PTR_PTR_Object;
 

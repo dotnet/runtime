@@ -7,15 +7,18 @@
 // skipping SSA (and dependent optimizations). This pass is disabled in the project file by setting JitDoSsa to 0
 // before running the test.
 
-struct S
+using Xunit;
+
+public struct S
 {
     long m_fld;
     int m_a, m_b, m_c, m_d;
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         S s;
-        s.m_fld = (long)args.Length;
+        s.m_fld = 0;
         return 100;
     }
 }

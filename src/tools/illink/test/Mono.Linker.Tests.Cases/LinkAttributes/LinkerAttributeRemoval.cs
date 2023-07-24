@@ -126,7 +126,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 			"LinkerAttributeRemovalEmbeddedAndLazyLoad")]
 		static void TestEmbeddedAttributeLazyLoadRemoved ()
 		{
-			// This needs the DynamicDependency above otherwise linker will not load the assembly at all
+			// This needs the DynamicDependency above otherwise ILLink will not load the assembly at all
 			Activator.CreateInstance (Type.GetType ("Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TypeWithEmbeddedAttributeToBeRemoved, LinkerAttributeRemovalEmbeddedAndLazyLoad"));
 		}
 

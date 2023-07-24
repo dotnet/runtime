@@ -10,7 +10,7 @@ namespace System.Data.ProviderBase
 {
     internal class DbMetaDataFactory
     {
-        private DataSet _metaDataCollectionsDataSet;
+        private readonly DataSet _metaDataCollectionsDataSet;
         private string _normalizedServerVersion;
         private string _serverVersionString;
         // well known column names

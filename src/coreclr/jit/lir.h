@@ -74,7 +74,7 @@ public:
         bool IsDummyUse() const;
 
         void ReplaceWith(GenTree* replacement);
-        unsigned ReplaceWithLclVar(Compiler* compiler, unsigned lclNum = BAD_VAR_NUM, GenTree** assign = nullptr);
+        unsigned ReplaceWithLclVar(Compiler* compiler, unsigned lclNum = BAD_VAR_NUM, GenTree** pStore = nullptr);
     };
 
     //------------------------------------------------------------------------
@@ -220,6 +220,8 @@ public:
 #ifdef DEBUG
         bool Contains(GenTree* node) const;
 #endif
+
+        ReadOnlyRange& operator=(ReadOnlyRange&& other);
     };
 
     //------------------------------------------------------------------------
@@ -246,6 +248,7 @@ public:
         Range(const Range& other) = delete;
         Range& operator=(const Range& other) = delete;
 
+        template <bool markFlagsOperands = false>
         ReadOnlyRange GetMarkedRange(unsigned markCount, GenTree* start, bool* isClosed, unsigned* sideEffects) const;
 
         void FinishInsertBefore(GenTree* insertionPoint, GenTree* first, GenTree* last);
@@ -289,6 +292,9 @@ public:
 
         ReadOnlyRange GetTreeRange(GenTree* root, bool* isClosed) const;
         ReadOnlyRange GetTreeRange(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
+#ifdef DEBUG
+        ReadOnlyRange GetTreeRangeWithFlags(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
+#endif
         ReadOnlyRange GetRangeOfOperandTrees(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
 
 #ifdef DEBUG
@@ -335,6 +341,47 @@ inline void GenTree::ClearRegOptional()
 inline bool GenTree::IsRegOptional() const
 {
     return (gtLIRFlags & LIR::Flags::RegOptional) != 0;
+}
+
+template <typename T, T* T::*prev, T* T::*next>
+static void CheckDoublyLinkedList(T* first)
+{
+    // (1) ensure there are no circularities, (2) ensure the prev list is
+    // precisely the inverse of the gtNext list.
+    //
+    // To detect circularity, use the "tortoise and hare" 2-pointer algorithm.
+
+    if (first == nullptr)
+    {
+        return;
+    }
+
+    GenTree* slowNode = first;
+    assert(slowNode != nullptr);
+    GenTree* fastNode1    = nullptr;
+    GenTree* fastNode2    = slowNode;
+    GenTree* prevSlowNode = nullptr;
+    while (((fastNode1 = fastNode2->*next) != nullptr) && ((fastNode2 = fastNode1->*next) != nullptr))
+    {
+        if ((slowNode == fastNode1) || (slowNode == fastNode2))
+        {
+            assert(!"Circularity detected");
+        }
+        assert(slowNode->*prev == prevSlowNode && "Invalid prev link");
+        prevSlowNode = slowNode;
+        slowNode     = slowNode->*next;
+        assert(slowNode != nullptr); // the fastNodes would have gone null first.
+    }
+    // If we get here, the list had no circularities, so either fastNode1 or fastNode2 must be nullptr.
+    assert((fastNode1 == nullptr) || (fastNode2 == nullptr));
+
+    // Need to check the rest of the gtPrev links.
+    while (slowNode != nullptr)
+    {
+        assert(slowNode->*prev == prevSlowNode && "Invalid prev link");
+        prevSlowNode = slowNode;
+        slowNode     = slowNode->*next;
+    }
 }
 
 #endif // _LIR_H_

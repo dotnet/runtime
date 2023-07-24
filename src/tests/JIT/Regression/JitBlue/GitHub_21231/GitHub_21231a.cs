@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Test case for https://github.com/dotnet/coreclr/issues/21231
 //
@@ -29,7 +30,8 @@ struct S1
 
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var vr22 = new S1[]{new S1(new S0(1))};
         S1 vr26;

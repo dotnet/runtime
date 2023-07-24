@@ -41,11 +41,11 @@ namespace System.Net
         private ManualResetEvent? _handle;
         private bool _synch;
         private bool _completed;
-        private AsyncCallback? _cb;
-        private object? _state;
+        private readonly AsyncCallback? _cb;
+        private readonly object? _state;
         private Exception? _exception;
         private HttpListenerContext? _context;
-        private object _locker = new object();
+        private readonly object _locker = new object();
         private ListenerAsyncResult? _forward;
         internal readonly HttpListener _parent;
         internal bool _endCalled;
@@ -78,8 +78,8 @@ namespace System.Net
             }
         }
 
-        private static WaitCallback s_invokeCB = new WaitCallback(InvokeCallback!);
-        private static void InvokeCallback(object o)
+        private static readonly WaitCallback s_invokeCB = InvokeCallback;
+        private static void InvokeCallback(object? o)
         {
             ListenerAsyncResult ares = (ListenerAsyncResult)o!;
             if (ares._forward != null)

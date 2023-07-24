@@ -30,7 +30,15 @@ namespace System.Diagnostics
         {
             const int SystemDiagnosticsStackDepth = 3;
 
-            if (skipFrames + SystemDiagnosticsStackDepth < 0 || !get_frame_info(skipFrames + SystemDiagnosticsStackDepth, needFileInfo, out MethodBase? method, out int ilOffset, out int nativeOffset, out string? fileName, out int line, out int column))
+            if (skipFrames + SystemDiagnosticsStackDepth < 0)
+                return;
+
+            MethodBase? method = null;
+            string? fileName = null;
+            bool success = GetFrameInfo(skipFrames + SystemDiagnosticsStackDepth, needFileInfo,
+                                        ObjectHandleOnStack.Create (ref method), ObjectHandleOnStack.Create (ref fileName),
+                                        out int ilOffset, out int nativeOffset, out int line, out int column);
+            if (!success)
                 return;
 
             _method = method;
@@ -50,8 +58,8 @@ namespace System.Diagnostics
 #pragma warning restore IDE0060
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool get_frame_info(int skipFrames, bool needFileInfo,
-            out MethodBase method, out int ilOffset, out int nativeOffset, out string file, out int line, out int column);
-
+        private static extern bool GetFrameInfo(int skipFrames, bool needFileInfo,
+                                                ObjectHandleOnStack out_method, ObjectHandleOnStack out_file,
+                                                out int ilOffset, out int nativeOffset, out int line, out int column);
     }
 }

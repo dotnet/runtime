@@ -874,7 +874,7 @@ namespace System.IO.Ports
 
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
-            WaitHandle wh = afsar._waitHandle;
+            ManualResetEvent wh = afsar._waitHandle;
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
@@ -952,7 +952,7 @@ namespace System.IO.Ports
 
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
-            WaitHandle wh = afsar._waitHandle;
+            ManualResetEvent wh = afsar._waitHandle;
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,

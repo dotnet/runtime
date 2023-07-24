@@ -47,7 +47,7 @@ namespace System
             }
 
             // If an enum or integer value is passed in
-            if (Type.IsIntegerType(valueType))
+            if (IsIntegerType(valueType))
             {
                 Type underlyingType = GetEnumUnderlyingType();
                 // We cannot compare the types directly because valueType is always a runtime type but underlyingType might not be.
@@ -72,7 +72,7 @@ namespace System
 
             Type valueType = value.GetType();
 
-            if (!(valueType.IsEnum || Type.IsIntegerType(valueType)))
+            if (!(valueType.IsEnum || IsIntegerType(valueType)))
                 throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
 
             Array values = GetEnumRawConstantValues();
@@ -174,8 +174,7 @@ namespace System
                     t == typeof(uint) ||
                     t == typeof(long) ||
                     t == typeof(ulong) ||
-                    t == typeof(char) ||
-                    t == typeof(bool);
+                    t == typeof(char);
         }
     }
 }

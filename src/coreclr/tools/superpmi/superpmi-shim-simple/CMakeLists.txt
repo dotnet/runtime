@@ -49,14 +49,18 @@ target_precompile_headers(superpmi-shim-simple PRIVATE "$<$<COMPILE_LANGUAGE:CXX
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-simple
+        PRIVATE
         utilcodestaticnohost
         mscorrc
         coreclrpal
         palrt
+        coreclrminipal
     )
 else()
     target_link_libraries(superpmi-shim-simple
+        PRIVATE
         advapi32.lib
+        coreclrminipal
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_CPP_LIB}
     )

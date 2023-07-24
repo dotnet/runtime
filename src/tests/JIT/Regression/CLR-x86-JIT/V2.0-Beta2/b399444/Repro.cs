@@ -4,12 +4,14 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Tests
 {
     public class Test
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if ((TestManyFields() == 100)
                 && (TestManyFieldsPlusOne() == 100))
@@ -54,13 +56,13 @@ namespace Tests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void TestLdManyFields()
+        internal static void TestLdManyFields()
         {
             object o = Activator.CreateInstance(typeof(ManyFields));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void TestLdManyFieldsPlusOne()
+        internal static void TestLdManyFieldsPlusOne()
         {
             object o = Activator.CreateInstance(typeof(ManyFieldsPlusOne));
         }

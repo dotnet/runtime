@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -32,15 +31,35 @@ namespace ILCompiler
 
     public partial class ReadyToRunCompilerContext : CompilerTypeSystemContext
     {
+        // Depth cutoff specifies the number of repetitions of a particular generic type within a type instantiation
+        // to trigger marking the type as potentially cyclic. Considering a generic type CyclicType`1<T> marked as
+        // cyclic by the initial module analysis, for instance CyclicType`1<CyclicType`1<CyclicType`1<__Canon>>> has "depth 3"
+        // so it will be cut off by specifying anything less than or equal to three.
+        public const int DefaultGenericCycleDepthCutoff = 4;
+
+        // Breadth cutoff specifies the minimum total number of generic types identified as potentially cyclic
+        // that must appear within a type instantiation to mark it as potentially cyclic. Considering generic types
+        // CyclicA`1, CyclicB`1 and CyclicC`1 marked as cyclic by the initial module analysis, a hypothetical type
+        // SomeType`3<CyclicA`1<__Canon>, List`1<CyclicB`1<__Canon>>, IEnumerable`1<HashSet`1<CyclicC`1<__Canon>>>>
+        // will have "breadth 3" and will be cut off by specifying anything less than or equal to three.
+        public const int DefaultGenericCycleBreadthCutoff = 2;
+
         private ReadyToRunMetadataFieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
+        private RuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
 
-        public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode, bool bubbleIncludesCorelib, CompilerTypeSystemContext oldTypeSystemContext = null)
+        public ReadyToRunCompilerContext(
+            TargetDetails details,
+            SharedGenericsMode genericsMode,
+            bool bubbleIncludesCorelib,
+            InstructionSetSupport instructionSetSupport,
+            CompilerTypeSystemContext oldTypeSystemContext)
             : base(details, genericsMode)
         {
+            InstructionSetSupport = instructionSetSupport;
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
@@ -52,6 +71,8 @@ namespace ILCompiler
                 matchingVectorType = "Vector128`1";
             else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector256Bit)
                 matchingVectorType = "Vector256`1";
+            else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector512Bit)
+                matchingVectorType = "Vector512`1";
 
             // No architecture has completely stable handling of Vector<T> in the abi (Arm64 may change to SVE)
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType, bubbleIncludesCorelib);
@@ -64,6 +85,8 @@ namespace ILCompiler
                 InheritOpenModules(oldTypeSystemContext);
             }
         }
+
+        public InstructionSetSupport InstructionSetSupport { get; }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
@@ -135,7 +158,11 @@ namespace ILCompiler
         /// </summary>
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
-            return BaseTypeRuntimeInterfacesAlgorithm.Instance;
+            if (_arrayOfTRuntimeInterfacesAlgorithm == null)
+            {
+                _arrayOfTRuntimeInterfacesAlgorithm = new SimpleArrayOfTRuntimeInterfacesAlgorithm(SystemModule);
+            }
+            return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 
         TypeDesc _asyncStateMachineBox;
@@ -153,6 +180,9 @@ namespace ILCompiler
                 return _asyncStateMachineBox;
             }
         }
+
+        public override bool SupportsTypeEquivalence => Target.IsWindows;
+        public override bool SupportsCOMInterop => Target.IsWindows;
     }
 
     internal class VectorOfTFieldLayoutAlgorithm : FieldLayoutAlgorithm
@@ -215,6 +245,7 @@ namespace ILCompiler
                     ByteCountAlignment = LayoutInt.Indeterminate,
                     Offsets = fieldsAndOffsets.ToArray(),
                     LayoutAbiStable = false,
+                    IsVectorTOrHasVectorTFields = true,
                 };
                 return instanceLayout;
             }
@@ -233,6 +264,7 @@ namespace ILCompiler
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
                     LayoutAbiStable = _vectorAbiIsStable,
+                    IsVectorTOrHasVectorTFields = true,
                 };
 #else
                 return new ComputedInstanceFieldLayout
@@ -243,6 +275,7 @@ namespace ILCompiler
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
                     LayoutAbiStable = _vectorAbiIsStable,
+                    IsVectorTOrHasVectorTFields = true,
                 };
 #endif
             }

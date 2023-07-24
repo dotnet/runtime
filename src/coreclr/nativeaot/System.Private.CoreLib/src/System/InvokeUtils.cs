@@ -106,7 +106,7 @@ namespace System
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            if (dstEEType.IsPointer)
+            if (dstEEType.IsPointer || dstEEType.IsFunctionPointer)
             {
                 Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out object dstPtr);
                 if (exception != null)
@@ -134,8 +134,7 @@ namespace System
             switch (dstCorElementType)
             {
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    bool boolValue = Convert.ToBoolean(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, boolValue ? 1 : 0) : boolValue;
+                    dstObject = Convert.ToBoolean(srcObject);
                     break;
 
                 case CorElementType.ELEMENT_TYPE_CHAR:

@@ -48,7 +48,7 @@ namespace System.Runtime.CompilerServices
         /// </param>
         /// <returns>Returns "true" if key was found, "false" otherwise.</returns>
         /// <remarks>
-        /// The key may get garbaged collected during the TryGetValue operation. If so, TryGetValue
+        /// The key may get garbage collected during the TryGetValue operation. If so, TryGetValue
         /// may at its discretion, return "false" and set "value" to the default (as if the key was not present.)
         /// </remarks>
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
@@ -258,7 +258,7 @@ namespace System.Runtime.CompilerServices
             {
                 Container c = _container;
                 return c is null || c.FirstFreeEntry == 0 ?
-                    ((IEnumerable<KeyValuePair<TKey, TValue>>)Array.Empty<KeyValuePair<TKey, TValue>>()).GetEnumerator() :
+                    GenericEmptyEnumerator<KeyValuePair<TKey, TValue>>.Instance :
                     new Enumerator(this);
             }
         }
@@ -538,7 +538,17 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(key != null); // Key already validated as non-null.
 
-                int hashCode = RuntimeHelpers.GetHashCode(key) & int.MaxValue;
+                int hashCode = RuntimeHelpers.TryGetHashCode(key);
+
+                if (hashCode == 0)
+                {
+                    // No hash code has been assigned to the key, so therefore it has not been added
+                    // to any ConditionalWeakTable.
+                    value = null;
+                    return -1;
+                }
+
+                hashCode &= int.MaxValue;
                 int bucket = hashCode & (_buckets.Length - 1);
                 for (int entriesIndex = Volatile.Read(ref _buckets[bucket]); entriesIndex != -1; entriesIndex = _entries[entriesIndex].Next)
                 {

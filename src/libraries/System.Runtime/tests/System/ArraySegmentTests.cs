@@ -24,6 +24,7 @@ namespace System.Tests
             return Factory(count * 2, count / 2, count);
         }
 
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override bool Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
         protected override bool IsReadOnly_ValidityValue => true;
@@ -78,7 +79,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Ctor_Invalid()
+        public void Ctor_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("array", () => new ArraySegment<T>(null));
             AssertExtensions.Throws<ArgumentNullException>("array", () => new ArraySegment<T>(null, -1, 1));

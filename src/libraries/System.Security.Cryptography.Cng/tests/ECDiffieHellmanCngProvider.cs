@@ -35,6 +35,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         public bool CanDeriveNewPublicKey => true;
+        public bool SupportsRawDerivation => PlatformDetection.IsWindows10OrLater;
+        public bool SupportsSha3 => PlatformDetection.SupportsSha3;
 
         private static bool NativeOidFriendlyNameExists(string oidFriendlyName)
         {

@@ -1,6 +1,15 @@
+include(CheckCXXSourceCompiles)
+include(CheckCXXSourceRuns)
+include(CheckCXXSymbolExists)
+include(CheckFunctionExists)
+include(CheckPrototypeDefinition)
+include(CheckIncludeFiles)
+include(CheckStructHasMember)
+include(CheckTypeSize)
+include(CheckLibraryExists)
+
 check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(sys/mman.h HAVE_SYS_MMAN_H)
-check_include_files(numa.h HAVE_NUMA_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)

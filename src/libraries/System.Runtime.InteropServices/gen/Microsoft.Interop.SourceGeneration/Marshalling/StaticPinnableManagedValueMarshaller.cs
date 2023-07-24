@@ -62,11 +62,6 @@ namespace Microsoft.Interop
             return _innerMarshallingGenerator.Generate(info, context);
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
-        {
-            return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context);
-        }
-
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             if (IsPinningPathSupported(info, context))
@@ -78,7 +73,7 @@ namespace Microsoft.Interop
         }
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
-            return context.SingleFrameSpansNativeContext && !info.IsByRef && !info.IsManagedReturnPosition;
+            return context.SingleFrameSpansNativeContext && !info.IsByRef && !context.IsInStubReturnPosition(info);
         }
 
         private IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)
@@ -106,6 +101,19 @@ namespace Microsoft.Interop
                     ),
                     EmptyStatement());
             }
+        }
+
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+        {
+            if (marshalKind is ByValueContentsMarshalKind.In)
+            {
+                diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
+                {
+                    NotSupportedDetails = SR.InAttributeOnlyNotSupportedOnPinnedParameters
+                };
+                return ByValueMarshalKindSupport.NotSupported;
+            }
+            return ByValueMarshalKindSupportDescriptor.PinnedParameter.GetSupport(marshalKind, info, context, out diagnostic);
         }
     }
 }

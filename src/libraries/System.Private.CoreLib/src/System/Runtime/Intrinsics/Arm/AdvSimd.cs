@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.Arm
@@ -51,25 +52,25 @@ namespace System.Runtime.Intrinsics.Arm
         //     /// float32x2_t vmla_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
         //     ///   A32: VMLA.F32 Dd, Dn, Dm[lane]
         //     /// </summary>
-        //     public static Vector64<float> MultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        //     public static Vector64<float> MultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
         //
         //     /// <summary>
         //     /// float32x2_t vmla_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
         //     ///   A32: VMLA.F32 Dd, Dn, Dm[lane]
         //     /// </summary>
-        //     public static Vector64<float> MultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        //     public static Vector64<float> MultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
         //
         //     /// <summary>
         //     /// float32x4_t vmlaq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
         //     ///   A32: VMLA.F32 Qd, Qn, Dm[lane]
         //     /// </summary>
-        //     public static Vector128<float> MultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        //     public static Vector128<float> MultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
         //
         //     /// <summary>
         //     /// float32x4_t vmlaq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
         //     ///   A32: VMLA.F32 Qd, Qn, Dm[lane]
         //     /// </summary>
-        //     public static Vector128<float> MultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector128<float> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        //     public static Vector128<float> MultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
         //
         //     /// <summary>
         //     /// float64x1_t vmla_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
@@ -112,25 +113,25 @@ namespace System.Runtime.Intrinsics.Arm
         //     /// float32x2_t vmls_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
         //     ///   A32: VMLS.F32 Dd, Dn, Dm[lane]
         //     /// </summary>
-        //     public static Vector64<float> MultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        //     public static Vector64<float> MultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
         //
         //     /// <summary>
         //     /// float32x2_t vmls_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
         //     ///   A32: VMLS.F32 Dd, Dn, Dm[lane]
         //     /// </summary>
-        //     public static Vector64<float> MultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        //     public static Vector64<float> MultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
         //
         //     /// <summary>
         //     /// float32x4_t vmlsq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
         //     ///   A32: VMLS.F32 Qd, Qn, Dm[lane]
         //     /// </summary>
-        //     public static Vector128<float> MultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        //     public static Vector128<float> MultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
         //
         //     /// <summary>
         //     /// float32x4_t vmlsq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
         //     ///   A32: VMLS.F32 Qd, Qn, Dm[lane]
         //     /// </summary>
-        //     public static Vector128<float> MultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector128<float> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        //     public static Vector128<float> MultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
         //
         //     /// <summary>
         //     /// float64x1_t vmls_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
@@ -1125,19 +1126,19 @@ namespace System.Runtime.Intrinsics.Arm
             /// float64x2_t vdupq_laneq_f64 (float64x2_t vec, const int lane)
             ///   A64: DUP Vd.2D, Vn.D[index]
             /// </summary>
-            public static Vector128<double> DuplicateSelectedScalarToVector128(Vector128<double> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
+            public static Vector128<double> DuplicateSelectedScalarToVector128(Vector128<double> value, [ConstantExpected(Max = (byte)(1))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
             /// <summary>
             /// int64x2_t vdupq_laneq_s64 (int64x2_t vec, const int lane)
             ///   A64: DUP Vd.2D, Vn.D[index]
             /// </summary>
-            public static Vector128<long> DuplicateSelectedScalarToVector128(Vector128<long> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
+            public static Vector128<long> DuplicateSelectedScalarToVector128(Vector128<long> value, [ConstantExpected(Max = (byte)(1))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
             /// <summary>
             /// uint64x2_t vdupq_laneq_u64 (uint64x2_t vec, const int lane)
             ///   A64: DUP Vd.2D, Vn.D[index]
             /// </summary>
-            public static Vector128<ulong> DuplicateSelectedScalarToVector128(Vector128<ulong> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
+            public static Vector128<ulong> DuplicateSelectedScalarToVector128(Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
             /// <summary>
             /// float64x2_t vdupq_n_f64 (float64_t value)
@@ -1245,49 +1246,49 @@ namespace System.Runtime.Intrinsics.Arm
             /// float32x2_t vfma_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
             ///   A64: FMLA Vd.2S, Vn.2S, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> FusedMultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+            public static Vector64<float> FusedMultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
             /// <summary>
             /// float32x2_t vfma_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
             ///   A64: FMLA Vd.2S, Vn.2S, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> FusedMultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+            public static Vector64<float> FusedMultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
             /// <summary>
             /// float64x2_t vfmaq_laneq_f64 (float64x2_t a, float64x2_t b, float64x2_t v, const int lane)
             ///   A64: FMLA Vd.2D, Vn.2D, Vm.D[lane]
             /// </summary>
-            public static Vector128<double> FusedMultiplyAddBySelectedScalar(Vector128<double> addend, Vector128<double> left, Vector128<double> right, byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+            public static Vector128<double> FusedMultiplyAddBySelectedScalar(Vector128<double> addend, Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
             /// <summary>
             /// float32x4_t vfmaq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
             ///   A64: FMLA Vd.4S, Vn.4S, Vm.S[lane]
             /// </summary>
-            public static Vector128<float> FusedMultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+            public static Vector128<float> FusedMultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
             /// <summary>
             /// float32x4_t vfmaq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
             ///   A64: FMLA Vd.4S, Vn.4S, Vm.S[lane]
             /// </summary>
-            public static Vector128<float> FusedMultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+            public static Vector128<float> FusedMultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
             /// <summary>
             /// float64_t vfmad_laneq_f64 (float64_t a, float64_t b, float64x2_t v, const int lane)
             ///   A64: FMLA Dd, Dn, Vm.D[lane]
             /// </summary>
-            public static Vector64<double> FusedMultiplyAddScalarBySelectedScalar(Vector64<double> addend, Vector64<double> left, Vector128<double> right, byte rightIndex) => FusedMultiplyAddScalarBySelectedScalar(addend, left, right, rightIndex);
+            public static Vector64<double> FusedMultiplyAddScalarBySelectedScalar(Vector64<double> addend, Vector64<double> left, Vector128<double> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => FusedMultiplyAddScalarBySelectedScalar(addend, left, right, rightIndex);
 
             /// <summary>
             /// float32_t vfmas_lane_f32 (float32_t a, float32_t b, float32x2_t v, const int lane)
             ///   A64: FMLA Sd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> FusedMultiplyAddScalarBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplyAddScalarBySelectedScalar(addend, left, right, rightIndex);
+            public static Vector64<float> FusedMultiplyAddScalarBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => FusedMultiplyAddScalarBySelectedScalar(addend, left, right, rightIndex);
 
             /// <summary>
             /// float32_t vfmas_laneq_f32 (float32_t a, float32_t b, float32x4_t v, const int lane)
             ///   A64: FMLA Sd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> FusedMultiplyAddScalarBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplyAddScalarBySelectedScalar(addend, left, right, rightIndex);
+            public static Vector64<float> FusedMultiplyAddScalarBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => FusedMultiplyAddScalarBySelectedScalar(addend, left, right, rightIndex);
 
             /// <summary>
             /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
@@ -1317,235 +1318,235 @@ namespace System.Runtime.Intrinsics.Arm
             /// float32x2_t vfms_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
             ///   A64: FMLS Vd.2S, Vn.2S, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> FusedMultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+            public static Vector64<float> FusedMultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
             /// <summary>
             /// float32x2_t vfms_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
             ///   A64: FMLS Vd.2S, Vn.2S, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> FusedMultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+            public static Vector64<float> FusedMultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
             /// <summary>
             /// float64x2_t vfmsq_laneq_f64 (float64x2_t a, float64x2_t b, float64x2_t v, const int lane)
             ///   A64: FMLS Vd.2D, Vn.2D, Vm.D[lane]
             /// </summary>
-            public static Vector128<double> FusedMultiplySubtractBySelectedScalar(Vector128<double> minuend, Vector128<double> left, Vector128<double> right, byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+            public static Vector128<double> FusedMultiplySubtractBySelectedScalar(Vector128<double> minuend, Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
             /// <summary>
             /// float32x4_t vfmsq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
             ///   A64: FMLS Vd.4S, Vn.4S, Vm.S[lane]
             /// </summary>
-            public static Vector128<float> FusedMultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+            public static Vector128<float> FusedMultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
             /// <summary>
             /// float32x4_t vfmsq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
             ///   A64: FMLS Vd.4S, Vn.4S, Vm.S[lane]
             /// </summary>
-            public static Vector128<float> FusedMultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+            public static Vector128<float> FusedMultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
             /// <summary>
             /// float64_t vfmsd_laneq_f64 (float64_t a, float64_t b, float64x2_t v, const int lane)
             ///   A64: FMLS Dd, Dn, Vm.D[lane]
             /// </summary>
-            public static Vector64<double> FusedMultiplySubtractScalarBySelectedScalar(Vector64<double> minuend, Vector64<double> left, Vector128<double> right, byte rightIndex) => FusedMultiplySubtractScalarBySelectedScalar(minuend, left, right, rightIndex);
+            public static Vector64<double> FusedMultiplySubtractScalarBySelectedScalar(Vector64<double> minuend, Vector64<double> left, Vector128<double> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => FusedMultiplySubtractScalarBySelectedScalar(minuend, left, right, rightIndex);
 
             /// <summary>
             /// float32_t vfmss_lane_f32 (float32_t a, float32_t b, float32x2_t v, const int lane)
             ///   A64: FMLS Sd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> FusedMultiplySubtractScalarBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplySubtractScalarBySelectedScalar(minuend, left, right, rightIndex);
+            public static Vector64<float> FusedMultiplySubtractScalarBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => FusedMultiplySubtractScalarBySelectedScalar(minuend, left, right, rightIndex);
 
             /// <summary>
             /// float32_t vfmss_laneq_f32 (float32_t a, float32_t b, float32x4_t v, const int lane)
             ///   A64: FMLS Sd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> FusedMultiplySubtractScalarBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplySubtractScalarBySelectedScalar(minuend, left, right, rightIndex);
+            public static Vector64<float> FusedMultiplySubtractScalarBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => FusedMultiplySubtractScalarBySelectedScalar(minuend, left, right, rightIndex);
 
             /// <summary>
             /// uint8x8_t vcopy_lane_u8 (uint8x8_t a, const int lane1, uint8x8_t b, const int lane2)
             ///   A64: INS Vd.B[lane1], Vn.B[lane2]
             /// </summary>
-            public static Vector64<byte> InsertSelectedScalar(Vector64<byte> result, byte resultIndex, Vector64<byte> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<byte> InsertSelectedScalar(Vector64<byte> result, [ConstantExpected(Max = (byte)(7))] byte resultIndex, Vector64<byte> value, [ConstantExpected(Max = (byte)(7))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint8x8_t vcopy_laneq_u8 (uint8x8_t a, const int lane1, uint8x16_t b, const int lane2)
             ///   A64: INS Vd.B[lane1], Vn.B[lane2]
             /// </summary>
-            public static Vector64<byte> InsertSelectedScalar(Vector64<byte> result, byte resultIndex, Vector128<byte> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<byte> InsertSelectedScalar(Vector64<byte> result, [ConstantExpected(Max = (byte)(7))] byte resultIndex, Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int16x4_t vcopy_lane_s16 (int16x4_t a, const int lane1, int16x4_t b, const int lane2)
             ///   A64: INS Vd.H[lane1], Vn.H[lane2]
             /// </summary>
-            public static Vector64<short> InsertSelectedScalar(Vector64<short> result, byte resultIndex, Vector64<short> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<short> InsertSelectedScalar(Vector64<short> result, [ConstantExpected(Max = (byte)(3))] byte resultIndex, Vector64<short> value, [ConstantExpected(Max = (byte)(3))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int16x4_t vcopy_laneq_s16 (int16x4_t a, const int lane1, int16x8_t b, const int lane2)
             ///   A64: INS Vd.H[lane1], Vn.H[lane2]
             /// </summary>
-            public static Vector64<short> InsertSelectedScalar(Vector64<short> result, byte resultIndex, Vector128<short> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<short> InsertSelectedScalar(Vector64<short> result, [ConstantExpected(Max = (byte)(3))] byte resultIndex, Vector128<short> value, [ConstantExpected(Max = (byte)(7))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int32x2_t vcopy_lane_s32 (int32x2_t a, const int lane1, int32x2_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector64<int> InsertSelectedScalar(Vector64<int> result, byte resultIndex, Vector64<int> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<int> InsertSelectedScalar(Vector64<int> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector64<int> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int32x2_t vcopy_laneq_s32 (int32x2_t a, const int lane1, int32x4_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector64<int> InsertSelectedScalar(Vector64<int> result, byte resultIndex, Vector128<int> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<int> InsertSelectedScalar(Vector64<int> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector128<int> value, [ConstantExpected(Max = (byte)(3))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int8x8_t vcopy_lane_s8 (int8x8_t a, const int lane1, int8x8_t b, const int lane2)
             ///   A64: INS Vd.B[lane1], Vn.B[lane2]
             /// </summary>
-            public static Vector64<sbyte> InsertSelectedScalar(Vector64<sbyte> result, byte resultIndex, Vector64<sbyte> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<sbyte> InsertSelectedScalar(Vector64<sbyte> result, [ConstantExpected(Max = (byte)(7))] byte resultIndex, Vector64<sbyte> value, [ConstantExpected(Max = (byte)(7))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int8x8_t vcopy_laneq_s8 (int8x8_t a, const int lane1, int8x16_t b, const int lane2)
             ///   A64: INS Vd.B[lane1], Vn.B[lane2]
             /// </summary>
-            public static Vector64<sbyte> InsertSelectedScalar(Vector64<sbyte> result, byte resultIndex, Vector128<sbyte> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<sbyte> InsertSelectedScalar(Vector64<sbyte> result, [ConstantExpected(Max = (byte)(7))] byte resultIndex, Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// float32x2_t vcopy_lane_f32 (float32x2_t a, const int lane1, float32x2_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector64<float> InsertSelectedScalar(Vector64<float> result, byte resultIndex, Vector64<float> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<float> InsertSelectedScalar(Vector64<float> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector64<float> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// float32x2_t vcopy_laneq_f32 (float32x2_t a, const int lane1, float32x4_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector64<float> InsertSelectedScalar(Vector64<float> result, byte resultIndex, Vector128<float> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<float> InsertSelectedScalar(Vector64<float> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector128<float> value, [ConstantExpected(Max = (byte)(3))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint16x4_t vcopy_lane_u16 (uint16x4_t a, const int lane1, uint16x4_t b, const int lane2)
             ///   A64: INS Vd.H[lane1], Vn.H[lane2]
             /// </summary>
-            public static Vector64<ushort> InsertSelectedScalar(Vector64<ushort> result, byte resultIndex, Vector64<ushort> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<ushort> InsertSelectedScalar(Vector64<ushort> result, [ConstantExpected(Max = (byte)(3))] byte resultIndex, Vector64<ushort> value, [ConstantExpected(Max = (byte)(3))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint16x4_t vcopy_laneq_u16 (uint16x4_t a, const int lane1, uint16x8_t b, const int lane2)
             ///   A64: INS Vd.H[lane1], Vn.H[lane2]
             /// </summary>
-            public static Vector64<ushort> InsertSelectedScalar(Vector64<ushort> result, byte resultIndex, Vector128<ushort> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<ushort> InsertSelectedScalar(Vector64<ushort> result, [ConstantExpected(Max = (byte)(3))] byte resultIndex, Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint32x2_t vcopy_lane_u32 (uint32x2_t a, const int lane1, uint32x2_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector64<uint> InsertSelectedScalar(Vector64<uint> result, byte resultIndex, Vector64<uint> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<uint> InsertSelectedScalar(Vector64<uint> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector64<uint> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint32x2_t vcopy_laneq_u32 (uint32x2_t a, const int lane1, uint32x4_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector64<uint> InsertSelectedScalar(Vector64<uint> result, byte resultIndex, Vector128<uint> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector64<uint> InsertSelectedScalar(Vector64<uint> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector128<uint> value, [ConstantExpected(Max = (byte)(3))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint8x16_t vcopyq_lane_u8 (uint8x16_t a, const int lane1, uint8x8_t b, const int lane2)
             ///   A64: INS Vd.B[lane1], Vn.B[lane2]
             /// </summary>
-            public static Vector128<byte> InsertSelectedScalar(Vector128<byte> result, byte resultIndex, Vector64<byte> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<byte> InsertSelectedScalar(Vector128<byte> result, [ConstantExpected(Max = (byte)(15))] byte resultIndex, Vector64<byte> value, [ConstantExpected(Max = (byte)(7))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint8x16_t vcopyq_laneq_u8 (uint8x16_t a, const int lane1, uint8x16_t b, const int lane2)
             ///   A64: INS Vd.B[lane1], Vn.B[lane2]
             /// </summary>
-            public static Vector128<byte> InsertSelectedScalar(Vector128<byte> result, byte resultIndex, Vector128<byte> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<byte> InsertSelectedScalar(Vector128<byte> result, [ConstantExpected(Max = (byte)(15))] byte resultIndex, Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// float64x2_t vcopyq_laneq_f64 (float64x2_t a, const int lane1, float64x2_t b, const int lane2)
             ///   A64: INS Vd.D[lane1], Vn.D[lane2]
             /// </summary>
-            public static Vector128<double> InsertSelectedScalar(Vector128<double> result, byte resultIndex, Vector128<double> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<double> InsertSelectedScalar(Vector128<double> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector128<double> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int16x8_t vcopyq_lane_s16 (int16x8_t a, const int lane1, int16x4_t b, const int lane2)
             ///   A64: INS Vd.H[lane1], Vn.H[lane2]
             /// </summary>
-            public static Vector128<short> InsertSelectedScalar(Vector128<short> result, byte resultIndex, Vector64<short> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<short> InsertSelectedScalar(Vector128<short> result, [ConstantExpected(Max = (byte)(7))] byte resultIndex, Vector64<short> value, [ConstantExpected(Max = (byte)(3))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int16x8_t vcopyq_laneq_s16 (int16x8_t a, const int lane1, int16x8_t b, const int lane2)
             ///   A64: INS Vd.H[lane1], Vn.H[lane2]
             /// </summary>
-            public static Vector128<short> InsertSelectedScalar(Vector128<short> result, byte resultIndex, Vector128<short> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<short> InsertSelectedScalar(Vector128<short> result, [ConstantExpected(Max = (byte)(7))] byte resultIndex, Vector128<short> value, [ConstantExpected(Max = (byte)(7))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int32x4_t vcopyq_lane_s32 (int32x4_t a, const int lane1, int32x2_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector128<int> InsertSelectedScalar(Vector128<int> result, byte resultIndex, Vector64<int> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<int> InsertSelectedScalar(Vector128<int> result, [ConstantExpected(Max = (byte)(3))] byte resultIndex, Vector64<int> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int32x4_t vcopyq_laneq_s32 (int32x4_t a, const int lane1, int32x4_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector128<int> InsertSelectedScalar(Vector128<int> result, byte resultIndex, Vector128<int> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<int> InsertSelectedScalar(Vector128<int> result, [ConstantExpected(Max = (byte)(3))] byte resultIndex, Vector128<int> value, [ConstantExpected(Max = (byte)(3))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int64x2_t vcopyq_laneq_s64 (int64x2_t a, const int lane1, int64x2_t b, const int lane2)
             ///   A64: INS Vd.D[lane1], Vn.D[lane2]
             /// </summary>
-            public static Vector128<long> InsertSelectedScalar(Vector128<long> result, byte resultIndex, Vector128<long> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<long> InsertSelectedScalar(Vector128<long> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector128<long> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int8x16_t vcopyq_lane_s8 (int8x16_t a, const int lane1, int8x8_t b, const int lane2)
             ///   A64: INS Vd.B[lane1], Vn.B[lane2]
             /// </summary>
-            public static Vector128<sbyte> InsertSelectedScalar(Vector128<sbyte> result, byte resultIndex, Vector64<sbyte> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<sbyte> InsertSelectedScalar(Vector128<sbyte> result, [ConstantExpected(Max = (byte)(15))] byte resultIndex, Vector64<sbyte> value, [ConstantExpected(Max = (byte)(7))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// int8x16_t vcopyq_laneq_s8 (int8x16_t a, const int lane1, int8x16_t b, const int lane2)
             ///   A64: INS Vd.B[lane1], Vn.B[lane2]
             /// </summary>
-            public static Vector128<sbyte> InsertSelectedScalar(Vector128<sbyte> result, byte resultIndex, Vector128<sbyte> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<sbyte> InsertSelectedScalar(Vector128<sbyte> result, [ConstantExpected(Max = (byte)(15))] byte resultIndex, Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// float32x4_t vcopyq_lane_f32 (float32x4_t a, const int lane1, float32x2_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector128<float> InsertSelectedScalar(Vector128<float> result, byte resultIndex, Vector64<float> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<float> InsertSelectedScalar(Vector128<float> result, [ConstantExpected(Max = (byte)(3))] byte resultIndex, Vector64<float> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// float32x4_t vcopyq_laneq_f32 (float32x4_t a, const int lane1, float32x4_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector128<float> InsertSelectedScalar(Vector128<float> result, byte resultIndex, Vector128<float> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<float> InsertSelectedScalar(Vector128<float> result, [ConstantExpected(Max = (byte)(3))] byte resultIndex, Vector128<float> value, [ConstantExpected(Max = (byte)(3))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint16x8_t vcopyq_lane_u16 (uint16x8_t a, const int lane1, uint16x4_t b, const int lane2)
             ///   A64: INS Vd.H[lane1], Vn.H[lane2]
             /// </summary>
-            public static Vector128<ushort> InsertSelectedScalar(Vector128<ushort> result, byte resultIndex, Vector64<ushort> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<ushort> InsertSelectedScalar(Vector128<ushort> result, [ConstantExpected(Max = (byte)(7))] byte resultIndex, Vector64<ushort> value, [ConstantExpected(Max = (byte)(3))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint16x8_t vcopyq_laneq_u16 (uint16x8_t a, const int lane1, uint16x8_t b, const int lane2)
             ///   A64: INS Vd.H[lane1], Vn.H[lane2]
             /// </summary>
-            public static Vector128<ushort> InsertSelectedScalar(Vector128<ushort> result, byte resultIndex, Vector128<ushort> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<ushort> InsertSelectedScalar(Vector128<ushort> result, [ConstantExpected(Max = (byte)(7))] byte resultIndex, Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint32x4_t vcopyq_lane_u32 (uint32x4_t a, const int lane1, uint32x2_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector128<uint> InsertSelectedScalar(Vector128<uint> result, byte resultIndex, Vector64<uint> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<uint> InsertSelectedScalar(Vector128<uint> result, [ConstantExpected(Max = (byte)(3))] byte resultIndex, Vector64<uint> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint32x4_t vcopyq_laneq_u32 (uint32x4_t a, const int lane1, uint32x4_t b, const int lane2)
             ///   A64: INS Vd.S[lane1], Vn.S[lane2]
             /// </summary>
-            public static Vector128<uint> InsertSelectedScalar(Vector128<uint> result, byte resultIndex, Vector128<uint> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<uint> InsertSelectedScalar(Vector128<uint> result, [ConstantExpected(Max = (byte)(3))] byte resultIndex, Vector128<uint> value, [ConstantExpected(Max = (byte)(3))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// uint64x2_t vcopyq_laneq_u64 (uint64x2_t a, const int lane1, uint64x2_t b, const int lane2)
             ///   A64: INS Vd.D[lane1], Vn.D[lane2]
             /// </summary>
-            public static Vector128<ulong> InsertSelectedScalar(Vector128<ulong> result, byte resultIndex, Vector128<ulong> value, byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
+            public static Vector128<ulong> InsertSelectedScalar(Vector128<ulong> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
             /// <summary>
             /// float64x2_t vld1q_dup_f64 (float64_t const * ptr)
@@ -2185,7 +2186,7 @@ namespace System.Runtime.Intrinsics.Arm
             /// float64x2_t vmulq_laneq_f64 (float64x2_t a, float64x2_t v, const int lane)
             ///   A64: FMUL Vd.2D, Vn.2D, Vm.D[lane]
             /// </summary>
-            public static Vector128<double> MultiplyBySelectedScalar(Vector128<double> left, Vector128<double> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+            public static Vector128<double> MultiplyBySelectedScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// int16_t vqdmulhh_s16 (int16_t a, int16_t b)
@@ -2203,25 +2204,25 @@ namespace System.Runtime.Intrinsics.Arm
             /// int16_t vqdmulhh_lane_s16 (int16_t a, int16x4_t v, const int lane)
             ///   A64: SQDMULH Hd, Hn, Vm.H[lane]
             /// </summary>
-            public static Vector64<short> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
+            public static Vector64<short> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
 
             /// <summary>
             /// int16_t vqdmulhh_laneq_s16 (int16_t a, int16x8_t v, const int lane)
             ///   A64: SQDMULH Hd, Hn, Vm.H[lane]
             /// </summary>
-            public static Vector64<short> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
+            public static Vector64<short> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
 
             /// <summary>
             /// int32_t vqdmulhs_lane_s32 (int32_t a, int32x2_t v, const int lane)
             ///   A64: SQDMULH Sd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<int> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
+            public static Vector64<int> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
 
             /// <summary>
             /// int32_t vqdmulhs_laneq_s32 (int32_t a, int32x4_t v, const int lane)
             ///   A64: SQDMULH Sd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<int> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
+            public static Vector64<int> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
 
             /// <summary>
             /// int32_t vqdmlalh_s16 (int32_t a, int16_t b, int16_t c)
@@ -2263,73 +2264,73 @@ namespace System.Runtime.Intrinsics.Arm
             /// int32_t vqdmullh_lane_s16 (int16_t a, int16x4_t v, const int lane)
             ///   A64: SQDMULL Sd, Hn, Vm.H[lane]
             /// </summary>
-            public static Vector64<int> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingWideningSaturateScalarBySelectedScalar(left, right, rightIndex);
+            public static Vector64<int> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningSaturateScalarBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// int32_t vqdmullh_laneq_s16 (int16_t a, int16x8_t v, const int lane)
             ///   A64: SQDMULL Sd, Hn, Vm.H[lane]
             /// </summary>
-            public static Vector64<int> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingWideningSaturateScalarBySelectedScalar(left, right, rightIndex);
+            public static Vector64<int> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingWideningSaturateScalarBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// int64_t vqdmulls_lane_s32 (int32_t a, int32x2_t v, const int lane)
             ///   A64: SQDMULL Dd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<long> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingWideningSaturateScalarBySelectedScalar(left, right, rightIndex);
+            public static Vector64<long> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingWideningSaturateScalarBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// int64_t vqdmulls_laneq_s32 (int32_t a, int32x4_t v, const int lane)
             ///   A64: SQDMULL Dd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<long> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingWideningSaturateScalarBySelectedScalar(left, right, rightIndex);
+            public static Vector64<long> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningSaturateScalarBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// int32_t vqdmlalh_lane_s16 (int32_t a, int16_t b, int16x4_t v, const int lane)
             ///   A64: SQDMLAL Sd, Hn, Vm.H[lane]
             /// </summary>
-            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<int> addend, Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<int> addend, Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
             /// <summary>
             /// int32_t vqdmlalh_laneq_s16 (int32_t a, int16_t b, int16x8_t v, const int lane)
             ///   A64: SQDMLAL Sd, Hn, Vm.H[lane]
             /// </summary>
-            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<int> addend, Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<int> addend, Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
             /// <summary>
             /// int64_t vqdmlals_lane_s32 (int64_t a, int32_t b, int32x2_t v, const int lane)
             ///   A64: SQDMLAL Dd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<long> addend, Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<long> addend, Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
             /// <summary>
             /// int64_t vqdmlals_laneq_s32 (int64_t a, int32_t b, int32x4_t v, const int lane)
             ///   A64: SQDMLAL Dd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<long> addend, Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<long> addend, Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
             /// <summary>
             /// int32_t vqdmlslh_lane_s16 (int32_t a, int16_t b, int16x4_t v, const int lane)
             ///   A64: SQDMLSL Sd, Hn, Vm.H[lane]
             /// </summary>
-            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<int> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<int> minuend, Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
             /// <summary>
             /// int32_t vqdmlslh_laneq_s16 (int32_t a, int16_t b, int16x8_t v, const int lane)
             ///   A64: SQDMLSL Sd, Hn, Vm.H[lane]
             /// </summary>
-            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<int> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<int> minuend, Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
             /// <summary>
             /// int64_t vqdmlsls_lane_s32 (int64_t a, int32_t b, int32x2_t v, const int lane)
             ///   A64: SQDMLSL Dd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<long> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<long> minuend, Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
             /// <summary>
             /// int64_t vqdmlsls_laneq_s32 (int64_t a, int32_t b, int32x4_t v, const int lane)
             ///   A64: SQDMLSL Dd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<long> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<long> minuend, Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
             /// <summary>
             /// float32x2_t vmulx_f32 (float32x2_t a, float32x2_t b)
@@ -2359,31 +2360,31 @@ namespace System.Runtime.Intrinsics.Arm
             /// float32x2_t vmulx_lane_f32 (float32x2_t a, float32x2_t v, const int lane)
             ///   A64: FMULX Vd.2S, Vn.2S, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> MultiplyExtendedBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
+            public static Vector64<float> MultiplyExtendedBySelectedScalar(Vector64<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// float32x2_t vmulx_laneq_f32 (float32x2_t a, float32x4_t v, const int lane)
             ///   A64: FMULX Vd.2S, Vn.2S, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> MultiplyExtendedBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
+            public static Vector64<float> MultiplyExtendedBySelectedScalar(Vector64<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// float64x2_t vmulxq_laneq_f64 (float64x2_t a, float64x2_t v, const int lane)
             ///   A64: FMULX Vd.2D, Vn.2D, Vm.D[lane]
             /// </summary>
-            public static Vector128<double> MultiplyExtendedBySelectedScalar(Vector128<double> left, Vector128<double> right, byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
+            public static Vector128<double> MultiplyExtendedBySelectedScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// float32x4_t vmulxq_lane_f32 (float32x4_t a, float32x2_t v, const int lane)
             ///   A64: FMULX Vd.4S, Vn.4S, Vm.S[lane]
             /// </summary>
-            public static Vector128<float> MultiplyExtendedBySelectedScalar(Vector128<float> left, Vector64<float> right, byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
+            public static Vector128<float> MultiplyExtendedBySelectedScalar(Vector128<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// float32x4_t vmulxq_laneq_f32 (float32x4_t a, float32x4_t v, const int lane)
             ///   A64: FMULX Vd.4S, Vn.4S, Vm.S[lane]
             /// </summary>
-            public static Vector128<float> MultiplyExtendedBySelectedScalar(Vector128<float> left, Vector128<float> right, byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
+            public static Vector128<float> MultiplyExtendedBySelectedScalar(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// float64x1_t vmulx_f64 (float64x1_t a, float64x1_t b)
@@ -2401,19 +2402,19 @@ namespace System.Runtime.Intrinsics.Arm
             /// float64_t vmulxd_laneq_f64 (float64_t a, float64x2_t v, const int lane)
             ///   A64: FMULX Dd, Dn, Vm.D[lane]
             /// </summary>
-            public static Vector64<double> MultiplyExtendedScalarBySelectedScalar(Vector64<double> left, Vector128<double> right, byte rightIndex) => MultiplyExtendedScalarBySelectedScalar(left, right, rightIndex);
+            public static Vector64<double> MultiplyExtendedScalarBySelectedScalar(Vector64<double> left, Vector128<double> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyExtendedScalarBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// float32_t vmulxs_lane_f32 (float32_t a, float32x2_t v, const int lane)
             ///   A64: FMULX Sd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> MultiplyExtendedScalarBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) => MultiplyExtendedScalarBySelectedScalar(left, right, rightIndex);
+            public static Vector64<float> MultiplyExtendedScalarBySelectedScalar(Vector64<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyExtendedScalarBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// float32_t vmulxs_laneq_f32 (float32_t a, float32x4_t v, const int lane)
             ///   A64: FMULX Sd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<float> MultiplyExtendedScalarBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) => MultiplyExtendedScalarBySelectedScalar(left, right, rightIndex);
+            public static Vector64<float> MultiplyExtendedScalarBySelectedScalar(Vector64<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyExtendedScalarBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// int16_t vqrdmulhh_s16 (int16_t a, int16_t b)
@@ -2431,31 +2432,31 @@ namespace System.Runtime.Intrinsics.Arm
             /// int16_t vqrdmulhh_lane_s16 (int16_t a, int16x4_t v, const int lane)
             ///   A64: SQRDMULH Hd, Hn, Vm.H[lane]
             /// </summary>
-            public static Vector64<short> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
+            public static Vector64<short> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
 
             /// <summary>
             /// int16_t vqrdmulhh_laneq_s16 (int16_t a, int16x8_t v, const int lane)
             ///   A64: SQRDMULH Hd, Hn, Vm.H[lane]
             /// </summary>
-            public static Vector64<short> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
+            public static Vector64<short> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
 
             /// <summary>
             /// int32_t vqrdmulhs_lane_s32 (int32_t a, int32x2_t v, const int lane)
             ///   A64: SQRDMULH Sd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<int> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
+            public static Vector64<int> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
 
             /// <summary>
             /// int32_t vqrdmulhs_laneq_s32 (int32_t a, int32x4_t v, const int lane)
             ///   A64: SQRDMULH Sd, Sn, Vm.S[lane]
             /// </summary>
-            public static Vector64<int> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
+            public static Vector64<int> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(left, right, rightIndex);
 
             /// <summary>
             /// float64_t vmuld_laneq_f64 (float64_t a, float64x2_t v, const int lane)
             ///   A64: FMUL Dd, Dn, Vm.D[lane]
             /// </summary>
-            public static Vector64<double> MultiplyScalarBySelectedScalar(Vector64<double> left, Vector128<double> right, byte rightIndex) => MultiplyScalarBySelectedScalar(left, right, rightIndex);
+            public static Vector64<double> MultiplyScalarBySelectedScalar(Vector64<double> left, Vector128<double> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyScalarBySelectedScalar(left, right, rightIndex);
 
             /// <summary>
             /// float64x2_t vnegq_f64 (float64x2_t a)
@@ -2659,55 +2660,55 @@ namespace System.Runtime.Intrinsics.Arm
             /// uint8_t vqshlb_n_u8 (uint8_t a, const int n)
             ///   A64: UQSHL Bd, Bn, #n
             /// </summary>
-            public static Vector64<byte> ShiftLeftLogicalSaturateScalar(Vector64<byte> value, byte count) => ShiftLeftLogicalSaturateScalar(value, count);
+            public static Vector64<byte> ShiftLeftLogicalSaturateScalar(Vector64<byte> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalSaturateScalar(value, count);
 
             /// <summary>
             /// int16_t vqshlh_n_s16 (int16_t a, const int n)
             ///   A64: SQSHL Hd, Hn, #n
             /// </summary>
-            public static Vector64<short> ShiftLeftLogicalSaturateScalar(Vector64<short> value, byte count) => ShiftLeftLogicalSaturateScalar(value, count);
+            public static Vector64<short> ShiftLeftLogicalSaturateScalar(Vector64<short> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalSaturateScalar(value, count);
 
             /// <summary>
             /// int32_t vqshls_n_s32 (int32_t a, const int n)
             ///   A64: SQSHL Sd, Sn, #n
             /// </summary>
-            public static Vector64<int> ShiftLeftLogicalSaturateScalar(Vector64<int> value, byte count) => ShiftLeftLogicalSaturateScalar(value, count);
+            public static Vector64<int> ShiftLeftLogicalSaturateScalar(Vector64<int> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalSaturateScalar(value, count);
 
             /// <summary>
             /// int8_t vqshlb_n_s8 (int8_t a, const int n)
             ///   A64: SQSHL Bd, Bn, #n
             /// </summary>
-            public static Vector64<sbyte> ShiftLeftLogicalSaturateScalar(Vector64<sbyte> value, byte count) => ShiftLeftLogicalSaturateScalar(value, count);
+            public static Vector64<sbyte> ShiftLeftLogicalSaturateScalar(Vector64<sbyte> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalSaturateScalar(value, count);
 
             /// <summary>
             /// uint16_t vqshlh_n_u16 (uint16_t a, const int n)
             ///   A64: UQSHL Hd, Hn, #n
             /// </summary>
-            public static Vector64<ushort> ShiftLeftLogicalSaturateScalar(Vector64<ushort> value, byte count) => ShiftLeftLogicalSaturateScalar(value, count);
+            public static Vector64<ushort> ShiftLeftLogicalSaturateScalar(Vector64<ushort> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalSaturateScalar(value, count);
 
             /// <summary>
             /// uint32_t vqshls_n_u32 (uint32_t a, const int n)
             ///   A64: UQSHL Sd, Sn, #n
             /// </summary>
-            public static Vector64<uint> ShiftLeftLogicalSaturateScalar(Vector64<uint> value, byte count) => ShiftLeftLogicalSaturateScalar(value, count);
+            public static Vector64<uint> ShiftLeftLogicalSaturateScalar(Vector64<uint> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalSaturateScalar(value, count);
 
             /// <summary>
             /// uint16_t vqshluh_n_s16 (int16_t a, const int n)
             ///   A64: SQSHLU Hd, Hn, #n
             /// </summary>
-            public static Vector64<ushort> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<short> value, byte count) => ShiftLeftLogicalSaturateUnsignedScalar(value, count);
+            public static Vector64<ushort> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<short> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalSaturateUnsignedScalar(value, count);
 
             /// <summary>
             /// uint32_t vqshlus_n_s32 (int32_t a, const int n)
             ///   A64: SQSHLU Sd, Sn, #n
             /// </summary>
-            public static Vector64<uint> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<int> value, byte count) => ShiftLeftLogicalSaturateUnsignedScalar(value, count);
+            public static Vector64<uint> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<int> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalSaturateUnsignedScalar(value, count);
 
             /// <summary>
             /// uint8_t vqshlub_n_s8 (int8_t a, const int n)
             ///   A64: SQSHLU Bd, Bn, #n
             /// </summary>
-            public static Vector64<byte> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<sbyte> value, byte count) => ShiftLeftLogicalSaturateUnsignedScalar(value, count);
+            public static Vector64<byte> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<sbyte> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalSaturateUnsignedScalar(value, count);
 
             /// <summary>
             /// uint8_t vqrshlb_u8 (uint8_t a, int8_t b)
@@ -2785,145 +2786,145 @@ namespace System.Runtime.Intrinsics.Arm
             /// int16_t vqshrns_n_s32 (int32_t a, const int n)
             ///   A64: SQSHRN Hd, Sn, #n
             /// </summary>
-            public static Vector64<short> ShiftRightArithmeticNarrowingSaturateScalar(Vector64<int> value, byte count) => ShiftRightArithmeticNarrowingSaturateScalar(value, count);
+            public static Vector64<short> ShiftRightArithmeticNarrowingSaturateScalar(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// int32_t vqshrnd_n_s64 (int64_t a, const int n)
             ///   A64: SQSHRN Sd, Dn, #n
             /// </summary>
-            public static Vector64<int> ShiftRightArithmeticNarrowingSaturateScalar(Vector64<long> value, byte count) => ShiftRightArithmeticNarrowingSaturateScalar(value, count);
+            public static Vector64<int> ShiftRightArithmeticNarrowingSaturateScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightArithmeticNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// int8_t vqshrnh_n_s16 (int16_t a, const int n)
             ///   A64: SQSHRN Bd, Hn, #n
             /// </summary>
-            public static Vector64<sbyte> ShiftRightArithmeticNarrowingSaturateScalar(Vector64<short> value, byte count) => ShiftRightArithmeticNarrowingSaturateScalar(value, count);
+            public static Vector64<sbyte> ShiftRightArithmeticNarrowingSaturateScalar(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint8_t vqshrunh_n_s16 (int16_t a, const int n)
             ///   A64: SQSHRUN Bd, Hn, #n
             /// </summary>
-            public static Vector64<byte> ShiftRightArithmeticNarrowingSaturateUnsignedScalar(Vector64<short> value, byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedScalar(value, count);
+            public static Vector64<byte> ShiftRightArithmeticNarrowingSaturateUnsignedScalar(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedScalar(value, count);
 
             /// <summary>
             /// uint16_t vqshruns_n_s32 (int32_t a, const int n)
             ///   A64: SQSHRUN Hd, Sn, #n
             /// </summary>
-            public static Vector64<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedScalar(Vector64<int> value, byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedScalar(value, count);
+            public static Vector64<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedScalar(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedScalar(value, count);
 
             /// <summary>
             /// uint32_t vqshrund_n_s64 (int64_t a, const int n)
             ///   A64: SQSHRUN Sd, Dn, #n
             /// </summary>
-            public static Vector64<uint> ShiftRightArithmeticNarrowingSaturateUnsignedScalar(Vector64<long> value, byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedScalar(value, count);
+            public static Vector64<uint> ShiftRightArithmeticNarrowingSaturateUnsignedScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedScalar(value, count);
 
             /// <summary>
             /// int16_t vqrshrns_n_s32 (int32_t a, const int n)
             ///   A64: SQRSHRN Hd, Sn, #n
             /// </summary>
-            public static Vector64<short> ShiftRightArithmeticRoundedNarrowingSaturateScalar(Vector64<int> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateScalar(value, count);
+            public static Vector64<short> ShiftRightArithmeticRoundedNarrowingSaturateScalar(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// int32_t vqrshrnd_n_s64 (int64_t a, const int n)
             ///   A64: SQRSHRN Sd, Dn, #n
             /// </summary>
-            public static Vector64<int> ShiftRightArithmeticRoundedNarrowingSaturateScalar(Vector64<long> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateScalar(value, count);
+            public static Vector64<int> ShiftRightArithmeticRoundedNarrowingSaturateScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// int8_t vqrshrnh_n_s16 (int16_t a, const int n)
             ///   A64: SQRSHRN Bd, Hn, #n
             /// </summary>
-            public static Vector64<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateScalar(Vector64<short> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateScalar(value, count);
+            public static Vector64<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateScalar(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint8_t vqrshrunh_n_s16 (int16_t a, const int n)
             ///   A64: SQRSHRUN Bd, Hn, #n
             /// </summary>
-            public static Vector64<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(Vector64<short> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(value, count);
+            public static Vector64<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(value, count);
 
             /// <summary>
             /// uint16_t vqrshruns_n_s32 (int32_t a, const int n)
             ///   A64: SQRSHRUN Hd, Sn, #n
             /// </summary>
-            public static Vector64<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(Vector64<int> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(value, count);
+            public static Vector64<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(value, count);
 
             /// <summary>
             /// uint32_t vqrshrund_n_s64 (int64_t a, const int n)
             ///   A64: SQRSHRUN Sd, Dn, #n
             /// </summary>
-            public static Vector64<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(Vector64<long> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(value, count);
+            public static Vector64<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(value, count);
 
             /// <summary>
             /// uint8_t vqshrnh_n_u16 (uint16_t a, const int n)
             ///   A64: UQSHRN Bd, Hn, #n
             /// </summary>
-            public static Vector64<byte> ShiftRightLogicalNarrowingSaturateScalar(Vector64<ushort> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+            public static Vector64<byte> ShiftRightLogicalNarrowingSaturateScalar(Vector64<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint16_t vqshrns_n_u32 (uint32_t a, const int n)
             ///   A64: UQSHRN Hd, Sn, #n
             /// </summary>
-            public static Vector64<short> ShiftRightLogicalNarrowingSaturateScalar(Vector64<int> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+            public static Vector64<short> ShiftRightLogicalNarrowingSaturateScalar(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint32_t vqshrnd_n_u64 (uint64_t a, const int n)
             ///   A64: UQSHRN Sd, Dn, #n
             /// </summary>
-            public static Vector64<int> ShiftRightLogicalNarrowingSaturateScalar(Vector64<long> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+            public static Vector64<int> ShiftRightLogicalNarrowingSaturateScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint8_t vqshrnh_n_u16 (uint16_t a, const int n)
             ///   A64: UQSHRN Bd, Hn, #n
             /// </summary>
-            public static Vector64<sbyte> ShiftRightLogicalNarrowingSaturateScalar(Vector64<short> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+            public static Vector64<sbyte> ShiftRightLogicalNarrowingSaturateScalar(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint16_t vqshrns_n_u32 (uint32_t a, const int n)
             ///   A64: UQSHRN Hd, Sn, #n
             /// </summary>
-            public static Vector64<ushort> ShiftRightLogicalNarrowingSaturateScalar(Vector64<uint> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+            public static Vector64<ushort> ShiftRightLogicalNarrowingSaturateScalar(Vector64<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint32_t vqshrnd_n_u64 (uint64_t a, const int n)
             ///   A64: UQSHRN Sd, Dn, #n
             /// </summary>
-            public static Vector64<uint> ShiftRightLogicalNarrowingSaturateScalar(Vector64<ulong> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+            public static Vector64<uint> ShiftRightLogicalNarrowingSaturateScalar(Vector64<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint8_t vqrshrnh_n_u16 (uint16_t a, const int n)
             ///   A64: UQRSHRN Bd, Hn, #n
             /// </summary>
-            public static Vector64<byte> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<ushort> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
+            public static Vector64<byte> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint16_t vqrshrns_n_u32 (uint32_t a, const int n)
             ///   A64: UQRSHRN Hd, Sn, #n
             /// </summary>
-            public static Vector64<short> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<int> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
+            public static Vector64<short> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint32_t vqrshrnd_n_u64 (uint64_t a, const int n)
             ///   A64: UQRSHRN Sd, Dn, #n
             /// </summary>
-            public static Vector64<int> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<long> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
+            public static Vector64<int> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint8_t vqrshrnh_n_u16 (uint16_t a, const int n)
             ///   A64: UQRSHRN Bd, Hn, #n
             /// </summary>
-            public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<short> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
+            public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint16_t vqrshrns_n_u32 (uint32_t a, const int n)
             ///   A64: UQRSHRN Hd, Sn, #n
             /// </summary>
-            public static Vector64<ushort> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<uint> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
+            public static Vector64<ushort> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// uint32_t vqrshrnd_n_u64 (uint64_t a, const int n)
             ///   A64: UQRSHRN Sd, Dn, #n
             /// </summary>
-            public static Vector64<uint> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<ulong> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
+            public static Vector64<uint> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateScalar(value, count);
 
             /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
@@ -3660,6 +3661,42 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<sbyte> VectorTableLookup(Vector128<sbyte> table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
 
             /// <summary>
+            ///  uint8x16_t vqtbl2q_u8(uint8x16x2_t t, uint8x16_t idx)
+            ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+            /// <summary>
+            ///  int8x16_t vqtbl2q_s8(int8x16x2_t t, uint8x16_t idx)
+            ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+            /// <summary>
+            ///  uint8x16_t vqtbl3q_u8(uint8x16x3_t t, uint8x16_t idx)
+            ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+            /// <summary>
+            ///  int8x16_t vqtbl3q_s8(int8x16x3_t t, uint8x16_t idx)
+            ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+            /// <summary>
+            ///  uint8x16_t vqtbl4q_u8(uint8x16x4_t t, uint8x16_t idx)
+            ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+            /// <summary>
+            ///  int8x16_t vqtbl4q_s8(int8x16x4_t t, uint8x16_t idx)
+            ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+            /// <summary>
             ///  uint8x16_t vqvtbx1q_u8(uint8x16_t r, int8x16_t t, uint8x16_t idx)
             ///   A64: TBX Vd.16B, {Vn.16B}, Vm.16B
             /// </summary>
@@ -3670,6 +3707,42 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: TBX Vd.16B, {Vn.16B}, Vm.16B
             /// </summary>
             public static Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, Vector128<sbyte> table, Vector128<sbyte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+            /// <summary>
+            ///  uint8x16_t vqtbx2q_u8(uint8x16x2_t t, uint8x16_t idx)
+            ///   A64: TBX Vd.16B, {Vn.16B, Vn+1.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<byte> VectorTableLookupExtension(Vector128<byte> defaultValues, (Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+            /// <summary>
+            ///  int8x16_t vqtbx2q_s8(int8x16x2_t t, uint8x16_t idx)
+            ///   A64: TBX Vd.16B, {Vn.16B, Vn+1.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+            /// <summary>
+            ///  uint8x16_t vqtbx3q_u8(uint8x16x3_t t, uint8x16_t idx)
+            ///   A64: TBX Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<byte> VectorTableLookupExtension(Vector128<byte> defaultValues, (Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+            /// <summary>
+            ///  int8x16_t vqtbx3q_s8(int8x16x3_t t, uint8x16_t idx)
+            ///   A64: TBX Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+            /// <summary>
+            ///  uint8x16_t vqtbx4q_u8(uint8x16x4_t t, uint8x16_t idx)
+            ///   A64: TBX Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<byte> VectorTableLookupExtension(Vector128<byte> defaultValues, (Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+            /// <summary>
+            ///  int8x16_t vqtbx4q_s8(int8x16x4_t t, uint8x16_t idx)
+            ///   A64: TBX Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
 
             /// <summary>
             /// uint8x8_t vzip2_u8(uint8x8_t a, uint8x8_t b)
@@ -6520,196 +6593,196 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VDUP.8 Dd, Dm[index]
         ///   A64: DUP Vd.8B, Vn.B[index]
         /// </summary>
-        public static Vector64<byte> DuplicateSelectedScalarToVector64(Vector64<byte> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<byte> DuplicateSelectedScalarToVector64(Vector64<byte> value, [ConstantExpected(Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// int16x4_t vdup_lane_s16 (int16x4_t vec, const int lane)
         ///   A32: VDUP.16 Dd, Dm[index]
         ///   A64: DUP Vd.4H, Vn.H[index]
         /// </summary>
-        public static Vector64<short> DuplicateSelectedScalarToVector64(Vector64<short> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<short> DuplicateSelectedScalarToVector64(Vector64<short> value, [ConstantExpected(Max = (byte)(3))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// int32x2_t vdup_lane_s32 (int32x2_t vec, const int lane)
         ///   A32: VDUP.32 Dd, Dm[index]
         ///   A64: DUP Vd.2S, Vn.S[index]
         /// </summary>
-        public static Vector64<int> DuplicateSelectedScalarToVector64(Vector64<int> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<int> DuplicateSelectedScalarToVector64(Vector64<int> value, [ConstantExpected(Max = (byte)(1))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// float32x2_t vdup_lane_f32 (float32x2_t vec, const int lane)
         ///   A32: VDUP.32 Dd, Dm[index]
         ///   A64: DUP Vd.2S, Vn.S[index]
         /// </summary>
-        public static Vector64<float> DuplicateSelectedScalarToVector64(Vector64<float> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<float> DuplicateSelectedScalarToVector64(Vector64<float> value, [ConstantExpected(Max = (byte)(1))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// int8x8_t vdup_lane_s8 (int8x8_t vec, const int lane)
         ///   A32: VDUP.8 Dd, Dm[index]
         ///   A64: DUP Vd.8B, Vn.B[index]
         /// </summary>
-        public static Vector64<sbyte> DuplicateSelectedScalarToVector64(Vector64<sbyte> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<sbyte> DuplicateSelectedScalarToVector64(Vector64<sbyte> value, [ConstantExpected(Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// uint16x4_t vdup_lane_u16 (uint16x4_t vec, const int lane)
         ///   A32: VDUP.16 Dd, Dm[index]
         ///   A64: DUP Vd.4H, Vn.H[index]
         /// </summary>
-        public static Vector64<ushort> DuplicateSelectedScalarToVector64(Vector64<ushort> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<ushort> DuplicateSelectedScalarToVector64(Vector64<ushort> value, [ConstantExpected(Max = (byte)(3))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// uint32x2_t vdup_lane_u32 (uint32x2_t vec, const int lane)
         ///   A32: VDUP.32 Dd, Dm[index]
         ///   A64: DUP Vd.2S, Vn.S[index]
         /// </summary>
-        public static Vector64<uint> DuplicateSelectedScalarToVector64(Vector64<uint> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<uint> DuplicateSelectedScalarToVector64(Vector64<uint> value, [ConstantExpected(Max = (byte)(1))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// uint8x8_t vdup_laneq_u8 (uint8x16_t vec, const int lane)
         ///   A32: VDUP.8 Dd, Dm[index]
         ///   A64: DUP Vd.8B, Vn.B[index]
         /// </summary>
-        public static Vector64<byte> DuplicateSelectedScalarToVector64(Vector128<byte> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<byte> DuplicateSelectedScalarToVector64(Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// int16x4_t vdup_laneq_s16 (int16x8_t vec, const int lane)
         ///   A32: VDUP.16 Dd, Dm[index]
         ///   A64: DUP Vd.4H, Vn.H[index]
         /// </summary>
-        public static Vector64<short> DuplicateSelectedScalarToVector64(Vector128<short> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<short> DuplicateSelectedScalarToVector64(Vector128<short> value, [ConstantExpected(Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// int32x2_t vdup_laneq_s32 (int32x4_t vec, const int lane)
         ///   A32: VDUP.32 Dd, Dm[index]
         ///   A64: DUP Vd.2S, Vn.S[index]
         /// </summary>
-        public static Vector64<int> DuplicateSelectedScalarToVector64(Vector128<int> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<int> DuplicateSelectedScalarToVector64(Vector128<int> value, [ConstantExpected(Max = (byte)(3))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// float32x2_t vdup_laneq_f32 (float32x4_t vec, const int lane)
         ///   A32: VDUP.32 Dd, Dm[index]
         ///   A64: DUP Vd.2S, Vn.S[index]
         /// </summary>
-        public static Vector64<float> DuplicateSelectedScalarToVector64(Vector128<float> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<float> DuplicateSelectedScalarToVector64(Vector128<float> value, [ConstantExpected(Max = (byte)(3))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// int8x8_t vdup_laneq_s8 (int8x16_t vec, const int lane)
         ///   A32: VDUP.8 Dd, Dm[index]
         ///   A64: DUP Vd.8B, Vn.B[index]
         /// </summary>
-        public static Vector64<sbyte> DuplicateSelectedScalarToVector64(Vector128<sbyte> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<sbyte> DuplicateSelectedScalarToVector64(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// uint16x4_t vdup_laneq_u16 (uint16x8_t vec, const int lane)
         ///   A32: VDUP.16 Dd, Dm[index]
         ///   A64: DUP Vd.4H, Vn.H[index]
         /// </summary>
-        public static Vector64<ushort> DuplicateSelectedScalarToVector64(Vector128<ushort> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<ushort> DuplicateSelectedScalarToVector64(Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// uint32x2_t vdup_laneq_u32 (uint32x4_t vec, const int lane)
         ///   A32: VDUP.32 Dd, Dm[index]
         ///   A64: DUP Vd.2S, Vn.S[index]
         /// </summary>
-        public static Vector64<uint> DuplicateSelectedScalarToVector64(Vector128<uint> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+        public static Vector64<uint> DuplicateSelectedScalarToVector64(Vector128<uint> value, [ConstantExpected(Max = (byte)(3))] byte index) => DuplicateSelectedScalarToVector64(value, index);
 
         /// <summary>
         /// uint8x16_t vdupq_lane_u8 (uint8x8_t vec, const int lane)
         ///   A32: VDUP.8 Qd, Dm[index]
         ///   A64: DUP Vd.16B, Vn.B[index]
         /// </summary>
-        public static Vector128<byte> DuplicateSelectedScalarToVector128(Vector64<byte> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<byte> DuplicateSelectedScalarToVector128(Vector64<byte> value, [ConstantExpected(Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// int16x8_t vdupq_lane_s16 (int16x4_t vec, const int lane)
         ///   A32: VDUP.16 Qd, Dm[index]
         ///   A64: DUP Vd.8H, Vn.H[index]
         /// </summary>
-        public static Vector128<short> DuplicateSelectedScalarToVector128(Vector64<short> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<short> DuplicateSelectedScalarToVector128(Vector64<short> value, [ConstantExpected(Max = (byte)(3))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// int32x4_t vdupq_lane_s32 (int32x2_t vec, const int lane)
         ///   A32: VDUP.32 Qd, Dm[index]
         ///   A64: DUP Vd.4S, Vn.S[index]
         /// </summary>
-        public static Vector128<int> DuplicateSelectedScalarToVector128(Vector64<int> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<int> DuplicateSelectedScalarToVector128(Vector64<int> value, [ConstantExpected(Max = (byte)(1))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// float32x4_t vdupq_lane_f32 (float32x2_t vec, const int lane)
         ///   A32: VDUP.32 Qd, Dm[index]
         ///   A64: DUP Vd.4S, Vn.S[index]
         /// </summary>
-        public static Vector128<float> DuplicateSelectedScalarToVector128(Vector64<float> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<float> DuplicateSelectedScalarToVector128(Vector64<float> value, [ConstantExpected(Max = (byte)(1))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// int8x16_t vdupq_lane_s8 (int8x8_t vec, const int lane)
         ///   A32: VDUP.8 Qd, Dm[index]
         ///   A64: DUP Vd.16B, Vn.B[index]
         /// </summary>
-        public static Vector128<sbyte> DuplicateSelectedScalarToVector128(Vector64<sbyte> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<sbyte> DuplicateSelectedScalarToVector128(Vector64<sbyte> value, [ConstantExpected(Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// uint16x8_t vdupq_lane_u16 (uint16x4_t vec, const int lane)
         ///   A32: VDUP.16 Qd, Dm[index]
         ///   A64: DUP Vd.8H, Vn.H[index]
         /// </summary>
-        public static Vector128<ushort> DuplicateSelectedScalarToVector128(Vector64<ushort> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<ushort> DuplicateSelectedScalarToVector128(Vector64<ushort> value, [ConstantExpected(Max = (byte)(3))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// uint32x4_t vdupq_lane_u32 (uint32x2_t vec, const int lane)
         ///   A32: VDUP.32 Qd, Dm[index]
         ///   A64: DUP Vd.4S, Vn.S[index]
         /// </summary>
-        public static Vector128<uint> DuplicateSelectedScalarToVector128(Vector64<uint> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<uint> DuplicateSelectedScalarToVector128(Vector64<uint> value, [ConstantExpected(Max = (byte)(1))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// uint8x16_t vdupq_lane_u8 (uint8x16_t vec, const int lane)
         ///   A32: VDUP.8 Qd, Dm[index]
         ///   A64: DUP Vd.16B, Vn.B[index]
         /// </summary>
-        public static Vector128<byte> DuplicateSelectedScalarToVector128(Vector128<byte> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<byte> DuplicateSelectedScalarToVector128(Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// int16x8_t vdupq_lane_s16 (int16x8_t vec, const int lane)
         ///   A32: VDUP.16 Qd, Dm[index]
         ///   A64: DUP Vd.8H, Vn.H[index]
         /// </summary>
-        public static Vector128<short> DuplicateSelectedScalarToVector128(Vector128<short> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<short> DuplicateSelectedScalarToVector128(Vector128<short> value, [ConstantExpected(Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// int32x4_t vdupq_lane_s32 (int32x4_t vec, const int lane)
         ///   A32: VDUP.32 Qd, Dm[index]
         ///   A64: DUP Vd.4S, Vn.S[index]
         /// </summary>
-        public static Vector128<int> DuplicateSelectedScalarToVector128(Vector128<int> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<int> DuplicateSelectedScalarToVector128(Vector128<int> value, [ConstantExpected(Max = (byte)(3))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// float32x4_t vdupq_lane_f32 (float32x4_t vec, const int lane)
         ///   A32: VDUP.32 Qd, Dm[index]
         ///   A64: DUP Vd.4S, Vn.S[index]
         /// </summary>
-        public static Vector128<float> DuplicateSelectedScalarToVector128(Vector128<float> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<float> DuplicateSelectedScalarToVector128(Vector128<float> value, [ConstantExpected(Max = (byte)(3))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// int8x16_t vdupq_lane_s8 (int8x16_t vec, const int lane)
         ///   A32: VDUP.8 Qd, Dm[index]
         ///   A64: DUP Vd.16B, Vn.B[index]
         /// </summary>
-        public static Vector128<sbyte> DuplicateSelectedScalarToVector128(Vector128<sbyte> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<sbyte> DuplicateSelectedScalarToVector128(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// uint16x8_t vdupq_lane_u16 (uint16x8_t vec, const int lane)
         ///   A32: VDUP.16 Qd, Dm[index]
         ///   A64: DUP Vd.8H, Vn.H[index]
         /// </summary>
-        public static Vector128<ushort> DuplicateSelectedScalarToVector128(Vector128<ushort> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<ushort> DuplicateSelectedScalarToVector128(Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// uint32x4_t vdupq_lane_u32 (uint32x4_t vec, const int lane)
         ///   A32: VDUP.32 Qd, Dm[index]
         ///   A64: DUP Vd.4S, Vn.S[index]
         /// </summary>
-        public static Vector128<uint> DuplicateSelectedScalarToVector128(Vector128<uint> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+        public static Vector128<uint> DuplicateSelectedScalarToVector128(Vector128<uint> value, [ConstantExpected(Max = (byte)(3))] byte index) => DuplicateSelectedScalarToVector128(value, index);
 
         /// <summary>
         /// uint8x8_t vdup_n_u8 (uint8_t value)
@@ -6814,119 +6887,119 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VMOV.U8 Rt, Dn[lane]
         ///   A64: UMOV Wd, Vn.B[lane]
         /// </summary>
-        public static byte Extract(Vector64<byte> vector, byte index) => Extract(vector, index);
+        public static byte Extract(Vector64<byte> vector, [ConstantExpected(Max = (byte)(7))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// int16_t vget_lane_s16 (int16x4_t v, const int lane)
         ///   A32: VMOV.S16 Rt, Dn[lane]
         ///   A64: SMOV Wd, Vn.H[lane]
         /// </summary>
-        public static short Extract(Vector64<short> vector, byte index) => Extract(vector, index);
+        public static short Extract(Vector64<short> vector, [ConstantExpected(Max = (byte)(3))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// int32_t vget_lane_s32 (int32x2_t v, const int lane)
         ///   A32: VMOV.32 Rt, Dn[lane]
         ///   A64: SMOV Wd, Vn.S[lane]
         /// </summary>
-        public static int Extract(Vector64<int> vector, byte index) => Extract(vector, index);
+        public static int Extract(Vector64<int> vector, [ConstantExpected(Max = (byte)(1))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// int8_t vget_lane_s8 (int8x8_t v, const int lane)
         ///   A32: VMOV.S8 Rt, Dn[lane]
         ///   A64: SMOV Wd, Vn.B[lane]
         /// </summary>
-        public static sbyte Extract(Vector64<sbyte> vector, byte index) => Extract(vector, index);
+        public static sbyte Extract(Vector64<sbyte> vector, [ConstantExpected(Max = (byte)(7))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// float32_t vget_lane_f32 (float32x2_t v, const int lane)
         ///   A32: VMOV.F32 Sd, Sm
         ///   A64: DUP Sd, Vn.S[lane]
         /// </summary>
-        public static float Extract(Vector64<float> vector, byte index) => Extract(vector, index);
+        public static float Extract(Vector64<float> vector, [ConstantExpected(Max = (byte)(1))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// uint16_t vget_lane_u16 (uint16x4_t v, const int lane)
         ///   A32: VMOV.U16 Rt, Dn[lane]
         ///   A64: UMOV Wd, Vn.H[lane]
         /// </summary>
-        public static ushort Extract(Vector64<ushort> vector, byte index) => Extract(vector, index);
+        public static ushort Extract(Vector64<ushort> vector, [ConstantExpected(Max = (byte)(3))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// uint32_t vget_lane_u32 (uint32x2_t v, const int lane)
         ///   A32: VMOV.32 Rt, Dn[lane]
         ///   A64: UMOV Wd, Vn.S[lane]
         /// </summary>
-        public static uint Extract(Vector64<uint> vector, byte index) => Extract(vector, index);
+        public static uint Extract(Vector64<uint> vector, [ConstantExpected(Max = (byte)(1))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// uint8_t vgetq_lane_u8 (uint8x16_t v, const int lane)
         ///   A32: VMOV.U8 Rt, Dn[lane]
         ///   A64: UMOV Wd, Vn.B[lane]
         /// </summary>
-        public static byte Extract(Vector128<byte> vector, byte index) => Extract(vector, index);
+        public static byte Extract(Vector128<byte> vector, [ConstantExpected(Max = (byte)(15))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// float64_t vgetq_lane_f64 (float64x2_t v, const int lane)
         ///   A32: VMOV.F64 Dd, Dm
         ///   A64: DUP Dd, Vn.D[lane]
         /// </summary>
-        public static double Extract(Vector128<double> vector, byte index) => Extract(vector, index);
+        public static double Extract(Vector128<double> vector, [ConstantExpected(Max = (byte)(1))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// int16_t vgetq_lane_s16 (int16x8_t v, const int lane)
         ///   A32: VMOV.S16 Rt, Dn[lane]
         ///   A64: SMOV Wd, Vn.H[lane]
         /// </summary>
-        public static short Extract(Vector128<short> vector, byte index) => Extract(vector, index);
+        public static short Extract(Vector128<short> vector, [ConstantExpected(Max = (byte)(7))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// int32_t vgetq_lane_s32 (int32x4_t v, const int lane)
         ///   A32: VMOV.32 Rt, Dn[lane]
         ///   A64: SMOV Wd, Vn.S[lane]
         /// </summary>
-        public static int Extract(Vector128<int> vector, byte index) => Extract(vector, index);
+        public static int Extract(Vector128<int> vector, [ConstantExpected(Max = (byte)(3))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// int64_t vgetq_lane_s64 (int64x2_t v, const int lane)
         ///   A32: VMOV Rt, Rt2, Dm
         ///   A64: UMOV Xd, Vn.D[lane]
         /// </summary>
-        public static long Extract(Vector128<long> vector, byte index) => Extract(vector, index);
+        public static long Extract(Vector128<long> vector, [ConstantExpected(Max = (byte)(1))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// int8_t vgetq_lane_s8 (int8x16_t v, const int lane)
         ///   A32: VMOV.S8 Rt, Dn[lane]
         ///   A64: SMOV Wd, Vn.B[lane]
         /// </summary>
-        public static sbyte Extract(Vector128<sbyte> vector, byte index) => Extract(vector, index);
+        public static sbyte Extract(Vector128<sbyte> vector, [ConstantExpected(Max = (byte)(15))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// float32_t vgetq_lane_f32 (float32x4_t v, const int lane)
         ///   A32: VMOV.F32 Sd, Sm
         ///   A64: DUP Sd, Vn.S[lane]
         /// </summary>
-        public static float Extract(Vector128<float> vector, byte index) => Extract(vector, index);
+        public static float Extract(Vector128<float> vector, [ConstantExpected(Max = (byte)(3))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// uint16_t vgetq_lane_u16 (uint16x8_t v, const int lane)
         ///   A32: VMOV.U16 Rt, Dn[lane]
         ///   A64: UMOV Wd, Vn.H[lane]
         /// </summary>
-        public static ushort Extract(Vector128<ushort> vector, byte index) => Extract(vector, index);
+        public static ushort Extract(Vector128<ushort> vector, [ConstantExpected(Max = (byte)(7))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// uint32_t vgetq_lane_u32 (uint32x4_t v, const int lane)
         ///   A32: VMOV.32 Rt, Dn[lane]
         ///   A64: UMOV Wd, Vn.S[lane]
         /// </summary>
-        public static uint Extract(Vector128<uint> vector, byte index) => Extract(vector, index);
+        public static uint Extract(Vector128<uint> vector, [ConstantExpected(Max = (byte)(3))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// uint64_t vgetq_lane_u64 (uint64x2_t v, const int lane)
         ///   A32: VMOV Rt, Rt2, Dm
         ///   A64: UMOV Xd, Vn.D[lane]
         /// </summary>
-        public static ulong Extract(Vector128<ulong> vector, byte index) => Extract(vector, index);
+        public static ulong Extract(Vector128<ulong> vector, [ConstantExpected(Max = (byte)(1))] byte index) => Extract(vector, index);
 
         /// <summary>
         /// uint8x8_t vmovn_u16 (uint16x8_t a)
@@ -7143,119 +7216,119 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VEXT.8 Dd, Dn, Dm, #n
         ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #n
         /// </summary>
-        public static Vector64<byte> ExtractVector64(Vector64<byte> upper, Vector64<byte> lower, byte index) => ExtractVector64(upper, lower, index);
+        public static Vector64<byte> ExtractVector64(Vector64<byte> upper, Vector64<byte> lower, [ConstantExpected(Max = (byte)(7))] byte index) => ExtractVector64(upper, lower, index);
 
         /// <summary>
         /// int16x4_t vext_s16 (int16x4_t a, int16x4_t b, const int n)
         ///   A32: VEXT.8 Dd, Dn, Dm, #(n*2)
         ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*2)
         /// </summary>
-        public static Vector64<short> ExtractVector64(Vector64<short> upper, Vector64<short> lower, byte index) => ExtractVector64(upper, lower, index);
+        public static Vector64<short> ExtractVector64(Vector64<short> upper, Vector64<short> lower, [ConstantExpected(Max = (byte)(3))] byte index) => ExtractVector64(upper, lower, index);
 
         /// <summary>
         /// int32x2_t vext_s32 (int32x2_t a, int32x2_t b, const int n)
         ///   A32: VEXT.8 Dd, Dn, Dm, #(n*4)
         ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*4)
         /// </summary>
-        public static Vector64<int> ExtractVector64(Vector64<int> upper, Vector64<int> lower, byte index) => ExtractVector64(upper, lower, index);
+        public static Vector64<int> ExtractVector64(Vector64<int> upper, Vector64<int> lower, [ConstantExpected(Max = (byte)(1))] byte index) => ExtractVector64(upper, lower, index);
 
         /// <summary>
         /// int8x8_t vext_s8 (int8x8_t a, int8x8_t b, const int n)
         ///   A32: VEXT.8 Dd, Dn, Dm, #n
         ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ExtractVector64(Vector64<sbyte> upper, Vector64<sbyte> lower, byte index) => ExtractVector64(upper, lower, index);
+        public static Vector64<sbyte> ExtractVector64(Vector64<sbyte> upper, Vector64<sbyte> lower, [ConstantExpected(Max = (byte)(7))] byte index) => ExtractVector64(upper, lower, index);
 
         /// <summary>
         /// float32x2_t vext_f32 (float32x2_t a, float32x2_t b, const int n)
         ///   A32: VEXT.8 Dd, Dn, Dm, #(n*4)
         ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*4)
         /// </summary>
-        public static Vector64<float> ExtractVector64(Vector64<float> upper, Vector64<float> lower, byte index) => ExtractVector64(upper, lower, index);
+        public static Vector64<float> ExtractVector64(Vector64<float> upper, Vector64<float> lower, [ConstantExpected(Max = (byte)(1))] byte index) => ExtractVector64(upper, lower, index);
 
         /// <summary>
         /// uint16x4_t vext_s16 (uint16x4_t a, uint16x4_t b, const int n)
         ///   A32: VEXT.8 Dd, Dn, Dm, #(n*2)
         ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*2)
         /// </summary>
-        public static Vector64<ushort> ExtractVector64(Vector64<ushort> upper, Vector64<ushort> lower, byte index) => ExtractVector64(upper, lower, index);
+        public static Vector64<ushort> ExtractVector64(Vector64<ushort> upper, Vector64<ushort> lower, [ConstantExpected(Max = (byte)(3))] byte index) => ExtractVector64(upper, lower, index);
 
         /// <summary>
         /// uint32x2_t vext_s32 (uint32x2_t a, uint32x2_t b, const int n)
         ///   A32: VEXT.8 Dd, Dn, Dm, #(n*4)
         ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*4)
         /// </summary>
-        public static Vector64<uint> ExtractVector64(Vector64<uint> upper, Vector64<uint> lower, byte index) => ExtractVector64(upper, lower, index);
+        public static Vector64<uint> ExtractVector64(Vector64<uint> upper, Vector64<uint> lower, [ConstantExpected(Max = (byte)(1))] byte index) => ExtractVector64(upper, lower, index);
 
         /// <summary>
         /// uint8x16_t vextq_s8 (uint8x16_t a, uint8x16_t b, const int n)
         ///   A32: VEXT.8 Qd, Qn, Qm, #n
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #n
         /// </summary>
-        public static Vector128<byte> ExtractVector128(Vector128<byte> upper, Vector128<byte> lower, byte index) => ExtractVector128(upper, lower, index);
+        public static Vector128<byte> ExtractVector128(Vector128<byte> upper, Vector128<byte> lower, [ConstantExpected(Max = (byte)(15))] byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// float64x2_t vextq_f64 (float64x2_t a, float64x2_t b, const int n)
         ///   A32: VEXT.8 Qd, Qn, Qm, #(n*8)
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
         /// </summary>
-        public static Vector128<double> ExtractVector128(Vector128<double> upper, Vector128<double> lower, byte index) => ExtractVector128(upper, lower, index);
+        public static Vector128<double> ExtractVector128(Vector128<double> upper, Vector128<double> lower, [ConstantExpected(Max = (byte)(1))] byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// int16x8_t vextq_s16 (int16x8_t a, int16x8_t b, const int n)
         ///   A32: VEXT.8 Qd, Qn, Qm, #(n*2)
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*2)
         /// </summary>
-        public static Vector128<short> ExtractVector128(Vector128<short> upper, Vector128<short> lower, byte index) => ExtractVector128(upper, lower, index);
+        public static Vector128<short> ExtractVector128(Vector128<short> upper, Vector128<short> lower, [ConstantExpected(Max = (byte)(7))] byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// int32x4_t vextq_s32 (int32x4_t a, int32x4_t b, const int n)
         ///   A32: VEXT.8 Qd, Qn, Qm, #(n*4)
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*4)
         /// </summary>
-        public static Vector128<int> ExtractVector128(Vector128<int> upper, Vector128<int> lower, byte index) => ExtractVector128(upper, lower, index);
+        public static Vector128<int> ExtractVector128(Vector128<int> upper, Vector128<int> lower, [ConstantExpected(Max = (byte)(3))] byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// int64x2_t vextq_s64 (int64x2_t a, int64x2_t b, const int n)
         ///   A32: VEXT.8 Qd, Qn, Qm, #(n*8)
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
         /// </summary>
-        public static Vector128<long> ExtractVector128(Vector128<long> upper, Vector128<long> lower, byte index) => ExtractVector128(upper, lower, index);
+        public static Vector128<long> ExtractVector128(Vector128<long> upper, Vector128<long> lower, [ConstantExpected(Max = (byte)(1))] byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// int8x16_t vextq_s8 (int8x16_t a, int8x16_t b, const int n)
         ///   A32: VEXT.8 Qd, Qn, Qm, #n
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ExtractVector128(Vector128<sbyte> upper, Vector128<sbyte> lower, byte index) => ExtractVector128(upper, lower, index);
+        public static Vector128<sbyte> ExtractVector128(Vector128<sbyte> upper, Vector128<sbyte> lower, [ConstantExpected(Max = (byte)(15))] byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// float32x4_t vextq_f32 (float32x4_t a, float32x4_t b, const int n)
         ///   A32: VEXT.8 Qd, Qn, Qm, #(n*4)
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*4)
         /// </summary>
-        public static Vector128<float> ExtractVector128(Vector128<float> upper, Vector128<float> lower, byte index) => ExtractVector128(upper, lower, index);
+        public static Vector128<float> ExtractVector128(Vector128<float> upper, Vector128<float> lower, [ConstantExpected(Max = (byte)(3))] byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// uint16x8_t vextq_s16 (uint16x8_t a, uint16x8_t b, const int n)
         ///   A32: VEXT.8 Qd, Qn, Qm, #(n*2)
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*2)
         /// </summary>
-        public static Vector128<ushort> ExtractVector128(Vector128<ushort> upper, Vector128<ushort> lower, byte index) => ExtractVector128(upper, lower, index);
+        public static Vector128<ushort> ExtractVector128(Vector128<ushort> upper, Vector128<ushort> lower, [ConstantExpected(Max = (byte)(7))] byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// uint32x4_t vextq_s32 (uint32x4_t a, uint32x4_t b, const int n)
         ///   A32: VEXT.8 Qd, Qn, Qm, #(n*4)
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*4)
         /// </summary>
-        public static Vector128<uint> ExtractVector128(Vector128<uint> upper, Vector128<uint> lower, byte index) => ExtractVector128(upper, lower, index);
+        public static Vector128<uint> ExtractVector128(Vector128<uint> upper, Vector128<uint> lower, [ConstantExpected(Max = (byte)(3))] byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// uint64x2_t vextq_s64 (uint64x2_t a, uint64x2_t b, const int n)
         ///   A32: VEXT.8 Qd, Qn, Qm, #(n*8)
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
         /// </summary>
-        public static Vector128<ulong> ExtractVector128(Vector128<ulong> upper, Vector128<ulong> lower, byte index) => ExtractVector128(upper, lower, index);
+        public static Vector128<ulong> ExtractVector128(Vector128<ulong> upper, Vector128<ulong> lower, [ConstantExpected(Max = (byte)(1))] byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// float32x2_t vrndm_f32 (float32x2_t a)
@@ -7633,140 +7706,140 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VMOV.8 Dd[lane], Rt
         ///   A64: INS Vd.B[lane], Wn
         /// </summary>
-        public static Vector64<byte> Insert(Vector64<byte> vector, byte index, byte data) => Insert(vector, index, data);
+        public static Vector64<byte> Insert(Vector64<byte> vector, [ConstantExpected(Max = (byte)(7))] byte index, byte data) => Insert(vector, index, data);
 
         /// <summary>
         /// int16x4_t vset_lane_s16 (int16_t a, int16x4_t v, const int lane)
         ///   A32: VMOV.16 Dd[lane], Rt
         ///   A64: INS Vd.H[lane], Wn
         /// </summary>
-        public static Vector64<short> Insert(Vector64<short> vector, byte index, short data) => Insert(vector, index, data);
+        public static Vector64<short> Insert(Vector64<short> vector, [ConstantExpected(Max = (byte)(3))] byte index, short data) => Insert(vector, index, data);
 
         /// <summary>
         /// int32x2_t vset_lane_s32 (int32_t a, int32x2_t v, const int lane)
         ///   A32: VMOV.32 Dd[lane], Rt
         ///   A64: INS Vd.S[lane], Wn
         /// </summary>
-        public static Vector64<int> Insert(Vector64<int> vector, byte index, int data) => Insert(vector, index, data);
+        public static Vector64<int> Insert(Vector64<int> vector, [ConstantExpected(Max = (byte)(1))] byte index, int data) => Insert(vector, index, data);
 
         /// <summary>
         /// int8x8_t vset_lane_s8 (int8_t a, int8x8_t v, const int lane)
         ///   A32: VMOV.8 Dd[lane], Rt
         ///   A64: INS Vd.B[lane], Wn
         /// </summary>
-        public static Vector64<sbyte> Insert(Vector64<sbyte> vector, byte index, sbyte data) => Insert(vector, index, data);
+        public static Vector64<sbyte> Insert(Vector64<sbyte> vector, [ConstantExpected(Max = (byte)(7))] byte index, sbyte data) => Insert(vector, index, data);
 
         /// <summary>
         /// float32x2_t vset_lane_f32 (float32_t a, float32x2_t v, const int lane)
         ///   A32: VMOV.F32 Sd, Sm
         ///   A64: INS Vd.S[lane], Vn.S[0]
         /// </summary>
-        public static Vector64<float> Insert(Vector64<float> vector, byte index, float data) => Insert(vector, index, data);
+        public static Vector64<float> Insert(Vector64<float> vector, [ConstantExpected(Max = (byte)(1))] byte index, float data) => Insert(vector, index, data);
 
         /// <summary>
         /// uint16x4_t vset_lane_u16 (uint16_t a, uint16x4_t v, const int lane)
         ///   A32: VMOV.16 Dd[lane], Rt
         ///   A64: INS Vd.H[lane], Wn
         /// </summary>
-        public static Vector64<ushort> Insert(Vector64<ushort> vector, byte index, ushort data) => Insert(vector, index, data);
+        public static Vector64<ushort> Insert(Vector64<ushort> vector, [ConstantExpected(Max = (byte)(3))] byte index, ushort data) => Insert(vector, index, data);
 
         /// <summary>
         /// uint32x2_t vset_lane_u32 (uint32_t a, uint32x2_t v, const int lane)
         ///   A32: VMOV.32 Dd[lane], Rt
         ///   A64: INS Vd.S[lane], Wn
         /// </summary>
-        public static Vector64<uint> Insert(Vector64<uint> vector, byte index, uint data) => Insert(vector, index, data);
+        public static Vector64<uint> Insert(Vector64<uint> vector, [ConstantExpected(Max = (byte)(1))] byte index, uint data) => Insert(vector, index, data);
 
         /// <summary>
         /// uint8x16_t vsetq_lane_u8 (uint8_t a, uint8x16_t v, const int lane)
         ///   A32: VMOV.8 Dd[lane], Rt
         ///   A64: INS Vd.B[lane], Wn
         /// </summary>
-        public static Vector128<byte> Insert(Vector128<byte> vector, byte index, byte data) => Insert(vector, index, data);
+        public static Vector128<byte> Insert(Vector128<byte> vector, [ConstantExpected(Max = (byte)(15))] byte index, byte data) => Insert(vector, index, data);
 
         /// <summary>
         /// float64x2_t vsetq_lane_f64 (float64_t a, float64x2_t v, const int lane)
         ///   A32: VMOV.F64 Dd, Dm
         ///   A64: INS Vd.D[lane], Vn.D[0]
         /// </summary>
-        public static Vector128<double> Insert(Vector128<double> vector, byte index, double data) => Insert(vector, index, data);
+        public static Vector128<double> Insert(Vector128<double> vector, [ConstantExpected(Max = (byte)(1))] byte index, double data) => Insert(vector, index, data);
 
         /// <summary>
         /// int16x8_t vsetq_lane_s16 (int16_t a, int16x8_t v, const int lane)
         ///   A32: VMOV.16 Dd[lane], Rt
         ///   A64: INS Vd.H[lane], Wn
         /// </summary>
-        public static Vector128<short> Insert(Vector128<short> vector, byte index, short data) => Insert(vector, index, data);
+        public static Vector128<short> Insert(Vector128<short> vector, [ConstantExpected(Max = (byte)(7))] byte index, short data) => Insert(vector, index, data);
 
         /// <summary>
         /// int32x4_t vsetq_lane_s32 (int32_t a, int32x4_t v, const int lane)
         ///   A32: VMOV.32 Dd[lane], Rt
         ///   A64: INS Vd.S[lane], Wn
         /// </summary>
-        public static Vector128<int> Insert(Vector128<int> vector, byte index, int data) => Insert(vector, index, data);
+        public static Vector128<int> Insert(Vector128<int> vector, [ConstantExpected(Max = (byte)(3))] byte index, int data) => Insert(vector, index, data);
 
         /// <summary>
         /// int64x2_t vsetq_lane_s64 (int64_t a, int64x2_t v, const int lane)
         ///   A32: VMOV.64 Dd, Rt, Rt2
         ///   A64: INS Vd.D[lane], Xn
         /// </summary>
-        public static Vector128<long> Insert(Vector128<long> vector, byte index, long data) => Insert(vector, index, data);
+        public static Vector128<long> Insert(Vector128<long> vector, [ConstantExpected(Max = (byte)(1))] byte index, long data) => Insert(vector, index, data);
 
         /// <summary>
         /// int8x16_t vsetq_lane_s8 (int8_t a, int8x16_t v, const int lane)
         ///   A32: VMOV.8 Dd[lane], Rt
         ///   A64: INS Vd.B[lane], Wn
         /// </summary>
-        public static Vector128<sbyte> Insert(Vector128<sbyte> vector, byte index, sbyte data) => Insert(vector, index, data);
+        public static Vector128<sbyte> Insert(Vector128<sbyte> vector, [ConstantExpected(Max = (byte)(15))] byte index, sbyte data) => Insert(vector, index, data);
 
         /// <summary>
         /// float32x4_t vsetq_lane_f32 (float32_t a, float32x4_t v, const int lane)
         ///   A32: VMOV.F32 Sd, Sm
         ///   A64: INS Vd.S[lane], Vn.S[0]
         /// </summary>
-        public static Vector128<float> Insert(Vector128<float> vector, byte index, float data) => Insert(vector, index, data);
+        public static Vector128<float> Insert(Vector128<float> vector, [ConstantExpected(Max = (byte)(3))] byte index, float data) => Insert(vector, index, data);
 
         /// <summary>
         /// uint16x8_t vsetq_lane_u16 (uint16_t a, uint16x8_t v, const int lane)
         ///   A32: VMOV.16 Dd[lane], Rt
         ///   A64: INS Vd.H[lane], Wn
         /// </summary>
-        public static Vector128<ushort> Insert(Vector128<ushort> vector, byte index, ushort data) => Insert(vector, index, data);
+        public static Vector128<ushort> Insert(Vector128<ushort> vector, [ConstantExpected(Max = (byte)(7))] byte index, ushort data) => Insert(vector, index, data);
 
         /// <summary>
         /// uint32x4_t vsetq_lane_u32 (uint32_t a, uint32x4_t v, const int lane)
         ///   A32: VMOV.32 Dd[lane], Rt
         ///   A64: INS Vd.S[lane], Wn
         /// </summary>
-        public static Vector128<uint> Insert(Vector128<uint> vector, byte index, uint data) => Insert(vector, index, data);
+        public static Vector128<uint> Insert(Vector128<uint> vector, [ConstantExpected(Max = (byte)(3))] byte index, uint data) => Insert(vector, index, data);
 
         /// <summary>
         /// uint64x2_t vsetq_lane_u64 (uint64_t a, uint64x2_t v, const int lane)
         ///   A32: VMOV.64 Dd, Rt, Rt2
         ///   A64: INS Vd.D[lane], Xn
         /// </summary>
-        public static Vector128<ulong> Insert(Vector128<ulong> vector, byte index, ulong data) => Insert(vector, index, data);
+        public static Vector128<ulong> Insert(Vector128<ulong> vector, [ConstantExpected(Max = (byte)(1))] byte index, ulong data) => Insert(vector, index, data);
 
         /// <summary>
         /// float64x2_t vcopyq_lane_f64 (float64x2_t a, const int lane1, float64x1_t b, const int lane2)
         ///   A32: VMOV.F64 Dd, Dm
         ///   A64: INS Vd.D[lane1], Vn.D[0]
         /// </summary>
-        public static Vector128<double> InsertScalar(Vector128<double> result, byte resultIndex, Vector64<double> value) => InsertScalar(result, resultIndex, value);
+        public static Vector128<double> InsertScalar(Vector128<double> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector64<double> value) => InsertScalar(result, resultIndex, value);
 
         /// <summary>
         /// int64x2_t vcopyq_lane_s64 (int64x2_t a, const int lane1, int64x1_t b, const int lane2)
         ///   A32: VMOV Dd, Dm
         ///   A64: INS Vd.D[lane1], Vn.D[0]
         /// </summary>
-        public static Vector128<long> InsertScalar(Vector128<long> result, byte resultIndex, Vector64<long> value) => InsertScalar(result, resultIndex, value);
+        public static Vector128<long> InsertScalar(Vector128<long> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector64<long> value) => InsertScalar(result, resultIndex, value);
 
         /// <summary>
         /// uint64x2_t vcopyq_lane_u64 (uint64x2_t a, const int lane1, uint64x1_t b, const int lane2)
         ///   A32: VMOV Dd, Dm
         ///   A64: INS Vd.D[lane1], Vn.D[0]
         /// </summary>
-        public static Vector128<ulong> InsertScalar(Vector128<ulong> result, byte resultIndex, Vector64<ulong> value) => InsertScalar(result, resultIndex, value);
+        public static Vector128<ulong> InsertScalar(Vector128<ulong> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector64<ulong> value) => InsertScalar(result, resultIndex, value);
 
         /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
@@ -7899,119 +7972,119 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VLD1.8 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.B }[index], [Xn]
         /// </summary>
-        public static unsafe Vector64<byte> LoadAndInsertScalar(Vector64<byte> value, byte index, byte* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector64<byte> LoadAndInsertScalar(Vector64<byte> value, [ConstantExpected(Max = (byte)(7))] byte index, byte* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// int16x4_t vld1_lane_s16 (int16_t const * ptr, int16x4_t src, const int lane)
         ///   A32: VLD1.16 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.H }[index], [Xn]
         /// </summary>
-        public static unsafe Vector64<short> LoadAndInsertScalar(Vector64<short> value, byte index, short* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector64<short> LoadAndInsertScalar(Vector64<short> value, [ConstantExpected(Max = (byte)(3))] byte index, short* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// int32x2_t vld1_lane_s32 (int32_t const * ptr, int32x2_t src, const int lane)
         ///   A32: VLD1.32 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe Vector64<int> LoadAndInsertScalar(Vector64<int> value, byte index, int* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector64<int> LoadAndInsertScalar(Vector64<int> value, [ConstantExpected(Max = (byte)(1))] byte index, int* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// int8x8_t vld1_lane_s8 (int8_t const * ptr, int8x8_t src, const int lane)
         ///   A32: VLD1.8 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.B }[index], [Xn]
         /// </summary>
-        public static unsafe Vector64<sbyte> LoadAndInsertScalar(Vector64<sbyte> value, byte index, sbyte* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector64<sbyte> LoadAndInsertScalar(Vector64<sbyte> value, [ConstantExpected(Max = (byte)(7))] byte index, sbyte* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// float32x2_t vld1_lane_f32 (float32_t const * ptr, float32x2_t src, const int lane)
         ///   A32: VLD1.32 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe Vector64<float> LoadAndInsertScalar(Vector64<float> value, byte index, float* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector64<float> LoadAndInsertScalar(Vector64<float> value, [ConstantExpected(Max = (byte)(1))] byte index, float* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// uint16x4_t vld1_lane_u16 (uint16_t const * ptr, uint16x4_t src, const int lane)
         ///   A32: VLD1.16 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.H }[index], [Xn]
         /// </summary>
-        public static unsafe Vector64<ushort> LoadAndInsertScalar(Vector64<ushort> value, byte index, ushort* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector64<ushort> LoadAndInsertScalar(Vector64<ushort> value, [ConstantExpected(Max = (byte)(3))] byte index, ushort* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// uint32x2_t vld1_lane_u32 (uint32_t const * ptr, uint32x2_t src, const int lane)
         ///   A32: VLD1.32 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe Vector64<uint> LoadAndInsertScalar(Vector64<uint> value, byte index, uint* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector64<uint> LoadAndInsertScalar(Vector64<uint> value, [ConstantExpected(Max = (byte)(1))] byte index, uint* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// uint8x16_t vld1q_lane_u8 (uint8_t const * ptr, uint8x16_t src, const int lane)
         ///   A32: VLD1.8 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.B }[index], [Xn]
         /// </summary>
-        public static unsafe Vector128<byte> LoadAndInsertScalar(Vector128<byte> value, byte index, byte* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector128<byte> LoadAndInsertScalar(Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte index, byte* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// float64x2_t vld1q_lane_f64 (float64_t const * ptr, float64x2_t src, const int lane)
         ///   A32: VLDR.64 Dd, [Rn]
         ///   A64: LD1 { Vt.D }[index], [Xn]
         /// </summary>
-        public static unsafe Vector128<double> LoadAndInsertScalar(Vector128<double> value, byte index, double* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector128<double> LoadAndInsertScalar(Vector128<double> value, [ConstantExpected(Max = (byte)(1))] byte index, double* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// int16x8_t vld1q_lane_s16 (int16_t const * ptr, int16x8_t src, const int lane)
         ///   A32: VLD1.16 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.H }[index], [Xn]
         /// </summary>
-        public static unsafe Vector128<short> LoadAndInsertScalar(Vector128<short> value, byte index, short* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector128<short> LoadAndInsertScalar(Vector128<short> value, [ConstantExpected(Max = (byte)(7))] byte index, short* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// int32x4_t vld1q_lane_s32 (int32_t const * ptr, int32x4_t src, const int lane)
         ///   A32: VLD1.32 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe Vector128<int> LoadAndInsertScalar(Vector128<int> value, byte index, int* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector128<int> LoadAndInsertScalar(Vector128<int> value, [ConstantExpected(Max = (byte)(3))] byte index, int* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// int64x2_t vld1q_lane_s64 (int64_t const * ptr, int64x2_t src, const int lane)
         ///   A32: VLDR.64 Dd, [Rn]
         ///   A64: LD1 { Vt.D }[index], [Xn]
         /// </summary>
-        public static unsafe Vector128<long> LoadAndInsertScalar(Vector128<long> value, byte index, long* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector128<long> LoadAndInsertScalar(Vector128<long> value, [ConstantExpected(Max = (byte)(1))] byte index, long* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// int8x16_t vld1q_lane_s8 (int8_t const * ptr, int8x16_t src, const int lane)
         ///   A32: VLD1.8 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.B }[index], [Xn]
         /// </summary>
-        public static unsafe Vector128<sbyte> LoadAndInsertScalar(Vector128<sbyte> value, byte index, sbyte* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector128<sbyte> LoadAndInsertScalar(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte index, sbyte* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// float32x4_t vld1q_lane_f32 (float32_t const * ptr, float32x4_t src, const int lane)
         ///   A32: VLD1.32 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe Vector128<float> LoadAndInsertScalar(Vector128<float> value, byte index, float* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector128<float> LoadAndInsertScalar(Vector128<float> value, [ConstantExpected(Max = (byte)(3))] byte index, float* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// uint16x8_t vld1q_lane_u16 (uint16_t const * ptr, uint16x8_t src, const int lane)
         ///   A32: VLD1.16 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.H }[index], [Xn]
         /// </summary>
-        public static unsafe Vector128<ushort> LoadAndInsertScalar(Vector128<ushort> value, byte index, ushort* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector128<ushort> LoadAndInsertScalar(Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte index, ushort* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// uint32x4_t vld1q_lane_u32 (uint32_t const * ptr, uint32x4_t src, const int lane)
         ///   A32: VLD1.32 { Dd[index] }, [Rn]
         ///   A64: LD1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe Vector128<uint> LoadAndInsertScalar(Vector128<uint> value, byte index, uint* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector128<uint> LoadAndInsertScalar(Vector128<uint> value, [ConstantExpected(Max = (byte)(3))] byte index, uint* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// uint64x2_t vld1q_lane_u64 (uint64_t const * ptr, uint64x2_t src, const int lane)
         ///   A32: VLDR.64 Dd, [Rn]
         ///   A64: LD1 { Vt.D }[index], [Xn]
         /// </summary>
-        public static unsafe Vector128<ulong> LoadAndInsertScalar(Vector128<ulong> value, byte index, ulong* address) => LoadAndInsertScalar(value, index, address);
+        public static unsafe Vector128<ulong> LoadAndInsertScalar(Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index, ulong* address) => LoadAndInsertScalar(value, index, address);
 
         /// <summary>
         /// uint8x8_t vld1_dup_u8 (uint8_t const * ptr)
@@ -8844,112 +8917,112 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
         ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<short> MultiplyAddBySelectedScalar(Vector64<short> addend, Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector64<short> MultiplyAddBySelectedScalar(Vector64<short> addend, Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// int16x4_t vmla_laneq_s16 (int16x4_t a, int16x4_t b, int16x8_t v, const int lane)
         ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
         ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<short> MultiplyAddBySelectedScalar(Vector64<short> addend, Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector64<short> MultiplyAddBySelectedScalar(Vector64<short> addend, Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x2_t vmla_lane_s32 (int32x2_t a, int32x2_t b, int32x2_t v, const int lane)
         ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
         ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<int> MultiplyAddBySelectedScalar(Vector64<int> addend, Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector64<int> MultiplyAddBySelectedScalar(Vector64<int> addend, Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x2_t vmla_laneq_s32 (int32x2_t a, int32x2_t b, int32x4_t v, const int lane)
         ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
         ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<int> MultiplyAddBySelectedScalar(Vector64<int> addend, Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector64<int> MultiplyAddBySelectedScalar(Vector64<int> addend, Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint16x4_t vmla_lane_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
         ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
         ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<ushort> MultiplyAddBySelectedScalar(Vector64<ushort> addend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector64<ushort> MultiplyAddBySelectedScalar(Vector64<ushort> addend, Vector64<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint16x4_t vmla_laneq_u16 (uint16x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
         ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
         ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<ushort> MultiplyAddBySelectedScalar(Vector64<ushort> addend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector64<ushort> MultiplyAddBySelectedScalar(Vector64<ushort> addend, Vector64<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x2_t vmla_lane_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
         ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
         ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<uint> MultiplyAddBySelectedScalar(Vector64<uint> addend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector64<uint> MultiplyAddBySelectedScalar(Vector64<uint> addend, Vector64<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x2_t vmla_laneq_u32 (uint32x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
         ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
         ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<uint> MultiplyAddBySelectedScalar(Vector64<uint> addend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector64<uint> MultiplyAddBySelectedScalar(Vector64<uint> addend, Vector64<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// int16x8_t vmlaq_lane_s16 (int16x8_t a, int16x8_t b, int16x4_t v, const int lane)
         ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
         ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<short> MultiplyAddBySelectedScalar(Vector128<short> addend, Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector128<short> MultiplyAddBySelectedScalar(Vector128<short> addend, Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// int16x8_t vmlaq_laneq_s16 (int16x8_t a, int16x8_t b, int16x8_t v, const int lane)
         ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
         ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<short> MultiplyAddBySelectedScalar(Vector128<short> addend, Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector128<short> MultiplyAddBySelectedScalar(Vector128<short> addend, Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlaq_lane_s32 (int32x4_t a, int32x4_t b, int32x2_t v, const int lane)
         ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
         ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<int> MultiplyAddBySelectedScalar(Vector128<int> addend, Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector128<int> MultiplyAddBySelectedScalar(Vector128<int> addend, Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlaq_laneq_s32 (int32x4_t a, int32x4_t b, int32x4_t v, const int lane)
         ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
         ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<int> MultiplyAddBySelectedScalar(Vector128<int> addend, Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector128<int> MultiplyAddBySelectedScalar(Vector128<int> addend, Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint16x8_t vmlaq_lane_u16 (uint16x8_t a, uint16x8_t b, uint16x4_t v, const int lane)
         ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
         ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<ushort> MultiplyAddBySelectedScalar(Vector128<ushort> addend, Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector128<ushort> MultiplyAddBySelectedScalar(Vector128<ushort> addend, Vector128<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint16x8_t vmlaq_laneq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t v, const int lane)
         ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
         ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<ushort> MultiplyAddBySelectedScalar(Vector128<ushort> addend, Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector128<ushort> MultiplyAddBySelectedScalar(Vector128<ushort> addend, Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlaq_lane_u32 (uint32x4_t a, uint32x4_t b, uint32x2_t v, const int lane)
         ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
         ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyAddBySelectedScalar(Vector128<uint> addend, Vector128<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector128<uint> MultiplyAddBySelectedScalar(Vector128<uint> addend, Vector128<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlaq_laneq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t v, const int lane)
         ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
         ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyAddBySelectedScalar(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        public static Vector128<uint> MultiplyAddBySelectedScalar(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
         /// <summary>
         /// int16x4_t vmul_n_s16 (int16x4_t a, int16_t b)
@@ -9026,476 +9099,476 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
         ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<short> MultiplyBySelectedScalar(Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector64<short> MultiplyBySelectedScalar(Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int16x4_t vmul_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
         ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
         ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<short> MultiplyBySelectedScalar(Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector64<short> MultiplyBySelectedScalar(Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int32x2_t vmul_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
         ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
         ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<int> MultiplyBySelectedScalar(Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector64<int> MultiplyBySelectedScalar(Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int32x2_t vmul_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
         ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
         ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<int> MultiplyBySelectedScalar(Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector64<int> MultiplyBySelectedScalar(Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// float32x2_t vmul_lane_f32 (float32x2_t a, float32x2_t v, const int lane)
         ///   A32: VMUL.F32 Dd, Dn, Dm[lane]
         ///   A64: FMUL Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<float> MultiplyBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector64<float> MultiplyBySelectedScalar(Vector64<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// float32x2_t vmul_laneq_f32 (float32x2_t a, float32x4_t v, const int lane)
         ///   A32: VMUL.F32 Dd, Dn, Dm[lane]
         ///   A64: FMUL Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<float> MultiplyBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector64<float> MultiplyBySelectedScalar(Vector64<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// uint16x4_t vmul_lane_u16 (uint16x4_t a, uint16x4_t v, const int lane)
         ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
         ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<ushort> MultiplyBySelectedScalar(Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector64<ushort> MultiplyBySelectedScalar(Vector64<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// uint16x4_t vmul_laneq_u16 (uint16x4_t a, uint16x8_t v, const int lane)
         ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
         ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<ushort> MultiplyBySelectedScalar(Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector64<ushort> MultiplyBySelectedScalar(Vector64<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// uint32x2_t vmul_lane_u32 (uint32x2_t a, uint32x2_t v, const int lane)
         ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
         ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<uint> MultiplyBySelectedScalar(Vector64<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector64<uint> MultiplyBySelectedScalar(Vector64<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// uint32x2_t vmul_laneq_u32 (uint32x2_t a, uint32x4_t v, const int lane)
         ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
         ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<uint> MultiplyBySelectedScalar(Vector64<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector64<uint> MultiplyBySelectedScalar(Vector64<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int16x8_t vmulq_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
         ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
         ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<short> MultiplyBySelectedScalar(Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector128<short> MultiplyBySelectedScalar(Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int16x8_t vmulq_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
         ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
         ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<short> MultiplyBySelectedScalar(Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector128<short> MultiplyBySelectedScalar(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmulq_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
         ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
         ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalar(Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalar(Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmulq_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
         ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
         ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalar(Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalar(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// float32x4_t vmulq_lane_f32 (float32x4_t a, float32x2_t v, const int lane)
         ///   A32: VMUL.F32 Qd, Qn, Dm[lane]
         ///   A64: FMUL Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<float> MultiplyBySelectedScalar(Vector128<float> left, Vector64<float> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector128<float> MultiplyBySelectedScalar(Vector128<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// float32x4_t vmulq_laneq_f32 (float32x4_t a, float32x4_t v, const int lane)
         ///   A32: VMUL.F32 Qd, Qn, Dm[lane]
         ///   A64: FMUL Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<float> MultiplyBySelectedScalar(Vector128<float> left, Vector128<float> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector128<float> MultiplyBySelectedScalar(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// uint16x8_t vmulq_lane_u16 (uint16x8_t a, uint16x4_t v, const int lane)
         ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
         ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<ushort> MultiplyBySelectedScalar(Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector128<ushort> MultiplyBySelectedScalar(Vector128<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// uint16x8_t vmulq_laneq_u16 (uint16x8_t a, uint16x8_t v, const int lane)
         ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
         ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<ushort> MultiplyBySelectedScalar(Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector128<ushort> MultiplyBySelectedScalar(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmulq_lane_u32 (uint32x4_t a, uint32x2_t v, const int lane)
         ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
         ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalar(Vector128<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalar(Vector128<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmulq_laneq_u32 (uint32x4_t a, uint32x4_t v, const int lane)
         ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
         ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalar(Vector128<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalar(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmull_lane_s16 (int16x4_t a, int16x4_t v, const int lane)
         ///   A32: VMULL.S16 Qd, Dn, Dm[lane]
         ///   A64: SMULL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningLower(Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningLower(Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmull_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
         ///   A32: VMULL.S16 Qd, Dn, Dm[lane]
         ///   A64: SMULL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningLower(Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningLower(Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmull_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
         ///   A32: VMULL.S32 Qd, Dn, Dm[lane]
         ///   A64: SMULL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningLower(Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningLower(Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmull_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
         ///   A32: VMULL.S32 Qd, Dn, Dm[lane]
         ///   A64: SMULL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningLower(Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningLower(Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmull_lane_u16 (uint16x4_t a, uint16x4_t v, const int lane)
         ///   A32: VMULL.U16 Qd, Dn, Dm[lane]
         ///   A64: UMULL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningLower(Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLower(Vector64<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmull_laneq_u16 (uint16x4_t a, uint16x8_t v, const int lane)
         ///   A32: VMULL.U16 Qd, Dn, Dm[lane]
         ///   A64: UMULL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningLower(Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLower(Vector64<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmull_lane_u32 (uint32x2_t a, uint32x2_t v, const int lane)
         ///   A32: VMULL.U32 Qd, Dn, Dm[lane]
         ///   A64: UMULL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningLower(Vector64<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLower(Vector64<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmull_laneq_u32 (uint32x2_t a, uint32x4_t v, const int lane)
         ///   A32: VMULL.U32 Qd, Dn, Dm[lane]
         ///   A64: UMULL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningLower(Vector64<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLower(Vector64<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLower(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlal_lane_s16 (int32x4_t a, int16x4_t b, int16x4_t v, const int lane)
         ///   A32: VMLAL.S16 Qd, Dn, Dm[lane]
         ///   A64: SMLAL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<int> addend, Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<int> addend, Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlal_laneq_s16 (int32x4_t a, int16x4_t b, int16x8_t v, const int lane)
         ///   A32: VMLAL.S16 Qd, Dn, Dm[lane]
         ///   A64: SMLAL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<int> addend, Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<int> addend, Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmlal_lane_s32 (int64x2_t a, int32x2_t b, int32x2_t v, const int lane)
         ///   A32: VMLAL.S32 Qd, Dn, Dm[lane]
         ///   A64: SMLAL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<long> addend, Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<long> addend, Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmlal_laneq_s32 (int64x2_t a, int32x2_t b, int32x4_t v, const int lane)
         ///   A32: VMLAL.S32 Qd, Dn, Dm[lane]
         ///   A64: SMLAL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<long> addend, Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<long> addend, Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlal_lane_u16 (uint32x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
         ///   A32: VMLAL.U16 Qd, Dn, Dm[lane]
         ///   A64: UMLAL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<uint> addend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<uint> addend, Vector64<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlal_laneq_u16 (uint32x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
         ///   A32: VMLAL.U16 Qd, Dn, Dm[lane]
         ///   A64: UMLAL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<uint> addend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<uint> addend, Vector64<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmlal_lane_u32 (uint64x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
         ///   A32: VMLAL.U32 Qd, Dn, Dm[lane]
         ///   A64: UMLAL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<ulong> addend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<ulong> addend, Vector64<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmlal_laneq_u32 (uint64x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
         ///   A32: VMLAL.U32 Qd, Dn, Dm[lane]
         ///   A64: UMLAL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<ulong> addend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<ulong> addend, Vector64<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlsl_lane_s16 (int32x4_t a, int16x4_t b, int16x4_t v, const int lane)
         ///   A32: VMLSL.S16 Qd, Dn, Dm[lane]
         ///   A64: SMLSL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<int> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<int> minuend, Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlsl_laneq_s16 (int32x4_t a, int16x4_t b, int16x8_t v, const int lane)
         ///   A32: VMLSL.S16 Qd, Dn, Dm[lane]
         ///   A64: SMLSL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<int> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<int> minuend, Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmlsl_lane_s32 (int64x2_t a, int32x2_t b, int32x2_t v, const int lane)
         ///   A32: VMLSL.S32 Qd, Dn, Dm[lane]
         ///   A64: SMLSL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<long> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<long> minuend, Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmlsl_laneq_s32 (int64x2_t a, int32x2_t b, int32x4_t v, const int lane)
         ///   A32: VMLSL.S32 Qd, Dn, Dm[lane]
         ///   A64: SMLSL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<long> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<long> minuend, Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlsl_lane_u16 (uint32x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
         ///   A32: VMLSL.U16 Qd, Dn, Dm[lane]
         ///   A64: UMLSL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<uint> minuend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<uint> minuend, Vector64<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlsl_laneq_u16 (uint32x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
         ///   A32: VMLSL.U16 Qd, Dn, Dm[lane]
         ///   A64: UMLSL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<uint> minuend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<uint> minuend, Vector64<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmlsl_lane_u32 (uint64x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
         ///   A32: VMLSL.U32 Qd, Dn, Dm[lane]
         ///   A64: UMLSL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<ulong> minuend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<ulong> minuend, Vector64<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmlsl_laneq_u32 (uint64x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
         ///   A32: VMLSL.U32 Qd, Dn, Dm[lane]
         ///   A64: UMLSL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<ulong> minuend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<ulong> minuend, Vector64<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningLowerAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmull_high_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
         ///   A32: VMULL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SMULL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningUpper(Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpper(Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmull_high_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
         ///   A32: VMULL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SMULL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningUpper(Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpper(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmull_high_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
         ///   A32: VMULL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SMULL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningUpper(Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpper(Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmull_high_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
         ///   A32: VMULL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SMULL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningUpper(Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpper(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmull_high_lane_u16 (uint16x8_t a, uint16x4_t v, const int lane)
         ///   A32: VMULL.U16 Qd, Dn+1, Dm[lane]
         ///   A64: UMULL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningUpper(Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpper(Vector128<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmull_high_laneq_u16 (uint16x8_t a, uint16x8_t v, const int lane)
         ///   A32: VMULL.U16 Qd, Dn+1, Dm[lane]
         ///   A64: UMULL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningUpper(Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpper(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmull_high_lane_u32 (uint32x4_t a, uint32x2_t v, const int lane)
         ///   A32: VMULL.U32 Qd, Dn+1, Dm[lane]
         ///   A64: UMULL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpper(Vector128<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpper(Vector128<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmull_high_laneq_u32 (uint32x4_t a, uint32x4_t v, const int lane)
         ///   A32: VMULL.U32 Qd, Dn+1, Dm[lane]
         ///   A64: UMULL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpper(Vector128<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpper(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpper(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlal_high_lane_s16 (int32x4_t a, int16x8_t b, int16x4_t v, const int lane)
         ///   A32: VMLAL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<int> addend, Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<int> addend, Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlal_high_laneq_s16 (int32x4_t a, int16x8_t b, int16x8_t v, const int lane)
         ///   A32: VMLAL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<int> addend, Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<int> addend, Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmlal_high_lane_s32 (int64x2_t a, int32x4_t b, int32x2_t v, const int lane)
         ///   A32: VMLAL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<long> addend, Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<long> addend, Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmlal_high_laneq_s32 (int64x2_t a, int32x4_t b, int32x4_t v, const int lane)
         ///   A32: VMLAL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<long> addend, Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<long> addend, Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlal_high_lane_u16 (uint32x4_t a, uint16x8_t b, uint16x4_t v, const int lane)
         ///   A32: VMLAL.U16 Qd, Dn+1, Dm[lane]
         ///   A64: UMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<uint> addend, Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<uint> addend, Vector128<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlal_high_laneq_u16 (uint32x4_t a, uint16x8_t b, uint16x8_t v, const int lane)
         ///   A32: VMLAL.U16 Qd, Dn+1, Dm[lane]
         ///   A64: UMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<uint> addend, Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<uint> addend, Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmlal_high_lane_u32 (uint64x2_t a, uint32x4_t b, uint32x2_t v, const int lane)
         ///   A32: VMLAL.U32 Qd, Dn+1, Dm[lane]
         ///   A64: UMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<ulong> addend, Vector128<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<ulong> addend, Vector128<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmlal_high_laneq_u32 (uint64x2_t a, uint32x4_t b, uint32x4_t v, const int lane)
         ///   A32: VMLAL.U32 Qd, Dn+1, Dm[lane]
         ///   A64: UMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<ulong> addend, Vector128<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<ulong> addend, Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndAdd(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlsl_high_lane_s16 (int32x4_t a, int16x8_t b, int16x4_t v, const int lane)
         ///   A32: VMLSL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<int> minuend, Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<int> minuend, Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlsl_high_laneq_s16 (int32x4_t a, int16x8_t b, int16x8_t v, const int lane)
         ///   A32: VMLSL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<int> minuend, Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<int> minuend, Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmlsl_high_lane_s32 (int64x2_t a, int32x4_t b, int32x2_t v, const int lane)
         ///   A32: VMLSL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<long> minuend, Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<long> minuend, Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vmlsl_high_laneq_s32 (int64x2_t a, int32x4_t b, int32x4_t v, const int lane)
         ///   A32: VMLSL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<long> minuend, Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<long> minuend, Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlsl_high_lane_u16 (uint32x4_t a, uint16x8_t b, uint16x4_t v, const int lane)
         ///   A32: VMLSL.U16 Qd, Dn+1, Dm[lane]
         ///   A64: UMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<uint> minuend, Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<uint> minuend, Vector128<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlsl_high_laneq_u16 (uint32x4_t a, uint16x8_t b, uint16x8_t v, const int lane)
         ///   A32: VMLSL.U16 Qd, Dn+1, Dm[lane]
         ///   A64: UMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<uint> minuend, Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<uint> minuend, Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmlsl_high_lane_u32 (uint64x2_t a, uint32x4_t b, uint32x2_t v, const int lane)
         ///   A32: VMLSL.U32 Qd, Dn+1, Dm[lane]
         ///   A64: UMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<ulong> minuend, Vector128<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<ulong> minuend, Vector128<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint64x2_t vmlsl_high_laneq_u32 (uint64x2_t a, uint32x4_t b, uint32x4_t v, const int lane)
         ///   A32: VMLSL.U32 Qd, Dn+1, Dm[lane]
         ///   A64: UMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<ulong> minuend, Vector128<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<ulong> minuend, Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyBySelectedScalarWideningUpperAndSubtract(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int16x4_t vqdmulh_n_s16 (int16x4_t a, int16_t b)
@@ -9530,56 +9603,56 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQDMULH.S16 Dd, Dn, Dm[lane]
         ///   A64: SQDMULH Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector64<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int16x4_t vqdmulh_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
         ///   A32: VQDMULH.S16 Dd, Dn, Dm[lane]
         ///   A64: SQDMULH Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector64<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int32x2_t vqdmulh_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
         ///   A32: VQDMULH.S32 Dd, Dn, Dm[lane]
         ///   A64: SQDMULH Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector64<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int32x2_t vqdmulh_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
         ///   A32: VQDMULH.S32 Dd, Dn, Dm[lane]
         ///   A64: SQDMULH Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector64<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int16x8_t vqdmulhq_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
         ///   A32: VQDMULH.S16 Qd, Qn, Dm[lane]
         ///   A64: SQDMULH Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector128<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int16x8_t vqdmulhq_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
         ///   A32: VQDMULH.S16 Qd, Qn, Dm[lane]
         ///   A64: SQDMULH Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector128<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmulhq_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
         ///   A32: VQDMULH.S32 Qd, Qn, Dm[lane]
         ///   A64: SQDMULH Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmulhq_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
         ///   A32: VQDMULH.S32 Qd, Qn, Dm[lane]
         ///   A64: SQDMULH Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int16x4_t vqdmulh_s16 (int16x4_t a, int16x4_t b)
@@ -9670,56 +9743,56 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQDMLAL.S16 Qd, Dn, Dm[lane]
         ///   A64: SQDMLAL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmlal_laneq_s16 (int32x4_t a, int16x4_t b, int16x8_t v, const int lane)
         ///   A32: VQDMLAL.S16 Qd, Dn, Dm[lane]
         ///   A64: SQDMLAL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmlal_lane_s32 (int64x2_t a, int32x2_t b, int32x2_t v, const int lane)
         ///   A32: VQDMLAL.S32 Qd, Dn, Dm[lane]
         ///   A64: SQDMLAL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmlal_laneq_s32 (int64x2_t a, int32x2_t b, int32x4_t v, const int lane)
         ///   A32: VQDMLAL.S32 Qd, Dn, Dm[lane]
         ///   A64: SQDMLAL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmlsl_lane_s16 (int32x4_t a, int16x4_t b, int16x4_t v, const int lane)
         ///   A32: VQDMLSL.S16 Qd, Dn, Dm[lane]
         ///   A64: SQDMLSL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmlsl_laneq_s16 (int32x4_t a, int16x4_t b, int16x8_t v, const int lane)
         ///   A32: VQDMLSL.S16 Qd, Dn, Dm[lane]
         ///   A64: SQDMLSL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmlsl_lane_s32 (int64x2_t a, int32x2_t b, int32x2_t v, const int lane)
         ///   A32: VQDMLSL.S32 Qd, Dn, Dm[lane]
         ///   A64: SQDMLSL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmlsl_laneq_s32 (int64x2_t a, int32x2_t b, int32x4_t v, const int lane)
         ///   A32: VQDMLSL.S32 Qd, Dn, Dm[lane]
         ///   A64: SQDMLSL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmull_s16 (int16x4_t a, int16x4_t b)
@@ -9754,28 +9827,28 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQDMULL.S16 Qd, Dn, Dm[lane]
         ///   A64: SQDMULL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingWideningSaturateLowerBySelectedScalar(left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningSaturateLowerBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmull_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
         ///   A32: VQDMULL.S16 Qd, Dn, Dm[lane]
         ///   A64: SQDMULL Vd.4S, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingWideningSaturateLowerBySelectedScalar(left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingWideningSaturateLowerBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmull_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
         ///   A32: VQDMULL.S32 Qd, Dn, Dm[lane]
         ///   A64: SQDMULL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingWideningSaturateLowerBySelectedScalar(left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingWideningSaturateLowerBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmull_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
         ///   A32: VQDMULL.S32 Qd, Dn, Dm[lane]
         ///   A64: SQDMULL Vd.2D, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingWideningSaturateLowerBySelectedScalar(left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningSaturateLowerBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmull_high_s16 (int16x8_t a, int16x8_t b)
@@ -9810,28 +9883,28 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQDMULL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMULL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingWideningSaturateUpperBySelectedScalar(left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningSaturateUpperBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmull_high_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
         ///   A32: VQDMULL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMULL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingWideningSaturateUpperBySelectedScalar(left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingWideningSaturateUpperBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmull_high_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
         ///   A32: VQDMULL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMULL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingWideningSaturateUpperBySelectedScalar(left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingWideningSaturateUpperBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmull_high_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
         ///   A32: VQDMULL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMULL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingWideningSaturateUpperBySelectedScalar(left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningSaturateUpperBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmlal_high_s16 (int32x4_t a, int16x8_t b, int16x8_t c)
@@ -9894,56 +9967,56 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQDMLAL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmlal_high_laneq_s16 (int32x4_t a, int16x8_t b, int16x8_t v, const int lane)
         ///   A32: VQDMLAL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmlal_high_lane_s32 (int64x2_t a, int32x4_t b, int32x2_t v, const int lane)
         ///   A32: VQDMLAL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmlal_high_laneq_s32 (int64x2_t a, int32x4_t b, int32x4_t v, const int lane)
         ///   A32: VQDMLAL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(addend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmlsl_high_lane_s16 (int32x4_t a, int16x8_t b, int16x4_t v, const int lane)
         ///   A32: VQDMLSL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqdmlsl_high_laneq_s16 (int32x4_t a, int16x8_t b, int16x8_t v, const int lane)
         ///   A32: VQDMLSL.S16 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmlsl_high_lane_s32 (int64x2_t a, int32x4_t b, int32x2_t v, const int lane)
         ///   A32: VQDMLSL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int64x2_t vqdmlsl_high_laneq_s32 (int64x2_t a, int32x4_t b, int32x4_t v, const int lane)
         ///   A32: VQDMLSL.S32 Qd, Dn+1, Dm[lane]
         ///   A64: SQDMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
+        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int16x4_t vqrdmulh_n_s16 (int16x4_t a, int16_t b)
@@ -9978,56 +10051,56 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQRDMULH.S16 Dd, Dn, Dm[lane]
         ///   A64: SQRDMULH Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector64<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int16x4_t vqrdmulh_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
         ///   A32: VQRDMULH.S16 Dd, Dn, Dm[lane]
         ///   A64: SQRDMULH Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector64<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int32x2_t vqrdmulh_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
         ///   A32: VQRDMULH.S32 Dd, Dn, Dm[lane]
         ///   A64: SQRDMULH Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector64<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int32x2_t vqrdmulh_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
         ///   A32: VQRDMULH.S32 Dd, Dn, Dm[lane]
         ///   A64: SQRDMULH Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector64<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int16x8_t vqrdmulhq_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
         ///   A32: VQRDMULH.S16 Qd, Qn, Dm[lane]
         ///   A64: SQRDMULH Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector128<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int16x8_t vqrdmulhq_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
         ///   A32: VQRDMULH.S16 Qd, Qn, Dm[lane]
         ///   A64: SQRDMULH Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector128<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqrdmulhq_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
         ///   A32: VQRDMULH.S32 Qd, Qn, Dm[lane]
         ///   A64: SQRDMULH Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector128<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vqrdmulhq_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
         ///   A32: VQRDMULH.S32 Qd, Qn, Dm[lane]
         ///   A64: SQRDMULH Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+        public static Vector128<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
 
         /// <summary>
         /// int16x4_t vqrdmulh_s16 (int16x4_t a, int16x4_t b)
@@ -10077,14 +10150,14 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VMUL.F32 Sd, Sn, Dm[lane]
         ///   A64: FMUL Sd, Sn, Vm.S[lane]
         /// </summary>
-        public static Vector64<float> MultiplyScalarBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) => MultiplyScalarBySelectedScalar(left, right, rightIndex);
+        public static Vector64<float> MultiplyScalarBySelectedScalar(Vector64<float> left, Vector64<float> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplyScalarBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// float32_t vmuls_laneq_f32 (float32_t a, float32x4_t v, const int lane)
         ///   A32: VMUL.F32 Sd, Sn, Dm[lane]
         ///   A64: FMUL Sd, Sn, Vm.S[lane]
         /// </summary>
-        public static Vector64<float> MultiplyScalarBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) => MultiplyScalarBySelectedScalar(left, right, rightIndex);
+        public static Vector64<float> MultiplyScalarBySelectedScalar(Vector64<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplyScalarBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// uint8x8_t vmls_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
@@ -10231,112 +10304,112 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
         ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<short> MultiplySubtractBySelectedScalar(Vector64<short> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector64<short> MultiplySubtractBySelectedScalar(Vector64<short> minuend, Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int16x4_t vmls_laneq_s16 (int16x4_t a, int16x4_t b, int16x8_t v, const int lane)
         ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
         ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<short> MultiplySubtractBySelectedScalar(Vector64<short> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector64<short> MultiplySubtractBySelectedScalar(Vector64<short> minuend, Vector64<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int32x2_t vmls_lane_s32 (int32x2_t a, int32x2_t b, int32x2_t v, const int lane)
         ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
         ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<int> MultiplySubtractBySelectedScalar(Vector64<int> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector64<int> MultiplySubtractBySelectedScalar(Vector64<int> minuend, Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int32x2_t vmls_laneq_s32 (int32x2_t a, int32x2_t b, int32x4_t v, const int lane)
         ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
         ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<int> MultiplySubtractBySelectedScalar(Vector64<int> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector64<int> MultiplySubtractBySelectedScalar(Vector64<int> minuend, Vector64<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint16x4_t vmls_lane_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
         ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
         ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<ushort> MultiplySubtractBySelectedScalar(Vector64<ushort> minuend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector64<ushort> MultiplySubtractBySelectedScalar(Vector64<ushort> minuend, Vector64<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint16x4_t vmls_laneq_u16 (uint16x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
         ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
         ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
         /// </summary>
-        public static Vector64<ushort> MultiplySubtractBySelectedScalar(Vector64<ushort> minuend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector64<ushort> MultiplySubtractBySelectedScalar(Vector64<ushort> minuend, Vector64<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x2_t vmls_lane_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
         ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
         ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<uint> MultiplySubtractBySelectedScalar(Vector64<uint> minuend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector64<uint> MultiplySubtractBySelectedScalar(Vector64<uint> minuend, Vector64<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x2_t vmls_laneq_u32 (uint32x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
         ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
         ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
         /// </summary>
-        public static Vector64<uint> MultiplySubtractBySelectedScalar(Vector64<uint> minuend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector64<uint> MultiplySubtractBySelectedScalar(Vector64<uint> minuend, Vector64<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int16x8_t vmlsq_lane_s16 (int16x8_t a, int16x8_t b, int16x4_t v, const int lane)
         ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
         ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<short> MultiplySubtractBySelectedScalar(Vector128<short> minuend, Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector128<short> MultiplySubtractBySelectedScalar(Vector128<short> minuend, Vector128<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int16x8_t vmlsq_laneq_s16 (int16x8_t a, int16x8_t b, int16x8_t v, const int lane)
         ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
         ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<short> MultiplySubtractBySelectedScalar(Vector128<short> minuend, Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector128<short> MultiplySubtractBySelectedScalar(Vector128<short> minuend, Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlsq_lane_s32 (int32x4_t a, int32x4_t b, int32x2_t v, const int lane)
         ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
         ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<int> MultiplySubtractBySelectedScalar(Vector128<int> minuend, Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector128<int> MultiplySubtractBySelectedScalar(Vector128<int> minuend, Vector128<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// int32x4_t vmlsq_laneq_s32 (int32x4_t a, int32x4_t b, int32x4_t v, const int lane)
         ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
         ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<int> MultiplySubtractBySelectedScalar(Vector128<int> minuend, Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector128<int> MultiplySubtractBySelectedScalar(Vector128<int> minuend, Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint16x8_t vmlsq_lane_u16 (uint16x8_t a, uint16x8_t b, uint16x4_t v, const int lane)
         ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
         ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<ushort> MultiplySubtractBySelectedScalar(Vector128<ushort> minuend, Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector128<ushort> MultiplySubtractBySelectedScalar(Vector128<ushort> minuend, Vector128<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint16x8_t vmlsq_laneq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t v, const int lane)
         ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
         ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
         /// </summary>
-        public static Vector128<ushort> MultiplySubtractBySelectedScalar(Vector128<ushort> minuend, Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector128<ushort> MultiplySubtractBySelectedScalar(Vector128<ushort> minuend, Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(7))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlsq_lane_u32 (uint32x4_t a, uint32x4_t b, uint32x2_t v, const int lane)
         ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
         ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<uint> MultiplySubtractBySelectedScalar(Vector128<uint> minuend, Vector128<uint> left, Vector64<uint> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector128<uint> MultiplySubtractBySelectedScalar(Vector128<uint> minuend, Vector128<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(1))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint32x4_t vmlsq_laneq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t v, const int lane)
         ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
         ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
         /// </summary>
-        public static Vector128<uint> MultiplySubtractBySelectedScalar(Vector128<uint> minuend, Vector128<uint> left, Vector128<uint> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        public static Vector128<uint> MultiplySubtractBySelectedScalar(Vector128<uint> minuend, Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(3))] byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
         /// <summary>
         /// uint16x8_t vmull_u8 (uint8x8_t a, uint8x8_t b)
@@ -11845,469 +11918,469 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VSLI.8 Dd, Dm, #n
         ///   A64: SLI Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<byte> ShiftLeftAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector64<byte> ShiftLeftAndInsert(Vector64<byte> left, Vector64<byte> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// int16x4_t vsli_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
         ///   A32: VSLI.16 Dd, Dm, #n
         ///   A64: SLI Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftLeftAndInsert(Vector64<short> left, Vector64<short> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector64<short> ShiftLeftAndInsert(Vector64<short> left, Vector64<short> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// int32x2_t vsli_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
         ///   A32: VSLI.32 Dd, Dm, #n
         ///   A64: SLI Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftLeftAndInsert(Vector64<int> left, Vector64<int> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector64<int> ShiftLeftAndInsert(Vector64<int> left, Vector64<int> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// int8x8_t vsli_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
         ///   A32: VSLI.8 Dd, Dm, #n
         ///   A64: SLI Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftLeftAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector64<sbyte> ShiftLeftAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// uint16x4_t vsli_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
         ///   A32: VSLI.16 Dd, Dm, #n
         ///   A64: SLI Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<ushort> ShiftLeftAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector64<ushort> ShiftLeftAndInsert(Vector64<ushort> left, Vector64<ushort> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// uint32x2_t vsli_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
         ///   A32: VSLI.32 Dd, Dm, #n
         ///   A64: SLI Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<uint> ShiftLeftAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector64<uint> ShiftLeftAndInsert(Vector64<uint> left, Vector64<uint> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// uint8x16_t vsliq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
         ///   A32: VSLI.8 Qd, Qm, #n
         ///   A64: SLI Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<byte> ShiftLeftAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector128<byte> ShiftLeftAndInsert(Vector128<byte> left, Vector128<byte> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// int16x8_t vsliq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
         ///   A32: VSLI.16 Qd, Qm, #n
         ///   A64: SLI Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftLeftAndInsert(Vector128<short> left, Vector128<short> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector128<short> ShiftLeftAndInsert(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// int32x4_t vsliq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
         ///   A32: VSLI.32 Qd, Qm, #n
         ///   A64: SLI Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftLeftAndInsert(Vector128<int> left, Vector128<int> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector128<int> ShiftLeftAndInsert(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// int64x2_t vsliq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
         ///   A32: VSLI.64 Qd, Qm, #n
         ///   A64: SLI Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftLeftAndInsert(Vector128<long> left, Vector128<long> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector128<long> ShiftLeftAndInsert(Vector128<long> left, Vector128<long> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// int8x16_t vsliq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
         ///   A32: VSLI.8 Qd, Qm, #n
         ///   A64: SLI Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftLeftAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector128<sbyte> ShiftLeftAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// uint16x8_t vsliq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
         ///   A32: VSLI.16 Qd, Qm, #n
         ///   A64: SLI Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<ushort> ShiftLeftAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector128<ushort> ShiftLeftAndInsert(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// uint32x4_t vsliq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
         ///   A32: VSLI.32 Qd, Qm, #n
         ///   A64: SLI Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<uint> ShiftLeftAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector128<uint> ShiftLeftAndInsert(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// uint64x2_t vsliq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
         ///   A32: VSLI.64 Qd, Qm, #n
         ///   A64: SLI Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<ulong> ShiftLeftAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+        public static Vector128<ulong> ShiftLeftAndInsert(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftLeftAndInsert(left, right, shift);
 
         /// <summary>
         /// int64_t vslid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
         ///   A32: VSLI.64 Dd, Dm, #n
         ///   A64: SLI Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftLeftAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) => ShiftLeftAndInsertScalar(left, right, shift);
+        public static Vector64<long> ShiftLeftAndInsertScalar(Vector64<long> left, Vector64<long> right, [ConstantExpected(Max = (byte)(7))] byte shift) => ShiftLeftAndInsertScalar(left, right, shift);
 
         /// <summary>
         /// uint64_t vslid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
         ///   A32: VSLI.64 Dd, Dm, #n
         ///   A64: SLI Dd, Dn, #n
         /// </summary>
-        public static Vector64<ulong> ShiftLeftAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) => ShiftLeftAndInsertScalar(left, right, shift);
+        public static Vector64<ulong> ShiftLeftAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, [ConstantExpected(Max = (byte)(7))] byte shift) => ShiftLeftAndInsertScalar(left, right, shift);
 
         /// <summary>
         /// uint8x8_t vshl_n_u8 (uint8x8_t a, const int n)
         ///   A32: VSHL.I8 Dd, Dm, #n
         ///   A64: SHL Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<byte> ShiftLeftLogical(Vector64<byte> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector64<byte> ShiftLeftLogical(Vector64<byte> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// int16x4_t vshl_n_s16 (int16x4_t a, const int n)
         ///   A32: VSHL.I16 Dd, Dm, #n
         ///   A64: SHL Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftLeftLogical(Vector64<short> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector64<short> ShiftLeftLogical(Vector64<short> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// int32x2_t vshl_n_s32 (int32x2_t a, const int n)
         ///   A32: VSHL.I32 Dd, Dm, #n
         ///   A64: SHL Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftLeftLogical(Vector64<int> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector64<int> ShiftLeftLogical(Vector64<int> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// int8x8_t vshl_n_s8 (int8x8_t a, const int n)
         ///   A32: VSHL.I8 Dd, Dm, #n
         ///   A64: SHL Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftLeftLogical(Vector64<sbyte> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector64<sbyte> ShiftLeftLogical(Vector64<sbyte> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// uint16x4_t vshl_n_u16 (uint16x4_t a, const int n)
         ///   A32: VSHL.I16 Dd, Dm, #n
         ///   A64: SHL Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<ushort> ShiftLeftLogical(Vector64<ushort> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector64<ushort> ShiftLeftLogical(Vector64<ushort> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// uint32x2_t vshl_n_u32 (uint32x2_t a, const int n)
         ///   A32: VSHL.I32 Dd, Dm, #n
         ///   A64: SHL Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<uint> ShiftLeftLogical(Vector64<uint> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector64<uint> ShiftLeftLogical(Vector64<uint> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// uint8x16_t vshlq_n_u8 (uint8x16_t a, const int n)
         ///   A32: VSHL.I8 Qd, Qm, #n
         ///   A64: SHL Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<byte> ShiftLeftLogical(Vector128<byte> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<byte> ShiftLeftLogical(Vector128<byte> value, [ConstantExpected(Max = (byte)(127))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// int16x8_t vshlq_n_s16 (int16x8_t a, const int n)
         ///   A32: VSHL.I16 Qd, Qm, #n
         ///   A64: SHL Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// int64x2_t vshlq_n_s64 (int64x2_t a, const int n)
         ///   A32: VSHL.I64 Qd, Qm, #n
         ///   A64: SHL Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// int8x16_t vshlq_n_s8 (int8x16_t a, const int n)
         ///   A32: VSHL.I8 Qd, Qm, #n
         ///   A64: SHL Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftLeftLogical(Vector128<sbyte> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<sbyte> ShiftLeftLogical(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(127))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// uint16x8_t vshlq_n_u16 (uint16x8_t a, const int n)
         ///   A32: VSHL.I16 Qd, Qm, #n
         ///   A64: SHL Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// uint32x4_t vshlq_n_u32 (uint32x4_t a, const int n)
         ///   A32: VSHL.I32 Qd, Qm, #n
         ///   A64: SHL Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// uint64x2_t vshlq_n_u64 (uint64x2_t a, const int n)
         ///   A32: VSHL.I64 Qd, Qm, #n
         ///   A64: SHL Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// uint8x8_t vqshl_n_u8 (uint8x8_t a, const int n)
         ///   A32: VQSHL.U8 Dd, Dm, #n
         ///   A64: UQSHL Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<byte> ShiftLeftLogicalSaturate(Vector64<byte> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector64<byte> ShiftLeftLogicalSaturate(Vector64<byte> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// int16x4_t vqshl_n_s16 (int16x4_t a, const int n)
         ///   A32: VQSHL.S16 Dd, Dm, #n
         ///   A64: SQSHL Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftLeftLogicalSaturate(Vector64<short> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector64<short> ShiftLeftLogicalSaturate(Vector64<short> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// int32x2_t vqshl_n_s32 (int32x2_t a, const int n)
         ///   A32: VQSHL.S32 Dd, Dm, #n
         ///   A64: SQSHL Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftLeftLogicalSaturate(Vector64<int> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector64<int> ShiftLeftLogicalSaturate(Vector64<int> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// int8x8_t vqshl_n_s8 (int8x8_t a, const int n)
         ///   A32: VQSHL.S8 Dd, Dm, #n
         ///   A64: SQSHL Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftLeftLogicalSaturate(Vector64<sbyte> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector64<sbyte> ShiftLeftLogicalSaturate(Vector64<sbyte> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// uint16x4_t vqshl_n_u16 (uint16x4_t a, const int n)
         ///   A32: VQSHL.U16 Dd, Dm, #n
         ///   A64: UQSHL Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<ushort> ShiftLeftLogicalSaturate(Vector64<ushort> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector64<ushort> ShiftLeftLogicalSaturate(Vector64<ushort> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// uint32x2_t vqshl_n_u32 (uint32x2_t a, const int n)
         ///   A32: VQSHL.U32 Dd, Dm, #n
         ///   A64: UQSHL Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<uint> ShiftLeftLogicalSaturate(Vector64<uint> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector64<uint> ShiftLeftLogicalSaturate(Vector64<uint> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// uint8x16_t vqshlq_n_u8 (uint8x16_t a, const int n)
         ///   A32: VQSHL.U8 Qd, Qm, #n
         ///   A64: UQSHL Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<byte> ShiftLeftLogicalSaturate(Vector128<byte> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector128<byte> ShiftLeftLogicalSaturate(Vector128<byte> value, [ConstantExpected(Max = (byte)(127))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// int16x8_t vqshlq_n_s16 (int16x8_t a, const int n)
         ///   A32: VQSHL.S16 Qd, Qm, #n
         ///   A64: SQSHL Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftLeftLogicalSaturate(Vector128<short> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector128<short> ShiftLeftLogicalSaturate(Vector128<short> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// int32x4_t vqshlq_n_s32 (int32x4_t a, const int n)
         ///   A32: VQSHL.S32 Qd, Qm, #n
         ///   A64: SQSHL Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftLeftLogicalSaturate(Vector128<int> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector128<int> ShiftLeftLogicalSaturate(Vector128<int> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// int64x2_t vqshlq_n_s64 (int64x2_t a, const int n)
         ///   A32: VQSHL.S64 Qd, Qm, #n
         ///   A64: SQSHL Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftLeftLogicalSaturate(Vector128<long> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector128<long> ShiftLeftLogicalSaturate(Vector128<long> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// int8x16_t vqshlq_n_s8 (int8x16_t a, const int n)
         ///   A32: VQSHL.S8 Qd, Qm, #n
         ///   A64: SQSHL Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftLeftLogicalSaturate(Vector128<sbyte> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector128<sbyte> ShiftLeftLogicalSaturate(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(127))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// uint16x8_t vqshlq_n_u16 (uint16x8_t a, const int n)
         ///   A32: VQSHL.U16 Qd, Qm, #n
         ///   A64: UQSHL Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<ushort> ShiftLeftLogicalSaturate(Vector128<ushort> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector128<ushort> ShiftLeftLogicalSaturate(Vector128<ushort> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// uint32x4_t vqshlq_n_u32 (uint32x4_t a, const int n)
         ///   A32: VQSHL.U32 Qd, Qm, #n
         ///   A64: UQSHL Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<uint> ShiftLeftLogicalSaturate(Vector128<uint> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector128<uint> ShiftLeftLogicalSaturate(Vector128<uint> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// uint64x2_t vqshlq_n_u64 (uint64x2_t a, const int n)
         ///   A32: VQSHL.U64 Qd, Qm, #n
         ///   A64: UQSHL Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<ulong> ShiftLeftLogicalSaturate(Vector128<ulong> value, byte count) => ShiftLeftLogicalSaturate(value, count);
+        public static Vector128<ulong> ShiftLeftLogicalSaturate(Vector128<ulong> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalSaturate(value, count);
 
         /// <summary>
         /// int64x1_t vqshl_n_s64 (int64x1_t a, const int n)
         ///   A32: VQSHL.S64 Dd, Dm, #n
         ///   A64: SQSHL Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftLeftLogicalSaturateScalar(Vector64<long> value, byte count) => ShiftLeftLogicalSaturateScalar(value, count);
+        public static Vector64<long> ShiftLeftLogicalSaturateScalar(Vector64<long> value, [ConstantExpected(Max = (byte)(7))] byte count) => ShiftLeftLogicalSaturateScalar(value, count);
 
         /// <summary>
         /// uint64x1_t vqshl_n_u64 (uint64x1_t a, const int n)
         ///   A32: VQSHL.U64 Dd, Dm, #n
         ///   A64: UQSHL Dd, Dn, #n
         /// </summary>
-        public static Vector64<ulong> ShiftLeftLogicalSaturateScalar(Vector64<ulong> value, byte count) => ShiftLeftLogicalSaturateScalar(value, count);
+        public static Vector64<ulong> ShiftLeftLogicalSaturateScalar(Vector64<ulong> value, [ConstantExpected(Max = (byte)(7))] byte count) => ShiftLeftLogicalSaturateScalar(value, count);
 
         /// <summary>
         /// uint16x4_t vqshlu_n_s16 (int16x4_t a, const int n)
         ///   A32: VQSHLU.S16 Dd, Dm, #n
         ///   A64: SQSHLU Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<ushort> ShiftLeftLogicalSaturateUnsigned(Vector64<short> value, byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
+        public static Vector64<ushort> ShiftLeftLogicalSaturateUnsigned(Vector64<short> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
 
         /// <summary>
         /// uint32x2_t vqshlu_n_s32 (int32x2_t a, const int n)
         ///   A32: VQSHLU.S32 Dd, Dm, #n
         ///   A64: SQSHLU Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<uint> ShiftLeftLogicalSaturateUnsigned(Vector64<int> value, byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
+        public static Vector64<uint> ShiftLeftLogicalSaturateUnsigned(Vector64<int> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
 
         /// <summary>
         /// uint8x8_t vqshlu_n_s8 (int8x8_t a, const int n)
         ///   A32: VQSHLU.S8 Dd, Dm, #n
         ///   A64: SQSHLU Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<byte> ShiftLeftLogicalSaturateUnsigned(Vector64<sbyte> value, byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
+        public static Vector64<byte> ShiftLeftLogicalSaturateUnsigned(Vector64<sbyte> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
 
         /// <summary>
         /// uint16x8_t vqshluq_n_s16 (int16x8_t a, const int n)
         ///   A32: VQSHLU.S16 Qd, Qm, #n
         ///   A64: SQSHLU Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<ushort> ShiftLeftLogicalSaturateUnsigned(Vector128<short> value, byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
+        public static Vector128<ushort> ShiftLeftLogicalSaturateUnsigned(Vector128<short> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
 
         /// <summary>
         /// uint32x4_t vqshluq_n_s32 (int32x4_t a, const int n)
         ///   A32: VQSHLU.S32 Qd, Qm, #n
         ///   A64: SQSHLU Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<uint> ShiftLeftLogicalSaturateUnsigned(Vector128<int> value, byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
+        public static Vector128<uint> ShiftLeftLogicalSaturateUnsigned(Vector128<int> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
 
         /// <summary>
         /// uint64x2_t vqshluq_n_s64 (int64x2_t a, const int n)
         ///   A32: VQSHLU.S64 Qd, Qm, #n
         ///   A64: SQSHLU Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<ulong> ShiftLeftLogicalSaturateUnsigned(Vector128<long> value, byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
+        public static Vector128<ulong> ShiftLeftLogicalSaturateUnsigned(Vector128<long> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
 
         /// <summary>
         /// uint8x16_t vqshluq_n_s8 (int8x16_t a, const int n)
         ///   A32: VQSHLU.S8 Qd, Qm, #n
         ///   A64: SQSHLU Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<byte> ShiftLeftLogicalSaturateUnsigned(Vector128<sbyte> value, byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
+        public static Vector128<byte> ShiftLeftLogicalSaturateUnsigned(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(127))] byte count) => ShiftLeftLogicalSaturateUnsigned(value, count);
 
         /// <summary>
         /// uint64x1_t vqshlu_n_s64 (int64x1_t a, const int n)
         ///   A32: VQSHLU.S64 Dd, Dm, #n
         ///   A64: SQSHLU Dd, Dn, #n
         /// </summary>
-        public static Vector64<ulong> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<long> value, byte count) => ShiftLeftLogicalSaturateUnsignedScalar(value, count);
+        public static Vector64<ulong> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<long> value, [ConstantExpected(Max = (byte)(7))] byte count) => ShiftLeftLogicalSaturateUnsignedScalar(value, count);
 
         /// <summary>
         /// int64x1_t vshl_n_s64 (int64x1_t a, const int n)
         ///   A32: VSHL.I64 Dd, Dm, #n
         ///   A64: SHL Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftLeftLogicalScalar(Vector64<long> value, byte count) => ShiftLeftLogicalScalar(value, count);
+        public static Vector64<long> ShiftLeftLogicalScalar(Vector64<long> value, [ConstantExpected(Max = (byte)(7))] byte count) => ShiftLeftLogicalScalar(value, count);
 
         /// <summary>
         /// uint64x1_t vshl_n_u64 (uint64x1_t a, const int n)
         ///   A32: VSHL.I64 Dd, Dm, #n
         ///   A64: SHL Dd, Dn, #n
         /// </summary>
-        public static Vector64<ulong> ShiftLeftLogicalScalar(Vector64<ulong> value, byte count) => ShiftLeftLogicalScalar(value, count);
+        public static Vector64<ulong> ShiftLeftLogicalScalar(Vector64<ulong> value, [ConstantExpected(Max = (byte)(7))] byte count) => ShiftLeftLogicalScalar(value, count);
 
         /// <summary>
         /// uint16x8_t vshll_n_u8 (uint8x8_t a, const int n)
         ///   A32: VSHLL.U8 Qd, Dm, #n
         ///   A64: USHLL Vd.8H, Vn.8B, #n
         /// </summary>
-        public static Vector128<ushort> ShiftLeftLogicalWideningLower(Vector64<byte> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+        public static Vector128<ushort> ShiftLeftLogicalWideningLower(Vector64<byte> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalWideningLower(value, count);
 
         /// <summary>
         /// int32x4_t vshll_n_s16 (int16x4_t a, const int n)
         ///   A32: VSHLL.S16 Qd, Dm, #n
         ///   A64: SSHLL Vd.4S, Vn.4H, #n
         /// </summary>
-        public static Vector128<int> ShiftLeftLogicalWideningLower(Vector64<short> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+        public static Vector128<int> ShiftLeftLogicalWideningLower(Vector64<short> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalWideningLower(value, count);
 
         /// <summary>
         /// int64x2_t vshll_n_s32 (int32x2_t a, const int n)
         ///   A32: VSHLL.S32 Qd, Dm, #n
         ///   A64: SSHLL Vd.2D, Vn.2S, #n
         /// </summary>
-        public static Vector128<long> ShiftLeftLogicalWideningLower(Vector64<int> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+        public static Vector128<long> ShiftLeftLogicalWideningLower(Vector64<int> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalWideningLower(value, count);
 
         /// <summary>
         /// int16x8_t vshll_n_s8 (int8x8_t a, const int n)
         ///   A32: VSHLL.S8 Qd, Dm, #n
         ///   A64: SSHLL Vd.8H, Vn.8B, #n
         /// </summary>
-        public static Vector128<short> ShiftLeftLogicalWideningLower(Vector64<sbyte> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+        public static Vector128<short> ShiftLeftLogicalWideningLower(Vector64<sbyte> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalWideningLower(value, count);
 
         /// <summary>
         /// uint32x4_t vshll_n_u16 (uint16x4_t a, const int n)
         ///   A32: VSHLL.U16 Qd, Dm, #n
         ///   A64: USHLL Vd.4S, Vn.4H, #n
         /// </summary>
-        public static Vector128<uint> ShiftLeftLogicalWideningLower(Vector64<ushort> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+        public static Vector128<uint> ShiftLeftLogicalWideningLower(Vector64<ushort> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalWideningLower(value, count);
 
         /// <summary>
         /// uint64x2_t vshll_n_u32 (uint32x2_t a, const int n)
         ///   A32: VSHLL.U32 Qd, Dm, #n
         ///   A64: USHLL Vd.2D, Vn.2S, #n
         /// </summary>
-        public static Vector128<ulong> ShiftLeftLogicalWideningLower(Vector64<uint> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+        public static Vector128<ulong> ShiftLeftLogicalWideningLower(Vector64<uint> value, [ConstantExpected(Max = (byte)(15))] byte count) => ShiftLeftLogicalWideningLower(value, count);
 
         /// <summary>
         /// uint16x8_t vshll_high_n_u8 (uint8x16_t a, const int n)
         ///   A32: VSHLL.U8 Qd, Dm+1, #n
         ///   A64: USHLL2 Vd.8H, Vn.16B, #n
         /// </summary>
-        public static Vector128<ushort> ShiftLeftLogicalWideningUpper(Vector128<byte> value, byte count) => ShiftLeftLogicalWideningUpper(value, count);
+        public static Vector128<ushort> ShiftLeftLogicalWideningUpper(Vector128<byte> value, [ConstantExpected(Max = (byte)(127))] byte count) => ShiftLeftLogicalWideningUpper(value, count);
 
         /// <summary>
         /// int32x4_t vshll_high_n_s16 (int16x8_t a, const int n)
         ///   A32: VSHLL.S16 Qd, Dm+1, #n
         ///   A64: SSHLL2 Vd.4S, Vn.8H, #n
         /// </summary>
-        public static Vector128<int> ShiftLeftLogicalWideningUpper(Vector128<short> value, byte count) => ShiftLeftLogicalWideningUpper(value, count);
+        public static Vector128<int> ShiftLeftLogicalWideningUpper(Vector128<short> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalWideningUpper(value, count);
 
         /// <summary>
         /// int64x2_t vshll_high_n_s32 (int32x4_t a, const int n)
         ///   A32: VSHLL.S32 Qd, Dm+1, #n
         ///   A64: SSHLL2 Vd.2D, Vn.4S, #n
         /// </summary>
-        public static Vector128<long> ShiftLeftLogicalWideningUpper(Vector128<int> value, byte count) => ShiftLeftLogicalWideningUpper(value, count);
+        public static Vector128<long> ShiftLeftLogicalWideningUpper(Vector128<int> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalWideningUpper(value, count);
 
         /// <summary>
         /// int16x8_t vshll_high_n_s8 (int8x16_t a, const int n)
         ///   A32: VSHLL.S8 Qd, Dm+1, #n
         ///   A64: SSHLL2 Vd.8H, Vn.16B, #n
         /// </summary>
-        public static Vector128<short> ShiftLeftLogicalWideningUpper(Vector128<sbyte> value, byte count) => ShiftLeftLogicalWideningUpper(value, count);
+        public static Vector128<short> ShiftLeftLogicalWideningUpper(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(127))] byte count) => ShiftLeftLogicalWideningUpper(value, count);
 
         /// <summary>
         /// uint32x4_t vshll_high_n_u16 (uint16x8_t a, const int n)
         ///   A32: VSHLL.U16 Qd, Dm+1, #n
         ///   A64: USHLL2 Vd.4S, Vn.8H, #n
         /// </summary>
-        public static Vector128<uint> ShiftLeftLogicalWideningUpper(Vector128<ushort> value, byte count) => ShiftLeftLogicalWideningUpper(value, count);
+        public static Vector128<uint> ShiftLeftLogicalWideningUpper(Vector128<ushort> value, [ConstantExpected(Max = (byte)(63))] byte count) => ShiftLeftLogicalWideningUpper(value, count);
 
         /// <summary>
         /// uint64x2_t vshll_high_n_u32 (uint32x4_t a, const int n)
         ///   A32: VSHLL.U32 Qd, Dm+1, #n
         ///   A64: USHLL2 Vd.2D, Vn.4S, #n
         /// </summary>
-        public static Vector128<ulong> ShiftLeftLogicalWideningUpper(Vector128<uint> value, byte count) => ShiftLeftLogicalWideningUpper(value, count);
+        public static Vector128<ulong> ShiftLeftLogicalWideningUpper(Vector128<uint> value, [ConstantExpected(Max = (byte)(31))] byte count) => ShiftLeftLogicalWideningUpper(value, count);
 
         /// <summary>
         /// uint8x8_t vshl_u8 (uint8x8_t a, int8x8_t b)
@@ -12762,1288 +12835,1288 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VSRI.8 Dd, Dm, #n
         ///   A64: SRI Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector64<byte> ShiftRightAndInsert(Vector64<byte> left, Vector64<byte> right, [ConstantExpected(Min = 1, Max = (byte)(64))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// int16x4_t vsri_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
         ///   A32: VSRI.16 Dd, Dm, #n
         ///   A64: SRI Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftRightAndInsert(Vector64<short> left, Vector64<short> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector64<short> ShiftRightAndInsert(Vector64<short> left, Vector64<short> right, [ConstantExpected(Min = 1, Max = (byte)(32))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// int32x2_t vsri_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
         ///   A32: VSRI.32 Dd, Dm, #n
         ///   A64: SRI Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftRightAndInsert(Vector64<int> left, Vector64<int> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector64<int> ShiftRightAndInsert(Vector64<int> left, Vector64<int> right, [ConstantExpected(Min = 1, Max = (byte)(16))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// int8x8_t vsri_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
         ///   A32: VSRI.8 Dd, Dm, #n
         ///   A64: SRI Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector64<sbyte> ShiftRightAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, [ConstantExpected(Min = 1, Max = (byte)(64))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// uint16x4_t vsri_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
         ///   A32: VSRI.16 Dd, Dm, #n
         ///   A64: SRI Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector64<ushort> ShiftRightAndInsert(Vector64<ushort> left, Vector64<ushort> right, [ConstantExpected(Min = 1, Max = (byte)(32))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// uint32x2_t vsri_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
         ///   A32: VSRI.32 Dd, Dm, #n
         ///   A64: SRI Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector64<uint> ShiftRightAndInsert(Vector64<uint> left, Vector64<uint> right, [ConstantExpected(Min = 1, Max = (byte)(16))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// uint8x16_t vsriq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
         ///   A32: VSRI.8 Qd, Qm, #n
         ///   A64: SRI Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector128<byte> ShiftRightAndInsert(Vector128<byte> left, Vector128<byte> right, [ConstantExpected(Min = 1, Max = (byte)(128))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// int16x8_t vsriq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
         ///   A32: VSRI.16 Qd, Qm, #n
         ///   A64: SRI Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftRightAndInsert(Vector128<short> left, Vector128<short> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector128<short> ShiftRightAndInsert(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 1, Max = (byte)(64))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// int32x4_t vsriq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
         ///   A32: VSRI.32 Qd, Qm, #n
         ///   A64: SRI Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftRightAndInsert(Vector128<int> left, Vector128<int> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector128<int> ShiftRightAndInsert(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 1, Max = (byte)(32))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// int64x2_t vsriq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
         ///   A32: VSRI.64 Qd, Qm, #n
         ///   A64: SRI Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftRightAndInsert(Vector128<long> left, Vector128<long> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector128<long> ShiftRightAndInsert(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 1, Max = (byte)(16))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// int8x16_t vsriq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
         ///   A32: VSRI.8 Qd, Qm, #n
         ///   A64: SRI Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector128<sbyte> ShiftRightAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, [ConstantExpected(Min = 1, Max = (byte)(128))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// uint16x8_t vsriq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
         ///   A32: VSRI.16 Qd, Qm, #n
         ///   A64: SRI Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector128<ushort> ShiftRightAndInsert(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 1, Max = (byte)(64))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// uint32x4_t vsriq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
         ///   A32: VSRI.32 Qd, Qm, #n
         ///   A64: SRI Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector128<uint> ShiftRightAndInsert(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 1, Max = (byte)(32))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// uint64x2_t vsriq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
         ///   A32: VSRI.64 Qd, Qm, #n
         ///   A64: SRI Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<ulong> ShiftRightAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+        public static Vector128<ulong> ShiftRightAndInsert(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 1, Max = (byte)(16))] byte shift) => ShiftRightAndInsert(left, right, shift);
 
         /// <summary>
         /// int64_t vsrid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
         ///   A32: VSRI.64 Dd, Dm, #n
         ///   A64: SRI Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftRightAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) => ShiftRightAndInsertScalar(left, right, shift);
+        public static Vector64<long> ShiftRightAndInsertScalar(Vector64<long> left, Vector64<long> right, [ConstantExpected(Min = 1, Max = (byte)(8))] byte shift) => ShiftRightAndInsertScalar(left, right, shift);
 
         /// <summary>
         /// uint64_t vsrid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
         ///   A32: VSRI.64 Dd, Dm, #n
         ///   A64: SRI Dd, Dn, #n
         /// </summary>
-        public static Vector64<ulong> ShiftRightAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) => ShiftRightAndInsertScalar(left, right, shift);
+        public static Vector64<ulong> ShiftRightAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, [ConstantExpected(Min = 1, Max = (byte)(8))] byte shift) => ShiftRightAndInsertScalar(left, right, shift);
 
         /// <summary>
         /// int16x4_t vshr_n_s16 (int16x4_t a, const int n)
         ///   A32: VSHR.S16 Dd, Dm, #n
         ///   A64: SSHR Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftRightArithmetic(Vector64<short> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector64<short> ShiftRightArithmetic(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmetic(value, count);
 
         /// <summary>
         /// int32x2_t vshr_n_s32 (int32x2_t a, const int n)
         ///   A32: VSHR.S32 Dd, Dm, #n
         ///   A64: SSHR Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftRightArithmetic(Vector64<int> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector64<int> ShiftRightArithmetic(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmetic(value, count);
 
         /// <summary>
         /// int8x8_t vshr_n_s8 (int8x8_t a, const int n)
         ///   A32: VSHR.S8 Dd, Dm, #n
         ///   A64: SSHR Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightArithmetic(Vector64<sbyte> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector64<sbyte> ShiftRightArithmetic(Vector64<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmetic(value, count);
 
         /// <summary>
         /// int16x8_t vshrq_n_s16 (int16x8_t a, const int n)
         ///   A32: VSHR.S16 Qd, Qm, #n
         ///   A64: SSHR Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftRightArithmetic(Vector128<short> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector128<short> ShiftRightArithmetic(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmetic(value, count);
 
         /// <summary>
         /// int32x4_t vshrq_n_s32 (int32x4_t a, const int n)
         ///   A32: VSHR.S32 Qd, Qm, #n
         ///   A64: SSHR Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmetic(value, count);
 
         /// <summary>
         /// int64x2_t vshrq_n_s64 (int64x2_t a, const int n)
         ///   A32: VSHR.S64 Qd, Qm, #n
         ///   A64: SSHR Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftRightArithmetic(Vector128<long> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector128<long> ShiftRightArithmetic(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmetic(value, count);
 
         /// <summary>
         /// int8x16_t vshrq_n_s8 (int8x16_t a, const int n)
         ///   A32: VSHR.S8 Qd, Qm, #n
         ///   A64: SSHR Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmetic(Vector128<sbyte> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector128<sbyte> ShiftRightArithmetic(Vector128<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightArithmetic(value, count);
 
         /// <summary>
         /// int16x4_t vsra_n_s16 (int16x4_t a, int16x4_t b, const int n)
         ///   A32: VSRA.S16 Dd, Dm, #n
         ///   A64: SSRA Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftRightArithmeticAdd(Vector64<short> addend, Vector64<short> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+        public static Vector64<short> ShiftRightArithmeticAdd(Vector64<short> addend, Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticAdd(addend, value, count);
 
         /// <summary>
         /// int32x2_t vsra_n_s32 (int32x2_t a, int32x2_t b, const int n)
         ///   A32: VSRA.S32 Dd, Dm, #n
         ///   A64: SSRA Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftRightArithmeticAdd(Vector64<int> addend, Vector64<int> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+        public static Vector64<int> ShiftRightArithmeticAdd(Vector64<int> addend, Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticAdd(addend, value, count);
 
         /// <summary>
         /// int8x8_t vsra_n_s8 (int8x8_t a, int8x8_t b, const int n)
         ///   A32: VSRA.S8 Dd, Dm, #n
         ///   A64: SSRA Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightArithmeticAdd(Vector64<sbyte> addend, Vector64<sbyte> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+        public static Vector64<sbyte> ShiftRightArithmeticAdd(Vector64<sbyte> addend, Vector64<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticAdd(addend, value, count);
 
         /// <summary>
         /// int16x8_t vsraq_n_s16 (int16x8_t a, int16x8_t b, const int n)
         ///   A32: VSRA.S16 Qd, Qm, #n
         ///   A64: SSRA Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticAdd(Vector128<short> addend, Vector128<short> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+        public static Vector128<short> ShiftRightArithmeticAdd(Vector128<short> addend, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticAdd(addend, value, count);
 
         /// <summary>
         /// int32x4_t vsraq_n_s32 (int32x4_t a, int32x4_t b, const int n)
         ///   A32: VSRA.S32 Qd, Qm, #n
         ///   A64: SSRA Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftRightArithmeticAdd(Vector128<int> addend, Vector128<int> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+        public static Vector128<int> ShiftRightArithmeticAdd(Vector128<int> addend, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticAdd(addend, value, count);
 
         /// <summary>
         /// int64x2_t vsraq_n_s64 (int64x2_t a, int64x2_t b, const int n)
         ///   A32: VSRA.S64 Qd, Qm, #n
         ///   A64: SSRA Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftRightArithmeticAdd(Vector128<long> addend, Vector128<long> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+        public static Vector128<long> ShiftRightArithmeticAdd(Vector128<long> addend, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticAdd(addend, value, count);
 
         /// <summary>
         /// int8x16_t vsraq_n_s8 (int8x16_t a, int8x16_t b, const int n)
         ///   A32: VSRA.S8 Qd, Qm, #n
         ///   A64: SSRA Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmeticAdd(Vector128<sbyte> addend, Vector128<sbyte> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+        public static Vector128<sbyte> ShiftRightArithmeticAdd(Vector128<sbyte> addend, Vector128<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightArithmeticAdd(addend, value, count);
 
         /// <summary>
         /// int64x1_t vsra_n_s64 (int64x1_t a, int64x1_t b, const int n)
         ///   A32: VSRA.S64 Dd, Dm, #n
         ///   A64: SSRA Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftRightArithmeticAddScalar(Vector64<long> addend, Vector64<long> value, byte count) => ShiftRightArithmeticAddScalar(addend, value, count);
+        public static Vector64<long> ShiftRightArithmeticAddScalar(Vector64<long> addend, Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightArithmeticAddScalar(addend, value, count);
 
         /// <summary>
         /// int16x4_t vqshrn_n_s32 (int32x4_t a, const int n)
         ///   A32: VQSHRN.S32 Dd, Qm, #n
         ///   A64: SQSHRN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<short> ShiftRightArithmeticNarrowingSaturateLower(Vector128<int> value, byte count) => ShiftRightArithmeticNarrowingSaturateLower(value, count);
+        public static Vector64<short> ShiftRightArithmeticNarrowingSaturateLower(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// int32x2_t vqshrn_n_s64 (int64x2_t a, const int n)
         ///   A32: VQSHRN.S64 Dd, Qm, #n
         ///   A64: SQSHRN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<int> ShiftRightArithmeticNarrowingSaturateLower(Vector128<long> value, byte count) => ShiftRightArithmeticNarrowingSaturateLower(value, count);
+        public static Vector64<int> ShiftRightArithmeticNarrowingSaturateLower(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// int8x8_t vqshrn_n_s16 (int16x8_t a, const int n)
         ///   A32: VQSHRN.S16 Dd, Qm, #n
         ///   A64: SQSHRN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightArithmeticNarrowingSaturateLower(Vector128<short> value, byte count) => ShiftRightArithmeticNarrowingSaturateLower(value, count);
+        public static Vector64<sbyte> ShiftRightArithmeticNarrowingSaturateLower(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint8x8_t vqshrun_n_s16 (int16x8_t a, const int n)
         ///   A32: VQSHRUN.S16 Dd, Qm, #n
         ///   A64: SQSHRUN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<short> value, byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(value, count);
+        public static Vector64<byte> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(value, count);
 
         /// <summary>
         /// uint16x4_t vqshrun_n_s32 (int32x4_t a, const int n)
         ///   A32: VQSHRUN.S32 Dd, Qm, #n
         ///   A64: SQSHRUN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<int> value, byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(value, count);
+        public static Vector64<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(value, count);
 
         /// <summary>
         /// uint32x2_t vqshrun_n_s64 (int64x2_t a, const int n)
         ///   A32: VQSHRUN.S64 Dd, Qm, #n
         ///   A64: SQSHRUN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<long> value, byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(value, count);
+        public static Vector64<uint> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(value, count);
 
         /// <summary>
         /// uint8x16_t vqshrun_high_n_s16 (uint8x8_t r, int16x8_t a, const int n)
         ///   A32: VQSHRUN.S16 Dd+1, Dn, #n
         ///   A64: SQSHRUN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightArithmeticNarrowingSaturateUnsignedUpper(Vector64<byte> lower, Vector128<short> value, byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedUpper(lower, value, count);
+        public static Vector128<byte> ShiftRightArithmeticNarrowingSaturateUnsignedUpper(Vector64<byte> lower, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedUpper(lower, value, count);
 
         /// <summary>
         /// uint16x8_t vqshrun_high_n_s32 (uint16x4_t r, int32x4_t a, const int n)
         ///   A32: VQSHRUN.S32 Dd+1, Dn, #n
         ///   A64: SQSHRUN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedUpper(Vector64<ushort> lower, Vector128<int> value, byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedUpper(lower, value, count);
+        public static Vector128<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedUpper(Vector64<ushort> lower, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedUpper(lower, value, count);
 
         /// <summary>
         /// uint32x4_t vqshrun_high_n_s64 (uint32x2_t r, int64x2_t a, const int n)
         ///   A32: VQSHRUN.S64 Dd+1, Dn, #n
         ///   A64: SQSHRUN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightArithmeticNarrowingSaturateUnsignedUpper(Vector64<uint> lower, Vector128<long> value, byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedUpper(lower, value, count);
+        public static Vector128<uint> ShiftRightArithmeticNarrowingSaturateUnsignedUpper(Vector64<uint> lower, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticNarrowingSaturateUnsignedUpper(lower, value, count);
 
         /// <summary>
         /// int16x8_t vqshrn_high_n_s32 (int16x4_t r, int32x4_t a, const int n)
         ///   A32: VQSHRN.S32 Dd+1, Qm, #n
         ///   A64: SQSHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value, byte count) => ShiftRightArithmeticNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<short> ShiftRightArithmeticNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// int32x4_t vqshrn_high_n_s64 (int32x2_t r, int64x2_t a, const int n)
         ///   A32: VQSHRN.S64 Dd+1, Qm, #n
         ///   A64: SQSHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<int> ShiftRightArithmeticNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value, byte count) => ShiftRightArithmeticNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<int> ShiftRightArithmeticNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// int8x16_t vqshrn_high_n_s16 (int8x8_t r, int16x8_t a, const int n)
         ///   A32: VQSHRN.S16 Dd+1, Qm, #n
         ///   A64: SQSHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmeticNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, byte count) => ShiftRightArithmeticNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<sbyte> ShiftRightArithmeticNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// int16x4_t vrshr_n_s16 (int16x4_t a, const int n)
         ///   A32: VRSHR.S16 Dd, Dm, #n
         ///   A64: SRSHR Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftRightArithmeticRounded(Vector64<short> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector64<short> ShiftRightArithmeticRounded(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticRounded(value, count);
 
         /// <summary>
         /// int32x2_t vrshr_n_s32 (int32x2_t a, const int n)
         ///   A32: VRSHR.S32 Dd, Dm, #n
         ///   A64: SRSHR Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftRightArithmeticRounded(Vector64<int> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector64<int> ShiftRightArithmeticRounded(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticRounded(value, count);
 
         /// <summary>
         /// int8x8_t vrshr_n_s8 (int8x8_t a, const int n)
         ///   A32: VRSHR.S8 Dd, Dm, #n
         ///   A64: SRSHR Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightArithmeticRounded(Vector64<sbyte> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector64<sbyte> ShiftRightArithmeticRounded(Vector64<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticRounded(value, count);
 
         /// <summary>
         /// int16x8_t vrshrq_n_s16 (int16x8_t a, const int n)
         ///   A32: VRSHR.S16 Qd, Qm, #n
         ///   A64: SRSHR Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticRounded(Vector128<short> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector128<short> ShiftRightArithmeticRounded(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticRounded(value, count);
 
         /// <summary>
         /// int32x4_t vrshrq_n_s32 (int32x4_t a, const int n)
         ///   A32: VRSHR.S32 Qd, Qm, #n
         ///   A64: SRSHR Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftRightArithmeticRounded(Vector128<int> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector128<int> ShiftRightArithmeticRounded(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticRounded(value, count);
 
         /// <summary>
         /// int64x2_t vrshrq_n_s64 (int64x2_t a, const int n)
         ///   A32: VRSHR.S64 Qd, Qm, #n
         ///   A64: SRSHR Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftRightArithmeticRounded(Vector128<long> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector128<long> ShiftRightArithmeticRounded(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticRounded(value, count);
 
         /// <summary>
         /// int8x16_t vrshrq_n_s8 (int8x16_t a, const int n)
         ///   A32: VRSHR.S8 Qd, Qm, #n
         ///   A64: SRSHR Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmeticRounded(Vector128<sbyte> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector128<sbyte> ShiftRightArithmeticRounded(Vector128<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightArithmeticRounded(value, count);
 
         /// <summary>
         /// int16x4_t vrsra_n_s16 (int16x4_t a, int16x4_t b, const int n)
         ///   A32: VRSRA.S16 Dd, Dm, #n
         ///   A64: SRSRA Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftRightArithmeticRoundedAdd(Vector64<short> addend, Vector64<short> value, byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
+        public static Vector64<short> ShiftRightArithmeticRoundedAdd(Vector64<short> addend, Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
 
         /// <summary>
         /// int32x2_t vrsra_n_s32 (int32x2_t a, int32x2_t b, const int n)
         ///   A32: VRSRA.S32 Dd, Dm, #n
         ///   A64: SRSRA Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftRightArithmeticRoundedAdd(Vector64<int> addend, Vector64<int> value, byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
+        public static Vector64<int> ShiftRightArithmeticRoundedAdd(Vector64<int> addend, Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
 
         /// <summary>
         /// int8x8_t vrsra_n_s8 (int8x8_t a, int8x8_t b, const int n)
         ///   A32: VRSRA.S8 Dd, Dm, #n
         ///   A64: SRSRA Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightArithmeticRoundedAdd(Vector64<sbyte> addend, Vector64<sbyte> value, byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
+        public static Vector64<sbyte> ShiftRightArithmeticRoundedAdd(Vector64<sbyte> addend, Vector64<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
 
         /// <summary>
         /// int16x8_t vrsraq_n_s16 (int16x8_t a, int16x8_t b, const int n)
         ///   A32: VRSRA.S16 Qd, Qm, #n
         ///   A64: SRSRA Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticRoundedAdd(Vector128<short> addend, Vector128<short> value, byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
+        public static Vector128<short> ShiftRightArithmeticRoundedAdd(Vector128<short> addend, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
 
         /// <summary>
         /// int32x4_t vrsraq_n_s32 (int32x4_t a, int32x4_t b, const int n)
         ///   A32: VRSRA.S32 Qd, Qm, #n
         ///   A64: SRSRA Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftRightArithmeticRoundedAdd(Vector128<int> addend, Vector128<int> value, byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
+        public static Vector128<int> ShiftRightArithmeticRoundedAdd(Vector128<int> addend, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
 
         /// <summary>
         /// int64x2_t vrsraq_n_s64 (int64x2_t a, int64x2_t b, const int n)
         ///   A32: VRSRA.S64 Qd, Qm, #n
         ///   A64: SRSRA Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftRightArithmeticRoundedAdd(Vector128<long> addend, Vector128<long> value, byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
+        public static Vector128<long> ShiftRightArithmeticRoundedAdd(Vector128<long> addend, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
 
         /// <summary>
         /// int8x16_t vrsraq_n_s8 (int8x16_t a, int8x16_t b, const int n)
         ///   A32: VRSRA.S8 Qd, Qm, #n
         ///   A64: SRSRA Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmeticRoundedAdd(Vector128<sbyte> addend, Vector128<sbyte> value, byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
+        public static Vector128<sbyte> ShiftRightArithmeticRoundedAdd(Vector128<sbyte> addend, Vector128<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
 
         /// <summary>
         /// int64x1_t vrsra_n_s64 (int64x1_t a, int64x1_t b, const int n)
         ///   A32: VRSRA.S64 Dd, Dm, #n
         ///   A64: SRSRA Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftRightArithmeticRoundedAddScalar(Vector64<long> addend, Vector64<long> value, byte count) => ShiftRightArithmeticRoundedAddScalar(addend, value, count);
+        public static Vector64<long> ShiftRightArithmeticRoundedAddScalar(Vector64<long> addend, Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightArithmeticRoundedAddScalar(addend, value, count);
 
         /// <summary>
         /// int16x4_t vqrshrn_n_s32 (int32x4_t a, const int n)
         ///   A32: VQRSHRN.S32 Dd, Qm, #n
         ///   A64: SQRSHRN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<short> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<int> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateLower(value, count);
+        public static Vector64<short> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// int32x2_t vqrshrn_n_s64 (int64x2_t a, const int n)
         ///   A32: VQRSHRN.S64 Dd, Qm, #n
         ///   A64: SQRSHRN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<int> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<long> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateLower(value, count);
+        public static Vector64<int> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// int8x8_t vqrshrn_n_s16 (int16x8_t a, const int n)
         ///   A32: VQRSHRN.S16 Dd, Qm, #n
         ///   A64: SQRSHRN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<short> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateLower(value, count);
+        public static Vector64<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint8x8_t vqrshrun_n_s16 (int16x8_t a, const int n)
         ///   A32: VQRSHRUN.S16 Dd, Qm, #n
         ///   A64: SQRSHRUN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<short> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, count);
+        public static Vector64<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, count);
 
         /// <summary>
         /// uint16x4_t vqrshrun_n_s32 (int32x4_t a, const int n)
         ///   A32: VQRSHRUN.S32 Dd, Qm, #n
         ///   A64: SQRSHRUN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<int> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, count);
+        public static Vector64<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, count);
 
         /// <summary>
         /// uint32x2_t vqrshrun_n_s64 (int64x2_t a, const int n)
         ///   A32: VQRSHRUN.S64 Dd, Qm, #n
         ///   A64: SQRSHRUN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<long> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, count);
+        public static Vector64<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, count);
 
         /// <summary>
         /// uint8x16_t vqrshrun_high_n_s16 (uint8x8_t r, int16x8_t a, const int n)
         ///   A32: VQRSHRUN.S16 Dd+1, Dn, #n
         ///   A64: SQRSHRUN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(Vector64<byte> lower, Vector128<short> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(lower, value, count);
+        public static Vector128<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(Vector64<byte> lower, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(lower, value, count);
 
         /// <summary>
         /// uint16x8_t vqrshrun_high_n_s32 (uint16x4_t r, int32x4_t a, const int n)
         ///   A32: VQRSHRUN.S32 Dd+1, Dn, #n
         ///   A64: SQRSHRUN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(Vector64<ushort> lower, Vector128<int> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(lower, value, count);
+        public static Vector128<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(Vector64<ushort> lower, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(lower, value, count);
 
         /// <summary>
         /// uint32x4_t vqrshrun_high_n_s64 (uint32x2_t r, int64x2_t a, const int n)
         ///   A32: VQRSHRUN.S64 Dd+1, Dn, #n
         ///   A64: SQRSHRUN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(Vector64<uint> lower, Vector128<long> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(lower, value, count);
+        public static Vector128<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(Vector64<uint> lower, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(lower, value, count);
 
         /// <summary>
         /// int16x8_t vqrshrn_high_n_s32 (int16x4_t r, int32x4_t a, const int n)
         ///   A32: VQRSHRN.S32 Dd+1, Dn, #n
         ///   A64: SQRSHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticRoundedNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<short> ShiftRightArithmeticRoundedNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// int32x4_t vqrshrn_high_n_s64 (int32x2_t r, int64x2_t a, const int n)
         ///   A32: VQRSHRN.S64 Dd+1, Dn, #n
         ///   A64: SQRSHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<int> ShiftRightArithmeticRoundedNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<int> ShiftRightArithmeticRoundedNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// int8x16_t vqrshrn_high_n_s16 (int8x8_t r, int16x8_t a, const int n)
         ///   A32: VQRSHRN.S16 Dd+1, Dn, #n
         ///   A64: SQRSHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// int64x1_t vrshr_n_s64 (int64x1_t a, const int n)
         ///   A32: VRSHR.S64 Dd, Dm, #n
         ///   A64: SRSHR Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftRightArithmeticRoundedScalar(Vector64<long> value, byte count) => ShiftRightArithmeticRoundedScalar(value, count);
+        public static Vector64<long> ShiftRightArithmeticRoundedScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightArithmeticRoundedScalar(value, count);
 
         /// <summary>
         /// int64x1_t vshr_n_s64 (int64x1_t a, const int n)
         ///   A32: VSHR.S64 Dd, Dm, #n
         ///   A64: SSHR Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftRightArithmeticScalar(Vector64<long> value, byte count) => ShiftRightArithmeticScalar(value, count);
+        public static Vector64<long> ShiftRightArithmeticScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightArithmeticScalar(value, count);
 
         /// <summary>
         /// uint8x8_t vshr_n_u8 (uint8x8_t a, const int n)
         ///   A32: VSHR.U8 Dd, Dm, #n
         ///   A64: USHR Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightLogical(Vector64<byte> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector64<byte> ShiftRightLogical(Vector64<byte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint16x4_t vshr_n_u16 (uint16x4_t a, const int n)
         ///   A32: VSHR.U16 Dd, Dm, #n
         ///   A64: USHR Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftRightLogical(Vector64<short> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector64<short> ShiftRightLogical(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint32x2_t vshr_n_u32 (uint32x2_t a, const int n)
         ///   A32: VSHR.U32 Dd, Dm, #n
         ///   A64: USHR Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftRightLogical(Vector64<int> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector64<int> ShiftRightLogical(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint8x8_t vshr_n_u8 (uint8x8_t a, const int n)
         ///   A32: VSHR.U8 Dd, Dm, #n
         ///   A64: USHR Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightLogical(Vector64<sbyte> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector64<sbyte> ShiftRightLogical(Vector64<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint16x4_t vshr_n_u16 (uint16x4_t a, const int n)
         ///   A32: VSHR.U16 Dd, Dm, #n
         ///   A64: USHR Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightLogical(Vector64<ushort> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector64<ushort> ShiftRightLogical(Vector64<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint32x2_t vshr_n_u32 (uint32x2_t a, const int n)
         ///   A32: VSHR.U32 Dd, Dm, #n
         ///   A64: USHR Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightLogical(Vector64<uint> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector64<uint> ShiftRightLogical(Vector64<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint8x16_t vshrq_n_u8 (uint8x16_t a, const int n)
         ///   A32: VSHR.U8 Qd, Qm, #n
         ///   A64: USHR Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightLogical(Vector128<byte> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<byte> ShiftRightLogical(Vector128<byte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint16x8_t vshrq_n_u16 (uint16x8_t a, const int n)
         ///   A32: VSHR.U16 Qd, Qm, #n
         ///   A64: USHR Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftRightLogical(Vector128<short> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<short> ShiftRightLogical(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint32x4_t vshrq_n_u32 (uint32x4_t a, const int n)
         ///   A32: VSHR.U32 Qd, Qm, #n
         ///   A64: USHR Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftRightLogical(Vector128<int> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<int> ShiftRightLogical(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint64x2_t vshrq_n_u64 (uint64x2_t a, const int n)
         ///   A32: VSHR.U64 Qd, Qm, #n
         ///   A64: USHR Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftRightLogical(Vector128<long> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<long> ShiftRightLogical(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint8x16_t vshrq_n_u8 (uint8x16_t a, const int n)
         ///   A32: VSHR.U8 Qd, Qm, #n
         ///   A64: USHR Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogical(Vector128<sbyte> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<sbyte> ShiftRightLogical(Vector128<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint16x8_t vshrq_n_u16 (uint16x8_t a, const int n)
         ///   A32: VSHR.U16 Qd, Qm, #n
         ///   A64: USHR Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint32x4_t vshrq_n_u32 (uint32x4_t a, const int n)
         ///   A32: VSHR.U32 Qd, Qm, #n
         ///   A64: USHR Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightLogical(Vector128<uint> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<uint> ShiftRightLogical(Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint64x2_t vshrq_n_u64 (uint64x2_t a, const int n)
         ///   A32: VSHR.U64 Qd, Qm, #n
         ///   A64: USHR Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// uint8x8_t vsra_n_u8 (uint8x8_t a, uint8x8_t b, const int n)
         ///   A32: VSRA.U8 Dd, Dm, #n
         ///   A64: USRA Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightLogicalAdd(Vector64<byte> addend, Vector64<byte> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector64<byte> ShiftRightLogicalAdd(Vector64<byte> addend, Vector64<byte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint16x4_t vsra_n_u16 (uint16x4_t a, uint16x4_t b, const int n)
         ///   A32: VSRA.U16 Dd, Dm, #n
         ///   A64: USRA Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftRightLogicalAdd(Vector64<short> addend, Vector64<short> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector64<short> ShiftRightLogicalAdd(Vector64<short> addend, Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint32x2_t vsra_n_u32 (uint32x2_t a, uint32x2_t b, const int n)
         ///   A32: VSRA.U32 Dd, Dm, #n
         ///   A64: USRA Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftRightLogicalAdd(Vector64<int> addend, Vector64<int> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector64<int> ShiftRightLogicalAdd(Vector64<int> addend, Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint8x8_t vsra_n_u8 (uint8x8_t a, uint8x8_t b, const int n)
         ///   A32: VSRA.U8 Dd, Dm, #n
         ///   A64: USRA Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightLogicalAdd(Vector64<sbyte> addend, Vector64<sbyte> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector64<sbyte> ShiftRightLogicalAdd(Vector64<sbyte> addend, Vector64<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint16x4_t vsra_n_u16 (uint16x4_t a, uint16x4_t b, const int n)
         ///   A32: VSRA.U16 Dd, Dm, #n
         ///   A64: USRA Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightLogicalAdd(Vector64<ushort> addend, Vector64<ushort> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector64<ushort> ShiftRightLogicalAdd(Vector64<ushort> addend, Vector64<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint32x2_t vsra_n_u32 (uint32x2_t a, uint32x2_t b, const int n)
         ///   A32: VSRA.U32 Dd, Dm, #n
         ///   A64: USRA Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightLogicalAdd(Vector64<uint> addend, Vector64<uint> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector64<uint> ShiftRightLogicalAdd(Vector64<uint> addend, Vector64<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint8x16_t vsraq_n_u8 (uint8x16_t a, uint8x16_t b, const int n)
         ///   A32: VSRA.U8 Qd, Qm, #n
         ///   A64: USRA Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalAdd(Vector128<byte> addend, Vector128<byte> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector128<byte> ShiftRightLogicalAdd(Vector128<byte> addend, Vector128<byte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint16x8_t vsraq_n_u16 (uint16x8_t a, uint16x8_t b, const int n)
         ///   A32: VSRA.U16 Qd, Qm, #n
         ///   A64: USRA Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalAdd(Vector128<short> addend, Vector128<short> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector128<short> ShiftRightLogicalAdd(Vector128<short> addend, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint32x4_t vsraq_n_u32 (uint32x4_t a, uint32x4_t b, const int n)
         ///   A32: VSRA.U32 Qd, Qm, #n
         ///   A64: USRA Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalAdd(Vector128<int> addend, Vector128<int> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector128<int> ShiftRightLogicalAdd(Vector128<int> addend, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint64x2_t vsraq_n_u64 (uint64x2_t a, uint64x2_t b, const int n)
         ///   A32: VSRA.U64 Qd, Qm, #n
         ///   A64: USRA Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftRightLogicalAdd(Vector128<long> addend, Vector128<long> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector128<long> ShiftRightLogicalAdd(Vector128<long> addend, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint8x16_t vsraq_n_u8 (uint8x16_t a, uint8x16_t b, const int n)
         ///   A32: VSRA.U8 Qd, Qm, #n
         ///   A64: USRA Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalAdd(Vector128<sbyte> addend, Vector128<sbyte> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector128<sbyte> ShiftRightLogicalAdd(Vector128<sbyte> addend, Vector128<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint16x8_t vsraq_n_u16 (uint16x8_t a, uint16x8_t b, const int n)
         ///   A32: VSRA.U16 Qd, Qm, #n
         ///   A64: USRA Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalAdd(Vector128<ushort> addend, Vector128<ushort> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector128<ushort> ShiftRightLogicalAdd(Vector128<ushort> addend, Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint32x4_t vsraq_n_u32 (uint32x4_t a, uint32x4_t b, const int n)
         ///   A32: VSRA.U32 Qd, Qm, #n
         ///   A64: USRA Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalAdd(Vector128<uint> addend, Vector128<uint> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector128<uint> ShiftRightLogicalAdd(Vector128<uint> addend, Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint64x2_t vsraq_n_u64 (uint64x2_t a, uint64x2_t b, const int n)
         ///   A32: VSRA.U64 Qd, Qm, #n
         ///   A64: USRA Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<ulong> ShiftRightLogicalAdd(Vector128<ulong> addend, Vector128<ulong> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+        public static Vector128<ulong> ShiftRightLogicalAdd(Vector128<ulong> addend, Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
         /// uint64x1_t vsra_n_u64 (uint64x1_t a, uint64x1_t b, const int n)
         ///   A32: VSRA.U64 Dd, Dm, #n
         ///   A64: USRA Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftRightLogicalAddScalar(Vector64<long> addend, Vector64<long> value, byte count) => ShiftRightLogicalAddScalar(addend, value, count);
+        public static Vector64<long> ShiftRightLogicalAddScalar(Vector64<long> addend, Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalAddScalar(addend, value, count);
 
         /// <summary>
         /// uint64x1_t vsra_n_u64 (uint64x1_t a, uint64x1_t b, const int n)
         ///   A32: VSRA.U64 Dd, Dm, #n
         ///   A64: USRA Dd, Dn, #n
         /// </summary>
-        public static Vector64<ulong> ShiftRightLogicalAddScalar(Vector64<ulong> addend, Vector64<ulong> value, byte count) => ShiftRightLogicalAddScalar(addend, value, count);
+        public static Vector64<ulong> ShiftRightLogicalAddScalar(Vector64<ulong> addend, Vector64<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalAddScalar(addend, value, count);
 
         /// <summary>
         /// uint8x8_t vshrn_n_u16 (uint16x8_t a, const int n)
         ///   A32: VSHRN.I16 Dd, Qm, #n
         ///   A64: SHRN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightLogicalNarrowingLower(Vector128<ushort> value, byte count) => ShiftRightLogicalNarrowingLower(value, count);
+        public static Vector64<byte> ShiftRightLogicalNarrowingLower(Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalNarrowingLower(value, count);
 
         /// <summary>
         /// int16x4_t vshrn_n_s32 (int32x4_t a, const int n)
         ///   A32: VSHRN.I32 Dd, Qm, #n
         ///   A64: SHRN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<short> ShiftRightLogicalNarrowingLower(Vector128<int> value, byte count) => ShiftRightLogicalNarrowingLower(value, count);
+        public static Vector64<short> ShiftRightLogicalNarrowingLower(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalNarrowingLower(value, count);
 
         /// <summary>
         /// int32x2_t vshrn_n_s64 (int64x2_t a, const int n)
         ///   A32: VSHRN.I64 Dd, Qm, #n
         ///   A64: SHRN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<int> ShiftRightLogicalNarrowingLower(Vector128<long> value, byte count) => ShiftRightLogicalNarrowingLower(value, count);
+        public static Vector64<int> ShiftRightLogicalNarrowingLower(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalNarrowingLower(value, count);
 
         /// <summary>
         /// int8x8_t vshrn_n_s16 (int16x8_t a, const int n)
         ///   A32: VSHRN.I16 Dd, Qm, #n
         ///   A64: SHRN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightLogicalNarrowingLower(Vector128<short> value, byte count) => ShiftRightLogicalNarrowingLower(value, count);
+        public static Vector64<sbyte> ShiftRightLogicalNarrowingLower(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalNarrowingLower(value, count);
 
         /// <summary>
         /// uint16x4_t vshrn_n_u32 (uint32x4_t a, const int n)
         ///   A32: VSHRN.I32 Dd, Qm, #n
         ///   A64: SHRN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightLogicalNarrowingLower(Vector128<uint> value, byte count) => ShiftRightLogicalNarrowingLower(value, count);
+        public static Vector64<ushort> ShiftRightLogicalNarrowingLower(Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalNarrowingLower(value, count);
 
         /// <summary>
         /// uint32x2_t vshrn_n_u64 (uint64x2_t a, const int n)
         ///   A32: VSHRN.I64 Dd, Qm, #n
         ///   A64: SHRN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightLogicalNarrowingLower(Vector128<ulong> value, byte count) => ShiftRightLogicalNarrowingLower(value, count);
+        public static Vector64<uint> ShiftRightLogicalNarrowingLower(Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalNarrowingLower(value, count);
 
         /// <summary>
         /// uint8x8_t vqshrn_n_u16 (uint16x8_t a, const int n)
         ///   A32: VQSHRN.U16 Dd, Qm, #n
         ///   A64: UQSHRN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightLogicalNarrowingSaturateLower(Vector128<ushort> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+        public static Vector64<byte> ShiftRightLogicalNarrowingSaturateLower(Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint16x4_t vqshrn_n_u32 (uint32x4_t a, const int n)
         ///   A32: VQSHRN.U32 Dd, Qm, #n
         ///   A64: UQSHRN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<short> ShiftRightLogicalNarrowingSaturateLower(Vector128<int> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+        public static Vector64<short> ShiftRightLogicalNarrowingSaturateLower(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint32x2_t vqshrn_n_u64 (uint64x2_t a, const int n)
         ///   A32: VQSHRN.U64 Dd, Qm, #n
         ///   A64: UQSHRN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<int> ShiftRightLogicalNarrowingSaturateLower(Vector128<long> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+        public static Vector64<int> ShiftRightLogicalNarrowingSaturateLower(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint8x8_t vqshrn_n_u16 (uint16x8_t a, const int n)
         ///   A32: VQSHRN.U16 Dd, Qm, #n
         ///   A64: UQSHRN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightLogicalNarrowingSaturateLower(Vector128<short> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+        public static Vector64<sbyte> ShiftRightLogicalNarrowingSaturateLower(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint16x4_t vqshrn_n_u32 (uint32x4_t a, const int n)
         ///   A32: VQSHRN.U32 Dd, Qm, #n
         ///   A64: UQSHRN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightLogicalNarrowingSaturateLower(Vector128<uint> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+        public static Vector64<ushort> ShiftRightLogicalNarrowingSaturateLower(Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint32x2_t vqshrn_n_u64 (uint64x2_t a, const int n)
         ///   A32: VQSHRN.U64 Dd, Qm, #n
         ///   A64: UQSHRN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightLogicalNarrowingSaturateLower(Vector128<ulong> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+        public static Vector64<uint> ShiftRightLogicalNarrowingSaturateLower(Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint8x16_t vqshrn_high_n_u16 (uint8x8_t r, uint16x8_t a, const int n)
         ///   A32: VQSHRN.U16 Dd+1, Qm, #n
         ///   A64: UQSHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalNarrowingSaturateUpper(Vector64<byte> lower, Vector128<ushort> value, byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<byte> ShiftRightLogicalNarrowingSaturateUpper(Vector64<byte> lower, Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint16x8_t vqshrn_high_n_u32 (uint16x4_t r, uint32x4_t a, const int n)
         ///   A32: VQSHRN.U32 Dd+1, Qm, #n
         ///   A64: UQSHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value, byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<short> ShiftRightLogicalNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint32x4_t vqshrn_high_n_u64 (uint32x2_t r, uint64x2_t a, const int n)
         ///   A32: VQSHRN.U64 Dd+1, Qm, #n
         ///   A64: UQSHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value, byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<int> ShiftRightLogicalNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint8x16_t vqshrn_high_n_u16 (uint8x8_t r, uint16x8_t a, const int n)
         ///   A32: VQSHRN.U16 Dd+1, Qm, #n
         ///   A64: UQSHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<sbyte> ShiftRightLogicalNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint16x8_t vqshrn_high_n_u32 (uint16x4_t r, uint32x4_t a, const int n)
         ///   A32: VQSHRN.U32 Dd+1, Qm, #n
         ///   A64: UQSHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalNarrowingSaturateUpper(Vector64<ushort> lower, Vector128<uint> value, byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<ushort> ShiftRightLogicalNarrowingSaturateUpper(Vector64<ushort> lower, Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint32x4_t vqshrn_high_n_u64 (uint32x2_t r, uint64x2_t a, const int n)
         ///   A32: VQSHRN.U64 Dd+1, Qm, #n
         ///   A64: UQSHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalNarrowingSaturateUpper(Vector64<uint> lower, Vector128<ulong> value, byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<uint> ShiftRightLogicalNarrowingSaturateUpper(Vector64<uint> lower, Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint8x16_t vshrn_high_n_u16 (uint8x8_t r, uint16x8_t a, const int n)
         ///   A32: VSHRN.I16 Dd+1, Qm, #n
         ///   A64: SHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value, byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
+        public static Vector128<byte> ShiftRightLogicalNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// int16x8_t vshrn_high_n_s32 (int16x4_t r, int32x4_t a, const int n)
         ///   A32: VSHRN.I32 Dd+1, Qm, #n
         ///   A64: SHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalNarrowingUpper(Vector64<short> lower, Vector128<int> value, byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
+        public static Vector128<short> ShiftRightLogicalNarrowingUpper(Vector64<short> lower, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// int32x4_t vshrn_high_n_s64 (int32x2_t r, int64x2_t a, const int n)
         ///   A32: VSHRN.I64 Dd+1, Qm, #n
         ///   A64: SHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalNarrowingUpper(Vector64<int> lower, Vector128<long> value, byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
+        public static Vector128<int> ShiftRightLogicalNarrowingUpper(Vector64<int> lower, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// int8x16_t vshrn_high_n_s16 (int8x8_t r, int16x8_t a, const int n)
         ///   A32: VSHRN.I16 Dd+1, Qm, #n
         ///   A64: SHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value, byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
+        public static Vector128<sbyte> ShiftRightLogicalNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// uint16x8_t vshrn_high_n_u32 (uint16x4_t r, uint32x4_t a, const int n)
         ///   A32: VSHRN.I32 Dd+1, Qm, #n
         ///   A64: SHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value, byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
+        public static Vector128<ushort> ShiftRightLogicalNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// uint32x4_t vshrn_high_n_u64 (uint32x2_t r, uint64x2_t a, const int n)
         ///   A32: VSHRN.I64 Dd+1, Qm, #n
         ///   A64: SHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value, byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
+        public static Vector128<uint> ShiftRightLogicalNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// uint8x8_t vrshr_n_u8 (uint8x8_t a, const int n)
         ///   A32: VRSHR.U8 Dd, Dm, #n
         ///   A64: URSHR Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightLogicalRounded(Vector64<byte> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector64<byte> ShiftRightLogicalRounded(Vector64<byte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint16x4_t vrshr_n_u16 (uint16x4_t a, const int n)
         ///   A32: VRSHR.U16 Dd, Dm, #n
         ///   A64: URSHR Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftRightLogicalRounded(Vector64<short> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector64<short> ShiftRightLogicalRounded(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint32x2_t vrshr_n_u32 (uint32x2_t a, const int n)
         ///   A32: VRSHR.U32 Dd, Dm, #n
         ///   A64: URSHR Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftRightLogicalRounded(Vector64<int> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector64<int> ShiftRightLogicalRounded(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint8x8_t vrshr_n_u8 (uint8x8_t a, const int n)
         ///   A32: VRSHR.U8 Dd, Dm, #n
         ///   A64: URSHR Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightLogicalRounded(Vector64<sbyte> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector64<sbyte> ShiftRightLogicalRounded(Vector64<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint16x4_t vrshr_n_u16 (uint16x4_t a, const int n)
         ///   A32: VRSHR.U16 Dd, Dm, #n
         ///   A64: URSHR Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightLogicalRounded(Vector64<ushort> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector64<ushort> ShiftRightLogicalRounded(Vector64<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint32x2_t vrshr_n_u32 (uint32x2_t a, const int n)
         ///   A32: VRSHR.U32 Dd, Dm, #n
         ///   A64: URSHR Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightLogicalRounded(Vector64<uint> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector64<uint> ShiftRightLogicalRounded(Vector64<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint8x16_t vrshrq_n_u8 (uint8x16_t a, const int n)
         ///   A32: VRSHR.U8 Qd, Qm, #n
         ///   A64: URSHR Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalRounded(Vector128<byte> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<byte> ShiftRightLogicalRounded(Vector128<byte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint16x8_t vrshrq_n_u16 (uint16x8_t a, const int n)
         ///   A32: VRSHR.U16 Qd, Qm, #n
         ///   A64: URSHR Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalRounded(Vector128<short> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<short> ShiftRightLogicalRounded(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint32x4_t vrshrq_n_u32 (uint32x4_t a, const int n)
         ///   A32: VRSHR.U32 Qd, Qm, #n
         ///   A64: URSHR Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalRounded(Vector128<int> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<int> ShiftRightLogicalRounded(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint64x2_t vrshrq_n_u64 (uint64x2_t a, const int n)
         ///   A32: VRSHR.U64 Qd, Qm, #n
         ///   A64: URSHR Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftRightLogicalRounded(Vector128<long> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<long> ShiftRightLogicalRounded(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint8x16_t vrshrq_n_u8 (uint8x16_t a, const int n)
         ///   A32: VRSHR.U8 Qd, Qm, #n
         ///   A64: URSHR Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalRounded(Vector128<sbyte> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<sbyte> ShiftRightLogicalRounded(Vector128<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint16x8_t vrshrq_n_u16 (uint16x8_t a, const int n)
         ///   A32: VRSHR.U16 Qd, Qm, #n
         ///   A64: URSHR Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalRounded(Vector128<ushort> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<ushort> ShiftRightLogicalRounded(Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint32x4_t vrshrq_n_u32 (uint32x4_t a, const int n)
         ///   A32: VRSHR.U32 Qd, Qm, #n
         ///   A64: URSHR Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalRounded(Vector128<uint> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<uint> ShiftRightLogicalRounded(Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint64x2_t vrshrq_n_u64 (uint64x2_t a, const int n)
         ///   A32: VRSHR.U64 Qd, Qm, #n
         ///   A64: URSHR Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<ulong> ShiftRightLogicalRounded(Vector128<ulong> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<ulong> ShiftRightLogicalRounded(Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRounded(value, count);
 
         /// <summary>
         /// uint8x8_t vrsra_n_u8 (uint8x8_t a, uint8x8_t b, const int n)
         ///   A32: VRSRA.U8 Dd, Dm, #n
         ///   A64: URSRA Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightLogicalRoundedAdd(Vector64<byte> addend, Vector64<byte> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector64<byte> ShiftRightLogicalRoundedAdd(Vector64<byte> addend, Vector64<byte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint16x4_t vrsra_n_u16 (uint16x4_t a, uint16x4_t b, const int n)
         ///   A32: VRSRA.U16 Dd, Dm, #n
         ///   A64: URSRA Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftRightLogicalRoundedAdd(Vector64<short> addend, Vector64<short> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector64<short> ShiftRightLogicalRoundedAdd(Vector64<short> addend, Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint32x2_t vrsra_n_u32 (uint32x2_t a, uint32x2_t b, const int n)
         ///   A32: VRSRA.U32 Dd, Dm, #n
         ///   A64: URSRA Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<int> ShiftRightLogicalRoundedAdd(Vector64<int> addend, Vector64<int> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector64<int> ShiftRightLogicalRoundedAdd(Vector64<int> addend, Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint8x8_t vrsra_n_u8 (uint8x8_t a, uint8x8_t b, const int n)
         ///   A32: VRSRA.U8 Dd, Dm, #n
         ///   A64: URSRA Vd.8B, Vn.8B, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightLogicalRoundedAdd(Vector64<sbyte> addend, Vector64<sbyte> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector64<sbyte> ShiftRightLogicalRoundedAdd(Vector64<sbyte> addend, Vector64<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint16x4_t vrsra_n_u16 (uint16x4_t a, uint16x4_t b, const int n)
         ///   A32: VRSRA.U16 Dd, Dm, #n
         ///   A64: URSRA Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightLogicalRoundedAdd(Vector64<ushort> addend, Vector64<ushort> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector64<ushort> ShiftRightLogicalRoundedAdd(Vector64<ushort> addend, Vector64<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint32x2_t vrsra_n_u32 (uint32x2_t a, uint32x2_t b, const int n)
         ///   A32: VRSRA.U32 Dd, Dm, #n
         ///   A64: URSRA Vd.2S, Vn.2S, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightLogicalRoundedAdd(Vector64<uint> addend, Vector64<uint> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector64<uint> ShiftRightLogicalRoundedAdd(Vector64<uint> addend, Vector64<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint8x16_t vrsraq_n_u8 (uint8x16_t a, uint8x16_t b, const int n)
         ///   A32: VRSRA.U8 Qd, Qm, #n
         ///   A64: URSRA Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalRoundedAdd(Vector128<byte> addend, Vector128<byte> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector128<byte> ShiftRightLogicalRoundedAdd(Vector128<byte> addend, Vector128<byte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint16x8_t vrsraq_n_u16 (uint16x8_t a, uint16x8_t b, const int n)
         ///   A32: VRSRA.U16 Qd, Qm, #n
         ///   A64: URSRA Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalRoundedAdd(Vector128<short> addend, Vector128<short> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector128<short> ShiftRightLogicalRoundedAdd(Vector128<short> addend, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint32x4_t vrsraq_n_u32 (uint32x4_t a, uint32x4_t b, const int n)
         ///   A32: VRSRA.U32 Qd, Qm, #n
         ///   A64: URSRA Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalRoundedAdd(Vector128<int> addend, Vector128<int> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector128<int> ShiftRightLogicalRoundedAdd(Vector128<int> addend, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint64x2_t vrsraq_n_u64 (uint64x2_t a, uint64x2_t b, const int n)
         ///   A32: VRSRA.U64 Qd, Qm, #n
         ///   A64: URSRA Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<long> ShiftRightLogicalRoundedAdd(Vector128<long> addend, Vector128<long> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector128<long> ShiftRightLogicalRoundedAdd(Vector128<long> addend, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint8x16_t vrsraq_n_u8 (uint8x16_t a, uint8x16_t b, const int n)
         ///   A32: VRSRA.U8 Qd, Qm, #n
         ///   A64: URSRA Vd.16B, Vn.16B, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalRoundedAdd(Vector128<sbyte> addend, Vector128<sbyte> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector128<sbyte> ShiftRightLogicalRoundedAdd(Vector128<sbyte> addend, Vector128<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(128))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint16x8_t vrsraq_n_u16 (uint16x8_t a, uint16x8_t b, const int n)
         ///   A32: VRSRA.U16 Qd, Qm, #n
         ///   A64: URSRA Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalRoundedAdd(Vector128<ushort> addend, Vector128<ushort> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector128<ushort> ShiftRightLogicalRoundedAdd(Vector128<ushort> addend, Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint32x4_t vrsraq_n_u32 (uint32x4_t a, uint32x4_t b, const int n)
         ///   A32: VRSRA.U32 Qd, Qm, #n
         ///   A64: URSRA Vd.4S, Vn.4S, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalRoundedAdd(Vector128<uint> addend, Vector128<uint> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector128<uint> ShiftRightLogicalRoundedAdd(Vector128<uint> addend, Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint64x2_t vrsraq_n_u64 (uint64x2_t a, uint64x2_t b, const int n)
         ///   A32: VRSRA.U64 Qd, Qm, #n
         ///   A64: URSRA Vd.2D, Vn.2D, #n
         /// </summary>
-        public static Vector128<ulong> ShiftRightLogicalRoundedAdd(Vector128<ulong> addend, Vector128<ulong> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
+        public static Vector128<ulong> ShiftRightLogicalRoundedAdd(Vector128<ulong> addend, Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
         /// uint64x1_t vrsra_n_u64 (uint64x1_t a, uint64x1_t b, const int n)
         ///   A32: VRSRA.U64 Dd, Dm, #n
         ///   A64: URSRA Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftRightLogicalRoundedAddScalar(Vector64<long> addend, Vector64<long> value, byte count) => ShiftRightLogicalRoundedAddScalar(addend, value, count);
+        public static Vector64<long> ShiftRightLogicalRoundedAddScalar(Vector64<long> addend, Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalRoundedAddScalar(addend, value, count);
 
         /// <summary>
         /// uint64x1_t vrsra_n_u64 (uint64x1_t a, uint64x1_t b, const int n)
         ///   A32: VRSRA.U64 Dd, Dm, #n
         ///   A64: URSRA Dd, Dn, #n
         /// </summary>
-        public static Vector64<ulong> ShiftRightLogicalRoundedAddScalar(Vector64<ulong> addend, Vector64<ulong> value, byte count) => ShiftRightLogicalRoundedAddScalar(addend, value, count);
+        public static Vector64<ulong> ShiftRightLogicalRoundedAddScalar(Vector64<ulong> addend, Vector64<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalRoundedAddScalar(addend, value, count);
 
         /// <summary>
         /// uint8x8_t vrshrn_n_u16 (uint16x8_t a, const int n)
         ///   A32: VRSHRN.I16 Dd, Qm, #n
         ///   A64: RSHRN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightLogicalRoundedNarrowingLower(Vector128<ushort> value, byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
+        public static Vector64<byte> ShiftRightLogicalRoundedNarrowingLower(Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
 
         /// <summary>
         /// int16x4_t vrshrn_n_s32 (int32x4_t a, const int n)
         ///   A32: VRSHRN.I32 Dd, Qm, #n
         ///   A64: RSHRN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<short> ShiftRightLogicalRoundedNarrowingLower(Vector128<int> value, byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
+        public static Vector64<short> ShiftRightLogicalRoundedNarrowingLower(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
 
         /// <summary>
         /// int32x2_t vrshrn_n_s64 (int64x2_t a, const int n)
         ///   A32: VRSHRN.I64 Dd, Qm, #n
         ///   A64: RSHRN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<int> ShiftRightLogicalRoundedNarrowingLower(Vector128<long> value, byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
+        public static Vector64<int> ShiftRightLogicalRoundedNarrowingLower(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
 
         /// <summary>
         /// int8x8_t vrshrn_n_s16 (int16x8_t a, const int n)
         ///   A32: VRSHRN.I16 Dd, Qm, #n
         ///   A64: RSHRN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingLower(Vector128<short> value, byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
+        public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingLower(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
 
         /// <summary>
         /// uint16x4_t vrshrn_n_u32 (uint32x4_t a, const int n)
         ///   A32: VRSHRN.I32 Dd, Qm, #n
         ///   A64: RSHRN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightLogicalRoundedNarrowingLower(Vector128<uint> value, byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
+        public static Vector64<ushort> ShiftRightLogicalRoundedNarrowingLower(Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
 
         /// <summary>
         /// uint32x2_t vrshrn_n_u64 (uint64x2_t a, const int n)
         ///   A32: VRSHRN.I64 Dd, Qm, #n
         ///   A64: RSHRN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightLogicalRoundedNarrowingLower(Vector128<ulong> value, byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
+        public static Vector64<uint> ShiftRightLogicalRoundedNarrowingLower(Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedNarrowingLower(value, count);
 
         /// <summary>
         /// uint8x8_t vqrshrn_n_u16 (uint16x8_t a, const int n)
         ///   A32: VQRSHRN.U16 Dd, Qm, #n
         ///   A64: UQRSHRN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<byte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ushort> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
+        public static Vector64<byte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint16x4_t vqrshrn_n_u32 (uint32x4_t a, const int n)
         ///   A32: VQRSHRN.U32 Dd, Qm, #n
         ///   A64: UQRSHRN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<short> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<int> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
+        public static Vector64<short> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint32x2_t vqrshrn_n_u64 (uint64x2_t a, const int n)
         ///   A32: VQRSHRN.U64 Dd, Qm, #n
         ///   A64: UQRSHRN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<int> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<long> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
+        public static Vector64<int> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint8x8_t vqrshrn_n_u16 (uint16x8_t a, const int n)
         ///   A32: VQRSHRN.U16 Dd, Qm, #n
         ///   A64: UQRSHRN Vd.8B, Vn.8H, #n
         /// </summary>
-        public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<short> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
+        public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint16x4_t vqrshrn_n_u32 (uint32x4_t a, const int n)
         ///   A32: VQRSHRN.U32 Dd, Qm, #n
         ///   A64: UQRSHRN Vd.4H, Vn.4S, #n
         /// </summary>
-        public static Vector64<ushort> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<uint> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
+        public static Vector64<ushort> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint32x2_t vqrshrn_n_u64 (uint64x2_t a, const int n)
         ///   A32: VQRSHRN.U64 Dd, Qm, #n
         ///   A64: UQRSHRN Vd.2S, Vn.2D, #n
         /// </summary>
-        public static Vector64<uint> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ulong> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
+        public static Vector64<uint> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
         /// uint8x16_t vqrshrn_high_n_u16 (uint8x8_t r, uint16x8_t a, const int n)
         ///   A32: VQRSHRN.U16 Dd+1, Dn, #n
         ///   A64: UQRSHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<byte> lower, Vector128<ushort> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<byte> lower, Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint16x8_t vqrshrn_high_n_u32 (uint16x4_t r, uint32x4_t a, const int n)
         ///   A32: VQRSHRN.U32 Dd+1, Dn, #n
         ///   A64: UQRSHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<short> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint32x4_t vqrshrn_high_n_u64 (uint32x2_t r, uint64x2_t a, const int n)
         ///   A32: VQRSHRN.U64 Dd+1, Dn, #n
         ///   A64: UQRSHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<int> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint8x16_t vqrshrn_high_n_u16 (uint8x8_t r, uint16x8_t a, const int n)
         ///   A32: VQRSHRN.U16 Dd+1, Dn, #n
         ///   A64: UQRSHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint16x8_t vqrshrn_high_n_u32 (uint16x4_t r, uint32x4_t a, const int n)
         ///   A32: VQRSHRN.U32 Dd+1, Dn, #n
         ///   A64: UQRSHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<ushort> lower, Vector128<uint> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<ushort> lower, Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint32x4_t vqrshrn_high_n_u64 (uint32x2_t r, uint64x2_t a, const int n)
         ///   A32: VQRSHRN.U64 Dd+1, Dn, #n
         ///   A64: UQRSHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<uint> lower, Vector128<ulong> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<uint> lower, Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
         /// uint8x16_t vrshrn_high_n_u16 (uint8x8_t r, uint16x8_t a, const int n)
         ///   A32: VRSHRN.I16 Dd+1, Qm, #n
         ///   A64: RSHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value, byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// int16x8_t vrshrn_high_n_s32 (int16x4_t r, int32x4_t a, const int n)
         ///   A32: VRSHRN.I32 Dd+1, Qm, #n
         ///   A64: RSHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalRoundedNarrowingUpper(Vector64<short> lower, Vector128<int> value, byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
+        public static Vector128<short> ShiftRightLogicalRoundedNarrowingUpper(Vector64<short> lower, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// int32x4_t vrshrn_high_n_s64 (int32x2_t r, int64x2_t a, const int n)
         ///   A32: VRSHRN.I64 Dd+1, Qm, #n
         ///   A64: RSHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalRoundedNarrowingUpper(Vector64<int> lower, Vector128<long> value, byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
+        public static Vector128<int> ShiftRightLogicalRoundedNarrowingUpper(Vector64<int> lower, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// int8x16_t vrshrn_high_n_s16 (int8x8_t r, int16x8_t a, const int n)
         ///   A32: VRSHRN.I16 Dd+1, Qm, #n
         ///   A64: RSHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value, byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
+        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// uint16x8_t vrshrn_high_n_u32 (uint16x4_t r, uint32x4_t a, const int n)
         ///   A32: VRSHRN.I32 Dd+1, Qm, #n
         ///   A64: RSHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value, byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// uint32x4_t vrshrn_high_n_u64 (uint32x2_t r, uint64x2_t a, const int n)
         ///   A32: VRSHRN.I64 Dd+1, Qm, #n
         ///   A64: RSHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value, byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
 
         /// <summary>
         /// uint64x1_t vrshr_n_u64 (uint64x1_t a, const int n)
         ///   A32: VRSHR.U64 Dd, Dm, #n
         ///   A64: URSHR Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftRightLogicalRoundedScalar(Vector64<long> value, byte count) => ShiftRightLogicalRoundedScalar(value, count);
+        public static Vector64<long> ShiftRightLogicalRoundedScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalRoundedScalar(value, count);
 
         /// <summary>
         /// uint64x1_t vrshr_n_u64 (uint64x1_t a, const int n)
         ///   A32: VRSHR.U64 Dd, Dm, #n
         ///   A64: URSHR Dd, Dn, #n
         /// </summary>
-        public static Vector64<ulong> ShiftRightLogicalRoundedScalar(Vector64<ulong> value, byte count) => ShiftRightLogicalRoundedScalar(value, count);
+        public static Vector64<ulong> ShiftRightLogicalRoundedScalar(Vector64<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalRoundedScalar(value, count);
 
         /// <summary>
         /// uint64x1_t vshr_n_u64 (uint64x1_t a, const int n)
         ///   A32: VSHR.U64 Dd, Dm, #n
         ///   A64: USHR Dd, Dn, #n
         /// </summary>
-        public static Vector64<long> ShiftRightLogicalScalar(Vector64<long> value, byte count) => ShiftRightLogicalScalar(value, count);
+        public static Vector64<long> ShiftRightLogicalScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalScalar(value, count);
 
         /// <summary>
         /// uint64x1_t vshr_n_u64 (uint64x1_t a, const int n)
         ///   A32: VSHR.U64 Dd, Dm, #n
         ///   A64: USHR Dd, Dn, #n
         /// </summary>
-        public static Vector64<ulong> ShiftRightLogicalScalar(Vector64<ulong> value, byte count) => ShiftRightLogicalScalar(value, count);
+        public static Vector64<ulong> ShiftRightLogicalScalar(Vector64<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) => ShiftRightLogicalScalar(value, count);
 
         /// <summary>
         /// int32x4_t vmovl_s16 (int16x4_t a)
@@ -14247,119 +14320,119 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VST1.8 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.B }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(byte* address, Vector64<byte> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(byte* address, Vector64<byte> value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1_lane_s16 (int16_t * ptr, int16x4_t val, const int lane)
         ///   A32: VST1.16 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.H }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(short* address, Vector64<short> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(short* address, Vector64<short> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1_lane_s32 (int32_t * ptr, int32x2_t val, const int lane)
         ///   A32: VST1.32 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(int* address, Vector64<int> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(int* address, Vector64<int> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1_lane_s8 (int8_t * ptr, int8x8_t val, const int lane)
         ///   A32: VST1.8 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.B }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(sbyte* address, Vector64<sbyte> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(sbyte* address, Vector64<sbyte> value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1_lane_f32 (float32_t * ptr, float32x2_t val, const int lane)
         ///   A32: VST1.32 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(float* address, Vector64<float> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(float* address, Vector64<float> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1_lane_u16 (uint16_t * ptr, uint16x4_t val, const int lane)
         ///   A32: VST1.16 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.H }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(ushort* address, Vector64<ushort> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(ushort* address, Vector64<ushort> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1_lane_u32 (uint32_t * ptr, uint32x2_t val, const int lane)
         ///   A32: VST1.32 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(uint* address, Vector64<uint> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(uint* address, Vector64<uint> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1q_lane_u8 (uint8_t * ptr, uint8x16_t val, const int lane)
         ///   A32: VST1.8 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.B }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(byte* address, Vector128<byte> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(byte* address, Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1q_lane_f64 (float64_t * ptr, float64x2_t val, const int lane)
         ///   A32: VSTR.64 Dd, [Rn]
         ///   A64: ST1 { Vt.D }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(double* address, Vector128<double> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(double* address, Vector128<double> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1q_lane_s16 (int16_t * ptr, int16x8_t val, const int lane)
         ///   A32: VST1.16 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.H }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(short* address, Vector128<short> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(short* address, Vector128<short> value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1q_lane_s32 (int32_t * ptr, int32x4_t val, const int lane)
         ///   A32: VST1.32 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(int* address, Vector128<int> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(int* address, Vector128<int> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1q_lane_s64 (int64_t * ptr, int64x2_t val, const int lane)
         ///   A32: VSTR.64 Dd, [Rn]
         ///   A64: ST1 { Vt.D }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(long* address, Vector128<long> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(long* address, Vector128<long> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1q_lane_s8 (int8_t * ptr, int8x16_t val, const int lane)
         ///   A32: VST1.8 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.B }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(sbyte* address, Vector128<sbyte> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(sbyte* address, Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1q_lane_f32 (float32_t * ptr, float32x4_t val, const int lane)
         ///   A32: VST1.32 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(float* address, Vector128<float> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(float* address, Vector128<float> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1q_lane_u16 (uint16_t * ptr, uint16x8_t val, const int lane)
         ///   A32: VST1.16 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.H }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(ushort* address, Vector128<ushort> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(ushort* address, Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1q_lane_u32 (uint32_t * ptr, uint32x4_t val, const int lane)
         ///   A32: VST1.32 { Dd[index] }, [Rn]
         ///   A64: ST1 { Vt.S }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(uint* address, Vector128<uint> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(uint* address, Vector128<uint> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// void vst1q_lane_u64 (uint64_t * ptr, uint64x2_t val, const int lane)
         ///   A32: VSTR.64 Dd, [Rn]
         ///   A64: ST1 { Vt.D }[index], [Xn]
         /// </summary>
-        public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, byte index) => StoreSelectedScalar(address, value, index);
+        public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)
@@ -14965,6 +15038,42 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<sbyte> VectorTableLookup(Vector128<sbyte> table, Vector64<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
 
         /// <summary>
+        ///  uint8x8_t vqtbl2q_u8(uint8x16x2_t t, uint8x8_t idx)
+        ///   A64: TBL Vd.8B, {Vn.16B, Vn+1.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+        /// <summary>
+        ///  int8x8_t vqtbl2q_u8(int8x16x2_t t, uint8x8_t idx)
+        ///   A64: TBL Vd.8B, {Vn.16B, Vn+1.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+        /// <summary>
+        ///  uint8x8_t vqtbl3q_u8(uint8x16x3_t t, uint8x8_t idx)
+        ///   A64: TBL Vd.8B, {Vn.16B, Vn+1.16B, Vn+2.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+        /// <summary>
+        ///  int8x8_t vqtbl3q_u8(int8x16x3_t t, uint8x8_t idx)
+        ///   A64: TBL Vd.8B, {Vn.16B, Vn+1.16B, Vn+2.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+        /// <summary>
+        ///  uint8x8_t vqtbl4q_u8(uint8x16x4_t t, uint8x8_t idx)
+        ///   A64: TBL Vd.8B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+        /// <summary>
+        ///  int8x8_t vqtbl4q_u8(int8x16x4_t t, uint8x8_t idx)
+        ///   A64: TBL Vd.8B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+
+        /// <summary>
         ///  uint8x8_t vqvtbx1_u8(uint8x8_t r, uint8x16_t t, uint8x8_t idx)
         ///   A32: VTBX Dd, {Dn, Dn+1}, Dm
         ///   A64: TBX Vd.8B, {Vn.16B}, Vm.8B
@@ -14977,6 +15086,42 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: TBX Vd.8B, {Vn.16B}, Vm.8B
         /// </summary>
         public static Vector64<sbyte> VectorTableLookupExtension(Vector64<sbyte> defaultValues, Vector128<sbyte> table, Vector64<sbyte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+        /// <summary>
+        ///  uint8x8_t vqtbx2q_u8(uint8x16x2_t t, uint8x8_t idx)
+        ///   A64: TBX Vd.8B, {Vn.16B, Vn+1.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<byte> VectorTableLookupExtension(Vector64<byte> defaultValues, (Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+        /// <summary>
+        ///  int8x8_t vqtbx2q_u8(int8x16x2_t t, uint8x8_t idx)
+        ///   A64: TBX Vd.8B, {Vn.16B, Vn+1.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> VectorTableLookupExtension(Vector64<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+        /// <summary>
+        ///  uint8x8_t vqtbx3q_u8(uint8x16x3_t t, uint8x8_t idx)
+        ///   A64: TBX Vd.8B, {Vn.16B, Vn+1.16B, Vn+2.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<byte> VectorTableLookupExtension(Vector64<byte> defaultValues, (Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+        /// <summary>
+        ///  int8x8_t vqtbx3q_u8(int8x16x3_t t, uint8x8_t idx)
+        ///   A64: TBX Vd.8B, {Vn.16B, Vn+1.16B, Vn+2.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> VectorTableLookupExtension(Vector64<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+        /// <summary>
+        ///  uint8x8_t vqtbx4q_u8(uint8x16x4_t t, uint8x8_t idx)
+        ///   A64: TBX Vd.8B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<byte> VectorTableLookupExtension(Vector64<byte> defaultValues, (Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
+
+        /// <summary>
+        ///  int8x8_t vqtbx4q_u8(int8x16x4_t t, uint8x8_t idx)
+        ///   A64: TBX Vd.8B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> VectorTableLookupExtension(Vector64<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
 
         /// <summary>
         /// uint8x8_t veor_u8 (uint8x8_t a, uint8x8_t b)

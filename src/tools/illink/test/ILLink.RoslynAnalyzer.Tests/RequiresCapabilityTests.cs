@@ -53,6 +53,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task RequiresInCompilerGeneratedCodeRelease ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task RequiresInLibraryAssembly ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task RequiresOnAttribute ()
 		{
 			return RunTest (nameof (RequiresOnAttribute));

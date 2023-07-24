@@ -307,6 +307,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_LDSTRCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDSTR, (image), (token), NULL, STACK_OBJ, mono_defaults.string_class)
 
+#define NEW_RVACONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_RVA, (image), (token), NULL, STACK_MP, NULL)
+
 #define NEW_LDSTRLITCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_LDSTR_LIT, (val))
 
 #define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token,generic_context) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), (generic_context), STACK_OBJ, mono_defaults.runtimetype_class)
@@ -666,7 +668,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 
 #define MONO_EMIT_NEW_VZERO(cfg,dr,kl) do { \
 		MonoInst *__inst; \
-		MONO_INST_NEW ((cfg), (__inst), MONO_CLASS_IS_SIMD (cfg, kl) ? OP_XZERO : OP_VZERO); \
+		MONO_INST_NEW ((cfg), (__inst), mini_class_is_simd (cfg, kl) ? OP_XZERO : OP_VZERO); \
 		__inst->dreg = dr; \
 		(__inst)->type = STACK_VTYPE; \
 		(__inst)->klass = (kl); \
@@ -880,6 +882,13 @@ static int ccount = 0;
 #define MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE(cfg) do { \
 	} while (0)
 
+#define MONO_EMIT_EXPLICIT_NULL_CHECK(cfg, reg) do { \
+		cfg->flags |= MONO_CFG_HAS_CHECK_THIS; \
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0);	\
+		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");		\
+		if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
+	} while (0)
+
 /* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */
 #define MONO_EMIT_NULL_CHECK(cfg, reg, out_of_page) do { \
 		if (cfg->explicit_null_checks || (out_of_page)) { \
@@ -888,7 +897,7 @@ static int ccount = 0;
 		} else { \
 			MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg); \
 		} \
-		MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
+		if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
 	} while (0)
 
 #define MONO_EMIT_NEW_CHECK_THIS(cfg, sreg) do { \
@@ -898,7 +907,7 @@ static int ccount = 0;
 		} else { \
 			MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, sreg); \
 			MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg); \
-			MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg); \
+			if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg); \
 		} \
 	} while (0)
 

@@ -72,9 +72,7 @@ namespace TLens.Analyzers
 					methods.Add (method);
 				}
 
-				if (!fields.ContainsKey (field))
-					fields.Add (field, access);
-				else
+				if (!fields.TryAdd (field, access))
 					fields[field] |= access;
 			}
 		}
@@ -82,7 +80,7 @@ namespace TLens.Analyzers
 		public override void PrintResults (int maxCount)
 		{
 			var static_entries = fields.Where (l => l.Value == Access.Write && l.Key.IsStatic).
-				OrderBy (l => l.Key, new FieldTypeSizeComparer ()).
+				OrderBy (l => l.Key, default (FieldTypeSizeComparer)).
 				ThenBy (l => l.Key.DeclaringType.FullName).
 				Take (maxCount);
 			if (static_entries.Any ()) {
@@ -100,7 +98,7 @@ namespace TLens.Analyzers
 			}
 
 			var instance_entries = fields.Where (l => l.Value == Access.Write && !l.Key.IsStatic).
-				OrderBy (l => l.Key, new FieldTypeSizeComparer ()).
+				OrderBy (l => l.Key, default (FieldTypeSizeComparer)).
 				ThenBy (l => l.Key.DeclaringType.FullName).
 				Take (maxCount);
 			if (instance_entries.Any ()) {

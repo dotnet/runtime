@@ -14,7 +14,7 @@
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesToPackage">
     <ItemGroup>
       <ReferencePath Include="@(LibrariesRefAssemblies)" />
-      <DocFilesToPackage Include="$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml" Condition="Exists('$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml')"/>
+      <DocFilesToPackage Include="$(MicrosoftNetCoreAppRefPackRefDir)%(LibrariesRefAssemblies.FileName).xml" Condition="Exists('$(MicrosoftNetCoreAppRefPackRefDir)%(LibrariesRefAssemblies.FileName).xml')"/>
       <Analyzer Include="$(MicrosoftNetCoreAppRefPackDir)/analyzers/**/*.*" />
       <FilesToPackage Include="@(Analyzer)" ExcludeFromValidation="true" TargetPath="analyzers/%(RecursiveDir)" />
     </ItemGroup>

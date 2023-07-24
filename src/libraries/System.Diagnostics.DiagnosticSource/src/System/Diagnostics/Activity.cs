@@ -17,9 +17,6 @@ namespace System.Diagnostics
     /// <summary>
     /// Carries the <see cref="Activity.Current"/> changed event data.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-    [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public readonly struct ActivityChangedEventArgs
     {
         internal ActivityChangedEventArgs(Activity? previous, Activity? current)
@@ -219,9 +216,6 @@ namespace System.Diagnostics
         /// </example>
         public string? Id
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
@@ -231,8 +225,12 @@ namespace System.Diagnostics
                     // Convert flags to binary.
                     Span<char> flagsChars = stackalloc char[2];
                     HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
-                    string id = "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
-
+                    string id =
+#if NET6_0_OR_GREATER
+                        string.Create(null, stackalloc char[128], $"00-{_traceId}-{_spanId}-{flagsChars}");
+#else
+                        "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
+#endif
                     Interlocked.CompareExchange(ref _id, id, null);
 
                 }
@@ -250,9 +248,6 @@ namespace System.Diagnostics
         /// </summary>
         public string? ParentId
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
@@ -262,7 +257,12 @@ namespace System.Diagnostics
                     {
                         Span<char> flagsChars = stackalloc char[2];
                         HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
-                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
+                        string parentId =
+#if NET6_0_OR_GREATER
+                            string.Create(null, stackalloc char[128], $"00-{_traceId}-{_parentSpanId}-{flagsChars}");
+#else
+                            "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
+#endif
                         Interlocked.CompareExchange(ref _parentId, parentId, null);
                     }
                     else if (Parent != null)
@@ -573,7 +573,12 @@ namespace System.Diagnostics
         /// <param name="parentId">The id of the parent operation.</param>
         public Activity SetParentId(string parentId)
         {
-            if (Parent != null)
+            if (_id != null || _spanId != null)
+            {
+                // Cannot set the parent on already started Activity.
+                NotifyError(new InvalidOperationException(SR.ActivitySetParentAlreadyStarted));
+            }
+            else if (Parent != null)
             {
                 NotifyError(new InvalidOperationException(SR.SetParentIdOnActivityWithParent));
             }
@@ -598,7 +603,12 @@ namespace System.Diagnostics
         /// </summary>
         public Activity SetParentId(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags activityTraceFlags = ActivityTraceFlags.None)
         {
-            if (Parent != null)
+            if (_id != null || _spanId != null)
+            {
+                // Cannot set the parent on already started Activity.
+                NotifyError(new InvalidOperationException(SR.ActivitySetParentAlreadyStarted));
+            }
+            else if (Parent != null)
             {
                 NotifyError(new InvalidOperationException(SR.SetParentIdOnActivityWithParent));
             }
@@ -791,9 +801,6 @@ namespace System.Diagnostics
         /// </summary>
         public ActivitySpanId SpanId
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get
             {
                 if (_spanId is null)
@@ -863,9 +870,6 @@ namespace System.Diagnostics
         /// </summary>
         public ActivitySpanId ParentSpanId
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get
             {
                 if (_parentSpanId is null)
@@ -971,9 +975,6 @@ namespace System.Diagnostics
                    (id[0] != 'f' || id[1] != 'f');
         }
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         internal static bool TryConvertIdToContext(string traceParent, string? traceState, bool isRemote, out ActivityContext context)
         {
             context = default;
@@ -1279,9 +1280,6 @@ namespace System.Diagnostics
         }
 #pragma warning restore CA1822
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         private static unsafe long GetRandomNumber()
         {
             // Use the first 8 bytes of the GUID as a random number.
@@ -1300,9 +1298,6 @@ namespace System.Diagnostics
             return canSet;
         }
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         private bool TrySetTraceIdFromParent()
         {
             Debug.Assert(_traceId is null);
@@ -1325,9 +1320,6 @@ namespace System.Diagnostics
             return _traceId != null;
         }
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         private void TrySetTraceFlagsFromParent()
         {
             Debug.Assert(!W3CIdFlagsSet);
@@ -1770,9 +1762,6 @@ namespace System.Diagnostics
     /// it has to, and caches the string representation after it was created.
     /// It is mostly useful as an exchange type.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public readonly struct ActivityTraceId : IEquatable<ActivityTraceId>
     {
         private readonly string? _hexString;
@@ -1954,9 +1943,6 @@ namespace System.Diagnostics
     /// it has to, and caches the string representation after it was created.
     /// It is mostly useful as an exchange type.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public readonly struct ActivitySpanId : IEquatable<ActivitySpanId>
     {
         private readonly string? _hexString;

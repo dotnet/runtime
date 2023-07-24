@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -10,17 +11,47 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal nint JSHandle;
 
+#if FEATURE_WASM_THREADS
+        private readonly object _thisLock = new object();
+        private SynchronizationContext? m_SynchronizationContext;
+#endif
+
+        public SynchronizationContext SynchronizationContext
+        {
+            get
+            {
+#if FEATURE_WASM_THREADS
+                return m_SynchronizationContext!;
+#else
+                throw new PlatformNotSupportedException();
+#endif
+            }
+        }
+
+#if FEATURE_WASM_THREADS
+        // the JavaScript object could only exist on the single web worker and can't migrate to other workers
+        internal int OwnerThreadId;
+#endif
+#if !DISABLE_LEGACY_JS_INTEROP
         internal GCHandle? InFlight;
         internal int InFlightCounter;
+#endif
         private bool _isDisposed;
 
         internal JSObject(IntPtr jsHandle)
         {
             JSHandle = jsHandle;
-            InFlight = null;
-            InFlightCounter = 0;
+#if FEATURE_WASM_THREADS
+            OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
+            m_SynchronizationContext = JSSynchronizationContext.CurrentJSSynchronizationContext;
+            if (m_SynchronizationContext == null)
+            {
+                throw new InvalidOperationException(); // should not happen
+            }
+#endif
         }
 
+#if !DISABLE_LEGACY_JS_INTEROP
         internal void AddInFlight()
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -53,6 +84,38 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
         }
+#endif
+
+#if FEATURE_WASM_THREADS
+        internal static void AssertThreadAffinity(object value)
+        {
+            if (value == null)
+            {
+                return;
+            }
+            if (value is JSObject jsObject)
+            {
+                if (jsObject.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                {
+                    throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
+                }
+            }
+            if (value is JSException jsException)
+            {
+                if (jsException.jsException != null && jsException.jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                {
+                    throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
+                }
+            }
+            if (value is JSHostImplementation.TaskCallback holder)
+            {
+                if (holder.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                {
+                    throw new InvalidOperationException("The JavaScript promise can be used only on the thread where it was created.");
+                }
+            }
+        }
+#endif
 
         /// <inheritdoc />
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
@@ -67,9 +130,22 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (!_isDisposed)
             {
+#if FEATURE_WASM_THREADS
+                SynchronizationContext.Send(static (JSObject self) =>
+                {
+                    lock (self._thisLock)
+                    {
+                        JSHostImplementation.ReleaseCSOwnedObject(self.JSHandle);
+                        self._isDisposed = true;
+                        self.JSHandle = IntPtr.Zero;
+                        self.m_SynchronizationContext = null;
+                    } //lock
+                }, this);
+#else
                 JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
                 _isDisposed = true;
                 JSHandle = IntPtr.Zero;
+#endif
             }
         }
 

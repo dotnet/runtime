@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
         private byte[]? m_providerMetadata;
         private protected virtual ReadOnlySpan<byte> ProviderMetadata => m_providerMetadata;
-        private const string EventSourceRequiresUnreferenceMessage = "EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type";
+        private const string EventSourceRequiresUnreferenceMessage = "EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed.";
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
 #endif
 
@@ -764,16 +764,16 @@ namespace System.Diagnostics.Tracing
                 {
                     if (m_traits[i].StartsWith("ETW_", StringComparison.Ordinal))
                     {
-                        string etwTrait = m_traits[i].Substring(4);
+                        ReadOnlySpan<char> etwTrait = m_traits[i].AsSpan(4);
                         if (!byte.TryParse(etwTrait, out byte traitNum))
                         {
-                            if (etwTrait == "GROUP")
+                            if (etwTrait is "GROUP")
                             {
                                 traitNum = 1;
                             }
                             else
                             {
-                                throw new ArgumentException(SR.Format(SR.EventSource_UnknownEtwTrait, etwTrait), "traits");
+                                throw new ArgumentException(SR.Format(SR.EventSource_UnknownEtwTrait, etwTrait.ToString()), "traits");
                             }
                         }
                         string value = m_traits[i + 1];

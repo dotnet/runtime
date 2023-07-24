@@ -118,19 +118,9 @@ namespace System.Reflection
             [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
             public ProxyAssembly(AssemblyLoadContext alc)
             {
-                string name;
-                if (alc == AssemblyLoadContext.Default)
-                {
-                    name = "ProxyBuilder";
-                }
-                else
-                {
-                    string? alcName = alc.Name;
-                    name = string.IsNullOrEmpty(alcName) ? $"DispatchProxyTypes.{alc.GetHashCode()}" : $"DispatchProxyTypes.{alcName}";
-                }
                 AssemblyBuilderAccess builderAccess =
                     alc.IsCollectible ? AssemblyBuilderAccess.RunAndCollect : AssemblyBuilderAccess.Run;
-                _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), builderAccess);
+                _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ProxyBuilder"), builderAccess);
                 _mb = _ab.DefineDynamicModule("testmod");
             }
 
@@ -220,7 +210,7 @@ namespace System.Reflection
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyBaseType)
             {
                 int nextId = Interlocked.Increment(ref _typeId);
-                TypeBuilder tb = _mb.DefineType(name + "_" + nextId, TypeAttributes.Public, proxyBaseType);
+                TypeBuilder tb = _mb.DefineType($"{name}_{nextId}", TypeAttributes.Public, proxyBaseType);
                 return new ProxyBuilder(this, tb, proxyBaseType);
             }
 

@@ -24,6 +24,7 @@ typedef unsigned short char16_t;
 #include <pal.h>
 #include <palprivate.h>
 #include <minipal/utils.h>
+#include <minipal/types.h>
 
 #define PALTEST(testfunc, testname) \
  int __cdecl testfunc(int argc, char* argv[]); \
@@ -227,5 +228,18 @@ CreatePipe(
 BOOL
 DeleteFileW(
         IN LPCWSTR lpFileName);
+
+#define wcstod        PAL_wcstod
+#define wcstoul       PAL_wcstoul
+#define wcscat        PAL_wcscat
+#define wcscpy        PAL_wcscpy
+#define wcslen        PAL_wcslen
+#define wcsncmp       PAL_wcsncmp
+#define wcschr        PAL_wcschr
+#define wcsrchr        PAL_wcsrchr
+#define wcspbrk       PAL_wcspbrk
+#define wcsstr        PAL_wcsstr
+#define wcscmp        PAL_wcscmp
+#define wcsncpy       PAL_wcsncpy
 
 #endif

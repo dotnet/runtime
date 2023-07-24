@@ -88,8 +88,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
-        <source>Insufficient hexadecimal digits.</source>
-        <target state="translated">Nedostatek šestnáctkových číslic.</target>
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">Nedostatečná nebo neplatná šestnáctková číslice.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -113,8 +113,8 @@
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
-        <source>Incomplete \\p{X} character escape.</source>
-        <target state="translated">Neúplné uvození znaků \\p{X}.</target>
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">Neúplné uvození znaků \p{X}.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -138,13 +138,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
-        <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="translated">Chybně naformátovaný pojmenovaný zpětný odkaz \\k&lt;...&gt;.</target>
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">Chybně naformátovaný pojmenovaný zpětný odkaz \k&lt;...&gt;.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
-        <source>Malformed \\p{X} character escape.</source>
-        <target state="translated">Chybně formátovaná řídicí sekvence znaků \\p{X}.</target>
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">Chybně formátovaná řídicí sekvence znaků \p{X}.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -167,11 +167,6 @@
         <target state="translated">Výsledek nelze volat pro shodu, která se nezdařila.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">Nahrazení regulárních výrazů pomocí substitucí skupin se u RegexOptions.NonBacktracking nepodporuje.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Kolekce je jen pro čtení.</target>
@@ -193,8 +188,8 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="translated">Vypršel časový limit modulu RegEx při pokusu o porovnání vzoru se vstupním řetězcem. K tomu může dojít z celé řady důvodů, mezi které patří velká velikost vstupních dat nebo nadměrné zpětné navracení způsobené vloženými kvantifikátory, zpětnými odkazy a dalšími faktory.</target>
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">Vypršel časový limit modulu Regex při pokusu o porovnání vzoru se vstupním řetězcem. K tomu může dojít z celé řady důvodů, mezi které patří velká velikost vstupních dat nebo nadměrné zpětné navracení způsobené vloženými kvantifikátory, zpětnými odkazy a dalšími faktory.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -213,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
-        <source>Cannot include class \\{0} in character range.</source>
-        <target state="translated">Do rozsahu znaků nejde zahrnout třídu \\{0}.</target>
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">Do rozsahu znaků nejde zahrnout třídu \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -228,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
-        <source>Illegal \\ at end of pattern.</source>
-        <target state="translated">Znak \\ na konci vzorku je neplatný.</target>
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">Znak \ na konci vzorku je neplatný.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -238,8 +233,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
-        <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="translated">Nerozpoznaná řídicí sekvence \\{0}.</target>
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">Nerozpoznaná řídicí sekvence \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

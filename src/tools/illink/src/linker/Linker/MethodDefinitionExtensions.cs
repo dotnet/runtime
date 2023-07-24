@@ -102,9 +102,6 @@ namespace Mono.Linker
 			}
 		}
 
-		public static bool HasParameterOfType (this MethodDefinition method, ParameterIndex index, string typeName)
-			=> method.TryGetParameter (index)?.ParameterType?.IsTypeOf (typeName) is true;
-
 		/// <summary>
 		/// Tries to get the <see cref="ParameterProxy"/> representing the parameter at index <paramref name="index"/> of method <paramref name="method"/>.
 		/// Returns null if <paramref name="index"/> is not a valid parameter index for <paramref name="method"/>.

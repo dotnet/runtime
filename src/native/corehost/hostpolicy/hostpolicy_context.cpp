@@ -114,6 +114,13 @@ namespace
     {
         hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
 
+        // Properties computed on demand by the host
+        if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
+        {
+            return pal::pal_utf8string(get_filename_without_ext(context->application), value_buffer, value_buffer_size);
+        }
+
+        // Properties from runtime initialization
         pal::string_t key_str;
         if (pal::clr_palstring(key, &key_str))
         {
@@ -128,13 +135,31 @@ namespace
     }
 }
 
-int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
+bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
+{
+    const auto &iter = std::find(init.cfg_keys.cbegin(), init.cfg_keys.cend(), _X("System.Runtime.Loader.UseRidGraph"));
+    if (iter != init.cfg_keys.cend())
+    {
+        size_t idx = iter - init.cfg_keys.cbegin();
+        return pal::strcasecmp(init.cfg_values[idx].data(), _X("true")) == 0;
+    }
+
+    // Reading the RID fallback graph is disabled by default
+    return false;
+}
+
+int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
 {
     application = args.managed_application;
     host_mode = hostpolicy_init.host_mode;
     host_path = hostpolicy_init.host_info.host_path;
     breadcrumbs_enabled = enable_breadcrumbs;
 
+    deps_json_t::rid_resolution_options_t rid_resolution_options
+    {
+        should_read_rid_fallback_graph(hostpolicy_init),
+        nullptr, /*rid_fallback_graph*/
+    };
     deps_resolver_t resolver
     {
         args,
@@ -142,7 +167,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         hostpolicy_init.additional_deps_serialized.c_str(),
         shared_store::get_paths(hostpolicy_init.tfm, host_mode, host_path),
         hostpolicy_init.probe_paths,
-        /* root_framework_rid_fallback_graph */ nullptr, // This means that the fx_definitions contains the root framework
+        rid_resolution_options,
         hostpolicy_init.is_framework_dependent
     };
 
@@ -152,10 +177,6 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         trace::error(_X("Error initializing the dependency resolver: %s"), resolver_errors.c_str());
         return StatusCode::ResolverInitFailure;
     }
-
-    // Store the root framework's rid fallback graph so that we can
-    // use it for future dependency resolutions
-    hostpolicy_init.root_rid_fallback_graph = resolver.get_root_deps().get_rid_fallback_graph();
 
     probe_paths_t probe_paths;
 

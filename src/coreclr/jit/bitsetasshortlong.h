@@ -39,6 +39,7 @@ private:
     static unsigned CountLong(Env env, BitSetShortLongRep bs);
     static bool IsEmptyUnionLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
     static void UnionDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
+    static bool UnionDLongChanged(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
     static void DiffDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
     static void AddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
     static bool TryAddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
@@ -209,6 +210,23 @@ public:
             UnionDLong(env, bs1, bs2);
         }
     }
+
+    static bool UnionDChanged(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2)
+    {
+        if (IsShort(env))
+        {
+            size_t bsCurrent = (size_t)bs1;
+            size_t bsNew     = bsCurrent | ((size_t)bs2);
+            bool   changed   = bsNew != bsCurrent;
+            bs1              = (BitSetShortLongRep)bsNew;
+            return changed;
+        }
+        else
+        {
+            return UnionDLongChanged(env, bs1, bs2);
+        }
+    }
+
     static BitSetShortLongRep Union(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2)
     {
         BitSetShortLongRep res = MakeCopy(env, bs1);
@@ -443,7 +461,7 @@ public:
     {
         if (IsShort(env))
         {
-            // Can't just shift by numBits+1, since that might be 32 (and (1 << 32( == 1, for an unsigned).
+            // Can't just shift by numBits+1, since that might be 32 (and (1 << 32) == 1, for an unsigned).
             unsigned numBits = BitSetTraits::GetSize(env);
             if (numBits == BitsInSizeT)
             {
@@ -636,6 +654,27 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
     {
         bs1[i] |= bs2[i];
     }
+}
+
+template <typename Env, typename BitSetTraits>
+bool BitSetOps</*BitSetType*/ BitSetShortLongRep,
+               /*Brand*/ BSShortLong,
+               /*Env*/ Env,
+               /*BitSetTraits*/ BitSetTraits>::UnionDLongChanged(Env                 env,
+                                                                 BitSetShortLongRep& bs1,
+                                                                 BitSetShortLongRep  bs2)
+{
+    assert(!IsShort(env));
+    bool     changed = false;
+    unsigned len     = BitSetTraits::GetArrSize(env);
+    for (unsigned i = 0; i < len; i++)
+    {
+        size_t bsCurrent = bs1[i];
+        size_t bsNew     = bsCurrent | bs2[i];
+        changed |= bsNew != bsCurrent;
+        bs1[i] = bsNew;
+    }
+    return changed;
 }
 
 template <typename Env, typename BitSetTraits>

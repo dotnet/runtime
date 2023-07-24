@@ -8,10 +8,14 @@ set(SOURCES
 
 # add the executable
 add_executable (COMClientDispatch ${SOURCES})
-target_link_libraries(COMClientDispatch ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(COMClientDispatch PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # Copy CoreShim manifest to project output
 file(GENERATE OUTPUT $<TARGET_FILE_DIR:COMClientDispatch>/CoreShim.X.manifest INPUT ${CMAKE_CURRENT_SOURCE_DIR}/CoreShim.X.manifest)
 
 # add the install targets
 install (TARGETS COMClientDispatch DESTINATION bin)
+# If there's a dynamic ASAN runtime, then copy it to project output.
+if (NOT "${ASAN_RUNTIME}" STREQUAL "")
+    file(COPY "${ASAN_RUNTIME}" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+endif()

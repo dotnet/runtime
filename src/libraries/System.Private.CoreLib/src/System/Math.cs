@@ -5,15 +5,6 @@
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
 // ===================================================================================================
 
-/*============================================================
-**
-**
-**
-** Purpose: Some floating-point math operations
-**
-**
-===========================================================*/
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -25,6 +16,9 @@ using System.Runtime.Versioning;
 
 namespace System
 {
+    /// <summary>
+    /// Provides constants and static methods for trigonometric, logarithmic, and other common mathematical functions.
+    /// </summary>
     public static partial class Math
     {
         public const double E = 2.7182818284590452354;
@@ -38,7 +32,7 @@ namespace System
         private const double doubleRoundLimit = 1e16d;
 
         // This table is required for the Round function which can specify the number of digits to round to
-        private static readonly double[] roundPower10Double = new double[] {
+        private static ReadOnlySpan<double> RoundPower10Double => new double[] {
           1E0, 1E1, 1E2, 1E3, 1E4, 1E5, 1E6, 1E7, 1E8,
           1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15
         };
@@ -994,6 +988,7 @@ namespace System
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         public static double MaxMagnitude(double x, double y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitude` function
@@ -1143,6 +1138,7 @@ namespace System
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         public static double MinMagnitude(double x, double y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitude` function
@@ -1347,7 +1343,7 @@ namespace System
 
             if (Abs(value) < doubleRoundLimit)
             {
-                double power10 = roundPower10Double[digits];
+                double power10 = RoundPower10Double[digits];
 
                 value *= power10;
 

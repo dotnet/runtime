@@ -13,14 +13,13 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Hashtable of all generic type templates used by the TypeLoader at runtime
     /// </summary>
-    public sealed class GenericTypesTemplateMap : ObjectNode, ISymbolDefinitionNode
+    public sealed class GenericTypesTemplateMap : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public GenericTypesTemplateMap(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__GenericTypesTemplateMap_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -29,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__GenericTypesTemplateMap");
         }
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -50,17 +49,10 @@ namespace ILCompiler.DependencyAnalysis
             Section nativeSection = nativeWriter.NewSection();
             nativeSection.Place(hashtable);
 
-            foreach (TypeDesc type in factory.MetadataManager.GetTypesWithConstructedEETypes())
+            foreach (TypeDesc type in factory.MetadataManager.GetTypeTemplates())
             {
-                if (!IsEligibleToHaveATemplate(type))
-                    continue;
-
                 // Type's native layout info
                 NativeLayoutTemplateTypeLayoutVertexNode templateNode = factory.NativeLayout.TemplateTypeLayout(type);
-
-                // If this template isn't considered necessary, don't emit it.
-                if (!templateNode.Marked)
-                    continue;
                 Vertex nativeLayout = templateNode.SavedVertex;
 
                 // Hashtable Entry
@@ -75,9 +67,9 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] streamBytes = nativeWriter.Save();
 
-            _endSymbol.SetSymbolOffset(streamBytes.Length);
+            _size = streamBytes.Length;
 
-            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         public static void GetTemplateTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)

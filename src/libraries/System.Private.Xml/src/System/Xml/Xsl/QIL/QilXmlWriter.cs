@@ -37,8 +37,8 @@ namespace System.Xml.Xsl.Qil
     /// </remarks>
     internal sealed class QilXmlWriter : QilScopedVisitor
     {
-        private XmlWriter writer;
-        private Options options;
+        private readonly XmlWriter writer;
+        private readonly Options options;
         private readonly NameGenerator _ngen;
 
         [Flags]
@@ -114,8 +114,8 @@ namespace System.Xml.Xsl.Qil
                 return;
             }
 
-            if (s != null && s.Length != 0)
-                this.writer.WriteComment(name != null && name.Length != 0 ? $"{name}: {s}" : s);
+            if (!string.IsNullOrEmpty(s))
+                this.writer.WriteComment(!string.IsNullOrEmpty(name) ? $"{name}: {s}" : s);
         }
 
         /// <summary>

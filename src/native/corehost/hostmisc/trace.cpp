@@ -4,6 +4,7 @@
 #include "trace.h"
 #include <mutex>
 #include <thread>
+#include <atomic>
 
 #define TRACE_VERBOSITY_WARN 2
 #define TRACE_VERBOSITY_INFO 3

@@ -16,9 +16,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// method in Roslyn .NET compiler; see its
         /// <a href="https://github.com/dotnet/roslyn/blob/master/src/Compilers/CSharp/Portable/SymbolDisplay/ObjectDisplay.cs">sources</a> for reference.
         /// </remarks>
-        public static StringBuilder AppendEscapedString(this StringBuilder builder, string value)
+        public static StringBuilder AppendEscapedString(this StringBuilder builder, string value, bool placeQuotes = true)
         {
-            builder.Append('"');
+            if (placeQuotes)
+            {
+                builder.Append('"');
+            }
 
             for (int i = 0; i < value.Length; i++)
             {
@@ -76,8 +79,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(escaped);
                 }
             }
-
-            builder.Append('"');
+            if (placeQuotes)
+            {
+                builder.Append('"');
+            }
             return builder;
         }
 
@@ -105,9 +110,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Returns a C# string literal with the given value.
         /// </summary>
-        public static string ToEscapedString(this string value)
+        public static string ToEscapedString(this string value, bool placeQuotes = true)
         {
-            return new StringBuilder(value.Length + 16).AppendEscapedString(value).ToString();
+            return new StringBuilder(value.Length + 16).AppendEscapedString(value, placeQuotes).ToString();
         }
     }
 }

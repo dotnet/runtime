@@ -77,11 +77,11 @@ SupportedISA DetermineSupportedISA()
     // get xcr0 register
     DWORD64 xcr0 = _xgetbv(0);
 
-    // get OS XState info 
+    // get OS XState info
     DWORD64 FeatureMask = GetEnabledXStateFeaturesHelper();
 
     // get processor extended feature flag info
-    __cpuid(reg, 7);
+    __cpuidex(reg, 7, 0);
 
     // check if all of AVX2, AVX512F and AVX512DQ are supported by both processor and OS
     if ((reg[EBX] & (AVX2 | AVX512F | AVX512DQ)) == (AVX2 | AVX512F | AVX512DQ) &&

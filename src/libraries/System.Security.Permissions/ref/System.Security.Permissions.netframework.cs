@@ -6,6 +6,11 @@
 
 using System.Runtime.CompilerServices;
 
+[assembly: TypeForwardedTo(typeof(System.DirectoryServices.DirectoryServicesPermission))]
+[assembly: TypeForwardedTo(typeof(System.DirectoryServices.DirectoryServicesPermissionAccess))]
+[assembly: TypeForwardedTo(typeof(System.DirectoryServices.DirectoryServicesPermissionAttribute))]
+[assembly: TypeForwardedTo(typeof(System.DirectoryServices.DirectoryServicesPermissionEntry))]
+[assembly: TypeForwardedTo(typeof(System.DirectoryServices.DirectoryServicesPermissionEntryCollection))]
 [assembly: TypeForwardedTo(typeof(System.Security.IPermission))]
 [assembly: TypeForwardedTo(typeof(System.Security.ISecurityEncodable))]
 [assembly: TypeForwardedTo(typeof(System.Security.Permissions.CodeAccessSecurityAttribute))]

@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 {
     internal sealed class InMemoryFileInfo : FileInfoBase
     {
-        private InMemoryDirectoryInfo _parent;
+        private readonly InMemoryDirectoryInfo _parent;
 
         public InMemoryFileInfo(string file, InMemoryDirectoryInfo parent)
         {

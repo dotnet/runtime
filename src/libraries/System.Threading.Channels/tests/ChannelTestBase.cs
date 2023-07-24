@@ -131,7 +131,7 @@ namespace System.Threading.Channels.Tests
             var cts = new CancellationTokenSource();
             cts.Cancel();
             Assert.True(c.Writer.TryComplete(new OperationCanceledException(cts.Token)));
-            await AssertCanceled(c.Reader.Completion, cts.Token);
+            await AssertExtensions.CanceledAsync(cts.Token, c.Reader.Completion);
         }
 
         [Fact]
@@ -450,7 +450,7 @@ namespace System.Threading.Channels.Tests
             catch (Exception e) { exc = e; }
 
             c.Writer.Complete(exc);
-            await AssertCanceled(c.Reader.Completion, cts.Token);
+            await AssertExtensions.CanceledAsync(cts.Token, c.Reader.Completion);
         }
 
         [Fact]
@@ -653,7 +653,7 @@ namespace System.Threading.Channels.Tests
 
             cts.Cancel();
 
-            await AssertCanceled(r.AsTask(), cts.Token);
+            await AssertExtensions.CanceledAsync(cts.Token, async () => await r);
 
             if (c.Writer.TryWrite(42))
             {
@@ -760,7 +760,7 @@ namespace System.Threading.Channels.Tests
                 var cts = new CancellationTokenSource();
                 ValueTask<int> r = c.Reader.ReadAsync(cts.Token);
                 cts.Cancel();
-                await AssertCanceled(r.AsTask(), cts.Token);
+                await AssertExtensions.CanceledAsync(cts.Token, async () => await r);
             }
 
             for (int i = 0; i < 7; i++)

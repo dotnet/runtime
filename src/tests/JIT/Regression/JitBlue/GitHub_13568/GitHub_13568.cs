@@ -5,6 +5,7 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Xunit;
 
 namespace VectorWiden
 {
@@ -14,7 +15,8 @@ namespace VectorWiden
         private static string _asciiString = new string('\0', _asciiBytes.Length);
         private static string compareString = "text/plain,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";
 
-        public static unsafe int Main()
+        [Fact]
+        public static unsafe int TestEntryPoint()
         {
             fixed (byte* pBytes = &_asciiBytes[0])
             fixed (char* pString = _asciiString)

@@ -13,22 +13,22 @@ namespace Microsoft.Interop
     {
         private readonly IMarshallingGeneratorFactory _inner;
 
-        public IMarshallingGenerator Create(
+        public ResolvedGenerator Create(
             TypePositionInfo info,
             StubCodeContext context)
         {
             if (info.MarshallingAttributeInfo is NoMarshallingInfo && CustomTypeToErrorMessageMap.TryGetValue(info.ManagedType, out string errorMessage))
             {
-                throw new MarshallingNotSupportedException(info, context)
+                return ResolvedGenerator.NotSupported(new(info, context)
                 {
                     NotSupportedDetails = errorMessage
-                };
+                });
             }
             return _inner.Create(info, context);
         }
 
-        public NoMarshallingInfoErrorMarshallingFactory(IMarshallingGeneratorFactory inner)
-            : this(inner, DefaultTypeToErrorMessageMap)
+        public NoMarshallingInfoErrorMarshallingFactory(IMarshallingGeneratorFactory inner, string stringMarshallingAttribute)
+            : this(inner, DefaultTypeToErrorMessageMap(stringMarshallingAttribute))
         {
         }
 
@@ -40,10 +40,10 @@ namespace Microsoft.Interop
 
         public ImmutableDictionary<ManagedTypeInfo, string> CustomTypeToErrorMessageMap { get; }
 
-        private static ImmutableDictionary<ManagedTypeInfo, string> DefaultTypeToErrorMessageMap { get; } =
-            ImmutableDictionary.CreateRange(new Dictionary<ManagedTypeInfo, string>
+        private static ImmutableDictionary<ManagedTypeInfo, string> DefaultTypeToErrorMessageMap(string stringMarshallingAttribute)
+            => ImmutableDictionary.CreateRange(new Dictionary<ManagedTypeInfo, string>
             {
-                { SpecialTypeInfo.String, SR.MarshallingStringOrCharAsUndefinedNotSupported },
+                { SpecialTypeInfo.String, string.Format(SR.MarshallingStringOrCharAsUndefinedNotSupported, stringMarshallingAttribute) },
                 { SpecialTypeInfo.Boolean, SR.MarshallingBoolAsUndefinedNotSupported },
             });
     }

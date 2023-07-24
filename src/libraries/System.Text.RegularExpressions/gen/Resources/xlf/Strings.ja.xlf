@@ -88,8 +88,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
-        <source>Insufficient hexadecimal digits.</source>
-        <target state="translated">不十分な 16 進数の数字です。</target>
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">16 進数が不足しているか、無効です。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -113,8 +113,8 @@
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
-        <source>Incomplete \\p{X} character escape.</source>
-        <target state="translated">不完全な \\p{X} 文字エスケープです。</target>
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">不完全な \p{X} 文字エスケープです。</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -138,13 +138,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
-        <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="translated">形式に誤りがある \\k&lt;...&gt; 名前付き逆参照です。</target>
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">形式に誤りがある \k&lt;...&gt;名前付き逆参照です。</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
-        <source>Malformed \\p{X} character escape.</source>
-        <target state="translated">形式に誤りがある \\p{X} エスケープ文字です。</target>
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">形式に誤りがある \p{X} エスケープ文字です。</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -167,11 +167,6 @@
         <target state="translated">失敗した Match で Result を呼び出すことはできません。</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">RegexOptions.NonBacktracking では、グループの置換による正規表現の置換はサポートされていません。</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">コレクションは読み取り専用です。</target>
@@ -193,8 +188,8 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="translated">パターンと入力文字列との照合中に、RegEx エンジンがタイムアウトしました。これは、非常に大きな入力、入れ子になった量指定子によって生じた過剰なバックトラッキング、前方参照などの要因を含む、さまざまな原因によって発生する可能性があります。</target>
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">パターンと入力文字列との照合中に、Regex エンジンがタイムアウトしました。これは、非常に大きな入力、入れ子になった量指定子によって生じた過剰なバックトラッキング、前方参照などの要因を含む、さまざまな原因によって発生する可能性があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -213,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
-        <source>Cannot include class \\{0} in character range.</source>
-        <target state="translated">文字範囲にクラス \\{0} を含めることはできません。</target>
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">文字範囲にクラス \{0} を含めることはできません。</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -228,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
-        <source>Illegal \\ at end of pattern.</source>
-        <target state="translated">パターンの末尾に無効な \\ があります。</target>
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">パターンの末尾に無効な \ があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -238,8 +233,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
-        <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="translated">認識できないエスケープ シーケンス \\{0} です。</target>
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">認識できないエスケープ シーケンス \{0}。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

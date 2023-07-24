@@ -8,7 +8,7 @@ if /i "%~1" == "x86"   (set __VCBuildArch=x86)
 if /i "%~1" == "x64"   (set __VCBuildArch=x86_amd64)
 if /i "%~1" == "arm"   (set __VCBuildArch=x86_arm)
 if /i "%~1" == "arm64" (set __VCBuildArch=x86_arm64)
-if /i "%~1" == "wasm"  (set __VCBuildArch=x86_amd64)
+if /i "%~1" == "wasm" (if /i "%PROCESSOR_ARCHITECTURE%" == "ARM64" (set __VCBuildArch=x86_arm64) else (set __VCBuildArch=x86_amd64))
 
 :: Default to highest Visual Studio version available that has Visual C++ tools.
 ::
@@ -61,8 +61,13 @@ exit /b 1
 if "%__VCBuildArch%"=="" exit /b 0
 
 :: Set the environment for the native build
-call "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
-if not "%ErrorLevel%"=="0" exit /b 1
+:: We can set SkipVCEnvInit to skip setting up the MSVC environment from VS and instead assume that the current environment is set up correctly.
+:: This is very useful for testing with new MSVC versions that aren't in a VS build yet.
+if not defined SkipVCEnvInit (
+  if not exist "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" goto :VSMissing
+  call "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
+  if not "%ErrorLevel%"=="0" exit /b 1
+)
 
 set "__VCBuildArch="
 

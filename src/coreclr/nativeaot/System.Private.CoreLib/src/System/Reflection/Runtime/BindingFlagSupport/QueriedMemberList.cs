@@ -96,11 +96,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //
         // Filter by name and visibility from the ReflectedType.
         //
-        public static QueriedMemberList<M> Create(RuntimeTypeInfo type, string optionalNameFilter, bool ignoreCase)
+        public static QueriedMemberList<M> Create(MemberPolicies<M> policies, RuntimeTypeInfo type, string optionalNameFilter, bool ignoreCase)
         {
             RuntimeTypeInfo reflectedType = type;
-
-            MemberPolicies<M> policies = MemberPolicies<M>.Default;
 
             NameFilter? nameFilter;
             if (optionalNameFilter == null)

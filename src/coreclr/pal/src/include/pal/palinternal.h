@@ -230,6 +230,8 @@ function_name() to call the system's implementation
 #define tanhf DUMMY_tanhf
 #define truncf DUMMY_truncf
 #define remove DUMMY_remove
+#define printf DUMMY_printf
+#define vprintf DUMMY_vprintf
 
 /* RAND_MAX needed to be renamed to avoid duplicate definition when including
    stdlib.h header files. PAL_RAND_MAX should have the same value as RAND_MAX
@@ -494,29 +496,15 @@ function_name() to call the system's implementation
 #undef open
 #undef glob
 #undef remove
+#undef printf
+#undef vprintf
 #undef ptrdiff_t
 #undef intptr_t
 #undef uintptr_t
 #undef timeval
 
-
-#undef printf
 #undef fprintf
 #undef vfprintf
-#undef vprintf
-#undef wcstod
-#undef wcstoul
-#undef _wcstoui64
-#undef wcscat
-#undef wcscpy
-#undef wcslen
-#undef wcsncmp
-#undef wcschr
-#undef wcsrchr
-#undef wcspbrk
-#undef wcsstr
-#undef wcscmp
-#undef wcsncpy
 #undef iswupper
 #undef iswspace
 #undef towlower

@@ -159,7 +159,7 @@ namespace System.ComponentModel.Composition.Hosting
                     if (disposableExports == null)
                     {
                         _importedDisposableExports.Remove(import);
-                        if (!_importedDisposableExports.Any())
+                        if (_importedDisposableExports.Count == 0)
                         {
                             _importedDisposableExports = null;
                         }

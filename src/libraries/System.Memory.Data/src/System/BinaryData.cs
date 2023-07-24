@@ -19,6 +19,7 @@ namespace System
     [JsonConverter(typeof(BinaryDataConverter))]
     public class BinaryData
     {
+        private const string JsonSerializerRequiresDynamicCode = "JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation.";
         private const string JsonSerializerRequiresUnreferencedCode = "JSON serialization and deserialization might require types that cannot be statically analyzed.";
 
         /// <summary>
@@ -30,6 +31,18 @@ namespace System
         /// Returns an empty BinaryData.
         /// </summary>
         public static BinaryData Empty { get; } = new BinaryData(ReadOnlyMemory<byte>.Empty);
+
+        /// <summary>
+        /// Gets the number of bytes of this data.
+        /// </summary>
+        /// <returns>The number of bytes of this data.</returns>
+        public int Length => _bytes.Length;
+
+        /// <summary>
+        /// Gets a value that indicates whether this data is empty.
+        /// </summary>
+        /// <returns><see langword="true" /> if the data is empty (that is, its <see cref="Length" /> is 0); otherwise, <see langword="false" />.</returns>
+        public bool IsEmpty => _bytes.IsEmpty;
 
         /// <summary>
         /// Creates a <see cref="BinaryData"/> instance by wrapping the
@@ -50,6 +63,7 @@ namespace System
         /// <param name="options">The options to use when serializing to JSON.</param>
         /// <param name="type">The type to use when serializing the data. If not specified, <see cref="object.GetType"/> will
         /// be used to determine the type.</param>
+        [RequiresDynamicCode(JsonSerializerRequiresDynamicCode)]
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public BinaryData(object? jsonSerializable, JsonSerializerOptions? options = default, Type? type = default)
         {
@@ -201,6 +215,7 @@ namespace System
         /// <param name="jsonSerializable">The data to use.</param>
         /// <param name="options">The options to use when serializing to JSON.</param>
         /// <returns>A value representing the UTF-8 encoding of the JSON representation of <paramref name="jsonSerializable" />.</returns>
+        [RequiresDynamicCode(JsonSerializerRequiresDynamicCode)]
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public static BinaryData FromObjectAsJson<T>(T jsonSerializable, JsonSerializerOptions? options = default)
         {
@@ -273,6 +288,7 @@ namespace System
         /// converted to.</typeparam>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to use when serializing to JSON.</param>
         /// <returns>The data converted to the specified type.</returns>
+        [RequiresDynamicCode(JsonSerializerRequiresDynamicCode)]
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public T? ToObjectFromJson<T>(JsonSerializerOptions? options = default)
         {

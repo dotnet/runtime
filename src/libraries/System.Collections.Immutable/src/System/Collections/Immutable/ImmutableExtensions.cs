@@ -45,14 +45,12 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(sequence, nameof(sequence));
 
-            var orderedCollection = sequence as IOrderedCollection<T>;
-            if (orderedCollection != null)
+            if (sequence is IOrderedCollection<T> orderedCollection)
             {
                 return orderedCollection;
             }
 
-            var listOfT = sequence as IList<T>;
-            if (listOfT != null)
+            if (sequence is IList<T> listOfT)
             {
                 return new ListOfTWrapper<T>(listOfT);
             }
@@ -91,8 +89,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(enumerable, nameof(enumerable));
 
-            var strongEnumerable = enumerable as IStrongEnumerable<T, TEnumerator>;
-            if (strongEnumerable != null)
+            if (enumerable is IStrongEnumerable<T, TEnumerator> strongEnumerable)
             {
                 return new DisposableEnumeratorAdapter<T, TEnumerator>(strongEnumerable.GetEnumerator());
             }

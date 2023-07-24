@@ -491,19 +491,19 @@ namespace System.DirectoryServices.AccountManagement
 
         // If useSidHistory == false, build a filter for objectSid.
         // If useSidHistory == true, build a filter for objectSid and sidHistory.
-        protected static bool SecurityIdentityClaimConverterHelper(string urnValue, bool useSidHistory, StringBuilder filter, bool throwOnFail)
+        protected static unsafe bool SecurityIdentityClaimConverterHelper(string urnValue, bool useSidHistory, StringBuilder filter, bool throwOnFail)
         {
             // String is in SDDL format.  Translate it to ldap hex format
 
-            IntPtr pBytePtr = IntPtr.Zero;
+            void* pSid = null;
             byte[] sidB = null;
 
             try
             {
-                if (Interop.Advapi32.ConvertStringSidToSid(urnValue, out pBytePtr) != Interop.BOOL.FALSE)
+                if (Interop.Advapi32.ConvertStringSidToSid(urnValue, out pSid) != Interop.BOOL.FALSE)
                 {
                     // Now we convert the native SID to a byte[] SID
-                    sidB = Utils.ConvertNativeSidToByteArray(pBytePtr);
+                    sidB = Utils.ConvertNativeSidToByteArray((IntPtr)pSid);
                     if (null == sidB)
                     {
                         if (throwOnFail)
@@ -522,8 +522,8 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (IntPtr.Zero != pBytePtr)
-                    Interop.Kernel32.LocalFree(pBytePtr);
+                if (pSid is not null)
+                    Interop.Kernel32.LocalFree(pSid);
             }
 
             StringBuilder stringizedBinarySid = new StringBuilder();

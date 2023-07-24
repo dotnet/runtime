@@ -675,58 +675,55 @@ namespace Microsoft.Win32
             get
             {
                 EnsureNotDisposed();
-                return IsSystemKey() ? SystemKeyHandle : _hkey;
+                return IsSystemKey() ? GetSystemKeyHandle() : _hkey;
             }
         }
 
-        private SafeRegistryHandle SystemKeyHandle
+        private SafeRegistryHandle GetSystemKeyHandle()
         {
-            get
+            Debug.Assert(IsSystemKey());
+
+            int ret = Interop.Errors.ERROR_INVALID_HANDLE;
+            IntPtr baseKey = 0;
+            switch (_keyName)
             {
-                Debug.Assert(IsSystemKey());
-
-                int ret = Interop.Errors.ERROR_INVALID_HANDLE;
-                IntPtr baseKey = 0;
-                switch (_keyName)
-                {
-                    case "HKEY_CLASSES_ROOT":
-                        baseKey = HKEY_CLASSES_ROOT;
-                        break;
-                    case "HKEY_CURRENT_USER":
-                        baseKey = HKEY_CURRENT_USER;
-                        break;
-                    case "HKEY_LOCAL_MACHINE":
-                        baseKey = HKEY_LOCAL_MACHINE;
-                        break;
-                    case "HKEY_USERS":
-                        baseKey = HKEY_USERS;
-                        break;
-                    case "HKEY_PERFORMANCE_DATA":
-                        baseKey = HKEY_PERFORMANCE_DATA;
-                        break;
-                    case "HKEY_CURRENT_CONFIG":
-                        baseKey = HKEY_CURRENT_CONFIG;
-                        break;
-                    default:
-                        Win32Error(ret, null);
-                        break;
-                }
-
-                // open the base key so that RegistryKey.Handle will return a valid handle
-                ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
-                    null,
-                    0,
-                    GetRegistryKeyAccess(IsWritable()) | (int)_regView,
-                    out SafeRegistryHandle result);
-
-                if (ret != 0 || result.IsInvalid)
-                {
-                    result.Dispose();
+                case "HKEY_CLASSES_ROOT":
+                    baseKey = HKEY_CLASSES_ROOT;
+                    break;
+                case "HKEY_CURRENT_USER":
+                    baseKey = HKEY_CURRENT_USER;
+                    break;
+                case "HKEY_LOCAL_MACHINE":
+                    baseKey = HKEY_LOCAL_MACHINE;
+                    break;
+                case "HKEY_USERS":
+                    baseKey = HKEY_USERS;
+                    break;
+                case "HKEY_PERFORMANCE_DATA":
+                    baseKey = HKEY_PERFORMANCE_DATA;
+                    break;
+                case "HKEY_CURRENT_CONFIG":
+                    baseKey = HKEY_CURRENT_CONFIG;
+                    break;
+                default:
                     Win32Error(ret, null);
-                }
-
-                return result;
+                    break;
             }
+
+            // open the base key so that RegistryKey.Handle will return a valid handle
+            ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
+                null,
+                0,
+                GetRegistryKeyAccess(IsWritable()) | (int)_regView,
+                out SafeRegistryHandle result);
+
+            if (ret != 0 || result.IsInvalid)
+            {
+                result.Dispose();
+                Win32Error(ret, null);
+            }
+
+            return result;
         }
 
         private static int GetRegistryKeyAccess(RegistryKeyPermissionCheck mode)
@@ -877,7 +874,7 @@ namespace Microsoft.Win32
                 return Array.Empty<string>();
             }
 
-            var names = new List<string>(values);
+            string[] names = new string[values];
 
             // Names in the registry aren't usually very long, although they can go to as large
             // as 16383 characters (MaxValueLength).
@@ -888,6 +885,7 @@ namespace Microsoft.Win32
             // only if needed.
 
             char[]? name = ArrayPool<char>.Shared.Rent(100);
+            int cpt = 0;
 
             try
             {
@@ -896,7 +894,7 @@ namespace Microsoft.Win32
 
                 while ((result = Interop.Advapi32.RegEnumValue(
                     _hkey,
-                    names.Count,
+                    cpt,
                     name,
                     ref nameLength,
                     0,
@@ -909,7 +907,12 @@ namespace Microsoft.Win32
                         // The size is only ever reported back correctly in the case
                         // of ERROR_SUCCESS. It will almost always be changed, however.
                         case Interop.Errors.ERROR_SUCCESS:
-                            names.Add(new string(name, 0, nameLength));
+                            if (cpt >= names.Length) // possible new item during loop
+                            {
+                                Array.Resize(ref names, names.Length * 2);
+                            }
+
+                            names[cpt++] = new string(name, 0, nameLength);
                             break;
                         case Interop.Errors.ERROR_MORE_DATA:
                             if (IsPerfDataKey())
@@ -919,9 +922,15 @@ namespace Microsoft.Win32
                                 // to be big enough however. 8 characters is the largest
                                 // known name. The size isn't returned, but the string is
                                 // null terminated.
+
+                                if (cpt >= names.Length) // possible new item during loop
+                                {
+                                    Array.Resize(ref names, names.Length * 2);
+                                }
+
                                 fixed (char* c = &name[0])
                                 {
-                                    names.Add(new string(c));
+                                    names[cpt++] = new string(c);
                                 }
                             }
                             else
@@ -949,7 +958,13 @@ namespace Microsoft.Win32
                     ArrayPool<char>.Shared.Return(name);
             }
 
-            return names.ToArray();
+            // Shrink array to fit found items, if necessary
+            if (cpt < names.Length)
+            {
+                Array.Resize(ref names, cpt);
+            }
+
+            return names;
         }
 
         /// <summary>Retrieves the specified value. <b>null</b> is returned if the value doesn't exist</summary>

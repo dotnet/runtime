@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
@@ -753,8 +754,8 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
-        public async Task SslStream_UntrustedCaWithCustomTrust_OK(bool usePartialChain)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        public async Task SslStream_ServerUntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
 
@@ -806,59 +807,55 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData(true)]
-        [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
-        public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
+        private async Task SslStream_ClientSendsChain_Core(SslClientAuthenticationOptions clientOptions, X509Certificate2Collection clientChain)
         {
-            string errorMessage;
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            if (customCallback)
-            {
-                clientOptions.RemoteCertificateValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) =>
-                    {
-                        // Add only root CA to verify that peer did send intermediate CA cert.
-                        chain.ChainPolicy.CustomTrustStore.Add(_certificates.serverChain[_certificates.serverChain.Count - 1]);
-                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                        // This should work and we should be able to trust the chain.
-                        Assert.True(chain.Build((X509Certificate2)certificate));
-                        // Reject it in custom callback to simulate for example pinning.
-                        return false;
-                    };
+            List<SslStream> streams = new List<SslStream>();
 
-                errorMessage = "RemoteCertificateValidationCallback";
-            }
-            else
+            var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true };
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
+            serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
             {
-                // On Windows we hand whole chain to OS so they can always see the root CA.
-                errorMessage = PlatformDetection.IsWindows ? "UntrustedRoot" : "PartialChain";
-            }
+                // Client should send chain without root CA. There is no good way how to know if the chain was built from certificates
+                // from wire or from system store. However, SslStream adds certificates from wire to ExtraStore in RemoteCertificateValidationCallback.
+                // So we verify the operation by checking the ExtraStore. On Windows, that includes leaf itself.
+                _output.WriteLine("RemoteCertificateValidationCallback called with {0} and {1} extra certificates", sslPolicyErrors, chain.ChainPolicy.ExtraStore.Count);
+                foreach (X509Certificate c in chain.ChainPolicy.ExtraStore)
+                {
+                    _output.WriteLine("received {0}", c.Subject);
+                }
 
-            var serverOptions = new SslServerAuthenticationOptions();
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, _certificates.serverChain);
+                // We may get completed chain from OS even if client sent less.
+                // As minimum, it should send more than the leaf cert
+                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1);
+                Assert.Contains(clientChain[0], chain.ChainPolicy.ExtraStore);
+                return true;
+            };
 
-            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
-            using (clientStream)
-            using (serverStream)
-            using (SslStream client = new SslStream(clientStream))
-            using (SslStream server = new SslStream(serverStream))
+            // run the test multiple times while holding established SSL so we could hit credential cache.
+            for (int i = 0; i < 3; i++)
             {
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                SslStream client = new SslStream(clientStream);
+                SslStream server = new SslStream(serverStream);
+
                 Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
-                var e = await Assert.ThrowsAsync<AuthenticationException>(() => t1);
-                Assert.Contains(errorMessage, e.Message);
-                // Server side should finish since we run custom callback after handshake is done.
-                await t2;
+                // hold to the streams so they stay in credential cache
+                streams.Add(client);
+                streams.Add(server);
+            }
+
+            foreach (SslStream s in streams)
+            {
+                s.Dispose();
             }
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73862")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73862", TestPlatforms.OSX)]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             // macOS ignores CertificateAuthority
@@ -900,45 +897,14 @@ namespace System.Net.Security.Tests
 
             Assert.NotEqual(0, retries);
 
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            var clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = "localhost",
+            };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
             clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
 
-            var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true };
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
-            serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
-            {
-                // Client should send chain without root CA. There is no good way how to know if the chain was built from certificates
-                // from wire or from system store. However, SslStream adds certificates from wire to ExtraStore in RemoteCertificateValidationCallback.
-                // So we verify the operation by checking the ExtraStore. On Windows, that includes leaf itself.
-                _output.WriteLine("RemoteCertificateValidationCallback called with {0} and {1} extra certificates", sslPolicyErrors, chain.ChainPolicy.ExtraStore.Count);
-                foreach (X509Certificate c in chain.ChainPolicy.ExtraStore)
-                {
-                    _output.WriteLine("received {0}", c.Subject);
-                }
-
-                // We may get completed chain from OS even if client sent less.
-                // As minimum, it should send more than the leaf cert
-                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1);
-                Assert.Contains(clientChain[0], chain.ChainPolicy.ExtraStore);
-                return true;
-            };
-
-            // run the test multiple times while holding established SSL so we could hit credential cache.
-            for (int i = 0; i < 3; i++)
-            {
-                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
-                SslStream client = new SslStream(clientStream);
-                SslStream server = new SslStream(serverStream);
-
-                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
-
-                // hold to the streams so they stay in credential cache
-                streams.Add(client);
-                streams.Add(server);
-            }
+            await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
 
             TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
             clientCertificate.Dispose();
@@ -946,10 +912,66 @@ namespace System.Net.Security.Tests
             {
                 c.Dispose();
             }
+        }
 
-            foreach (SslStream s in streams)
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        public async Task SslStream_ClientCertificateContext_SendsChain()
+        {
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
+
+            var clientOptions = new SslClientAuthenticationOptions()
             {
-                s.Dispose();
+                TargetHost = "localhost",
+            };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, clientChain);
+
+            await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
+
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
+            clientCertificate.Dispose();
+            foreach (X509Certificate c in clientChain)
+            {
+                c.Dispose();
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_EphemeralKey_Throws()
+        {
+            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = TestHelper.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+
+            var clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = "localhost",
+                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
+            };
+
+            var serverOptions = new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = serverCertificate
+            };
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+
+            Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+            Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+            AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(() => t2);
+            Assert.Contains("ephemeral", e.Message);
+            server.Dispose();
+            await Assert.ThrowsAsync<IOException>(() => t1);
+            client.Dispose();
+
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+            serverCertificate.Dispose();
+            foreach (X509Certificate c in chain)
+            {
+                c.Dispose();
             }
         }
 

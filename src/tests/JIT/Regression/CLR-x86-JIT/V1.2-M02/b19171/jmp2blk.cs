@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 public struct AA
 {
     public static int[,] Static2()
@@ -18,7 +19,8 @@ public struct AA
         return (new int[1, 1]);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

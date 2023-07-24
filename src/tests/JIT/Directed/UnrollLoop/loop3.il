@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'loop3' {}
+.assembly ASSEMBLY_NAME {}
 .class private auto ansi beforefieldinit A
        extends [mscorlib]System.Object
 {
@@ -39,7 +39,7 @@
 
 } // end of class A
 
-.class private auto ansi beforefieldinit B
+.class public auto ansi beforefieldinit B
        extends A
 {
   .method public hidebysig virtual instance int32 

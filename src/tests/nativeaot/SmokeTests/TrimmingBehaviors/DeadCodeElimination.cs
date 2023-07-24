@@ -20,6 +20,7 @@ class DeadCodeElimination
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeEquals.Run();
+        TestBranchesInGenericCodeRemoval.Run();
 
         return 100;
     }
@@ -34,7 +35,7 @@ class DeadCodeElimination
         {
             typeof(PresentType).ToString();
 
-            if (!IsTypePresent(typeof(SanityTest), nameof(PresentType)))
+            if (GetTypeSecretly(typeof(SanityTest), nameof(PresentType)) == null)
                 throw new Exception();
 
             ThrowIfPresent(typeof(SanityTest), nameof(NotPresentType));
@@ -115,9 +116,7 @@ class DeadCodeElimination
                 s_d.TrySomething();
             }
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
         }
     }
 
@@ -146,9 +145,7 @@ class DeadCodeElimination
             // and uses a virtual method implementation from Base.
             DoIt(null);
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
         }
     }
 
@@ -184,9 +181,7 @@ class DeadCodeElimination
 
             new Derived2().DoSomething();
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
         }
     }
 
@@ -325,26 +320,95 @@ class DeadCodeElimination
             Console.WriteLine(s_type == typeof(Never));
 
 #if !DEBUG
-            ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Never));
 #endif
+        }
+    }
+
+    class TestBranchesInGenericCodeRemoval
+    {
+        class ClassWithUnusedVirtual
+        {
+            public virtual string MyUnusedVirtualMethod() => typeof(UnusedFromVirtual).ToString();
+            public virtual string MyUsedVirtualMethod() => typeof(UsedFromVirtual).ToString();
+        }
+
+        class UnusedFromVirtual { }
+        class UsedFromVirtual { }
+
+        struct Unused { public byte Val; }
+        struct Used { public byte Val; }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static T Cast<T>(byte o, ClassWithUnusedVirtual inst)
+        {
+            if (typeof(T) == typeof(Unused))
+            {
+                // Expect this not to be scanned. The virtual slot should not be created.
+                inst.MyUnusedVirtualMethod();
+
+                Unused result = new Unused { Val = o };
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(Used))
+            {
+                // This will introduce a virtual slot.
+                inst.MyUsedVirtualMethod();
+
+                Used result = new Used { Val = o };
+                return (T)(object)result;
+            }
+            return default;
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing dead branches guarded by typeof in generic code removal");
+
+            Cast<Used>(12, new ClassWithUnusedVirtual());
+
+            // We only expect to be able to get rid of it when optimizing
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
+#endif
+            ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
+
+            ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UnusedFromVirtual));
+            ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UsedFromVirtual));
         }
     }
 
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
-    private static bool IsTypePresent(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public) != null;
+    private static Type GetTypeSecretly(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public);
 
     private static void ThrowIfPresent(Type testType, string typeName)
     {
-        if (IsTypePresent(testType, typeName))
+        if (GetTypeSecretly(testType, typeName) != null)
         {
             throw new Exception(typeName);
         }
     }
 
+    private static void ThrowIfPresentWithUsableMethodTable(Type testType, string typeName)
+    {
+        Type t = GetTypeSecretly(testType, typeName);
+        if (t == null)
+            return;
+
+        try
+        {
+            RuntimeHelpers.GetUninitializedObject(t);
+
+            // Should have thrown NotSupported above.
+            throw new Exception();
+        }
+        catch (NotSupportedException) { }
+    }
+
     private static void ThrowIfNotPresent(Type testType, string typeName)
     {
-        if (!IsTypePresent(testType, typeName))
+        if (GetTypeSecretly(testType, typeName) == null)
         {
             throw new Exception(typeName);
         }

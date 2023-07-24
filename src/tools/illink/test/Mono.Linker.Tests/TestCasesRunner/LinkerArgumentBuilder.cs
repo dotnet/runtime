@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -61,6 +61,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			Append ("-a");
 			Append (fileName);
+			Append ("entrypoint");
 		}
 
 		public virtual void LinkFromPublicAndFamily (string fileName)
@@ -102,12 +103,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public virtual void AddLinkSymbols (string value)
 		{
 			Append ("-b");
-			Append (value);
-		}
-
-		public virtual void AddKeepDebugMembers (string value)
-		{
-			Append ("-v");
 			Append (value);
 		}
 
@@ -217,9 +212,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (!string.IsNullOrEmpty (options.LinkSymbols))
 				AddLinkSymbols (options.LinkSymbols);
-
-			if (!string.IsNullOrEmpty (options.KeepDebugMembers))
-				AddKeepDebugMembers (options.KeepDebugMembers);
 
 			AddSkipUnresolved (options.SkipUnresolved);
 

@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Xunit;
 
 namespace ComInterfaceGenerator.Tests
@@ -13,45 +15,46 @@ namespace ComInterfaceGenerator.Tests
     {
         internal partial class ImplicitThis
         {
-            public readonly record struct NoCasting;
-
-            internal partial interface INativeObject : IUnmanagedInterfaceType<INativeObject, NoCasting>
+            [UnmanagedObjectUnwrapperAttribute<VTableGCHandlePair<INativeObject>>]
+            internal partial interface INativeObject : IUnmanagedInterfaceType
             {
-                static int IUnmanagedInterfaceType<INativeObject, NoCasting>.VirtualMethodTableLength => 2;
-
-                static NoCasting IUnmanagedInterfaceType<INativeObject, NoCasting>.TypeKey => default;
-
-                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * IUnmanagedVirtualMethodTableProvider<NoCasting>.GetVirtualMethodTableLength<INativeObject>());
-                static void* IUnmanagedInterfaceType<INativeObject, NoCasting>.VirtualMethodTableManagedImplementation
+                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * 6);
+                static void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation
                 {
                     get
                     {
                         if (s_vtable[0] == null)
                         {
-                            Native.PopulateUnmanagedVirtualMethodTable(new Span<IntPtr>(s_vtable, IUnmanagedVirtualMethodTableProvider<NoCasting>.GetVirtualMethodTableLength<INativeObject>()));
+                            Native.PopulateUnmanagedVirtualMethodTable(s_vtable);
                         }
                         return s_vtable;
                     }
-                }
-
-                static void* IUnmanagedInterfaceType<INativeObject, NoCasting>.GetUnmanagedWrapperForObject(INativeObject obj)
-                {
-                    return VTableGCHandlePair<INativeObject, NoCasting>.Allocate(obj);
-                }
-
-                static INativeObject IUnmanagedInterfaceType<INativeObject, NoCasting>.GetObjectForUnmanagedWrapper(void* ptr)
-                {
-                    return VTableGCHandlePair<INativeObject, NoCasting>.GetObject(ptr);
                 }
 
                 [VirtualMethodIndex(0, ImplicitThisParameter = true)]
                 int GetData();
                 [VirtualMethodIndex(1, ImplicitThisParameter = true)]
                 void SetData(int x);
+                [VirtualMethodIndex(2, ImplicitThisParameter = true)]
+                void ExchangeData(ref int x);
+                [VirtualMethodIndex(3, ImplicitThisParameter = true)]
+                void SumAndSetData(
+                    [MarshalUsing(CountElementName = nameof(numValues))] int[] values,
+                    int numValues,
+                    out int oldValue);
+                [VirtualMethodIndex(4, ImplicitThisParameter = true)]
+                void SumAndSetData(
+                    [MarshalUsing(CountElementName = nameof(numValues))] ref int[] values,
+                    int numValues,
+                    out int oldValue);
+                [VirtualMethodIndex(5, ImplicitThisParameter = true)]
+                void MultiplyWithData(
+                    [MarshalUsing(CountElementName = nameof(numValues))] int[] values,
+                    int numValues);
             }
 
             [NativeMarshalling(typeof(NativeObjectMarshaller))]
-            public class NativeObject : INativeObject.Native, IUnmanagedVirtualMethodTableProvider<NoCasting>, IDisposable
+            public class NativeObject : INativeObject.Native, IUnmanagedVirtualMethodTableProvider, IDisposable
             {
                 private readonly void* _pointer;
 
@@ -60,7 +63,11 @@ namespace ComInterfaceGenerator.Tests
                     _pointer = pointer;
                 }
 
-                public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => new VirtualMethodTableInfo((IntPtr)_pointer, new ReadOnlySpan<IntPtr>(*(void**)_pointer, 2));
+                public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(Type type)
+                {
+                    Assert.Equal(typeof(INativeObject), type);
+                    return new VirtualMethodTableInfo(_pointer, *(void***)_pointer);
+                }
 
                 public void Dispose()
                 {
@@ -112,18 +119,23 @@ namespace ComInterfaceGenerator.Tests
 
             ManagedObjectImplementation impl = new ManagedObjectImplementation(startingValue);
 
-            void* wrapper = IUnmanagedVirtualMethodTableProvider<NativeExportsNE.ImplicitThis.NoCasting>.GetUnmanagedWrapperForObject<NativeExportsNE.ImplicitThis.INativeObject>(impl);
+            void* wrapper = VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject>.Allocate(impl);
 
-            Assert.Equal(startingValue, NativeExportsNE.ImplicitThis.GetNativeObjectData(wrapper));
-            NativeExportsNE.ImplicitThis.SetNativeObjectData(wrapper, newValue);
-            Assert.Equal(newValue, NativeExportsNE.ImplicitThis.GetNativeObjectData(wrapper));
-            // Verify that we actually updated the managed instance.
-            Assert.Equal(newValue, impl.GetData());
-
-            VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject, NativeExportsNE.ImplicitThis.NoCasting>.Free(wrapper);
+            try
+            {
+                Assert.Equal(startingValue, NativeExportsNE.ImplicitThis.GetNativeObjectData(wrapper));
+                NativeExportsNE.ImplicitThis.SetNativeObjectData(wrapper, newValue);
+                Assert.Equal(newValue, NativeExportsNE.ImplicitThis.GetNativeObjectData(wrapper));
+                // Verify that we actually updated the managed instance.
+                Assert.Equal(newValue, impl.GetData());
+            }
+            finally
+            {
+                VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject>.Free(wrapper);
+            }
         }
 
-        class ManagedObjectImplementation : NativeExportsNE.ImplicitThis.INativeObject
+        sealed class ManagedObjectImplementation : NativeExportsNE.ImplicitThis.INativeObject
         {
             private int _data;
 
@@ -132,8 +144,24 @@ namespace ComInterfaceGenerator.Tests
                 _data = value;
             }
 
+            public void ExchangeData(ref int x) => x = Interlocked.Exchange(ref _data, x);
             public int GetData() => _data;
+            public void MultiplyWithData([MarshalUsing(CountElementName = "numValues")] int[] values, int numValues)
+            {
+                for (int i = 0; i < values.Length; i++)
+                {
+                    values[i] *= _data;
+                }
+            }
             public void SetData(int x) => _data = x;
+            public void SumAndSetData([MarshalUsing(CountElementName = "numValues")] int[] values, int numValues, out int oldValue)
+            {
+                int value = values.Sum();
+                oldValue = _data;
+                _data = value;
+            }
+
+            public void SumAndSetData([MarshalUsing(CountElementName = "numValues")] ref int[] values, int numValues, out int oldValue) => SumAndSetData(values, numValues, out oldValue);
         }
     }
 }

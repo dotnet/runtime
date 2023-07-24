@@ -27,8 +27,5 @@
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\StackTraceData.cs">
       <Link>Internal\Runtime\StackTraceData.cs</Link>
     </Compile>
-    <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
-      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
 </Project>

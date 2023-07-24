@@ -112,7 +112,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(!constructor.IsStatic);
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;

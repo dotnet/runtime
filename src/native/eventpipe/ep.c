@@ -17,12 +17,12 @@
 
 static bool _ep_can_start_threads = false;
 
-static ep_rt_session_id_array_t _ep_deferred_enable_session_ids = { 0 };
-static ep_rt_session_id_array_t _ep_deferred_disable_session_ids = { 0 };
+static dn_vector_t *_ep_deferred_enable_session_ids = NULL;
+static dn_vector_t *_ep_deferred_disable_session_ids = NULL;
 
 static EventPipeIpcStreamFactorySuspendedPortsCallback _ep_ipc_stream_factory_suspended_ports_callback = NULL;
 
-static ep_rt_execution_checkpoint_array_t _ep_rundown_execution_checkpoints = { 0 };
+static dn_vector_ptr_t *_ep_rundown_execution_checkpoints = NULL;
 
 /*
  * Forward declares of all static functions.
@@ -195,15 +195,16 @@ EventPipeProviderCallbackDataQueue *
 ep_provider_callback_data_queue_init (EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	EP_ASSERT (provider_callback_data_queue != NULL);
-	ep_rt_provider_callback_data_queue_alloc (&provider_callback_data_queue->queue);
-	return ep_rt_provider_callback_data_queue_is_valid (&provider_callback_data_queue->queue) ? provider_callback_data_queue : NULL;
+	provider_callback_data_queue->queue = dn_queue_alloc ();
+	return provider_callback_data_queue->queue ? provider_callback_data_queue : NULL;
 }
 
 void
 ep_provider_callback_data_queue_fini (EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	ep_return_void_if_nok (provider_callback_data_queue != NULL);
-	ep_rt_provider_callback_data_queue_free (&provider_callback_data_queue->queue);
+	dn_queue_free (provider_callback_data_queue->queue);
+	provider_callback_data_queue->queue = NULL;
 }
 
 /*
@@ -217,7 +218,8 @@ ep_provider_callback_data_alloc (
 	void *callback_data,
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
-	bool enabled)
+	bool enabled,
+	EventPipeSessionID session_id)
 {
 	EventPipeProviderCallbackData *instance = ep_rt_object_alloc (EventPipeProviderCallbackData);
 	ep_raise_error_if_nok (instance != NULL);
@@ -229,7 +231,8 @@ ep_provider_callback_data_alloc (
 		callback_data,
 		keywords,
 		provider_level,
-		enabled) != NULL);
+		enabled,
+		session_id) != NULL);
 
 ep_on_exit:
 	return instance;
@@ -288,7 +291,8 @@ ep_provider_callback_data_init (
 	void *callback_data,
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
-	bool enabled)
+	bool enabled,
+	EventPipeSessionID session_id)
 {
 	EP_ASSERT (provider_callback_data != NULL);
 
@@ -298,6 +302,7 @@ ep_provider_callback_data_init (
 	provider_callback_data->keywords = keywords;
 	provider_callback_data->provider_level = provider_level;
 	provider_callback_data->enabled = enabled;
+	provider_callback_data->session_id = session_id;
 
 	return provider_callback_data;
 }
@@ -588,7 +593,7 @@ disable_holding_lock (
 				{
 					config_enable_disable (ep_config_get (), session, provider_callback_data_queue, true);
 					{
-						ep_session_execute_rundown (session, &_ep_rundown_execution_checkpoints);
+						ep_session_execute_rundown (session, _ep_rundown_execution_checkpoints);
 					}
 					config_enable_disable(ep_config_get (), session, provider_callback_data_queue, false);
 				}
@@ -918,7 +923,7 @@ bool
 session_requested_sampling (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	return ep_rt_session_provider_list_find_by_name (ep_session_provider_list_get_providers_cref (ep_session_get_providers (session)), ep_config_get_sample_profiler_provider_name_utf8 ());
+	return ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (ep_session_get_providers (session)), ep_config_get_sample_profiler_provider_name_utf8 ());
 }
 
 static
@@ -1126,7 +1131,7 @@ ep_disable (EventPipeSessionID id)
 	EP_LOCK_ENTER (section1)
 		if (!_ep_can_start_threads && !ipc_stream_factory_any_suspended_ports ())
 		{
-			ep_rt_session_id_array_append (&_ep_deferred_disable_session_ids, id);
+			dn_vector_push_back (_ep_deferred_disable_session_ids, id);
 			ep_raise_error_holding_lock (section1);
 		}
 	EP_LOCK_EXIT (section1)
@@ -1183,7 +1188,7 @@ ep_start_streaming (EventPipeSessionID session_id)
 		if (_ep_can_start_threads)
 			ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
 		else
-			ep_rt_session_id_array_append (&_ep_deferred_enable_session_ids, session_id);
+			dn_vector_push_back (_ep_deferred_enable_session_ids, session_id);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -1205,7 +1210,6 @@ EventPipeProvider *
 ep_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data)
 {
 	ep_return_null_if_nok (provider_name != NULL);
@@ -1218,7 +1222,7 @@ ep_create_provider (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&data_queue);
 
 	EP_LOCK_ENTER (section1)
-		provider = config_create_provider (ep_config_get (), provider_name, callback_func, callback_data_free_func, callback_data, provider_callback_data_queue);
+		provider = config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, provider_callback_data_queue);
 		ep_raise_error_if_nok_holding_lock (provider != NULL, section1);
 	EP_LOCK_EXIT (section1)
 
@@ -1347,10 +1351,13 @@ ep_init (void)
 	const uint32_t default_profiler_sample_rate_in_nanoseconds = 1000000; // 1 msec.
 	ep_sample_profiler_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
 
-	ep_rt_session_id_array_alloc (&_ep_deferred_enable_session_ids);
-	ep_rt_session_id_array_alloc (&_ep_deferred_disable_session_ids);
+	_ep_deferred_enable_session_ids = dn_vector_alloc_t (EventPipeSessionID);
+	_ep_deferred_disable_session_ids = dn_vector_alloc_t (EventPipeSessionID);
 
-	ep_rt_execution_checkpoint_array_alloc (&_ep_rundown_execution_checkpoints);
+	ep_raise_error_if_nok (_ep_deferred_enable_session_ids && _ep_deferred_disable_session_ids);
+
+	_ep_rundown_execution_checkpoints = dn_vector_ptr_alloc ();
+	ep_raise_error_if_nok (_ep_rundown_execution_checkpoints);
 
 	EP_LOCK_ENTER (section1)
 		ep_volatile_store_eventpipe_state (EP_STATE_INITIALIZED);
@@ -1377,14 +1384,13 @@ ep_finish_init (void)
 	EP_LOCK_ENTER (section1)
 		_ep_can_start_threads = true;
 		if (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED) {
-			ep_rt_session_id_array_iterator_t deferred_session_ids_iterator = ep_rt_session_id_array_iterator_begin (&_ep_deferred_enable_session_ids);
-			while (!ep_rt_session_id_array_iterator_end (&_ep_deferred_enable_session_ids, &deferred_session_ids_iterator)) {
-				EventPipeSessionID session_id = ep_rt_session_id_array_iterator_value (&deferred_session_ids_iterator);
-				if (is_session_id_in_collection (session_id))
-					ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
-				ep_rt_session_id_array_iterator_next (&deferred_session_ids_iterator);
+			if (_ep_deferred_enable_session_ids) {
+				DN_VECTOR_FOREACH_BEGIN (EventPipeSessionID, session_id, _ep_deferred_enable_session_ids) {
+					if (is_session_id_in_collection (session_id))
+						ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
+				} DN_VECTOR_FOREACH_END;
+				dn_vector_clear (_ep_deferred_enable_session_ids);
 			}
-			ep_rt_session_id_array_clear (&_ep_deferred_enable_session_ids);
 		}
 
 		ep_sample_profiler_can_start_sampling ();
@@ -1395,13 +1401,12 @@ ep_finish_init (void)
 	// lock since we've set _ep_can_start_threads to true inside the lock. Anyone
 	// who was waiting on that lock will see that state and not mutate the defer list
 	if (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED) {
-		ep_rt_session_id_array_iterator_t deferred_disable_session_ids_iterator = ep_rt_session_id_array_iterator_begin (&_ep_deferred_disable_session_ids);
-		while (!ep_rt_session_id_array_iterator_end (&_ep_deferred_disable_session_ids, &deferred_disable_session_ids_iterator)) {
-			EventPipeSessionID session_id = ep_rt_session_id_array_iterator_value (&deferred_disable_session_ids_iterator);
-			disable_helper (session_id);
-			ep_rt_session_id_array_iterator_next (&deferred_disable_session_ids_iterator);
+		if (_ep_deferred_disable_session_ids) {
+			DN_VECTOR_FOREACH_BEGIN (EventPipeSessionID, session_id, _ep_deferred_disable_session_ids) {
+				disable_helper (session_id);
+			} DN_VECTOR_FOREACH_END;
+			dn_vector_clear (_ep_deferred_disable_session_ids);
 		}
-		ep_rt_session_id_array_clear (&_ep_deferred_disable_session_ids);
 	}
 
 ep_on_exit:
@@ -1431,19 +1436,20 @@ ep_shutdown (void)
 			ep_disable ((EventPipeSessionID)session);
 	}
 
-	ep_rt_execution_checkpoint_array_iterator_t checkpoint_iterator;
-	EventPipeExecutionCheckpoint *checkpoint;
-	checkpoint_iterator = ep_rt_execution_checkpoint_array_iterator_begin (&_ep_rundown_execution_checkpoints);
-	while (!ep_rt_execution_checkpoint_array_iterator_end (&_ep_rundown_execution_checkpoints, &checkpoint_iterator)) {
-		checkpoint = ep_rt_execution_checkpoint_array_iterator_value (&checkpoint_iterator);
-		if (checkpoint)
-			ep_rt_utf8_string_free (checkpoint->name);
-		ep_rt_execution_checkpoint_array_iterator_next (&checkpoint_iterator);
+	if (_ep_rundown_execution_checkpoints) {
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeExecutionCheckpoint *, checkpoint, _ep_rundown_execution_checkpoints) {
+			if (checkpoint)
+				ep_rt_utf8_string_free (checkpoint->name);
+		} DN_VECTOR_PTR_FOREACH_END;
+		dn_vector_ptr_free (_ep_rundown_execution_checkpoints);
+		_ep_rundown_execution_checkpoints = NULL;
 	}
-	ep_rt_execution_checkpoint_array_free (&_ep_rundown_execution_checkpoints);
 
-	ep_rt_session_id_array_free (&_ep_deferred_enable_session_ids);
-	ep_rt_session_id_array_free (&_ep_deferred_disable_session_ids);
+	dn_vector_free (_ep_deferred_enable_session_ids);
+	_ep_deferred_enable_session_ids = NULL;
+
+	dn_vector_free (_ep_deferred_disable_session_ids);
+	_ep_deferred_disable_session_ids = NULL;
 
 	ep_thread_fini ();
 
@@ -1571,7 +1577,7 @@ ep_add_rundown_execution_checkpoint (
 	ep_raise_error_if_nok (exec_checkpoint != NULL);
 
 	EP_LOCK_ENTER (section1)
-		ep_raise_error_if_nok_holding_lock (ep_rt_execution_checkpoint_array_append (&_ep_rundown_execution_checkpoints, exec_checkpoint), section1);
+		ep_raise_error_if_nok_holding_lock (dn_vector_ptr_push_back (_ep_rundown_execution_checkpoints, exec_checkpoint), section1);
 		exec_checkpoint = NULL;
 	EP_LOCK_EXIT (section1)
 
@@ -1599,7 +1605,7 @@ ep_provider_callback_data_queue_enqueue (
 	EP_ASSERT (provider_callback_data_queue != NULL);
 	EventPipeProviderCallbackData *provider_callback_data_move = ep_provider_callback_data_alloc_move (provider_callback_data);
 	ep_raise_error_if_nok (provider_callback_data_move != NULL);
-	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_push_tail (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), provider_callback_data_move));
+	ep_raise_error_if_nok (dn_queue_push (ep_provider_callback_data_queue_get_queue (provider_callback_data_queue), provider_callback_data_move));
 
 	return true;
 
@@ -1615,10 +1621,13 @@ ep_provider_callback_data_queue_try_dequeue (
 {
 	EP_ASSERT (provider_callback_data_queue != NULL);
 
-	ep_return_false_if_nok (!ep_rt_provider_callback_data_queue_is_empty (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue)));
+	dn_queue_t *queue = ep_provider_callback_data_queue_get_queue (provider_callback_data_queue);
+	ep_return_false_if_nok (!dn_queue_empty (queue));
 
-	EventPipeProviderCallbackData *value = NULL;
-	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_pop_head (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), &value));
+	EventPipeProviderCallbackData *value = *dn_queue_front_t (queue, EventPipeProviderCallbackData *);
+	dn_queue_pop (queue);
+
+	ep_raise_error_if_nok (value != NULL);
 	ep_provider_callback_data_init_move (provider_callback_data, value);
 	ep_provider_callback_data_free (value);
 

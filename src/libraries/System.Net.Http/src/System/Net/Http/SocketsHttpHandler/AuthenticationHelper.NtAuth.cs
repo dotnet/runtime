@@ -50,7 +50,7 @@ namespace System.Net.Http
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
         {
             return isProxyAuth ?
-                connection.SendAsyncCore(request, async, cancellationToken) :
+                connection.SendAsync(request, async, cancellationToken) :
                 pool.SendWithNtProxyAuthAsync(connection, request, async, cancellationToken);
         }
 
@@ -209,7 +209,7 @@ namespace System.Net.Http
                                 {
                                     isNewConnection = false;
                                     connection.Dispose();
-                                    throw new HttpRequestException(SR.Format(SR.net_http_authvalidationfailure, statusCode), null, HttpStatusCode.Unauthorized);
+                                    throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.Format(SR.net_http_authvalidationfailure, statusCode), statusCode: HttpStatusCode.Unauthorized);
                                 }
                                 break;
                             }

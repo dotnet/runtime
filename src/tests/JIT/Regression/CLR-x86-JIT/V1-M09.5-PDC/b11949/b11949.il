@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -23,12 +24,13 @@
 	ret
   } // end of method 'X::.ctor'
 
-} // end of class 'X'
 
-//Global methods
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .method public static int32 main() il managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .maxstack  1
   .locals (class A.X px)
   .entrypoint
@@ -57,5 +59,6 @@ try_end:
 	ret
 
   .try try_begin to filter_begin filter filter_begin handler except_begin to try_end
-} // end of global method 'main'
+} // end of method 'main'
+} // end of class 'X'
 }

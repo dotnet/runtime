@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             result.Should().Pass()
                 .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
                 .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext")
-                .And.HaveStdErrContaining($"Executing as a {(selfContained ? "self-contained" : "framework-dependent")} app");
+                .And.ExecuteSelfContained(selfContained);
         }
 
         public class SharedTestState : SharedTestStateBase
@@ -80,7 +80,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 // Copy over the C++/CLI test library
                 string ijwLibraryName = "ijw.dll";
                 IjwLibraryPath = Path.Combine(folder, ijwLibraryName);
-                File.Copy(Path.Combine(RepoDirectories.Artifacts, "corehost_test", ijwLibraryName), IjwLibraryPath);
+                File.Copy(Path.Combine(RepoDirectories.HostTestArtifacts, ijwLibraryName), IjwLibraryPath);
 
                 // Create a runtimeconfig.json for the C++/CLI test library
                 new RuntimeConfig(Path.Combine(folder, "ijw.runtimeconfig.json"))

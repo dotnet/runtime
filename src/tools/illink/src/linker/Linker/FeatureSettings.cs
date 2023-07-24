@@ -41,7 +41,7 @@ namespace Mono.Linker
 
 		public static string GetAttribute (XPathNavigator nav, string attribute)
 		{
-			return nav.GetAttribute (attribute, String.Empty);
+			return nav.GetAttribute (attribute, string.Empty);
 		}
 	}
 }

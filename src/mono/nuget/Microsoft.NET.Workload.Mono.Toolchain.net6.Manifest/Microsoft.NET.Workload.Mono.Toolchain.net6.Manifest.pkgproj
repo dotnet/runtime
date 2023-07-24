@@ -6,9 +6,12 @@
   </PropertyGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
+    <Error Condition="'$(SdkBandVersionForWorkload_FromRuntimeVersions)' == ''"
+           Text="%24(SdkBandVersionForWorkload_FromRuntimeVersions) is not set" />
+
     <!-- Override the id to include the sdk band as per the workload installer spec -->
     <PropertyGroup>
-      <Id>Microsoft.NET.Workload.Mono.ToolChain.net6.Manifest-$(SdkBandVersion)</Id>
+      <Id>Microsoft.NET.Workload.Mono.ToolChain.net6.Manifest-$(SdkBandVersionForWorkload_FromRuntimeVersions)</Id>
     </PropertyGroup>
 
     <PropertyGroup>

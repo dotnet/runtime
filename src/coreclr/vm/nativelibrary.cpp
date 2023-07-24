@@ -642,12 +642,12 @@ namespace
         if (g_hostpolicy_embedded)
         {
 #ifdef TARGET_WINDOWS
-            if (wcscmp(wszLibName, W("hostpolicy.dll")) == 0)
+            if (u16_strcmp(wszLibName, W("hostpolicy.dll")) == 0)
             {
                 return WszGetModuleHandle(NULL);
             }
 #else
-            if (wcscmp(wszLibName, W("libhostpolicy")) == 0)
+            if (u16_strcmp(wszLibName, W("libhostpolicy")) == 0)
             {
                 return PAL_LoadLibraryDirect(NULL);
             }
@@ -716,33 +716,6 @@ namespace
             if (hmod != NULL)
             {
                 return hmod;
-            }
-        }
-
-        // This may be an assembly name
-        // Format is "fileName, assemblyDisplayName"
-        MAKE_UTF8PTR_FROMWIDE(szLibName, wszLibName);
-        char *szComma = strchr(szLibName, ',');
-        if (szComma)
-        {
-            *szComma = '\0';
-            // Trim white spaces
-            while (COMCharacter::nativeIsWhiteSpace(*(++szComma)));
-
-            AssemblySpec spec;
-            SString ssAssemblyDisplayName(SString::Utf8, szComma);
-            if (SUCCEEDED(spec.InitNoThrow(ssAssemblyDisplayName)))
-            {
-                // Need to perform case insensitive hashing.
-                SString moduleName(SString::Utf8, szLibName);
-                moduleName.LowerCase();
-
-                szLibName = (LPSTR)moduleName.GetUTF8();
-
-                Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
-                Module *pModule = pAssembly->FindModuleByName(szLibName);
-
-                hmod = LocalLoadLibraryHelper(pModule->GetPath(), loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
             }
         }
 

@@ -492,9 +492,6 @@
   <data name="AttributedTypesCannotInheritFromNonAttributedSerializableTypes" xml:space="preserve">
     <value>Type '{0}' cannot inherit from a type that is not marked with DataContractAttribute or SerializableAttribute.  Consider marking the base type '{1}' with DataContractAttribute or SerializableAttribute, or removing them from the derived type.</value>
   </data>
-  <data name="QuotaMustBePositive" xml:space="preserve">
-    <value>Quota must be a positive value.</value>
-  </data>
   <data name="QuotaIsReadOnly" xml:space="preserve">
     <value>The '{0}' quota is readonly.</value>
   </data>
@@ -542,9 +539,6 @@
   </data>
   <data name="UnknownConstantType" xml:space="preserve">
     <value>Internal Error: Unrecognized constant type {0}.</value>
-  </data>
-  <data name="ValueMustBeNonNegative" xml:space="preserve">
-    <value>The value of this argument must be non-negative.</value>
   </data>
   <data name="ValueTypeCannotBeNull" xml:space="preserve">
     <value>ValueType '{0}' cannot be null.</value>
@@ -646,13 +640,13 @@
     <value>The value '{0}' cannot be represented with the type '{1}'.</value>
   </data>
   <data name="XmlDeclarationRequired" xml:space="preserve">
-    <value>An XML declaration with an encoding is required for all non-UTF8 documents.</value>
+    <value>An XML declaration with an encoding is required for all non UTF-8 documents.</value>
   </data>
   <data name="XmlDeclMissingVersion" xml:space="preserve">
     <value>Version not found in XML declaration.</value>
   </data>
   <data name="XmlDeclMissing" xml:space="preserve">
-    <value>An XML declaration is required for all non-UTF8 documents.</value>
+    <value>An XML declaration is required for all non UTF-8 documents.</value>
   </data>
   <data name="XmlDeclNotFirst" xml:space="preserve">
     <value>No characters can appear before the XML declaration.</value>
@@ -772,7 +766,7 @@
     <value>UniqueId cannot be zero length.</value>
   </data>
   <data name="XmlInvalidUTF8Bytes" xml:space="preserve">
-    <value>'{0}' contains invalid UTF8 bytes.</value>
+    <value>'{0}' contains invalid UTF-8 bytes.</value>
   </data>
   <data name="XmlInvalidVersion" xml:space="preserve">
     <value>XML version must be '1.0'.</value>

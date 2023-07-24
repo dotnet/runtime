@@ -10,7 +10,7 @@ using Mono.Linker.Dataflow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial struct HandleCallAction
+	internal partial struct HandleCallAction
 	{
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 
@@ -82,8 +82,8 @@ namespace ILLink.Shared.TrimAnalysis
 			if (!_reflectionMarker.TryResolveTypeNameAndMark (resolvedAssembly, typeName, _diagnosticContext, out TypeDefinition? resolvedTypeDefinition)
 				|| resolvedTypeDefinition.IsTypeOf (WellKnownType.System_Array)) {
 				// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
-				// Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies
-				// but linker can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
+				// Note that we did find the assembly, so it's not a ILLink config problem, it's either intentional, or wrong versions of assemblies
+				// but ILLink can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
 				// might expect an exception to be thrown.
 				resolvedType = default;
 				return false;
@@ -106,7 +106,7 @@ namespace ILLink.Shared.TrimAnalysis
 			=> _reflectionMarker.MarkPropertiesOnTypeHierarchy (_diagnosticContext.Origin, type.Type, p => p.Name == name, bindingFlags);
 
 		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type)
-			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, m => m.IsPublic && m.GetMetadataParametersCount () == 0);
+			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, m => m.IsPublic && !m.HasMetadataParameters ());
 
 		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags, int? parameterCount)
 			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, (parameterCount == null) ? null : m => m.GetMetadataParametersCount () == parameterCount, bindingFlags);

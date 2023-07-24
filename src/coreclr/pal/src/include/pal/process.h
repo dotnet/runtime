@@ -151,11 +151,12 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  siginfo - POSIX signal info
 
   Does not return
 --*/
 PAL_NORETURN
-VOID PROCAbort(int signal = SIGABRT);
+VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr);
 
 /*++
 Function:
@@ -180,7 +181,7 @@ Parameters:
 
 (no return value)
 --*/
-VOID PROCCreateCrashDumpIfEnabled(int signal);
+VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo);
 
 /*++
 Function:

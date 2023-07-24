@@ -5,10 +5,12 @@
 //different data types, Int16, Int32, Int64, etc
 
 using System;
+using Xunit;
 
-internal class pow3
+public class pow3
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = true;
 

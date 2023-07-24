@@ -230,6 +230,18 @@ namespace Sequential
     {
         Vector128<byte> vector16Align;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class Class32Align
+    {
+        Vector256<byte> vector32Align;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class Class64Align
+    {
+        Vector512<byte> vector64Align;
+    }
 }
 
 namespace Auto
@@ -358,15 +370,51 @@ namespace Auto
         public Vector128<byte> _1;
     }
 
+    [StructLayout(LayoutKind.Auto)]
+    public struct int8x32x2
+    {
+        public Vector256<byte> _0;
+        public Vector256<byte> _1;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct int8x64x2
+    {
+        public Vector512<byte> _0;
+        public Vector512<byte> _1;
+    }
+
     public struct Wrapper_int8x16x2
     {
         public int8x16x2 fld;
+    }
+
+    public struct Wrapper_int8x32x2
+    {
+        public int8x32x2 fld;
+    }
+
+    public struct Wrapper_int8x64x2
+    {
+        public int8x64x2 fld;
     }
 
     public struct Wrapper_int8x16x2_2
     {
         public bool fld1;
         public int8x16x2 fld2;
+    }
+
+    public struct Wrapper_int8x32x2_2
+    {
+        public bool fld1;
+        public int8x32x2 fld2;
+    }
+
+    public struct Wrapper_int8x64x2_2
+    {
+        public bool fld1;
+        public int8x64x2 fld2;
     }
 
     [StructLayout(LayoutKind.Auto)]
@@ -452,6 +500,18 @@ namespace Auto
     public class Class16Align
     {
         Vector128<byte> vector16Align;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class Class32Align
+    {
+        Vector256<byte> vector32Align;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class Class64Align
+    {
+        Vector512<byte> vector64Align;
     }
 }
 

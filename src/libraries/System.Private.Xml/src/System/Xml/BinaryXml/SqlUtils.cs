@@ -188,7 +188,7 @@ namespace System.Xml
             // Make local copy of data to avoid modifying input.
             uint[] rgulNumeric = new uint[4] { m_data1, m_data2, m_data3, m_data4 };
             int culLen = m_bLen;
-            char[] pszTmp = new char[s_NUMERIC_MAX_PRECISION + 1];   //Local Character buffer to hold
+            Span<char> pszTmp = stackalloc char[s_NUMERIC_MAX_PRECISION + 1];   //Local Character buffer to hold
                                                                      //the decimal digits, from the
                                                                      //lowest significant to highest significant
 
@@ -222,7 +222,7 @@ namespace System.Xml
             if (m_bScale > 0)
                 uiResultLen++;
 
-            char[] szResult = new char[uiResultLen];
+            Span<char> szResult = stackalloc char[uiResultLen];
             int iCurChar = 0;
 
             if (!fPositive)
@@ -267,7 +267,7 @@ namespace System.Xml
         }
     }
 
-    internal struct BinXmlSqlMoney
+    internal readonly struct BinXmlSqlMoney
     {
         private readonly long _data;
 
@@ -305,7 +305,7 @@ namespace System.Xml
     {
         private const int MaxFractionDigits = 7;
 
-        internal static int[] KatmaiTimeScaleMultiplicator = new int[8] {
+        internal static ReadOnlySpan<int> KatmaiTimeScaleMultiplicator => new int[8] {
             10000000,
             1000000,
             100000,
@@ -385,15 +385,15 @@ namespace System.Xml
                     fractionDigits--;
                     fraction /= 10;
                 }
-                char[] charArray = new char[fractionDigits];
+                Span<char> chars = stackalloc char[fractionDigits];
                 while (fractionDigits > 0)
                 {
                     fractionDigits--;
-                    charArray[fractionDigits] = (char)(fraction % 10 + '0');
+                    chars[fractionDigits] = (char)(fraction % 10 + '0');
                     fraction /= 10;
                 }
                 sb.Append('.');
-                sb.Append(charArray);
+                sb.Append(chars);
             }
         }
 

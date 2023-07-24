@@ -4,10 +4,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public unsafe class AliasingRetBuf
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int failures = 0;
 

@@ -22,7 +22,7 @@ namespace DebuggerTests
         // FIXME: check object properties..
 
         //FIXME: function name
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [ConditionalTheory(nameof(WasmSingleThreaded), nameof(RunningOnChrome))]
         [InlineData("ContinueWithStaticAsync", "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithStaticAsync.AnonymousMethod__3_0")]
         [InlineData("ContinueWithInstanceAsync", "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceAsync.AnonymousMethod__5_0")]
         public async Task AsyncLocalsInContinueWith(string method_name, string expected_method_name) => await CheckInspectLocalsAtBreakpointSite(
@@ -44,6 +44,7 @@ namespace DebuggerTests
              });
 
         [ConditionalFact(nameof(RunningOnChrome))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task AsyncLocalsInContinueWithInstanceUsingThisBlock() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceUsingThisAsync.AnonymousMethod__6_0",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -66,6 +67,7 @@ namespace DebuggerTests
              });
 
          [Fact] // NestedContinueWith
+         [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
          public async Task AsyncLocalsInNestedContinueWithStaticBlock() => await CheckInspectLocalsAtBreakpointSite(
               "DebuggerTests.AsyncTests.ContinueWithTests", "NestedContinueWithStaticAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithStaticAsync",
               "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -82,7 +84,7 @@ namespace DebuggerTests
                  }, "locals");
               });
 
-        [Theory]
+        [ConditionalTheory(nameof(WasmSingleThreaded), nameof(RunningOnChrome))]
         [InlineData("Run", 246, 16, 252, 16, "RunCSharpScope")]
         [InlineData("RunContinueWith", 277, 20, 283, 20, "RunContinueWithSameVariableName")]
         [InlineData("RunNestedContinueWith", 309, 24, 315, 24, "RunNestedContinueWithSameVariableName.AnonymousMethod__1")]
@@ -140,7 +142,6 @@ namespace DebuggerTests
         public async Task InspectLocalsInAsyncVBMethod()
         {
             var expression = $"{{ invoke_static_method('[debugger-test-vb] DebuggerTestVB.TestVbScope:Run'); }}";
-
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
                 "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 14, 12,

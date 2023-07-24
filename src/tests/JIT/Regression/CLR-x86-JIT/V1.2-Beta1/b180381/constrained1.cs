@@ -3,16 +3,18 @@
 //
 
 using System;
+using Xunit;
 
 public class Test_constrained1
 {
-    public static void M<T>(T t)
+    internal static void M<T>(T t)
     {
         System.Type type = t.GetType();
         Console.WriteLine(type);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         M("Hello"); // Works fine
         M(3); // CLR crashes

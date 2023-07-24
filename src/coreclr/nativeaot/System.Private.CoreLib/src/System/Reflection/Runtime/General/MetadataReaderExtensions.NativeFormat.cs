@@ -18,13 +18,13 @@ using Internal.Runtime.Augments;
 
 using Internal.Metadata.NativeFormat;
 using NativeFormatAssemblyFlags = global::Internal.Metadata.NativeFormat.AssemblyFlags;
+using NativeFormatModifiedType = global::Internal.Metadata.NativeFormat.ModifiedType;
 
 namespace System.Reflection.Runtime.General
 {
     //
     // Collect various metadata reading tasks for better chunking...
     //
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public static class NativeFormatMetadataReaderExtensions
     {
@@ -151,7 +151,7 @@ namespace System.Reflection.Runtime.General
             LowLevelList<Type> customModifiers = new LowLevelList<Type>();
             do
             {
-                ModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
+                NativeFormatModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
                 if (optional == modifiedType.IsOptional)
                 {
                     Type customModifier = modifiedType.ModifierType.Resolve(reader, typeContext);
@@ -174,7 +174,7 @@ namespace System.Reflection.Runtime.General
 
             do
             {
-                ModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
+                NativeFormatModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
                 handle = modifiedType.Type;
                 handleType = handle.HandleType;
             }

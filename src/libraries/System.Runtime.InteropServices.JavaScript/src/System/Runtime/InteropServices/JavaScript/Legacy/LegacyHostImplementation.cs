@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -11,12 +12,16 @@ namespace System.Runtime.InteropServices.JavaScript
     internal static class LegacyHostImplementation
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReleaseInFlight(object obj)
+        {
+            JSObject? jsObj = obj as JSObject;
+            jsObj?.ReleaseInFlight();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RegisterCSOwnedObject(JSObject proxy)
         {
-            lock (JSHostImplementation.s_csOwnedObjects)
-            {
-                JSHostImplementation.s_csOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
-            }
+            JSHostImplementation.ThreadCsOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
         }
 
         public static MarshalType GetMarshalTypeFromType(Type type)
@@ -36,7 +41,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     case TypeCode.UInt64:
                         return MarshalType.ENUM64;
                     default:
-                        throw new JSException($"Unsupported enum underlying type {typeCode}");
+                        throw new ArgumentException(SR.Format(SR.UnsupportedEnumType, type.FullName), nameof(type));
                 }
             }
 
@@ -69,7 +74,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (type.IsArray)
             {
                 if (!type.IsSZArray)
-                    throw new JSException("Only single-dimensional arrays with a zero lower bound can be marshaled to JS");
+                    throw new ArgumentException(SR.Format(SR.UnsupportedArrayType, type.FullName), nameof(type));
 
                 var elementType = type.GetElementType();
                 switch (Type.GetTypeCode(elementType))
@@ -91,7 +96,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     case TypeCode.Double:
                         return MarshalType.ARRAY_DOUBLE;
                     default:
-                        throw new JSException($"Unsupported array element type {elementType}");
+                        throw new ArgumentException(SR.Format(SR.UnsupportedElementType, elementType), nameof(type));
                 }
             }
             else if (type == typeof(IntPtr))
@@ -115,9 +120,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return MarshalType.OBJECT;
         }
 
-        public static char GetCallSignatureCharacterForMarshalType(MarshalType t, char? defaultValue)
+        public static char GetCallSignatureCharacterForMarshalType(MarshalType type, char? defaultValue)
         {
-            switch (t)
+            switch (type)
             {
                 case MarshalType.BOOL:
                     return 'b';
@@ -154,7 +159,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (defaultValue.HasValue)
                         return defaultValue.Value;
                     else
-                        throw new JSException($"Unsupported marshal type {t}");
+                        throw new ArgumentException(SR.Format(SR.UnsupportedLegacyMarshlerType, type), nameof(type));
             }
         }
 
@@ -213,5 +218,15 @@ namespace System.Runtime.InteropServices.JavaScript
             Function = 4,
             Uint8Array = 11,
         }
+
+#if FEATURE_WASM_THREADS
+        public static void ThrowIfLegacyWorkerThread()
+        {
+            if (Thread.CurrentThread.ManagedThreadId != 1)
+            {
+                throw new PlatformNotSupportedException("Legacy interop is not supported with WebAssembly threads.");
+            }
+        }
+#endif
     }
 }

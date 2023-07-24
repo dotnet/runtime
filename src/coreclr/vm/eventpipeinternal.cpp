@@ -85,7 +85,8 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, Eve
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
     _In_z_ LPCWSTR providerName,
-    EventPipeCallback pCallbackFunc)
+    EventPipeCallback pCallbackFunc,
+    void* pCallbackContext)
 {
     QCALL_CONTRACT;
 
@@ -93,7 +94,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
 
     BEGIN_QCALL;
 
-    pProvider = EventPipeAdapter::CreateProvider(providerName, pCallbackFunc);
+    pProvider = EventPipeAdapter::CreateProvider(providerName, pCallbackFunc, pCallbackContext);
 
     END_QCALL;
 

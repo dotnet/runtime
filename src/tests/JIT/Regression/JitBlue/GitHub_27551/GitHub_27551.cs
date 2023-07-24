@@ -5,6 +5,7 @@ using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class GitHub_27551
 {
@@ -88,7 +89,8 @@ public class GitHub_27551
         ValidateResult(value, result);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Vector256<Byte> value = Vector256.Create((byte)GetByte());
         Test(value);

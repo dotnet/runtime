@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <HWITestsArm64Only>true</HWITestsArm64Only>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

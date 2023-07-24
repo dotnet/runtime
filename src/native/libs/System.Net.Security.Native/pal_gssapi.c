@@ -351,7 +351,7 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
     }
     else if (packageType == PAL_GSS_KERBEROS)
     {
-        desiredMech = gss_mech_krb5;
+        desiredMech = krbMech;
     }
     else
     {
@@ -631,7 +631,7 @@ static uint32_t AcquireCredWithPassword(uint32_t* minorStatus,
     }
     else if (packageType == PAL_GSS_KERBEROS)
     {
-        desiredMech = gss_mech_krb5;
+        desiredMech = (gss_OID)(unsigned long)gss_mech_krb5;
     }
     else
     {

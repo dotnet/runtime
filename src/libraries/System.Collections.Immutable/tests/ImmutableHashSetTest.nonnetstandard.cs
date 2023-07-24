@@ -49,7 +49,7 @@ namespace System.Collections.Immutable.Tests
                 Assert.Same(emptySet, ImmutableHashSet<T>.Empty);
             }
 
-            var reemptied = emptySet.Add(value).Clear();
+            IImmutableSet<T> reemptied = emptySet.Add(value).Clear();
             Assert.Same(reemptied, reemptied.ToImmutableHashSet(comparer)); //, "Getting the empty set from a non-empty instance did not preserve the comparer.");
         }
     }

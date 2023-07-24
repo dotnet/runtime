@@ -10,8 +10,8 @@
     <NoWarn>$(NoWarn);0809;0618;CS8614;CS3015</NoWarn>
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <FeatureWasmPerfTracing Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</FeatureWasmPerfTracing>
-    <FeatureWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <FeatureWasmPerfTracing Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmPerfTracing>
+    <FeatureWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
     <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <DefineConstants>$(DefineConstants);BUILDING_CORELIB_REFERENCE</DefineConstants>

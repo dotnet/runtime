@@ -256,7 +256,7 @@ namespace System.Net.Sockets
             {
                 if (disposing)
                 {
-                    IDisposable? dataStream = _dataStream;
+                    NetworkStream? dataStream = _dataStream;
                     if (dataStream != null)
                     {
                         dataStream.Dispose();

@@ -66,6 +66,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     ///   - AotDataFile (when using UseAotDataFile=true)
     ///   - LlvmObjectFile (if using LLVM)
     ///   - LlvmBitcodeFile (if using LLVM-only)
+    ///   - ExportsFile (used in LibraryMode only)
+    ///   - MethodTokenFile (when using CollectCompiledMethods=true)
     /// </summary>
     [Output]
     public ITaskItem[]? CompiledAssemblies { get; set; }
@@ -107,9 +109,59 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDirectPInvoke { get; set; }
 
     /// <summary>
+    /// When this option is specified, the mono aot compiler will generate direct calls for only specified direct pinvokes.
+    /// Specified direct pinvokes can be in the format of 'module' to generate direct calls for all entrypoints in the module,
+    /// or 'module!entrypoint' to generate direct calls for individual entrypoints in a module. 'module' will trump 'module!entrypoint'.
+    /// For a direct call to be generated, the managed code must call the native function through a direct pinvoke, e.g.
+    ///
+    /// [DllImport("module", EntryPoint="entrypoint")]
+    /// public static extern <ret> ManagedName (arg)
+    ///
+    /// or
+    ///
+    /// [DllImport("module")]
+    /// public static extern <ret> entrypoint (arg)
+    ///
+    /// The native sources must be supplied in the direct pinvoke sources parammeter in the LibraryBuilder to generate a shared library.
+    /// If not using the LibraryBuilder, the native sources must be linked manually in the final executable or library.
+    /// This requires UseStaticLinking=true, can be used in conjunction with DirectPInvokeLists, but is incompatible with UseDirectPInvoke.
+    /// </summary>
+    public ITaskItem[] DirectPInvokes { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
+    /// When this option is specified, the mono aot compiler will generate direct calls for only specified direct pinvokes in the provided files.
+    /// Specified direct pinvokes can be in the format of 'module' to generate direct calls for all entrypoints in the module,
+    /// or 'module!entrypoint' to generate direct calls for individual entrypoints in a module. 'module' will trump 'module!entrypoint'.
+    /// For a direct call to be generated, the managed code must call the native function through a direct pinvoke, e.g.
+    ///
+    /// [DllImport("module", EntryPoint="entrypoint")]
+    /// public static extern <ret> ManagedName (arg)
+    ///
+    /// or
+    ///
+    /// [DllImport("module")]
+    /// public static extern <ret> entrypoint (arg)
+    ///
+    /// The native sources must be supplied in the direct pinvoke sources parammeter in the LibraryBuilder to generate a shared library.
+    /// If not using the LibraryBuilder, the native sources must be linked manually in the final executable or library.
+    /// This requires UseStaticLinking=true, can be used in conjunction with DirectPInvokes, but is incompatible with UseDirectPInvoke.
+    /// </summary>
+    public ITaskItem[] DirectPInvokeLists { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Instructs the AOT compiler to emit DWARF debugging information.
     /// </summary>
     public bool UseDwarfDebug { get; set; }
+
+    /// <summary>
+    /// Instructs the AOT compiler to print the list of aot compiled methods
+    /// </summary>
+    public bool CollectCompiledMethods { get; set; }
+
+    /// <summary>
+    /// Directory to store the aot output when using switch compiled-methods-outfile
+    /// </summary>
+    public string? CompiledMethodsOutputDirectory { get; set; }
 
     /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
@@ -180,6 +232,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? ToolPrefix { get; set; }
 
     /// <summary>
+    /// Prepends a prefix to the name of the assembler (as) tool ran by the AOT compiler.
+    /// </summary>
+    public string? AsPrefix { get; set; }
+
+    /// <summary>
     /// Path to the directory where msym artifacts are stored.
     /// </summary>
     public string? MsymPath { get; set; }
@@ -248,6 +305,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private FileCache? _cache;
     private int _numCompiled;
     private int _totalNumAssemblies;
+
+    private readonly Dictionary<string, string> _symbolNameFixups = new();
+    private static readonly char[] s_semicolon = new char[]{ ';' };
 
     private bool ProcessAndValidateArguments()
     {
@@ -353,7 +413,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 throw new LogAsErrorException($"'{nameof(AotModulesTableLanguage)}' must be one of: '{nameof(MonoAotModulesTableLanguage.C)}', '{nameof(MonoAotModulesTableLanguage.ObjC)}'. Received: '{AotModulesTableLanguage}'.");
         }
 
-        if (!string.IsNullOrEmpty(AotModulesTablePath))
+        if (!string.IsNullOrEmpty(AotModulesTablePath) || parsedOutputType == MonoAotOutputType.ObjectFile)
         {
             // AOT modules for static linking, needs the aot modules table
             UseStaticLinking = true;
@@ -364,9 +424,21 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new LogAsErrorException($"'{nameof(UseDirectIcalls)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
-        if (UseDirectPInvoke && !UseStaticLinking)
+        if (UseDirectPInvoke && (DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0))
         {
-            throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
+            throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}' flag trumps specified '{nameof(DirectPInvokes)}' and '{nameof(DirectPInvokeLists)}' arguments. Unset either the flag or the specific direct pinvoke arguments.");
+        }
+
+        if (UseDirectPInvoke || DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0)
+        {
+            if (!UseStaticLinking)
+                throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}', '{nameof(DirectPInvokes)}', and '{nameof(DirectPInvokeLists)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
+
+            foreach (var directPInvokeList in DirectPInvokeLists)
+            {
+                if (!File.Exists(directPInvokeList.GetMetadata("FullPath")))
+                    throw new LogAsErrorException($"Could not find file '{directPInvokeList}'.");
+            }
         }
 
         if (UseStaticLinking && (parsedOutputType == MonoAotOutputType.Library))
@@ -379,6 +451,17 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             string? fullPath = asmItem.GetMetadata("FullPath");
             if (!File.Exists(fullPath))
                 throw new LogAsErrorException($"Could not find {fullPath} to AOT");
+        }
+
+        if (CollectCompiledMethods)
+        {
+            if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))
+                throw new LogAsErrorException($"{nameof(CompiledMethodsOutputDirectory)} is empty. When {nameof(CollectCompiledMethods)} is set to true, the user needs to provide a directory for {nameof(CompiledMethodsOutputDirectory)}.");
+
+            if (!Directory.Exists(CompiledMethodsOutputDirectory))
+            {
+                Directory.CreateDirectory(CompiledMethodsOutputDirectory);
+            }
         }
 
         return !Log.HasLoggedErrors;
@@ -501,7 +584,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return true;
     }
 
-    private IEnumerable<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)
+    private List<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)
     {
         List<ITaskItem> filteredAssemblies = new();
         foreach (var asmItem in assemblies)
@@ -558,9 +641,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 Log.LogMessage(MessageImportance.Low, $"Copying {asmPath} to {newPath}");
             _fileWrites.Add(newPath);
 
-            ITaskItem newAsm = new TaskItem(newPath);
+            var newAsm = new TaskItem(newPath);
             asmItem.CopyMetadataTo(newAsm);
-            asmItem.SetMetadata(s_originalFullPathMetadataName, asmPath);
+            newAsm.SetMetadata(s_originalFullPathMetadataName, asmPath);
             newAssemblies.Add(newAsm);
         }
 
@@ -574,19 +657,19 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
-        bool isDedup = assembly == DedupAssembly;
+        bool isDedup = Path.GetFileName(assembly) == Path.GetFileName(DedupAssembly);
         List<ProxyFile> proxyFiles = new(capacity: 5);
 
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
         {
-             aotArgs.AddRange(a.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
+             aotArgs.AddRange(a.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries));
         }
 
         var p = assemblyItem.GetMetadata("ProcessArguments");
         if (p != null)
         {
-            processArgs.AddRange(p.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
+            processArgs.AddRange(p.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries));
         }
 
         processArgs.Add("--debug");
@@ -611,6 +694,25 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add($"static");
         }
 
+        if (UseDirectPInvoke)
+        {
+            aotArgs.Add($"direct-pinvoke");
+        }
+
+        if (DirectPInvokes.Length > 0)
+        {
+            var directPInvokesSB = new StringBuilder("direct-pinvokes=");
+            Array.ForEach(DirectPInvokes, directPInvokeItem => directPInvokesSB.Append($"{directPInvokeItem.ItemSpec};"));
+            aotArgs.Add(directPInvokesSB.ToString());
+        }
+
+        if (DirectPInvokeLists.Length > 0)
+        {
+            var directPInvokeListsSB = new StringBuilder("direct-pinvoke-lists=");
+            Array.ForEach(DirectPInvokeLists, directPInvokeListItem => directPInvokeListsSB.Append($"{directPInvokeListItem.GetMetadata("FullPath")};"));
+            aotArgs.Add(directPInvokeListsSB.ToString());
+        }
+
         if (UseDwarfDebug)
         {
             aotArgs.Add($"dwarfdebug");
@@ -626,6 +728,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add($"tool-prefix={ToolPrefix}");
         }
 
+        if (!string.IsNullOrEmpty(AsPrefix))
+        {
+            aotArgs.Add($"as-prefix={AsPrefix}");
+        }
+
         string assemblyFilename = Path.GetFileName(assembly);
 
         if (isDedup)
@@ -635,6 +742,23 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         else if (!string.IsNullOrEmpty (DedupAssembly))
         {
             aotArgs.Add("dedup-skip");
+        }
+
+        if (CollectCompiledMethods)
+        {
+            string assemblyName = assemblyFilename.Replace(".", "_");
+            string outputFileName = assemblyName + "_compiled_methods.txt";
+            string outputFilePath;
+            if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))
+            {
+                outputFilePath = outputFileName;
+            }
+            else
+            {
+                outputFilePath = Path.Combine(CompiledMethodsOutputDirectory, outputFileName);
+            }
+            aotArgs.Add($"compiled-methods-outfile={outputFilePath}");
+            aotAssembly.SetMetadata("MethodTokenFile", outputFilePath);
         }
 
         // compute output mode and file names
@@ -731,8 +855,26 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 ProxyFile proxyFile = _cache.NewFile(llvmObjectFile);
                 proxyFiles.Add(proxyFile);
                 aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
-                aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
+
+                if (UseStaticLinking)
+                {
+                    aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
+                }
             }
+        }
+
+        if (!string.IsNullOrEmpty(TempPath))
+        {
+            aotArgs.Add($"temp-path={TempPath}");
+        }
+        else if (!string.IsNullOrEmpty(IntermediateOutputPath))
+        {
+            string aotTmpPath = Path.Combine(IntermediateOutputPath, assemblyFilename + ".tmp");
+            if (!Directory.Exists(aotTmpPath))
+            {
+                Directory.CreateDirectory(aotTmpPath);
+            }
+            aotArgs.Add($"temp-path={aotTmpPath}");
         }
 
         if (EnableUnmanagedCallersOnlyMethodsExport)
@@ -768,7 +910,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-
         if (AotProfilePath?.Length > 0)
         {
             aotArgs.Add("profile-only");
@@ -790,11 +931,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!string.IsNullOrEmpty(AotArguments))
         {
             aotArgs.Add(AotArguments);
-        }
-
-        if (!string.IsNullOrEmpty(TempPath))
-        {
-            aotArgs.Add($"temp-path={TempPath}");
         }
 
         if (!string.IsNullOrEmpty(LdName))
@@ -953,7 +1089,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (!TryGetAssemblyName(asmPath, out string? assemblyName))
                 return false;
 
-            string symbolName = assemblyName.Replace ('.', '_').Replace ('-', '_').Replace(' ', '_');
+            string symbolName = FixupSymbolName(assemblyName);
             symbols.Add($"mono_aot_module_{symbolName}_info");
         }
 
@@ -1071,15 +1207,50 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private static IList<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
+    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
     {
         List<ITaskItem> outItems = new(originalAssemblies.Count);
         foreach (ITaskItem item in originalAssemblies)
         {
-            if (dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
-                outItems.Add(dictItem);
+            if (!dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
+                continue;
+
+            string originalFullPath = item.GetMetadata(s_originalFullPathMetadataName);
+            if (!string.IsNullOrEmpty(originalFullPath))
+                dictItem.ItemSpec = originalFullPath;
+
+            outItems.Add(dictItem);
         }
         return outItems;
+    }
+
+    private string FixupSymbolName(string name)
+    {
+        if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
+            return fixedName;
+
+        UTF8Encoding utf8 = new();
+        byte[] bytes = utf8.GetBytes(name);
+        StringBuilder sb = new();
+
+        foreach (byte b in bytes)
+        {
+            if ((b >= (byte)'0' && b <= (byte)'9') ||
+                (b >= (byte)'a' && b <= (byte)'z') ||
+                (b >= (byte)'A' && b <= (byte)'Z') ||
+                (b == (byte)'_'))
+            {
+                sb.Append((char)b);
+            }
+            else
+            {
+                sb.Append('_');
+            }
+        }
+
+        fixedName = sb.ToString();
+        _symbolNameFixups[name] = fixedName;
+        return fixedName;
     }
 
     internal sealed class PrecompileArguments

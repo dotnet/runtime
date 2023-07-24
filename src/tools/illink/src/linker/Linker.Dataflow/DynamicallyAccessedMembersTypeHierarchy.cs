@@ -65,7 +65,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			// For the purposes of the DynamicallyAccessedMembers type hierarchies
-			// we consider interfaces of marked types to be also "marked" in that 
+			// we consider interfaces of marked types to be also "marked" in that
 			// their annotations will be applied to the type regardless if later on
 			// we decide to remove the interface. This is to keep the complexity of the implementation
 			// relatively low. In the future it could be possibly optimized.
@@ -216,7 +216,7 @@ namespace Mono.Linker.Dataflow
 			var baseType = _context.TryResolve (type.BaseType);
 			if (baseType != null) {
 				var baseAnnotation = GetCachedInfoForTypeInHierarchy (baseType);
-				var annotationToApplyToBase = Annotations.GetMissingMemberTypes (annotation, baseAnnotation.annotation);
+				var annotationToApplyToBase = baseAnnotation.applied ? Annotations.GetMissingMemberTypes (annotation, baseAnnotation.annotation) : annotation;
 
 				// Apply any annotations that didn't exist on the base type to the base type.
 				// This may produce redundant warnings when the annotation is DAMT.All or DAMT.PublicConstructors and the base already has a
@@ -226,15 +226,15 @@ namespace Mono.Linker.Dataflow
 
 			// Most of the DynamicallyAccessedMemberTypes don't select members on interfaces. We only need to apply
 			// annotations to interfaces separately if dealing with DAMT.All or DAMT.Interfaces.
-			if (annotation.HasFlag (DynamicallyAccessedMemberTypesOverlay.Interfaces) && type.HasInterfaces) {
-				var annotationToApplyToInterfaces = annotation == DynamicallyAccessedMemberTypes.All ? annotation : DynamicallyAccessedMemberTypesOverlay.Interfaces;
+			if (annotation.HasFlag (DynamicallyAccessedMemberTypes.Interfaces) && type.HasInterfaces) {
+				var annotationToApplyToInterfaces = annotation == DynamicallyAccessedMemberTypes.All ? annotation : DynamicallyAccessedMemberTypes.Interfaces;
 				foreach (var iface in type.Interfaces) {
 					var interfaceType = _context.TryResolve (iface.InterfaceType);
 					if (interfaceType == null)
 						continue;
 
 					var interfaceAnnotation = GetCachedInfoForTypeInHierarchy (interfaceType);
-					if (interfaceAnnotation.annotation.HasFlag (annotationToApplyToInterfaces))
+					if (interfaceAnnotation.applied && interfaceAnnotation.annotation.HasFlag (annotationToApplyToInterfaces))
 						continue;
 
 					// Apply All or Interfaces to the interface type.

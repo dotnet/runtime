@@ -490,15 +490,11 @@ namespace System.Speech.Internal.SrgsCompiler
                     if (srcToState != null)
                     {
                         // - If not found, clone a new DestToState, add SrcToState.DestToState to SrcToDestHash, and add SrcToState to CloneStack.
-                        if (!SrcToDestHash.ContainsKey(srcToState))
+                        if (!SrcToDestHash.TryGetValue(srcToState, out destToState))
                         {
                             destToState = CreateNewState(srcToState.Rule);
                             SrcToDestHash.Add(srcToState, destToState);
                             CloneStack.Push(srcToState);
-                        }
-                        else
-                        {
-                            destToState = SrcToDestHash[srcToState];
                         }
                     }
 

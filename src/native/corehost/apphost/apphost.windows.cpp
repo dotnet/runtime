@@ -81,14 +81,19 @@ namespace
         return msg;
     }
 
-    pal::string_t get_runtime_not_found_message()
+    void open_url(const pal::char_t* url)
     {
-        pal::string_t msg = INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("\n\n");
-        msg.append(get_apphost_details_message());
-        return msg;
+        // Open the URL in default browser
+        ::ShellExecuteW(
+            nullptr,
+            _X("open"),
+            url,
+            nullptr,
+            nullptr,
+            SW_SHOWNORMAL);
     }
 
-    void enable_visual_styles()
+    bool enable_visual_styles()
     {
         // Create an activation context using a manifest that enables visual styles
         // See https://learn.microsoft.com/windows/win32/controls/cookbook-overview
@@ -99,7 +104,7 @@ namespace
         if (len == 0 || len >= MAX_PATH)
         {
             trace::verbose(_X("GetWindowsDirectory failed. Error code: %d"), ::GetLastError());
-            return;
+            return false;
         }
 
         pal::string_t manifest(buf);
@@ -112,17 +117,109 @@ namespace
         if (context_handle == INVALID_HANDLE_VALUE)
         {
             trace::verbose(_X("CreateActCtxW failed using manifest '%s'. Error code: %d"), manifest.c_str(), ::GetLastError());
-            return;
+            return false;
         }
 
         ULONG_PTR cookie;
         if (::ActivateActCtx(context_handle, &cookie) == FALSE)
         {
             trace::verbose(_X("ActivateActCtx failed. Error code: %d"), ::GetLastError());
-            return;
+            return false;
         }
 
-        return;
+        return true;
+    }
+
+    void append_hyperlink(pal::string_t& str, const pal::char_t* url)
+    {
+        str.append(_X("<A HREF=\""));
+        str.append(url);
+        str.append(_X("\">"));
+
+        // & indicates an accelerator key when in hyperlink text.
+        // Replace & with && such that the single ampersand is shown.
+        for (size_t i = 0; i < pal::strlen(url); ++i)
+        {
+            str.push_back(url[i]);
+            if (url[i] == _X('&'))
+                str.push_back(_X('&'));
+        }
+
+        str.append(_X("</A>"));
+    }
+
+    bool try_show_error_with_task_dialog(
+        const pal::char_t *executable_name,
+        const pal::char_t *instruction,
+        const pal::char_t *details,
+        const pal::char_t *url)
+    {
+        HMODULE comctl32 = ::LoadLibraryExW(L"comctl32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (comctl32 == nullptr)
+            return false;
+
+        typedef HRESULT (WINAPI* task_dialog_indirect)(
+            const TASKDIALOGCONFIG* pTaskConfig,
+            int* pnButton,
+            int* pnRadioButton,
+            BOOL* pfVerificationFlagChecked);
+
+        task_dialog_indirect task_dialog_indirect_func = (task_dialog_indirect)::GetProcAddress(comctl32, "TaskDialogIndirect");
+        if (task_dialog_indirect_func == nullptr)
+        {
+            ::FreeLibrary(comctl32);
+            return false;
+        }
+
+        TASKDIALOGCONFIG config{0};
+        config.cbSize = sizeof(TASKDIALOGCONFIG);
+        config.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_ENABLE_HYPERLINKS | TDF_SIZE_TO_CONTENT | TDF_USE_COMMAND_LINKS;
+        config.dwCommonButtons = TDCBF_CLOSE_BUTTON;
+        config.pszWindowTitle = executable_name;
+        config.pszMainInstruction = instruction;
+
+        // Use the application's icon if available
+        HMODULE exe_module = ::GetModuleHandleW(nullptr);
+        assert(exe_module != nullptr);
+        if (::FindResourceW(exe_module, IDI_APPLICATION, RT_GROUP_ICON) != nullptr)
+        {
+            config.hInstance = exe_module;
+            config.pszMainIcon = IDI_APPLICATION;
+        }
+        else
+        {
+            config.pszMainIcon = TD_ERROR_ICON;
+        }
+
+        int download_button_id = 1000;
+        TASKDIALOG_BUTTON download_button { download_button_id, _X("Download it now\n") _X("You will need to run the downloaded installer") };
+        config.cButtons = 1;
+        config.pButtons = &download_button;
+        config.nDefaultButton = download_button_id;
+
+        pal::string_t expanded_info(details);
+        expanded_info.append(DOC_LINK_INTRO _X("\n"));
+        append_hyperlink(expanded_info, DOTNET_APP_LAUNCH_FAILED_URL);
+        expanded_info.append(_X("\n\nDownload link:\n"));
+        append_hyperlink(expanded_info, url);
+        config.pszExpandedInformation = expanded_info.c_str();
+
+        // Callback to handle hyperlink clicks
+        config.pfCallback = [](HWND hwnd, UINT uNotification, WPARAM wParam, LPARAM lParam, LONG_PTR lpRefData) -> HRESULT
+        {
+            if (uNotification == TDN_HYPERLINK_CLICKED && lParam != NULL)
+                open_url(reinterpret_cast<LPCWSTR>(lParam));
+
+            return S_OK;
+        };
+
+        int clicked_button;
+        bool succeeded = SUCCEEDED(task_dialog_indirect_func(&config, &clicked_button, nullptr, nullptr));
+        if (succeeded && clicked_button == download_button_id)
+            open_url(url);
+
+        ::FreeLibrary(comctl32);
+        return succeeded;
     }
 
     void show_error_dialog(const pal::char_t* executable_name, int error_code)
@@ -131,11 +228,13 @@ namespace
         if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &gui_errors_disabled) && pal::xtoi(gui_errors_disabled.c_str()) == 1)
             return;
 
-        pal::string_t dialogMsg;
+        const pal::char_t* instruction = nullptr;
+        pal::string_t details;
         pal::string_t url;
         if (error_code == StatusCode::CoreHostLibMissingFailure)
         {
-            dialogMsg = get_runtime_not_found_message();
+            instruction = INSTALL_NET_DESKTOP_ERROR_MESSAGE;
+            details = get_apphost_details_message();
             pal::string_t line;
             pal::stringstream_t ss(g_buffered_errors);
             while (std::getline(ss, line, _X('\n')))
@@ -150,7 +249,7 @@ namespace
         {
             // We don't have a great way of passing out different kinds of detailed error info across components, so
             // just match the expected error string. See fx_resolver.messages.cpp.
-            dialogMsg = pal::string_t(INSTALL_OR_UPDATE_NET_ERROR_MESSAGE _X("\n\n"));
+            instruction = INSTALL_OR_UPDATE_NET_ERROR_MESSAGE;
             pal::string_t line;
             pal::stringstream_t ss(g_buffered_errors);
             bool foundCustomMessage = false;
@@ -160,18 +259,29 @@ namespace
                 const pal::char_t prefix_before_7_0[] = _X("The framework '");
                 const pal::char_t suffix_before_7_0[] = _X(" was not found.");
                 const pal::char_t custom_prefix[] = _X("  _ ");
-                if (utils::starts_with(line, prefix, true)
+                bool has_prefix = utils::starts_with(line, prefix, true);
+                if (has_prefix
                     || (utils::starts_with(line, prefix_before_7_0, true) && utils::ends_with(line, suffix_before_7_0, true)))
                 {
-                    dialogMsg.append(line);
-                    dialogMsg.append(_X("\n\n"));
+                    details.append(_X("Required: "));
+                    if (has_prefix)
+                    {
+                        details.append(line.substr(utils::strlen(prefix) - 1));
+                    }
+                    else
+                    {
+                        size_t prefix_len = utils::strlen(prefix_before_7_0) - 1;
+                        details.append(line.substr(prefix_len, line.length() - prefix_len - utils::strlen(suffix_before_7_0)));
+                    }
+
+                    details.append(_X("\n\n"));
                     foundCustomMessage = true;
                 }
                 else if (utils::starts_with(line, custom_prefix, true))
                 {
-                    dialogMsg.erase();
-                    dialogMsg.append(line.substr(utils::strlen(custom_prefix)));
-                    dialogMsg.append(_X("\n\n"));
+                    details.erase();
+                    details.append(line.substr(utils::strlen(custom_prefix)));
+                    details.append(_X("\n\n"));
                     foundCustomMessage = true;
                 }
                 else if (try_get_url_from_line(line, url))
@@ -181,7 +291,7 @@ namespace
             }
 
             if (!foundCustomMessage)
-                dialogMsg.append(get_apphost_details_message());
+                details.append(get_apphost_details_message());
         }
         else if (error_code == StatusCode::BundleExtractionFailure)
         {
@@ -191,14 +301,15 @@ namespace
             {
                 if (utils::starts_with(line, _X("Bundle header version compatibility check failed."), true))
                 {
-                    dialogMsg = get_runtime_not_found_message();
+                    instruction = INSTALL_NET_DESKTOP_ERROR_MESSAGE;
+                    details = get_apphost_details_message();
                     url = get_download_url();
                     url.append(_X("&apphost_version="));
                     url.append(_STRINGIFY(COMMON_HOST_PKG_VER));
                 }
             }
 
-            if (dialogMsg.empty())
+            if (instruction == nullptr)
                 return;
         }
         else
@@ -206,29 +317,27 @@ namespace
             return;
         }
 
-        dialogMsg.append(
-            _X("Learn about "));
-        dialogMsg.append(error_code == StatusCode::FrameworkMissingFailure ? _X("framework resolution:") : _X("runtime installation:"));
-        dialogMsg.append(_X("\n") DOTNET_APP_LAUNCH_FAILED_URL _X("\n\n")
-            _X("Would you like to download it now?"));
-
         assert(url.length() > 0);
         assert(is_gui_application());
         url.append(_X("&gui=true"));
 
-        enable_visual_styles();
+        trace::verbose(_X("Showing error dialog for application: '%s' - error code: 0x%x - url: '%s' - details: %s"), executable_name, error_code, url.c_str(), details.c_str());
 
-        trace::verbose(_X("Showing error dialog for application: '%s' - error code: 0x%x - url: '%s' - dialog message: %s"), executable_name, error_code, url.c_str(), dialogMsg.c_str());
-        if (::MessageBoxW(nullptr, dialogMsg.c_str(), executable_name, MB_ICONERROR | MB_YESNO) == IDYES)
+        if (enable_visual_styles())
         {
-            // Open the URL in default browser
-            ::ShellExecuteW(
-                nullptr,
-                _X("open"),
-                url.c_str(),
-                nullptr,
-                nullptr,
-                SW_SHOWNORMAL);
+            // Task dialog requires enabling visual styles
+            if (try_show_error_with_task_dialog(executable_name, instruction, details.c_str(), url.c_str()))
+                return;
+        }
+
+        pal::string_t dialog_message(instruction);
+        dialog_message.append(_X("\n\n"));
+        dialog_message.append(details);
+        dialog_message.append(DOC_LINK_INTRO _X("\n") DOTNET_APP_LAUNCH_FAILED_URL _X("\n\n")
+            _X("Would you like to download it now?"));
+        if (::MessageBoxW(nullptr, dialog_message.c_str(), executable_name, MB_ICONERROR | MB_YESNO) == IDYES)
+        {
+            open_url(url.c_str());
         }
     }
 }

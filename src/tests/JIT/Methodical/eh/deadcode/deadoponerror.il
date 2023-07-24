@@ -5,7 +5,7 @@
 .assembly extern mscorlib
 { }
 .assembly extern eh_common {}
-.assembly 'deadoponerror'
+.assembly ASSEMBLY_NAME
 { }
 .assembly extern xunit.core {}
 .class public auto ansi Test_deadoponerror extends [mscorlib]System.Object

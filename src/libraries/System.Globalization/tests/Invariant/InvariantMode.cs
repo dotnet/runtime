@@ -1196,6 +1196,16 @@ namespace System.Globalization.Tests
             Assert.Equal(CultureInfo.GetCultureInfo("en-US"), CultureInfo.GetCultureInfo("en-US", predefinedOnly: true));
         }
 
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [InlineData(0x0001)]
+        [InlineData(0x7c5C)]
+        [InlineData(0x03_0404)] // with sort id
+        [InlineData(0x007F)] // LOCALE_INVARIANT
+        public void TestCultureInfo_Ctor_Int32_ReturnsInvariant(int culture)
+        {
+            Assert.Equal(new CultureInfo(culture), CultureInfo.InvariantCulture);
+        }
+
         private static byte[] GetExpectedInvariantOrdinalSortKey(ReadOnlySpan<char> input)
         {
             MemoryStream memoryStream = new MemoryStream();

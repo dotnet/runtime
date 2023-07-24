@@ -64,6 +64,7 @@ internal static partial class Interop
             SECPKG_ATTR_ISSUER_LIST_EX = 0x59,         // returns SecPkgContext_IssuerListInfoEx
             SECPKG_ATTR_CLIENT_CERT_POLICY = 0x60,     // sets    SecPkgCred_ClientCertCtlPolicy
             SECPKG_ATTR_CONNECTION_INFO = 0x5A,        // returns SecPkgContext_ConnectionInfo
+            SECPKG_ATTR_SESSION_INFO = 0x5D,           // sets    SecPkgContext_SessionInfo
             SECPKG_ATTR_CIPHER_INFO = 0x64,            // returns SecPkgContext_CipherInfo
             SECPKG_ATTR_REMOTE_CERT_CHAIN = 0x67,      // returns PCCERT_CONTEXT
             SECPKG_ATTR_UI_INFO = 0x68,                // sets    SEcPkgContext_UiInfo
@@ -200,6 +201,7 @@ internal static partial class Interop
                 SCH_CRED_MANUAL_CRED_VALIDATION = 0x08,
                 SCH_CRED_NO_DEFAULT_CREDS = 0x10,
                 SCH_CRED_AUTO_CRED_VALIDATION = 0x20,
+                SCH_CRED_DISABLE_RECONNECTS = 0x80,
                 SCH_CRED_REVOCATION_CHECK_END_CERT = 0x100,
                 SCH_CRED_IGNORE_NO_REVOCATION_CHECK = 0x800,
                 SCH_CRED_IGNORE_REVOCATION_OFFLINE = 0x1000,
@@ -238,7 +240,7 @@ internal static partial class Interop
                 SCH_CRED_NO_DEFAULT_CREDS = 0x10,
                 SCH_CRED_AUTO_CRED_VALIDATION = 0x20,
                 SCH_CRED_USE_DEFAULT_CREDS = 0x40,
-                SCH_DISABLE_RECONNECTS = 0x80,
+                SCH_CRED_DISABLE_RECONNECTS = 0x80,
                 SCH_CRED_REVOCATION_CHECK_END_CERT = 0x100,
                 SCH_CRED_REVOCATION_CHECK_CHAIN = 0x200,
                 SCH_CRED_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT = 0x400,
@@ -331,6 +333,21 @@ internal static partial class Interop
             public char* pwszSslCtlIdentifier;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct SecPkgContext_SessionInfo
+        {
+            public uint dwFlags;
+            public uint cbSessionId;
+            public fixed byte rgbSessionId[32];
+
+            [Flags]
+            public enum Flags
+            {
+                Zero = 0,
+                SSL_SESSION_RECONNECT = 0x01,
+            };
+        }
+
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int EncryptMessage(
             ref CredHandle contextHandle,
@@ -344,6 +361,20 @@ internal static partial class Interop
             ref SecBufferDesc inputOutput,
             uint sequenceNumber,
             uint* qualityOfProtection);
+
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        internal static partial int MakeSignature(
+            ref CredHandle contextHandle,
+            uint qualityOfProtection,
+            ref SecBufferDesc inputOutput,
+            uint sequenceNumber);
+
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        internal static unsafe partial int VerifySignature(
+            ref CredHandle contextHandle,
+            in SecBufferDesc input,
+            uint sequenceNumber,
+            uint *qualityOfProtection);
 
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int QuerySecurityContextToken(

@@ -375,7 +375,7 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
                 StackSString codeBase;
                 GetAssembly()->GetCodeBase(codeBase);
 
-                LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find class \"%s\" in the manifest for assembly \"%ws\"\n", szName, (LPCWSTR)codeBase));
+                LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find class \"%s\" in the manifest for assembly \"%s\"\n", szName, codeBase.GetUTF8()));
             }
 #endif
 
@@ -958,7 +958,6 @@ void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
 
 #endif
 
-
 TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
                                                     LoadTypesFlag fLoadTypes /*= LoadTypes*/,
                                                     ClassLoadLevel level /*=CLASS_LOADED*/,
@@ -1302,7 +1301,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
         LPCUTF8 szName = pName->GetName();
         if (szName == NULL)
             szName = "<UNKNOWN>";
-        LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find type \"%s\", assembly \"%ws\" in hash table. Incomplete = %d\n",
+        LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find type \"%s\", assembly \"%s\" in hash table. Incomplete = %d\n",
             szName, GetAssembly()->GetDebugName(), incomplete));
 #endif
         return FALSE;
@@ -2010,10 +2009,10 @@ VOID ClassLoader::Init(AllocMemTracker *pamTracker)
     // type in one of the modules governed by the loader.
     // The process of creating these types may be reentrant.  The ordering has
     // not yet been sorted out, and when we sort it out we should also modify the
-    // ordering for m_AvailableTypesLock in BaseDomain.
+    // ordering for m_AvailableTypesLock below.
     m_AvailableClassLock.Init(
                              CrstAvailableClass,
-                             CRST_REENTRANCY);
+                             CrstFlags(CRST_REENTRANCY | CRST_DEBUGGER_THREAD));
 
     // This lock is taken within the classloader whenever we have to insert a new param. type into the table.
     m_AvailableTypesLock.Init(
@@ -2145,12 +2144,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
     if (typeHnd.IsNull() && pTargetInstantiation != NULL)
     {
         // If the type is not loaded yet, we have to do heavy weight arity verification based on metadata
-        HENUMInternal hEnumGenericPars;
-        HRESULT hr = pInternalImport->EnumInit(mdtGenericParam, typeDef, &hEnumGenericPars);
-        if (FAILED(hr))
-            pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDef, IDS_CLASSLOAD_BADFORMAT);
-        DWORD nGenericClassParams = pInternalImport->EnumGetCount(&hEnumGenericPars);
-        pInternalImport->EnumClose(&hEnumGenericPars);
+        uint32_t nGenericClassParams = pModule->m_pTypeGenericInfoMap->GetGenericArgumentCount(typeDef, pInternalImport);
 
         if (pTargetInstantiation->GetNumArgs() != nGenericClassParams)
             pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDef, IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS);
@@ -2659,7 +2653,7 @@ ClassLoader::GetEnclosingClassThrowing(
     _ASSERTE(tdEnclosing);
     *tdEnclosing = mdTypeDefNil;
 
-    HRESULT hr = pInternalImport->GetNestedClassProps(cl, tdEnclosing);
+    HRESULT hr = pModule->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(cl, tdEnclosing, pInternalImport);
 
     if (FAILED(hr))
     {
@@ -2866,7 +2860,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
     {
         SString name;
         TypeString::AppendTypeKeyDebug(name, pTypeKey);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: About to do incremental load of type %S (%p) from level %s\n", name.GetUnicode(), typeHnd.AsPtr(), classLoadLevelName[currentLevel]));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: About to do incremental load of type %s (%p) from level %s\n", name.GetUTF8(), typeHnd.AsPtr(), classLoadLevelName[currentLevel]));
     }
 #endif
 
@@ -2966,9 +2960,9 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
+        PREFIX_ASSUME(pLoaderModule != NULL);
         pLoaderModule->GetLoaderAllocator()->EnsureInstantiation(NULL, Instantiation(pKey->GetRetAndArgTypes(), pKey->GetNumArgs() + 1));
 
-        PREFIX_ASSUME(pLoaderModule!=NULL);
         DWORD numArgs = pKey->GetNumArgs();
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FnPtrTypeDesc)) + S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 
@@ -3261,7 +3255,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     {
         SString name;
         TypeString::AppendTypeKeyDebug(name, pTypeKey);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: LoadTypeHandleForTypeKey for type %S to level %s\n", name.GetUnicode(), classLoadLevelName[targetLevel]));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: LoadTypeHandleForTypeKey for type %s to level %s\n", name.GetUTF8(), classLoadLevelName[targetLevel]));
         CrstHolder unresolvedClassLockHolder(&m_UnresolvedClassLock);
         m_pUnresolvedClassHash->Dump();
     }
@@ -4974,168 +4968,6 @@ BOOL ClassLoader::CanAccessFamily(
         pCurrentClass = GetEnclosingMethodTable(pCurrentClass);
     }
 
-    return FALSE;
-}
-
-//If instance is an inner class, this also succeeds if the outer class conforms to 8.5.3.2.  A nested class
-//is enclosed inside of the enclosing class' open type.  So we need to ignore generic variables.  That also
-//helps us with:
-/*
-class Base {
-    protected int m_family;
-}
-class Derived<T> : Base {
-    class Inner {
-        public int function(Derived<T> d) {
-            return d.m_family;
-        }
-    }
-}
-*/
-
-//Since the inner T is not the same T as the enclosing T (since accessing generic variables is a CLS rule,
-//not a CLI rule), we see that as a comparison between Derived<T> and Derived<T'>.  CanCastTo rejects that.
-//Instead we just check against the typedef of the two types.  This ignores all generic parameters (formal
-//or not).
-
-BOOL CanAccessFamilyVerificationEnclosingHelper(MethodTable * pMTCurrentEnclosingClass,
-                                                TypeHandle thInstanceClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    _ASSERTE(pMTCurrentEnclosingClass);
-
-    if (thInstanceClass.IsGenericVariable())
-    {
-        //In this case it is a TypeVarTypeDesc (i.e. T).  If this access would be legal due to a
-        //constraint:
-        //
-        /*
-        public class My<T>
-        {
-            public class Inner<U> where U : My<T>
-            {
-                public int foo(U u)
-                {
-                    return u.field;
-                }
-            }
-            protected int field;
-        }
-        */
-        //We need to find the generic class constraint.  (The above is legal because U must be a My<T> which makes this
-        //legal by 8.5.3.2)
-        // There may only be 1 class constraint on a generic parameter
-
-        // Get the constraints on this generic variable
-        // At most 1 of them is a class constraint.
-        // That class constraint methodtable can go through the normal search for matching typedef logic below
-        TypeVarTypeDesc *tyvar = thInstanceClass.AsGenericVariable();
-        DWORD numConstraints;
-        TypeHandle *constraints = tyvar->GetConstraints(&numConstraints, CLASS_DEPENDENCIES_LOADED);
-        if (constraints == NULL)
-        {
-            // If we did not find a class constraint, we cannot generate a methodtable to search for
-            return FALSE;
-        }
-        else
-        {
-            for (DWORD i = 0; i < numConstraints; i++)
-            {
-                if (!constraints[i].IsInterface())
-                {
-                    // We have found the class constraint on this TypeVarTypeDesc
-                    // Recurse on the found class constraint. It is possible that this constraint may also be a TypeVarTypeDesc
-//class Outer4<T>
-//{
-//    protected int field;
-//
-//    public class Inner<U,V> where V:U where U : Outer4<T>
-//    {
-//        public int Method(V param) { return (++param.field); }
-//    }
-//}
-                    return CanAccessFamilyVerificationEnclosingHelper(pMTCurrentEnclosingClass, constraints[i]);
-                }
-            }
-            // If we did not find a class constraint, we cannot generate a methodtable to search for
-            return FALSE;
-        }
-    }
-    do
-    {
-        MethodTable * pAccessor = pMTCurrentEnclosingClass;
-        //If thInstanceClass is a MethodTable, we should only be doing the TypeDef comparison (see
-        //above).
-        if (!thInstanceClass.IsTypeDesc())
-        {
-            MethodTable *pInstanceMT = thInstanceClass.AsMethodTable();
-
-            // This is a CanCastTo implementation for classes, assuming we should ignore generic instantiation parameters.
-            do
-            {
-                if (pAccessor->HasSameTypeDefAs(pInstanceMT))
-                    return TRUE;
-                pInstanceMT = pInstanceMT->GetParentMethodTable();
-            }while(pInstanceMT);
-        }
-        else
-        {
-            // Leave this logic in place for now, as I'm not fully confident it can't happen, and we are very close to RTM
-            // This logic was originally written to handle TypeVarTypeDescs, but those are now handled above.
-            _ASSERTE(FALSE);
-            if (thInstanceClass.CanCastTo(TypeHandle(pAccessor)))
-                return TRUE;
-        }
-
-        pMTCurrentEnclosingClass = GetEnclosingMethodTable(pMTCurrentEnclosingClass);
-    }while(pMTCurrentEnclosingClass);
-    return FALSE;
-}
-
-
-//This checks the verification only part of the rule above.
-//From the example above:
-//  GrandChild::function2(Child * o) {
-//      o->protectedField; //This access is illegal.
-//  }
-// pCurrentClass is GrandChild and pTargetClass is Child.  This check is completely unnecessary for statics,
-// but by legacy convention you can use GrandChild for pTargetClass in that case.
-
-BOOL ClassLoader::CanAccessFamilyVerification(TypeHandle thCurrentClass,
-                                              TypeHandle thInstanceClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        MODE_ANY;
-        PRECONDITION(!thCurrentClass.IsNull());
-        PRECONDITION(!thCurrentClass.IsTypeDesc());
-    }
-    CONTRACTL_END
-
-    //Check to see if Instance is equal to or derived from pCurrentClass.
-    //
-    //In some cases the type we have for the instance type is actually a TypeVarTypeDesc.  In those cases we
-    //need to check against the constraints (You're accessing a member through a 'T' with a type constraint
-    //that makes this legal).  For those cases, CanCastTo does what I want.
-    MethodTable * pAccessor = thCurrentClass.GetMethodTable();
-    if (thInstanceClass.CanCastTo(TypeHandle(pAccessor)))
-        return TRUE;
-
-    //TypeDescs don't have methods so only run this on MethodTables.
-    if (!thInstanceClass.IsNull())
-    {
-        return CanAccessFamilyVerificationEnclosingHelper(pAccessor, thInstanceClass);
-    }
     return FALSE;
 }
 

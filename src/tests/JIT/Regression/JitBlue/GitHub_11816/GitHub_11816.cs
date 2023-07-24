@@ -8,6 +8,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class GitHub_11816
 {
@@ -116,7 +117,8 @@ public class GitHub_11816
         return f[0];
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float value = 0.0F;
         value += TestStruct();

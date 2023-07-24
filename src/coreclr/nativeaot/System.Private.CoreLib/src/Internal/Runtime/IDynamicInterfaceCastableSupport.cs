@@ -19,16 +19,16 @@ namespace Internal.Runtime
         internal static IntPtr IDynamicCastableGetInterfaceImplementation(IDynamicInterfaceCastable instance, MethodTable* interfaceType, ushort slot)
         {
             RuntimeTypeHandle handle = instance.GetInterfaceImplementation(new RuntimeTypeHandle(new EETypePtr(interfaceType)));
-            EETypePtr implType = handle.ToEETypePtr();
-            if (implType.IsNull)
+            MethodTable* implType = handle.ToMethodTable();
+            if (implType == null)
             {
                 ThrowInvalidCastException(instance, interfaceType);
             }
-            if (!implType.IsInterface)
+            if (!implType->IsInterface)
             {
                 ThrowInvalidOperationException(implType);
             }
-            IntPtr result = RuntimeImports.RhResolveDispatchOnType(implType, new EETypePtr(interfaceType), slot);
+            IntPtr result = RuntimeImports.RhResolveDispatchOnType(new EETypePtr(implType), new EETypePtr(interfaceType), slot);
             if (result == IntPtr.Zero)
             {
                 IDynamicCastableGetInterfaceImplementationFailure(instance, interfaceType, implType);
@@ -38,24 +38,24 @@ namespace Internal.Runtime
 
         private static void ThrowInvalidCastException(object instance, MethodTable* interfaceType)
         {
-            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, instance.GetType(), Type.GetTypeFromEETypePtr(new EETypePtr(interfaceType))));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, instance.GetType(), Type.GetTypeFromMethodTable(interfaceType)));
         }
 
-        private static void ThrowInvalidOperationException(EETypePtr resolvedImplType)
+        private static void ThrowInvalidOperationException(MethodTable* resolvedImplType)
         {
-            throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_NotInterface, Type.GetTypeFromEETypePtr(resolvedImplType)));
+            throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_NotInterface, Type.GetTypeFromMethodTable(resolvedImplType)));
         }
 
-        private static void IDynamicCastableGetInterfaceImplementationFailure(object instance, MethodTable* interfaceType, EETypePtr resolvedImplType)
+        private static void IDynamicCastableGetInterfaceImplementationFailure(object instance, MethodTable* interfaceType, MethodTable* resolvedImplType)
         {
-            if (resolvedImplType.DispatchMap == IntPtr.Zero)
-                throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_MissingImplementationAttribute, Type.GetTypeFromEETypePtr(resolvedImplType), nameof(DynamicInterfaceCastableImplementationAttribute)));
+            if (resolvedImplType->DispatchMap == null)
+                throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_MissingImplementationAttribute, Type.GetTypeFromMethodTable(resolvedImplType), nameof(DynamicInterfaceCastableImplementationAttribute)));
 
             bool implementsInterface = false;
-            var interfaces = resolvedImplType.Interfaces;
-            for (int i = 0; i < interfaces.Count; i++)
+            var interfaces = resolvedImplType->InterfaceMap;
+            for (int i = 0; i < resolvedImplType->NumInterfaces; i++)
             {
-                if (interfaces[i] == new EETypePtr(interfaceType))
+                if (interfaces[i] == interfaceType)
                 {
                     implementsInterface = true;
                     break;
@@ -63,7 +63,7 @@ namespace Internal.Runtime
             }
 
             if (!implementsInterface)
-                throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_DoesNotImplementRequested, Type.GetTypeFromEETypePtr(resolvedImplType), Type.GetTypeFromEETypePtr(new EETypePtr(interfaceType))));
+                throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_DoesNotImplementRequested, Type.GetTypeFromMethodTable(resolvedImplType), Type.GetTypeFromMethodTable(interfaceType)));
 
             throw new EntryPointNotFoundException();
         }

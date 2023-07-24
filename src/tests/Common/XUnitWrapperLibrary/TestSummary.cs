@@ -1,42 +1,184 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml;
 namespace XUnitWrapperLibrary;
 
 public class TestSummary
 {
-    readonly record struct TestResult(string Name, string ContainingTypeName, string MethodName, TimeSpan Duration, Exception? Exception, string? SkipReason, string? Output);
+    public readonly record struct TestResult
+    {
+        public readonly string Name;
+        public readonly string ContainingTypeName;
+        public readonly string MethodName;
+        public readonly TimeSpan Duration;
+        public readonly Exception? Exception;
+        public readonly string? SkipReason;
+        public readonly string? Output;
 
-    public int PassedTests { get; private set; } = 0;
-    public int FailedTests { get; private set; } = 0;
-    public int SkippedTests { get; private set; } = 0;
+        public TestResult(string name,
+                          string containingTypeName,
+                          string methodName,
+                          TimeSpan duration,
+                          Exception? exception,
+                          string? skipReason,
+                          string? output)
+        {
+            Name = name;
+            ContainingTypeName = containingTypeName;
+            MethodName = methodName;
+            Duration = duration;
+            Exception = exception;
+            SkipReason = skipReason;
+            Output = output;
+        }
+
+        public string ToXmlString()
+        {
+            var testResultSb = new StringBuilder();
+            testResultSb.Append($@"<test name=""{Name}"" type=""{ContainingTypeName}"""
+                              + $@" method=""{MethodName}"" time=""{Duration.TotalSeconds:F6}""");
+
+            string outputElement = !string.IsNullOrWhiteSpace(Output)
+                                 ? $"<output><![CDATA[{XmlConvert.EncodeName(Output)}]]></output>"
+                                 : string.Empty;
+
+            if (Exception is not null)
+            {
+                string? message = Exception.Message;
+
+                if (Exception is System.Reflection.TargetInvocationException tie)
+                {
+                    if (tie.InnerException is not null)
+                    {
+                        message = $"{message}\n INNER EXCEPTION--\n"
+                            + $"{tie.InnerException.GetType()}--\n"
+                            + $"{tie.InnerException.Message}--\n"
+                            + $"{tie.InnerException.StackTrace}";
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(message))
+                {
+                    message = "NoExceptionMessage";
+                }
+
+                testResultSb.Append($@" result=""Fail"">"
+                                  + $@"<failure exception-type=""{Exception.GetType()}"">"
+                                  + $"<message><![CDATA[{message}]]></message>"
+                                  + "<stack-trace><![CDATA[");
+
+                testResultSb.Append(!string.IsNullOrWhiteSpace(Exception.StackTrace)
+                                    ? Exception.StackTrace
+                                    : "NoStackTrace");
+
+                testResultSb.AppendLine($"]]></stack-trace></failure>{outputElement}</test>");
+            }
+            else if (SkipReason is not null)
+            {
+                testResultSb.Append($@" result=""Skip""><reason><![CDATA[");
+
+                testResultSb.Append(!string.IsNullOrWhiteSpace(SkipReason)
+                                    ? SkipReason
+                                    : "No Known Skip Reason");
+
+                testResultSb.AppendLine("]]></reason></test>");
+            }
+            else
+            {
+                testResultSb.AppendLine($@" result=""Pass"">{outputElement}</test>");
+            }
+
+            return testResultSb.ToString();
+        }
+    }
+
+    public int PassedTests { get; private set; }
+    public int FailedTests { get; private set; }
+    public int SkippedTests { get; private set; }
+    public int TotalTests { get; private set; }
 
     private readonly List<TestResult> _testResults = new();
-
     private DateTime _testRunStart = DateTime.Now;
 
-    public void ReportPassedTest(string name, string containingTypeName, string methodName, TimeSpan duration, string output)
+    public void WriteHeaderToTempLog(string assemblyName, StreamWriter tempLogSw)
+    {
+        // We are writing down both, date and time, in the same field here because
+        // it's much simpler to parse later on in the XUnitLogChecker.
+        tempLogSw.WriteLine("<assembly\n"
+                        + $"    name=\"{assemblyName}\"\n"
+                        + $"    test-framework=\"XUnitWrapperGenerator-generated-runner\"\n"
+                        + $"    run-date-time=\"{_testRunStart.ToString("yyyy-MM-dd HH:mm:ss")}\">");
+    }
+
+    public void WriteFooterToTempLog(StreamWriter tempLogSw)
+    {
+        tempLogSw.WriteLine("</assembly>");
+    }
+
+    public void ReportPassedTest(string name,
+                                 string containingTypeName,
+                                 string methodName,
+                                 TimeSpan duration,
+                                 string output,
+                                 StreamWriter tempLogSw,
+                                 StreamWriter statsCsvSw)
     {
         PassedTests++;
-        _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, null, null, output));
+        TotalTests++;
+        var result = new TestResult(name, containingTypeName, methodName, duration, null, null, output);
+        _testResults.Add(result);
+
+        statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
+        tempLogSw.WriteLine(result.ToXmlString());
+        statsCsvSw.Flush();
+        tempLogSw.Flush();
     }
 
-    public void ReportFailedTest(string name, string containingTypeName, string methodName, TimeSpan duration, Exception ex, string output)
+    public void ReportFailedTest(string name,
+                                 string containingTypeName,
+                                 string methodName,
+                                 TimeSpan duration,
+                                 Exception ex,
+                                 string output,
+                                 StreamWriter tempLogSw,
+                                 StreamWriter statsCsvSw)
     {
         FailedTests++;
-        _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, ex, null, output));
+        TotalTests++;
+        var result = new TestResult(name, containingTypeName, methodName, duration, ex, null, output);
+        _testResults.Add(result);
+
+        statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
+        tempLogSw.WriteLine(result.ToXmlString());
+        statsCsvSw.Flush();
+        tempLogSw.Flush();
     }
 
-    public void ReportSkippedTest(string name, string containingTypeName, string methodName, TimeSpan duration, string reason)
+    public void ReportSkippedTest(string name,
+                                  string containingTypeName,
+                                  string methodName,
+                                  TimeSpan duration,
+                                  string reason,
+                                  StreamWriter tempLogSw,
+                                  StreamWriter statsCsvSw)
     {
         SkippedTests++;
-        _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, null, reason, null));
+        TotalTests++;
+        var result = new TestResult(name, containingTypeName, methodName, duration, null, reason, null);
+        _testResults.Add(result);
+
+        statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
+        tempLogSw.WriteLine(result.ToXmlString());
+        statsCsvSw.Flush();
+        tempLogSw.Flush();
     }
 
+    // NOTE: This will likely change or be removed altogether with the existence of the temp log.
     public string GetTestResultOutput(string assemblyName)
     {
         double totalRunSeconds = (DateTime.Now - _testRunStart).TotalSeconds;
@@ -47,8 +189,8 @@ public class TestSummary
 <assembly
     name=""{assemblyName}""
     test-framework=""XUnitWrapperGenerator-generated-runner""
-    run-date=""{_testRunStart.ToString("yyy-mm-dd")}""
-    run-time=""{_testRunStart.ToString("hh:mm:ss")}""
+    run-date=""{_testRunStart.ToString("yyyy-MM-dd")}""
+    run-time=""{_testRunStart.ToString("HH:mm:ss")}""
     time=""{totalRunSeconds}""
     total=""{_testResults.Count}""
     passed=""{PassedTests}""
@@ -69,38 +211,7 @@ public class TestSummary
 
         foreach (var test in _testResults)
         {
-            resultsFile.Append($@"<test name=""{test.Name}"" type=""{test.ContainingTypeName}"" method=""{test.MethodName}"" time=""{test.Duration.TotalSeconds:F6}"" ");
-            string outputElement = !string.IsNullOrWhiteSpace(test.Output) ? $"<output><![CDATA[{test.Output}]]></output>" : string.Empty;
-            if (test.Exception is not null)
-            {
-                string exceptionMessage = test.Exception.Message;
-                if (test.Exception is System.Reflection.TargetInvocationException tie)
-                {
-                    if (tie.InnerException != null)
-                    {
-                        exceptionMessage = $"{exceptionMessage} \n INNER EXCEPTION--\n {tie.InnerException.GetType()}--\n{tie.InnerException.Message}--\n{tie.InnerException.StackTrace}";
-                    }
-                }
-                if (string.IsNullOrWhiteSpace(exceptionMessage))
-                {
-                    exceptionMessage = "NoExceptionMessage";
-                }
-
-                string? stackTrace = test.Exception.StackTrace;
-                if (string.IsNullOrWhiteSpace(stackTrace))
-                {
-                    stackTrace = "NoStackTrace";
-                }
-                resultsFile.AppendLine($@"result=""Fail""><failure exception-type=""{test.Exception.GetType()}""><message><![CDATA[{exceptionMessage}]]></message><stack-trace><![CDATA[{stackTrace}]]></stack-trace></failure>{outputElement}</test>");
-            }
-            else if (test.SkipReason is not null)
-            {
-                resultsFile.AppendLine($@"result=""Skip""><reason><![CDATA[{(!string.IsNullOrWhiteSpace(test.SkipReason) ? test.SkipReason : "No Known Skip Reason")}]]></reason></test>");
-            }
-            else
-            {
-                resultsFile.AppendLine($@" result=""Pass"">{outputElement}</test>");
-            }
+            resultsFile.AppendLine(test.ToXmlString());
         }
 
         resultsFile.AppendLine("</collection>");

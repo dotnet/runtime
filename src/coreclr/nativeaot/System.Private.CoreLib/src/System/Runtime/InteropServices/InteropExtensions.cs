@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices
     ///     in order to be accessible from System.Private.Interop.dll.
     /// </summary>
     [CLSCompliant(false)]
-    [ReflectionBlocked]
     public static class InteropExtensions
     {
         internal static bool MightBeBlittable(this EETypePtr eeType)
@@ -28,7 +27,7 @@ namespace System.Runtime.InteropServices
             // This is used as the approximate implementation of MethodTable::IsBlittable(). It  will err in the direction of declaring
             // things blittable since it is used for argument validation only.
             //
-            return !eeType.HasPointers;
+            return !eeType.ContainsGCPointers;
         }
 
         public static bool IsBlittable(this RuntimeTypeHandle handle)

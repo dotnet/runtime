@@ -8,7 +8,6 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public sealed class Condition
     {
         internal class Waiter
@@ -90,8 +89,7 @@ namespace System.Threading
 
         public Condition(Lock @lock)
         {
-            if (@lock == null)
-                throw new ArgumentNullException(nameof(@lock));
+            ArgumentNullException.ThrowIfNull(@lock);
             _lock = @lock;
         }
 
@@ -101,8 +99,7 @@ namespace System.Threading
 
         public unsafe bool Wait(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             if (!_lock.IsAcquired)
                 throw new SynchronizationLockException();

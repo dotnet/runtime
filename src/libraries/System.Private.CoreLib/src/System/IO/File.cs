@@ -88,7 +88,7 @@ namespace System.IO
         // Tests whether a file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
         // false.  Note that if path describes a directory,
-        // Exists will return true.
+        // Exists will return false.
         public static bool Exists([NotNullWhen(true)] string? path)
         {
             try
@@ -121,7 +121,7 @@ namespace System.IO
         /// <summary>
         /// Initializes a new instance of the <see cref="FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size, additional file options and the allocation size.
         /// </summary>
-        /// <remarks><see cref="FileStream(string,System.IO.FileStreamOptions)"/> for information about exceptions.</remarks>
+        /// <remarks><see cref="FileStream(string,FileStreamOptions)"/> for information about exceptions.</remarks>
         public static FileStream Open(string path, FileStreamOptions options) => new FileStream(path, options);
 
         public static FileStream Open(string path, FileMode mode)
@@ -134,15 +134,15 @@ namespace System.IO
             => new FileStream(path, mode, access, share);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Microsoft.Win32.SafeHandles.SafeFileHandle" /> class with the specified path, creation mode, read/write and sharing permission, the access other SafeFileHandles can have to the same file, additional file options and the allocation size.
+        /// Initializes a new instance of the <see cref="SafeFileHandle" /> class with the specified path, creation mode, read/write and sharing permission, the access other SafeFileHandles can have to the same file, additional file options and the allocation size.
         /// </summary>
-        /// <param name="path">A relative or absolute path for the file that the current <see cref="Microsoft.Win32.SafeHandles.SafeFileHandle" /> instance will encapsulate.</param>
+        /// <param name="path">A relative or absolute path for the file that the current <see cref="SafeFileHandle" /> instance will encapsulate.</param>
         /// <param name="mode">One of the enumeration values that determines how to open or create the file. The default value is <see cref="FileMode.Open" /></param>
         /// <param name="access">A bitwise combination of the enumeration values that determines how the file can be accessed. The default value is <see cref="FileAccess.Read" /></param>
         /// <param name="share">A bitwise combination of the enumeration values that determines how the file will be shared by processes. The default value is <see cref="FileShare.Read" />.</param>
         /// <param name="preallocationSize">The initial allocation size in bytes for the file. A positive value is effective only when a regular file is being created, overwritten, or replaced.
         /// Negative values are not allowed. In other cases (including the default 0 value), it's ignored.</param>
-        /// <param name="options">An object that describes optional <see cref="Microsoft.Win32.SafeHandles.SafeFileHandle" /> parameters to use.</param>
+        /// <param name="options">An object that describes optional <see cref="SafeFileHandle" /> parameters to use.</param>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is an empty string (""), contains only white space, or contains one or more invalid characters.
         /// -or-
@@ -758,7 +758,7 @@ namespace System.IO
             InternalWriteAllLines(new StreamWriter(path, false, encoding), contents);
         }
 
-        private static void InternalWriteAllLines(TextWriter writer, IEnumerable<string> contents)
+        private static void InternalWriteAllLines(StreamWriter writer, IEnumerable<string> contents)
         {
             Debug.Assert(writer != null);
             Debug.Assert(contents != null);
@@ -1069,7 +1069,7 @@ namespace System.IO
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
         }
 
-        private static async Task InternalWriteAllLinesAsync(TextWriter writer, IEnumerable<string> contents, CancellationToken cancellationToken)
+        private static async Task InternalWriteAllLinesAsync(StreamWriter writer, IEnumerable<string> contents, CancellationToken cancellationToken)
         {
             Debug.Assert(writer != null);
             Debug.Assert(contents != null);
@@ -1078,12 +1078,10 @@ namespace System.IO
             {
                 foreach (string line in contents)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    await writer.WriteLineAsync(line).ConfigureAwait(false);
+                    await writer.WriteLineAsync(line.AsMemory(), cancellationToken).ConfigureAwait(false);
                 }
 
-                cancellationToken.ThrowIfCancellationRequested();
-                await writer.FlushAsync().ConfigureAwait(false);
+                await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 

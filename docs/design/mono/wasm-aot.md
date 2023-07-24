@@ -41,10 +41,10 @@ every generated AOT method has its address taken, which severely limits the inte
 optimizations that LLVM can do, since it cannot determine the set of callers for a function.
 This means that it cannot remove functions corresponding to unused IL methods, cannot
 specialize functions for constant/nonnull arguments, etc.
-The dotnet linker includes some support for adding a [DisablePrivateReflection] attribute to
+The dotnet ILLink tool includes some support for adding a [DisablePrivateReflection] attribute to
 methods which cannot be called using reflection, and the AOT compiler could use this
 to avoid generating function pointers for methods which are not called from outside the
-AOT image. This is not enabled right now because the linker support is not complete.
+AOT image. This is not enabled right now because the ILLink tool support is not complete.
 
 ### Null checks
 

@@ -1,16 +1,15 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <IsShipping>false</IsShipping>
     <!-- Reference the outputs to have them available as build outputs. -->
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <IsPackable>true</IsPackable>
-    <IncludeBuildOutput>true</IncludeBuildOutput>
     <!-- TODO: Enable APICompat: https://github.com/dotnet/runtime/issues/52562. -->
     <EnablePackageValidation>false</EnablePackageValidation>
     <PackageDescription>Internal transport package to provide windowsdesktop with the assemblies from dotnet/runtime that make up the Microsoft.WindowsDesktop.App shared framework.</PackageDescription>
     <!-- Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684. -->
-    <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <NoWarn>$(NoWarn);NU5131;NU5128</NoWarn>
   </PropertyGroup>
 
   <!-- Always generate this package during servicing to flow the dependency to WindowsDesktop. -->
@@ -24,7 +23,6 @@
          ReferringTargetFramework is set to $(NetCoreAppCurrent)-windows so that we pack the Windows specific implementation assemblies -->
     <ProjectReference Include="@(WindowsDesktopCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj');
                                $(LibrariesProjectRoot)System.Diagnostics.EventLog\src\Messages\System.Diagnostics.EventLog.Messages.csproj"
-                      ReferringTargetFramework="$(NetCoreAppCurrent)-windows"
                       PrivateAssets="all"
                       Pack="true"
                       Private="true"

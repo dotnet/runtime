@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "eventpipewritingprofiler.h"
+#include <inttypes.h>
+
+EventPipeWritingProfiler *EventPipeWritingProfiler::s_singleton = nullptr;
 
 GUID EventPipeWritingProfiler::GetClsid()
 {
@@ -10,27 +13,47 @@ GUID EventPipeWritingProfiler::GetClsid()
     return clsid;
 }
 
+static void Callback(
+    const UINT8 *source_id,
+    UINT32 is_enabled,
+    UINT8 level,
+    UINT64 match_any_keywords,
+    UINT64 match_all_keywords,
+    COR_PRF_FILTER_DATA *filter_data,
+    void *callback_data)
+{
+    EventPipeWritingProfiler::GetSingleton()->ProviderCallback(source_id,
+                                                               is_enabled,
+                                                               level,
+                                                               match_any_keywords,
+                                                               match_all_keywords,
+                                                               filter_data,
+                                                               callback_data);
+}
+
 HRESULT EventPipeWritingProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
+    s_singleton = this;
+
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
-    if (FAILED(hr = pCorProfilerInfo->QueryInterface(__uuidof(ICorProfilerInfo12), (void **)&_pCorProfilerInfo12)))
+    if (FAILED(hr = pCorProfilerInfo->QueryInterface(__uuidof(ICorProfilerInfo14), (void **)&_pCorProfilerInfo)))
     {
-        printf("FAIL: failed to QI for ICorProfilerInfo12.\n");
+        printf("FAIL: failed to QI for ICorProfilerInfo14.\n");
         _failures++;
         return hr;
     }
 
     // No event mask, just calling the EventPipe APIs.
-    if (FAILED(hr = _pCorProfilerInfo12->SetEventMask2(COR_PRF_MONITOR_JIT_COMPILATION | COR_PRF_MONITOR_CACHE_SEARCHES, 0)))
+    if (FAILED(hr = _pCorProfilerInfo->SetEventMask2(COR_PRF_MONITOR_JIT_COMPILATION | COR_PRF_MONITOR_CACHE_SEARCHES, 0)))
     {
         _failures++;
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x\n", hr);
         return hr;
     }
 
-    if (FAILED(hr = _pCorProfilerInfo12->EventPipeCreateProvider(WCHAR("MySuperAwesomeEventPipeProvider"), &_provider)))
+    if (FAILED(hr = _pCorProfilerInfo->EventPipeCreateProvider2(WCHAR("MySuperAwesomeEventPipeProvider"), Callback, &_provider)))
     {
         _failures++;
         printf("FAIL: could not create EventPipe provider hr=0x%x\n", hr);
@@ -57,7 +80,7 @@ HRESULT EventPipeWritingProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     };
 
     const size_t allTypesParamsCount = sizeof(allTypesParams) / sizeof(allTypesParams[0]);
-    hr = _pCorProfilerInfo12->EventPipeDefineEvent(
+    hr = _pCorProfilerInfo->EventPipeDefineEvent(
             _provider,                      // Provider
             WCHAR("AllTypesEvent"),         // Name
             1,                              // ID
@@ -81,7 +104,7 @@ HRESULT EventPipeWritingProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
         { COR_PRF_EVENTPIPE_ARRAY, COR_PRF_EVENTPIPE_INT32,    WCHAR("IntArray")},
     };
     const size_t arrayTypeParamsCount = sizeof(arrayTypeParams) / sizeof(arrayTypeParams[0]);
-    hr = _pCorProfilerInfo12->EventPipeDefineEvent(
+    hr = _pCorProfilerInfo->EventPipeDefineEvent(
             _provider,                       // Provider
             WCHAR("ArrayTypeEvent"),         // Name
             3,                               // ID
@@ -102,7 +125,7 @@ HRESULT EventPipeWritingProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     }
 
     // EVENTPIPE_EVENT _emptyEvent;
-    hr = _pCorProfilerInfo12->EventPipeDefineEvent(
+    hr = _pCorProfilerInfo->EventPipeDefineEvent(
             _provider,                      // Provider
             WCHAR("EmptyEvent"),            // Name
             2032,                           // ID
@@ -128,7 +151,7 @@ HRESULT EventPipeWritingProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
     const size_t simpleParamsCount = sizeof(simpleParams) / sizeof(simpleParams[0]);
     // EVENTPIPE_EVENT _simpleEvent;
-    hr = _pCorProfilerInfo12->EventPipeDefineEvent(
+    hr = _pCorProfilerInfo->EventPipeDefineEvent(
             _provider,                      // Provider
             WCHAR("SimpleEvent"),           // Name
             2,                              // ID
@@ -155,14 +178,14 @@ HRESULT EventPipeWritingProfiler::Shutdown()
 {
     Profiler::Shutdown();
 
-    if(_failures == 0)
+    if(_failures == 0 && _enables == 2 && _disables == 2)
     {
         printf("PROFILER TEST PASSES\n");
     }
     else
     {
         // failures were printed earlier when _failures was incremented
-        printf("EventPipe profiler test failed, check log for more info.\n");
+        printf("EventPipe profiler test failed, check log for more info. _enables=%d _disables=%d\n", _enables.load(), _disables.load());
     }
     fflush(stdout);
 
@@ -188,6 +211,37 @@ HRESULT STDMETHODCALLTYPE EventPipeWritingProfiler::JITCachedFunctionSearchFinis
     return S_OK;
 }
 
+void EventPipeWritingProfiler::ProviderCallback(
+    const UINT8 *source_id,
+    UINT32 is_enabled,
+    UINT8 level,
+    UINT64 match_any_keywords,
+    UINT64 match_all_keywords,
+    COR_PRF_FILTER_DATA *filter_data,
+    void *callback_data)
+{
+    // The callback contract is is_enabled will be true if any session has this provider active
+    // so if is_enabled == true the way you can tell if a session is closing is by checking
+    // if source_id == null
+    if (is_enabled && source_id != nullptr)
+    {
+        ++_enables;
+    }
+    else
+    {
+        ++_disables;
+    }
+
+    // The diagnostics client library sets keywords to 0xF00000000000 by default
+    if (match_any_keywords != 0xF00000000000
+        || match_all_keywords != 0
+        || level != 5)
+    {
+        _failures++;
+        printf("Saw incorrect data in ProviderCallback any=%" PRIu64 ", all=%" PRIu64 ", level=%d\n",
+            match_any_keywords, match_all_keywords, level);
+    }
+}
 
 HRESULT EventPipeWritingProfiler::FunctionSeen(FunctionID functionID)
 {
@@ -262,7 +316,7 @@ HRESULT EventPipeWritingProfiler::FunctionSeen(FunctionID functionID)
         eventData[14].ptr = reinterpret_cast<UINT64>(&dateTime);
         eventData[14].size = sizeof(uint64_t);
 
-        HRESULT hr = _pCorProfilerInfo12->EventPipeWriteEvent(
+        HRESULT hr = _pCorProfilerInfo->EventPipeWriteEvent(
                         _allTypesEvent,
                         sizeof(eventData)/sizeof(COR_PRF_EVENT_DATA),
                         eventData,
@@ -293,7 +347,7 @@ HRESULT EventPipeWritingProfiler::FunctionSeen(FunctionID functionID)
 
         arrayTypeEventData[0].ptr = reinterpret_cast<UINT64>(&dataSource[0]);
         arrayTypeEventData[0].size = arraySize;
-        hr = _pCorProfilerInfo12->EventPipeWriteEvent(
+        hr = _pCorProfilerInfo->EventPipeWriteEvent(
                         _arrayTypeEvent,
                         sizeof(arrayTypeEventData) / sizeof(arrayTypeEventData[0]),
                         arrayTypeEventData,
@@ -308,7 +362,7 @@ HRESULT EventPipeWritingProfiler::FunctionSeen(FunctionID functionID)
 
         for (int i= 0; i < 10; ++i)
         {
-            hr = _pCorProfilerInfo12->EventPipeWriteEvent(
+            hr = _pCorProfilerInfo->EventPipeWriteEvent(
                         _emptyEvent,
                         0,
                         NULL,
@@ -328,7 +382,7 @@ HRESULT EventPipeWritingProfiler::FunctionSeen(FunctionID functionID)
             simpleEventData[0].ptr = reinterpret_cast<UINT64>(&i32);
             simpleEventData[0].size = sizeof(int32_t);
 
-            hr = _pCorProfilerInfo12->EventPipeWriteEvent(
+            hr = _pCorProfilerInfo->EventPipeWriteEvent(
                         _simpleEvent,
                         sizeof(simpleEventData) / sizeof(simpleEventData[0]),
                         simpleEventData,

@@ -4,17 +4,18 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
+using Internal.IL;
 
 using ILCompiler.Dataflow;
 using ILCompiler.Logging;
 using ILLink.Shared;
+
 using MethodIL = Internal.IL.MethodIL;
-using Internal.IL;
 
 namespace ILCompiler
 {
@@ -22,6 +23,7 @@ namespace ILCompiler
     {
         private readonly ILogWriter _logWriter;
         private readonly CompilerGeneratedState _compilerGeneratedState;
+        private readonly UnconditionalSuppressMessageAttributeState _unconditionalSuppressMessageAttributeState;
 
         private readonly HashSet<int> _suppressedWarnings;
         private readonly HashSet<string> _suppressedCategories;
@@ -47,13 +49,14 @@ namespace ILCompiler
             IEnumerable<string> suppressedCategories)
         {
             _logWriter = writer;
-            _compilerGeneratedState = ilProvider == null ? null : new CompilerGeneratedState(ilProvider, this);
             IsVerbose = isVerbose;
             _suppressedWarnings = new HashSet<int>(suppressedWarnings);
             _isSingleWarn = singleWarn;
             _singleWarnEnabledAssemblies = new HashSet<string>(singleWarnEnabledModules, StringComparer.OrdinalIgnoreCase);
             _singleWarnDisabledAssemblies = new HashSet<string>(singleWarnDisabledModules, StringComparer.OrdinalIgnoreCase);
             _suppressedCategories = new HashSet<string>(suppressedCategories, StringComparer.Ordinal);
+            _compilerGeneratedState = ilProvider == null ? null : new CompilerGeneratedState(ilProvider, this);
+            _unconditionalSuppressMessageAttributeState = new UnconditionalSuppressMessageAttributeState(_compilerGeneratedState, this);
         }
 
         public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules, IEnumerable<string> suppressedCategories)
@@ -146,94 +149,10 @@ namespace ILCompiler
 
         internal bool IsWarningSuppressed(int code, MessageOrigin origin)
         {
-            // This is causing too much noise
-            // https://github.com/dotnet/runtimelab/issues/1591
-            if (code == 2110 || code == 2111 || code == 2113 || code == 2115)
-                return true;
-
             if (_suppressedWarnings.Contains(code))
                 return true;
 
-            // TODO: Suppressions with different scopes
-
-            TypeSystemEntity member = origin.MemberDefinition;
-            if (IsSuppressed(code, member))
-                return true;
-
-            MethodDesc owningMethod;
-            if (_compilerGeneratedState != null)
-            {
-                while (_compilerGeneratedState?.TryGetOwningMethodForCompilerGeneratedMember(member, out owningMethod) == true)
-                {
-                    Debug.Assert(owningMethod != member);
-                    if (IsSuppressed(code, owningMethod))
-                        return true;
-                    member = owningMethod;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool IsSuppressed(int id, TypeSystemEntity warningOrigin)
-        {
-            TypeSystemEntity warningOriginMember = warningOrigin;
-            while (warningOriginMember != null)
-            {
-                if (IsSuppressedOnElement(id, warningOriginMember))
-                    return true;
-
-                warningOriginMember = warningOriginMember.GetOwningType();
-            }
-
-            // TODO: Assembly-level suppressions
-
-            return false;
-        }
-
-        private static bool IsSuppressedOnElement(int id, TypeSystemEntity provider)
-        {
-            if (provider == null)
-                return false;
-
-            // TODO: Assembly-level suppressions
-
-            IEnumerable<CustomAttributeValue<TypeDesc>> suppressions = null;
-
-            if (provider is TypeDesc type)
-            {
-                var ecmaType = type.GetTypeDefinition() as EcmaType;
-                suppressions = ecmaType?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
-            }
-
-            if (provider is MethodDesc method)
-            {
-                var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
-                suppressions = ecmaMethod?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
-            }
-
-            if (suppressions != null)
-            {
-                foreach (CustomAttributeValue<TypeDesc> suppression in suppressions)
-                {
-                    if (suppression.FixedArguments.Length != 2
-                        || suppression.FixedArguments[1].Value is not string warningId
-                        || warningId.Length < 6
-                        || !warningId.StartsWith("IL")
-                        || (warningId.Length > 6 && warningId[6] != ':')
-                        || !int.TryParse(warningId.AsSpan(2, 4), out int suppressedCode))
-                    {
-                        continue;
-                    }
-
-                    if (id == suppressedCode)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return _unconditionalSuppressMessageAttributeState.IsSuppressed(code, origin);
         }
 
         internal static bool IsWarningAsError(int _/*code*/)
@@ -291,14 +210,26 @@ namespace ILCompiler
         }
 
         internal bool ShouldSuppressAnalysisWarningsForRequires(TypeSystemEntity originMember, string requiresAttribute)
+             => ShouldSuppressAnalysisWarningsForRequires(originMember, requiresAttribute, out _);
+
+        internal bool ShouldSuppressAnalysisWarningsForRequires(TypeSystemEntity originMember, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
             // Check if the current scope method has Requires on it
             // since that attribute automatically suppresses all trim analysis warnings.
             // Check both the immediate origin method as well as suppression context method
             // since that will be different for compiler generated code.
             if (originMember is MethodDesc method &&
-                method.IsInRequiresScope(requiresAttribute))
+                method.IsInRequiresScope(requiresAttribute, out attribute))
                 return true;
+
+            if (originMember is FieldDesc field)
+                return field.DoesFieldRequire(requiresAttribute, out attribute);
+
+            if (originMember.GetOwningType() == null)  // Basically a way to test if the entity is a member (type, method, field, ...)
+            {
+                attribute = null;
+                return false;
+            }
 
             MethodDesc owningMethod;
             if (_compilerGeneratedState != null)
@@ -306,12 +237,13 @@ namespace ILCompiler
                 while (_compilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember(originMember, out owningMethod))
                 {
                     Debug.Assert(owningMethod != originMember);
-                    if (owningMethod.IsInRequiresScope(requiresAttribute))
+                    if (owningMethod.IsInRequiresScope(requiresAttribute, out attribute))
                         return true;
                     originMember = owningMethod;
                 }
             }
 
+            attribute = null;
             return false;
         }
     }

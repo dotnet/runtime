@@ -37,13 +37,13 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else
             {
-                if (value.IsDisposed)
-                {
-                    throw new ObjectDisposedException(nameof(value));
-                }
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(value);
+#endif
+                ObjectDisposedException.ThrowIf(value.IsDisposed, value);
                 slot.Type = MarshalerType.JSObject;
                 slot.JSHandle = value.JSHandle;
-                if (slot.JSHandle == IntPtr.Zero) throw new ObjectDisposedException(nameof(value));
+                ObjectDisposedException.ThrowIf(slot.JSHandle == IntPtr.Zero, value);
             }
         }
 

@@ -42,11 +42,6 @@ namespace Mono.Linker.Steps
 			}
 
 			switch (rootMode) {
-			case AssemblyRootMode.Default:
-				if (assembly.MainModule.Kind == ModuleKind.Dll)
-					goto case AssemblyRootMode.AllMembers;
-				else
-					goto case AssemblyRootMode.EntryPoint;
 			case AssemblyRootMode.EntryPoint:
 				var ep = assembly.MainModule.EntryPoint;
 				if (ep == null) {

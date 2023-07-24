@@ -4,6 +4,7 @@
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Configuration.Assemblies;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
@@ -164,6 +165,8 @@ namespace System.Reflection
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual FileStream[] GetFiles(bool getResourceModules) { throw NotImplemented.ByDesign; }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
 
         public override string ToString()
@@ -265,10 +268,10 @@ namespace System.Reflection
                     return result;
 
                 // we cannot check for file presence on BROWSER. The files could be embedded and not physically present.
-#if !TARGET_BROWSER
+#if !TARGET_BROWSER && !TARGET_WASI
                 if (!File.Exists(normalizedPath))
                     throw new FileNotFoundException(SR.Format(SR.FileNotFound_LoadFile, normalizedPath), normalizedPath);
-#endif // !TARGET_BROWSER
+#endif // !TARGET_BROWSER && !TARGET_WASI
 
                 AssemblyLoadContext alc = new IndividualAssemblyLoadContext($"Assembly.LoadFile({normalizedPath})");
                 result = alc.LoadFromAssemblyPath(normalizedPath);
@@ -330,7 +333,7 @@ namespace System.Reflection
             try
             {
                 // Load the dependency via LoadFrom so that it goes through the same path of being in the LoadFrom list.
-                return Assembly.LoadFrom(requestedAssemblyPath);
+                return LoadFrom(requestedAssemblyPath);
             }
             catch (FileNotFoundException)
             {

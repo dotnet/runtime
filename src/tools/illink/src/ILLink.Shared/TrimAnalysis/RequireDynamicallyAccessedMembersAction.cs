@@ -14,9 +14,9 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 namespace ILLink.Shared.TrimAnalysis
 {
 	[StructLayout (LayoutKind.Auto)]
-	partial struct RequireDynamicallyAccessedMembersAction
+	internal partial struct RequireDynamicallyAccessedMembersAction
 	{
-		readonly DiagnosticContext _diagnosticContext;
+		private readonly DiagnosticContext _diagnosticContext;
 
 		public void Invoke (in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
 		{

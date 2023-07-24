@@ -1,0 +1,37 @@
+<Project>
+  <PropertyGroup>
+    <!-- These need to be set here because the root Directory.Build.props sets up the intermediate path early -->
+    <OutputType>Exe</OutputType>
+    <TargetOS>wasi</TargetOS>
+    <!--
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
+    -->
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Build.props"/>
+
+  <PropertyGroup>
+    <OutputPath>bin</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <WasiNativeStrip>false</WasiNativeStrip>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+    <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)CommonAssemblyInfo.cs" />
+  </ItemGroup>
+
+  <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
+  <Import Project="$(MonoProjectRoot)wasi\build\WasiApp.InTree.props" />
+</Project>

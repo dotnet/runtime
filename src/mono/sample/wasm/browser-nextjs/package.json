@@ -3,7 +3,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build:dotnet": "dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug",
+    "build:dotnet": "dotnet build /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Debug",
     "dev": "next dev",
     "build": "next build",
     "start": "next start"

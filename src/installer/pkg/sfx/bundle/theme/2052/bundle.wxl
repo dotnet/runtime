@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
   <String Id="Caption">[WixBundleName] 安装程序</String>
   <String Id="Title">[BUNDLEMONIKER]</String>
@@ -28,7 +28,7 @@
   <String Id="OptionsCancelButton">取消(&amp;C)</String>
   <String Id="ProgressHeader">安装进度</String>
   <String Id="ProgressLabel">正在处理:</String>
-  <String Id="OverallProgressPackageText">正在初始化…</String>
+  <String Id="OverallProgressPackageText">正在初始化...</String>
   <String Id="ProgressCancelButton">取消(&amp;C)</String>
   <String Id="ModifyHeader">修改安装程序</String>
   <String Id="ModifyRepairButton">修复(&amp;R)</String>
@@ -39,10 +39,10 @@
   <String Id="SuccessInstallHeader">安装成功</String>
   <String Id="SuccessHeader">设置成功</String>
   <String Id="SuccessLaunchButton">启动(&amp;L)</String>
-  <String Id="SuccessRestartText">在使用此软件之前，您必须重新启动计算机。</String>
+  <String Id="SuccessRestartText">您必须先重新启动计算机，然后才能使用该软件。</String>
   <String Id="SuccessRestartButton">重新启动(&amp;R)</String>
   <String Id="SuccessCloseButton">关闭(&amp;C)</String>
-  <String Id="FailureHeader">设置失败</String>
+  <String Id="FailureHeader">安装失败</String>
   <String Id="FailureInstallHeader">安装失败</String>
   <String Id="FailureUninstallHeader">卸载失败</String>
   <String Id="FailureRepairHeader">修复失败</String>

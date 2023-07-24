@@ -88,8 +88,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
-        <source>Insufficient hexadecimal digits.</source>
-        <target state="translated">Yetersiz sayıda onaltılık basamak.</target>
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">Yetersiz veya geçersiz onaltılık basamak.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -113,8 +113,8 @@
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
-        <source>Incomplete \\p{X} character escape.</source>
-        <target state="translated">Tamamlanmamış \\p{X} karakter kaçışı.</target>
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">Tamamlanmamış \p{X} karakter kaçışı.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -138,13 +138,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
-        <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="translated">Hatalı biçimlendirilmiş \\k&lt;...&gt; adlı geri başvuru.</target>
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">Hatalı biçimlendirilmiş \k&lt;...&gt; adlı geri başvuru.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
-        <source>Malformed \\p{X} character escape.</source>
-        <target state="translated">Hatalı biçimlendirilmiş \\p{X} karakter kaçışı.</target>
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">Hatalı biçimlendirilmiş \p{X} karakter kaçışı.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -167,11 +167,6 @@
         <target state="translated">Sonuç, başarısız Eşleştirmede çağrılamaz.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">Grup değiştirmeleri içeren normal ifade değiştirmeleri RegexOptions.NonBacktracking ile desteklenmez.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Koleksiyon salt okunur.</target>
@@ -193,8 +188,8 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="translated">RegEx altyapısı bir deseni bir giriş dizesiyle eşleştirmeye çalışırken zaman aşımına uğradı. Bu birçok nedenle oluşabilir; buna çok büyük girişler ya da iç içe geçmiş miktar belirleyiciler, geri başvurular ve diğer faktörler nedeniyle oluşan aşırı geri dönüşler dahildir.</target>
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">Normal ifade altyapısı bir deseni bir giriş dizesiyle eşleştirmeye çalışırken zaman aşımına uğradı. Bu durum, çok büyük girişler veya iç içe niceleyiciler, geri başvurular ve diğer faktörler nedeniyle oluşan aşırı geri izleme gibi birçok nedenle oluşabilir.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -213,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
-        <source>Cannot include class \\{0} in character range.</source>
-        <target state="translated">Karakter aralığına \\{0} sınıfı dahil edilemez.</target>
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">Karakter aralığına \{0} sınıfı dahil edilemez.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -228,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
-        <source>Illegal \\ at end of pattern.</source>
-        <target state="translated">Desenin sonunda geçersiz \\.</target>
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">Desenin sonunda geçersiz \.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -238,8 +233,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
-        <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="translated">Tanınmayan kaçış dizisi \\{0}.</target>
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">Tanınmayan kaçış dizisi \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

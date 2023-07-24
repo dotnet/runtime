@@ -61,7 +61,7 @@ inline UPTR DispID2HashKey(DISPID DispID)
 }
 
 // Typedef for string comparison functions.
-typedef int (__cdecl *UnicodeStringCompareFuncPtr)(const WCHAR *, const WCHAR *);
+typedef int (*UnicodeStringCompareFuncPtr)(const WCHAR *, const WCHAR *);
 
 //--------------------------------------------------------------------------------
 // The DispatchMemberInfo class implementation.
@@ -138,7 +138,7 @@ DispatchMemberInfo::~DispatchMemberInfo()
         delete [] m_pParamInOnly;
 
     if (m_hndMemberInfo)
-        m_pDispInfo->GetLoaderAllocator()->FreeHandle(m_hndMemberInfo);
+        m_pDispInfo->FreeHandle(m_hndMemberInfo);
 
     // Clear the name of the member.
     m_strName.Clear();
@@ -225,7 +225,7 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
         aDispIds[cNames] = DISPID_UNKNOWN;
 
     // Retrieve the appropriate string comparation function.
-    UnicodeStringCompareFuncPtr StrCompFunc = bCaseSensitive ? wcscmp : SString::_wcsicmp;
+    UnicodeStringCompareFuncPtr StrCompFunc = bCaseSensitive ? u16_strcmp : SString::_wcsicmp;
 
     GCPROTECT_BEGIN(ParamArray)
     {
@@ -340,7 +340,8 @@ PTRARRAYREF DispatchMemberInfo::GetParameters()
 
 OBJECTREF DispatchMemberInfo::GetMemberInfoObject()
 {
-    return m_pDispInfo->GetLoaderAllocator()->GetHandleValue(m_hndMemberInfo);
+    WRAPPER_NO_CONTRACT;
+    return m_pDispInfo->GetHandleValue(m_hndMemberInfo);
 }
 
 void DispatchMemberInfo::MarshalParamNativeToManaged(int iParam, VARIANT *pSrcVar, OBJECTREF *pDestObj)
@@ -524,7 +525,7 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
         // If we managed to get the member's properties then extract the name.
         if (pMemberProps)
         {
-            int MemberNameLen = (INT)wcslen(pMemberProps->pName);
+            int MemberNameLen = (INT)u16_strlen(pMemberProps->pName);
             strMemberName = new WCHAR[MemberNameLen + 1];
 
             memcpy(strMemberName, pMemberProps->pName, (MemberNameLen + 1) * sizeof(WCHAR));
@@ -1059,7 +1060,7 @@ DispatchInfo::~DispatchInfo()
     while (pCurrMember)
     {
         // Retrieve the next member.
-        DispatchMemberInfo* pNextMember = pCurrMember->m_pNext;
+        DispatchMemberInfo* pNextMember = pCurrMember->GetNext();
 
         // Delete the current member.
         delete pCurrMember;
@@ -1124,9 +1125,10 @@ DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensiti
         if (pCurrMemberInfo->GetMemberInfoObject() != NULL)
         {
             // Compare the 2 strings.
-            if (bCaseSensitive ?
-                    pCurrMemberInfo->m_strName.Equals(strName) :
-                    pCurrMemberInfo->m_strName.EqualsCaseInsensitive(strName))
+            SString& name = pCurrMemberInfo->GetName();
+            if (bCaseSensitive
+                    ? name.Equals(strName)
+                    : name.EqualsCaseInsensitive(strName))
             {
                 // We have found the member, so ensure it is initialized and return it.
                 pCurrMemberInfo->EnsureInitialized();
@@ -1136,7 +1138,7 @@ DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensiti
         }
 
         // Process the next member.
-        pCurrMemberInfo = pCurrMemberInfo->m_pNext;
+        pCurrMemberInfo = pCurrMemberInfo->GetNext();
     }
 
     // No member has been found with the corresponding name.
@@ -1145,7 +1147,7 @@ DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensiti
 
 // Helper method used to create DispatchMemberInfo's. This is only here because
 // we can't call new inside a method that has a EX_TRY statement.
-DispatchMemberInfo* DispatchInfo::CreateDispatchMemberInfoInstance(DISPID DispID, SString& strMemberName, OBJECTREF MemberInfoObj)
+DispatchMemberInfo* DispatchInfo::CreateDispatchMemberInfoInstance(DISPID dispID, SString& strMemberName, OBJECTREF memberInfoObj)
 {
     CONTRACT (DispatchMemberInfo*)
     {
@@ -1157,8 +1159,8 @@ DispatchMemberInfo* DispatchInfo::CreateDispatchMemberInfoInstance(DISPID DispID
     }
     CONTRACT_END;
 
-    DispatchMemberInfo* pInfo = new DispatchMemberInfo(this, DispID, strMemberName);
-    pInfo->SetHandle(GetLoaderAllocator()->AllocateHandle(MemberInfoObj));
+    DispatchMemberInfo* pInfo = new DispatchMemberInfo(this, dispID, strMemberName);
+    pInfo->SetHandle(AllocateHandle(memberInfoObj));
 
     RETURN pInfo;
 }
@@ -1756,7 +1758,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         }
         else
         {
-            pObjs->MemberName = (OBJECTREF)StringObject::NewString(pDispMemberInfo->m_strName.GetUnicode());
+            pObjs->MemberName = (OBJECTREF)StringObject::NewString(pDispMemberInfo->GetName().GetUnicode());
         }
 
         // If there are named arguments, then set up the array of named arguments
@@ -2730,7 +2732,7 @@ BOOL DispatchInfo::SynchWithManagedView()
         // Go through the list of member info's and find the end.
         DispatchMemberInfo **ppNextMember = &m_pFirstMemberInfo;
         while (*ppNextMember)
-            ppNextMember = &((*ppNextMember)->m_pNext);
+            ppNextMember = (*ppNextMember)->GetNextPtr();
 
         // Retrieve the member info map.
         pMemberMap = GetMemberInfoMap();
@@ -2785,7 +2787,7 @@ BOOL DispatchInfo::SynchWithManagedView()
                         }
 
                         // Check the next member.
-                        pCurrMemberInfo = pCurrMemberInfo->m_pNext;
+                        pCurrMemberInfo = pCurrMemberInfo->GetNext();
                     }
 
                     // If we have not found a match then we need to add the member info to the
@@ -2846,7 +2848,7 @@ BOOL DispatchInfo::SynchWithManagedView()
                             *ppNextMember = pMemberToAdd;
 
                             // Update ppNextMember to be ready for the next new member.
-                            ppNextMember = &((*ppNextMember)->m_pNext);
+                            ppNextMember = (*ppNextMember)->GetNextPtr();
 
                             // Add the member to the map. Note, the hash is unsynchronized, but we already have our lock
                             // so we're okay.
@@ -2900,6 +2902,41 @@ BOOL DispatchInfo::VariantIsMissing(VARIANT *pOle)
     LIMITED_METHOD_CONTRACT;
 
     return (V_VT(pOle) == VT_ERROR) && (V_ERROR(pOle) == DISP_E_PARAMNOTFOUND);
+}
+
+LOADERHANDLE DispatchInfo::AllocateHandle(OBJECTREF objRef)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return m_pMT->GetLoaderAllocator()->AllocateHandle(objRef);
+}
+
+void DispatchInfo::FreeHandle(LOADERHANDLE handle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(handle != NULL);
+    }
+    CONTRACTL_END;
+
+    PTR_LoaderAllocator loaderAllocator = m_pMT->GetLoaderAllocator();
+
+    // If the loader isn't alive, we can't free the handle.
+    if (loaderAllocator->AddReferenceIfAlive())
+    {
+        loaderAllocator->FreeHandle(handle);
+        loaderAllocator->Release();
+    }
+}
+
+OBJECTREF DispatchInfo::GetHandleValue(LOADERHANDLE handle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return m_pMT->GetLoaderAllocator()->GetHandleValue(handle);
 }
 
 PTRARRAYREF DispatchInfo::RetrievePropList()
@@ -3272,27 +3309,6 @@ HRESULT DispatchExInfo::SynchInvokeMember(SimpleComCallWrapper *pSimpleWrap, DIS
     return hr;
 }
 
-// Helper method used to create DispatchMemberInfo's. This is only here because
-// we can't call new inside a method that has a EX_TRY statement.
-DispatchMemberInfo* DispatchExInfo::CreateDispatchMemberInfoInstance(DISPID DispID, SString& strMemberName, OBJECTREF MemberInfoObj)
-{
-    CONTRACT (DispatchMemberInfo*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    DispatchMemberInfo* pInfo = new DispatchMemberInfo(this, DispID, strMemberName);
-    pInfo->SetHandle(GetLoaderAllocator()->AllocateHandle(MemberInfoObj));
-
-    RETURN pInfo;
-}
-
-
 DispatchMemberInfo* DispatchExInfo::GetFirstMember()
 {
     CONTRACT (DispatchMemberInfo*)
@@ -3323,7 +3339,7 @@ DispatchMemberInfo* DispatchExInfo::GetFirstMember()
 
     // Now we need to make sure we skip any members that are deleted.
     while ((*ppNextMemberInfo) && !(*ppNextMemberInfo)->GetMemberInfoObject())
-        ppNextMemberInfo = &((*ppNextMemberInfo)->m_pNext);
+        ppNextMemberInfo = (*ppNextMemberInfo)->GetNextPtr();
 
     RETURN *ppNextMemberInfo;
 }
@@ -3345,7 +3361,7 @@ DispatchMemberInfo* DispatchExInfo::GetNextMember(DISPID CurrMemberDispID)
         RETURN NULL;
 
     // Start from the next member.
-    DispatchMemberInfo **ppNextMemberInfo = &pDispMemberInfo->m_pNext;
+    DispatchMemberInfo **ppNextMemberInfo = pDispMemberInfo->GetNextPtr();
 
     // If the next member is not set we need to sink up with the expando object
     // itself to make sure that this member is really the last member and that
@@ -3363,7 +3379,7 @@ DispatchMemberInfo* DispatchExInfo::GetNextMember(DISPID CurrMemberDispID)
 
     // Now we need to make sure we skip any members that are deleted.
     while ((*ppNextMemberInfo) && !(*ppNextMemberInfo)->GetMemberInfoObject())
-        ppNextMemberInfo = &((*ppNextMemberInfo)->m_pNext);
+        ppNextMemberInfo = (*ppNextMemberInfo)->GetNextPtr();
 
     RETURN *ppNextMemberInfo;
 }

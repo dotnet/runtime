@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         AreSame(Type.GetTypeCode(null),             TypeCode.Empty);
         AreSame(Type.GetTypeCode(typeof(void*)),    TypeCode.Object);

@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // This testcase reproduces a bug where the tree re-sequencing was not correct for 
 // fgMorphModToSubMulDiv(), resulting in an assert in LSRA.
@@ -22,7 +23,8 @@ public static class Test_DevDiv_359736
         return arg % val;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = -1;
         try

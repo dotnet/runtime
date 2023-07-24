@@ -130,7 +130,7 @@
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
   <data name="ShorthandClassInCharacterRange" xml:space="preserve">
-    <value>Cannot include class \\{0} in character range.</value>
+    <value>Cannot include class \{0} in character range.</value>
   </data>
   <data name="BeginIndexNotNegative" xml:space="preserve">
     <value>Start index cannot be less than 0 or greater than input length.</value>
@@ -154,13 +154,13 @@
     <value>AppDomain data '{0}' contains the invalid value or object '{1}' for specifying a default matching timeout for System.Text.RegularExpressions.Regex.</value>
   </data>
   <data name="UnescapedEndingBackslash" xml:space="preserve">
-    <value>Illegal \\ at end of pattern.</value>
+    <value>Illegal \ at end of pattern.</value>
   </data>
   <data name="ReversedQuantifierRange" xml:space="preserve">
     <value>Illegal {x,y} with x &gt; y.</value>
   </data>
   <data name="InvalidUnicodePropertyEscape" xml:space="preserve">
-    <value>Incomplete \\p{X} character escape.</value>
+    <value>Incomplete \p{X} character escape.</value>
   </data>
   <data name="CaptureGroupNameInvalid" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
@@ -169,13 +169,13 @@
     <value>Length cannot be less than 0 or exceed input length.</value>
   </data>
   <data name="MalformedNamedReference" xml:space="preserve">
-    <value>Malformed \\k&lt;...&gt; named back reference.</value>
+    <value>Malformed \k&lt;...&gt; named back reference.</value>
   </data>
   <data name="AlternationHasMalformedReference" xml:space="preserve">
     <value>Conditional alternation is missing a closing parenthesis after the group number {0}.</value>
   </data>
   <data name="MalformedUnicodePropertyEscape" xml:space="preserve">
-    <value>Malformed \\p{X} character escape.</value>
+    <value>Malformed \p{X} character escape.</value>
   </data>
   <data name="MakeException" xml:space="preserve">
     <value>Invalid pattern '{0}' at offset {1}. {2}</value>
@@ -211,7 +211,7 @@
     <value>A subtraction must be the last element in a character class.</value>
   </data>
   <data name="InsufficientOrInvalidHexDigits" xml:space="preserve">
-    <value>Insufficient hexadecimal digits.</value>
+    <value>Insufficient or invalid hexadecimal digits.</value>
   </data>
   <data name="AlternationHasTooManyConditions" xml:space="preserve">
     <value>Too many | in (?()|).</value>
@@ -235,7 +235,7 @@
     <value>Unrecognized control character.</value>
   </data>
   <data name="UnrecognizedEscape" xml:space="preserve">
-    <value>Unrecognized escape sequence \\{0}.</value>
+    <value>Unrecognized escape sequence \{0}.</value>
   </data>
   <data name="InvalidGroupingConstruct" xml:space="preserve">
     <value>Unrecognized grouping construct.</value>
@@ -246,10 +246,6 @@
   <data name="UnterminatedComment" xml:space="preserve">
     <value>Unterminated (?#...) comment.</value>
   </data>
-  <data name="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups" xml:space="preserve">
-    <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
-    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
-  </data>
   <data name="NotSupported_NonBacktrackingConflictingExpression" xml:space="preserve">
     <value>RegexOptions.NonBacktracking is not supported in conjunction with expressions containing: '{0}'.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
@@ -259,7 +255,7 @@
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
   <data name="ExpressionDescription_Backreference" xml:space="preserve">
-    <value>backreference (\\ number)</value>
+    <value>backreference (\ number)</value>
   </data>
   <data name="ExpressionDescription_Conditional" xml:space="preserve">
     <value>captured group conditional (?( name ) yes-pattern | no-pattern ) or (?( number ) yes-pattern| no-pattern )</value>
@@ -271,7 +267,7 @@
     <value>negative lookahead (?! pattern) or negative lookbehind (?&lt;! pattern)</value>
   </data>
   <data name="ExpressionDescription_ContiguousMatches" xml:space="preserve">
-    <value>contiguous matches (\\G)</value>
+    <value>contiguous matches (\G)</value>
   </data>
   <data name="ExpressionDescription_AtomicSubexpressions" xml:space="preserve">
     <value>atomic subexpressions (?&gt; pattern)</value>

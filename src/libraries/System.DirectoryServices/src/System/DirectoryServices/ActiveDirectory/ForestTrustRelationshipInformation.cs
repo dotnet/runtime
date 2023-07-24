@@ -78,7 +78,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public void Save()
+        public unsafe void Save()
         {
             int count = 0;
             IntPtr records = (IntPtr)0;
@@ -181,14 +181,14 @@ namespace System.DirectoryServices.ActiveDirectory
                         record.ForestTrustType = LSA_FOREST_TRUST_RECORD_TYPE.ForestTrustDomainInfo;
                         ForestTrustDomainInformation tmp = _domainInfo[i];
                         record.Time = tmp.time;
-                        IntPtr pSid = (IntPtr)0;
+                        void* pSid = null;
                         global::Interop.BOOL result = global::Interop.Advapi32.ConvertStringSidToSid(tmp.DomainSid, out pSid);
                         if (result == global::Interop.BOOL.FALSE)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                         }
-                        record.DomainInfo.sid = pSid;
-                        sidList.Add(pSid);
+                        record.DomainInfo.sid = (IntPtr)pSid;
+                        sidList.Add((IntPtr)pSid);
                         record.DomainInfo.DNSNameBuffer = Marshal.StringToHGlobalUni(tmp.DnsName);
                         ptrList.Add(record.DomainInfo.DNSNameBuffer);
                         record.DomainInfo.DNSNameLength = (short)(tmp.DnsName == null ? 0 : tmp.DnsName.Length * 2);             // sizeof(WCHAR)
@@ -289,7 +289,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     for (int i = 0; i < sidList.Count; i++)
                     {
-                        global::Interop.Kernel32.LocalFree((IntPtr)sidList[i]!);
+                        global::Interop.Kernel32.LocalFree((void*)(nint)sidList[i]!);
                     }
 
                     if (records != (IntPtr)0)

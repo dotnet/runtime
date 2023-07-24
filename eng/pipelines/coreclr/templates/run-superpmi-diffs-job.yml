@@ -16,6 +16,9 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   helixQueues: ''                 # required -- Helix queues
   dependOnEvaluatePaths: false
+  diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', or 'all'
+  baseJitOptions: ''              # e.g. JitStressModeNames=STRESS_PHYSICAL_PROMOTION;JitFullyInt=1
+  diffJitOptions: ''
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -38,26 +41,50 @@ jobs:
       displayName: '${{ parameters.jobName }}'
 
     variables:
-
     - ${{ each variable in parameters.variables }}:
-      - ${{ if ne(variable.name, '') }}:
-        - name: ${{ variable.name }}
-          value: ${{ variable.value }}
-      - ${{ if ne(variable.group, '') }}:
-        - group: ${{ variable.group }}
+      - ${{insert}}: ${{ variable }}
 
-    - name: PythonScript
-      value: 'py -3'
-    - name: PipScript
-      value: 'py -3 -m pip'
-    - name: SpmiCollectionLocation
-      value: '$(Build.SourcesDirectory)\artifacts\spmi\'
-    - name: SpmiLogsLocation
-      value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
-    - name: SpmiAsmdiffsLocation
-      value: '$(Build.SourcesDirectory)\artifacts\spmi_asmdiffs\'
-    - name: HelixResultLocation
-      value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+    - name: diffType
+      value: ${{ parameters.diffType }}
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'py -3'
+      - name: PipScript
+        value: 'py -3 -m pip'
+      - name: SpmiCollectionLocation
+        value: '$(Build.SourcesDirectory)\artifacts\spmi\'
+      - name: SpmiLogsLocation
+        value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
+      - name: SpmiDiffsLocation
+        value: '$(Build.SourcesDirectory)\artifacts\spmi_diffs\'
+      - name: HelixResultLocation
+        value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'python3'
+      - name: PipScript
+        value: 'pip3'
+      - name: SpmiCollectionLocation
+        value: '$(Build.SourcesDirectory)/artifacts/spmi/'
+      - name: SpmiLogsLocation
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
+      - name: SpmiDiffsLocation
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_diffs/'
+      - name: HelixResultLocation
+        value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
+
+    - name: SetupScriptDirs
+      value: ''
+    - ${{ if eq(parameters.diffType, 'asmdiffs') }}:
+      - name: SetupScriptDirs
+        value: '-checked_directory $(buildProductRootFolderPath)'
+    - ${{ if eq(parameters.diffType, 'tpdiff') }}:
+      - name: SetupScriptDirs
+        value: '-release_directory $(releaseProductRootFolderPath)'
+    - ${{ if eq(parameters.diffType, 'all') }}:
+      - name: SetupScriptDirs
+        value: '-checked_directory $(buildProductRootFolderPath) -release_directory $(releaseProductRootFolderPath)'
 
     workspace:
       clean: all
@@ -67,14 +94,21 @@ jobs:
     steps:
     - ${{ parameters.steps }}
 
-    - script: |
-        mkdir $(SpmiCollectionLocation)
-        mkdir $(SpmiLogsLocation)
-        mkdir $(SpmiAsmdiffsLocation)
-      displayName: Create directories
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir -p $(SpmiCollectionLocation)
+          mkdir -p $(SpmiLogsLocation)
+          mkdir -p $(SpmiDiffsLocation)
+        displayName: Create directories
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir $(SpmiCollectionLocation)
+          mkdir $(SpmiLogsLocation)
+          mkdir $(SpmiDiffsLocation)
+        displayName: Create directories
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_setup.py -source_directory $(Build.SourcesDirectory) -checked_directory $(buildProductRootFolderPath) -release_directory $(releaseProductRootFolderPath) -arch $(archType)
-      displayName: ${{ format('SuperPMI diffs setup ({0})', parameters.archType) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_setup.py -source_directory $(Build.SourcesDirectory) $(SetupScriptDirs) -type $(diffType) -platform $(osGroup) -arch $(archType)
+      displayName: ${{ format('SuperPMI diffs setup ({0} {1}{2} {3})', parameters.diffType, parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
 
       # Run superpmi-diffs.py script in helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
@@ -91,7 +125,11 @@ jobs:
         helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-diffs.proj'
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup }}
         archType: ${{ parameters.archType }}
+        SuperPmiDiffType: ${{ parameters.diffType }}
+        SuperPmiBaseJitOptions: ${{ parameters.baseJitOptions }}
+        SuperPmiDiffJitOptions: ${{ parameters.diffJitOptions }}
 
       # Always upload the available logs for diagnostics
     - task: CopyFiles@2
@@ -107,34 +145,35 @@ jobs:
       inputs:
         sourceFolder: '$(HelixResultLocation)'
         contents: '**/superpmi_*.md'
-        targetFolder: '$(SpmiAsmdiffsLocation)'
+        targetFolder: '$(SpmiDiffsLocation)'
       condition: always()
 
-    - task: CopyFiles@2
-      displayName: Copying dasm files of all partitions
-      inputs:
-        sourceFolder: '$(HelixResultLocation)'
-        contents: '**/Asmdiffs_*.zip'
-        targetFolder: '$(SpmiAsmdiffsLocation)'
-      condition: always()
+    - ${{ if eq(parameters.diffType, 'asmdiffs') }}:
+      - task: CopyFiles@2
+        displayName: Copying dasm files of all partitions
+        inputs:
+          sourceFolder: '$(HelixResultLocation)'
+          contents: '**/Asmdiffs_*.zip'
+          targetFolder: '$(SpmiDiffsLocation)'
+        condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_summarize.py -diff_summary_dir $(SpmiAsmdiffsLocation) -arch $(archType)
-      displayName: ${{ format('Summarize ({0})', parameters.archType) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_summarize.py -diff_summary_dir $(SpmiDiffsLocation) -type $(diffType) -platform $(osGroup) -arch $(archType)
+      displayName: ${{ format('Summarize ({0} {1}{2} {3})', parameters.diffType, parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
       condition: always()
 
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI logs
       inputs:
         targetPath: $(SpmiLogsLocation)
-        artifactName: 'SuperPMI_Logs_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
+        artifactName: 'SuperPMI_Logs_$(diffType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
       continueOnError: true
 
     - task: PublishPipelineArtifact@1
-      displayName: Publish SuperPMI asmdiffs files
+      displayName: Publish SuperPMI diffs files
       inputs:
-        targetPath: $(SpmiAsmdiffsLocation)
-        artifactName: 'SuperPMI_Asmdiffs_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
+        targetPath: $(SpmiDiffsLocation)
+        artifactName: 'SuperPMI_Diffs_$(diffType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
       continueOnError: true
 
@@ -142,6 +181,6 @@ jobs:
       displayName: Publish SuperPMI build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_BuildLogs_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
+        artifactName: 'SuperPMI_BuildLogs_$(diffType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
       continueOnError: true

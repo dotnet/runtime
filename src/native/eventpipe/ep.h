@@ -164,7 +164,6 @@ EventPipeProvider *
 ep_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data);
 
 void
@@ -294,22 +293,24 @@ ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallb
 
 static
 inline
-void
+uint32_t
 ep_write_buffer_uint8_t (uint8_t **buffer, uint8_t value)
 {
 	memcpy (*buffer, &value, sizeof (value));
 	*buffer += sizeof (value);
+	return sizeof (value);
 }
 
 #define EP_WRITE_BUFFER_INT(BITS, SIGNEDNESS) \
 static \
 inline \
-void \
+uint32_t \
 ep_write_buffer_##SIGNEDNESS##int##BITS##_t (uint8_t **buffer, SIGNEDNESS##int##BITS##_t value) \
 { \
 	value = ep_rt_val_##SIGNEDNESS##int##BITS##_t (value); \
 	memcpy (*buffer, &value, sizeof (value)); \
 	*buffer += sizeof (value); \
+	return sizeof (value); \
 }
 
 EP_WRITE_BUFFER_INT (16, )
@@ -323,19 +324,42 @@ EP_WRITE_BUFFER_INT (64, u)
 
 static
 inline
-void
-ep_write_buffer_string_utf16_t (uint8_t **buf, const ep_char16_t *str, size_t len)
+uint32_t
+ep_write_buffer_uintptr_t (uint8_t **buffer, uintptr_t value)
 {
-	memcpy (*buf, str, len);
-	*buf += len;
+	value = ep_rt_val_uintptr_t (value);
+	memcpy (*buffer, &value, sizeof (value));
+	*buffer += sizeof (value);
+	return sizeof (value);
 }
 
 static
 inline
-void
+uint32_t
+ep_write_buffer_string_utf16_t (uint8_t **buf, const ep_char16_t *str, uint32_t len)
+{
+	uint32_t num_bytes = 0;
+	if (str && len != 0) {
+		num_bytes = len * sizeof (ep_char16_t);
+		memcpy (*buf, str, num_bytes);
+	}
+
+	(*buf) [num_bytes] = 0;
+	num_bytes++;
+
+	(*buf) [num_bytes] = 0;
+	num_bytes++;
+
+	*buf += num_bytes;
+	return num_bytes;
+}
+
+static
+inline
+uint32_t
 ep_write_buffer_timestamp (uint8_t **buffer, ep_timestamp_t value)
 {
-	ep_write_buffer_int64_t (buffer, value);
+	return ep_write_buffer_int64_t (buffer, value);
 }
 
 #else /* ENABLE_PERFTRACING */

@@ -10,8 +10,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System;
+using Xunit;
 
-class TestReadIntAsDouble
+public class TestReadIntAsDouble
 {
 	private struct Dec
 	{
@@ -44,7 +45,7 @@ class TestReadIntAsDouble
 
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	public static void TestDoubleAssignment(Data d)
+	internal static void TestDoubleAssignment(Data d)
 	{
 		Dec p = default;
 		p.ulo = d.x;
@@ -70,7 +71,7 @@ class TestReadIntAsDouble
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TestIntAssignment(Data d)
+    internal static void TestIntAssignment(Data d)
     {
         Dec p = default;
         p.ulo = d.x;
@@ -79,7 +80,8 @@ class TestReadIntAsDouble
         d.x = Unsafe.As<Dec, DecCalc2>(ref p).ulo;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestDoubleAssignment(default);
         TestIntAssignment(default);

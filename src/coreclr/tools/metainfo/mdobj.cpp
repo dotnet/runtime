@@ -255,7 +255,7 @@ void DisplayFile(_In_z_ WCHAR* szFile, BOOL isFile, ULONG DumpFilter, _In_opt_z_
 
     // We need to make sure this file isn't too long. Checking _MAX_PATH is probably safe, but since we have a much
     // larger buffer, we might as well use it all.
-    if (wcslen(szFile) > 1000)
+    if (u16_strlen(szFile) > 1000)
         return;
 
 
@@ -273,14 +273,15 @@ void DisplayFile(_In_z_ WCHAR* szFile, BOOL isFile, ULONG DumpFilter, _In_opt_z_
     // print bar that separates different files
     pDisplayString("////////////////////////////////////////////////////////////////\n");
 
-    WCHAR *pExt = wcsrchr(szFile, W('.'));
-    WCHAR *pFname = wcsrchr(szFile, DIRECTORY_SEPARATOR_CHAR_W);
+    WCHAR *pExt = (WCHAR*)u16_strrchr(szFile, W('.'));
+    WCHAR *pFname = (WCHAR*)u16_strrchr(szFile, DIRECTORY_SEPARATOR_CHAR_W);
     if (pFname == NULL)
     {
         pFname = szFile;
     }
 
-    sprintf_s(szString,1024,"\nFile %S: \n",pFname);
+    MAKE_UTF8PTR_FROMWIDE(pFnameUtf8, pFname);
+    sprintf_s(szString,1024,"\nFile %s: \n",pFnameUtf8);
     pDisplayString(szString);
 
     if (DumpFilter & MDInfo::dumpValidate)

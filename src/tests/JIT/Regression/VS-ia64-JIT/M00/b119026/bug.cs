@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 public class test
 {
     static short si16;
     static uint su32;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         si16 = -1;
         su32 = (uint)si16;

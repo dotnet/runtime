@@ -58,7 +58,20 @@ namespace Microsoft.Extensions.Primitives
 
         private static string GetResourceText(ExceptionResource resource)
         {
-            return SR.GetResourceString(GetResourceName(resource));
+            Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
+                "The enum value is not defined, please check the ExceptionResource Enum.");
+
+            switch (resource)
+            {
+                case ExceptionResource.Argument_InvalidOffsetLength: return SR.Argument_InvalidOffsetLength;
+                case ExceptionResource.Argument_InvalidOffsetLengthStringSegment: return SR.Argument_InvalidOffsetLengthStringSegment;
+                case ExceptionResource.Capacity_CannotChangeAfterWriteStarted: return SR.Capacity_CannotChangeAfterWriteStarted;
+                case ExceptionResource.Capacity_NotEnough: return SR.Capacity_NotEnough;
+                case ExceptionResource.Capacity_NotUsedEntirely: return SR.Capacity_NotUsedEntirely;
+                default:
+                    Debug.Fail($"Unexpected resource {resource}");
+                    return "";
+            }
         }
 
         private static string GetArgumentName(ExceptionArgument argument)
@@ -67,14 +80,6 @@ namespace Microsoft.Extensions.Primitives
                 "The enum value is not defined, please check the ExceptionArgument Enum.");
 
             return argument.ToString();
-        }
-
-        private static string GetResourceName(ExceptionResource resource)
-        {
-            Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
-                "The enum value is not defined, please check the ExceptionResource Enum.");
-
-            return resource.ToString();
         }
     }
 

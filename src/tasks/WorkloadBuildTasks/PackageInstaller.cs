@@ -33,7 +33,7 @@ namespace Microsoft.Workload.Build.Tasks
 
         public static bool Install(PackageReference[] references, string nugetConfigContents, string baseTempDir, TaskLoggingHelper logger, bool stopOnMissing=true, string? packagesPath=null)
         {
-            if (!references.Any())
+            if (references.Length == 0)
                 return true;
 
             return new PackageInstaller(nugetConfigContents, baseTempDir, packagesPath, logger)

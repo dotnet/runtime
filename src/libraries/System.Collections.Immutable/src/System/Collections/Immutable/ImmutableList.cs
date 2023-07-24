@@ -36,10 +36,23 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Creates a new immutable collection prefilled with the specified items.
         /// </summary>
-        /// <typeparam name="T">The type of items stored by the collection.</typeparam>
-        /// <param name="items">The items to prepopulate.</param>
+        /// <typeparam name="T">The type of items in the immutable list.</typeparam>
+        /// <param name="items">A span that contains the items to prepopulate the list with.</param>
         /// <returns>The new immutable collection.</returns>
-        public static ImmutableList<T> Create<T>(params T[] items) => ImmutableList<T>.Empty.AddRange(items);
+        public static ImmutableList<T> Create<T>(params T[] items)
+        {
+            Requires.NotNull(items, nameof(items));
+
+            return Create((ReadOnlySpan<T>)items);
+        }
+
+        /// <summary>
+        /// Creates a new immutable list that contains the items from the specified span of items.
+        /// </summary>
+        /// <typeparam name="T">The type of items stored by the collection.</typeparam>
+        /// <param name="items">A span that contains the items to prepopulate the list with.</param>
+        /// <returns>A new immutable list that contains the specified items.</returns>
+        public static ImmutableList<T> Create<T>(ReadOnlySpan<T> items) => ImmutableList<T>.Empty.AddRange(items);
 
         /// <summary>
         /// Creates a new immutable list builder.
@@ -56,8 +69,7 @@ namespace System.Collections.Immutable
         /// <returns>An immutable list.</returns>
         public static ImmutableList<TSource> ToImmutableList<TSource>(this IEnumerable<TSource> source)
         {
-            var existingList = source as ImmutableList<TSource>;
-            if (existingList != null)
+            if (source is ImmutableList<TSource> existingList)
             {
                 return existingList;
             }

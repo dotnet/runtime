@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
             }
 
-            private static AsymmetricAlgorithm DecodeRsaPublicKey(byte[] encodedKeyValue)
+            private static RSA DecodeRsaPublicKey(byte[] encodedKeyValue)
             {
                 RSA rsa = RSA.Create();
                 try
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            private static AsymmetricAlgorithm DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
+            private static DSA DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
             {
                 SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
                 {
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 DSA dsa = DSA.Create();
-                IDisposable? toDispose = dsa;
+                DSA? toDispose = dsa;
 
                 try
                 {
@@ -111,7 +111,7 @@ namespace System.Security.Cryptography.X509Certificates
             public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
             {
                 const int errSecUnknownFormat = -25257;
-                if (rawData == null || rawData.Length == 0)
+                if (rawData.IsEmpty)
                 {
                     // Throw to match Windows and Unix behavior.
                     throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);

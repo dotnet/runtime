@@ -38,8 +38,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public bool Equals (InterproceduralState<TValue, TValueLattice> other)
 			=> Methods.Equals (other.Methods) && HoistedLocals.Equals (other.HoistedLocals);
 
+		public override bool Equals (object obj)
+			=> obj is InterproceduralState<TValue, TValueLattice> inst && Equals (inst);
+
+		public override int GetHashCode ()
+			=> throw new NotImplementedException ();
+
 		public InterproceduralState<TValue, TValueLattice> Clone ()
-			=> new (Methods.Clone (),
+			=> new (Methods.DeepCopy (),
 			HoistedLocals.Clone (), lattice);
 
 		public void TrackMethod (MethodBodyValue method)

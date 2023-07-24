@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ValueNumberingUnorderedComparisonsOfConstants
 {
@@ -11,7 +12,8 @@ public class ValueNumberingUnorderedComparisonsOfConstants
 
     private static int _counter = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // The conditions of the loops get reversed and duplicated.
         // As part of this a comparison like a > b, which is really !IsNaN(a) && !IsNaN(b) && a > b

@@ -122,7 +122,7 @@ namespace System.Xml.Serialization
             ArgumentNullException.ThrowIfNull(members);
             ElementAccessor element = new ElementAccessor();
             element.IsSoap = true;
-            element.Name = elementName == null || elementName.Length == 0 ? elementName : XmlConvert.EncodeLocalName(elementName);
+            element.Name = string.IsNullOrEmpty(elementName) ? elementName : XmlConvert.EncodeLocalName(elementName);
 
             element.Mapping = ImportMembersMapping(members, ns, hasWrapperElement, writeAccessors, validate, new RecursionLimiter());
             element.Mapping.TypeName = elementName;
@@ -134,7 +134,7 @@ namespace System.Xml.Serialization
             return xmlMapping;
         }
 
-        private static Exception ReflectionException(string context, Exception e)
+        private static InvalidOperationException ReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlReflectionError, context), e);
         }
@@ -729,7 +729,7 @@ namespace System.Xml.Serialization
         {
             ElementAccessor element = new ElementAccessor();
             element.IsSoap = true;
-            element.Name = mapping.TypeName; //XmlConvert.EncodeLocalName(name == null || name.Length == 0 ? mapping.TypeName : name);
+            element.Name = mapping.TypeName;
             element.Namespace = ns;
             element.Mapping = mapping;
             return element;

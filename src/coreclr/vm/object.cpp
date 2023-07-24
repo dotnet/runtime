@@ -392,7 +392,7 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
         return;
     }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     if (argDest->IsStructPassedInRegs())
     {
@@ -425,7 +425,7 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
 
 #endif
 
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (argDest->IsStructPassedInRegs())
     {
         *(UINT64*)(argDest->GetStructGenRegDestinationAddress()) = 0;
@@ -694,7 +694,7 @@ STRINGREF StringObject::NewString(const WCHAR *pwsz)
     else
     {
 
-        DWORD nch = (DWORD)wcslen(pwsz);
+        DWORD nch = (DWORD)u16_strlen(pwsz);
         if (nch==0) {
             return GetEmptyString();
         }

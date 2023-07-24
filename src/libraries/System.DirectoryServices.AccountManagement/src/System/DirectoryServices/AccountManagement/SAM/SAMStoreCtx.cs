@@ -572,7 +572,7 @@ namespace System.DirectoryServices.AccountManagement
             return FindByDate(FindByDateMatcher.DateProperty.AccountExpirationTime, matchType, dt, principalType);
         }
 
-        private ResultSet FindByDate(
+        private SAMQuerySet FindByDate(
                         FindByDateMatcher.DateProperty property,
                         MatchType matchType,
                         DateTime value,

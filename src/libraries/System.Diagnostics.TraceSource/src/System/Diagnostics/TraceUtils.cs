@@ -15,10 +15,7 @@ namespace System.Diagnostics
     {
         internal static void VerifyAttributes(StringDictionary? attributes, string[]? supportedAttributes, object parent)
         {
-            if (attributes == null)
-            {
-                throw new ArgumentNullException(nameof(attributes));
-            }
+            ArgumentNullException.ThrowIfNull(attributes);
 
             foreach (string key in attributes.Keys)
             {

@@ -1,0 +1,1 @@
+N:System.Linq;The type system needs to be low level enough to be usable as an actual runtime type system. LINQ is not low level enough to be allowable in the type system.

@@ -134,8 +134,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(RangeIndexLengthData))]
         public void AsSpanStartLength(IEnumerable<int> source, int start, int length)
         {
-            var array = source.ToImmutableArray();
-            var expected = source.Skip(start).Take(length);
+            ImmutableArray<int> array = source.ToImmutableArray();
+            IEnumerable<int> expected = source.Skip(start).Take(length);
             Assert.Equal(expected, array.AsSpan(start, length).ToArray());
         }
 
@@ -143,7 +143,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void AsSpanStartLengthInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(-1, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(array.Length + 1, 1));
@@ -208,13 +208,13 @@ namespace System.Collections.Immutable.Tests
             // ImmutableArray<IEnumerable<T>>. However, if you pass a T[] in, you should get
             // a ImmutableArray<T>.
 
-            var array = new int[0];
+            int[] array = new int[0];
             Assert.IsType<ImmutableArray<int>>(ImmutableArray.Create(array));
 
-            var immutable = ImmutableArray<int>.Empty;
+            ImmutableArray<int> immutable = ImmutableArray<int>.Empty;
             Assert.IsType<ImmutableArray<ImmutableArray<int>>>(ImmutableArray.Create(immutable));
 
-            var enumerable = Enumerable.Empty<int>();
+            IEnumerable<int> enumerable = Enumerable.Empty<int>();
             Assert.IsType<ImmutableArray<IEnumerable<int>>>(ImmutableArray.Create(enumerable));
 
             Span<int> span = Span<int>.Empty;
@@ -284,7 +284,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(CreateRangeWithSelectorAndArgumentData))]
         public void CreateRangeWithSelectorAndArgument<TArg, TResult>(IEnumerable<int> source, Func<int, TArg, TResult> selector, TArg arg)
         {
-            var expected = source.Zip(Enumerable.Repeat(arg, source.Count()), selector);
+            IEnumerable<TResult> expected = source.Zip(Enumerable.Repeat(arg, source.Count()), selector);
             Assert.Equal(expected, ImmutableArray.CreateRange(source.ToImmutableArray(), selector, arg));
         }
 
@@ -311,7 +311,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(CreateRangeSliceWithSelectorData))]
         public void CreateRangeSliceWithSelector<TResult>(IEnumerable<int> source, int start, int length, Func<int, TResult> selector)
         {
-            var expected = source.Skip(start).Take(length).Select(selector);
+            IEnumerable<TResult> expected = source.Skip(start).Take(length).Select(selector);
             Assert.Equal(expected, ImmutableArray.CreateRange(source.ToImmutableArray(), start, length, selector));
         }
 
@@ -332,7 +332,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void CreateRangeSliceWithSelectorInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(array, 0, 0, (Func<int, int>)null));
 
@@ -352,7 +352,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(CreateRangeSliceWithSelectorAndArgumentData))]
         public void CreateRangeSliceWithSelectorAndArgument<TArg, TResult>(IEnumerable<int> source, int start, int length, Func<int, TArg, TResult> selector, TArg arg)
         {
-            var expected = source.Skip(start).Take(length).Zip(Enumerable.Repeat(arg, length), selector);
+            IEnumerable<TResult> expected = source.Skip(start).Take(length).Zip(Enumerable.Repeat(arg, length), selector);
             Assert.Equal(expected, ImmutableArray.CreateRange(source.ToImmutableArray(), start, length, selector, arg));
         }
 
@@ -375,7 +375,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void CreateRangeSliceWithSelectorAndArgumentInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(array, 0, 0, (Func<int, int, int>)null, 0));
 
@@ -402,7 +402,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(CreateFromSliceData))]
         public void SliceFromSliceData(IEnumerable<int> source, int start, int length)
         {
-            var immutableArray = source.ToImmutableArray();
+            ImmutableArray<int> immutableArray = source.ToImmutableArray();
             Assert.Equal(source.Skip(start).Take(length), immutableArray.Slice(start, length));
         }
 
@@ -420,7 +420,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void CreateFromSliceOfImmutableArrayInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.Create(array, -1, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.Create(array, array.Length + 1, 0));
@@ -439,8 +439,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void CreateFromSliceOfImmutableArrayOptimizations(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
-            var slice = ImmutableArray.Create(array, 0, array.Length);
+            ImmutableArray<int> array = source.ToImmutableArray();
+            ImmutableArray<int> slice = ImmutableArray.Create(array, 0, array.Length);
             Assert.True(array == slice); // Verify that the underlying arrays are reference-equal.
         }
 
@@ -448,8 +448,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void SliceFromCompleteImmutableArrayOptimizations(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
-            var slice = array.Slice(0, array.Length);
+            ImmutableArray<int> array = source.ToImmutableArray();
+            ImmutableArray<int> slice = array.Slice(0, array.Length);
             Assert.True(array == slice); // Verify that the underlying arrays are reference-equal.
         }
 
@@ -457,8 +457,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void CreateFromSliceOfImmutableArrayEmptyReturnsSingleton(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
-            var slice = ImmutableArray.Create(array, Math.Min(1, array.Length), 0);
+            ImmutableArray<int> array = source.ToImmutableArray();
+            ImmutableArray<int> slice = ImmutableArray.Create(array, Math.Min(1, array.Length), 0);
             Assert.True(s_empty == slice);
         }
 
@@ -466,7 +466,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void CreateFromSliceOfArrayInvalid(IEnumerable<int> source)
         {
-            var array = source.ToArray();
+            int[] array = source.ToArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.Create(array, -1, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.Create(array, array.Length + 1, 0));
@@ -485,7 +485,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void SliceFromInvalidRange(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => array.Slice(-1, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => array.Slice(array.Length + 1, 0));
@@ -504,8 +504,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void CreateFromSliceOfArrayEmptyReturnsSingleton(IEnumerable<int> source)
         {
-            var array = source.ToArray();
-            var slice = ImmutableArray.Create(array, Math.Min(1, array.Length), 0);
+            int[] array = source.ToArray();
+            ImmutableArray<int> slice = ImmutableArray.Create(array, Math.Min(1, array.Length), 0);
             Assert.True(s_empty == slice);
         }
 
@@ -513,8 +513,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void SliceEmptyReturnsSingleton(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
-            var slice = array.Slice(Math.Min(1, array.Length), 0);
+            ImmutableArray<int> array = source.ToImmutableArray();
+            ImmutableArray<int> slice = array.Slice(Math.Min(1, array.Length), 0);
             Assert.True(s_empty == slice);
         }
 
@@ -551,7 +551,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CreateFromArrayNull()
         {
-            var immutable = ImmutableArray.Create(default(int[]));
+            ImmutableArray<int> immutable = ImmutableArray.Create(default(int[]));
             Assert.False(immutable.IsDefault);
             Assert.True(immutable.IsEmpty);
         }
@@ -633,8 +633,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CastUpReferenceToInterface()
         {
-            var stringArray = ImmutableArray.Create("a", "b");
-            var enumArray = ImmutableArray<IEnumerable>.CastUp(stringArray);
+            ImmutableArray<string> stringArray = ImmutableArray.Create("a", "b");
+            ImmutableArray<IEnumerable> enumArray = ImmutableArray<IEnumerable>.CastUp(stringArray);
             Assert.Equal(2, enumArray.Length);
             Assert.True(stringArray == enumArray.CastArray<string>());
             Assert.True(stringArray == enumArray.As<string>());
@@ -643,8 +643,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CastUpInterfaceToInterface()
         {
-            var genericEnumArray = ImmutableArray.Create<IEnumerable<int>>(new List<int>(), new List<int>());
-            var legacyEnumArray = ImmutableArray<IEnumerable>.CastUp(genericEnumArray);
+            ImmutableArray<IEnumerable<int>> genericEnumArray = ImmutableArray.Create<IEnumerable<int>>(new List<int>(), new List<int>());
+            ImmutableArray<IEnumerable> legacyEnumArray = ImmutableArray<IEnumerable>.CastUp(genericEnumArray);
             Assert.Equal(2, legacyEnumArray.Length);
             Assert.True(genericEnumArray == legacyEnumArray.As<IEnumerable<int>>());
             Assert.True(genericEnumArray == legacyEnumArray.CastArray<IEnumerable<int>>());
@@ -653,8 +653,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CastUpArrayToSystemArray()
         {
-            var arrayArray = ImmutableArray.Create(new int[] { 1, 2 }, new int[] { 3, 4 });
-            var sysArray = ImmutableArray<Array>.CastUp(arrayArray);
+            ImmutableArray<int[]> arrayArray = ImmutableArray.Create(new int[] { 1, 2 }, new int[] { 3, 4 });
+            ImmutableArray<Array> sysArray = ImmutableArray<Array>.CastUp(arrayArray);
             Assert.Equal(2, sysArray.Length);
             Assert.True(arrayArray == sysArray.As<int[]>());
             Assert.True(arrayArray == sysArray.CastArray<int[]>());
@@ -663,8 +663,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CastUpArrayToObject()
         {
-            var arrayArray = ImmutableArray.Create(new int[] { 1, 2 }, new int[] { 3, 4 });
-            var objectArray = ImmutableArray<object>.CastUp(arrayArray);
+            ImmutableArray<int[]> arrayArray = ImmutableArray.Create(new int[] { 1, 2 }, new int[] { 3, 4 });
+            ImmutableArray<object> objectArray = ImmutableArray<object>.CastUp(arrayArray);
             Assert.Equal(2, objectArray.Length);
             Assert.True(arrayArray == objectArray.As<int[]>());
             Assert.True(arrayArray == objectArray.CastArray<int[]>());
@@ -673,8 +673,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CastUpDelegateToSystemDelegate()
         {
-            var delArray = ImmutableArray.Create<Action>(() => { }, () => { });
-            var sysDelArray = ImmutableArray<Delegate>.CastUp(delArray);
+            ImmutableArray<Action> delArray = ImmutableArray.Create<Action>(() => { }, () => { });
+            ImmutableArray<Delegate> sysDelArray = ImmutableArray<Delegate>.CastUp(delArray);
             Assert.Equal(2, sysDelArray.Length);
             Assert.True(delArray == sysDelArray.As<Action>());
             Assert.True(delArray == sysDelArray.CastArray<Action>());
@@ -683,9 +683,9 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CastArrayUnrelatedInterface()
         {
-            var stringArray = ImmutableArray.Create("cat", "dog");
-            var comparableArray = ImmutableArray<IComparable>.CastUp(stringArray);
-            var enumArray = comparableArray.CastArray<IEnumerable>();
+            ImmutableArray<string> stringArray = ImmutableArray.Create("cat", "dog");
+            ImmutableArray<IComparable> comparableArray = ImmutableArray<IComparable>.CastUp(stringArray);
+            ImmutableArray<IEnumerable> enumArray = comparableArray.CastArray<IEnumerable>();
             Assert.Equal(2, enumArray.Length);
             Assert.True(stringArray == enumArray.As<string>());
             Assert.True(stringArray == enumArray.CastArray<string>());
@@ -694,14 +694,14 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CastArrayBadInterface()
         {
-            var formattableArray = ImmutableArray.Create<IFormattable>(1, 2);
+            ImmutableArray<IFormattable> formattableArray = ImmutableArray.Create<IFormattable>(1, 2);
             Assert.Throws<InvalidCastException>(() => formattableArray.CastArray<IComparable>());
         }
 
         [Fact]
         public void CastArrayBadReference()
         {
-            var objectArray = ImmutableArray.Create<object>("cat", "dog");
+            ImmutableArray<object> objectArray = ImmutableArray.Create<object>("cat", "dog");
             Assert.Throws<InvalidCastException>(() => objectArray.CastArray<string>());
         }
 
@@ -709,7 +709,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void ToImmutableArray(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
             Span<int> span = source.ToArray().AsSpan();
 
             Assert.Equal(source, array);
@@ -723,7 +723,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void Count(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             Assert.Equal(source.Count(), array.Length);
             Assert.Equal(source.Count(), ((ICollection)array).Count);
@@ -796,7 +796,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void ContainsInt32(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             if (source.Any(i => i >= 0))
             {
@@ -808,6 +808,24 @@ namespace System.Collections.Immutable.Tests
             int notContained = Enumerable.Range(0, int.MaxValue).First(i => !source.Contains(i));
             Assert.False(array.Contains(notContained));
             Assert.False(((ICollection<int>)array).Contains(notContained));
+        }
+
+        [Fact]
+        public void ContainsDivisibleEqualityComparer()
+        {
+            ImmutableArray<int> array = ImmutableArray.Create(1, 4, 3);
+            var divisibleComparer = new DelegateEqualityComparer<int>(equals: (x, y) => x % y == 0);
+            Assert.True(array.Contains(2, divisibleComparer));
+
+            array = ImmutableArray.Create(1, 5, 3);
+            Assert.False(array.Contains(2, divisibleComparer));
+        }
+
+        [Fact]
+        public void ContainsDefaultEqualityComparer()
+        {
+            ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3);
+            Assert.True(array.Contains(2, null));
         }
 
         [Theory]
@@ -835,8 +853,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void GetEnumerator(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
-            var enumeratorStruct = array.GetEnumerator();
+            ImmutableArray<int> array = source.ToImmutableArray();
+            ImmutableArray<int>.Enumerator enumeratorStruct = array.GetEnumerator();
 
             Assert.IsType<ImmutableArray<int>.Enumerator>(enumeratorStruct);
             AssertNotAssignableFrom<IDisposable>(enumeratorStruct);
@@ -864,7 +882,7 @@ namespace System.Collections.Immutable.Tests
 
         private static void AssertNotAssignableFrom<T>(object obj)
         {
-            var typeInfo = obj.GetType().GetTypeInfo();
+            TypeInfo typeInfo = obj.GetType().GetTypeInfo();
             Assert.False(typeof(T).GetTypeInfo().IsAssignableFrom(typeInfo));
         }
 
@@ -887,10 +905,10 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void EnumeratorTraversal(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
-            var enumeratorStruct = array.GetEnumerator();
-            var enumeratorObject = ((IEnumerable<int>)array).GetEnumerator();
+            ImmutableArray<int>.Enumerator enumeratorStruct = array.GetEnumerator();
+            IEnumerator<int> enumeratorObject = ((IEnumerable<int>)array).GetEnumerator();
 
             Assert.Throws<IndexOutOfRangeException>(() => enumeratorStruct.Current);
             Assert.Throws<InvalidOperationException>(() => enumeratorObject.Current);
@@ -920,7 +938,7 @@ namespace System.Collections.Immutable.Tests
         public void EnumeratorObjectTraversalDisposeReset(IEnumerable<int> source)
         {
             var array = (IEnumerable<int>)source.ToImmutableArray();
-            var enumerator = array.GetEnumerator();
+            IEnumerator<int> enumerator = array.GetEnumerator();
 
             Assert.All(Enumerable.Range(0, source.Count()), bound =>
             {
@@ -951,7 +969,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(EnumeratorTraversalNullData))]
         public void EnumeratorTraversalNull<T>(IEnumerable<T> source) where T : class
         {
-            var array = ForceLazy(source.ToImmutableArray()).ToArray();
+            T[] array = ForceLazy(source.ToImmutableArray()).ToArray();
             Assert.Equal(source, array);
             Assert.Contains(null, array);
         }
@@ -985,13 +1003,13 @@ namespace System.Collections.Immutable.Tests
 
         public static IEnumerable<object[]> EqualsData()
         {
-            var enumerables = Int32EnumerableData()
+            IEnumerable<IEnumerable<int>> enumerables = Int32EnumerableData()
                 .Select(array => array[0])
                 .Cast<IEnumerable<int>>();
 
-            foreach (var enumerable in enumerables)
+            foreach (IEnumerable<int> enumerable in enumerables)
             {
-                var array = enumerable.ToImmutableArray();
+                ImmutableArray<int> array = enumerable.ToImmutableArray();
 
                 yield return new object[]
                 {
@@ -1030,7 +1048,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(SpecialInt32ImmutableArrayData))]
         public void EqualsSelf(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
 #pragma warning disable CS1718 // Comparison made to same variable
             Assert.True(array == array);
@@ -1059,7 +1077,7 @@ namespace System.Collections.Immutable.Tests
             // If one nullable with HasValue = false is compared to a nullable with HasValue = true,
             // but Value.IsDefault = true, the nullables will compare as equal.
 
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
             ImmutableArray<int>? nullable = array;
 
             Assert.Equal(array.IsDefault, null == nullable);
@@ -1074,7 +1092,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(SpecialInt32ImmutableArrayData))]
         public void GetHashCodeTest(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             // We must box once. Otherwise, the following assert would not have much purpose since
             // RuntimeHelpers.GetHashCode returns different values for boxed objects that are not
@@ -1110,7 +1128,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(AddData))]
         public void Add(IEnumerable<int> source, IEnumerable<int> items)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             var list = new List<Tuple<int[], ImmutableArray<int>>>();
 
@@ -1123,12 +1141,12 @@ namespace System.Collections.Immutable.Tests
                 // Add the next item.
                 array = array.Add(item);
 
-                var expected = source.Concat(items.Take(++index));
+                IEnumerable<int> expected = source.Concat(items.Take(++index));
                 Assert.Equal(expected, array);
 
                 // Go back to previous ImmutableArrays and make sure their contents
                 // didn't change by comparing them against their snapshots.
-                foreach (var tuple in list)
+                foreach (Tuple<int[], ImmutableArray<int>> tuple in list)
                 {
                     Assert.Equal(tuple.Item1, tuple.Item2);
                 }
@@ -1141,7 +1159,7 @@ namespace System.Collections.Immutable.Tests
         {
             Assert.All(ChangeType(items), it =>
             {
-                var array = source.ToImmutableArray();
+                ImmutableArray<int> array = source.ToImmutableArray();
 
                 Assert.Equal(source.Concat(items), array.AddRange(it)); // Enumerable overload
                 Assert.Equal(source.Concat(items), array.AddRange(it.ToImmutableArray())); // ImmutableArray overload
@@ -1161,7 +1179,7 @@ namespace System.Collections.Immutable.Tests
         [InlineData(new int[] { 1, 2 }, new int[] { 1, 2 }, 0)]
         public void AddRangeWithLength(IEnumerable<int> source, IEnumerable<int> items, int length)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             Assert.Equal(source.Concat(items.Take(length)), array.AddRange(items.ToArray(), length)); // Array overload
             Assert.Equal(source.Concat(items.Take(length)), array.AddRange(items.ToImmutableArray(), length)); // ImmutableArray overload
@@ -1175,7 +1193,7 @@ namespace System.Collections.Immutable.Tests
         [InlineData(new object[] { 1, 2 }, new int[] { 1, 2 })]
         public void AddRangeDerivedArray(IEnumerable<object> source, IEnumerable<int> items)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<object> array = source.ToImmutableArray();
 
             Assert.Equal(source.Concat(items.Cast<object>()), array.AddRange(items.ToArray())); // Array overload
             Assert.Equal(source.Concat(items.Cast<object>()), array.AddRange(items.ToImmutableArray())); // ImmutableArray overload
@@ -1233,8 +1251,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void AddRangeWithLengthInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
-            var items = new int[] { 1, 2 };
+            ImmutableArray<int> array = source.ToImmutableArray();
+            int[] items = new int[] { 1, 2 };
 
             AssertExtensions.Throws<ArgumentNullException>("items", () => array.AddRange(null, 3));
 
@@ -1256,10 +1274,10 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(InsertData))]
         public void Insert<T>(IEnumerable<T> source, int index, T item)
         {
-            var expected = source.Take(index)
+            IEnumerable<T> expected = source.Take(index)
                 .Concat(new[] { item })
                 .Concat(source.Skip(index));
-            var array = source.ToImmutableArray();
+            ImmutableArray<T> array = source.ToImmutableArray();
 
             Assert.Equal(expected, array.Insert(index, item));
             Assert.Equal(source, array); // Make sure the original array wasn't affected.
@@ -1277,7 +1295,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void InsertInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.Insert(-1, 0x61));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.Insert(array.Length + 1, 0x61));
@@ -1296,7 +1314,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void InsertRangeInvalid(IEnumerable<int> source)
         {
-            var immutableArray = source.ToImmutableArray();
+            ImmutableArray<int> immutableArray = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(immutableArray.Length + 1, s_oneElement));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(-1, s_oneElement));
@@ -1317,7 +1335,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void InsertRangeDefaultInvalid(IEnumerable<int> items)
         {
-            var immutableArray = items.ToImmutableArray();
+            ImmutableArray<int> immutableArray = items.ToImmutableArray();
 
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(1, items));
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(-1, items));
@@ -1353,11 +1371,11 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(InsertRangeData))]
         public void InsertRange(IEnumerable<int> source, int index, IEnumerable<int> items)
         {
-            var immutableArray = source.ToImmutableArray();
+            ImmutableArray<int> immutableArray = source.ToImmutableArray();
 
             Assert.All(ChangeType(items), it =>
             {
-                var expected = source.Take(index)
+                IEnumerable<int> expected = source.Take(index)
                     .Concat(items)
                     .Concat(source.Skip(index));
 
@@ -1413,8 +1431,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(RemoveAtData))]
         public void RemoveAt(IEnumerable<int> source, int index)
         {
-            var array = source.ToImmutableArray();
-            var expected = source.Take(index).Concat(source.Skip(index + 1));
+            ImmutableArray<int> array = source.ToImmutableArray();
+            IEnumerable<int> expected = source.Take(index).Concat(source.Skip(index + 1));
             Assert.Equal(expected, array.RemoveAt(index));
         }
 
@@ -1430,7 +1448,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void RemoveAtInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveAt(-1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveAt(array.Length));
@@ -1450,10 +1468,10 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(RemoveData))]
         public void Remove<T>(IEnumerable<T> source, T item, IEqualityComparer<T> comparer)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<T> array = source.ToImmutableArray();
 
-            var comparerOrDefault = comparer ?? EqualityComparer<T>.Default;
-            var expected = source
+            IEqualityComparer<T> comparerOrDefault = comparer ?? EqualityComparer<T>.Default;
+            IEnumerable<T> expected = source
                 .TakeWhile(x => !comparerOrDefault.Equals(x, item))
                 .Concat(source.SkipWhile(x => !comparerOrDefault.Equals(x, item)).Skip(1));
 
@@ -1499,8 +1517,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(RangeIndexLengthData))]
         public void RemoveRangeIndexLength(IEnumerable<int> source, int index, int length)
         {
-            var array = source.ToImmutableArray();
-            var expected = source.Take(index).Concat(source.Skip(index + length));
+            ImmutableArray<int> array = source.ToImmutableArray();
+            IEnumerable<int> expected = source.Take(index).Concat(source.Skip(index + length));
             Assert.Equal(expected, array.RemoveRange(index, length));
         }
 
@@ -1508,7 +1526,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void RemoveRangeIndexLengthInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveRange(-1, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveRange(array.Length + 1, 1));
@@ -1588,7 +1606,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void RemoveRangeEnumerableInvalid(IEnumerable<int> source)
         {
-            var immutableArray = source.ToImmutableArray();
+            ImmutableArray<int> immutableArray = source.ToImmutableArray();
 
             Assert.All(SharedEqualityComparers<int>(), comparer =>
             {
@@ -1671,8 +1689,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(RemoveAllData))]
         public void RemoveAll(IEnumerable<int> source, Predicate<int> match)
         {
-            var array = source.ToImmutableArray();
-            var expected = source.Where(i => !match(i));
+            ImmutableArray<int> array = source.ToImmutableArray();
+            IEnumerable<int> expected = source.Where(i => !match(i));
             Assert.Equal(expected, array.RemoveAll(match));
         }
 
@@ -1689,7 +1707,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void RemoveAllInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentNullException>("match", () => array.RemoveAll(match: null));
         }
@@ -1704,10 +1722,10 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(ReplaceData))]
         public void Replace<T>(IEnumerable<T> source, T oldValue, T newValue, IEqualityComparer<T> comparer)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<T> array = source.ToImmutableArray();
 
-            var comparerOrDefault = comparer ?? EqualityComparer<T>.Default;
-            var expected = source
+            IEqualityComparer<T> comparerOrDefault = comparer ?? EqualityComparer<T>.Default;
+            IEnumerable<T> expected = source
                 .TakeWhile(x => !comparerOrDefault.Equals(x, oldValue))
                 .Concat(new[] { newValue })
                 .Concat(source.SkipWhile(x => !comparerOrDefault.Equals(x, oldValue)).Skip(1));
@@ -1747,7 +1765,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void ReplaceInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
             int notContained = Enumerable.Range(0, int.MaxValue).First(i => !source.Contains(i));
 
             Assert.All(SharedEqualityComparers<int>(), comparer =>
@@ -1783,8 +1801,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(SetItemData))]
         public void SetItem<T>(IEnumerable<T> source, int index, T item)
         {
-            var array = source.ToImmutableArray();
-            var expected = source.ToArray();
+            ImmutableArray<T> array = source.ToImmutableArray();
+            T[] expected = source.ToArray();
             expected[index] = item;
             Assert.Equal(expected, array.SetItem(index, item));
         }
@@ -1801,7 +1819,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void SetItemInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.SetItem(index: -1, item: 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.SetItem(index: array.Length, item: 0));
@@ -1821,7 +1839,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(CopyToData))]
         public void CopyTo(IEnumerable<int> source, int sourceIndex, IEnumerable<int> destination, int destinationIndex, int length)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             // Take a snapshot of the destination array before calling CopyTo.
             // Afterwards, ensure that the range we copied to was overwritten, and check
@@ -1884,7 +1902,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void CopyToInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             // ImmutableArray<T>.CopyTo defers to Array.Copy for argument validation, so
             // the parameter names here come from Array.Copy.
@@ -1914,7 +1932,7 @@ namespace System.Collections.Immutable.Tests
         [InlineData(3, 1)]
         public void CopyToDefaultInvalid(int destinationLength, int destinationIndex)
         {
-            var destination = new int[destinationLength];
+            int[] destination = new int[destinationLength];
 
             if (destinationIndex == 0)
             {
@@ -1932,7 +1950,7 @@ namespace System.Collections.Immutable.Tests
         public void IsDefault(IEnumerable<int> source, bool isDefault, bool isEmpty)
         {
             _ = isEmpty;
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             Assert.Equal(isDefault, array.IsDefault);
         }
@@ -1941,7 +1959,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(IsDefaultOrEmptyData))]
         public void IsDefaultOrEmpty(IEnumerable<int> source, bool isDefault, bool isEmpty)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             Assert.Equal(isDefault || isEmpty, array.IsDefaultOrEmpty);
         }
@@ -1957,7 +1975,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void GetIndexer(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             for (int i = 0; i < array.Length; i++)
             {
@@ -1974,7 +1992,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void GetIndexerInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             Assert.Throws<IndexOutOfRangeException>(() => array[-1]);
             Assert.Throws<IndexOutOfRangeException>(() => ((IList)array)[-1]);
@@ -2008,9 +2026,9 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(SortData))]
         public void Sort<T>(IEnumerable<T> source, int index, int count, IComparer<T> comparer)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<T> array = source.ToImmutableArray();
 
-            var expected = source.ToArray();
+            T[] expected = source.ToArray();
             Array.Sort(expected, index, count, comparer);
 
             Assert.Equal(expected, array.Sort(index, count, comparer));
@@ -2055,7 +2073,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void SortComparisonInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentNullException>("comparison", () => array.Sort(comparison: null));
         }
@@ -2064,7 +2082,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void SortComparerInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.Sort(-1, -1, Comparer<int>.Default));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.Sort(-1, 0, Comparer<int>.Default));
@@ -2096,7 +2114,7 @@ namespace System.Collections.Immutable.Tests
             // If ImmutableArray<T>.Sort is called when the array is already sorted,
             // it should just return the original array rather than allocating a new one.
 
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             Assert.True(array == array.Sort(index, count, comparer));
 
@@ -2137,7 +2155,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void ToBuilder(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
             ImmutableArray<int>.Builder builder = array.ToBuilder();
 
             Assert.Equal(array, builder);
@@ -2171,8 +2189,7 @@ namespace System.Collections.Immutable.Tests
                 int[] firstArray = first.ToArray();
                 Assert.Equal(!IsImmutableArray(second) && expected, ((IStructuralEquatable)firstArray).Equals(second, comparer));
 
-                var secondEquatable = second as IStructuralEquatable;
-                if (secondEquatable != null)
+                if (second is IStructuralEquatable secondEquatable)
                 {
                     Assert.Equal(expected, secondEquatable.Equals(firstArray, comparer));
                 }
@@ -2248,14 +2265,14 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(IStructuralEquatableGetHashCodeData))]
         public void IStructuralEquatableGetHashCode(IEnumerable<int> source, IEqualityComparer comparer)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
             int expected = ((IStructuralEquatable)source.ToArray()).GetHashCode(comparer);
             Assert.Equal(expected, ((IStructuralEquatable)array).GetHashCode(comparer));
         }
 
         public static IEnumerable<object[]> IStructuralEquatableGetHashCodeData()
         {
-            var enumerables = Int32EnumerableData()
+            IEnumerable<IEnumerable<int>> enumerables = Int32EnumerableData()
                 .Select(array => array[0])
                 .Cast<IEnumerable<int>>();
 
@@ -2280,7 +2297,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void IStructuralEquatableGetHashCodeNullComparerNonNullUnderlyingArrayInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
             AssertExtensions.Throws<ArgumentNullException>("comparer", () => ((IStructuralEquatable)array).GetHashCode(comparer: null));
         }
 
@@ -2300,7 +2317,7 @@ namespace System.Collections.Immutable.Tests
         public void IStructuralComparableCompareToDefaultAndNonDefaultInvalid(IEnumerable<int> source)
         {
             object other = source.ToImmutableArray();
-            var comparers = SharedComparers<int>().OfType<IComparer>().Except(new IComparer[] { null });
+            IEnumerable<IComparer> comparers = SharedComparers<int>().OfType<IComparer>().Except(new IComparer[] { null });
 
             Assert.All(comparers, comparer =>
             {
@@ -2323,7 +2340,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(IStructuralComparableCompareToDefaultAndNonImmutableArrayInvalidData))]
         public void IStructuralComparableCompareToDefaultAndNonImmutableArrayInvalid(object other)
         {
-            var comparers = SharedComparers<int>().OfType<IComparer>().Except(new IComparer[] { null });
+            IEnumerable<IComparer> comparers = SharedComparers<int>().OfType<IComparer>().Except(new IComparer[] { null });
 
             Assert.All(comparers, comparer =>
             {
@@ -2335,7 +2352,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(IStructuralComparableCompareToNullComparerArgumentInvalidData))]
         public void IStructuralComparableCompareToNullComparerArgumentInvalid(IEnumerable<int> source, object other)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
             AssertExtensions.Throws<ArgumentException>("other", () => ((IStructuralComparable)array).CompareTo(other, comparer: null));
 
             if (other is Array || IsImmutableArray(other))
@@ -2355,7 +2372,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(IStructuralComparableCompareToNullComparerNullReferenceInvalidData))]
         public void IStructuralComparableCompareToNullComparerNullReferenceInvalid(IEnumerable<int> source, object other)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
             Assert.Throws<NullReferenceException>(() => ((IStructuralComparable)array).CompareTo(other, comparer: null));
 
             if (other == null)
@@ -2369,8 +2386,9 @@ namespace System.Collections.Immutable.Tests
             // This was not fixed for compatibility reasons. See https://github.com/dotnet/runtime/issues/19265
             yield return new object[] { new[] { 1, 2, 3 }, new[] { 1, 2, 3 } };
             yield return new object[] { new[] { 1, 2, 3 }, ImmutableArray.Create(1, 2, 3) };
+
             // Cache this into a local so the comparands are reference-equal.
-            var oneTwoThree = ImmutableArray.Create(1, 2, 3);
+            ImmutableArray<int> oneTwoThree = ImmutableArray.Create(1, 2, 3);
             yield return new object[] { oneTwoThree, oneTwoThree };
         }
 
@@ -2378,7 +2396,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(IStructuralComparableCompareToData))]
         public void IStructuralComparableCompareTo(IEnumerable<int> source, object other, IComparer comparer, int expected)
         {
-            var array = source?.ToImmutableArray() ?? s_emptyDefault;
+            ImmutableArray<int> array = source?.ToImmutableArray() ?? s_emptyDefault;
             Assert.Equal(expected, ((IStructuralComparable)array).CompareTo(other ?? s_emptyDefault, comparer));
 
             if (other is Array)
@@ -2408,7 +2426,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(IStructuralComparableCompareToInvalidData))]
         public void IStructuralComparableCompareToInvalid(IEnumerable<int> source, object other, IComparer comparer)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentException>("other", () => ((IStructuralComparable)array).CompareTo(other, comparer));
             AssertExtensions.Throws<ArgumentException>("other", () => ((IStructuralComparable)source.ToArray()).CompareTo(other, comparer));
@@ -2437,7 +2455,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(BinarySearchData))]
         public void BinarySearch(IEnumerable<int> source, int value)
         {
-            var array = source.ToArray();
+            int[] array = source.ToArray();
 
             Assert.Equal(
                 Array.BinarySearch(array, value),
@@ -2500,7 +2518,7 @@ namespace System.Collections.Immutable.Tests
             // in (for example) a CopyTo method and we read from the field more than once.
             // Also noteworthy: this method only tests the thread-safety of the Add method.
             // While it proves the general point, any method that reads 'this' more than once is vulnerable.
-            var array = ImmutableArray.Create<int>();
+            ImmutableArray<int> array = ImmutableArray.Create<int>();
             Action mutator = () =>
             {
                 for (int i = 0; i < 100; i++)
@@ -2533,8 +2551,8 @@ namespace System.Collections.Immutable.Tests
         {
             var array = new[] { 1, 2, 3 }.ToImmutableArray();
 
-            ref readonly var safeRef = ref array.ItemRef(1);
-            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref readonly int safeRef = ref array.ItemRef(1);
+            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
 
             Assert.Equal(2, array.ItemRef(1));
 
@@ -2648,7 +2666,7 @@ namespace System.Collections.Immutable.Tests
                 return false;
             }
 
-            var typeInfo = obj.GetType().GetTypeInfo();
+            TypeInfo typeInfo = obj.GetType().GetTypeInfo();
             return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(ImmutableArray<>);
         }
 

@@ -30,7 +30,7 @@ public:
     // Notification of noway_assert.
     void NotifyNowayAssert(const char* filename, unsigned line);
 
-    // Is telemetry enabled through COMPlus_JitTelemetry?
+    // Is telemetry enabled through DOTNET_JitTelemetry?
     static bool IsTelemetryEnabled();
 
 private:

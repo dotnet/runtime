@@ -20,10 +20,10 @@ extends:
           jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
           buildConfig: checked
           platforms:
-          - Linux_arm64
-          - OSX_arm64
+          - linux_arm64
+          - osx_arm64
           - windows_arm64
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: jitstress-isas-arm
 
@@ -32,7 +32,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
           platforms:
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: jitstress-isas-arm
 
@@ -41,8 +41,8 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
           platforms:
-          - Linux_arm64
-          - OSX_arm64
+          - linux_arm64
+          - osx_arm64
           - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

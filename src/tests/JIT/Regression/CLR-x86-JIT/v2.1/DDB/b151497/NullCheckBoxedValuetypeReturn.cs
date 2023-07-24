@@ -11,6 +11,7 @@
 //     It should print out "Pass".
 
 using System;
+using Xunit;
 
 struct MyStruct
 {
@@ -26,7 +27,8 @@ public class MainApp
         return new MyStruct();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if ((object)MainApp.Foo() == null)
         {

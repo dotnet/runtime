@@ -116,8 +116,6 @@ public:
 
     bool IsValueClass() const
     {
-        assert(!IsBlockLayout());
-
         return m_isValueClass;
     }
 
@@ -186,9 +184,21 @@ public:
         return m_gcPtrCount != 0;
     }
 
+    bool HasGCByRef() const;
+
     bool IsGCPtr(unsigned slot) const
     {
         return GetGCPtr(slot) != TYPE_GC_NONE;
+    }
+
+    bool IsGCRef(unsigned slot) const
+    {
+        return GetGCPtr(slot) == TYPE_GC_REF;
+    }
+
+    bool IsGCByRef(unsigned slot) const
+    {
+        return GetGCPtr(slot) == TYPE_GC_BYREF;
     }
 
     var_types GetGCPtrType(unsigned slot) const

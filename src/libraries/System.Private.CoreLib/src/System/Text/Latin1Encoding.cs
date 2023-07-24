@@ -19,7 +19,7 @@ namespace System.Text
         internal static readonly Latin1EncodingSealed s_default = new Latin1EncodingSealed();
 
         // We only use the best-fit table, of which ASCII is a superset for us.
-        public Latin1Encoding() : base(Encoding.ISO_8859_1)
+        public Latin1Encoding() : base(ISO_8859_1)
         {
         }
 
@@ -151,9 +151,7 @@ namespace System.Text
 
         public override int GetMaxByteCount(int charCount)
         {
-            if (charCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(charCount),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             // Characters would be # of characters + 1 in case high surrogate is ? * max fallback
             long byteCount = (long)charCount + 1;
@@ -236,6 +234,24 @@ namespace System.Text
             }
         }
 
+        /// <inheritdoc/>
+        public override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            {
+                int written = GetBytesCommon(charsPtr, chars.Length, bytesPtr, bytes.Length, throwForDestinationOverflow: false);
+                if (written >= 0)
+                {
+                    bytesWritten = written;
+                    return true;
+                }
+
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
         public override unsafe int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (s is null || bytes is null)
@@ -271,7 +287,7 @@ namespace System.Text
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe int GetBytesCommon(char* pChars, int charCount, byte* pBytes, int byteCount)
+        private unsafe int GetBytesCommon(char* pChars, int charCount, byte* pBytes, int byteCount, bool throwForDestinationOverflow = true)
         {
             // Common helper method for all non-EncoderNLS entry points to GetBytes.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
@@ -295,7 +311,7 @@ namespace System.Text
             {
                 // Simple narrowing conversion couldn't operate on entire buffer - invoke fallback.
 
-                return GetBytesWithFallback(pChars, charCount, pBytes, byteCount, charsConsumed, bytesWritten);
+                return GetBytesWithFallback(pChars, charCount, pBytes, byteCount, charsConsumed, bytesWritten, throwForDestinationOverflow);
             }
         }
 
@@ -513,6 +529,23 @@ namespace System.Text
             }
         }
 
+        /// <inheritdoc/>
+        public override unsafe bool TryGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten)
+        {
+            if (bytes.Length <= chars.Length)
+            {
+                fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+                fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+                {
+                    charsWritten = GetCharsCommon(bytesPtr, bytes.Length, charsPtr, chars.Length);
+                    return true;
+                }
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
         public override unsafe string GetString(byte[] bytes)
         {
             if (bytes is null)
@@ -520,16 +553,13 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes);
             }
 
-            return string.Create(bytes.Length, (encoding: this, bytes), static (chars, args) =>
+            string result = string.FastAllocateString(bytes.Length);
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = result)
             {
-                Debug.Assert(chars.Length == args.bytes.Length);
-
-                fixed (byte* pBytes = args.bytes)
-                fixed (char* pChars = chars)
-                {
-                    args.encoding.GetCharsCommon(pBytes, args.bytes.Length, pChars, chars.Length);
-                }
-            });
+                GetCharsCommon(pBytes, bytes.Length, pChars, result.Length);
+            }
+            return result;
         }
 
         public override unsafe string GetString(byte[] bytes, int index, int count)
@@ -553,14 +583,13 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            return string.Create(count, (encoding: this, bytes, index), static (chars, args) =>
+            string result = string.FastAllocateString(count);
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = result)
             {
-                fixed (byte* pBytes = args.bytes)
-                fixed (char* pChars = chars)
-                {
-                    args.encoding.GetCharsCommon(pBytes + args.index, chars.Length, pChars, chars.Length);
-                }
-            });
+                GetCharsCommon(pBytes + index, count, pChars, count);
+            }
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

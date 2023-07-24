@@ -47,10 +47,7 @@ namespace System.Threading
         /// than 0.</exception>
         public CountdownEvent(int initialCount)
         {
-            if (initialCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(initialCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(initialCount);
 
             _initialCount = initialCount;
             _currentCount = initialCount;
@@ -216,10 +213,7 @@ namespace System.Threading
         /// disposed.</exception>
         public bool Signal(int signalCount)
         {
-            if (signalCount <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(signalCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(signalCount);
 
             ObjectDisposedException.ThrowIf(_disposed, this);
             Debug.Assert(_event != null);
@@ -323,10 +317,7 @@ namespace System.Threading
         /// disposed.</exception>
         public bool TryAddCount(int signalCount)
         {
-            if (signalCount <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(signalCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(signalCount);
 
             ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -388,10 +379,7 @@ namespace System.Threading
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             _currentCount = count;
             _initialCount = count;
@@ -463,10 +451,8 @@ namespace System.Threading
         public bool Wait(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
 
             return Wait((int)totalMilliseconds, CancellationToken.None);
         }
@@ -494,10 +480,8 @@ namespace System.Threading
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
 
             return Wait((int)totalMilliseconds, cancellationToken);
         }
@@ -540,10 +524,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             ObjectDisposedException.ThrowIf(_disposed, this);
             cancellationToken.ThrowIfCancellationRequested();

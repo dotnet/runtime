@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_Avx512F_handwritten_ro</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="HandwrittenProgram.cs" />
+    <Compile Include="..\..\X86\Shared\SimpleUnOpTest_DataTable.cs" />
+
+    <Compile Include="ConvertToVector256Int32.Double.cs" />
+    <Compile Include="ConvertToVector256Single.Double.cs" />
+    <Compile Include="ConvertToVector256Int32WithTruncation.Double.cs" />
+    <Compile Include="ConvertToVector512Double.Single.cs" />
+    <Compile Include="ConvertToVector512Double.Int32.cs" />
+    <Compile Include="ConvertToVector512Int32.Byte.cs" />
+    <Compile Include="ConvertToVector512Int32.Int16.cs" />
+    <Compile Include="ConvertToVector512Int32.SByte.cs" />
+    <Compile Include="ConvertToVector512Int32.UInt16.cs" />
+    <Compile Include="ConvertToVector512Int64.Byte.cs" />
+    <Compile Include="ConvertToVector512Int64.Int16.cs" />
+    <Compile Include="ConvertToVector512Int64.Int32.cs" />
+    <Compile Include="ConvertToVector512Int64.SByte.cs" />
+    <Compile Include="ConvertToVector512Int64.UInt16.cs" />
+    <Compile Include="ConvertToVector512Int64.UInt32.cs" />
+    <Compile Include="ConvertToVector512UInt32.Byte.cs" />
+    <Compile Include="ConvertToVector512UInt32.Int16.cs" />
+    <Compile Include="ConvertToVector512UInt32.SByte.cs" />
+    <Compile Include="ConvertToVector512UInt32.UInt16.cs" />
+    <Compile Include="ConvertToVector512UInt64.Byte.cs" />
+    <Compile Include="ConvertToVector512UInt64.Int16.cs" />
+    <Compile Include="ConvertToVector512UInt64.Int32.cs" />
+    <Compile Include="ConvertToVector512UInt64.SByte.cs" />
+    <Compile Include="ConvertToVector512UInt64.UInt16.cs" />
+    <Compile Include="ConvertToVector512UInt64.UInt32.cs" />
+    <Compile Include="LoadAlignedVector512.cs" />
+    <Compile Include="LoadAlignedVector512NonTemporal.cs" />
+    <Compile Include="Sqrt.cs" />
+    <Compile Include="Store.cs" />
+    <Compile Include="StoreAligned.cs" />
+    <Compile Include="StoreAlignedNonTemporal.cs" />
+    <Compile Include="UnpackHigh.cs" />
+    <Compile Include="UnpackLow.cs" />
+  </ItemGroup>
+</Project>

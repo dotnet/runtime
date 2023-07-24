@@ -28,7 +28,7 @@ namespace System.Runtime.Serialization.Json
         private SupportedEncoding _encodingCode;
         private readonly bool _isReading;
 
-        private Stream _stream = null!; // initialized in InitForXXX
+        private BufferedStream _stream = null!; // initialized in InitForXXX
 
         public JsonEncodingStreamWrapper(Stream stream, Encoding? encoding, bool isReader)
         {

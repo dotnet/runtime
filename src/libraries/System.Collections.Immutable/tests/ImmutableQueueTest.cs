@@ -16,11 +16,11 @@ namespace System.Collections.Immutable.Tests
         {
             Assert.NotNull(items);
 
-            var queue = ImmutableQueue<T>.Empty;
+            ImmutableQueue<T> queue = ImmutableQueue<T>.Empty;
             int i = 0;
             foreach (T item in items)
             {
-                var nextQueue = queue.Enqueue(item);
+                ImmutableQueue<T> nextQueue = queue.Enqueue(item);
                 Assert.NotSame(queue, nextQueue); //, "Enqueue returned this instead of a new instance.");
                 Assert.Equal(i, queue.Count()); //, "Enqueue mutated the queue.");
                 Assert.Equal(++i, nextQueue.Count());
@@ -44,7 +44,7 @@ namespace System.Collections.Immutable.Tests
             {
                 T actualItem = queue.Peek();
                 AssertAreSame(expectedItem, actualItem);
-                var nextQueue = queue.Dequeue();
+                ImmutableQueue<T> nextQueue = queue.Dequeue();
                 Assert.NotSame(queue, nextQueue); //, "Dequeue returned this instead of a new instance.");
                 Assert.Equal(i, queue.Count());
                 Assert.Equal(--i, nextQueue.Count());
@@ -55,7 +55,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void EnumerationOrder()
         {
-            var queue = ImmutableQueue<int>.Empty;
+            ImmutableQueue<int> queue = ImmutableQueue<int>.Empty;
 
             // Push elements onto the backwards stack.
             queue = queue.Enqueue(1).Enqueue(2).Enqueue(3);
@@ -83,15 +83,15 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void GetEnumeratorText()
         {
-            var queue = ImmutableQueue.Create(5);
-            var enumeratorStruct = queue.GetEnumerator();
+            ImmutableQueue<int> queue = ImmutableQueue.Create(5);
+            ImmutableQueue<int>.Enumerator enumeratorStruct = queue.GetEnumerator();
             Assert.Throws<InvalidOperationException>(() => enumeratorStruct.Current);
             Assert.True(enumeratorStruct.MoveNext());
             Assert.Equal(5, enumeratorStruct.Current);
             Assert.False(enumeratorStruct.MoveNext());
             Assert.Throws<InvalidOperationException>(() => enumeratorStruct.Current);
 
-            var enumerator = ((IEnumerable<int>)queue).GetEnumerator();
+            IEnumerator<int> enumerator = ((IEnumerable<int>)queue).GetEnumerator();
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             Assert.True(enumerator.MoveNext());
             Assert.Equal(5, enumerator.Current);
@@ -109,9 +109,9 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void EnumeratorRecyclingMisuse()
         {
-            var queue = ImmutableQueue.Create(5);
-            var enumerator = ((IEnumerable<int>)queue).GetEnumerator();
-            var enumeratorCopy = enumerator;
+            ImmutableQueue<int> queue = ImmutableQueue.Create(5);
+            IEnumerator<int> enumerator = ((IEnumerable<int>)queue).GetEnumerator();
+            IEnumerator<int> enumeratorCopy = enumerator;
             Assert.True(enumerator.MoveNext());
             enumerator.Dispose();
             Assert.Throws<ObjectDisposedException>(() => enumerator.MoveNext());
@@ -149,11 +149,11 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void DequeueOutValue()
         {
-            var queue = ImmutableQueue<int>.Empty.Enqueue(5).Enqueue(6);
+            ImmutableQueue<int> queue = ImmutableQueue<int>.Empty.Enqueue(5).Enqueue(6);
             int head;
             queue = queue.Dequeue(out head);
             Assert.Equal(5, head);
-            var emptyQueue = queue.Dequeue(out head);
+            ImmutableQueue<int> emptyQueue = queue.Dequeue(out head);
             Assert.Equal(6, head);
             Assert.True(emptyQueue.IsEmpty);
 
@@ -166,9 +166,9 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void ClearTest()
         {
-            var emptyQueue = ImmutableQueue.Create<GenericParameterHelper>();
+            ImmutableQueue<GenericParameterHelper> emptyQueue = ImmutableQueue.Create<GenericParameterHelper>();
             AssertAreSame(emptyQueue, emptyQueue.Clear());
-            var nonEmptyQueue = emptyQueue.Enqueue(new GenericParameterHelper(3));
+            ImmutableQueue<GenericParameterHelper> nonEmptyQueue = emptyQueue.Enqueue(new GenericParameterHelper(3));
             AssertAreSame(emptyQueue, nonEmptyQueue.Clear());
 
             // Interface test
@@ -217,6 +217,10 @@ namespace System.Collections.Immutable.Tests
             Assert.False(queue.IsEmpty);
             Assert.Equal(new[] { 1, 2 }, queue);
 
+            queue = ImmutableQueue.Create((ReadOnlySpan<int>)new[] { 1, 2 });
+            Assert.False(queue.IsEmpty);
+            Assert.Equal(new[] { 1, 2 }, queue);
+
             queue = ImmutableQueue.CreateRange((IEnumerable<int>)new[] { 1, 2 });
             Assert.False(queue.IsEmpty);
             Assert.Equal(new[] { 1, 2 }, queue);
@@ -258,13 +262,13 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void PeekRef()
         {
-            var queue = ImmutableQueue<int>.Empty
+            ImmutableQueue<int> queue = ImmutableQueue<int>.Empty
                 .Enqueue(1)
                 .Enqueue(2)
                 .Enqueue(3);
 
-            ref readonly var safeRef = ref queue.PeekRef();
-            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref readonly int safeRef = ref queue.PeekRef();
+            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
 
             Assert.Equal(1, queue.PeekRef());
 
@@ -276,15 +280,15 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void PeekRef_Empty()
         {
-            var queue = ImmutableQueue<int>.Empty;
+            ImmutableQueue<int> queue = ImmutableQueue<int>.Empty;
 
             Assert.Throws<InvalidOperationException>(() => queue.PeekRef());
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
-            var queue = ImmutableQueue<T>.Empty;
-            foreach (var item in contents)
+            ImmutableQueue<T> queue = ImmutableQueue<T>.Empty;
+            foreach (T item in contents)
             {
                 queue = queue.Enqueue(item);
             }

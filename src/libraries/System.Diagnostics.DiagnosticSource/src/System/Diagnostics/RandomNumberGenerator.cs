@@ -14,9 +14,6 @@ namespace System.Diagnostics
 
         public static RandomNumberGenerator Current => t_random ??= new RandomNumberGenerator();
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         public unsafe RandomNumberGenerator()
         {
             do

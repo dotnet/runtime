@@ -1151,7 +1151,7 @@ namespace System.Data
 
         #region ITypedList
 
-        string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[] listAccessors)
+        string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[]? listAccessors)
         {
             if (_table != null)
             {
@@ -1164,7 +1164,7 @@ namespace System.Data
                     DataSet? dataSet = _table.DataSet;
                     if (dataSet != null)
                     {
-                        DataTable? foundTable = dataSet.FindTable(_table, listAccessors, 0);
+                        DataTable? foundTable = DataSet.FindTable(_table, listAccessors, 0);
                         if (foundTable != null)
                         {
                             return foundTable.TableName;
@@ -1175,7 +1175,7 @@ namespace System.Data
             return string.Empty;
         }
 
-        PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
+        PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[]? listAccessors)
         {
             if (_table != null)
             {
@@ -1191,7 +1191,7 @@ namespace System.Data
                         return new PropertyDescriptorCollection(null);
                     }
 
-                    DataTable? foundTable = dataSet.FindTable(_table, listAccessors, 0);
+                    DataTable? foundTable = DataSet.FindTable(_table, listAccessors, 0);
                     if (foundTable != null)
                     {
                         return foundTable.GetPropertyDescriptorCollection();

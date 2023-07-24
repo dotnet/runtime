@@ -69,10 +69,6 @@ namespace System.Reflection.TypeLoading
         protected abstract MethodSig<RoParameter> ComputeMethodSig();
         private volatile MethodSig<RoParameter>? _lazyMethodSig;
 
-        private MethodSig<RoType> CustomModifiers => _lazyCustomModifiers ??= ComputeCustomModifiers();
-        protected abstract MethodSig<RoType> ComputeCustomModifiers();
-        private volatile MethodSig<RoType>? _lazyCustomModifiers;
-
         public sealed override string ToString() => Loader.GetDisposedString() ?? this.ToString(ComputeMethodSigStrings());
         protected abstract MethodSig<string> ComputeMethodSigStrings();
 
@@ -89,7 +85,6 @@ namespace System.Reflection.TypeLoading
         MethodBase IRoMethodBase.MethodBase => this;
         public MetadataLoadContext Loader => GetRoModule().Loader;
         public abstract TypeContext TypeContext { get; }
-        Type[] IRoMethodBase.GetCustomModifiers(int position, bool isRequired) => CustomModifiers[position].ExtractCustomModifiers(isRequired);
         string IRoMethodBase.GetMethodSigString(int position) => ComputeMethodSigStrings()[position];
     }
 }

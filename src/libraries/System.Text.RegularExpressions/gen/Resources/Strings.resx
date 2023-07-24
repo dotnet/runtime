@@ -153,7 +153,7 @@
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
   <data name="ShorthandClassInCharacterRange" xml:space="preserve">
-    <value>Cannot include class \\{0} in character range.</value>
+    <value>Cannot include class \{0} in character range.</value>
   </data>
   <data name="BeginIndexNotNegative" xml:space="preserve">
     <value>Start index cannot be less than 0 or greater than input length.</value>
@@ -178,13 +178,13 @@
     <value>AppDomain data '{0}' contains the invalid value or object '{1}' for specifying a default matching timeout for System.Text.RegularExpressions.Regex.</value>
   </data>
   <data name="UnescapedEndingBackslash" xml:space="preserve">
-    <value>Illegal \\ at end of pattern.</value>
+    <value>Illegal \ at end of pattern.</value>
   </data>
   <data name="ReversedQuantifierRange" xml:space="preserve">
     <value>Illegal {x,y} with x &gt; y.</value>
   </data>
   <data name="InvalidUnicodePropertyEscape" xml:space="preserve">
-    <value>Incomplete \\p{X} character escape.</value>
+    <value>Incomplete \p{X} character escape.</value>
   </data>
   <data name="CaptureGroupNameInvalid" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
@@ -193,13 +193,13 @@
     <value>Length cannot be less than 0 or exceed input length.</value>
   </data>
   <data name="MalformedNamedReference" xml:space="preserve">
-    <value>Malformed \\k&lt;...&gt; named back reference.</value>
+    <value>Malformed \k&lt;...&gt; named back reference.</value>
   </data>
   <data name="AlternationHasMalformedReference" xml:space="preserve">
     <value>Conditional alternation is missing a closing parenthesis after the group number {0}.</value>
   </data>
   <data name="MalformedUnicodePropertyEscape" xml:space="preserve">
-    <value>Malformed \\p{X} character escape.</value>
+    <value>Malformed \p{X} character escape.</value>
   </data>
   <data name="MakeException" xml:space="preserve">
     <value>Invalid pattern '{0}' at offset {1}. {2}</value>
@@ -226,7 +226,7 @@
     <value>Quantifier '{0}' following nothing.</value>
   </data>
   <data name="RegexMatchTimeoutException_Occurred" xml:space="preserve">
-    <value>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</value>
+    <value>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</value>
   </data>
   <data name="ReversedCharacterRange" xml:space="preserve">
     <value>[x-y] range in reverse order.</value>
@@ -235,7 +235,7 @@
     <value>A subtraction must be the last element in a character class.</value>
   </data>
   <data name="InsufficientOrInvalidHexDigits" xml:space="preserve">
-    <value>Insufficient hexadecimal digits.</value>
+    <value>Insufficient or invalid hexadecimal digits.</value>
   </data>
   <data name="AlternationHasTooManyConditions" xml:space="preserve">
     <value>Too many | in (?()|).</value>
@@ -259,7 +259,7 @@
     <value>Unrecognized control character.</value>
   </data>
   <data name="UnrecognizedEscape" xml:space="preserve">
-    <value>Unrecognized escape sequence \\{0}.</value>
+    <value>Unrecognized escape sequence \{0}.</value>
   </data>
   <data name="InvalidGroupingConstruct" xml:space="preserve">
     <value>Unrecognized grouping construct.</value>
@@ -269,10 +269,6 @@
   </data>
   <data name="UnterminatedComment" xml:space="preserve">
     <value>Unterminated (?#...) comment.</value>
-  </data>
-  <data name="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups" xml:space="preserve">
-    <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
-    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
   <data name="UseRegexSourceGeneratorMessage" xml:space="preserve">
     <value>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</value>

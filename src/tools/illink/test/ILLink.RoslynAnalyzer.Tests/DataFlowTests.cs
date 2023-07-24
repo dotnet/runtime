@@ -17,6 +17,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task AnnotatedMembersAccessedViaUnsafeAccessor ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task ApplyTypeAnnotations ()
 		{
 			return RunTest ();
@@ -96,6 +102,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task CompilerGeneratedCodeAccessedViaReflection ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task ConstructedTypesDataFlow ()
 		{
 			return RunTest ();
 		}

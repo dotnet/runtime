@@ -38,10 +38,6 @@ STDMETHODIMP RegMeta::GetAssemblyProps(       // S_OK or error.
     AssemblyRec *pRecord;
     CMiniMdRW   *pMiniMd = &(m_pStgdb->m_MiniMd);
 
-    LOG((LOGMD, "RegMeta::GetAssemblyProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        mda, ppbPublicKey, pcbPublicKey, pulHashAlgId, szName, cchName, pchName, pMetaData,
-        pdwAssemblyFlags));
-
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(mda) == mdtAssembly && RidFromToken(mda));
@@ -102,10 +98,6 @@ STDMETHODIMP RegMeta::GetAssemblyRefProps(    // S_OK or error.
     AssemblyRefRec  *pRecord;
     CMiniMdRW   *pMiniMd = &(m_pStgdb->m_MiniMd);
 
-    LOG((LOGMD, "RegMeta::GetAssemblyRefProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        mdar, ppbPublicKeyOrToken, pcbPublicKeyOrToken, szName, cchName,
-        pchName, pMetaData, ppbHashValue, pdwAssemblyRefFlags));
-
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(mdar) == mdtAssemblyRef && RidFromToken(mdar));
@@ -156,9 +148,6 @@ STDMETHODIMP RegMeta::GetFileProps(     // S_OK or error.
     FileRec   *pRecord;
     CMiniMdRW *pMiniMd = &(m_pStgdb->m_MiniMd);
 
-    LOG((LOGMD, "RegMeta::GetFileProps(%#08x, %#08x, %#08x, %#08x, %#08x, %#08x, %#08x)\n",
-        mdf, szName, cchName, pchName, ppbHashValue, pcbHashValue, pdwFileFlags));
-
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(mdf) == mdtFile && RidFromToken(mdf));
@@ -198,10 +187,6 @@ STDMETHODIMP RegMeta::GetExportedTypeProps(   // S_OK or error.
     CMiniMdRW   *pMiniMd = &(m_pStgdb->m_MiniMd);
     int         bTruncation=0;          // Was there name truncation?
 
-    LOG((LOGMD, "RegMeta::GetExportedTypeProps(%#08x, %#08x, %#08x, %#08x, %#08x, %#08x, %#08x)\n",
-        mdct, szName, cchName, pchName,
-        ptkImplementation, ptkTypeDef, pdwExportedTypeFlags));
-
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(mdct) == mdtExportedType && RidFromToken(mdct));
@@ -229,7 +214,7 @@ STDMETHODIMP RegMeta::GetExportedTypeProps(   // S_OK or error.
             if (bTruncation || !szName)
                 *pchName = ns::GetFullLength(wzTypeNamespace, wzTypeName);
             else
-                *pchName = (ULONG)(wcslen(szName) + 1);
+                *pchName = (ULONG)(u16_strlen(szName) + 1);
         }
     }
     if (ptkImplementation)
@@ -269,12 +254,6 @@ STDMETHODIMP RegMeta::GetManifestResourceProps(   // S_OK or error.
     ManifestResourceRec *pRecord;
     CMiniMdRW   *pMiniMd = &(m_pStgdb->m_MiniMd);
 
-    LOG((LOGMD, "RegMeta::GetManifestResourceProps("
-        "%#08x, %#08x, %#08x, %#08x, %#08x, %#08x, %#08x)\n",
-        mdmr, szName, cchName, pchName,
-        ptkImplementation, pdwOffset,
-        pdwResourceFlags));
-
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(mdmr) == mdtManifestResource && RidFromToken(mdmr));
@@ -307,9 +286,6 @@ STDMETHODIMP RegMeta::EnumAssemblyRefs(       // S_OK or error
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     HENUMInternal       *pEnum;
-
-    LOG((LOGMD, "MD RegMeta::EnumAssemblyRefs(%#08x, %#08x, %#08x, %#08x)\n",
-        phEnum, rAssemblyRefs, cMax, pcTokens));
 
     LOCKREAD();
 
@@ -353,8 +329,6 @@ STDMETHODIMP RegMeta::EnumFiles(              // S_OK or error
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     HENUMInternal       *pEnum;
 
-    LOG((LOGMD, "MD RegMeta::EnumFiles(%#08x, %#08x, %#08x, %#08x)\n",
-        phEnum, rFiles, cMax, pcTokens));
     LOCKREAD();
 
     if (*ppmdEnum == 0)
@@ -396,9 +370,6 @@ STDMETHODIMP RegMeta::EnumExportedTypes(           // S_OK or error
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     HENUMInternal       *pEnum = NULL;
-
-    LOG((LOGMD, "MD RegMeta::EnumExportedTypes(%#08x, %#08x, %#08x, %#08x)\n",
-        phEnum, rExportedTypes, cMax, pcTokens));
 
     LOCKREAD();
 
@@ -464,9 +435,6 @@ STDMETHODIMP RegMeta::EnumManifestResources(  // S_OK or error
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     HENUMInternal       *pEnum;
 
-    LOG((LOGMD, "MD RegMeta::EnumManifestResources(%#08x, %#08x, %#08x, %#08x)\n",
-        phEnum, rManifestResources, cMax, pcTokens));
-
     LOCKREAD();
 
     if (*ppmdEnum == 0)
@@ -504,7 +472,6 @@ STDMETHODIMP RegMeta::GetAssemblyFromScope(   // S_OK or error
     HRESULT     hr = NOERROR;
     CMiniMdRW   *pMiniMd = NULL;
 
-    LOG((LOGMD, "MD RegMeta::GetAssemblyFromScope(%#08x)\n", ptkAssembly));
     LOCKREAD();
     _ASSERTE(ptkAssembly);
 
@@ -534,11 +501,7 @@ STDMETHODIMP RegMeta::FindExportedTypeByName( // S_OK or error
     CMiniMdRW   *pMiniMd = NULL;
     LPSTR       szNameUTF8 = NULL;
 
-    LOG((LOGMD, "MD RegMeta::FindExportedTypeByName(%S, %#08x, %#08x)\n",
-        MDSTR(szName), tkEnclosingType, ptkExportedType));
-
     LOCKREAD();
-
 
     // Validate name for prefix.
     if (!szName)
@@ -574,11 +537,7 @@ STDMETHODIMP RegMeta::FindManifestResourceByName( // S_OK or error
     LPCUTF8     szNameTmp = NULL;
     CMiniMdRW   *pMiniMd = NULL;
 
-    LOG((LOGMD, "MD RegMeta::FindManifestResourceByName(%S, %#08x)\n",
-        MDSTR(szName), ptkManifestResource));
-
     LOCKREAD();
-
 
     // Validate name for prefix.
     if (!szName)
@@ -624,11 +583,6 @@ STDMETHODIMP RegMeta::FindAssembliesByName( // S_OK or error
         ULONG    *pcAssemblies)       // [OUT] The number of assemblies returned.
 {
 #ifdef FEATURE_METADATA_IN_VM
-    LOG((LOGMD, "RegMeta::FindAssembliesByName(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        szAppBase, szPrivateBin, szAssemblyName, ppIUnk, cMax, pcAssemblies));
-
-    // No need to lock this function. It is going through fusion to find the matching Assemblies by name
-
     return COR_E_NOTSUPPORTED;
 #else //!FEATURE_METADATA_IN_VM
     // Calls to fusion are not supported outside VM

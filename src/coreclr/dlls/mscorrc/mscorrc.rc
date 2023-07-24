@@ -115,7 +115,6 @@ BEGIN
     FUSION_E_REF_DEF_MISMATCH               "The located assembly's manifest definition with name '%1' does not match the assembly reference."
     FUSION_E_PRIVATE_ASM_DISALLOWED         "Assembly '%1' is required to be strongly named."
     FUSION_E_INVALID_NAME                   "The given assembly name, '%1', was invalid."
-    FUSION_E_CACHEFILE_FAILED               "Failed to add file to AppDomain cache."
     FUSION_E_APP_DOMAIN_LOCKED              "The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."
     IDS_EE_HASH_VAL_FAILED                  "Hash validation failed for file or assembly '%1'."
     CORSEC_E_INVALID_PUBLICKEY              "The public key for assembly '%1' was invalid."
@@ -309,6 +308,12 @@ BEGIN
     IDS_CLASSLOAD_ENUM_EXTRA_GENERIC_TYPE_PARAM "Enumerated types cannot have any generic type parameters, beyond any inherited from their enclosing type (for nested enums)."
 	IDS_CLASSLOAD_GENERICTYPE_RECURSIVE     "Could not load type '%1' from assembly '%2' because it has recursive generic definition."
     IDS_CLASSLOAD_TOOMANYGENERICARGS        "Could not load type '%1' from assembly '%2'. Internal limitation: Too many generic arguments."
+
+    IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT  "InlineArrayAttribute requires that the target type has a single instance field. Type: '%1'.  Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_LENGTH       "InlineArrayAttribute requires that the length argument is greater than 0. Type: '%1'.  Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT     "InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '%1'.  Assembly: '%2'."
+
+    IDS_INVALID_RECURSIVE_GENERIC_FIELD_LOAD "Could not load type '%1' from assembly '%2' because of an invalid self-referential generic field."
 
 #if FEATURE_COMINTEROP
     IDS_EE_CANNOTCAST_NOMARSHAL                 "The Windows Runtime Object can only be used in the threading context where it was created, because it implements INoMarshal or has MarshalingBehaviorAttribute(MarshalingType.None) set."
@@ -601,6 +606,7 @@ BEGIN
         BFA_GENERIC_METHODS_INST                "Generic methods should always be mcInstantiated."
         BFA_BAD_FIELD_TOKEN                     "Field token out of range."
         BFA_INVALID_FIELD_ACC_FLAGS             "Invalid Field Access Flags."
+        BFA_INVALID_UNSAFEACCESSOR              "Invalid usage of UnsafeAccessorAttribute."
         BFA_FIELD_LITERAL_AND_INIT              "Field is Literal and InitOnly."
         BFA_NONSTATIC_GLOBAL_FIELD              "Non-Static Global Field."
         BFA_INSTANCE_FIELD_IN_INT               "Instance Field in an Interface."

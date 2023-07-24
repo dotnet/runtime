@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class MiscTests : BuildTestBase
+public class MiscTests : BlazorWasmTestBase
 {
     public MiscTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -22,20 +22,29 @@ public class MiscTests : BuildTestBase
     [InlineData("Debug", false)]
     [InlineData("Release", true)]
     [InlineData("Release", false)]
-    //[ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
     public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
     {
         string id = $"blz_deploy_on_build_{config}_{nativeRelink}_{Path.GetRandomFileName()}";
         string projectFile = CreateProjectWithNativeReference(id);
-        AddItemsPropertiesToProject(projectFile, extraProperties: nativeRelink ? string.Empty : "<RunAOTCompilation>true</RunAOTCompilation>");
+        string extraProperties = config == "Debug"
+                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
+                                    : string.Empty;
+        if (!nativeRelink)
+            extraProperties += "<RunAOTCompilation>true</RunAOTCompilation>";
+        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         // build with -p:DeployOnBuild=true, and that will trigger a publish
-        (CommandResult res, _) = BuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
+        (CommandResult res, _) = BlazorBuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
 
         var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
 
-        AssertDotNetNativeFiles(expectedFileType, config, forPublish: true, targetFramework: DefaultTargetFrameworkForBlazor);
-        AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: false);
+        _provider.AssertBlazorBundle(new BlazorBuildOptions
+            (
+                Id: id,
+                Config: config,
+                ExpectedFileType: expectedFileType
+            ), isPublish: true);
 
         if (expectedFileType == NativeFilesType.AOT)
         {
@@ -67,13 +76,18 @@ public class MiscTests : BuildTestBase
     {
         string id = $"blz_aot_prj_file_{config}_{Path.GetRandomFileName()}";
         string projectFile = CreateBlazorWasmTemplateProject(id);
-        AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+
+        string extraProperties = config == "Debug"
+                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
+                                    : string.Empty;
+        AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>" + extraProperties);
 
         // No relinking, no AOT
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
 
         // will aot
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
 
         // build again
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));

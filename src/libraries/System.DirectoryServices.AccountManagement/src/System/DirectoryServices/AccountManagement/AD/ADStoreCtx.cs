@@ -139,11 +139,11 @@ namespace System.DirectoryServices.AccountManagement
                 // to build a list of ldap attributes for each object type.
                 if (null != ldapAttribute)
                 {
-                    if (propertyNameToLdapAttr.ContainsKey(propertyName))
+                    if (propertyNameToLdapAttr.TryGetValue(propertyName, out string[] ldapAttributes))
                     {
-                        string[] props = new string[propertyNameToLdapAttr[propertyName].Length + 1];
-                        propertyNameToLdapAttr[propertyName].CopyTo(props, 0);
-                        props[propertyNameToLdapAttr[propertyName].Length] = ldapAttribute;
+                        string[] props = new string[ldapAttributes.Length + 1];
+                        ldapAttributes.CopyTo(props, 0);
+                        props[ldapAttributes.Length] = ldapAttribute;
                         propertyNameToLdapAttr[propertyName] = props;
                     }
                     else
@@ -494,7 +494,7 @@ namespace System.DirectoryServices.AccountManagement
             // even before we call ObjectSecurity to see if it would return null, because once ObjectSecurity returns null the
             // first time, it'll keep returning null even if we refresh the cache.
             if (!de.Properties.Contains("nTSecurityDescriptor"))
-                de.RefreshCache(new string[] { "nTSecurityDescriptor" });
+                de.RefreshCache(s_nTSecurityDescriptor);
             ActiveDirectorySecurity adsSecurity = de.ObjectSecurity;
 
             bool denySelfFound;
@@ -829,7 +829,7 @@ namespace System.DirectoryServices.AccountManagement
                 DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
                 Debug.Assert(de != null);
 
-                de.RefreshCache(new string[] { "msDS-User-Account-Control-Computed", "lockoutTime" });
+                de.RefreshCache(s_msDSUACCLockoutTime);
 
                 if (de.Properties["msDS-User-Account-Control-Computed"].Count > 0)
                 {
@@ -992,34 +992,34 @@ namespace System.DirectoryServices.AccountManagement
         internal override ResultSet FindByLockoutTime(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            return FindByDate(principalType, new string[] { "lockoutTime" }, matchType, dt);
+            return FindByDate(principalType, s_lockoutTime, matchType, dt);
         }
 
         internal override ResultSet FindByLogonTime(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            return FindByDate(principalType, new string[] { "lastLogon", "lastLogonTimestamp" }, matchType, dt);
+            return FindByDate(principalType, s_lastLogonTime, matchType, dt);
         }
 
         internal override ResultSet FindByPasswordSetTime(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            return FindByDate(principalType, new string[] { "pwdLastSet" }, matchType, dt);
+            return FindByDate(principalType, s_pwdLastSet, matchType, dt);
         }
 
         internal override ResultSet FindByBadPasswordAttempt(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            return FindByDate(principalType, new string[] { "badPasswordTime" }, matchType, dt);
+            return FindByDate(principalType, s_badPasswordTime, matchType, dt);
         }
 
         internal override ResultSet FindByExpirationTime(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            return FindByDate(principalType, new string[] { "accountExpires" }, matchType, dt);
+            return FindByDate(principalType, s_accountExpires, matchType, dt);
         }
 
-        private ResultSet FindByDate(Type subtype, string[] ldapAttributes, MatchType matchType, DateTime value)
+        private ADEntriesSet FindByDate(Type subtype, string[] ldapAttributes, MatchType matchType, DateTime value)
         {
             Debug.Assert(ldapAttributes != null);
             Debug.Assert(ldapAttributes.Length > 0);
@@ -1300,7 +1300,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetGroupsMemberOf: principalDN={0}", principalDN);
 
-                principalDE.RefreshCache(new string[] { "memberOf", "primaryGroupID" });
+                principalDE.RefreshCache(s_memberOfPrimaryGroupId);
 
                 if ((principalDE.Properties["primaryGroupID"].Count > 0) &&
                     (principalDE.Properties["objectSid"].Count > 0))
@@ -1530,9 +1530,9 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        private string GetGroupDnFromGroupID(byte[] userSid, int primaryGroupId)
+        private unsafe string GetGroupDnFromGroupID(byte[] userSid, int primaryGroupId)
         {
-            IntPtr pGroupSid = IntPtr.Zero;
+            void* pGroupSid = null;
             byte[] groupSid = null;
 
             // This function is based on the technique in KB article 297951.
@@ -1554,14 +1554,14 @@ namespace System.DirectoryServices.AccountManagement
                         if (Interop.Advapi32.ConvertStringSidToSid(sddlSid, out pGroupSid) != Interop.BOOL.FALSE)
                         {
                             // Now we convert the native SID to a byte[] SID
-                            groupSid = Utils.ConvertNativeSidToByteArray(pGroupSid);
+                            groupSid = Utils.ConvertNativeSidToByteArray((IntPtr)pGroupSid);
                         }
                     }
                 }
             }
             finally
             {
-                if (pGroupSid != IntPtr.Zero)
+                if (pGroupSid is not null)
                     Interop.Kernel32.LocalFree(pGroupSid);
             }
 
@@ -2386,6 +2386,16 @@ namespace System.DirectoryServices.AccountManagement
         protected string contextBasePartitionDN; //contains the DN of the Partition to which the user supplied context base (this.ctxBase) belongs.
         protected string dnsHostName;
         protected ulong lockoutDuration;
+        private static readonly string[] s_lockoutTime = new string[] { "lockoutTime" };
+        private static readonly string[] s_lastLogonTime = new string[] { "lastLogon", "lastLogonTimestamp" };
+        private static readonly string[] s_pwdLastSet = new string[] { "pwdLastSet" };
+        private static readonly string[] s_badPasswordTime = new string[] { "badPasswordTime" };
+        private static readonly string[] s_accountExpires = new string[] { "accountExpires" };
+        private static readonly string[] s_nTSecurityDescriptor = new string[] { "nTSecurityDescriptor" };
+        private static readonly string[] s_msDSUACCLockoutTime = new string[] { "msDS-User-Account-Control-Computed", "lockoutTime" };
+        private static readonly string[] s_memberOfPrimaryGroupId = new string[] { "memberOf", "primaryGroupID" };
+        private static readonly string[] s_lockoutDuration = new string[] { "lockoutDuration" };
+        internal static readonly char[] s_comma = new char[] { ',' };
 
         protected enum StoreCapabilityMap
         {
@@ -2415,7 +2425,7 @@ namespace System.DirectoryServices.AccountManagement
                 this.contextBasePartitionDN = this.defaultNamingContext;
 
                 // Split the naming context's DN into its RDNs
-                string[] ncComponents = defaultNamingContext.Split(new char[] { ',' });
+                string[] ncComponents = defaultNamingContext.Split(s_comma);
 
                 StringBuilder sb = new StringBuilder();
 
@@ -2492,7 +2502,7 @@ namespace System.DirectoryServices.AccountManagement
                                                     this.authTypes);
 
             // So we don't load every property
-            domainNC.RefreshCache(new string[] { "lockoutDuration" });
+            domainNC.RefreshCache(s_lockoutDuration);
 
             if (domainNC.Properties["lockoutDuration"].Count > 0)
             {

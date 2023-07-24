@@ -396,9 +396,6 @@
   <data name="ArgumentCannotBeOfTypeVoid" xml:space="preserve">
     <value>Argument type cannot be System.Void.</value>
   </data>
-  <data name="OutOfRange" xml:space="preserve">
-    <value>{0} must be greater than or equal to {1}</value>
-  </data>
   <data name="LabelTargetAlreadyDefined" xml:space="preserve">
     <value>Cannot redefine label '{0}' in an inner block.</value>
   </data>

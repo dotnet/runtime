@@ -19,7 +19,7 @@ namespace ILCompiler
     {
         private readonly DebugInformationProvider _wrappedProvider;
         private readonly string _fileName;
-        private readonly TextWriter _tw;
+        private readonly StreamWriter _tw;
         private readonly Dictionary<MethodDesc, MethodDebugInformation> _generatedInfos = new Dictionary<MethodDesc, MethodDebugInformation>();
 
         private int _currentLine;
@@ -55,7 +55,7 @@ namespace ILCompiler
             }
         }
 
-        private MethodDebugInformation GetDebugInformation(MethodIL methodIL)
+        private SyntheticMethodDebugInformation GetDebugInformation(MethodIL methodIL)
         {
             MethodDesc owningMethod = methodIL.OwningMethod;
             var disasm = new ILDisassembler(methodIL);

@@ -212,6 +212,7 @@ namespace Internal.TypeSystem
 
             flags |= TypeFlags.HasFinalizerComputed;
             flags |= TypeFlags.AttributeCacheComputed;
+            flags |= TypeFlags.HasGenericVarianceComputed;
 
             return flags;
         }

@@ -174,9 +174,11 @@ unsafe class ControlFlowGuardTests
         if (s_armed)
             flProtect |= 0x40000000 /* TARGETS_INVALID */;
 
+        uint allocSize = 4096;
+
         IntPtr address = VirtualAlloc(
             lpAddress: IntPtr.Zero,
-            dwSize: 4096,
+            dwSize: allocSize,
             flAllocationType: 0x00001000 | 0x00002000 /* COMMIT+RESERVE*/,
             flProtect: flProtect);
 
@@ -195,6 +197,15 @@ unsafe class ControlFlowGuardTests
             default:
                 throw new NotSupportedException();
         }
+
+        [DllImport("kernel32", ExactSpelling = true)]
+        static extern IntPtr GetCurrentProcess();
+
+        [DllImport("kernel32", ExactSpelling = true, SetLastError = true)]
+        static extern int FlushInstructionCache(IntPtr hProcess, IntPtr lpBaseAddress, nuint dwSize);
+
+        if (FlushInstructionCache(GetCurrentProcess(), address, allocSize) == 0)
+            Console.WriteLine("FlushInstructionCache failed");
 
         return address;
     }

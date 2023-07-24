@@ -11,15 +11,13 @@ namespace System.Formats.Asn1
 {
     internal static class AsnCharacterStringEncodings
     {
-        private static readonly Encoding s_utf8Encoding =
-            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-
-        private static readonly Encoding s_bmpEncoding = new BMPEncoding();
-        private static readonly Encoding s_ia5Encoding = new IA5Encoding();
-        private static readonly Encoding s_visibleStringEncoding = new VisibleStringEncoding();
-        private static readonly Encoding s_numericStringEncoding = new NumericStringEncoding();
-        private static readonly Encoding s_printableStringEncoding = new PrintableStringEncoding();
-        private static readonly Encoding s_t61Encoding = new T61Encoding();
+        private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        private static readonly BMPEncoding s_bmpEncoding = new BMPEncoding();
+        private static readonly IA5Encoding s_ia5Encoding = new IA5Encoding();
+        private static readonly VisibleStringEncoding s_visibleStringEncoding = new VisibleStringEncoding();
+        private static readonly NumericStringEncoding s_numericStringEncoding = new NumericStringEncoding();
+        private static readonly PrintableStringEncoding s_printableStringEncoding = new PrintableStringEncoding();
+        private static readonly T61Encoding s_t61Encoding = new T61Encoding();
 
         internal static Encoding GetEncoding(UniversalTagNumber encodingType) =>
             encodingType switch
@@ -419,7 +417,7 @@ namespace System.Formats.Asn1
     /// </summary>
     internal sealed class T61Encoding : Encoding
     {
-        private static readonly Encoding s_utf8Encoding = new UTF8Encoding(false, throwOnInvalidBytes: true);
+        private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(false, throwOnInvalidBytes: true);
         private static readonly Encoding s_latin1Encoding = GetEncoding("iso-8859-1");
 
         public override int GetByteCount(char[] chars, int index, int count)

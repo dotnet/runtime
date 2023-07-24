@@ -1,3 +1,4 @@
+project(utils C)
 
 set(utils_win32_sources
     mono-os-semaphore-win32.c
@@ -14,6 +15,10 @@ if(HOST_WIN32 AND HOST_AMD64)
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
 
     list(APPEND utils_win32_sources win64.asm)
+elseif(HOST_WASI)
+    set (CMAKE_ASM_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
+    set (CMAKE_ASM_COMPILER_TARGET "${CMAKE_C_COMPILER_TARGET}")
+    enable_language(ASM)
 endif()
 
 set(utils_unix_sources
@@ -23,6 +28,8 @@ set(utils_unix_sources
 
 if(HOST_WIN32)
     set(utils_platform_sources ${utils_win32_sources})
+elseif(HOST_WASI)
+    set(utils_platform_sources ${utils_unix_sources} mono-threads-wasi.S)
 else()
     set(utils_platform_sources ${utils_unix_sources})
 endif()
@@ -84,8 +91,6 @@ set(utils_common_sources
     mono-stdlib.c
     mono-property-hash.h
     mono-property-hash.c
-    mono-value-hash.h
-    mono-value-hash.c
     freebsd-dwarf.h
     dtrace.h
     mono-error.c
@@ -96,7 +101,6 @@ set(utils_common_sources
     mono-forward-internal.h
     mono-machine.h
     mono-math.h
-    mono-membar.h
     mono-path.h
     mono-poll.h
     mono-uri.h
@@ -162,12 +166,6 @@ set(utils_common_sources
     mono-conc-hashtable.c
     json.h
     json.c
-    networking.c
-    networking-posix.c
-    networking-fallback.c
-    networking-missing.c
-    networking-windows.c
-    networking.h
     mono-rand.c
     mono-rand-windows.c
     mono-rand.h
@@ -185,7 +183,10 @@ set(utils_common_sources
     options.h
     options-def.h
     options.c
-	ftnptr.h)
+    ftnptr.h
+    wasm-module-reader.h
+    wasm-module-reader.c
+  )
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources mach-support-unknown.c)
@@ -219,13 +220,15 @@ elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
+elseif(TARGET_WASI)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c")
 elseif(TARGET_POWERPC OR TARGET_POWERPC64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-ppc.c")
 else()
   message(FATAL_ERROR "")
 endif()
 
-addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
+set(utils_sources "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
 
 set(utils_sources
     ${utils_sources}
@@ -254,3 +257,11 @@ if(ENABLE_DTRACE)
 
     set(utils_sources "${utils_sources};${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h;../utils/dtrace.h")
 endif()
+
+add_library(utils_objects OBJECT ${utils_sources})
+target_link_libraries(utils_objects PRIVATE monoapi eglib_api)
+target_compile_definitions(utils_objects PRIVATE -DMONO_DLL_EXPORT)
+target_include_directories(utils_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/..)
+

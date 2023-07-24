@@ -207,6 +207,9 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(realChild.HasFullName);
 
+#if NET8_0_OR_GREATER
+            int numberOfSegments = fullName.AsSpan().Count('.');
+#else
             int numberOfSegments = 0;
             ReadOnlySpan<char> span = fullName.AsSpan();
             int dotPos;
@@ -215,6 +218,7 @@ namespace System.Reflection.Metadata.Ecma335
                 span = span.Slice(dotPos + 1);
                 numberOfSegments++;
             }
+#endif
 
             StringHandle simpleName = GetSimpleName(realChild, numberOfSegments);
             var namespaceHandle = NamespaceDefinitionHandle.FromVirtualIndex(++_virtualNamespaceCounter);

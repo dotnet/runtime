@@ -23,6 +23,7 @@
 */
 
 using System;
+using Xunit;
 
 namespace BadOverride1
 {
@@ -54,7 +55,8 @@ namespace BadOverride1
 
     public static class App
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Dll.Apis.RunDllCode();
             Console.Write("\r\n");

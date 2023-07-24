@@ -155,12 +155,12 @@ namespace System.Linq.Parallel
             }
         }
 
-        private static IComparer<Pair<bool, TRightKey>> CreateComparer<TRightKey>(IComparer<TRightKey> comparer)
+        private static PairComparer<bool, TRightKey> CreateComparer<TRightKey>(IComparer<TRightKey> comparer)
         {
             return CreateComparer(Comparer<bool>.Default, comparer);
         }
 
-        private static IComparer<Pair<TLeftKey, TRightKey>> CreateComparer<TLeftKey, TRightKey>(IComparer<TLeftKey> leftKeyComparer, IComparer<TRightKey> rightKeyComparer)
+        private static PairComparer<TLeftKey, TRightKey> CreateComparer<TLeftKey, TRightKey>(IComparer<TLeftKey> leftKeyComparer, IComparer<TRightKey> rightKeyComparer)
         {
             return new PairComparer<TLeftKey, TRightKey>(leftKeyComparer, rightKeyComparer);
         }
@@ -241,7 +241,7 @@ namespace System.Linq.Parallel
         /// <summary>
         /// Adds TElement values to a HashLookup of ListChunks. TOrderKey is ignored.
         /// </summary>
-        private struct GroupJoinBaseHashBuilder : IBaseHashBuilder<TElement, TOrderKey>
+        private readonly struct GroupJoinBaseHashBuilder : IBaseHashBuilder<TElement, TOrderKey>
         {
             private readonly HashLookup<THashKey, ListChunk<TElement>> _base;
 
@@ -342,7 +342,7 @@ namespace System.Linq.Parallel
         /// <remarks>
         /// The least order key in the list is chosen to represent the list
         /// </remarks>
-        private struct OrderedGroupJoinBaseHashBuilder : IBaseHashBuilder<TElement, TOrderKey>
+        private readonly struct OrderedGroupJoinBaseHashBuilder : IBaseHashBuilder<TElement, TOrderKey>
         {
             private readonly HashLookup<THashKey, GroupKeyData> _base;
             private readonly IComparer<TOrderKey> _orderKeyComparer;

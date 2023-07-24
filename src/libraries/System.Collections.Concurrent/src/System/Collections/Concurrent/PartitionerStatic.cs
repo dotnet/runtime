@@ -472,7 +472,7 @@ namespace System.Collections.Concurrent
         }
         #endregion
 
-        #region Dynamic Partitioner for source data of IEnuemrable<> type
+        #region Dynamic Partitioner for source data of IEnumerable<> type
         /// <summary>
         /// Inherits from DynamicPartitioners
         /// Provides customized implementation of GetOrderableDynamicPartitions_Factory method, to return an instance
@@ -504,7 +504,7 @@ namespace System.Collections.Concurrent
                 IEnumerator<KeyValuePair<long, TSource>>[] partitions
                     = new IEnumerator<KeyValuePair<long, TSource>>[partitionCount];
 
-                IEnumerable<KeyValuePair<long, TSource>> partitionEnumerable = new InternalPartitionEnumerable(_source.GetEnumerator(), _useSingleChunking, true);
+                var partitionEnumerable = new InternalPartitionEnumerable(_source.GetEnumerator(), _useSingleChunking, true);
                 for (int i = 0; i < partitionCount; i++)
                 {
                     partitions[i] = partitionEnumerable.GetEnumerator();

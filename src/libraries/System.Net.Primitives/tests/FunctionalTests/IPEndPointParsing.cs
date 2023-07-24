@@ -10,7 +10,7 @@ namespace System.Net.Primitives.Functional.Tests
     public class IPEndPointParsing
     {
         [Theory]
-        [MemberData(nameof(IPAddressParsing.ValidIpv4Addresses), MemberType = typeof(IPAddressParsing))]    // Just borrow the list from IPAddressParsing
+        [MemberData(nameof(IPAddressParsingFormatting.ValidIpv4Addresses), MemberType = typeof(IPAddressParsingFormatting))]    // Just borrow the list from IPAddressParsing
         public void Parse_ValidEndPoint_IPv4_Success(string address, string expectedAddress)
         {
             Parse_ValidEndPoint_Success(address, expectedAddress, true);
@@ -62,16 +62,16 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(IPAddressParsing.InvalidIpv4Addresses), MemberType = typeof(IPAddressParsing))]
-        [MemberData(nameof(IPAddressParsing.InvalidIpv4AddressesStandalone), MemberType = typeof(IPAddressParsing))]
+        [MemberData(nameof(IPAddressParsingFormatting.InvalidIpv4Addresses), MemberType = typeof(IPAddressParsingFormatting))]
+        [MemberData(nameof(IPAddressParsingFormatting.InvalidIpv4AddressesStandalone), MemberType = typeof(IPAddressParsingFormatting))]
         public void Parse_InvalidAddress_IPv4_Throws(string address)
         {
             Parse_InvalidAddress_Throws(address, true);
         }
 
         [Theory]
-        [MemberData(nameof(IPAddressParsing.InvalidIpv6Addresses), MemberType = typeof(IPAddressParsing))]
-        [MemberData(nameof(IPAddressParsing.InvalidIpv6AddressesNoInner), MemberType = typeof(IPAddressParsing))]
+        [MemberData(nameof(IPAddressParsingFormatting.InvalidIpv6Addresses), MemberType = typeof(IPAddressParsingFormatting))]
+        [MemberData(nameof(IPAddressParsingFormatting.InvalidIpv6AddressesNoInner), MemberType = typeof(IPAddressParsingFormatting))]
         public void Parse_InvalidAddress_IPv6_Throws(string address)
         {
             Parse_InvalidAddress_Throws(address, false);
@@ -106,7 +106,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(IPAddressParsing.ValidIpv4Addresses), MemberType = typeof(IPAddressParsing))]
+        [MemberData(nameof(IPAddressParsingFormatting.ValidIpv4Addresses), MemberType = typeof(IPAddressParsingFormatting))]
         public void Parse_InvalidPort_IPv4_Throws(string address, string expectedAddress)
         {
             _ = expectedAddress;
@@ -114,7 +114,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(IPAddressParsing.ValidIpv6Addresses), MemberType = typeof(IPAddressParsing))]
+        [MemberData(nameof(IPAddressParsingFormatting.ValidIpv6Addresses), MemberType = typeof(IPAddressParsingFormatting))]
         public void Parse_InvalidPort_IPv6_Throws(string address, string expectedAddress)
         {
             _ = expectedAddress;

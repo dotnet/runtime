@@ -68,6 +68,12 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override int GetInlineArrayLength()
+        {
+            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
+            throw new InvalidOperationException();
+        }
+
         public override bool IsSequentialLayout
         {
             get
@@ -365,6 +371,8 @@ namespace Internal.TypeSystem.Interop
             }
 
             public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
+
+            public override bool HasEmbeddedSignatureData => false;
 
             public override bool HasRva
             {

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="volatilstind_d.il" />
+    <Compile Include="volatilstind.il" />
+  </ItemGroup>
+</Project>

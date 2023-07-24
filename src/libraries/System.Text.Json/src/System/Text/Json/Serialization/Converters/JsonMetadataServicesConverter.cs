@@ -15,44 +15,22 @@ namespace System.Text.Json.Serialization.Converters
     /// <typeparam name="T">The type to converter</typeparam>
     internal sealed class JsonMetadataServicesConverter<T> : JsonResumableConverter<T>
     {
-        private readonly Func<JsonConverter<T>>? _converterCreator;
-        private JsonConverter<T>? _converter;
-
         // A backing converter for when fast-path logic cannot be used.
-        internal JsonConverter<T> Converter
-        {
-            get
-            {
-                _converter ??= _converterCreator!();
-                Debug.Assert(_converter != null);
-                Debug.Assert(_converter.ConverterStrategy == ConverterStrategy);
-                return _converter;
-            }
-        }
+        internal JsonConverter<T> Converter { get; }
 
         internal override Type? KeyType => Converter.KeyType;
-
         internal override Type? ElementType => Converter.ElementType;
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
         internal override bool SupportsCreateObjectDelegate => Converter.SupportsCreateObjectDelegate;
         internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
 
-        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy)
-        {
-            if (converterCreator is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(converterCreator));
-            }
-
-            _converterCreator = converterCreator;
-            ConverterStrategy = converterStrategy;
-        }
+        internal override bool CanPopulate => Converter.CanPopulate;
 
         public JsonMetadataServicesConverter(JsonConverter<T> converter)
         {
-            _converter = converter;
             ConverterStrategy = converter.ConverterStrategy;
+            Converter = converter;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
@@ -61,20 +39,17 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-
-            Debug.Assert(options == jsonTypeInfo.Options);
+            Debug.Assert(jsonTypeInfo is JsonTypeInfo<T> typeInfo && typeInfo.SerializeHandler != null);
 
             if (!state.SupportContinuation &&
                 jsonTypeInfo.CanUseSerializeHandler &&
+                !JsonHelpers.RequiresSpecialNumberHandlingOnWrite(state.Current.NumberHandling) &&
                 !state.CurrentContainsMetadata) // Do not use the fast path if state needs to write metadata.
             {
-                Debug.Assert(jsonTypeInfo is JsonTypeInfo<T> typeInfo && typeInfo.SerializeHandler != null);
-                Debug.Assert(options.SerializerContext?.CanUseSerializationLogic == true);
                 ((JsonTypeInfo<T>)jsonTypeInfo).SerializeHandler!(writer, value);
                 return true;
             }
 
-            jsonTypeInfo.ValidateCanBeUsedForMetadataSerialization();
             return Converter.OnTryWrite(writer, value, options, ref state);
         }
 

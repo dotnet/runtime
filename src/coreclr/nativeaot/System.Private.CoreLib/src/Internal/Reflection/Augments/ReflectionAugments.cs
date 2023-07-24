@@ -27,7 +27,6 @@ using EETypeElementType = Internal.Runtime.EETypeElementType;
 
 namespace Internal.Reflection.Augments
 {
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class ReflectionAugments
     {
         //
@@ -48,7 +47,7 @@ namespace Internal.Reflection.Augments
             {
                 // Type exists in metadata only. Aside from the enums, there is no chance a type with a TypeCode would not have an MethodTable,
                 // so if it's not an enum, return the default.
-                if (!type.IsEnum)
+                if (!type.IsEnum || type.IsGenericParameter)
                     return TypeCode.Object;
                 Type underlyingType = Enum.GetUnderlyingType(type);
                 eeType = underlyingType.TypeHandle.ToEETypePtr();
@@ -117,7 +116,6 @@ namespace Internal.Reflection.Augments
     // This class is implemented by Internal.Reflection.Core.dll and provides the actual implementation
     // of Type.GetTypeInfo() and Assembly.Load().
     //
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionCoreCallbacks
     {
         public abstract Assembly Load(AssemblyName refName, bool throwOnFileNotFound);
@@ -153,10 +151,6 @@ namespace Internal.Reflection.Augments
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
         public abstract Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure);
 
-#if FEATURE_COMINTEROP
-        public abstract Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError);
-#endif
-
         public abstract IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);
 
         public abstract void RunModuleConstructor(Module module);
@@ -165,8 +159,7 @@ namespace Internal.Reflection.Augments
 
         public abstract Assembly[] GetLoadedAssemblies();
 
-        public abstract EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(Type type)
-            where TUnderlyingValue : struct, INumber<TUnderlyingValue>;
+        public abstract EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create);
 
         public abstract DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type);
     }

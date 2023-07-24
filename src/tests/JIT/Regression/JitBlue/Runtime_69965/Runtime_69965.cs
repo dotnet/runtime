@@ -5,10 +5,12 @@ using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_69965
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Value = 10;
         var vtor = Vector128.Create(Value, Value, Value, Value);

@@ -220,9 +220,9 @@ namespace System.Tests
             bool lookForSetValue = (target == EnvironmentVariableTarget.Process)
                 || (PlatformDetection.IsWindows && PlatformDetection.IsPrivilegedProcess);
 
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/30566")]
-            if (PlatformDetection.IsWindowsNanoServer && target == EnvironmentVariableTarget.User)
+            if (target == EnvironmentVariableTarget.User && PlatformDetection.IsWindowsNanoServer)
             {
+                // Windows Nano Server does not have full per-user registry hives
                 lookForSetValue = false;
             }
 

@@ -5,6 +5,7 @@
 // to analyze a bounds check.
 
 using System;
+using Xunit;
 
 public struct MyStruct
 {
@@ -28,7 +29,8 @@ public struct MyReader
 
 public class GitHub_19454
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MyReader r = new MyReader();
         r.ReadBytesInner(0);

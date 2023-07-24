@@ -25,5 +25,11 @@ namespace Internal.TypeSystem
             if (_typeDef.IsIntrinsic)
                 flags |= TypeFlags.IsIntrinsic;
         }
+
+        partial void AddComputedInlineArrayFlag(ref TypeFlags flags)
+        {
+            if (((MetadataType)_typeDef).IsInlineArray)
+                flags |= TypeFlags.IsInlineArray;
+        }
     }
 }

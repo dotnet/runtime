@@ -66,7 +66,8 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
 
         protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object? defaultValue)
         {
-            return DefaultValueParser.GetDefaultValueIfAny(Reader, _parameter.DefaultValue, ParameterType, CustomAttributes, raw, out defaultValue);
+            return DefaultValueParser.GetDefaultValueFromConstantIfAny(Reader, _parameter.DefaultValue, ParameterType, raw, out defaultValue)
+                || DefaultValueParser.GetDefaultValueFromAttributeIfAny(CustomAttributes, raw, out defaultValue);
         }
 
         private readonly MethodHandle _methodHandle;

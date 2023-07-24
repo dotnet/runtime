@@ -89,7 +89,7 @@ namespace System.Diagnostics
         private static Type GetProxyType(Type type, Type[] genericTypeArguments)
         {
             // Get the DebuggerTypeProxyAttribute for obj
-            var attrs =
+            CustomAttributeData[] attrs =
                 type.GetTypeInfo().CustomAttributes
                 .Where(a => a.AttributeType == typeof(DebuggerTypeProxyAttribute))
                 .ToArray();
@@ -113,8 +113,8 @@ namespace System.Diagnostics
         internal static string ValidateDebuggerDisplayReferences(object obj)
         {
             // Get the DebuggerDisplayAttribute for obj
-            var objType = obj.GetType();
-            var attrs =
+            Type objType = obj.GetType();
+            CustomAttributeData[] attrs =
                 objType.GetTypeInfo().CustomAttributes
                 .Where(a => a.AttributeType == typeof(DebuggerDisplayAttribute))
                 .ToArray();
@@ -122,12 +122,12 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException($"Expected one DebuggerDisplayAttribute on {objType}.");
             }
-            var cad = attrs[0];
+            CustomAttributeData cad = attrs[0];
 
             // Get the text of the DebuggerDisplayAttribute
             string attrText = (string)cad.ConstructorArguments[0].Value;
 
-            var segments = attrText.Split(new[] { '{', '}' });
+            string[] segments = attrText.Split(new[] { '{', '}' });
 
             if (segments.Length % 2 == 0)
             {

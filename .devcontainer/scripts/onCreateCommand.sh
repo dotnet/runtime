@@ -16,7 +16,7 @@ case "$opt" in
         # prebuild for WASM, so it is ready for wasm development
         make -C src/mono/wasm provision-wasm
         export EMSDK_PATH=$PWD/src/mono/wasm/emsdk
-        ./build.sh mono+libs -os Browser -c Release
+        ./build.sh mono+libs -os browser -c Release
 
         # install dotnet-serve for running wasm samples
         ./dotnet.sh tool install dotnet-serve --tool-path ./.dotnet-tools-global

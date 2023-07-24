@@ -336,7 +336,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        private Query ProcessVariable(Variable root)
+        private VariableQuery ProcessVariable(Variable root)
         {
             _needContext = true;
             if (!_allowVar)

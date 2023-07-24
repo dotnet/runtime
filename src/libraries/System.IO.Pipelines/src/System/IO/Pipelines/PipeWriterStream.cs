@@ -61,10 +61,10 @@ namespace System.IO.Pipelines
         public override void SetLength(long value) => throw new NotSupportedException();
 
         public sealed override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, default), callback, state);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, default), callback, state);
 
         public sealed override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         public override void Write(byte[] buffer, int offset, int count) =>
             WriteAsync(buffer, offset, count).GetAwaiter().GetResult();

@@ -8,59 +8,21 @@ The mechanism for executing .NET code in a WASI runtime environment is equivalen
 
 ## How to build the runtime
 
-### 1. Build the WASM runtime
-
-To build the wasi runtime we need the file `wasm_m2n_invoke.g.h` which is generated when compiling wasm runtime
-
+on Linux:
+```.sh
+./build.sh -bl -os wasi -subset mono+libs -c Debug
 ```
-make -C src/mono/wasm provision-wasm
-export EMSDK_PATH=[path_printed_by_provision_wasm]
-./build.sh mono+libs -os browser
+or for just native rebuild
+```.sh
+./build.sh -bl -os wasi -subset mono.runtime+libs.native+mono.wasiruntime -c Debug
 ```
-
-### 2. Build the WASI runtime
-
-Currently this can only be built in Linux or WSL (tested on Windows 11). Simply run `make` in this directory. It will automatically download and use [WASI SDK](https://github.com/WebAssembly/wasi-sdk).
-
-The resulting libraries are placed in `(repo_root)/artifacts/bin/mono/Wasi.Release`.
-
-## How to build and run the sample
-
-### 1. Obtain a WASI runtime
-
-To run an application in a WASI environment, you need to have a WASI runtime available. For example, download [wasmtime](https://github.com/bytecodealliance/wasmtime/releases) and make sure it's available on `PATH`:
-
-```
-export PATH=~/wasmtime-v0.31.0-x86_64-linux
-wasmtime --version
-```
-
-Other WASI runtimes also work. Tested: [wamr](https://github.com/bytecodealliance/wasm-micro-runtime), [wasmer](https://wasmer.io/).
-
-### 2. Obtain a suitable .NET build toolchain
-
-You also need to have a working installation of .NET 7 including the `browser-wasm` runtime pack. For example, obtain the [.NET SDK daily build](https://github.com/dotnet/installer/blob/main/README.md#installers-and-binaries) (`main` branch), and ensure the `browser-wasm` pack is installed:
-
-```
-dotnet workload install wasm-tools -s https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json
-```
-
-To make this available to the build scripts, supply environment variables. Example:
-
-```
-export DOTNET_ROOT=~/dotnet7
-export BROWSER_WASM_RUNTIME_PATH=$(DOTNET_ROOT)/packs/Microsoft.NETCore.App.Runtime.Mono.browser-wasm/7.0.0-alpha.1.22061.11/runtimes/browser-wasm
-```
-
-You'll need to update these paths to match the location where you extracted the .NET daily SDK build and the exact version of the `browser-wasm` pack you received.
 
 ### 3. Run it
 
 Finally, you can build and run the sample:
 
 ```
-cd sample/console
-make run
+./dotnet.sh build /p:TargetOS=wasi /p:Configuration=Debug /t:RunSample src/mono/sample/wasi/console
 ```
 
 ### 4. Debug it

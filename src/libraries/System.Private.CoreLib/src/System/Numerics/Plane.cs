@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -23,35 +22,38 @@ namespace System.Numerics
         /// <summary>The distance of the plane along its normal from the origin.</summary>
         public float D;
 
-        /// <summary>Creates a <see cref="System.Numerics.Plane" /> object from the X, Y, and Z components of its normal, and its distance from the origin on that normal.</summary>
+        /// <summary>Creates a <see cref="Plane" /> object from the X, Y, and Z components of its normal, and its distance from the origin on that normal.</summary>
         /// <param name="x">The X component of the normal.</param>
         /// <param name="y">The Y component of the normal.</param>
         /// <param name="z">The Z component of the normal.</param>
         /// <param name="d">The distance of the plane along its normal from the origin.</param>
+        [Intrinsic]
         public Plane(float x, float y, float z, float d)
         {
             Normal = new Vector3(x, y, z);
             D = d;
         }
 
-        /// <summary>Creates a <see cref="System.Numerics.Plane" /> object from a specified normal and the distance along the normal from the origin.</summary>
+        /// <summary>Creates a <see cref="Plane" /> object from a specified normal and the distance along the normal from the origin.</summary>
         /// <param name="normal">The plane's normal vector.</param>
         /// <param name="d">The plane's distance from the origin along its normal vector.</param>
+        [Intrinsic]
         public Plane(Vector3 normal, float d)
         {
             Normal = normal;
             D = d;
         }
 
-        /// <summary>Creates a <see cref="System.Numerics.Plane" /> object from a specified four-dimensional vector.</summary>
-        /// <param name="value">A vector whose first three elements describe the normal vector, and whose <see cref="System.Numerics.Vector4.W" /> defines the distance along that normal from the origin.</param>
+        /// <summary>Creates a <see cref="Plane" /> object from a specified four-dimensional vector.</summary>
+        /// <param name="value">A vector whose first three elements describe the normal vector, and whose <see cref="Vector4.W" /> defines the distance along that normal from the origin.</param>
+        [Intrinsic]
         public Plane(Vector4 value)
         {
             Normal = new Vector3(value.X, value.Y, value.Z);
             D = value.W;
         }
 
-        /// <summary>Creates a <see cref="System.Numerics.Plane" /> object that contains three specified points.</summary>
+        /// <summary>Creates a <see cref="Plane" /> object that contains three specified points.</summary>
         /// <param name="point1">The first point defining the plane.</param>
         /// <param name="point2">The second point defining the plane.</param>
         /// <param name="point3">The third point defining the plane.</param>
@@ -59,7 +61,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane CreateFromVertices(Vector3 point1, Vector3 point2, Vector3 point3)
         {
-            if (Vector.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated)
             {
                 Vector3 a = point2 - point1;
                 Vector3 b = point3 - point1;
@@ -107,23 +109,24 @@ namespace System.Numerics
         /// <param name="plane">The plane.</param>
         /// <param name="value">The four-dimensional vector.</param>
         /// <returns>The dot product.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Dot(Plane plane, Vector4 value)
         {
-            return plane.Normal.X * value.X +
-                   plane.Normal.Y * value.Y +
-                   plane.Normal.Z * value.Z +
-                   plane.D * value.W;
+            return (plane.Normal.X * value.X)
+                 + (plane.Normal.Y * value.Y)
+                 + (plane.Normal.Z * value.Z)
+                 + (plane.D * value.W);
         }
 
-        /// <summary>Returns the dot product of a specified three-dimensional vector and the normal vector of this plane plus the distance (<see cref="System.Numerics.Plane.D" />) value of the plane.</summary>
+        /// <summary>Returns the dot product of a specified three-dimensional vector and the normal vector of this plane plus the distance (<see cref="D" />) value of the plane.</summary>
         /// <param name="plane">The plane.</param>
         /// <param name="value">The 3-dimensional vector.</param>
         /// <returns>The dot product.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DotCoordinate(Plane plane, Vector3 value)
         {
-            if (Vector.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated)
             {
                 return Vector3.Dot(plane.Normal, value) + plane.D;
             }
@@ -136,14 +139,14 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Returns the dot product of a specified three-dimensional vector and the <see cref="System.Numerics.Plane.Normal" /> vector of this plane.</summary>
+        /// <summary>Returns the dot product of a specified three-dimensional vector and the <see cref="Normal" /> vector of this plane.</summary>
         /// <param name="plane">The plane.</param>
         /// <param name="value">The three-dimensional vector.</param>
         /// <returns>The dot product.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DotNormal(Plane plane, Vector3 value)
         {
-            if (Vector.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated)
             {
                 return Vector3.Dot(plane.Normal, value);
             }
@@ -155,13 +158,13 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Creates a new <see cref="System.Numerics.Plane" /> object whose normal vector is the source plane's normal vector normalized.</summary>
+        /// <summary>Creates a new <see cref="Plane" /> object whose normal vector is the source plane's normal vector normalized.</summary>
         /// <param name="value">The source plane.</param>
         /// <returns>The normalized plane.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane Normalize(Plane value)
         {
-            if (Vector.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated)
             {
                 float normalLengthSquared = value.Normal.LengthSquared();
                 if (MathF.Abs(normalLengthSquared - 1.0f) < NormalizeEpsilon)
@@ -197,7 +200,7 @@ namespace System.Numerics
         /// <param name="plane">The normalized plane to transform.</param>
         /// <param name="matrix">The transformation matrix to apply to <paramref name="plane" />.</param>
         /// <returns>The transformed plane.</returns>
-        /// <remarks><paramref name="plane" /> must already be normalized so that its <see cref="System.Numerics.Plane.Normal" /> vector is of unit length before this method is called.</remarks>
+        /// <remarks><paramref name="plane" /> must already be normalized so that its <see cref="Normal" /> vector is of unit length before this method is called.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane Transform(Plane plane, Matrix4x4 matrix)
         {
@@ -216,7 +219,7 @@ namespace System.Numerics
         /// <param name="plane">The normalized plane to transform.</param>
         /// <param name="rotation">The Quaternion rotation to apply to the plane.</param>
         /// <returns>A new plane that results from applying the Quaternion rotation.</returns>
-        /// <remarks><paramref name="plane" /> must already be normalized so that its <see cref="System.Numerics.Plane.Normal" /> vector is of unit length before this method is called.</remarks>
+        /// <remarks><paramref name="plane" /> must already be normalized so that its <see cref="Normal" /> vector is of unit length before this method is called.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane Transform(Plane plane, Quaternion rotation)
         {
@@ -260,22 +263,22 @@ namespace System.Numerics
         /// <param name="value1">The first plane to compare.</param>
         /// <param name="value2">The second plane to compare.</param>
         /// <returns><see langword="true" /> if <paramref name="value1" /> and <paramref name="value2" /> are equal; otherwise, <see langword="false" />.</returns>
-        /// <remarks>Two <see cref="System.Numerics.Plane" /> objects are equal if their <see cref="System.Numerics.Plane.Normal" /> and <see cref="System.Numerics.Plane.D" /> fields are equal.
-        /// The <see cref="System.Numerics.Plane.op_Equality" /> method defines the operation of the equality operator for <see cref="System.Numerics.Plane" /> objects.</remarks>
+        /// <remarks>Two <see cref="Plane" /> objects are equal if their <see cref="Normal" /> and <see cref="D" /> fields are equal.
+        /// The <see cref="op_Equality" /> method defines the operation of the equality operator for <see cref="Plane" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Plane value1, Plane value2)
         {
-            return (value1.Normal.X == value2.Normal.X &&
-                    value1.Normal.Y == value2.Normal.Y &&
-                    value1.Normal.Z == value2.Normal.Z &&
-                    value1.D == value2.D);
+            return (value1.Normal == value2.Normal)
+                && (value1.D == value2.D);
         }
 
         /// <summary>Returns a value that indicates whether two planes are not equal.</summary>
         /// <param name="value1">The first plane to compare.</param>
         /// <param name="value2">The second plane to compare.</param>
         /// <returns><see langword="true" /> if <paramref name="value1" /> and <paramref name="value2" /> are not equal; otherwise, <see langword="false" />.</returns>
-        /// <remarks>The <see cref="System.Numerics.Plane.op_Inequality" /> method defines the operation of the inequality operator for <see cref="System.Numerics.Plane" /> objects.</remarks>
+        /// <remarks>The <see cref="op_Inequality" /> method defines the operation of the inequality operator for <see cref="Plane" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Plane value1, Plane value2)
         {
@@ -285,7 +288,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><see langword="true" /> if the current instance and <paramref name="obj" /> are equal; otherwise, <see langword="false" />. If <paramref name="obj" /> is <see langword="null" />, the method returns <see langword="false" />.</returns>
-        /// <remarks>The current instance and <paramref name="obj" /> are equal if <paramref name="obj" /> is a <see cref="System.Numerics.Plane" /> object and their <see cref="System.Numerics.Plane.Normal" /> and <see cref="System.Numerics.Plane.D" /> fields are equal.</remarks>
+        /// <remarks>The current instance and <paramref name="obj" /> are equal if <paramref name="obj" /> is a <see cref="Plane" /> object and their <see cref="Normal" /> and <see cref="D" /> fields are equal.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals([NotNullWhen(true)] object? obj)
         {
@@ -295,7 +298,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether this instance and another plane object are equal.</summary>
         /// <param name="other">The other plane.</param>
         /// <returns><see langword="true" /> if the two planes are equal; otherwise, <see langword="false" />.</returns>
-        /// <remarks>Two <see cref="System.Numerics.Plane" /> objects are equal if their <see cref="System.Numerics.Plane.Normal" /> and <see cref="System.Numerics.Plane.D" /> fields are equal.</remarks>
+        /// <remarks>Two <see cref="Plane" /> objects are equal if their <see cref="Normal" /> and <see cref="D" /> fields are equal.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Plane other)
         {
@@ -304,7 +307,7 @@ namespace System.Numerics
 
             if (Vector128.IsHardwareAccelerated)
             {
-                return Vector128.LoadUnsafe(ref Unsafe.AsRef(in Normal.X)).Equals(Vector128.LoadUnsafe(ref other.Normal.X));
+                return this.AsVector128().Equals(other.AsVector128());
             }
 
             return SoftwareFallback(in this, other);
@@ -324,8 +327,8 @@ namespace System.Numerics
         }
 
         /// <summary>Returns the string representation of this plane object.</summary>
-        /// <returns>A string that represents this <see cref="System.Numerics.Plane" /> object.</returns>
-        /// <remarks>The string representation of a <see cref="System.Numerics.Plane" /> object use the formatting conventions of the current culture to format the numeric values in the returned string. For example, a <see cref="System.Numerics.Plane" /> object whose string representation is formatted by using the conventions of the en-US culture might appear as <c>{Normal:&lt;1.1, 2.2, 3.3&gt; D:4.4}</c>.</remarks>
+        /// <returns>A string that represents this <see cref="Plane" /> object.</returns>
+        /// <remarks>The string representation of a <see cref="Plane" /> object use the formatting conventions of the current culture to format the numeric values in the returned string. For example, a <see cref="Plane" /> object whose string representation is formatted by using the conventions of the en-US culture might appear as <c>{Normal:&lt;1.1, 2.2, 3.3&gt; D:4.4}</c>.</remarks>
         public override readonly string ToString() => $"{{Normal:{Normal} D:{D}}}";
     }
 }

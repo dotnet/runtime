@@ -341,7 +341,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var buffer = new BufferBlock<int>(new DataflowBlockOptions() { CancellationToken = cts.Token });
             buffer.Post(1);
             cts.Cancel();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => buffer.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, buffer.Completion);
             Assert.Equal(expected: 0, actual: buffer.Count);
 
             cts = new CancellationTokenSource();
@@ -419,8 +419,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestPrecanceled()
         {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
             var bb = new BufferBlock<int>(
-                new DataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true) });
+                new DataflowBlockOptions { CancellationToken = cts.Token });
 
             int ignoredValue;
             IList<int> ignoredValues;
@@ -438,8 +441,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(bb.TryReceiveAll(out ignoredValues));
             Assert.False(bb.TryReceive(out ignoredValue));
 
-            Assert.NotNull(bb.Completion);
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, bb.Completion);
             bb.Complete(); // just make sure it doesn't throw
         }
 
@@ -465,7 +467,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 else
                 {
                     cts.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+                    await AssertExtensions.CanceledAsync(cts.Token, bb.Completion);
                 }
 
                 await Task.WhenAll(sends);
@@ -566,6 +568,33 @@ namespace System.Threading.Tasks.Dataflow.Tests
             // which will cause the block to fault.
             bb.Complete();
             await Assert.ThrowsAsync<FormatException>(() => bb.Completion);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task TestSynchronousWaitForCompletionDoesNotDeadlock()
+        {
+            SynchronizationContext origContext = SynchronizationContext.Current;
+            try
+            {
+                // Avoid xunit synchronization context which impacts scheduling and the outcome of this test
+                SynchronizationContext.SetSynchronizationContext(null);
+
+                var block1 = new BufferBlock<int>();
+                var block2 = new BufferBlock<int>();
+                block1.LinkTo(block2, new DataflowLinkOptions { PropagateCompletion = true });
+
+                block1.Post(1);
+                block1.Complete();
+                await block1.Completion;
+
+                Assert.True(block2.TryReceive(out int value), "Value should have been received");
+                Assert.Equal(1, value);
+                Assert.True(block2.Completion.Wait(30_000), "Synchronous wait should have completed within timeout period");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(origContext);
+            }
         }
     }
 }

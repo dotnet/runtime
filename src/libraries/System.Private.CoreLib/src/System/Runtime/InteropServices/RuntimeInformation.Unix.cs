@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices
         private static string? s_osDescription;
         private static volatile int s_osArchPlusOne;
 
-        public static string OSDescription => s_osDescription ??= Interop.Sys.GetUnixVersion();
+        public static string OSDescription => s_osDescription ??= (GetPrettyOSDescription() ?? Interop.Sys.GetUnixVersion());
 
         public static Architecture OSArchitecture
         {
@@ -29,6 +29,16 @@ namespace System.Runtime.InteropServices
                 Debug.Assert(osArch >= 0);
                 return (Architecture)osArch;
             }
+        }
+
+        private static string? GetPrettyOSDescription()
+        {
+            if (OperatingSystem.IsLinux())
+            {
+                return Interop.OSReleaseFile.GetPrettyName();
+            }
+
+            return null;
         }
     }
 }

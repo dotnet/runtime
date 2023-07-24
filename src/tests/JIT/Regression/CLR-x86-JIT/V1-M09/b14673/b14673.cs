@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     using System;
 
     public class Bug
     {
-        public void runTest(Object var2)
+        internal void runTest(Object var2)
         {
             int iTemp = 5;
             Object VarResult = (iTemp);
@@ -18,7 +19,8 @@ namespace DefaultNamespace
             else
                 Console.WriteLine("Test FAiLED");
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Bug oCbTest = new Bug();
             oCbTest.runTest((3));

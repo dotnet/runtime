@@ -268,6 +268,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     _ASSERTE(!currentNativeCodeVersion.IsNull());
     _ASSERTE(!currentNativeCodeVersion.IsFinalTier());
     _ASSERTE(createTieringBackgroundWorkerRef != nullptr);
+    _ASSERTE(!currentNativeCodeVersion.GetILCodeVersion().IsDeoptimized());
 
     NativeCodeVersion t1NativeCodeVersion;
     HRESULT hr;
@@ -301,6 +302,14 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                 // 2) Better profile since we'll be able to instrument inlinees
                 // 3) Unoptimized instrumented tier is faster to produce and wire up
                 nextTier = NativeCodeVersion::OptimizationTier0Instrumented;
+
+#if _DEBUG
+                if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentedTierAlwaysOptimized) != 0)
+                {
+                    // Override that behavior and always use optimizations.
+                    nextTier = NativeCodeVersion::OptimizationTier1Instrumented;
+                }
+#endif
 
                 // NOTE: we might consider using OptimizationTier1Instrumented if the previous Tier0
                 // made it to Tier1-OSR.
@@ -995,7 +1004,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
         bool mayHaveEntryPointSlotsToBackpatch = pMethod->MayHaveEntryPointSlotsToBackpatch();
         MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
         CodeVersionManager::LockHolder codeVersioningLockHolder;
-
+        
         // As long as we are exclusively using any non-JumpStamp publishing for tiered compilation
         // methods this first attempt should succeed
         ilParent = nativeCodeVersion.GetILCodeVersion();
@@ -1089,6 +1098,14 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
                 _ASSERTE(!nativeCodeVersion.IsFinalTier());
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+                if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+                {
+                    // If we plan to only instrument hot code we have to make an exception
+                    // for cold methods with loops so if those self promote to OSR they need
+                    // some profile to optimize, so here we allow JIT to enable instrumentation
+                    // if current method has loops and is eligible for OSR.
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
+                }
                 return flags;
             }
 
@@ -1125,6 +1142,14 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         case NativeCodeVersion::OptimizationTier0:
             if (g_pConfig->TieredCompilation_QuickJit())
             {
+                if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+                {
+                    // If we plan to only instrument hot code we have to make an exception
+                    // for cold methods with loops so if those self promote to OSR they need
+                    // some profile to optimize, so here we allow JIT to enable instrumentation
+                    // if current method has loops and is eligible for OSR.
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
+                }
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 break;
             }

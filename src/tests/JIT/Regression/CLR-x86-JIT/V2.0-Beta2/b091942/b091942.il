@@ -47,23 +47,26 @@
 // Global field to store the big struct
 .field static valuetype BigStruct s_bigStruct
 
-  .method public hidebysig static int32 Main(string [] args) cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
     .entrypoint
-    .locals init (int32 retValue)
+    .locals init (int32 retValue, string [] wasArgs)
+	ldc.i4.0
+	newarr     [mscorlib]System.String
+	stloc.1
 
-	ldarg.0
+	ldloc.1
 	call       bool TestClass::Test1(string [] args)
 	brfalse.s  FAILED
 
-	ldarg.0
+	ldloc.1
 	call       bool TestClass::Test2(string [] args)
 	brfalse.s  FAILED
 
-	ldarg.0
+	ldloc.1
 	call       bool TestClass::Test3(string [] args)
 	brfalse.s  FAILED
 
@@ -109,7 +112,7 @@ NEXT:	ldsfld     class BigClass TestClass::s_bigClass
     IL_0000:  ret
   }
 
-  .method public hidebysig static bool Test1(string [] args) cil managed
+  .method public hidebysig static bool Test1(string [] args) cil managed noinlining
   {
     .locals init (bool retValue)
 	ldstr   "Running Test1: Using a class with a big offset field"
@@ -169,7 +172,7 @@ NEXT:	ldloc.0
     IL_0000:  ret
   }
 
-  .method public hidebysig static bool Test2(string [] args) cil managed
+  .method public hidebysig static bool Test2(string [] args) cil managed noinlining
   {
     .locals init (bool retValue)
 	ldstr   "Running Test2: Using a valuetype with a not so big offset field"
@@ -239,7 +242,7 @@ NEXT:	ldloc.0
     IL_0000:  ret
   }
 
-  .method public hidebysig static bool Test3(string [] args) cil managed
+  .method public hidebysig static bool Test3(string [] args) cil managed noinlining
   {
     .locals init (bool retValue)
 	ldstr   "Running Test3: Using a valuetype with a big offset field"

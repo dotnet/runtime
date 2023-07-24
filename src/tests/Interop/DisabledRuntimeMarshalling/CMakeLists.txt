@@ -4,7 +4,7 @@ set(SOURCES DisabledRuntimeMarshallingNative.cpp )
 
 # add the executable
 add_library (DisabledRuntimeMarshallingNative SHARED ${SOURCES})
-target_link_libraries(DisabledRuntimeMarshallingNative ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(DisabledRuntimeMarshallingNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets
 install (TARGETS DisabledRuntimeMarshallingNative DESTINATION bin)

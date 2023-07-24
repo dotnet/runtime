@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace UseTrashedVfp1
 {
@@ -26,7 +27,8 @@ namespace UseTrashedVfp1
         }
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool fTestPassed;
 

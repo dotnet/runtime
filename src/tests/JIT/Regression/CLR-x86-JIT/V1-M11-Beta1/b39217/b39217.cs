@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -12,7 +13,7 @@ namespace Test
         bool[] m_ab = null;
         static App[] m_ax = new App[7];
 
-        public static void Method1() { }
+        internal static void Method1() { }
 
         public bool[] Method1(ref int param1, App param4)
         {
@@ -30,7 +31,8 @@ namespace Test
             Method1();
             Method2();
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

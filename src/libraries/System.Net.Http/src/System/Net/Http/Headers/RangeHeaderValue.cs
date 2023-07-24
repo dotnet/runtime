@@ -19,7 +19,7 @@ namespace System.Net.Http.Headers
             get { return _unit; }
             set
             {
-                HeaderUtilities.CheckValidToken(value, nameof(value));
+                HeaderUtilities.CheckValidToken(value);
                 _unit = value;
             }
         }
@@ -109,7 +109,7 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static RangeHeaderValue Parse(string? input)
+        public static RangeHeaderValue Parse(string input)
         {
             int index = 0;
             return (RangeHeaderValue)GenericHeaderParser.RangeParser.ParseValue(input, null, ref index);

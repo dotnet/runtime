@@ -3,11 +3,15 @@
 
 // NOTE: This is a generated file - do not manually edit!
 
-#pragma warning disable 649
+#pragma warning disable 649, SA1121, IDE0036, SA1129
 
+using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
+using Internal.LowLevelLinq;
 using Internal.NativeFormat;
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Metadata.NativeFormat.Writer
 {
@@ -192,6 +196,11 @@ namespace Internal.Metadata.NativeFormat.Writer
         } // Write
 
         public static void Write(this NativeWriter writer, CallingConventions value)
+        {
+            writer.WriteUnsigned((uint)value);
+        } // Write
+
+        public static void Write(this NativeWriter writer, SignatureCallingConvention value)
         {
             writer.WriteUnsigned((uint)value);
         } // Write

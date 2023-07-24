@@ -166,6 +166,14 @@ public partial class Program
         IsFalse(typeof(Vector<float>).IsAssignableTo(typeof(Vector128<float>)));
         IsFalse(typeof(Vector<float>).IsAssignableTo(typeof(Vector256<float>)));
 
+        // Implementing types to open generics.
+        // Order here is important as we've hit cases where the type system
+        // has introduced non-deterministic results: open, specific, specific, open is intentional.
+        IsFalse(typeof(ImplementingStruct1).IsAssignableTo(typeof(IGenericInterface<>)));
+        IsTrue(typeof(ImplementingStruct1).IsAssignableTo(typeof(IGenericInterface<ImplementingStruct1>)));
+        IsTrue(typeof(ImplementingStruct2).IsAssignableTo(typeof(IGenericInterface<ImplementingStruct2>)));
+        IsFalse(typeof(ImplementingStruct2).IsAssignableTo(typeof(IGenericInterface<>)));
+
         // null type
         IsFalse(typeof(int).IsAssignableTo(null));
         IsFalse(typeof(object).IsAssignableTo(null));

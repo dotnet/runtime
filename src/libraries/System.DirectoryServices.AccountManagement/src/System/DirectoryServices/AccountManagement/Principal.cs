@@ -892,7 +892,7 @@ namespace System.DirectoryServices.AccountManagement
             if (_isDeleted)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "Principal", "CheckDisposedOrDeleted: accessing deleted object");
-                throw new InvalidOperationException(SR.PrincipalDeleted);
+                throw new InvalidOperationException(SR.PrincipalAccessedAfterBeingDeleted);
             }
         }
 

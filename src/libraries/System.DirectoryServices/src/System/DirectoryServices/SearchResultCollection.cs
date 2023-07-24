@@ -49,7 +49,7 @@ namespace System.DirectoryServices
                 if (_innerList == null)
                 {
                     _innerList = new ArrayList();
-                    IEnumerator enumerator = new ResultsEnumerator(
+                    var enumerator = new ResultsEnumerator(
                         this,
                         _rootEntry.GetUsername(),
                         _rootEntry.GetPassword(),

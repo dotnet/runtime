@@ -2,8 +2,13 @@ trigger:
   none
 
 schedules:
-  - cron: 0 12 * * 1
-    displayName: Weekly Monday CodeQL/Semmle run
+  - cron: 0 12 * * 1,4,6
+    # CodeQL auto-injects into other pipelines and will do a scan if one hasn't
+    # been done in 72 hours. These can cause timeouts, so we ensure that one has
+    # already been performed. We can increase this to 4x/week or be more
+    # sophisticated if the 72 hour period ending Thursday ("4" in the cron line)
+    # causes a problem.
+    displayName: 3x/week CodeQL/Semmle run
     branches:
       include:
       - main
@@ -37,7 +42,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
-          - Linux_x64
+          - linux_x64
           - windows_x64
           jobParameters:
             buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
@@ -55,10 +60,10 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - Linux_x64
+          - linux_x64
           - windows_x64
           jobParameters:
-            buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
             nameSuffix: AllSubsets_Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360

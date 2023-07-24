@@ -29,7 +29,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CopyToTest()
         {
-            var listQuery = this.GetListQuery(ImmutableList.Create(1, 2));
+            IImmutableListQueries<int> listQuery = this.GetListQuery(ImmutableList.Create(1, 2));
             var list = (IEnumerable<int>)listQuery;
 
             var array = new int[2];
@@ -62,7 +62,7 @@ namespace System.Collections.Immutable.Tests
         {
             this.GetListQuery(ImmutableList<int>.Empty).ForEach(n => { throw new ShouldNotBeInvokedException(); });
 
-            var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 3));
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 3));
             var hitTest = new bool[list.Max() + 1];
             this.GetListQuery(list).ForEach(i =>
             {
@@ -82,7 +82,7 @@ namespace System.Collections.Immutable.Tests
         {
             Assert.False(this.GetListQuery(ImmutableList<int>.Empty).Exists(n => true));
 
-            var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(1, 5));
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(1, 5));
             Assert.True(this.GetListQuery(list).Exists(n => n == 3));
             Assert.False(this.GetListQuery(list).Exists(n => n == 8));
         }
@@ -91,9 +91,9 @@ namespace System.Collections.Immutable.Tests
         public void FindAllTest()
         {
             Assert.True(this.GetListQuery(ImmutableList<int>.Empty).FindAll(n => true).IsEmpty);
-            var list = ImmutableList<int>.Empty.AddRange(new[] { 2, 3, 4, 5, 6 });
-            var actual = this.GetListQuery(list).FindAll(n => n % 2 == 1);
-            var expected = list.ToList().FindAll(n => n % 2 == 1);
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 2, 3, 4, 5, 6 });
+            ImmutableList<int> actual = this.GetListQuery(list).FindAll(n => n % 2 == 1);
+            List<int> expected = list.ToList().FindAll(n => n % 2 == 1);
             Assert.Equal<int>(expected, actual.ToList());
         }
 
@@ -101,7 +101,7 @@ namespace System.Collections.Immutable.Tests
         public void FindTest()
         {
             Assert.Equal(0, this.GetListQuery(ImmutableList<int>.Empty).Find(n => true));
-            var list = ImmutableList<int>.Empty.AddRange(new[] { 2, 3, 4, 5, 6 });
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 2, 3, 4, 5, 6 });
             Assert.Equal(3, this.GetListQuery(list).Find(n => (n % 2) == 1));
         }
 
@@ -109,7 +109,7 @@ namespace System.Collections.Immutable.Tests
         public void FindLastTest()
         {
             Assert.Equal(0, this.GetListQuery(ImmutableList<int>.Empty).FindLast(n => { throw new ShouldNotBeInvokedException(); }));
-            var list = ImmutableList<int>.Empty.AddRange(new[] { 2, 3, 4, 5, 6 });
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 2, 3, 4, 5, 6 });
             Assert.Equal(5, this.GetListQuery(list).FindLast(n => (n % 2) == 1));
         }
 
@@ -121,8 +121,8 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(-1, this.GetListQuery(ImmutableList<int>.Empty).FindIndex(0, 0, n => true));
 
             // Create a list with contents: 100,101,102,103,104,100,101,102,103,104
-            var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(100, 5).Concat(Enumerable.Range(100, 5)));
-            var bclList = list.ToList();
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(100, 5).Concat(Enumerable.Range(100, 5)));
+            List<int> bclList = list.ToList();
             Assert.Equal(-1, this.GetListQuery(list).FindIndex(n => n == 6));
 
             for (int idx = 0; idx < list.Count; idx++)
@@ -175,8 +175,8 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(-1, this.GetListQuery(ImmutableList<int>.Empty).FindLastIndex(0, 0, n => true));
 
             // Create a list with contents: 100,101,102,103,104,100,101,102,103,104
-            var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(100, 5).Concat(Enumerable.Range(100, 5)));
-            var bclList = list.ToList();
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(100, 5).Concat(Enumerable.Range(100, 5)));
+            List<int> bclList = list.ToList();
             Assert.Equal(-1, this.GetListQuery(list).FindLastIndex(n => n == 6));
 
             for (int idx = 0; idx < list.Count; idx++)
@@ -279,10 +279,10 @@ namespace System.Collections.Immutable.Tests
         public void ConvertAllTest()
         {
             Assert.True(this.GetListQuery(ImmutableList<int>.Empty).ConvertAll<float>(n => n).IsEmpty);
-            var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
             Func<int, double> converter = n => 2.0 * n;
-            var expected = list.ToList().Select(converter).ToList();
-            var actual = this.GetListQuery(list).ConvertAll(converter);
+            List<double> expected = list.ToList().Select(converter).ToList();
+            ImmutableList<double> actual = this.GetListQuery(list).ConvertAll(converter);
             Assert.Equal<double>(expected.ToList(), actual.ToList());
         }
 
@@ -290,15 +290,15 @@ namespace System.Collections.Immutable.Tests
         public void GetRangeTest()
         {
             Assert.True(this.GetListQuery(ImmutableList<int>.Empty).GetRange(0, 0).IsEmpty);
-            var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
-            var bclList = list.ToList();
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
+            List<int> bclList = list.ToList();
 
             for (int index = 0; index < list.Count; index++)
             {
                 for (int count = 0; count < list.Count - index; count++)
                 {
-                    var expected = bclList.GetRange(index, count);
-                    var actual = this.GetListQuery(list).GetRange(index, count);
+                    List<int> expected = bclList.GetRange(index, count);
+                    ImmutableList<int> actual = this.GetListQuery(list).GetRange(index, count);
                     Assert.Equal<int>(expected.ToList(), actual.ToList());
                 }
             }
@@ -308,7 +308,7 @@ namespace System.Collections.Immutable.Tests
         public void TrueForAllTest()
         {
             Assert.True(this.GetListQuery(ImmutableList<int>.Empty).TrueForAll(n => false));
-            var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
             this.TrueForAllTestHelper(list, n => n % 2 == 0);
             this.TrueForAllTestHelper(list, n => n % 2 == 1);
             this.TrueForAllTestHelper(list, n => true);
@@ -317,7 +317,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void RemoveAllTest()
         {
-            var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
             this.RemoveAllTestHelper(list, n => false);
             this.RemoveAllTestHelper(list, n => true);
             this.RemoveAllTestHelper(list, n => n < 7);
@@ -328,7 +328,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void ReverseTest()
         {
-            var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
 
             for (int i = 0; i < list.Count; i++)
             {
@@ -348,17 +348,17 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void SortTest()
         {
-            var scenarios = new[] {
+            ImmutableList<int>[] scenarios = new[] {
                 ImmutableList<int>.Empty,
                 ImmutableList<int>.Empty.AddRange(Enumerable.Range(1, 50)),
                 ImmutableList<int>.Empty.AddRange(Enumerable.Range(1, 50).Reverse()),
             };
 
-            foreach (var scenario in scenarios)
+            foreach (ImmutableList<int> scenario in scenarios)
             {
-                var expected = scenario.ToList();
+                List<int> expected = scenario.ToList();
                 expected.Sort();
-                var actual = this.SortTestHelper(scenario);
+                List<int> actual = this.SortTestHelper(scenario);
                 Assert.Equal<int>(expected, actual);
 
                 expected = scenario.ToList();
@@ -397,7 +397,7 @@ namespace System.Collections.Immutable.Tests
         public void BinarySearch()
         {
             var basis = new List<int>(Enumerable.Range(1, 50).Select(n => n * 2));
-            var query = this.GetListQuery(basis.ToImmutableList());
+            IImmutableListQueries<int> query = this.GetListQuery(basis.ToImmutableList());
             for (int value = basis.First() - 1; value <= basis.Last() + 1; value++)
             {
                 int expected = basis.BinarySearch(value);
@@ -421,7 +421,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void BinarySearchPartialSortedList()
         {
-            var reverseSorted = ImmutableArray.CreateRange(Enumerable.Range(1, 150).Select(n => n * 2).Reverse());
+            ImmutableArray<int> reverseSorted = ImmutableArray.CreateRange(Enumerable.Range(1, 150).Select(n => n * 2).Reverse());
             this.BinarySearchPartialSortedListHelper(reverseSorted, 0, 50);
             this.BinarySearchPartialSortedListHelper(reverseSorted, 50, 50);
             this.BinarySearchPartialSortedListHelper(reverseSorted, 100, 50);
@@ -436,7 +436,7 @@ namespace System.Collections.Immutable.Tests
             int max = inputData[sortedIndex + sortedLength - 1];
 
             var basis = new List<int>(inputData);
-            var query = this.GetListQuery(inputData.ToImmutableList());
+            IImmutableListQueries<int> query = this.GetListQuery(inputData.ToImmutableList());
             for (int value = min - 1; value <= max + 1; value++)
             {
                 for (int index = sortedIndex; index < sortedIndex + sortedLength; index++) // make sure the index we pass in is always within the sorted range in the list.
@@ -463,7 +463,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void GetEnumeratorTest()
         {
-            var enumerable = this.GetEnumerableOf(1);
+            IEnumerable<int> enumerable = this.GetEnumerableOf(1);
             Assert.Equal(new[] { 1 }, enumerable.ToList()); // exercises the enumerator
 
             IEnumerable enumerableNonGeneric = enumerable;
@@ -514,9 +514,9 @@ namespace System.Collections.Immutable.Tests
 
         private void TrueForAllTestHelper<T>(ImmutableList<T> list, Predicate<T> test)
         {
-            var bclList = list.ToList();
-            var expected = bclList.TrueForAll(test);
-            var actual = this.GetListQuery(list).TrueForAll(test);
+            List<T> bclList = list.ToList();
+            bool expected = bclList.TrueForAll(test);
+            bool actual = this.GetListQuery(list).TrueForAll(test);
             Assert.Equal(expected, actual);
         }
 

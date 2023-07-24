@@ -353,6 +353,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsPublic
+        {
+            get
+            {
+                return Attributes.IsPublic();
+            }
+        }
+
         public override bool IsStaticConstructor
         {
             get

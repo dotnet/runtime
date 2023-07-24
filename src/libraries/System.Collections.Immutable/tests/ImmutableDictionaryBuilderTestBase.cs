@@ -12,7 +12,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Add()
         {
-            var builder = this.GetBuilder<string, int>();
+            IDictionary<string, int> builder = this.GetBuilder<string, int>();
             builder.Add("five", 5);
             builder.Add(new KeyValuePair<string, int>("six", 6));
             Assert.Equal(5, builder["five"]);
@@ -31,7 +31,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddExactDuplicate()
         {
-            var builder = this.GetBuilder<string, int>();
+            IDictionary<string, int> builder = this.GetBuilder<string, int>();
             builder.Add("five", 5);
             builder.Add("five", 5);
             Assert.Equal(1, builder.Count);
@@ -40,7 +40,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddExistingKeyWithDifferentValue()
         {
-            var builder = this.GetBuilder<string, int>();
+            IDictionary<string, int> builder = this.GetBuilder<string, int>();
             builder.Add("five", 5);
             AssertExtensions.Throws<ArgumentException>(null, () => builder.Add("five", 6));
         }
@@ -48,7 +48,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Indexer()
         {
-            var builder = this.GetBuilder<string, int>();
+            IDictionary<string, int> builder = this.GetBuilder<string, int>();
 
             // Set and set again.
             builder["five"] = 5;
@@ -67,16 +67,16 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void ContainsPair()
         {
-            var map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5);
-            var builder = this.GetBuilder(map);
+            IImmutableDictionary<string, int> map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5);
+            IDictionary<string, int> builder = this.GetBuilder(map);
             Assert.True(builder.Contains(new KeyValuePair<string, int>("five", 5)));
         }
 
         [Fact]
         public void RemovePair()
         {
-            var map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
-            var builder = this.GetBuilder(map);
+            IImmutableDictionary<string, int> map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
+            IDictionary<string, int> builder = this.GetBuilder(map);
             Assert.True(builder.Remove(new KeyValuePair<string, int>("five", 5)));
             Assert.False(builder.Remove(new KeyValuePair<string, int>("foo", 1)));
             Assert.Equal(1, builder.Count);
@@ -86,8 +86,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void RemoveKey()
         {
-            var map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
-            var builder = this.GetBuilder(map);
+            IImmutableDictionary<string, int> map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
+            IDictionary<string, int> builder = this.GetBuilder(map);
             builder.Remove("five");
             Assert.Equal(1, builder.Count);
             Assert.Equal(6, builder["six"]);
@@ -96,8 +96,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CopyTo()
         {
-            var map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5);
-            var builder = this.GetBuilder(map);
+            IImmutableDictionary<string, int> map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5);
+            IDictionary<string, int> builder = this.GetBuilder(map);
             var array = new KeyValuePair<string, int>[2]; // intentionally larger than source.
             builder.CopyTo(array, 1);
             Assert.Equal(new KeyValuePair<string, int>(), array[0]);
@@ -109,15 +109,15 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void IsReadOnly()
         {
-            var builder = this.GetBuilder<string, int>();
+            IDictionary<string, int> builder = this.GetBuilder<string, int>();
             Assert.False(builder.IsReadOnly);
         }
 
         [Fact]
         public void Keys()
         {
-            var map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
-            var builder = this.GetBuilder(map);
+            IImmutableDictionary<string, int> map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
+            IDictionary<string, int> builder = this.GetBuilder(map);
             CollectionAssertAreEquivalent(new[] { "five", "six" }, builder.Keys);
             CollectionAssertAreEquivalent(new[] { "five", "six" }, ((IReadOnlyDictionary<string, int>)builder).Keys.ToArray());
         }
@@ -125,8 +125,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Values()
         {
-            var map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
-            var builder = this.GetBuilder(map);
+            IImmutableDictionary<string, int> map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
+            IDictionary<string, int> builder = this.GetBuilder(map);
             CollectionAssertAreEquivalent(new[] { 5, 6 }, builder.Values);
             CollectionAssertAreEquivalent(new[] { 5, 6 }, ((IReadOnlyDictionary<string, int>)builder).Values.ToArray());
         }
@@ -134,8 +134,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void TryGetValue()
         {
-            var map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
-            var builder = this.GetBuilder(map);
+            IImmutableDictionary<string, int> map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
+            IDictionary<string, int> builder = this.GetBuilder(map);
             int value;
             Assert.True(builder.TryGetValue("five", out value) && value == 5);
             Assert.True(builder.TryGetValue("six", out value) && value == 6);
@@ -146,16 +146,16 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void EnumerateTest()
         {
-            var map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
-            var builder = this.GetBuilder(map);
-            using (var enumerator = builder.GetEnumerator())
+            IImmutableDictionary<string, int> map = this.GetEmptyImmutableDictionary<string, int>().Add("five", 5).Add("six", 6);
+            IDictionary<string, int> builder = this.GetBuilder(map);
+            using (IEnumerator<KeyValuePair<string, int>> enumerator = builder.GetEnumerator())
             {
                 Assert.True(enumerator.MoveNext());
                 Assert.True(enumerator.MoveNext());
                 Assert.False(enumerator.MoveNext());
             }
 
-            var manualEnum = builder.GetEnumerator();
+            IEnumerator<KeyValuePair<string, int>> manualEnum = builder.GetEnumerator();
             Assert.Throws<InvalidOperationException>(() => manualEnum.Current);
             while (manualEnum.MoveNext()) { }
             Assert.False(manualEnum.MoveNext());
@@ -165,7 +165,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void IDictionaryMembers()
         {
-            var builder = this.GetBuilder<string, int>();
+            IDictionary<string, int> builder = this.GetBuilder<string, int>();
             var dictionary = (IDictionary)builder;
             dictionary.Add("a", 1);
             Assert.True(dictionary.Contains("a"));
@@ -183,10 +183,10 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void IDictionaryEnumerator()
         {
-            var builder = this.GetBuilder<string, int>();
+            IDictionary<string, int> builder = this.GetBuilder<string, int>();
             var dictionary = (IDictionary)builder;
             dictionary.Add("a", 1);
-            var enumerator = dictionary.GetEnumerator();
+            IDictionaryEnumerator enumerator = dictionary.GetEnumerator();
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             Assert.Throws<InvalidOperationException>(() => enumerator.Key);
             Assert.Throws<InvalidOperationException>(() => enumerator.Value);
@@ -225,7 +225,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void ICollectionMembers()
         {
-            var builder = this.GetBuilder<string, int>();
+            IDictionary<string, int> builder = this.GetBuilder<string, int>();
             var collection = (ICollection)builder;
 
             collection.CopyTo(new object[0], 0);

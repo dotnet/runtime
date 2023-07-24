@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -17,11 +16,9 @@ namespace System.Runtime
     {
         Unknown = 0,
         InternalError = 1,                                   // "Runtime internal error"
-        UnhandledException_ExceptionDispatchNotAllowed = 2,  // "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope."
-        UnhandledException_CallerDidNotHandle = 3,           // "Unhandled exception: no handler found in calling method."
-        ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
-        UnhandledException = 5,                              // "unhandled exception"
-        UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
+        UnhandledException = 2,                              // "unhandled exception"
+        UnhandledExceptionFromPInvoke = 3,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
+        EnvironmentFailFast = 4,
     }
 
     internal static unsafe partial class EH
@@ -270,10 +267,7 @@ namespace System.Runtime
             // If the helper fails to yield an object, then we fail-fast.
             if (e == null)
             {
-                FailFastViaClasslib(
-                    RhFailFastReason.ClassLibDidNotTranslateExceptionID,
-                    null,
-                    address);
+                FailFastViaClasslib(RhFailFastReason.InternalError, null, address);
             }
 
             return e;
@@ -306,10 +300,7 @@ namespace System.Runtime
             // If the helper fails to yield an object, then we fail-fast.
             if (e == null)
             {
-                FailFastViaClasslib(
-                    RhFailFastReason.ClassLibDidNotTranslateExceptionID,
-                    null,
-                    (IntPtr)pEEType);
+                FailFastViaClasslib(RhFailFastReason.InternalError, null, (IntPtr)pEEType);
             }
 
             return e;
@@ -547,7 +538,7 @@ namespace System.Runtime
             }
 
             exInfo.Init(exceptionToThrow!, instructionFault);
-            DispatchEx(ref exInfo._frameIter, ref exInfo, MaxTryRegionIdx);
+            DispatchEx(ref exInfo._frameIter, ref exInfo);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
@@ -569,7 +560,7 @@ namespace System.Runtime
             }
 
             exInfo.Init(exceptionObj);
-            DispatchEx(ref exInfo._frameIter, ref exInfo, MaxTryRegionIdx);
+            DispatchEx(ref exInfo._frameIter, ref exInfo);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
@@ -586,11 +577,11 @@ namespace System.Runtime
             object rethrownException = activeExInfo.ThrownException;
 
             exInfo.Init(rethrownException, ref activeExInfo);
-            DispatchEx(ref exInfo._frameIter, ref exInfo, activeExInfo._idxCurClause);
+            DispatchEx(ref exInfo._frameIter, ref exInfo);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
-        private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo, uint startIdx)
+        private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
             object exceptionObj = exInfo.ThrownException;
@@ -604,19 +595,22 @@ namespace System.Runtime
             byte* pCatchHandler = null;
             uint catchingTryRegionIdx = MaxTryRegionIdx;
 
-            bool isFirstRethrowFrame = (startIdx != MaxTryRegionIdx);
+            bool isFirstRethrowFrame = (exInfo._kind & ExKind.RethrowFlag) != 0;
             bool isFirstFrame = true;
 
             byte* prevControlPC = null;
             byte* prevOriginalPC = null;
             UIntPtr prevFramePtr = UIntPtr.Zero;
             bool unwoundReversePInvoke = false;
+            IntPtr pReversePInvokePropagationCallback = IntPtr.Zero;
+            IntPtr pReversePInvokePropagationContext = IntPtr.Zero;
 
             bool isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0);
             Debug.Assert(isValid, "RhThrowEx called with an unexpected context");
 
             OnFirstChanceExceptionViaClassLib(exceptionObj);
 
+            uint startIdx = MaxTryRegionIdx;
             for (; isValid; isValid = frameIter.Next(&startIdx, &unwoundReversePInvoke))
             {
                 // For GC stackwalking, we'll happily walk across native code blocks, but for EH dispatch, we
@@ -643,7 +637,29 @@ namespace System.Runtime
                 }
             }
 
-            if (pCatchHandler == null)
+#if FEATURE_OBJCMARSHAL
+            if (unwoundReversePInvoke)
+            {
+                // We did not find any managed handlers before hitting a reverse P/Invoke boundary.
+                // See if the classlib has a handler to propagate the exception to native code.
+                IntPtr pGetHandlerClasslibFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress((IntPtr)prevControlPC,
+                    ClassLibFunctionId.ObjectiveCMarshalGetUnhandledExceptionPropagationHandler);
+                if (pGetHandlerClasslibFunction != IntPtr.Zero)
+                {
+                    var pGetHandler = (delegate*<object, IntPtr, out IntPtr, IntPtr>)pGetHandlerClasslibFunction;
+                    pReversePInvokePropagationCallback = pGetHandler(
+                        exceptionObj, (IntPtr)prevControlPC, out pReversePInvokePropagationContext);
+                    if (pReversePInvokePropagationCallback != IntPtr.Zero)
+                    {
+                        // Tell the second pass to unwind to this frame.
+                        handlingFrameSP = frameIter.SP;
+                        catchingTryRegionIdx = MaxTryRegionIdx;
+                    }
+                }
+            }
+#endif // FEATURE_OBJCMARSHAL
+
+            if (pCatchHandler == null && pReversePInvokePropagationCallback == IntPtr.Zero)
             {
                 OnUnhandledExceptionViaClassLib(exceptionObj);
 
@@ -655,8 +671,8 @@ namespace System.Runtime
             }
 
             // We FailFast above if the exception goes unhandled.  Therefore, we cannot run the second pass
-            // without a catch handler.
-            Debug.Assert(pCatchHandler != null, "We should have a handler if we're starting the second pass");
+            // without a catch handler or propagation callback.
+            Debug.Assert(pCatchHandler != null || pReversePInvokePropagationCallback != IntPtr.Zero, "We should have a handler if we're starting the second pass");
 
             // ------------------------------------------------
             //
@@ -673,11 +689,22 @@ namespace System.Runtime
 
             exInfo._passNumber = 2;
             startIdx = MaxTryRegionIdx;
+            unwoundReversePInvoke = false;
             isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0);
-            for (; isValid && ((byte*)frameIter.SP <= (byte*)handlingFrameSP); isValid = frameIter.Next(&startIdx))
+            for (; isValid && ((byte*)frameIter.SP <= (byte*)handlingFrameSP); isValid = frameIter.Next(&startIdx, &unwoundReversePInvoke))
             {
                 Debug.Assert(isValid, "second-pass EH unwind failed unexpectedly");
                 DebugScanCallFrame(exInfo._passNumber, frameIter.ControlPC, frameIter.SP);
+
+                if (unwoundReversePInvoke)
+                {
+                    Debug.Assert(pReversePInvokePropagationCallback != IntPtr.Zero, "Unwound to a reverse P/Invoke in the second pass. We should have a propagation handler.");
+                    Debug.Assert(frameIter.SP == handlingFrameSP, "Encountered a different reverse P/Invoke frame in the second pass.");
+                    Debug.Assert(frameIter.PreviousTransitionFrame != IntPtr.Zero, "Should have a transition frame for reverse P/Invoke.");
+                    // Found the native frame that called the reverse P/invoke.
+                    // It is not possible to run managed second pass handlers on a native frame.
+                    break;
+                }
 
                 if ((frameIter.SP == handlingFrameSP)
 #if TARGET_ARM64
@@ -692,6 +719,18 @@ namespace System.Runtime
 
                 InvokeSecondPass(ref exInfo, startIdx);
             }
+
+#if FEATURE_OBJCMARSHAL
+            if (pReversePInvokePropagationCallback != IntPtr.Zero)
+            {
+                InternalCalls.RhpCallPropagateExceptionCallback(
+                    pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
+                // the helper should jump to propagation handler and not return
+                Debug.Assert(false, "unreachable");
+                FallbackFailFast(RhFailFastReason.InternalError, null);
+            }
+#endif // FEATURE_OBJCMARSHAL
+
 
             // ------------------------------------------------
             //
@@ -803,8 +842,17 @@ namespace System.Runtime
                 else
                 {
                     byte* pFilterFunclet = ehClause._filterAddress;
-                    bool shouldInvokeHandler =
-                        InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
+
+                    bool shouldInvokeHandler = false;
+                    try
+                    {
+                        shouldInvokeHandler =
+                            InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
+                    }
+                    catch when (true)
+                    {
+                        // Prevent leaking any exception from the filter funclet
+                    }
 
                     if (shouldInvokeHandler)
                     {

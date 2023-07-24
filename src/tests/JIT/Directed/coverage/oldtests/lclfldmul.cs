@@ -5,7 +5,8 @@
 
 #pragma warning disable 0414
 using System;
-internal class lclfldmul
+using Xunit;
+public class lclfldmul
 {
     //user-defined class that overloads operator *
     public class numHolder
@@ -248,7 +249,8 @@ internal class lclfldmul
         public numHolder nHldr_vt_op2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
         //initialize class

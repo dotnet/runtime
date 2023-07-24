@@ -466,7 +466,7 @@ ULONG MDInternalRW::Release()
     cRef = InterlockedDecrement(&m_cRefs);
     if (cRef == 0)
     {
-        LOG((LOGMD, "MDInternalRW(0x%08x)::destruction\n", this));
+        LOG((LOGMD, "MDInternalRW(0x%p)::destruction\n", this));
         delete this;
     }
     return cRef;

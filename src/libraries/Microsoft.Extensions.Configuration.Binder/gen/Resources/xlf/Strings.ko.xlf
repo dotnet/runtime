@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ko" original="../Strings.resx">
+    <body>
+      <trans-unit id="CollectionNotSupported">
+        <source>The collection type is not supported: '{0}'.</source>
+        <target state="translated">컬렉션 유형이 지원되지 않습니다: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</source>
+        <target state="translated">바인더 호출에 대한 바인딩 논리가 생성되지 않았습니다. 지원되지 않는 입력 패턴에는 제네릭 호출 및 boxed 개체 전달이 포함됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoTitle">
+        <source>The target type for a binder call could not be determined</source>
+        <target state="translated">바인더 호출의 대상 유형을 확인할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DictionaryKeyNotSupported">
+        <source>The dictionary key type is not supported: '{0}'.</source>
+        <target state="translated">사전 키 유형이 지원되지 않습니다: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypeNotSupported">
+        <source>The collection element type is not supported: '{0}'.</source>
+        <target state="translated">컬렉션 요소 유형이 지원되지 않습니다: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+        <source>The project's language version has to be at least 'C# 11'.</source>
+        <target state="translated">프로젝트의 언어 버전은 'C# 11' 이상이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LanguageVersionIsNotSupportedTitle">
+        <source>Language version is required to be at least C# 11</source>
+        <target state="translated">언어 버전은 C# 11 이상이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">공용 인스턴스 생성자가 없으므로 '{0}' 형식의 인스턴스를 만들 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultiDimArraysNotSupported">
+        <source>Multidimensional arrays are not supported: '{0}'.</source>
+        <target state="translated">다차원 배열은 지원되지 않습니다: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">매개 변수가 있는 공용 생성자가 여러 개 있으므로 '{0}' 형식의 인스턴스를 만들 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullableUnderlyingTypeNotSupported">
+        <source>Nullable underlying type is not supported: '{0}'.</source>
+        <target state="translated">Null 허용 기본 유형이 지원되지 않습니다: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyNotSupportedMessageFormat">
+        <source>Property '{0}' on type '{1}' is not supported.</source>
+        <target state="translated">'{1}' 형식의 속성 '{0}'은(는) 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyNotSupportedTitle">
+        <source>Did not generate binding logic for a property on a type</source>
+        <target state="translated">형식의 속성에 대한 바인딩 논리를 생성하지 않았습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupported">
+        <source>The type is not supported: '{0}'.</source>
+        <target state="translated">지원되지 않는 유형: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Did not generate binding logic for a type</source>
+        <target state="translated">형식에 대한 바인딩 논리를 생성하지 않았습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindMessageFormat">
+        <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
+        <target state="translated">대상 유형이 '{0}'인 바인더 호출에 대해 바인딩 논리가 생성되지 않았습니다. 값 유형은 구성 '바인딩' 방법에 대한 유효하지 않은 입력입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindTitle">
+        <source>Value types are invalid inputs to configuration 'Bind' methods</source>
+        <target state="translated">값 형식은 구성 'Bind' 메서드에 대한 잘못된 입력입니다.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

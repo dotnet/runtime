@@ -18,14 +18,14 @@ namespace ILCompiler.Dataflow
         public MultiValue Source { init; get; }
         public MultiValue Target { init; get; }
         public MessageOrigin Origin { init; get; }
-        internal Origin MemberWithRequirements { init; get; }
+        internal string Reason { init; get; }
 
-        internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, Origin memberWithRequirements)
+        internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, string reason)
         {
-            Source = source.Clone();
-            Target = target.Clone();
+            Source = source.DeepCopy();
+            Target = target.DeepCopy();
             Origin = origin;
-            MemberWithRequirements = memberWithRequirements;
+            Reason = reason;
         }
 
         public TrimAnalysisAssignmentPattern Merge(ValueSetLattice<SingleValue> lattice, TrimAnalysisAssignmentPattern other)
@@ -36,7 +36,7 @@ namespace ILCompiler.Dataflow
                 lattice.Meet(Source, other.Source),
                 lattice.Meet(Target, other.Target),
                 Origin,
-                MemberWithRequirements);
+                Reason);
         }
 
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker, Logger logger)
@@ -52,20 +52,10 @@ namespace ILCompiler.Dataflow
             {
                 foreach (var targetValue in Target)
                 {
-                    if (targetValue is FieldValue fieldValue)
-                    {
-                        // Once this is removed, please also cleanup ReflectionMethodBodyScanner.HandleStoreValueWithDynamicallyAccessedMembers
-                        // which has to special case FieldValue right now, should not be needed after removal of this
-                        ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, fieldValue.Field, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
-                        ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, fieldValue.Field, DiagnosticUtilities.RequiresDynamicCodeAttribute);
-                        // ?? Should this be enabled (was not so far)
-                        //ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, fieldValue.Field, DiagnosticUtilities.RequiresAssemblyFilesAttribute);
-                    }
-
                     if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
                         throw new NotImplementedException();
 
-                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, MemberWithRequirements);
+                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, Reason);
                     requireDynamicallyAccessedMembersAction.Invoke(sourceValue, targetWithDynamicallyAccessedMembers);
                 }
             }

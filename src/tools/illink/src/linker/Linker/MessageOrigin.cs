@@ -106,11 +106,11 @@ namespace Mono.Linker
 
 			StringBuilder sb = new StringBuilder (fileName);
 			if (sourceLine != 0) {
-				sb.Append ("(").Append (sourceLine);
+				sb.Append ('(').Append (sourceLine);
 				if (sourceColumn != 0)
-					sb.Append (",").Append (sourceColumn);
+					sb.Append (',').Append (sourceColumn);
 
-				sb.Append (")");
+				sb.Append (')');
 			}
 
 			return sb.ToString ();

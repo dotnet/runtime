@@ -479,7 +479,7 @@ GcInfoEncoder::GcInfoEncoder(
     m_ReversePInvokeFrameSlot = NO_REVERSE_PINVOKE_FRAME;
 #ifdef TARGET_AMD64
     m_WantsReportOnlyLeaf = false;
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     m_HasTailCalls = false;
 #endif // TARGET_AMD64
     m_IsVarArg = false;
@@ -729,6 +729,8 @@ void GcInfoEncoder::SetStackBaseRegister( UINT32 regNum )
     _ASSERTE( m_StackBaseRegister == NO_STACK_BASE_REGISTER || m_StackBaseRegister == regNum );
 #if defined(TARGET_LOONGARCH64)
     assert(regNum == 3 || 22 == regNum);
+#elif defined(TARGET_RISCV64)
+    assert(regNum == 2 || 8 == regNum);
 #endif
     m_StackBaseRegister = regNum;
 }
@@ -752,7 +754,7 @@ void GcInfoEncoder::SetWantsReportOnlyLeaf()
 {
     m_WantsReportOnlyLeaf = true;
 }
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 void GcInfoEncoder::SetHasTailCalls()
 {
     m_HasTailCalls = true;
@@ -1011,7 +1013,7 @@ void GcInfoEncoder::Build()
         (m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) &&
 #ifdef TARGET_AMD64
         !m_WantsReportOnlyLeaf &&
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         !m_HasTailCalls &&
 #endif // TARGET_AMD64
         !IsStructReturnKind(m_ReturnKind);
@@ -1024,6 +1026,8 @@ void GcInfoEncoder::Build()
         GCINFO_WRITE(m_Info1, 0, 1, FlagsSize); // Slim encoding
 #if defined(TARGET_LOONGARCH64)
         assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
+#elif defined(TARGET_RISCV64)
+        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
 #endif
         GCINFO_WRITE(m_Info1, (m_StackBaseRegister == NO_STACK_BASE_REGISTER) ? 0 : 1, 1, FlagsSize);
 
@@ -1039,11 +1043,13 @@ void GcInfoEncoder::Build()
         GCINFO_WRITE(m_Info1, m_contextParamType, 2, FlagsSize);
 #if defined(TARGET_LOONGARCH64)
         assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
+#elif defined(TARGET_RISCV64)
+        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
 #endif
         GCINFO_WRITE(m_Info1, ((m_StackBaseRegister != NO_STACK_BASE_REGISTER) ? 1 : 0), 1, FlagsSize);
 #ifdef TARGET_AMD64
         GCINFO_WRITE(m_Info1, (m_WantsReportOnlyLeaf ? 1 : 0), 1, FlagsSize);
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         GCINFO_WRITE(m_Info1, (m_HasTailCalls ? 1 : 0), 1, FlagsSize);
 #endif // TARGET_AMD64
         GCINFO_WRITE(m_Info1, ((m_SizeOfEditAndContinuePreservedArea != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) ? 1 : 0), 1, FlagsSize);
@@ -1129,6 +1135,8 @@ void GcInfoEncoder::Build()
     {
 #if defined(TARGET_LOONGARCH64)
         assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
+#elif defined(TARGET_RISCV64)
+        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
 #endif
         GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister), STACK_BASE_REGISTER_ENCBASE, StackBaseSize);
     }

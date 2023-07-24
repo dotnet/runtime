@@ -88,7 +88,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType!), memberInfo.Name)));
+                throw new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType!), memberInfo.Name));
             }
         }
 
@@ -140,7 +140,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.NoSetMethodForProperty, propInfo.DeclaringType, propInfo.Name)));
+                    throw new InvalidOperationException(SR.Format(SR.NoSetMethodForProperty, propInfo.DeclaringType, propInfo.Name));
                 }
             }
             else if (memberInfo is FieldInfo fieldInfo)
@@ -152,7 +152,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType!), memberInfo.Name)));
+                throw new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType!), memberInfo.Name));
             }
         }
 

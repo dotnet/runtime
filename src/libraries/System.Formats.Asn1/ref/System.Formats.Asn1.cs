@@ -45,6 +45,10 @@ namespace System.Formats.Asn1
     public partial class AsnContentException : System.Exception
     {
         public AsnContentException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected AsnContentException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public AsnContentException(string? message) { }
         public AsnContentException(string? message, System.Exception? inner) { }
@@ -96,6 +100,7 @@ namespace System.Formats.Asn1
         public AsnReader(System.ReadOnlyMemory<byte> data, System.Formats.Asn1.AsnEncodingRules ruleSet, System.Formats.Asn1.AsnReaderOptions options = default(System.Formats.Asn1.AsnReaderOptions)) { }
         public bool HasData { get { throw null; } }
         public System.Formats.Asn1.AsnEncodingRules RuleSet { get { throw null; } }
+        public System.Formats.Asn1.AsnReader Clone() { throw null; }
         public System.ReadOnlyMemory<byte> PeekContentBytes() { throw null; }
         public System.ReadOnlyMemory<byte> PeekEncodedValue() { throw null; }
         public System.Formats.Asn1.Asn1Tag PeekTag() { throw null; }

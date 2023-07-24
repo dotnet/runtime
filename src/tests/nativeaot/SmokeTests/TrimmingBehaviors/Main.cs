@@ -8,6 +8,7 @@ bool success = RunTest(Dataflow.Run);
 success &= RunTest(DeadCodeElimination.Run);
 success &= RunTest(FeatureSwitches.Run);
 success &= RunTest(ILLinkDescriptor.Run);
+success &= RunTest(DependencyInjectionPattern.Run);
 
 return success ? 100 : 1;
 

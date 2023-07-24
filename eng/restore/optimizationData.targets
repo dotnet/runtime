@@ -1,16 +1,16 @@
 ﻿<Project>
   <ItemGroup>
     <!-- Mibc data to use when exact architecture match is available -->
-    <MIBCPackageDef Include="optimization.windows_nt-x86.mibc.runtime" Version="$(optimizationwindows_ntx86MIBCRuntimeVersion)" MibcArchitecture="Windows/x86"/>
-    <MIBCPackageDef Include="optimization.windows_nt-x64.mibc.runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="Windows/x64"/>
-    <MIBCPackageDef Include="optimization.windows_nt-arm64.mibc.runtime" Version="$(optimizationwindows_ntarm64MIBCRuntimeVersion)" MibcArchitecture="Windows/arm64"/>
-    <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="Linux/x64"/>
-    <MIBCPackageDef Include="optimization.linux-arm64.mibc.runtime" Version="$(optimizationlinuxarm64MIBCRuntimeVersion)" MibcArchitecture="Linux/arm64"/>
+    <MIBCPackageDef Include="optimization.windows_nt-x86.mibc.runtime" Version="$(optimizationwindows_ntx86MIBCRuntimeVersion)" MibcArchitecture="windows/x86"/>
+    <MIBCPackageDef Include="optimization.windows_nt-x64.mibc.runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="windows/x64"/>
+    <MIBCPackageDef Include="optimization.windows_nt-arm64.mibc.runtime" Version="$(optimizationwindows_ntarm64MIBCRuntimeVersion)" MibcArchitecture="windows/arm64"/>
+    <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="linux/x64"/>
+    <MIBCPackageDef Include="optimization.linux-arm64.mibc.runtime" Version="$(optimizationlinuxarm64MIBCRuntimeVersion)" MibcArchitecture="linux/arm64"/>
 
     <!-- Mibc data to use when exact architecture match not available -->
-    <MIBCPackageDef Include="optimization.windows_nt-x64.mibc.runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="Windows"/>
-    <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="Linux"/>
-    <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="OSX"/>
+    <MIBCPackageDef Include="optimization.windows_nt-x64.mibc.runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="windows"/>
+    <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="linux"/>
+    <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="osx"/>
 
     <MIBCPackage Include="@(MIBCPackageDef->HasMetadata('MibcArchitecture')->WithMetadataValue('MibcArchitecture','$(TargetOS)/$(TargetArchitecture)'))" />
     <MIBCPackage Include="@(MIBCPackageDef->HasMetadata('MibcArchitecture')->WithMetadataValue('MibcArchitecture','$(TargetOS)'))" Condition="'@(MIBCPackage)' == ''" />
@@ -30,8 +30,9 @@
         <PackagePath>$(NuGetPackageRoot)%(MIBCPackage.Identity)/%(MIBCPackage.Version)</PackagePath>
       </MIBCPackage>
       <_optimizationMibcFile Include="%(MIBCPackage.PackagePath)/**/*.mibc" SubdirectoryName="$(TargetOS)/$(TargetArchitecture)" />
+      <_optimizationMibcDestinationFile Include="@(_optimizationMibcFile->'$(MibcOptimizationDataDir)%(SubdirectoryName)/%(RecursiveDir)%(Filename)%(Extension)')" />
       <ExcessFilesCurrentlyPresent Include="$(MibcOptimizationDataDir)/**" 
-                                   Exclude="@(_optimizationMibcFile->'$(MibcOptimizationDataDir)%(SubdirectoryName)/%(RecursiveDir)%(Filename)%(Extension)')"/>
+                                   Exclude="@(_optimizationMibcDestinationFile)"/>
     </ItemGroup>
 
     <Error Condition="'@(_optimizationMibcFile)' == ''" Text="Failed to restore Mibc optimization data" />
@@ -41,7 +42,7 @@
 
     <!-- Copy the correct mibc files into place -->
     <Copy SourceFiles="@(_optimizationMibcFile)"
-          DestinationFiles="@(_optimizationMibcFile->'$(MibcOptimizationDataDir)%(SubdirectoryName)/%(RecursiveDir)%(Filename)%(Extension)')"
+          DestinationFiles="@(_optimizationMibcDestinationFile)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true" />
 

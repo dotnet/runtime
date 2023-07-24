@@ -10,7 +10,6 @@ namespace JIT.HardwareIntrinsics.General._NotSupported
     {
         static Program()
         {
-
         }
     }
 }

@@ -1,6 +1,7 @@
 {
     "changes": [
         {"document": "AddInstanceField.cs", "update": "AddInstanceField_v1.cs"},
+        {"document": "AddInstanceField.cs", "update": "AddInstanceField_v2.cs"},
     ]
 }
 

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection.Metadata;
 
 using ILCompiler.Logging;
 
@@ -148,9 +147,9 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-            if (knownStacks.ContainsKey(newOffset))
+            if (knownStacks.TryGetValue(newOffset, out var knownStack))
             {
-                knownStacks[newOffset] = MergeStack(knownStacks[newOffset], newStack);
+                knownStacks[newOffset] = MergeStack(knownStack, newStack);
             }
             else
             {
@@ -217,7 +216,7 @@ namespace ILCompiler.Dataflow
                     {
                         string displayName = $"local variable V_{localReference.LocalIndex}";
                         throw new InvalidOperationException(MessageContainer.CreateErrorMessage(
-                            $"""In method {method.OwningMethod.GetDisplayName()}, local variable V_{localVariableIndex} references {displayName} of type {localReference.ReferencedType.GetDisplayName()} which is a reference. Linker dataflow tracking has failed.""",
+                            $"""In method {method.OwningMethod.GetDisplayName()}, local variable V_{localVariableIndex} references {displayName} of type {localReference.ReferencedType.GetDisplayName()} which is a reference. Dataflow tracking has failed.""",
                             (int)DiagnosticId.LinkerUnexpectedError,
                             origin: new MessageOrigin(method, ilOffset)).ToMSBuildString());
                     }
@@ -319,7 +318,7 @@ namespace ILCompiler.Dataflow
             // are the same set of methods that we discovered and scanned above.
             if (_annotations.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod(startingMethod, out List<TypeSystemEntity>? compilerGeneratedCallees))
             {
-                var calleeMethods = compilerGeneratedCallees.OfType<MethodDefinition>();
+                var calleeMethods = compilerGeneratedCallees.OfType<MethodDesc>();
                 // https://github.com/dotnet/linker/issues/2845
                 // Disabled asserts due to a bug
                 // Debug.Assert (interproceduralState.Count == 1 + calleeMethods.Count ());
@@ -363,16 +362,16 @@ namespace ILCompiler.Dataflow
                 ValidateNoReferenceToReference(locals, methodBody, reader.Offset);
                 int curBasicBlock = blockIterator.MoveNext(reader.Offset);
 
-                if (knownStacks.ContainsKey(reader.Offset))
+                if (knownStacks.TryGetValue(reader.Offset, out var knownStack))
                 {
                     if (currentStack == null)
                     {
                         // The stack copy constructor reverses the stack
-                        currentStack = new Stack<StackSlot>(knownStacks[reader.Offset].Reverse());
+                        currentStack = new Stack<StackSlot>(knownStack.Reverse());
                     }
                     else
                     {
-                        currentStack = MergeStack(currentStack, knownStacks[reader.Offset]);
+                        currentStack = MergeStack(currentStack, knownStack);
                     }
                 }
 
@@ -477,6 +476,7 @@ namespace ILCompiler.Dataflow
                         {
                             if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
+                                HandleMethodTokenAccess(methodBody, offset, methodOperand);
                                 TrackNestedFunctionReference(methodOperand, ref interproceduralState);
                             }
 
@@ -530,7 +530,19 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.ldtoken:
                         object obj = methodBody.GetObject(reader.ReadILToken());
-                        ScanLdtoken(obj, currentStack);
+                        ScanLdtoken(methodBody, offset, obj, currentStack);
+                        break;
+
+                    case ILOpcode.ldvirtftn:
+                        {
+                            if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
+                            {
+                                HandleMethodTokenAccess(methodBody, offset, methodOperand);
+                            }
+
+                            PopUnknown(currentStack, 1, methodBody, offset);
+                            PushUnknown(currentStack);
+                        }
                         break;
 
                     case ILOpcode.ldind_i:
@@ -544,7 +556,6 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldind_u2:
                     case ILOpcode.ldind_u4:
                     case ILOpcode.ldlen:
-                    case ILOpcode.ldvirtftn:
                     case ILOpcode.localloc:
                     case ILOpcode.refanytype:
                     case ILOpcode.refanyval:
@@ -788,7 +799,7 @@ namespace ILCompiler.Dataflow
                                 StackSlot retValue = PopUnknown(currentStack, 1, methodBody, offset);
                                 // If the return value is a reference, treat it as the value itself for now
                                 // We can handle ref return values better later
-                                ReturnValue = MultiValueLattice.Meet(ReturnValue, DereferenceValue(retValue.Value, locals, ref interproceduralState));
+                                ReturnValue = MultiValueLattice.Meet(ReturnValue, DereferenceValue(methodBody, offset, retValue.Value, locals, ref interproceduralState));
                                 ValidateNoReferenceToReference(locals, methodBody, offset);
                             }
                             ClearStack(ref currentStack);
@@ -915,7 +926,7 @@ namespace ILCompiler.Dataflow
             currentStack.Push(newSlot);
         }
 
-        private static void ScanLdtoken(object operand, Stack<StackSlot> currentStack)
+        private void ScanLdtoken(MethodIL methodBody, int offset, object operand, Stack<StackSlot> currentStack)
         {
             if (operand is TypeDesc type)
             {
@@ -935,32 +946,39 @@ namespace ILCompiler.Dataflow
                                 var nullableDam = new RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers(new TypeProxy(type),
                                     new RuntimeTypeHandleForGenericParameterValue(genericParam));
                                 currentStack.Push(new StackSlot(nullableDam));
-                                return;
+                                break;
                             case MetadataType underlyingType:
                                 var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue(new TypeProxy(type), new SystemTypeValue(underlyingType));
                                 currentStack.Push(new StackSlot(nullableType));
-                                return;
+                                break;
                             default:
                                 PushUnknown(currentStack);
-                                return;
+                                break;
                         }
                     }
                     else
                     {
                         var typeHandle = new RuntimeTypeHandleValue(new TypeProxy(type));
                         currentStack.Push(new StackSlot(typeHandle));
-                        return;
                     }
                 }
+
+                HandleTypeTokenAccess(methodBody, offset, type);
             }
             else if (operand is MethodDesc method)
             {
                 StackSlot slot = new StackSlot(new RuntimeMethodHandleValue(method));
                 currentStack.Push(slot);
+
+                HandleMethodTokenAccess(methodBody, offset, method);
             }
             else
             {
+                Debug.Assert(operand is FieldDesc);
+
                 PushUnknown(currentStack);
+
+                HandleFieldTokenAccess(methodBody, offset, (FieldDesc)operand);
             }
         }
 
@@ -1008,7 +1026,7 @@ namespace ILCompiler.Dataflow
                         StoreMethodLocalValue(locals, source, localReference.LocalIndex, curBasicBlock);
                         break;
                     case FieldReferenceValue fieldReference
-                    when GetFieldValue(fieldReference.FieldDefinition).AsSingleValue() is FieldValue fieldValue:
+                    when HandleGetField(method, offset, fieldReference.FieldDefinition).AsSingleValue() is FieldValue fieldValue:
                         HandleStoreField(method, offset, fieldValue, source);
                         break;
                     case ParameterReferenceValue parameterReference
@@ -1020,7 +1038,7 @@ namespace ILCompiler.Dataflow
                         HandleStoreMethodReturnValue(method, offset, methodReturnValue, source);
                         break;
                     case FieldValue fieldValue:
-                        HandleStoreField(method, offset, fieldValue, DereferenceValue(source, locals, ref ipState));
+                        HandleStoreField(method, offset, fieldValue, DereferenceValue(method, offset, source, locals, ref ipState));
                         break;
                     case IValueWithStaticType valueWithStaticType:
                         if (valueWithStaticType.StaticType is not null && FlowAnnotations.IsTypeInterestingForDataflow(valueWithStaticType.StaticType))
@@ -1039,7 +1057,25 @@ namespace ILCompiler.Dataflow
 
         }
 
-        protected abstract MultiValue GetFieldValue(FieldDesc field);
+        /// <summary>
+        /// HandleGetField is called every time the scanner needs to represent a value of the field
+        /// either as a source or target. It is not called when just a reference to field is created,
+        /// But if such reference is dereferenced then it will get called.
+        /// It is NOT called for hoisted locals.
+        /// </summary>
+        /// <remarks>
+        /// There should be no need to perform checks for hoisted locals. All of our reflection checks are based
+        /// on an assumption that problematic things happen because of running code. Doing things purely in the type system
+        /// (declaring new types which are never instantiated, declaring fields which are never assigned to, ...)
+        /// don't cause problems (or better way, they won't show observable behavioral differences).
+        /// Typically that would mean that accessing fields is also an uninteresting operation, unfortunately
+        /// static fields access can cause execution of static .cctor and that is running code -> possible problems.
+        /// So we have to track accesses in that case.
+        /// Hoisted locals are fields on closure classes/structs which should not have static .ctors, so we don't
+        /// need to track those. It makes the design a bit cleaner because hoisted locals are purely handled in here
+        /// and don't leak over to the reflection handling code in any way.
+        /// </remarks>
+        protected abstract MultiValue HandleGetField(MethodIL methodBody, int offset, FieldDesc field);
 
         private void ScanLdfld(
             MethodIL methodBody,
@@ -1065,7 +1101,7 @@ namespace ILCompiler.Dataflow
             }
             else
             {
-                value = GetFieldValue(field);
+                value = HandleGetField(methodBody, offset, field);
             }
             currentStack.Push(new StackSlot(value));
         }
@@ -1101,7 +1137,7 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-            foreach (var value in GetFieldValue(field))
+            foreach (var value in HandleGetField(methodBody, offset, field))
             {
                 // GetFieldValue may return different node types, in which case they can't be stored to.
                 // At least not yet.
@@ -1109,7 +1145,7 @@ namespace ILCompiler.Dataflow
                     continue;
 
                 // Incomplete handling of ref fields -- if we're storing a reference to a value, pretend it's just the value
-                MultiValue valueToStore = DereferenceValue(valueToStoreSlot.Value, locals, ref interproceduralState);
+                MultiValue valueToStore = DereferenceValue(methodBody, offset, valueToStoreSlot.Value, locals, ref interproceduralState);
 
                 HandleStoreField(methodBody, offset, fieldValue, valueToStore);
             }
@@ -1145,7 +1181,12 @@ namespace ILCompiler.Dataflow
             return methodParams;
         }
 
-        internal MultiValue DereferenceValue(MultiValue maybeReferenceValue, ValueBasicBlockPair?[] locals, ref InterproceduralState interproceduralState)
+        internal MultiValue DereferenceValue(
+            MethodIL methodBody,
+            int offset,
+            MultiValue maybeReferenceValue,
+            ValueBasicBlockPair?[] locals,
+            ref InterproceduralState interproceduralState)
         {
             MultiValue dereferencedValue = MultiValueLattice.Top;
             foreach (var value in maybeReferenceValue)
@@ -1157,7 +1198,7 @@ namespace ILCompiler.Dataflow
                             dereferencedValue,
                             CompilerGeneratedState.IsHoistedLocal(fieldReferenceValue.FieldDefinition)
                                 ? interproceduralState.GetHoistedLocal(new HoistedLocalKey(fieldReferenceValue.FieldDefinition))
-                                : GetFieldValue(fieldReferenceValue.FieldDefinition));
+                                : HandleGetField(methodBody, offset, fieldReferenceValue.FieldDefinition));
                         break;
                     case ParameterReferenceValue parameterReferenceValue:
                         dereferencedValue = MultiValue.Meet(
@@ -1206,6 +1247,21 @@ namespace ILCompiler.Dataflow
             }
         }
 
+        /// <summary>
+        /// Called when type is accessed directly by its token (so creating a RuntimeHandle)
+        /// </summary>
+        protected abstract void HandleTypeTokenAccess(MethodIL methodBody, int offset, TypeDesc accessedType);
+
+        /// <summary>
+        /// Called to handle access to a method by its token (so creating a RuntimeHandle)
+        /// </summary>
+        protected abstract void HandleMethodTokenAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod);
+
+        /// <summary>
+        /// Called to handle access to a field by its token (so creating a RuntimeHandle)
+        /// </summary>
+        protected abstract void HandleFieldTokenAccess(MethodIL methodBody, int offset, FieldDesc accessedField);
+
         private void HandleCall(
             MethodIL callingMethodBody,
             ILOpcode opcode,
@@ -1232,7 +1288,7 @@ namespace ILCompiler.Dataflow
 
             var dereferencedMethodParams = new List<MultiValue>();
             foreach (var argument in methodArguments)
-                dereferencedMethodParams.Add(DereferenceValue(argument, locals, ref interproceduralState));
+                dereferencedMethodParams.Add(DereferenceValue(callingMethodBody, offset, argument, locals, ref interproceduralState));
             MultiValue methodReturnValue;
             bool handledFunction = HandleCall(
                 callingMethodBody,
@@ -1286,7 +1342,7 @@ namespace ILCompiler.Dataflow
             ValueNodeList methodParams,
             out MultiValue methodReturnValue);
 
-        // Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for the linker are nearly always less than 32 elements.
+        // Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for trimming are nearly always less than 32 elements.
         private const int MaxTrackedArrayValues = 32;
 
         private static void MarkArrayValuesAsUnknown(ArrayValue arrValue, int curBasicBlock)
@@ -1321,7 +1377,7 @@ namespace ILCompiler.Dataflow
                     else
                     {
                         // When we know the index, we can record the value at that index.
-                        StoreMethodLocalValue(arrValue.IndexValues, valueToStore.Value, indexToStoreAtInt.Value, curBasicBlock, MaxTrackedArrayValues);
+                        StoreMethodLocalValue(arrValue.IndexValues, ArrayValue.SanitizeArrayElementValue(valueToStore.Value), indexToStoreAtInt.Value, curBasicBlock, MaxTrackedArrayValues);
                     }
                 }
             }

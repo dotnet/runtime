@@ -11,14 +11,14 @@ namespace System.Reflection.Runtime.TypeInfos
     internal abstract partial class RuntimeTypeInfo
     {
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => Query<ConstructorInfo>(bindingAttr).ToArray();
+        public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => Query<ConstructorInfo>(ConstructorPolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected sealed override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             Debug.Assert(types != null);
 
-            QueryResult<ConstructorInfo> queryResult = Query<ConstructorInfo>(bindingAttr);
+            QueryResult<ConstructorInfo> queryResult = Query<ConstructorInfo>(ConstructorPolicies.Instance, bindingAttr);
             ListBuilder<ConstructorInfo> candidates = new ListBuilder<ConstructorInfo>();
             foreach (ConstructorInfo candidate in queryResult)
             {
@@ -47,19 +47,19 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public sealed override EventInfo[] GetEvents(BindingFlags bindingAttr) => Query<EventInfo>(bindingAttr).ToArray();
+        public sealed override EventInfo[] GetEvents(BindingFlags bindingAttr) => Query<EventInfo>(EventPolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public sealed override EventInfo GetEvent(string name, BindingFlags bindingAttr) => Query<EventInfo>(name, bindingAttr).Disambiguate();
+        public sealed override EventInfo GetEvent(string name, BindingFlags bindingAttr) => Query<EventInfo>(EventPolicies.Instance, name, bindingAttr).Disambiguate();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public sealed override FieldInfo[] GetFields(BindingFlags bindingAttr) => Query<FieldInfo>(bindingAttr).ToArray();
+        public sealed override FieldInfo[] GetFields(BindingFlags bindingAttr) => Query<FieldInfo>(FieldPolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr) => Query<FieldInfo>(name, bindingAttr).Disambiguate();
+        public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr) => Query<FieldInfo>(FieldPolicies.Instance, name, bindingAttr).Disambiguate();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public sealed override MethodInfo[] GetMethods(BindingFlags bindingAttr) => Query<MethodInfo>(bindingAttr).ToArray();
+        public sealed override MethodInfo[] GetMethods(BindingFlags bindingAttr) => Query<MethodInfo>(MethodPolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
@@ -85,12 +85,12 @@ namespace System.Reflection.Runtime.TypeInfos
                 Debug.Assert(binder == null);
                 Debug.Assert(callConvention == CallingConventions.Any);
                 Debug.Assert(modifiers == null);
-                return Query<MethodInfo>(name, bindingAttr).Disambiguate();
+                return Query<MethodInfo>(MethodPolicies.Instance, name, bindingAttr).Disambiguate();
             }
             else
             {
                 // Group #2: This group of api takes a set of parameter types and an optional binder.
-                QueryResult<MethodInfo> queryResult = Query<MethodInfo>(name, bindingAttr);
+                QueryResult<MethodInfo> queryResult = Query<MethodInfo>(MethodPolicies.Instance, name, bindingAttr);
                 ListBuilder<MethodInfo> candidates = new ListBuilder<MethodInfo>();
                 foreach (MethodInfo candidate in queryResult)
                 {
@@ -114,13 +114,13 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public sealed override Type[] GetNestedTypes(BindingFlags bindingAttr) => Query<Type>(bindingAttr).ToArray();
+        public sealed override Type[] GetNestedTypes(BindingFlags bindingAttr) => Query<Type>(NestedTypePolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public sealed override Type GetNestedType(string name, BindingFlags bindingAttr) => Query<Type>(name, bindingAttr).Disambiguate();
+        public sealed override Type GetNestedType(string name, BindingFlags bindingAttr) => Query<Type>(NestedTypePolicies.Instance, name, bindingAttr).Disambiguate();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => Query<PropertyInfo>(bindingAttr).ToArray();
+        public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => Query<PropertyInfo>(PropertyPolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected sealed override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
@@ -133,12 +133,12 @@ namespace System.Reflection.Runtime.TypeInfos
                 // Group #1: This group of api accept only a name and BindingFlags. The other parameters are hard-wired by the non-virtual api entrypoints.
                 Debug.Assert(binder == null);
                 Debug.Assert(modifiers == null);
-                return Query<PropertyInfo>(name, bindingAttr).Disambiguate();
+                return Query<PropertyInfo>(PropertyPolicies.Instance, name, bindingAttr).Disambiguate();
             }
             else
             {
                 // Group #2: This group of api takes a set of parameter types, a return type (both cannot be null) and an optional binder.
-                QueryResult<PropertyInfo> queryResult = Query<PropertyInfo>(name, bindingAttr);
+                QueryResult<PropertyInfo> queryResult = Query<PropertyInfo>(PropertyPolicies.Instance, name, bindingAttr);
                 ListBuilder<PropertyInfo> candidates = new ListBuilder<PropertyInfo>();
                 foreach (PropertyInfo candidate in queryResult)
                 {
@@ -155,9 +155,10 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (types == null || types.Length == 0)
                 {
                     // no arguments
+                    PropertyInfo firstCandidate = candidates[0];
+
                     if (candidates.Count == 1)
                     {
-                        PropertyInfo firstCandidate = candidates[0];
                         if (returnType is not null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                             return null;
                         return firstCandidate;
@@ -165,8 +166,10 @@ namespace System.Reflection.Runtime.TypeInfos
                     else
                     {
                         if (returnType is null)
+                        {
                             // if we are here we have no args or property type to select over and we have more than one property with that name
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(firstCandidate);
+                        }
                     }
                 }
 
@@ -179,34 +182,32 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        private QueryResult<M> Query<M>(BindingFlags bindingAttr) where M : MemberInfo
+        private QueryResult<M> Query<M>(MemberPolicies<M> policies, BindingFlags bindingAttr) where M : MemberInfo
         {
-            return Query<M>(null, bindingAttr, null);
+            return Query<M>(policies, null, bindingAttr, null);
         }
 
-        private QueryResult<M> Query<M>(string name, BindingFlags bindingAttr) where M : MemberInfo
+        private QueryResult<M> Query<M>(MemberPolicies<M> policies, string name, BindingFlags bindingAttr) where M : MemberInfo
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            return Query<M>(name, bindingAttr, null);
+            ArgumentNullException.ThrowIfNull(name);
+            return Query<M>(policies, name, bindingAttr, null);
         }
 
-        private QueryResult<M> Query<M>(string optionalName, BindingFlags bindingAttr, Func<M, bool> optionalPredicate) where M : MemberInfo
+        private QueryResult<M> Query<M>(MemberPolicies<M> policies, string optionalName, BindingFlags bindingAttr, Func<M, bool> optionalPredicate) where M : MemberInfo
         {
-            MemberPolicies<M> policies = MemberPolicies<M>.Default;
             bindingAttr = policies.ModifyBindingFlags(bindingAttr);
             bool ignoreCase = (bindingAttr & BindingFlags.IgnoreCase) != 0;
 
             TypeComponentsCache cache = Cache;
             QueriedMemberList<M> queriedMembers;
             if (optionalName == null)
-                queriedMembers = cache.GetQueriedMembers<M>();
+                queriedMembers = cache.GetQueriedMembers(policies);
             else
-                queriedMembers = cache.GetQueriedMembers<M>(optionalName, ignoreCase: ignoreCase);
+                queriedMembers = cache.GetQueriedMembers<M>(policies, optionalName, ignoreCase: ignoreCase);
 
             if (optionalPredicate != null)
                 queriedMembers = queriedMembers.Filter(optionalPredicate);
-            return new QueryResult<M>(bindingAttr, queriedMembers);
+            return new QueryResult<M>(policies, bindingAttr, queriedMembers);
         }
 
         private TypeComponentsCache Cache => _lazyCache ??= new TypeComponentsCache(this);

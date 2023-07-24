@@ -177,6 +177,7 @@ class SchemaDef
         new EnumType("AssemblyFlags", "uint"),
         new EnumType("AssemblyHashAlgorithm", "uint"),
         new EnumType("CallingConventions", "ushort"),
+        new EnumType("SignatureCallingConvention", "byte"),
         new EnumType("EventAttributes", "ushort"),
         new EnumType("FieldAttributes", "ushort"),
         new EnumType("GenericParameterAttributes", "ushort"),
@@ -253,7 +254,24 @@ class SchemaDef
                 new MemberDef(name: "GenericTypeParameter", value: "0x0", comment: "Represents a type parameter for a generic type."),
                 new MemberDef(name: "GenericMethodParameter", value: "0x1", comment: "Represents a type parameter from a generic method."),
             }
-        )
+        ),
+        new RecordDef(
+            name: "SignatureCallingConvention",
+            baseTypeName: "byte",
+            flags: RecordDefFlags.Enum,
+            members: new MemberDef[] {
+                new MemberDef(name: "HasThis", value: "0x20"),
+                new MemberDef(name: "ExplicitThis", value: "0x40"),
+                new MemberDef(name: "Default", value: "0x00"),
+                new MemberDef(name: "Vararg", value: "0x05"),
+                new MemberDef(name: "Cdecl", value: "0x01"),
+                new MemberDef(name: "StdCall", value: "0x02"),
+                new MemberDef(name: "ThisCall", value: "0x03"),
+                new MemberDef(name: "FastCall", value: "0x04"),
+                new MemberDef(name: "Unmanaged", value: "0x09"),
+                new MemberDef(name: "UnmanagedCallingConventionMask", value: "0x0F"),
+            }
+        ),
     }
     .OrderBy(record => record.Name, StringComparer.Ordinal)
     .ToArray();
@@ -274,7 +292,7 @@ class SchemaDef
         (
             from primitiveType in PrimitiveTypes select
                 new RecordDef(
-                    name: "Constant" + primitiveType.Name + "Value",
+                    name: "Constant" + primitiveType.TypeName + "Value",
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", typeName: primitiveType.Name,
                             flags: primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0)
@@ -309,9 +327,9 @@ class SchemaDef
         (
             from primitiveType in PrimitiveTypes select
                 new RecordDef(
-                    name: "Constant" + primitiveType.Name + "Array",
+                    name: "Constant" + primitiveType.TypeName + "Array",
                     members: new MemberDef[] {
-                        new MemberDef(name: "Value", typeName: primitiveType.Name,
+                        new MemberDef(name: "Value", typeName: primitiveType.TypeName,
                             flags: MemberDefFlags.Array | (primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0))
                     }
                 )
@@ -540,7 +558,7 @@ class SchemaDef
             name: "MethodInstantiation",
             members: new MemberDef[] {
                 new MemberDef("Method", MethodDefOrRef, MemberDefFlags.RecordRef),
-                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef),
+                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef),
                 // COMPLETENESS: new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
@@ -656,7 +674,7 @@ class SchemaDef
             name: "TypeInstantiationSignature",
             members: new MemberDef[] {
                 new MemberDef("GenericType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef),
+                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(
@@ -668,7 +686,7 @@ class SchemaDef
         new RecordDef(
             name: "ArraySignature",
             members: new MemberDef[] {
-                new MemberDef("ElementType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("ElementType", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
                 new MemberDef("Rank", "int"),
                 new MemberDef("Sizes", "Int32", MemberDefFlags.Array),
                 new MemberDef("LowerBounds", "Int32", MemberDefFlags.Array),
@@ -677,7 +695,7 @@ class SchemaDef
         new RecordDef(
             name: "ByReferenceSignature",
             members: new MemberDef[] {
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(
@@ -721,7 +739,7 @@ class SchemaDef
         new RecordDef(
             name: "MethodSignature",
             members: new MemberDef[] {
-                new MemberDef("CallingConvention", "CallingConventions"),
+                new MemberDef("CallingConvention", "SignatureCallingConvention"),
                 new MemberDef("GenericParameterCount", "int"),
                 new MemberDef("ReturnType", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
                 new MemberDef("Parameters", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
@@ -759,10 +777,10 @@ class SchemaDef
     public static readonly string[] TypeNamesWithCollectionTypes =
         RecordSchema.SelectMany(r =>
             from member in r.Members
-            let memberName = member.Name as string
-            where memberName != null &&
+            let memberTypeName = member.TypeName as string
+            where memberTypeName != null &&
                 (member.Flags & MemberDefFlags.Collection) != 0 &&
-                !PrimitiveTypes.Any(pt => pt.Name == memberName)
-            select memberName
+                !PrimitiveTypes.Any(pt => pt.TypeName == memberTypeName)
+            select memberTypeName
         ).Concat(new[] { "ScopeDefinition" }).Distinct().ToArray();
 }

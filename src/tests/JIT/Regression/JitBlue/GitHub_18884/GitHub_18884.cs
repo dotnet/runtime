@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class GitHub_18884
 {
@@ -14,7 +15,8 @@ public static class GitHub_18884
     static long s_5;
     static int returnVal = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_3 = 0; // avoid runtime checks in M15
         ReproWindows(0, 0, 1, 0);
@@ -23,7 +25,7 @@ public static class GitHub_18884
         return returnVal;
     }
 
-    static void ReproWindows(byte arg0, long arg1, ushort arg2, ulong arg3)
+    internal static void ReproWindows(byte arg0, long arg1, ushort arg2, ulong arg3)
     {
         s_5 >>= 50 / arg2;  // the value shifted by here
         if (arg0 != 0)
@@ -38,7 +40,8 @@ public static class GitHub_18884
             returnVal = -1;
         }
     }
-    static void ReproUx(ulong arg0, long arg1, ushort arg2, byte arg3)
+
+    internal static void ReproUx(ulong arg0, long arg1, ushort arg2, byte arg3)
     {
         s_5 >>= 50 / arg2;  // the value shifted by here
         if (arg3 != 0)
@@ -53,8 +56,9 @@ public static class GitHub_18884
             returnVal = -1;
         }
     }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void CheckValue(int value, int expectedValue)
+    internal static void CheckValue(int value, int expectedValue)
     {
         if (value != expectedValue)
         {
@@ -64,7 +68,7 @@ public static class GitHub_18884
     }
 
     // While fixing the above failures, this test (from corefx) failed.
-    public static void Set_Mask_AllTest()
+    internal static void Set_Mask_AllTest()
     {
         BitVector32 flip = new BitVector32();
         int mask = 0;

@@ -18,8 +18,8 @@
 // within the EE and recognized in Interop scenarios.
 
 //
-// Note: This file gets parsed by the Mono IL Linker (https://github.com/mono/linker/) which may throw an exception during parsing.
-// Specifically, this (https://github.com/mono/linker/blob/main/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
+// Note: This file gets parsed by the Mono IL Linker (https://github.com/dotnet/runtime/tree/main/src/tools/illink) which may throw an exception during parsing.
+// Specifically, this (https://github.com/dotnet/runtime/blob/main/src/tools/illink/src/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
 // parse this header, and it may throw an exception while doing that. If you edit this file and get a build failure on msbuild.exe D:\repos\coreclr\build.proj
 // you might want to check out the parser linked above.
 //
@@ -143,7 +143,6 @@ DEFINE_EXCEPTION(g_SystemNS,           FieldAccessException,           false,  C
 
 DEFINE_EXCEPTION(g_IONS,               FileLoadException,              true,
                  COR_E_FILELOAD,
-                 FUSION_E_CACHEFILE_FAILED,
                  FUSION_E_INVALID_NAME,
                  FUSION_E_PRIVATE_ASM_DISALLOWED, 
                  FUSION_E_REF_DEF_MISMATCH,

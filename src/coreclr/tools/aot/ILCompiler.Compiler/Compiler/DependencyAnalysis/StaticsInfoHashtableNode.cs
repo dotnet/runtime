@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -12,20 +13,19 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hashtable with information about all statics regions for all compiled generic types.
     /// </summary>
-    internal sealed class StaticsInfoHashtableNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class StaticsInfoHashtableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private ExternalReferencesTableNode _nativeStaticsReferences;
 
         public StaticsInfoHashtableNode(ExternalReferencesTableNode externalReferences, ExternalReferencesTableNode nativeStaticsReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "_StaticsInfoHashtableNode_End", true);
             _externalReferences = externalReferences;
             _nativeStaticsReferences = nativeStaticsReferences;
         }
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -38,36 +38,32 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-
         /// <summary>
         /// Helper method to compute the dependencies that would be needed by a hashtable entry for statics info lookup.
         /// This helper is used by EETypeNode, which is used by the dependency analysis to compute the statics hashtable
         /// entries for the compiled types.
         /// </summary>
-        public static void AddStaticsInfoDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public static void AddStaticsInfoDependencies(ref DependencyList dependencies, NodeFactory factory, MetadataType metadataType)
         {
-            if (type is MetadataType && type.HasInstantiation && !type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            Debug.Assert(metadataType.HasInstantiation && !metadataType.IsCanonicalSubtype(CanonicalFormKind.Any));
+
+            // The StaticsInfoHashtable entries only exist for static fields on generic types.
+
+            if (metadataType.GCStaticFieldSize.AsInt > 0)
             {
-                MetadataType metadataType = (MetadataType)type;
+                dependencies.Add(factory.TypeGCStaticsSymbol(metadataType), "GC statics indirection for StaticsInfoHashtable");
+            }
 
-                // The StaticsInfoHashtable entries only exist for static fields on generic types.
+            if (metadataType.NonGCStaticFieldSize.AsInt > 0 || NonGCStaticsNode.TypeHasCctorContext(factory.PreinitializationManager, metadataType))
+            {
+                // The entry in the StaticsInfoHashtable points at the beginning of the static fields data, rather than the cctor
+                // context offset.
+                dependencies.Add(factory.TypeNonGCStaticsSymbol(metadataType), "Non-GC statics indirection for StaticsInfoHashtable");
+            }
 
-                if (metadataType.GCStaticFieldSize.AsInt > 0)
-                {
-                    dependencies.Add(factory.TypeGCStaticsSymbol(metadataType), "GC statics indirection for StaticsInfoHashtable");
-                }
-
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || factory.PreinitializationManager.HasLazyStaticConstructor(type))
-                {
-                    // The entry in the StaticsInfoHashtable points at the beginning of the static fields data, rather than the cctor
-                    // context offset.
-                    dependencies.Add(factory.TypeNonGCStaticsSymbol(metadataType), "Non-GC statics indirection for StaticsInfoHashtable");
-                }
-
-                if (metadataType.ThreadGcStaticFieldSize.AsInt > 0)
-                {
-                    dependencies.Add(factory.TypeThreadStaticIndex(metadataType), "Threadstatics indirection for StaticsInfoHashtable");
-                }
+            if (metadataType.ThreadGcStaticFieldSize.AsInt > 0)
+            {
+                dependencies.Add(factory.TypeThreadStaticIndex(metadataType), "Threadstatics indirection for StaticsInfoHashtable");
             }
         }
 
@@ -83,22 +79,15 @@ namespace ILCompiler.DependencyAnalysis
 
             section.Place(hashtable);
 
-            foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes())
+            foreach (var metadataType in factory.MetadataManager.GetTypesWithGenericStaticBaseInfos())
             {
-                if (!type.HasInstantiation || type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.IsGenericDefinition)
-                    continue;
-
-                MetadataType metadataType = type as MetadataType;
-                if (metadataType == null)
-                    continue;
-
                 VertexBag bag = new VertexBag();
 
                 if (metadataType.GCStaticFieldSize.AsInt > 0)
                 {
                     bag.AppendUnsigned(BagElementKind.GcStaticData, _nativeStaticsReferences.GetIndex(factory.TypeGCStaticsSymbol(metadataType)));
                 }
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || factory.PreinitializationManager.HasLazyStaticConstructor(type))
+                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || NonGCStaticsNode.TypeHasCctorContext(factory.PreinitializationManager, metadataType))
                 {
                     bag.AppendUnsigned(BagElementKind.NonGcStaticData, _nativeStaticsReferences.GetIndex(factory.TypeNonGCStaticsSymbol(metadataType)));
                 }
@@ -109,18 +98,18 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (bag.ElementsCount > 0)
                 {
-                    uint typeId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(type));
+                    uint typeId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(metadataType));
                     Vertex staticsInfo = writer.GetTuple(writer.GetUnsignedConstant(typeId), bag);
 
-                    hashtable.Append((uint)type.GetHashCode(), section.Place(staticsInfo));
+                    hashtable.Append((uint)metadataType.GetHashCode(), section.Place(staticsInfo));
                 }
             }
 
             byte[] hashTableBytes = writer.Save();
 
-            _endSymbol.SetSymbolOffset(hashTableBytes.Length);
+            _size = hashTableBytes.Length;
 
-            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

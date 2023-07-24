@@ -269,6 +269,16 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(System.Reflection.Tests.GenericClass<System.String>), Type.GetType("System.Reflection.Tests.GenericClass`1[[System.String, System.Private.CoreLib]]", throwOnError: true));
             Assert.Throws<FileNotFoundException>(() => Type.GetType("System.Reflection.Tests.GenericClass`1[[Bogus, BogusAssembly]]", throwOnError: true));
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37871", TestRuntimes.Mono)]
+        public void GetType_InvalidAssemblyName()
+        {
+            Assert.Null(Type.GetType("MissingAssemblyName, "));
+            Assert.Null(Type.GetType("ExtraComma, ,"));
+            Assert.Null(Type.GetType("ExtraComma, , System.Runtime"));
+            Assert.Throws<FileLoadException>(() => Type.GetType("System.Object, System.Runtime, Version=x.y"));
+        }
     }
 
     namespace MyNamespace1

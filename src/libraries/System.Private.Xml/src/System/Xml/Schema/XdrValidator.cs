@@ -337,7 +337,7 @@ namespace System.Xml.Schema
                 return;
             }
             string url = uri.Substring(x_schema.Length);
-            XmlReader? reader = null;
+            XmlTextReader? reader = null;
             SchemaInfo? xdrSchema = null;
             try
             {

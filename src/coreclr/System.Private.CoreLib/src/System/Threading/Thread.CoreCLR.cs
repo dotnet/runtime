@@ -119,9 +119,6 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SleepInternal(int millisecondsTimeout);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_UninterruptibleSleep0")]
-        internal static partial void UninterruptibleSleep0();
-
         /// <summary>
         /// Wait for a length of time proportional to 'iterations'.  Each iteration is should
         /// only take a few machine instructions.  Calling this API is preferable to coding
@@ -251,7 +248,7 @@ namespace System.Threading
             //  Once we CoUninitialize the thread, the OS will still
             //  report the thread as implicitly in the MTA if any
             //  other thread in the process is CoInitialized.
-            if ((state == System.Threading.ApartmentState.Unknown) && (retState == System.Threading.ApartmentState.MTA))
+            if ((state == ApartmentState.Unknown) && (retState == ApartmentState.MTA))
             {
                 return true;
             }
@@ -278,17 +275,17 @@ namespace System.Threading
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
-             if (state != ApartmentState.Unknown)
-             {
+            if (state != ApartmentState.Unknown)
+            {
                 if (throwOnError)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
                 }
 
                 return false;
-             }
+            }
 
-             return true;
+            return true;
         }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
@@ -331,24 +328,6 @@ namespace System.Threading
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetCurrentProcessorNumber();
-
-        // Cached processor id could be used as a hint for which per-core stripe of data to access to avoid sharing.
-        // It is periodically refreshed to trail the actual thread core affinity.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetCurrentProcessorId()
-        {
-            if (s_isProcessorNumberReallyFast)
-                return GetCurrentProcessorNumber();
-
-            return ProcessorIdCache.GetCurrentProcessorId();
-        }
-
-        // a speed check will determine refresh rate of the cache and will report if caching is not advisable.
-        // we will record that in a readonly static so that it could become a JIT constant and bypass caching entirely.
-        private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread()

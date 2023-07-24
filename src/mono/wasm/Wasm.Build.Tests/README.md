@@ -6,14 +6,16 @@ being generated.
 
 - When running locally, it tests against a local workload install (based on `artifacts`)
   - but this can be turned off with `/p:TestUsingWorkloads=false`
-  - in which case, it will run against `emsdk` from `EMSDK_PATH`
+  - in which case, it will run against a sdk that has updated workload
+    manifests for `wasm-tools*`, but does not have the workload installed.
+    Typically installed in `artifacts/bin/dotnet-none`.
 
-- On CI, both workload, and emsdk cases are tested
+- On CI, both workload, and no-workload cases are tested
 
 - Running:
 
 Linux/macOS: `$ make -C src/mono/wasm run-build-tests`
-Windows: `.\dotnet.cmd build .\src\mono\wasm\BuildWasmApps\Wasm.Build.Tests\Wasm.Build.Tests.csproj -c Release -t:Test -p:TargetOS=Browser -p:TargetArchitecture=wasm`
+Windows: `.\dotnet.cmd build .\src\mono\wasm\Wasm.Build.Tests\Wasm.Build.Tests.csproj -c Release -t:Test -p:TargetOS=browser -p:TargetArchitecture=wasm`
 
 - Specific tests can be run via `XUnitClassName`, and `XUnitMethodName`
   - eg. `XUnitClassName=Wasm.Build.Tests.BlazorWasmTests`
@@ -21,7 +23,7 @@ Windows: `.\dotnet.cmd build .\src\mono\wasm\BuildWasmApps\Wasm.Build.Tests\Wasm
 ## Running on helix
 
 The wasm.build.tests are built, and sent as a payload to helix, alongwith
-either emsdk+tasks+targets, or sdk+workload. And on helix the individual unit
+either sdk+no-workload-installed, or sdk+workload. And on helix the individual unit
 tests generate test projects, and build those.
 
 ## About the tests
@@ -57,3 +59,4 @@ For this, the builds get cached using `BuildArgs` as the key.
 ## Useful environment variables
 
 - `SHOW_BUILD_OUTPUT` - will show the build output to the console
+- `SKIP_PROJECT_CLEANUP` - won't remove the temporary project directories generated for the tests

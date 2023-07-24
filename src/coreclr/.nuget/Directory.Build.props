@@ -17,7 +17,7 @@
     <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
     <SkipIndexCheck>true</SkipIndexCheck>
   </PropertyGroup>
-  
+
   <!-- CoreCLR nuget packages shouldn't be published during servicing. -->
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
     <IsShipping>false</IsShipping>
@@ -33,7 +33,7 @@
     transport packages to flow dependencies anymore -->
     <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">false</CreatePackedPackage>
 
-    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;OSX;Android;Linux;FreeBSD;NetBSD;illumos;Solaris</SupportedPackageOSGroups>
+    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;osx;android;linux;freebsd;netbsd;illumos;solaris</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 
     <_isSupportedOSGroup>true</_isSupportedOSGroup>
@@ -42,7 +42,7 @@
   <!-- derive an OS Group based on the OS Family -->
   <PropertyGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(TargetOS)' != ''">$(TargetOS)</_derivedPackageTargetOSGroup>
-    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == ''">Linux</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == ''">linux</_derivedPackageTargetOSGroup>
 
     <_isSupportedOSGroup Condition="!$(SupportedPackageOSGroups.Contains(';$(_derivedPackageTargetOSGroup);'))">false</_isSupportedOSGroup>
   </PropertyGroup>
@@ -52,7 +52,7 @@
   <PropertyGroup Condition="'$(PackageTargetRuntime)' != '' and '$(_isSupportedOSGroup)' == 'true'">
     <!-- Android will use Linux package definitions -->
     <_packageTargetOSGroup>$(_derivedPackageTargetOSGroup)</_packageTargetOSGroup>
-    <_packageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == 'Android'">Linux</_packageTargetOSGroup>
+    <_packageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == 'android'">linux</_packageTargetOSGroup>
   </PropertyGroup>
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
@@ -64,7 +64,7 @@
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Linux;'))">
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';linux;'))">
     <OfficialBuildRID Include="linux-x64" />
     <OfficialBuildRID Include="linux-musl-x64" />
     <OfficialBuildRID Include="rhel.6-x64" />
@@ -87,19 +87,22 @@
       <Platform>armel</Platform>
     </OfficialBuildRID>
   </ItemGroup>
-  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';OSX;'))">
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';osx;'))">
     <OfficialBuildRID Include="osx-x64" />
+    <OfficialBuildRID Include="osx-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
   </ItemGroup>
-  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';FreeBSD;'))">
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';freebsd;'))">
     <OfficialBuildRID Include="freebsd-x64" />
   </ItemGroup>
-  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';NetBSD;'))">
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';netbsd;'))">
     <OfficialBuildRID Include="netbsd-x64" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';illumos;'))">
     <OfficialBuildRID Include="illumos-x64" />
   </ItemGroup>
-  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Solaris;'))">
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';solaris;'))">
     <OfficialBuildRID Include="solaris-x64" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';windows;'))">
@@ -107,9 +110,6 @@
       <Platform>x86</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="win-x64" />
-    <OfficialBuildRID Include="win-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
     <OfficialBuildRID Include="win-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
@@ -117,8 +117,8 @@
   <ItemGroup>
     <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set, but
          don't build the RID-specific package if we're in an unsupported os family -->
-    <BuildRID Include="@(OfficialBuildRID)" Exclude="$(OutputRid)"/>
-    <BuildRID Include="$(OutputRid)"
+    <BuildRID Include="@(OfficialBuildRID)" Exclude="$(OutputRID)"/>
+    <BuildRID Include="$(OutputRID)"
               Condition="'$(_isSupportedOSGroup)' == 'true'">
       <Platform Condition="'$(TargetArchitecture)' == 'x64'">amd64</Platform>
       <Platform Condition="'$(TargetArchitecture)' != 'x64'">$(TargetArchitecture)</Platform>

@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -29,7 +28,6 @@ namespace System.Runtime.Intrinsics
     [DebuggerTypeProxy(typeof(Vector256DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = Vector256.Size)]
     public readonly struct Vector256<T> : IEquatable<Vector256<T>>
-        where T : struct
     {
         internal readonly Vector128<T> _lower;
         internal readonly Vector128<T> _upper;
@@ -63,6 +61,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
         public static bool IsSupported
         {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
@@ -197,15 +196,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator /(Vector256<T> left, T right)
         {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right);
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
+            return Vector256.Create(
+                left._lower / right,
+                left._upper / right
+            );
         }
 
         /// <summary>Compares two vectors to determine if all elements are equal.</summary>
@@ -257,15 +251,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator <<(Vector256<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
+            return Vector256.Create(
+                value._lower << shiftCount,
+                value._upper << shiftCount
+            );
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
@@ -329,15 +318,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator >>(Vector256<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
+            return Vector256.Create(
+                value._lower >> shiftCount,
+                value._upper >> shiftCount
+            );
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
@@ -389,15 +373,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator >>>(Vector256<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
+            return Vector256.Create(
+                value._lower >>> shiftCount,
+                value._upper >>> shiftCount
+            );
         }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>

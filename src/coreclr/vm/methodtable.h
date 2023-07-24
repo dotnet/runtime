@@ -25,6 +25,7 @@
 #include "contractimpl.h"
 #include "generics.h"
 #include "gcinfotypes.h"
+#include "enum_class_flags.h"
 
 /*
  * Forward Declarations
@@ -62,6 +63,28 @@ class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ArgDestination;
 enum class WellKnownAttribute : DWORD;
+
+enum class ResolveVirtualStaticMethodFlags
+{
+    None = 0,
+    AllowNullResult = 1,
+    VerifyImplemented = 2,
+    AllowVariantMatches = 4,
+    InstantiateResultOverFinalMethodDesc = 8,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
+};
+
+
+enum class FindDefaultInterfaceImplementationFlags
+{
+    None,
+    AllowVariance = 1,
+    ThrowOnConflict = 2,
+    InstantiateFoundMethodDesc = 4,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
+};
 
 //============================================================================
 // This is the in-memory structure of a class and it will evolve.
@@ -752,9 +775,14 @@ public:
     static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #endif
 
+#if defined(TARGET_RISCV64)
+    static bool IsRiscv64OnlyOneField(MethodTable * pMT);
+    static int GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+#endif
+
 #if defined(UNIX_AMD64_ABI_ITF)
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
-    bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
+    bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, MethodTable** pByValueClassCache = NULL);
     bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
@@ -794,7 +822,7 @@ private:
 #if defined(UNIX_AMD64_ABI_ITF)
     void AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel) const;
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
-    bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
+    bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, MethodTable** pByValueClassCache);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
     DWORD   GetClassIndexFromToken(mdTypeDef typeToken)
@@ -1045,18 +1073,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;;
         SetFlag(enum_flag_IsIntrinsicType);
-    }
-
-    // See the comment in code:MethodTable.DoFullyLoad for detailed description.
-    inline BOOL DependsOnEquivalentOrForwardedStructs()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_DependsOnEquivalentOrForwardedStructs);
-    }
-
-    inline void SetDependsOnEquivalentOrForwardedStructs()
-    {
-        SetFlag(enum_flag_DependsOnEquivalentOrForwardedStructs);
     }
 
     // Is this a method table for a generic type instantiation, e.g. List<string>?
@@ -1329,8 +1345,6 @@ public:
     VtableIndirectionSlotIterator IterateVtableIndirectionSlots();
     VtableIndirectionSlotIterator IterateVtableIndirectionSlotsFrom(DWORD index);
 
-    static BOOL CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule);
-
     inline BOOL HasNonVirtualSlots()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1582,6 +1596,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return GetFlag(enum_flag_ContainsPointers);
     }
+
     BOOL            Collectible()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1591,6 +1606,7 @@ public:
         return FALSE;
 #endif
     }
+
     BOOL            ContainsPointersOrCollectible()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1601,6 +1617,8 @@ public:
     NOINLINE BYTE *GetLoaderAllocatorObjectForGC();
 
     BOOL            IsNotTightlyPacked();
+
+    BOOL            IsAllGCPointers();
 
     void SetContainsPointers()
     {
@@ -2089,7 +2107,6 @@ public:
     MethodDesc *GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk);
 #endif // FEATURE_COMINTEROP
 
-
     // Resolve virtual static interface method pInterfaceMD on this type.
     //
     // Specify allowNullResult to return NULL instead of throwing if the there is no implementation
@@ -2101,9 +2118,7 @@ public:
     MethodDesc *ResolveVirtualStaticMethod(
         MethodTable* pInterfaceType,
         MethodDesc* pInterfaceMD,
-        BOOL allowNullResult,
-        BOOL verifyImplemented = FALSE,
-        BOOL allowVariantMatches = TRUE,
+        ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags,
         BOOL *uniqueResolution = NULL,
         ClassLoadLevel level = CLASS_LOADED);
 
@@ -2183,8 +2198,7 @@ public:
         MethodDesc *pInterfaceMD,
         MethodTable *pObjectMT,
         MethodDesc **ppDefaultMethod,
-        BOOL allowVariance,
-        BOOL throwOnConflict,
+        FindDefaultInterfaceImplementationFlags findDefaultImplementationFlags,
         ClassLoadLevel level = CLASS_LOADED);
 #endif // DACCESS_COMPILE
 
@@ -2224,7 +2238,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, ClassLoadLevel level);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);
@@ -2276,6 +2290,7 @@ public:
     inline PTR_BYTE GetGCStaticsBasePointer();
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer();
     inline PTR_BYTE GetGCThreadStaticsBasePointer();
+    inline PTR_BYTE GetGCThreadStaticsBaseHandle();
 #endif //!DACCESS_COMPILE
 
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
@@ -3481,8 +3496,7 @@ private:
 
         enum_flag_HasSingleNonVirtualSlot   = 0x4000,
 
-        enum_flag_DependsOnEquivalentOrForwardedStructs= 0x8000, // Declares methods that have type equivalent or type forwarded structures in their signature
-
+        // unused                           = 0x8000,
     };  // enum WFLAGS2_ENUM
 
     __forceinline void ClearFlag(WFLAGS_LOW_ENUM flag)
@@ -3545,20 +3559,14 @@ private:
     }
 
 private:
-    /*
-     * This stuff must be first in the struct and should fit on a cache line - don't move it. Used by the GC.
-     */
-    // struct
-    // {
-
     // Low WORD is component size for array and string types (HasComponentSize() returns true).
     // Used for flags otherwise.
     DWORD           m_dwFlags;
 
     // Base size of instance of this class when allocated on the heap
     DWORD           m_BaseSize;
-    // }
 
+    // See WFLAGS2_ENUM for values.
     WORD            m_wFlags2;
 
     // Class token if it fits into 16-bits. If this is (WORD)-1, the class token is stored in the TokenOverflow optional member.
@@ -3574,7 +3582,7 @@ private:
 
     PTR_MethodTable m_pParentMethodTable;
 
-    PTR_Module      m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
+    PTR_Module      m_pLoaderModule;
 
     PTR_MethodTableWriteableData m_pWriteableData;
 

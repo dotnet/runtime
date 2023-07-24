@@ -1,10 +1,10 @@
 [see also](../../../wasm/runtime/diagnostics/README.md)
 
-To be able to run this sample you need to build the runtime with `/p:WasmEnablePerfTracing=true` and use Chrome browser
+To be able to run this sample you need to build the runtime with `/p:MonoWasmBuildVariant=multithread` and use Chrome browser
 
 # Testing with mock
 
-Build the runtime with `/p:WasmEnablePerfTracing=true /p:MonoDiagnosticsMock=true`
+Build the runtime with `/p:MonoWasmBuildVariant=multithread /p:MonoDiagnosticsMock=true`
 Run this test with `/p:MonoDiagnosticsMock=true`
 
 It will inject file [mock.js](./mock.js) into the worker thread, which is mocking the `dotnet trace` tool.
@@ -17,8 +17,8 @@ dotnet trace convert --format Speedscope c:\Downloads\trace.1665653486202.nettra
 
 # Testing with dotnet trace tool
 
-Build the runtime with `/p:WasmEnablePerfTracing=true`
-Build version of dsrouter with WebSockets https://github.com/lambdageek/diagnostics/tree/wasm-server
+Build the runtime with `/p:MonoWasmBuildVariant=multithread`
+Build a version of dsrouter with WebSockets support (versions from upstream that target net6.0 or later have the requisite support, see https://github.com/dotnet/diagnostics/blob/main/src/Tools/dotnet-dsrouter/dotnet-dsrouter.csproj)
 
 In console #1 start dsrouter
 ```
@@ -27,7 +27,7 @@ c:\Dev\diagnostics\artifacts\bin\dotnet-dsrouter\Debug\net6.0\dotnet-dsrouter.ex
 
 In console #2 start the sample
 ```
-dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug /t:RunSample src/mono/sample/wasm/browser-eventpipe /p:MonoDiagnosticsMock=false
+dotnet build /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Debug /t:RunSample src/mono/sample/wasm/browser-eventpipe /p:MonoDiagnosticsMock=false
 ```
 
 In console #3 start the dotnet trace

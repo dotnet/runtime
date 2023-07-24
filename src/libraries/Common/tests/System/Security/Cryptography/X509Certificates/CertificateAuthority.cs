@@ -854,8 +854,8 @@ SingleResponse ::= SEQUENCE {
                 rootAuthority = new CertificateAuthority(
                     rootCert,
                     rootDistributionViaHttp ? certUrl : null,
-                    issuerRevocationViaCrl ? cdpUrl : null,
-                    issuerRevocationViaOcsp ? ocspUrl : null);
+                    issuerRevocationViaCrl || (endEntityRevocationViaCrl && intermediateAuthorityCount == 0) ? cdpUrl : null,
+                    issuerRevocationViaOcsp || (endEntityRevocationViaOcsp && intermediateAuthorityCount == 0) ? ocspUrl : null);
 
                 CertificateAuthority issuingAuthority = rootAuthority;
                 intermediateAuthorities = new CertificateAuthority[intermediateAuthorityCount];

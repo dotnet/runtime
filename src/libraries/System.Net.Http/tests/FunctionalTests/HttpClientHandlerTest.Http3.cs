@@ -285,10 +285,9 @@ namespace System.Net.Http.Functional.Tests
                 await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
-                await stream.SendFrameAsync(ReservedHttp2PriorityFrameId, new byte[8]);
-
                 QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () =>
                 {
+                    await stream.SendFrameAsync(ReservedHttp2PriorityFrameId, new byte[8]);
                     await stream.HandleRequestAsync();
                     await using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
                 });
@@ -795,6 +794,11 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(HttpStatusCode.OK, responseA.StatusCode);
                     Assert.NotEqual(3, responseA.Version.Major);
                 }
+                catch (TimeoutException ex)
+                {
+                    _output.WriteLine($"Unable to establish non-H/3 connection to {uri}: {ex}");
+                    return;
+                }
                 catch (HttpRequestException ex) when
                     (ex.InnerException is SocketException se &&
                     (se.SocketErrorCode == SocketError.NetworkUnreachable || se.SocketErrorCode == SocketError.HostUnreachable || se.SocketErrorCode == SocketError.ConnectionRefused))
@@ -897,7 +901,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 else
                 {
-                    var ioe = Assert.IsType<IOException>(ex);
+                    var ioe = Assert.IsType<HttpIOException>(ex);
                     var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
                     var qex = Assert.IsType<QuicException>(hre.InnerException);
                     Assert.Equal(QuicError.OperationAborted, qex.QuicError);
@@ -1025,6 +1029,67 @@ namespace System.Net.Http.Functional.Tests
             SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
             Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
             await connection.DisposeAsync();
+        }
+
+        [Fact]
+        public async Task ConnectionAttemptCanceled_AuthorityNotBlocked()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                Http3LoopbackConnection connection;
+                while (true)
+                {
+                    try
+                    {
+                        connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                        break;
+                    }
+                    catch (Exception ex) // Ignore exception and continue until a viable connection is established.
+                    {
+                        _output.WriteLine(ex.ToString());
+                    }
+                }
+                await connection.HandleRequestAsync();
+                await connection.DisposeAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using CancellationTokenSource cts = new CancellationTokenSource();
+                using HttpClient client = CreateHttpClient(new SocketsHttpHandler()
+                {
+                    SslOptions = new SslClientAuthenticationOptions()
+                    {
+                        RemoteCertificateValidationCallback = (_, _, _, _) =>
+                        {
+                            cts.Cancel();
+                            return true;
+                        }
+                    }
+                });
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.SendAsync(request, cts.Token));
+
+                // Next call must succeed
+                using HttpRequestMessage request2 = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+                await client.SendAsync(request2);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
 
         [Fact]
@@ -1712,7 +1777,8 @@ namespace System.Net.Http.Functional.Tests
         public static TheoryData<string> InteropUris() =>
             new TheoryData<string>
             {
-                { "https://www.litespeedtech.com/" }, // LiteSpeed
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/83775")]
+                //{ "https://www.litespeedtech.com/" }, // LiteSpeed
                 { "https://quic.tech:8443/" }, // Cloudflare
                 { "https://quic.aiortc.org:443/" }, // aioquic
                 { "https://h2o.examp1e.net/" } // h2o/quicly

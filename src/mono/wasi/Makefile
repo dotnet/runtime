@@ -1,51 +1,120 @@
-include Makefile.variable
+TOP=$(realpath $(CURDIR)/../../..)
+-include Make.config
+
+escape_quote = $(subst ",\",$(1))
+
+ifneq ($(V),)
+MSBUILD_ARGS+=/p:MonoVerboseBuild=true
+MSBUILD_ARGS+=-bl
+endif
+
+DOTNET=$(TOP)/dotnet.sh
+
+WASI_SDK_PATH?=$(TOP)/src/mono/wasi/wasi-sdk
+CONFIG?=Release
+BINDIR?=$(TOP)/artifacts/bin
+OBJDIR?=$(TOP)/artifacts/obj
+_MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=wasi /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
+HELIX_TARGET_QUEUE?=Ubuntu.1804.Amd64.Open
 
 all: build-all
 
-build-all: $(WASI_SDK_CLANG)
-	mkdir -p $(WASI_OBJ_DIR)
-	cd $(WASI_OBJ_DIR) && \
-	PATH=$(NINJA_DIR):${PATH} cmake -G Ninja \
-		-DWASI_SDK_PREFIX=$(WASI_SDK_ROOT) \
-		-DCMAKE_SYSROOT=$(WASI_SDK_ROOT)/share/wasi-sysroot \
-		-DCMAKE_TOOLCHAIN_FILE=$(WASI_SDK_ROOT)/share/cmake/wasi-sdk.cmake \
-		-DCMAKE_C_FLAGS="--sysroot=$(WASI_SDK_ROOT)/share/wasi-sysroot \
-		-I$(CURDIR)/include -I$(TOP)/src/mono -I$(TOP)/src/native/public -I$(TOP)/src/mono/mono/eglib -I$(WASI_OBJ_DIR)/mono/eglib -I$(WASI_OBJ_DIR) -I$(TOP)/artifacts/obj/wasm -I$(TOP)/src/mono/wasm/runtime" \
-		-DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_ROOT)/share/wasi-sysroot" \
-		-DENABLE_MINIMAL=jit,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,interpreter,threads,qcalls,debugger_agent,sockets,eventpipe \
-		-DDISABLE_SHARED_LIBS=1 \
-		-Wl,--allow-undefined \
-		$(TOP)/src/mono
-	cd $(WASI_OBJ_DIR) && PATH=$(NINJA_DIR):${PATH} ninja
+MONO_OBJ_DIR=$(OBJDIR)/mono/wasi.wasm.$(CONFIG)
+BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm
 
-	mkdir -p $(WASI_BIN_DIR)
-	cp $(WASI_OBJ_DIR)/mono/mini/*.a $(WASI_OBJ_DIR)/libmono-wasi-driver.a $(WASI_BIN_DIR)
-	rm -rf $(WASI_BIN_DIR)/libmono-component-hot_reload-static.a
-	rm -rf $(WASI_BIN_DIR)/libmono-component-diagnostics_tracing-static.a
-	mkdir -p $(WASI_BIN_DIR)/include/mono-wasi
-	cp mono-wasi-driver/*.h $(WASI_BIN_DIR)/include/mono-wasi
+#
+# Helper targets
+#
 
-$(WASI_SDK_CLANG):
-	mkdir -p $(WASI_OBJ_DIR)
-	cd $(WASI_OBJ_DIR) && \
-		wget -q https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WASI_SDK_VERSION)/wasi-sdk-$(WASI_SDK_VERSION).0-linux.tar.gz && \
-		tar xf wasi-sdk-*.tar.gz
+.PHONY: runtime
+.PHONY: build
 
-.stamp-wasmtime-$(WASMTIME_VERSION):
-	@echo "** Provisioning wasmtime $(WASMTIME_VERSION) **"
-	rm -Rf $(WASMTIME_DIR) && \
-	wget -q https://github.com/bytecodealliance/wasmtime/releases/download/$(WASMTIME_VERSION)/$(WASMTIME_DIR_NAME).tar.xz -O - | tar -C `dirname $(WASMTIME_DIR)` -Jxf - && \
-	touch $@
+build:
+	$(TOP)/build.sh mono+libs.pretest -os wasi -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
-.stamp-ninja-$(NINJA_VERSION):
-	@echo "** Provisioning ninja $(NINJA_VERSION) **"
-	rm -Rf $(NINJA_DIR); \
-	mkdir $(NINJA_DIR) && \
-	wget -q https://github.com/ninja-build/ninja/releases/download/v1.11.0/ninja-linux.zip -O $(NINJA_DIR)/ninja.zip && \
-	(cd $(NINJA_DIR) && unzip -q ninja.zip && rm ninja.zip) && \
-	touch $@
+build-all:
+	$(TOP)/build.sh mono+libs+packs -os wasi -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
-provision-deps: .stamp-wasmtime-$(WASMTIME_VERSION) .stamp-ninja-$(NINJA_VERSION)
-	@echo "-------------------------------------------"
-	@echo "** Installed wasmtime in $(WASMTIME_DIR)"
-	@echo "** Installed ninja in $(NINJA_DIR)"
+runtime:
+	$(TOP)/build.sh mono.runtime+mono.wasiruntime+libs.native+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+# Rebuild only the mono runtime+cross compiler, don't build dotnet.wasm
+mono-runtime:
+	$(TOP)/build.sh mono.runtime+libs.native+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+corlib:
+	$(TOP)/build.sh mono.corelib+mono.wasiruntime+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+test-runner:
+	$(DOTNET) build $(TOP)/src/libraries/Common/tests/WasmTestRunner /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+
+app-builder:
+	$(DOTNET) build $(TOP)/src/tasks/WasmAppBuilder
+
+build-tasks:
+	$(DOTNET) build $(TOP)/src/tasks/WasmBuildTasks $(MSBUILD_ARGS)
+
+clean:
+	$(RM) -rf $(BUILDS_OBJ_DIR)
+
+run-tests-%:
+	$(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+run-build-tests:
+	WASI_SDK_PATH=$(WASI_SDK_PATH) $(DOTNET) build $(TOP)/src/mono/wasi//Wasi.Build.Tests/ /t:Test /bl $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+build-debugger-tests-helix:
+	$(DOTNET) build -restore -bl:$(TOP)/artifacts/log/$(CONFIG)/Wasm.Debugger.Tests.binlog \
+	/p:ContinuousIntegrationBuild=true /p:ArchiveTests=true \
+	$(TOP)/src/mono/wasm/debugger/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
+	$(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+submit-debugger-tests-helix: build-debugger-tests-helix
+	BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
+		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
+		/p:TestRunNamePrefixSuffix=WasmDebugger /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
+		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
+		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
+		/p:_Scenarios=wasmdebuggertests \
+		$(_MSBUILD_WASM_BUILD_ARGS) \
+		$(MSBUILD_ARGS)
+
+submit-wbt-helix:
+	PATH="$(JSVU):$(PATH)" \
+		$(DOTNET) build $(TOP)/src/mono/wasi/Wasi.Build.Tests/ /v:m /p:ArchiveTests=true /t:ArchiveTests $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS) && \
+	WASI_SDK_PATH=$(WASI_SDK_PATH) BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
+		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
+		/p:TestRunNamePrefixSuffix=WasiBuildTests /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
+		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -v:m -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
+		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
+		/p:_Scenarios=buildwasmapps \
+		$(_MSBUILD_WASM_BUILD_ARGS) \
+		$(MSBUILD_ARGS)
+
+submit-tests-helix:
+	echo "\n** This will submit all the available test zip files to helix **\n"
+	BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
+		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
+		/p:TestRunNamePrefixSuffix=WasiTests /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
+		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -v:n -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
+		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
+		$(_MSBUILD_WASM_BUILD_ARGS) \
+		$(MSBUILD_ARGS)
+
+run-debugger-tests:
+	rm -f $(TOP)/artifacts/bin/DebuggerTestSuite/x64/Debug/*log; \
+	if [ ! -z "$(TEST_FILTER)" ]; then \
+	$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
+	else \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "category!=failing" $(TEST_ARGS); \
+	fi
+
+build-dbg-proxy:
+	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/wasiDebugHost $(MSBUILD_ARGS)
+build-dbg-testsuite:
+	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
+build-app-host:
+	$(DOTNET) build $(TOP)/src/mono/wasm/host $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+patch-deterministic:
+	cd emsdk/upstream/emscripten/ && patch -p1 < ../../../runtime/deterministic.diff

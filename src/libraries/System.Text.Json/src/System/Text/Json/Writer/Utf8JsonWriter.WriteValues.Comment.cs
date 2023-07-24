@@ -53,6 +53,10 @@ namespace System.Text.Json
             }
 
             WriteCommentByOptions(value);
+            if (_tokenType is JsonTokenType.PropertyName or JsonTokenType.None)
+            {
+                _commentAfterNoneOrPropertyName = true;
+            }
         }
 
         private void WriteCommentByOptions(ReadOnlySpan<char> value)
@@ -116,13 +120,12 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
-            if (_tokenType != JsonTokenType.None)
+            if (_tokenType != JsonTokenType.None || _commentAfterNoneOrPropertyName)
             {
                 WriteNewLine(output);
+                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                BytesPending += indent;
             }
-
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
-            BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Slash;
             output[BytesPending++] = JsonConstants.Asterisk;
@@ -165,6 +168,10 @@ namespace System.Text.Json
             }
 
             WriteCommentByOptions(utf8Value);
+            if (_tokenType is JsonTokenType.PropertyName or JsonTokenType.None)
+            {
+                _commentAfterNoneOrPropertyName = true;
+            }
         }
 
         private void WriteCommentByOptions(ReadOnlySpan<byte> utf8Value)
@@ -219,12 +226,10 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
-            if (_tokenType != JsonTokenType.PropertyName)
+            if (_tokenType != JsonTokenType.None || _commentAfterNoneOrPropertyName)
             {
-                if (_tokenType != JsonTokenType.None)
-                {
-                    WriteNewLine(output);
-                }
+                WriteNewLine(output);
+
                 JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
                 BytesPending += indent;
             }

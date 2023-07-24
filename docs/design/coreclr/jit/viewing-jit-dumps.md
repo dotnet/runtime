@@ -98,21 +98,21 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
 ## Setting configuration variables
 
-The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/inc/clrconfigvalues.h) and [jit/jitconfigvalues.h](/src/coreclr/jit/jitconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
+The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/inc/clrconfigvalues.h) and [jit/jitconfigvalues.h](/src/coreclr/jit/jitconfigvalues.h). When used as an environment variable, the string name generally has `DOTNET_` prepended. When used as a registry value name, the configuration name is used directly.
 
 These can be set in one of three ways:
 
-* Setting the environment variable `COMPlus_<flagname>`. For example, the following will set the `JitDump` flag so that the compilation of all methods named `Main` will be dumped:
+* Setting the environment variable `DOTNET_<flagname>`. For example, the following will set the `JitDump` flag so that the compilation of all methods named `Main` will be dumped:
 
    ```shell
    # Windows
-   set COMPlus_JitDump=Main
+   set DOTNET_JitDump=Main
 
    # Powershell
-   $env:COMPlus_JitDump="Main"
+   $env:DOTNET_JitDump="Main"
 
    # Unix
-   export COMPlus_JitDump=Main
+   export DOTNET_JitDump=Main
    ```
 
 * *Windows-only:* Setting the registry key `HKCU\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
@@ -120,7 +120,7 @@ These can be set in one of three ways:
 
 ## Specifying method names
 
-Some environment variables such as `COMPlus_JitDump` take a set of patterns specifying method names. The matching works in the following way:
+Some environment variables such as `DOTNET_JitDump` take a set of patterns specifying method names. The matching works in the following way:
 * A method set string is a space-separated list of patterns. Patterns can arbitrarily contain both '*' (match any characters) and '?' (match any 1 character).
 * The string matched against depends on characters in the pattern:
   + If the pattern contains a ':' character, the string matched against is prefixed by the class name and a colon
@@ -150,7 +150,7 @@ new C<sbyte, string>().M<int, object>(default, default, default, default); // co
 new C<int, int>().M<int, int>(default, default, default, default); // compilation 2
 ```
 
-The full names of these instantiations are the following, as printed by `COMPlus_JitDisasmSummary`:
+The full names of these instantiations are the following, as printed by `DOTNET_JitDisasmSummary`:
 
 ```
 MyNamespace.C`2[byte,System.__Canon]:M[int,System.__Canon](byte,System.__Canon,int,System.__Canon)
@@ -178,15 +178,15 @@ M(*Canon)
 
 Below are some of the most useful `COMPlus` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specify `*` to mean all methods.
 
-* `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
-* `COMPlus_JitDumpASCII`={1 or 0} - Specifies whether the JIT dump should be ASCII only (Defaults to 1). Disabling this generates more readable expression trees.
-* `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
-* `COMPlus_JitDiffableDasm` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
-* `COMPlus_JitGCDump`={method-list} – dump the GC information.
-* `COMPlus_JitUnwindDump`={method-list} – dump the unwind tables.
-* `COMPlus_JitEHDump`={method-list} – dump the exception handling tables.
-* `COMPlus_JitTimeLogFile`={file name} – this specifies a log file to which timing information is written.
-* `COMPlus_JitTimeLogCsv`={file name} – this specifies a log file to which summary timing information can be written, in CSV form.
+* `DOTNET_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
+* `DOTNET_JitDumpASCII`={1 or 0} - Specifies whether the JIT dump should be ASCII only (Defaults to 1). Disabling this generates more readable expression trees.
+* `DOTNET_JitDisasm`={method-list} – dump a disassembly listing of each method.
+* `DOTNET_JitDisasmDiffable` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
+* `DOTNET_JitGCDump`={method-list} – dump the GC information.
+* `DOTNET_JitUnwindDump`={method-list} – dump the unwind tables.
+* `DOTNET_JitEHDump`={method-list} – dump the exception handling tables.
+* `DOTNET_JitTimeLogFile`={file name} – this specifies a log file to which timing information is written.
+* `DOTNET_JitTimeLogCsv`={file name} – this specifies a log file to which summary timing information can be written, in CSV form.
 
 ## Dumping native images
 

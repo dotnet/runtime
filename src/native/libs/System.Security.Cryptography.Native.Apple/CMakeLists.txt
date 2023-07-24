@@ -90,6 +90,7 @@ set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIE
 
 if (GEN_SHARED_LIB)
     target_link_libraries(System.Security.Cryptography.Native.Apple
+        PRIVATE
         ${NATIVE_LIBS_EXTRA}
     )
 

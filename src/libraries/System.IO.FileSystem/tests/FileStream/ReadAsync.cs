@@ -11,7 +11,7 @@ namespace System.IO.Tests
 {
     public abstract class FileStream_AsyncReads : FileSystemTest
     {
-        protected abstract Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
+        protected abstract Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
 
         [Fact]
         public async Task EmptyFileReadAsyncSucceedSynchronously()
@@ -95,8 +95,6 @@ namespace System.IO.Tests
                     // Ideally we'd be doing an Assert.Throws<OperationCanceledException>
                     // but since cancellation is a race condition we accept either outcome
                     Assert.Equal(cts.Token, oce.CancellationToken);
-
-                    Assert.Equal(0, fs.Position); // if read was cancelled, the Position should remain unchanged
                 }
             }
         }
@@ -132,17 +130,72 @@ namespace System.IO.Tests
                 Assert.Equal(fileSize, fs.Position);
             }
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task BypassingCacheInvalidatesCachedData(bool fsIsAsync, bool asyncReads)
+        {
+            const int BufferSize = 4096;
+            const int FileSize = BufferSize * 4;
+            string filePath = GetTestFilePath();
+            byte[] content = RandomNumberGenerator.GetBytes(FileSize);
+            File.WriteAllBytes(filePath, content);
+
+            await Test(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, BufferSize, fsIsAsync));
+            await Test(new BufferedStream(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 0, fsIsAsync), BufferSize));
+
+            async Task Test(Stream stream)
+            {
+                try
+                {
+                    // 1. Populates the private stream buffer, leaves bufferSize - 1 bytes available for next read.
+                    await ReadAndAssertAsync(stream, 1);
+                    // 2. Consumes all available data from the buffer, reads another bufferSize-many bytes from the disk and copies the 1 missing byte.
+                    await ReadAndAssertAsync(stream, BufferSize);
+                    // 3. Seek back by the number of bytes consumed from the buffer, all buffered data is now available for next read.
+                    stream.Position -= 1;
+                    // 4. Consume all buffered data.
+                    await ReadAndAssertAsync(stream, BufferSize);
+                    // 5. Bypass the cache (all buffered data has been consumed and we need bufferSize-many bytes).
+                    // The cache should get invalidated now!!
+                    await ReadAndAssertAsync(stream,BufferSize);
+                    // 6. Seek back by just a few bytes.
+                    stream.Position -= 9;
+                    // 7. Perform a read, which should not use outdated buffered data.
+                    await ReadAndAssertAsync(stream,BufferSize);
+                }
+                finally
+                {
+                    await stream.DisposeAsync();
+                }
+            }
+
+            async Task ReadAndAssertAsync(Stream stream, int size)
+            {
+                var initialPosition = stream.Position;
+                var buffer = new byte[size];
+
+                var count = asyncReads
+                    ? await ReadAsync(stream, buffer, 0, size)
+                    : stream.Read(buffer);
+
+                Assert.Equal(content.Skip((int)initialPosition).Take(count), buffer.Take(count));
+            }
+        }
     }
 
     public class FileStream_ReadAsync_AsyncReads : FileStream_AsyncReads
     {
-        protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+        protected override Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             stream.ReadAsync(buffer, offset, count, cancellationToken);
     }
 
     public class FileStream_BeginEndRead_AsyncReads : FileStream_AsyncReads
     {
-        protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+        protected override Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             Task.Factory.FromAsync(
                 (callback, state) => stream.BeginRead(buffer, offset, count, callback, state),
                 iar => stream.EndRead(iar),

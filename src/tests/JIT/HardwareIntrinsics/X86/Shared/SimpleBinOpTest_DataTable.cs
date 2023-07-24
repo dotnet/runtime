@@ -30,7 +30,7 @@ namespace JIT.HardwareIntrinsics.X86
             int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<TOp1>();
             int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<TOp2>();
             int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<TResult>();
-            if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
+            if (((alignment != 64) && (alignment != 32) && (alignment != 16)) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
             {
                 throw new ArgumentException("Invalid value of alignment");
             }

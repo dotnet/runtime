@@ -258,7 +258,7 @@ namespace System.IO.Packaging
                 else if (packageFileAccess == FileAccess.ReadWrite)
                     zipArchiveMode = ZipArchiveMode.Update;
 
-                zipArchive = new ZipArchive(_containerStream, zipArchiveMode, true, Text.Encoding.UTF8);
+                zipArchive = new ZipArchive(_containerStream, zipArchiveMode, true);
                 _zipStreamManager = new ZipStreamManager(zipArchive, _packageFileMode, _packageFileAccess);
                 contentTypeHelper = new ContentTypeHelper(zipArchive, _packageFileMode, _packageFileAccess, _zipStreamManager);
             }
@@ -325,7 +325,7 @@ namespace System.IO.Packaging
                 else if (packageFileAccess == FileAccess.ReadWrite)
                     zipArchiveMode = ZipArchiveMode.Update;
 
-                zipArchive = new ZipArchive(s, zipArchiveMode, true, Text.Encoding.UTF8);
+                zipArchive = new ZipArchive(s, zipArchiveMode, true);
 
                 _zipStreamManager = new ZipStreamManager(zipArchive, packageFileMode, packageFileAccess);
                 contentTypeHelper = new ContentTypeHelper(zipArchive, packageFileMode, packageFileAccess, _zipStreamManager);
@@ -501,7 +501,7 @@ namespace System.IO.Packaging
                 //with the rules for comparing/normalizing partnames.
                 //Refer to PackUriHelper.ValidatedPartUri.GetNormalizedPartUri method.
                 //Currently normalization just involves upper-casing ASCII and hence the simplification.
-                return (string.CompareOrdinal(extensionA.ToUpperInvariant(), extensionB.ToUpperInvariant()) == 0);
+                return extensionA.ToUpperInvariant() == extensionB.ToUpperInvariant();
             }
 
             int IEqualityComparer<string>.GetHashCode(string extension)
@@ -727,8 +727,8 @@ namespace System.IO.Packaging
                     // Make sure that the current node read is an Element
                     if ((reader.NodeType == XmlNodeType.Element)
                         && (reader.Depth == 0)
-                        && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
-                        && (string.CompareOrdinal(reader.Name, TypesTagName) == 0))
+                        && (reader.NamespaceURI == TypesNamespaceUri)
+                        && (reader.Name == TypesTagName))
                     {
                         //There should be a namespace Attribute present at this level.
                         //Also any other attribute on the <Types> tag is an error including xml: and xsi: attributes
@@ -753,19 +753,19 @@ namespace System.IO.Packaging
                             // Currently we expect the Default and Override Tag at Depth 1
                             if (reader.NodeType == XmlNodeType.Element
                                 && reader.Depth == 1
-                                && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
-                                && (string.CompareOrdinal(reader.Name, DefaultTagName) == 0))
+                                && (reader.NamespaceURI == TypesNamespaceUri)
+                                && (reader.Name == DefaultTagName))
                             {
                                 ProcessDefaultTagAttributes(reader);
                             }
                             else if (reader.NodeType == XmlNodeType.Element
                                      && reader.Depth == 1
-                                     && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
-                                     && (string.CompareOrdinal(reader.Name, OverrideTagName) == 0))
+                                     && (reader.NamespaceURI == TypesNamespaceUri)
+                                     && (reader.Name == OverrideTagName))
                             {
                                 ProcessOverrideTagAttributes(reader);
                             }
-                            else if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && string.CompareOrdinal(reader.Name, TypesTagName) == 0)
+                            else if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && reader.Name == TypesTagName)
                             {
                                 continue;
                             }
@@ -884,7 +884,7 @@ namespace System.IO.Packaging
                 //Skips over the following - ProcessingInstruction, DocumentType, Comment, Whitespace, or SignificantWhitespace
                 reader.MoveToContent();
 
-                if (reader.NodeType == XmlNodeType.EndElement && string.CompareOrdinal(elementName, reader.LocalName) == 0)
+                if (reader.NodeType == XmlNodeType.EndElement && elementName == reader.LocalName)
                     return;
                 else
                     throw new XmlException(SR.Format(SR.ElementIsNotEmptyElement, elementName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);

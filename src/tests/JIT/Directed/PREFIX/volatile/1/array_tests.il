@@ -2,18 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly array_tests{}
+.assembly 'array_tests_volatile'{}
 
 .class value sealed valClass {
 	.field		int32 Field
 }
 
-.class	array_tests {
+.class public	array_tests {
 
 .field static	int8[] i1
 .field static	unsigned int8[] u1
@@ -216,7 +217,10 @@ END:
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main() {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
 .locals	(int32)

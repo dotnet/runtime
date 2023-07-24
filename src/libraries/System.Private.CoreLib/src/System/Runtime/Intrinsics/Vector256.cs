@@ -57,7 +57,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Abs<T>(Vector256<T> vector)
-            where T : struct
         {
             return Create(
                 Vector128.Abs(vector._lower),
@@ -73,8 +72,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Add<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left + right;
+        public static Vector256<T> Add<T>(Vector256<T> left, Vector256<T> right) => left + right;
 
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -85,7 +83,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> AndNot<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.AndNot(left._lower, right._lower),
@@ -102,8 +99,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<TTo> As<TFrom, TTo>(this Vector256<TFrom> vector)
-            where TFrom : struct
-            where TTo : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<TTo>();
@@ -118,8 +113,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<byte> AsByte<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, byte>();
+        public static Vector256<byte> AsByte<T>(this Vector256<T> vector) => vector.As<T, byte>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Double}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -128,8 +122,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<double> AsDouble<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, double>();
+        public static Vector256<double> AsDouble<T>(this Vector256<T> vector) => vector.As<T, double>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Int16}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -138,8 +131,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<short> AsInt16<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, short>();
+        public static Vector256<short> AsInt16<T>(this Vector256<T> vector) => vector.As<T, short>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Int32}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -148,8 +140,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<int> AsInt32<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, int>();
+        public static Vector256<int> AsInt32<T>(this Vector256<T> vector) => vector.As<T, int>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Int64}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -158,8 +149,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<long> AsInt64<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, long>();
+        public static Vector256<long> AsInt64<T>(this Vector256<T> vector) => vector.As<T, long>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{IntPtr}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -168,8 +158,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nint> AsNInt<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, nint>();
+        public static Vector256<nint> AsNInt<T>(this Vector256<T> vector) => vector.As<T, nint>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UIntPtr}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -179,8 +168,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nuint> AsNUInt<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, nuint>();
+        public static Vector256<nuint> AsNUInt<T>(this Vector256<T> vector) => vector.As<T, nuint>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{SByte}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -190,8 +178,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> AsSByte<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, sbyte>();
+        public static Vector256<sbyte> AsSByte<T>(this Vector256<T> vector) => vector.As<T, sbyte>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Single}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -200,8 +187,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<float> AsSingle<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, float>();
+        public static Vector256<float> AsSingle<T>(this Vector256<T> vector) => vector.As<T, float>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UInt16}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -211,8 +197,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ushort> AsUInt16<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, ushort>();
+        public static Vector256<ushort> AsUInt16<T>(this Vector256<T> vector) => vector.As<T, ushort>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UInt32}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -222,8 +207,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<uint> AsUInt32<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, uint>();
+        public static Vector256<uint> AsUInt32<T>(this Vector256<T> vector) => vector.As<T, uint>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UInt64}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -233,10 +217,9 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ulong> AsUInt64<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, ulong>();
+        public static Vector256<ulong> AsUInt64<T>(this Vector256<T> vector) => vector.As<T, ulong>();
 
-        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{T}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector256{T}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector256{T}" />.</returns>
@@ -244,7 +227,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> AsVector256<T>(this Vector<T> value)
-            where T : struct
         {
             Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
@@ -254,15 +236,14 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{T}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector{T}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector256{T}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> AsVector<T>(this Vector256<T> value)
-            where T : struct
         {
             Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
@@ -279,8 +260,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> BitwiseAnd<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left & right;
+        public static Vector256<T> BitwiseAnd<T>(Vector256<T> left, Vector256<T> right) => left & right;
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -290,8 +270,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> BitwiseOr<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left | right;
+        public static Vector256<T> BitwiseOr<T>(Vector256<T> left, Vector256<T> right) => left | right;
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its ceiling computed.</param>
@@ -331,7 +310,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> ConditionalSelect<T>(Vector256<T> condition, Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.ConditionalSelect(condition._lower, left._lower, right._lower),
@@ -473,11 +451,11 @@ namespace System.Runtime.Intrinsics
 
                 if (Fma.IsSupported)
                 {
-                    return Fma.MultiplyAdd(upper, Vector256.Create(65536.0f), lower);
+                    return Fma.MultiplyAdd(upper, Create(65536.0f), lower);
                 }
                 else
                 {
-                    Vector256<float> result = Avx.Multiply(upper, Vector256.Create(65536.0f));
+                    Vector256<float> result = Avx.Multiply(upper, Create(65536.0f));
                     return Avx.Add(result, lower);
                 }
             }
@@ -525,8 +503,8 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector256{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this Vector256<T> vector, T[] destination)
-            where T : struct
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
@@ -535,8 +513,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[0]), vector);
         }
 
         /// <summary>Copies a <see cref="Vector256{T}" /> to a given array starting at the specified index.</summary>
@@ -548,8 +525,8 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex" /> is negative or greater than the length of <paramref name="destination" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this Vector256<T> vector, T[] destination, int startIndex)
-            where T : struct
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
@@ -563,8 +540,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
-            Unsafe.WriteUnaligned(ref Unsafe.Add(ref address, startIndex), vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[startIndex]), vector);
         }
 
         /// <summary>Copies a <see cref="Vector256{T}" /> to a given span.</summary>
@@ -573,16 +549,15 @@ namespace System.Runtime.Intrinsics
         /// <param name="destination">The span to which the <paramref name="vector" /> is copied.</param>
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector256{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this Vector256<T> vector, Span<T> destination)
-            where T : struct
         {
-            if ((uint)destination.Length < (uint)Vector256<T>.Count)
+            if (destination.Length < Vector256<T>.Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> instance with all elements initialized to the specified value.</summary>
@@ -593,7 +568,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Create<T>(T value)
-            where T : struct
         {
             Vector128<T> vector = Vector128.Create(value);
             return Create(vector, vector);
@@ -705,8 +679,8 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector256{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Create<T>(T[] values)
-            where T : struct
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
@@ -715,8 +689,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
-            return Unsafe.ReadUnaligned<Vector256<T>>(ref address);
+            return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref values[0]));
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> from a given array.</summary>
@@ -727,8 +700,8 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector256{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Create<T>(T[] values, int index)
-            where T : struct
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
@@ -737,8 +710,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
-            return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.Add(ref address, index));
+            return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref values[index]));
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> from a given readonly span.</summary>
@@ -749,15 +721,13 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Create<T>(ReadOnlySpan<T> values)
-            where T : struct
         {
             if (values.Length < Vector256<T>.Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
-            return Unsafe.ReadUnaligned<Vector256<T>>(ref address);
+            return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
 
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -797,7 +767,8 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi8</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15, byte e16, byte e17, byte e18, byte e19, byte e20, byte e21, byte e22, byte e23, byte e24, byte e25, byte e26, byte e27, byte e28, byte e29, byte e30, byte e31)
+        public static Vector256<byte> Create(byte e0,  byte e1,  byte e2,  byte e3,  byte e4,  byte e5,  byte e6,  byte e7,  byte e8,  byte e9,  byte e10, byte e11, byte e12, byte e13, byte e14, byte e15,
+                                             byte e16, byte e17, byte e18, byte e19, byte e20, byte e21, byte e22, byte e23, byte e24, byte e25, byte e26, byte e27, byte e28, byte e29, byte e30, byte e31)
         {
             return Create(
                 Vector128.Create(e0,  e1,  e2,  e3,  e4,  e5,  e6,  e7,  e8,  e9,  e10, e11, e12, e13, e14, e15),
@@ -927,7 +898,8 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15, sbyte e16, sbyte e17, sbyte e18, sbyte e19, sbyte e20, sbyte e21, sbyte e22, sbyte e23, sbyte e24, sbyte e25, sbyte e26, sbyte e27, sbyte e28, sbyte e29, sbyte e30, sbyte e31)
+        public static Vector256<sbyte> Create(sbyte e0,  sbyte e1,  sbyte e2,  sbyte e3,  sbyte e4,  sbyte e5,  sbyte e6,  sbyte e7,  sbyte e8,  sbyte e9,  sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15,
+                                              sbyte e16, sbyte e17, sbyte e18, sbyte e19, sbyte e20, sbyte e21, sbyte e22, sbyte e23, sbyte e24, sbyte e25, sbyte e26, sbyte e27, sbyte e28, sbyte e29, sbyte e30, sbyte e31)
         {
             return Create(
                 Vector128.Create(e0,  e1,  e2,  e3,  e4,  e5,  e6,  e7,  e8,  e9,  e10, e11, e12, e13, e14, e15),
@@ -1034,7 +1006,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="lower" /> and <paramref name="upper" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Create<T>(Vector128<T> lower, Vector128<T> upper)
-            where T : struct
         {
             if (Avx.IsSupported)
             {
@@ -1153,8 +1124,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> CreateScalar<T>(T value)
-            where T : struct => Vector128.CreateScalar(value).ToVector256();
+        public static Vector256<T> CreateScalar<T>(T value) => Vector128.CreateScalar(value).ToVector256();
 
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
@@ -1253,7 +1223,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateScalarUnsafe<T>(T value)
-            where T : struct
         {
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
@@ -1362,8 +1331,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Divide<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left / right;
+        public static Vector256<T> Divide<T>(Vector256<T> left, Vector256<T> right) => left / right;
 
         /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -1372,8 +1340,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Divide<T>(Vector256<T> left, T right)
-            where T : struct => left / right;
+        public static Vector256<T> Divide<T>(Vector256<T> left, T right) => left / right;
 
         /// <summary>Computes the dot product of two vectors.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1384,7 +1351,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Dot<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             // Doing this as Dot(lower) + Dot(upper) is important for floating-point determinism
             // This is because the underlying dpps instruction on x86/x64 will do this equivalently
@@ -1404,7 +1370,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Equals<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.Equals(left._lower, right._lower),
@@ -1420,8 +1385,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EqualsAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left == right;
+        public static bool EqualsAll<T>(Vector256<T> left, Vector256<T> right) => left == right;
 
         /// <summary>Compares two vectors to determine if any elements are equal.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -1432,7 +1396,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EqualsAny<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.EqualsAny(left._lower, right._lower)
                 || Vector128.EqualsAny(left._upper, right._upper);
@@ -1447,7 +1410,6 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint ExtractMostSignificantBits<T>(this Vector256<T> vector)
-            where T : struct
         {
             uint result = vector._lower.ExtractMostSignificantBits();
             result |= vector._upper.ExtractMostSignificantBits() << Vector128<T>.Count;
@@ -1492,7 +1454,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T GetElement<T>(this Vector256<T> vector, int index)
-            where T : struct
         {
             if ((uint)(index) >= (uint)(Vector256<T>.Count))
             {
@@ -1510,7 +1471,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> GetLower<T>(this Vector256<T> vector)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             return vector._lower;
@@ -1521,27 +1481,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to get the upper 128-bits from.</param>
         /// <returns>The value of the upper 128-bits as a new <see cref="Vector128{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> GetUpper<T>(this Vector256<T> vector)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-
-            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
-            {
-                // All integral types generate the same instruction, so just pick one rather than handling each T separately
-                return Avx2.ExtractVector128(vector.AsByte(), 1).As<byte, T>();
-            }
-            else if (Avx.IsSupported)
-            {
-                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
-                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
-                return Avx.ExtractVector128(vector.AsSingle(), 1).As<float, T>();
-            }
-            else
-            {
-                return vector._upper;
-            }
+            return vector._upper;
         }
 
         /// <summary>Compares two vectors to determine which is greater on a per-element basis.</summary>
@@ -1553,7 +1498,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> GreaterThan<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.GreaterThan(left._lower, right._lower),
@@ -1570,7 +1514,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.GreaterThanAll(left._lower, right._lower)
                 && Vector128.GreaterThanAll(left._upper, right._upper);
@@ -1585,7 +1528,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanAny<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.GreaterThanAny(left._lower, right._lower)
                 || Vector128.GreaterThanAny(left._upper, right._upper);
@@ -1600,7 +1542,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> GreaterThanOrEqual<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.GreaterThanOrEqual(left._lower, right._lower),
@@ -1617,7 +1558,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanOrEqualAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.GreaterThanOrEqualAll(left._lower, right._lower)
                 && Vector128.GreaterThanOrEqualAll(left._upper, right._upper);
@@ -1632,7 +1572,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanOrEqualAny<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.GreaterThanOrEqualAny(left._lower, right._lower)
                 || Vector128.GreaterThanOrEqualAny(left._upper, right._upper);
@@ -1647,7 +1586,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> LessThan<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.LessThan(left._lower, right._lower),
@@ -1664,7 +1602,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.LessThanAll(left._lower, right._lower)
                 && Vector128.LessThanAll(left._upper, right._upper);
@@ -1679,7 +1616,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanAny<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.LessThanAny(left._lower, right._lower)
                 || Vector128.LessThanAny(left._upper, right._upper);
@@ -1694,7 +1630,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> LessThanOrEqual<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.LessThanOrEqual(left._lower, right._lower),
@@ -1711,7 +1646,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanOrEqualAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.LessThanOrEqualAll(left._lower, right._lower)
                 && Vector128.LessThanOrEqualAll(left._upper, right._upper);
@@ -1726,12 +1660,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanOrEqualAny<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.LessThanOrEqualAny(left._lower, right._lower)
                 || Vector128.LessThanOrEqualAny(left._upper, right._upper);
         }
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -1740,8 +1674,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Load<T>(T* source)
-            where T : unmanaged => LoadUnsafe(ref *source);
+        public static Vector256<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1752,7 +1685,6 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> LoadAligned<T>(T* source)
-            where T : unmanaged
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -1773,8 +1705,8 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> LoadAlignedNonTemporal<T>(T* source)
-            where T : unmanaged => LoadAligned(source);
+        public static Vector256<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1784,7 +1716,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> LoadUnsafe<T>(ref T source)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             ref byte address = ref Unsafe.As<T, byte>(ref source);
@@ -1801,12 +1732,26 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             source = ref Unsafe.Add(ref source, (nint)elementOffset);
             return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref source));
         }
+
+        /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <param name="source">The source from which the vector will be loaded.</param>
+        /// <returns>The vector loaded from <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector256<ushort> LoadUnsafe(ref char source) =>
+            LoadUnsafe(ref Unsafe.As<char, ushort>(ref source));
+
+        /// <summary>Loads a vector from the given source and element offset and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <param name="source">The source to which <paramref name="elementOffset" /> will be added before loading the vector.</param>
+        /// <param name="elementOffset">The element offset from <paramref name="source" /> from which the vector will be loaded.</param>
+        /// <returns>The vector loaded from <paramref name="source" /> plus <paramref name="elementOffset" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector256<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
+            LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1817,7 +1762,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Max<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.Max(left._lower, right._lower),
@@ -1834,7 +1778,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Min<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.Min(left._lower, right._lower),
@@ -1850,8 +1793,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Multiply<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left * right;
+        public static Vector256<T> Multiply<T>(Vector256<T> left, Vector256<T> right) => left * right;
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1861,8 +1803,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Multiply<T>(Vector256<T> left, T right)
-            where T : struct => left * right;
+        public static Vector256<T> Multiply<T>(Vector256<T> left, T right) => left * right;
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1872,8 +1813,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Multiply<T>(T left, Vector256<T> right)
-            where T : struct => left * right;
+        public static Vector256<T> Multiply<T>(T left, Vector256<T> right) => left * right;
 
         /// <summary>Narrows two <see cref="Vector256{Double}"/> instances into one <see cref="Vector256{Single}" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
@@ -1984,8 +1924,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Negate<T>(Vector256<T> vector)
-            where T : struct => -vector;
+        public static Vector256<T> Negate<T>(Vector256<T> vector) => -vector;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1995,7 +1934,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> OnesComplement<T>(Vector256<T> vector)
-            where T : struct
         {
             return Create(
                 Vector128.OnesComplement(vector._lower),
@@ -2616,7 +2554,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Sqrt<T>(Vector256<T> vector)
-            where T : struct
         {
             return Create(
                 Vector128.Sqrt(vector._lower),
@@ -2624,6 +2561,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -2632,8 +2570,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Store<T>(this Vector256<T> source, T* destination)
-            where T : unmanaged => source.StoreUnsafe(ref *destination);
+        public static void Store<T>(this Vector256<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2644,7 +2581,6 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAligned<T>(this Vector256<T> source, T* destination)
-            where T : unmanaged
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -2665,8 +2601,8 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination)
-            where T : unmanaged => source.StoreAligned(destination);
+        public static void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination) => source.StoreAligned(destination);
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2676,7 +2612,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreUnsafe<T>(this Vector256<T> source, ref T destination)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             ref byte address = ref Unsafe.As<T, byte>(ref destination);
@@ -2693,7 +2628,6 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreUnsafe<T>(this Vector256<T> source, ref T destination, nuint elementOffset)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
@@ -2708,8 +2642,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Subtract<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left - right;
+        public static Vector256<T> Subtract<T>(Vector256<T> left, Vector256<T> right) => left - right;
 
         /// <summary>Computes the sum of all elements in a vector.</summary>
         /// <param name="vector">The vector whose elements will be summed.</param>
@@ -2719,7 +2652,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Sum<T>(Vector256<T> vector)
-            where T : struct
         {
             // Doing this as Sum(lower) + Sum(upper) is important for floating-point determinism
             // This is because the underlying dpps instruction on x86/x64 will do this equivalently
@@ -2738,10 +2670,42 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ToScalar<T>(this Vector256<T> vector)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             return vector.GetElementUnsafe(0);
+        }
+
+        /// <summary>Converts the given vector to a new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of the given vector and the upper 256-bits initialized to zero.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to extend.</param>
+        /// <returns>A new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of <paramref name="vector" /> and the upper 256-bits initialized to zero.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector512<T> ToVector512<T>(this Vector256<T> vector)
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
+            Vector512<T> result = default;
+            result.SetLowerUnsafe(vector);
+            return result;
+        }
+
+        /// <summary>Converts the given vector to a new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of the given vector and the upper 256-bits left uninitialized.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to extend.</param>
+        /// <returns>A new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of <paramref name="vector" /> and the upper 256-bits left uninitialized.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static unsafe Vector512<T> ToVector512Unsafe<T>(this Vector256<T> vector)
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+            Unsafe.SkipInit(out Vector512<T> result);
+            result.SetLowerUnsafe(vector);
+            return result;
         }
 
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
@@ -2750,16 +2714,15 @@ namespace System.Runtime.Intrinsics
         /// <param name="destination">The span to which <paramref name="destination" /> is copied.</param>
         /// <returns><c>true</c> if <paramref name="vector" /> was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector256{T}.Count" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCopyTo<T>(this Vector256<T> vector, Span<T> destination)
-            where T : struct
         {
-            if ((uint)destination.Length < (uint)Vector256<T>.Count)
+            if (destination.Length < Vector256<T>.Count)
             {
                 return false;
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
             return true;
         }
 
@@ -2809,7 +2772,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector256<ulong> Lower, Vector256<ulong> Upper) Widen(Vector256<uint> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens the lower half of a <see cref="Vector128{Byte}" /> into a <see cref="Vector128{UInt16} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{Byte}" /> into a <see cref="Vector256{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2825,7 +2788,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector128{Int16}" /> into a <see cref="Vector128{Int32} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{Int16}" /> into a <see cref="Vector256{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2840,7 +2803,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector128{Int32}" /> into a <see cref="Vector128{Int64} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{Int32}" /> into a <see cref="Vector256{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2855,7 +2818,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector128{SByte}" /> into a <see cref="Vector128{Int16} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{SByte}" /> into a <see cref="Vector256{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2870,7 +2833,7 @@ namespace System.Runtime.Intrinsics
                 Vector128.WidenUpper(lower)
             );
         }
-        /// <summary>Widens the lower half of a <see cref="Vector128{Single}" /> into a <see cref="Vector128{Double} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{Single}" /> into a <see cref="Vector256{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2885,7 +2848,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector128{UInt16}" /> into a <see cref="Vector128{UInt32} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{UInt16}" /> into a <see cref="Vector256{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3036,7 +2999,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<T> WithElement<T>(this Vector256<T> vector, int index, T value)
-            where T : struct
         {
             if ((uint)(index) >= (uint)(Vector256<T>.Count))
             {
@@ -3054,60 +3016,32 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value of the lower 128-bits as a <see cref="Vector128{T}" />.</param>
         /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to <paramref name="value" /> and the upper 128-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> WithLower<T>(this Vector256<T> vector, Vector128<T> value)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
-            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
-            {
-                // All integral types generate the same instruction, so just pick one rather than handling each T separately
-                return Avx2.InsertVector128(vector.AsByte(), value.AsByte(), 0).As<byte, T>();
-            }
-            else if (Avx.IsSupported)
-            {
-                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
-                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
-                return Avx.InsertVector128(vector.AsSingle(), value.AsSingle(), 0).As<float, T>();
-            }
-            else
-            {
-                Vector256<T> result = vector;
-                result.SetLowerUnsafe(value);
-                return result;
-            }
+            Vector256<T> result = vector;
+            result.SetLowerUnsafe(value);
+            return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector256{T}" /> with the upper 128-bits set to the specified value and the upper 128-bits set to the same value as that in the given vector.</summary>
+        /// <summary>Creates a new <see cref="Vector256{T}" /> with the upper 128-bits set to the specified value and the lower 128-bits set to the same value as that in the given vector.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the lower 128-bits from.</param>
         /// <param name="value">The value of the upper 128-bits as a <see cref="Vector128{T}" />.</param>
         /// <returns>A new <see cref="Vector256{T}" /> with the upper 128-bits set to <paramref name="value" /> and the lower 128-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> WithUpper<T>(this Vector256<T> vector, Vector128<T> value)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
-            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
-            {
-                // All integral types generate the same instruction, so just pick one rather than handling each T separately
-                return Avx2.InsertVector128(vector.AsByte(), value.AsByte(), 1).As<byte, T>();
-            }
-            else if (Avx.IsSupported)
-            {
-                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
-                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
-                return Avx.InsertVector128(vector.AsSingle(), value.AsSingle(), 1).As<float, T>();
-            }
-            else
-            {
-                Vector256<T> result = vector;
-                result.SetUpperUnsafe(value);
-                return result;
-            }
+            Vector256<T> result = vector;
+            result.SetUpperUnsafe(value);
+            return result;
         }
 
         /// <summary>Computes the exclusive-or of two vectors.</summary>
@@ -3118,12 +3052,10 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Xor<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left ^ right;
+        public static Vector256<T> Xor<T>(Vector256<T> left, Vector256<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector256<T> vector, int index)
-            where T : struct
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
             ref T address = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector));
@@ -3132,7 +3064,6 @@ namespace System.Runtime.Intrinsics
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void SetElementUnsafe<T>(in this Vector256<T> vector, int index, T value)
-            where T : struct
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
             ref T address = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector));
@@ -3141,14 +3072,12 @@ namespace System.Runtime.Intrinsics
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void SetLowerUnsafe<T>(in this Vector256<T> vector, Vector128<T> value)
-            where T : struct
         {
             Unsafe.AsRef(in vector._lower) = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void SetUpperUnsafe<T>(in this Vector256<T> vector, Vector128<T> value)
-            where T : struct
         {
             Unsafe.AsRef(in vector._upper) = value;
         }

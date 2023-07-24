@@ -27,18 +27,19 @@ namespace System.Text.Unicode
             Debug.Assert(pInputBuffer != null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
 
             // First, try to drain off as many ASCII bytes as we can from the beginning.
-            int indexOfFirstNonAscii = Ascii.GetIndexOfFirstNonAsciiByte(new ReadOnlySpan<byte>(pInputBuffer, inputLength));
+            nuint numAsciiBytesCounted = Ascii.GetIndexOfFirstNonAsciiByte(pInputBuffer, (uint)inputLength);
+            pInputBuffer += numAsciiBytesCounted;
+
             // Quick check - did we just end up consuming the entire input buffer?
             // If so, short-circuit the remainder of the method.
-            if (indexOfFirstNonAscii < 0)
+
+            inputLength -= (int)numAsciiBytesCounted;
+            if (inputLength == 0)
             {
                 utf16CodeUnitCountAdjustment = 0;
                 scalarCountAdjustment = 0;
-                return pInputBuffer + inputLength;
+                return pInputBuffer;
             }
-
-            pInputBuffer += indexOfFirstNonAscii;
-            inputLength -= indexOfFirstNonAscii;
 
 #if DEBUG
             // Keep these around for final validation at the end of the method.
@@ -739,6 +740,7 @@ namespace System.Text.Unicode
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static ulong GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> bitMask128)
         {
             if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)

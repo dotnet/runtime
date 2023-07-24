@@ -81,7 +81,7 @@ def main(argv):
     args, unknown = parser.parse_known_args(argv)
 
     if unknown:
-        logging.warn('Ignoring argument(s): {}'.format(','.join(unknown)))
+        logging.warning('Ignoring argument(s): {}'.format(','.join(unknown)))
 
     if args.coreclr is None:
         logging.error('Specify --coreclr')
@@ -108,7 +108,7 @@ def main(argv):
     repoRoot = os.path.dirname(os.path.dirname(coreclr))
     formattingScriptFolder = os.path.join(repoRoot, "eng", "formatting")
     formattingDownloadScriptCommand = []
-    if platform == 'Linux' or platform == 'OSX':
+    if platform == 'linux' or platform == 'osx':
         formattingDownloadScriptCommand = [os.path.join(formattingScriptFolder, "download-tools.sh")]
     elif platform == 'windows':
         formattingDownloadScriptCommand = ["powershell", os.path.join(formattingScriptFolder, "download-tools.ps1")]
@@ -129,7 +129,7 @@ def main(argv):
 
     cleanup(jitUtilsPath, '')
 
-    if platform == 'Linux' or platform == 'OSX':
+    if platform == 'linux' or platform == 'osx':
         bootstrapFilename = "bootstrap.sh"
     elif platform == 'windows':
         bootstrapFilename = "bootstrap.cmd"
@@ -161,12 +161,12 @@ def main(argv):
 
         # On *nix platforms, we need to make the bootstrap file executable
 
-        if platform == 'Linux' or platform == 'OSX':
+        if platform == 'linux' or platform == 'osx':
             logging.info("Making bootstrap executable")
             os.chmod(bootstrapPath, 0o751)
 
         # Run bootstrap
-        if platform == 'Linux' or platform == 'OSX':
+        if platform == 'linux' or platform == 'osx':
             logging.info('Running: bash {}'.format(bootstrapPath))
             proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
             output,error = proc.communicate()
@@ -192,7 +192,7 @@ def main(argv):
 
         jitformat = jitutilsBin
 
-        if platform == 'Linux' or platform == 'OSX':
+        if platform == 'linux' or platform == 'osx':
             jitformat = os.path.join(jitformat, "jit-format")
         elif platform == 'windows':
             jitformat = os.path.join(jitformat,"jit-format.exe")

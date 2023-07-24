@@ -8,6 +8,7 @@
 //     File: D:\a\_work\1\s\src\coreclr\jit\codegenarm64.cpp Line: 4543
 //
 
+using Xunit;
 public class C0
 {
     public int F0;
@@ -19,7 +20,8 @@ public class Program
     public static IRuntime s_rt = new Runtime();
     public static ulong s_3;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();
 
@@ -32,13 +34,16 @@ public class Program
         return 100;
     }
 
+// Allow reflection lookup on public method
+#pragma warning disable xUnit1013
     public static void MainInner(IRuntime rt)
     {
         var vr2 = new C0();
         M11(vr2, 1);
     }
+#pragma warning restore xUnit1013
 
-    public static void M11(C0 argThis, short arg0)
+    internal static void M11(C0 argThis, short arg0)
     {
         short var0 = default(short);
 

@@ -118,7 +118,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1505, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 1561, 8,
                 "ToStringOverriden.Run",
                 wait_for_event_fn: async (pause_location) =>
                 {

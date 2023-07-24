@@ -86,6 +86,11 @@ namespace Internal.TypeSystem
             return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
+        public override int GetInlineArrayLength()
+        {
+            return _typeDef.GetInlineArrayLength();
+        }
+
         public override MetadataType GetNestedType(string name)
         {
             // Return the result from the typical type definition.

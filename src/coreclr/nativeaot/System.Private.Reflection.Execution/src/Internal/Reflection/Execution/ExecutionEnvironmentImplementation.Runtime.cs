@@ -21,11 +21,6 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        public sealed override object NewObject(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.NewObject(typeHandle);
-        }
-
         public sealed override Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
         {
             return RuntimeAugments.NewArray(typeHandleForArrayType, count);
@@ -115,11 +110,6 @@ namespace Internal.Reflection.Execution
             targetMethods = tMethods;
         }
 
-        public sealed override string GetLastResortString(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.GetLastResortString(typeHandle);
-        }
-
         //==============================================================================================
         // Miscellaneous
         //==============================================================================================
@@ -128,7 +118,7 @@ namespace Internal.Reflection.Execution
             return new LiteralFieldAccessor(value, fieldTypeHandle);
         }
 
-        public sealed override EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(RuntimeTypeHandle typeHandle)
+        public sealed override void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags)
         {
             // Handle the weird case of an enum type nested under a generic type that makes the
             // enum itself generic
@@ -138,21 +128,17 @@ namespace Internal.Reflection.Execution
                 typeDefHandle = RuntimeAugments.GetGenericDefinition(typeHandle);
             }
 
-            // If the type is reflection blocked, we pretend there are no enum values defined
-            if (ReflectionExecution.ExecutionEnvironment.IsReflectionBlocked(typeDefHandle))
-            {
-                return new EnumInfo<TUnderlyingValue>(RuntimeAugments.GetEnumUnderlyingType(typeHandle), Array.Empty<TUnderlyingValue>(), Array.Empty<string>(), false);
-            }
-
-            QTypeDefinition qTypeDefinition;
-            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(typeDefHandle, out qTypeDefinition))
-            {
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(Type.GetTypeFromHandle(typeDefHandle));
-            }
+            QTypeDefinition qTypeDefinition = ReflectionExecution.ExecutionEnvironment.GetMetadataForNamedType(typeDefHandle);
 
             if (qTypeDefinition.IsNativeFormatMetadataBased)
             {
-                return NativeFormatEnumInfo.Create<TUnderlyingValue>(typeHandle, qTypeDefinition.NativeFormatReader, qTypeDefinition.NativeFormatHandle);
+                NativeFormatEnumInfo.GetEnumValuesAndNames(
+                    qTypeDefinition.NativeFormatReader,
+                    qTypeDefinition.NativeFormatHandle,
+                    out values,
+                    out names,
+                    out isFlags);
+                return;
             }
 #if ECMA_METADATA_SUPPORT
             if (qTypeDefinition.IsEcmaFormatMetadataBased)
@@ -160,10 +146,13 @@ namespace Internal.Reflection.Execution
                 return EcmaFormatEnumInfo.Create<TUnderlyingValue>(typeHandle, qTypeDefinition.EcmaFormatReader, qTypeDefinition.EcmaFormatHandle);
             }
 #endif
-            return null;
+            names = Array.Empty<string>();
+            values = Array.Empty<object>();
+            isFlags = false;
+            return;
         }
 
-        public override IntPtr GetDynamicInvokeThunk(MethodInvoker invoker)
+        public override IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker)
         {
             return ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo.InvokeThunk
                 ;

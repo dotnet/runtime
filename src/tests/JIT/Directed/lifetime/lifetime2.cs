@@ -6,8 +6,9 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
-internal class Test_lifetime2
+public class Test_lifetime2
 {
     public static int aExists;
     public static int bExists;
@@ -180,7 +181,8 @@ internal class Test_lifetime2
         return 100;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (f1() != 100)
             return -1;

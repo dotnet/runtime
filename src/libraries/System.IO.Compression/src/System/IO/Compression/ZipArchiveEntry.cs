@@ -18,12 +18,12 @@ namespace System.IO.Compression
     {
         private ZipArchive _archive;
         private readonly bool _originallyInArchive;
-        private readonly int _diskNumberStart;
+        private readonly uint _diskNumberStart;
         private readonly ZipVersionMadeByPlatform _versionMadeByPlatform;
         private ZipVersionNeededValues _versionMadeBySpecification;
         internal ZipVersionNeededValues _versionToExtract;
         private BitFlagValues _generalPurposeBitFlag;
-        private bool _isEncrypted;
+        private readonly bool _isEncrypted;
         private CompressionMethodValues _storedCompressionMethod;
         private DateTimeOffset _lastModified;
         private long _compressedSize;
@@ -687,7 +687,7 @@ namespace System.IO.Compression
             return GetDataDecompressor(compressedStream);
         }
 
-        private Stream OpenInWriteMode()
+        private WrappedStream OpenInWriteMode()
         {
             if (_everOpenedForWrite)
                 throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
@@ -708,7 +708,7 @@ namespace System.IO.Compression
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
 
-        private Stream OpenInUpdateMode()
+        private WrappedStream OpenInUpdateMode()
         {
             if (_currentlyOpenForWrite)
                 throw new IOException(SR.UpdateModeOneStream);

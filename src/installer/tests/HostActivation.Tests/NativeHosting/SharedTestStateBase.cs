@@ -23,21 +23,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             _baseDirArtifact = new TestArtifact(BaseDirectory);
             Directory.CreateDirectory(BaseDirectory);
 
-            string nativeHostName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("nativehost");
+            string nativeHostName = Binaries.GetExeFileNameForCurrentPlatform("nativehost");
             NativeHostPath = Path.Combine(BaseDirectory, nativeHostName);
 
             // Copy over native host
             RepoDirectories = new RepoDirectoriesProvider();
-            File.Copy(Path.Combine(RepoDirectories.Artifacts, "corehost_test", nativeHostName), NativeHostPath);
+            File.Copy(Path.Combine(RepoDirectories.HostTestArtifacts, nativeHostName), NativeHostPath);
 
             // Copy nethost next to native host
             // This is done even for tests not directly using nethost because nativehost consumes nethost in the more
             // user-friendly way of linking against nethost (instead of dlopen/LoadLibrary and dlsym/GetProcAddress).
             // On Windows, we can delay load through a linker option, but on other platforms load is required on start.
-            string nethostName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost");
-            NethostPath = Path.Combine(Path.GetDirectoryName(NativeHostPath), nethostName);
+            NethostPath = Path.Combine(Path.GetDirectoryName(NativeHostPath), Binaries.NetHost.FileName);
             File.Copy(
-                Path.Combine(RepoDirectories.HostArtifacts, nethostName),
+                Binaries.NetHost.FilePath,
                 NethostPath);
         }
 

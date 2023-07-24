@@ -6,7 +6,7 @@ set(NATIVECOMPRESSION_SOURCES
     pal_zlib.c
 )
 
-if (NOT CLR_CMAKE_TARGET_BROWSER)
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_USE_SYSTEM_BROTLI)
         add_definitions(-DFEATURE_USE_SYSTEM_BROTLI)
@@ -25,11 +25,11 @@ if (NOT CLR_CMAKE_TARGET_BROWSER)
     )
 endif ()
 
-if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
+if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(NATIVE_LIBS_EXTRA)
     append_extra_compression_libs(NATIVE_LIBS_EXTRA)
 
-    if (CLR_CMAKE_TARGET_BROWSER)
+    if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
         add_definitions(-DINTERNAL_ZLIB)
         set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
@@ -44,7 +44,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
 
     # Delete this suppression once brotli is upgraded to vNext (current latest v1.0.9
     # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
-    set(FLAGS "${FLAGS} -Wno-vla-parameter")
+    if (NOT CLR_CMAKE_TARGET_WASI)
+        set(FLAGS "${FLAGS} -Wno-vla-parameter")
+    endif ()
 
     set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS ${FLAGS})
 
@@ -58,6 +60,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         )
 
         target_link_libraries(System.IO.Compression.Native
+            PRIVATE
             ${NATIVE_LIBS_EXTRA}
         )
 
@@ -101,6 +104,7 @@ else ()
 
     if (CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64)
         include(${CLR_SRC_NATIVE_DIR}/external/zlib-intel.cmake)
+        add_definitions(-DINTERNAL_ZLIB_INTEL)
     else ()
         include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
     endif ()
@@ -118,7 +122,7 @@ else ()
         )
     endif ()
 
-    if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
         set(NATIVECOMPRESSION_SOURCES ${NATIVECOMPRESSION_SOURCES} entrypoints.c)
     endif ()
 
@@ -140,17 +144,6 @@ else ()
             ${NATIVECOMPRESSION_SOURCES}
         )
         target_compile_options(System.IO.Compression.Native.Aot.GuardCF PRIVATE /GL-)
-    endif()
-
-    # Allow specification of libraries that should be linked against
-    if (GEN_SHARED_LIB)
-        target_link_libraries(System.IO.Compression.Native ${__LinkLibraries})
-    endif ()
-    target_link_libraries(System.IO.Compression.Native-Static ${__LinkLibraries})
-
-    if(STATIC_LIBS_ONLY)
-        target_link_libraries(System.IO.Compression.Native.Aot ${__LinkLibraries})
-        target_link_libraries(System.IO.Compression.Native.Aot.GuardCF ${__LinkLibraries})
     endif()
 
     if (GEN_SHARED_LIB)

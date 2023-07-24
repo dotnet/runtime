@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.UnitTests;
 using System.Collections.Generic;
@@ -10,6 +11,8 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
+
 namespace LibraryImportGenerator.UnitTests
 {
     public class AdditionalAttributesOnStub
@@ -17,117 +20,97 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public async Task SkipLocalsInitAdded()
         {
-            string source = @"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-[assembly:DisableRuntimeMarshalling]
-partial class C
-{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method();
-}
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method();
+                }
 
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{
-}
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
 
-struct Native
-{
-}
+                struct Native
+                {
+                }
 
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{
-    public static Native ConvertToUnmanaged(S s) => default;
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
 
-    public static S ConvertToManaged(Native n) => default;
-}";
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: true, TestTargetFramework.Net);
         }
 
         [Fact]
         public async Task SkipLocalsInitNotAddedOnForwardingStub()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class C
-{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial void Method();
-}";
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial void Method();
+                }
+                """;
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
         }
 
         [Fact]
         public async Task GeneratedCodeAdded()
         {
-            string source = @"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-[assembly:DisableRuntimeMarshalling]
-partial class C
-{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method();
-}
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method();
+                }
 
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{
-}
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
 
-struct Native
-{
-}
+                struct Native
+                {
+                }
 
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{
-    public static Native ConvertToUnmanaged(S s) => default;
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
 
-    public static S ConvertToManaged(Native n) => default;
-}";
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName);
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName, attributeAdded: true, TestTargetFramework.Net);
         }
 
         [Fact]
         public async Task GeneratedCodeNotAddedOnForwardingStub()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class C
-{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial void Method();
-}";
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName);
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial void Method();
+                }
+                """;
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
         }
 
         public static IEnumerable<object[]> GetDownlevelTargetFrameworks()
@@ -144,146 +127,175 @@ partial class C
         [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task SkipLocalsInitOnDownlevelTargetFrameworks(TestTargetFramework targetFramework, bool expectSkipLocalsInit)
         {
-            string source = $@"
-using System.Runtime.InteropServices;
-{CodeSnippets.LibraryImportAttributeDeclaration}
-partial class C
-{{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool Method();
-}}";
-            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            if (expectSkipLocalsInit)
-            {
-                Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
-            }
-            else
-            {
-                Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
-            }
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                {{CodeSnippets.LibraryImportAttributeDeclaration}}
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    [return: MarshalAs(UnmanagedType.Bool)]
+                    public static partial bool Method();
+                }
+                """;
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: expectSkipLocalsInit, targetFramework);
         }
 
         [Fact]
         public async Task SkipLocalsInitNotAddedWhenDefinedAtModuleLevel()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-using System.Runtime.CompilerServices;
-[module:SkipLocalsInit]
-partial class C
-{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method();
-}
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                using System.Runtime.CompilerServices;
+                [module:SkipLocalsInit]
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method();
+                }
 
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{
-}
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
 
-struct Native
-{
-}
+                struct Native
+                {
+                }
 
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{
-    public static Native ConvertToUnmanaged(S s) => default;
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
 
-    public static S ConvertToManaged(Native n) => default;
-}";
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
         }
 
         [Fact]
         public async Task SkipLocalsInitNotAddedWhenDefinedAtClassLevel()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-using System.Runtime.CompilerServices;
-[SkipLocalsInit]
-partial class C
-{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method();
-}
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                using System.Runtime.CompilerServices;
+                [SkipLocalsInit]
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method();
+                }
 
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{
-}
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
 
-struct Native
-{
-}
+                struct Native
+                {
+                }
 
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{
-    public static Native ConvertToUnmanaged(S s) => default;
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
 
-    public static S ConvertToManaged(Native n) => default;
-}";
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
         }
 
         [Fact]
         public async Task SkipLocalsInitNotAddedWhenDefinedOnMethodByUser()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-using System.Runtime.CompilerServices;
-partial class C
-{
-    [SkipLocalsInit]
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method();
-}
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                using System.Runtime.CompilerServices;
+                partial class C
+                {
+                    [SkipLocalsInit]
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method();
+                }
 
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{
-}
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
 
-struct Native
-{
-}
+                struct Native
+                {
+                }
 
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{
-    public static Native ConvertToUnmanaged(S s) => default;
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
 
-    public static S ConvertToManaged(Native n) => default;
-}";
-            Compilation comp = await TestUtils.CreateCompilation(source);
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
+            // Verify that we get no diagnostics from applying the attribute twice.
+            await VerifyCS.VerifySourceGeneratorAsync(source);
+        }
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
+        private static Task VerifySourceGeneratorAsync(string source, string typeName, string methodName, string? attributeName, bool attributeAdded, TestTargetFramework targetFramework)
+        {
+            AttributeAddedTest test = new(typeName, methodName, attributeName, attributeAdded, targetFramework)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+            return test.RunAsync();
+        }
 
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.DoesNotContain(newComp.GetDiagnostics(), d => d.Id != "CS0579"); // No duplicate attribute error
+        class AttributeAddedTest : VerifyCS.Test
+        {
+            private readonly string _typeName;
+            private readonly string _methodName;
+            private readonly string? _attributeName;
+            private readonly bool _expectAttributeAdded;
+
+            public AttributeAddedTest(string typeName, string methodName, string? attributeName, bool attributeAdded, TestTargetFramework targetFramework)
+                : base(targetFramework)
+            {
+                _typeName = typeName;
+                _methodName = methodName;
+                _attributeName = attributeName;
+                _expectAttributeAdded = attributeAdded;
+            }
+
+            protected override void VerifyFinalCompilation(Compilation compilation)
+            {
+                ITypeSymbol c = compilation.GetTypeByMetadataName(_typeName)!;
+                IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == _methodName);
+                if (_expectAttributeAdded)
+                {
+                    Assert.Contains(stubMethod.GetAttributes(), ValidateAttribute);
+
+                    bool ValidateAttribute(AttributeData attr)
+                    {
+                        bool isTargetAttribute = attr.AttributeClass!.ToDisplayString() == _attributeName;
+                        if (!isTargetAttribute)
+                        {
+                            return false;
+                        }
+
+                        AttributeSyntax syntax = (AttributeSyntax)attr.ApplicationSyntaxReference!.GetSyntax();
+                        return syntax.Name.ToString().StartsWith("global::");
+                    }
+                }
+                else
+                {
+                    // Only check the name here. We don't want to accidentally add the attribute and not fail the test due to the application
+                    // not having the correct syntax or other features we validate.
+                    Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == _attributeName);
+                }
+            }
         }
     }
 }

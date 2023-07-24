@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.Net.Http.Metrics;
 
 namespace System.Net.Http
 {
@@ -133,10 +135,7 @@ namespace System.Net.Http
             get => _settings._maxAutomaticRedirections;
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxAutomaticRedirections = value;
@@ -148,10 +147,7 @@ namespace System.Net.Http
             get => _settings._maxConnectionsPerServer;
             set
             {
-                if (value < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxConnectionsPerServer = value;
@@ -456,6 +452,34 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="IMeterFactory"/> to create a custom <see cref="Meter"/> for the <see cref="SocketsHttpHandler"/> instance.
+        /// </summary>
+        /// <remarks>
+        /// When <see cref="MeterFactory"/> is set to a non-<see langword="null"/> value, all metrics emitted by the <see cref="SocketsHttpHandler"/> instance
+        /// will be recorded using the <see cref="Meter"/> provided by the <see cref="IMeterFactory"/>.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public IMeterFactory? MeterFactory
+        {
+            get => _settings._meterFactory;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._meterFactory = value;
+            }
+        }
+
+        internal ClientCertificateOption ClientCertificateOptions
+        {
+            get => _settings._clientCertificateOptions;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._clientCertificateOptions = value;
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && !_disposed)
@@ -491,6 +515,10 @@ namespace System.Net.Http
             {
                 handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
             }
+
+            handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
+
+            settings._metrics = new SocketsHttpHandlerMetrics(meter);
 
             if (settings._allowAutoRedirect)
             {
@@ -569,7 +597,7 @@ namespace System.Net.Http
                 return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
             }
 
-            HttpMessageHandler handler = _handler ?? SetupHandlerChain();
+            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)

@@ -49,7 +49,7 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified class constructor threw an
         // exception when it ran.
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
         private static partial void RunClassConstructor(QCallTypeHandle type);
 
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
@@ -70,7 +70,7 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified module constructor threw an
         // exception when it ran.
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
         private static partial void RunModuleConstructor(QCallModule module);
 
         public static void RunModuleConstructor(ModuleHandle module)
@@ -82,10 +82,10 @@ namespace System.Runtime.CompilerServices
             RunModuleConstructor(new QCallModule(ref rm));
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
         internal static partial void CompileMethod(RuntimeMethodHandleInternal method);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
         private static unsafe partial void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
 
         public static void PrepareMethod(RuntimeMethodHandle method) => PrepareMethod(method, null);
@@ -114,6 +114,17 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetHashCode(object? o);
 
+        /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        /// <remarks>
+        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
+        /// code to the object if it does not already have one.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int TryGetHashCode(object o);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern new bool Equals(object? o1, object? o2);
 
@@ -122,7 +133,7 @@ namespace System.Runtime.CompilerServices
         {
             // This offset is baked in by string indexer intrinsic, so there is no harm
             // in getting it baked in here as well.
-            [System.Runtime.Versioning.NonVersionable]
+            [NonVersionable]
             get =>
                 // Number of bytes from the address pointed to by a reference to
                 // a String to the first 16-bit character in the String.  Skip
@@ -171,7 +182,7 @@ namespace System.Runtime.CompilerServices
             return obj!;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
         private static partial void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -298,13 +309,13 @@ namespace System.Runtime.CompilerServices
         }
 
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
+        [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
         /// <summary>
         /// Allocate memory that is associated with the <paramref name="type"/> and
-        /// will be freed if and when the <see cref="System.Type"/> is unloaded.
+        /// will be freed if and when the <see cref="Type"/> is unloaded.
         /// </summary>
         /// <param name="type">Type associated with the allocated memory.</param>
         /// <param name="size">Amount of memory in bytes to allocate.</param>
@@ -319,7 +330,7 @@ namespace System.Runtime.CompilerServices
             return AllocateTypeAssociatedMemory(new QCallTypeHandle(ref rt), (uint)size);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
+        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -369,34 +380,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
-
-#pragma warning disable 0414
-        // Type that represents a managed view of the unmanaged GCFrame
-        // data structure in coreclr. The type layouts between the two should match.
-        internal unsafe ref struct GCFrameRegistration
-        {
-            private nuint m_reserved1;
-            private nuint m_reserved2;
-            private void* m_pObjRefs;
-            private uint m_numObjRefs;
-            private int m_MaybeInterior;
-
-            public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
-            {
-                m_reserved1 = 0;
-                m_reserved2 = 0;
-                m_pObjRefs = allocation;
-                m_numObjRefs = elemCount;
-                m_MaybeInterior = areByRefs ? 1 : 0;
-            }
-        }
-#pragma warning restore 0414
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -545,6 +528,8 @@ namespace System.Runtime.CompilerServices
 
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
 
+        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
+
         public bool HasDefaultConstructor => (Flags & (enum_flag_HasComponentSize | enum_flag_HasDefaultCtor)) == enum_flag_HasDefaultCtor;
 
         public bool IsMultiDimensionalArray
@@ -651,7 +636,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TypeHandle TypeHandleOf<T>()
         {
-            return new TypeHandle((void*)RuntimeTypeHandle.GetValueInternal(typeof(T).TypeHandle));
+            return new TypeHandle((void*)RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle));
         }
     }
 

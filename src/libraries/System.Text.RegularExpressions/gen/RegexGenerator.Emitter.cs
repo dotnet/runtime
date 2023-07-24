@@ -10,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -18,10 +19,15 @@ using Microsoft.CodeAnalysis.CSharp;
 // Most changes made to this file should be kept in sync, so far as bug fixes and relevant optimizations
 // are concerned.
 
+#pragma warning disable CA1861 // Avoid constant arrays as arguments.
 namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator
     {
+        /// <summary>Escapes '&amp;', '&lt;' and '&gt;' characters. We aren't using HtmlEncode as that would also escape single and double quotes.</summary>
+        private static string EscapeXmlComment(string text) =>
+            text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
         private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer)
         {
@@ -49,12 +55,19 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emit the partial method definition.
-            writer.WriteLine("/// <remarks>");
-            writer.WriteLine("/// Pattern explanation:<br/>");
-            writer.WriteLine("/// <code>");
+            writer.WriteLine($"/// <remarks>");
+            writer.WriteLine($"/// Pattern:<br/>");
+            writer.WriteLine($"/// <code>{EscapeXmlComment(Literal(regexMethod.Pattern, quote: false))}</code><br/>");
+            if (regexMethod.Options != RegexOptions.None)
+            {
+                writer.WriteLine($"/// Options:<br/>");
+                writer.WriteLine($"/// <code>{Literal(regexMethod.Options)}</code><br/>");
+            }
+            writer.WriteLine($"/// Explanation:<br/>");
+            writer.WriteLine($"/// <code>");
             DescribeExpressionAsXmlComment(writer, regexMethod.Tree.Root.Child(0), regexMethod); // skip implicit root capture
-            writer.WriteLine("/// </code>");
-            writer.WriteLine("/// </remarks>");
+            writer.WriteLine($"/// </code>");
+            writer.WriteLine($"/// </remarks>");
             writer.WriteLine($"[global::System.CodeDom.Compiler.{s_generatedCodeAttribute}]");
             writer.WriteLine($"{regexMethod.Modifiers} global::System.Text.RegularExpressions.Regex {regexMethod.MethodName}() => global::{GeneratedNamespace}.{regexMethod.GeneratedName}.Instance;");
 
@@ -68,12 +81,22 @@ namespace System.Text.RegularExpressions.Generator
 
         /// <summary>Emits the Regex-derived type for a method where we're unable to generate custom code.</summary>
         private static void EmitRegexLimitedBoilerplate(
-            IndentedTextWriter writer, RegexMethod rm, string reason)
+            IndentedTextWriter writer, RegexMethod rm, string reason, LanguageVersion langVer)
         {
-            writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MethodName} method.</summary>");
+            string visibility;
+            if (langVer >= LanguageVersion.CSharp11)
+            {
+                visibility = "file";
+                writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MethodName} method.</summary>");
+            }
+            else
+            {
+                visibility = "internal";
+                writer.WriteLine($"/// <summary>This class supports generated regexes and should not be used by other code directly.</summary>");
+            }
             writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {reason}.</remarks>");
             writer.WriteLine($"[{s_generatedCodeAttribute}]");
-            writer.WriteLine($"file sealed class {rm.GeneratedName} : Regex");
+            writer.WriteLine($"{visibility} sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
             writer.Write($"    internal static readonly Regex Instance = ");
@@ -242,7 +265,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"        {{");
                 writer.Indent += 3;
                 EnterCheckOverflow();
-                EmitTryFindNextPossibleStartingPosition(writer, rm, requiredHelpers);
+                EmitTryFindNextPossibleStartingPosition(writer, rm, requiredHelpers, checkOverflow);
                 ExitCheckOverflow();
                 writer.Indent -= 3;
                 writer.WriteLine($"        }}");
@@ -284,6 +307,17 @@ namespace System.Text.RegularExpressions.Generator
                     "[MethodImpl(MethodImplOptions.AggressiveInlining)]",
                     "internal static bool IsWordChar(char ch)",
                     "{",
+                    "    // Mask of Unicode categories that combine to form [\\w]",
+                    "    const int WordCategoriesMask =",
+                    "        1 << (int)UnicodeCategory.UppercaseLetter |",
+                    "        1 << (int)UnicodeCategory.LowercaseLetter |",
+                    "        1 << (int)UnicodeCategory.TitlecaseLetter |",
+                    "        1 << (int)UnicodeCategory.ModifierLetter |",
+                    "        1 << (int)UnicodeCategory.OtherLetter |",
+                    "        1 << (int)UnicodeCategory.NonSpacingMark |",
+                    "        1 << (int)UnicodeCategory.DecimalDigitNumber |",
+                    "        1 << (int)UnicodeCategory.ConnectorPunctuation;",
+                    "",
                     "    // Bitmap for whether each character 0 through 127 is in [\\w]",
                     "    ReadOnlySpan<byte> ascii = new byte[]",
                     "    {",
@@ -295,18 +329,7 @@ namespace System.Text.RegularExpressions.Generator
                     "    int chDiv8 = ch >> 3;",
                     "    return (uint)chDiv8 < (uint)ascii.Length ?",
                     "        (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :",
-                    "        CharUnicodeInfo.GetUnicodeCategory(ch) switch",
-                    "        {",
-                    "            UnicodeCategory.UppercaseLetter or",
-                    "            UnicodeCategory.LowercaseLetter or",
-                    "            UnicodeCategory.TitlecaseLetter or",
-                    "            UnicodeCategory.ModifierLetter or",
-                    "            UnicodeCategory.OtherLetter or",
-                    "            UnicodeCategory.NonSpacingMark or",
-                    "            UnicodeCategory.DecimalDigitNumber or",
-                    "            UnicodeCategory.ConnectorPunctuation => true,",
-                    "            _ => false,",
-                    "        };",
+                    "        (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;",
                     "}",
                 });
             }
@@ -361,6 +384,203 @@ namespace System.Text.RegularExpressions.Generator
                     $"}}",
                 });
             }
+        }
+
+        /// <summary>Adds a SearchValues instance declaration to the required helpers collection if the chars are ASCII.</summary>
+        private static string EmitSearchValuesOrLiteral(ReadOnlySpan<char> chars, Dictionary<string, string[]> requiredHelpers)
+        {
+            // SearchValues<char> is faster than a regular IndexOfAny("abcd") for sets of 4/5 values iff they are ASCII.
+            // Only emit SearchValues instances when we know they'll be faster to avoid increasing the startup cost too much.
+            Debug.Assert(chars.Length is 4 or 5);
+
+            return RegexCharClass.IsAscii(chars)
+                ? EmitSearchValues(chars.ToArray(), requiredHelpers)
+                : Literal(chars.ToString());
+        }
+
+        /// <summary>Adds a SearchValues instance declaration to the required helpers collection.</summary>
+        private static string EmitSearchValues(char[] asciiChars, Dictionary<string, string[]> requiredHelpers)
+        {
+            Debug.Assert(RegexCharClass.IsAscii(asciiChars));
+
+            // The set of ASCII characters can be represented as a 128-bit bitmap. Use the 16-byte hex string as the key.
+            byte[] bitmap = new byte[16];
+            foreach (char c in asciiChars)
+            {
+                bitmap[c >> 3] |= (byte)(1 << (c & 7));
+            }
+
+            string hexBitmap = BitConverter.ToString(bitmap).Replace("-", string.Empty);
+
+            string fieldName = hexBitmap switch
+            {
+                "FFFFFFFF000000000000000000000080" => "s_asciiControl",
+                "000000000000FF030000000000000000" => "s_asciiDigits",
+                "0000000000000000FEFFFF07FEFFFF07" => "s_asciiLetters",
+                "000000000000FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigits",
+                "000000000000FF037E0000007E000000" => "s_asciiHexDigits",
+                "000000000000FF03000000007E000000" => "s_asciiHexDigitsLower",
+                "000000000000FF037E00000000000000" => "s_asciiHexDigitsUpper",
+                "00000000EEF7008C010000B800000028" => "s_asciiPunctuation",
+                "00000000010000000000000000000000" => "s_asciiSeparators",
+                "00000000100800700000004001000050" => "s_asciiSymbols",
+                "003E0000010000000000000000000000" => "s_asciiWhiteSpace",
+                "000000000000FF03FEFFFF87FEFFFF07" => "s_asciiWordChars",
+
+                "00000000FFFFFFFFFFFFFFFFFFFFFF7F" => "s_asciiExceptControl",
+                "FFFFFFFFFFFF00FCFFFFFFFFFFFFFFFF" => "s_asciiExceptDigits",
+                "FFFFFFFFFFFFFFFF010000F8010000F8" => "s_asciiExceptLetters",
+                "FFFFFFFFFFFF00FC010000F8010000F8" => "s_asciiExceptLettersAndDigits",
+                "FFFFFFFFFFFFFFFFFFFFFFFF010000F8" => "s_asciiExceptLower",
+                "FFFFFFFF1108FF73FEFFFF47FFFFFFD7" => "s_asciiExceptPunctuation",
+                "FFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptSeparators",
+                "FFFFFFFFEFF7FF8FFFFFFFBFFEFFFFAF" => "s_asciiExceptSymbols",
+                "FFFFFFFFFFFFFFFF010000F8FFFFFFFF" => "s_asciiExceptUpper",
+                "FFC1FFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptWhiteSpace",
+                "FFFFFFFFFFFF00FC01000078010000F8" => "s_asciiExceptWordChars",
+
+                _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
+            };
+
+            if (!requiredHelpers.ContainsKey(fieldName))
+            {
+                Array.Sort(asciiChars);
+
+                string setLiteral = Literal(new string(asciiChars));
+
+                requiredHelpers.Add(fieldName, new string[]
+                {
+                    $"/// <summary>Supports searching for characters in or not in {EscapeXmlComment(setLiteral)}.</summary>",
+                    $"internal static readonly SearchValues<char> {fieldName} = SearchValues.Create({setLiteral});",
+                });
+            }
+
+            return $"{HelpersTypeName}.{fieldName}";
+        }
+
+        private static string EmitIndexOfAnyCustomHelper(string set, Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
+        {
+            // In order to optimize the search for ASCII characters, we use SearchValues to vectorize a search
+            // for those characters plus anything non-ASCII (if we find something non-ASCII, we'll fall back to
+            // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
+            // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
+            // all of the target ASCII characters and all of non-ASCII.
+            var asciiChars = new List<char>();
+            for (int i = 0; i < 128; i++)
+            {
+                if (!RegexCharClass.CharInClass((char)i, set))
+                {
+                    asciiChars.Add((char)i);
+                }
+            }
+
+            // If this is a known set, use a predetermined simple name for the helper.
+            string? helperName = set switch
+            {
+                RegexCharClass.DigitClass => "IndexOfAnyDigit",
+                RegexCharClass.ControlClass => "IndexOfAnyControl",
+                RegexCharClass.LetterClass => "IndexOfAnyLetter",
+                RegexCharClass.LetterOrDigitClass => "IndexOfAnyLetterOrDigit",
+                RegexCharClass.LowerClass => "IndexOfAnyLower",
+                RegexCharClass.NumberClass => "IndexOfAnyNumber",
+                RegexCharClass.PunctuationClass => "IndexOfAnyPunctuation",
+                RegexCharClass.SeparatorClass => "IndexOfAnySeparator",
+                RegexCharClass.SpaceClass => "IndexOfAnyWhiteSpace",
+                RegexCharClass.SymbolClass => "IndexOfAnySymbol",
+                RegexCharClass.UpperClass => "IndexOfAnyUpper",
+                RegexCharClass.WordClass => "IndexOfAnyWordChar",
+
+                RegexCharClass.NotDigitClass => "IndexOfAnyExceptDigit",
+                RegexCharClass.NotControlClass => "IndexOfAnyExceptControl",
+                RegexCharClass.NotLetterClass => "IndexOfAnyExceptLetter",
+                RegexCharClass.NotLetterOrDigitClass => "IndexOfAnyExceptLetterOrDigit",
+                RegexCharClass.NotLowerClass => "IndexOfAnyExceptLower",
+                RegexCharClass.NotNumberClass => "IndexOfAnyExceptNumber",
+                RegexCharClass.NotPunctuationClass => "IndexOfAnyExceptPunctuation",
+                RegexCharClass.NotSeparatorClass => "IndexOfAnyExceptSeparator",
+                RegexCharClass.NotSpaceClass => "IndexOfAnyExceptWhiteSpace",
+                RegexCharClass.NotSymbolClass => "IndexOfAnyExceptSymbol",
+                RegexCharClass.NotUpperClass => "IndexOfAnyExceptUpper",
+                RegexCharClass.NotWordClass => "IndexOfAnyExceptWordChar",
+
+                _ => null,
+            };
+
+            // If this set is just from a few Unicode categories, derive a name from the categories.
+            if (helperName is null)
+            {
+                Span<UnicodeCategory> categories = stackalloc UnicodeCategory[5]; // arbitrary limit to keep names from being too unwieldy
+                if (RegexCharClass.TryGetOnlyCategories(set, categories, out int numCategories, out bool negatedCategory))
+                {
+                    helperName = $"IndexOfAny{(negatedCategory ? "Except" : "")}{string.Concat(categories.Slice(0, numCategories).ToArray().Select(c => c.ToString()))}";
+                }
+            }
+
+            // As a final fallback, manufacture a name unique to the full set description.
+            if (helperName is null)
+            {
+                using (SHA256 sha = SHA256.Create())
+                {
+#pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
+                    helperName = $"IndexOfNonAsciiOrAny_{BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(set))).Replace("-", "")}";
+#pragma warning restore CA1850
+                }
+            }
+
+            if (!requiredHelpers.ContainsKey(helperName))
+            {
+                var additionalDeclarations = new HashSet<string>();
+                string matchExpr = MatchCharacterClass("span[i]", set, negate: false, additionalDeclarations, requiredHelpers);
+
+                var lines = new List<string>();
+                lines.Add($"/// <summary>Finds the next index of any character that matches {EscapeXmlComment(DescribeSet(set))}.</summary>");
+                lines.Add($"[MethodImpl(MethodImplOptions.AggressiveInlining)]");
+                lines.Add($"internal static int {helperName}(this ReadOnlySpan<char> span)");
+                lines.Add($"{{");
+                int uncheckedStart = lines.Count;
+                lines.Add(asciiChars.Count == 128 ?
+                          $"    int i = span.IndexOfAnyExceptInRange('\0', '\u007f');" :
+                          $"    int i = span.IndexOfAnyExcept({EmitSearchValues(asciiChars.ToArray(), requiredHelpers)});");
+                lines.Add($"    if ((uint)i < (uint)span.Length)");
+                lines.Add($"    {{");
+                lines.Add($"        if (char.IsAscii(span[i]))");
+                lines.Add($"        {{");
+                lines.Add($"            return i;");
+                lines.Add($"        }}");
+                lines.Add($"");
+                if (additionalDeclarations.Count > 0)
+                {
+                    lines.AddRange(additionalDeclarations.Select(s => $"        {s}"));
+                }
+                lines.Add($"        do");
+                lines.Add($"        {{");
+                lines.Add($"            if ({matchExpr})");
+                lines.Add($"            {{");
+                lines.Add($"                return i;");
+                lines.Add($"            }}");
+                lines.Add($"            i++;");
+                lines.Add($"        }}");
+                lines.Add($"        while ((uint)i < (uint)span.Length);");
+                lines.Add($"    }}");
+                lines.Add($"");
+                lines.Add($"    return -1;");
+                lines.Add($"}}");
+
+                if (checkOverflow)
+                {
+                    lines.Insert(uncheckedStart, "    unchecked");
+                    lines.Insert(uncheckedStart + 1, "    {");
+                    for (int i = uncheckedStart + 2; i < lines.Count - 1; i++)
+                    {
+                        lines[i] = $"    {lines[i]}";
+                    }
+                    lines.Insert(lines.Count - 1, "    }");
+                }
+
+                requiredHelpers.Add(helperName, lines.ToArray());
+            }
+
+            return helperName;
         }
 
         /// <summary>Emits the body of the Scan method override.</summary>
@@ -450,7 +670,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the body of the TryFindNextPossibleStartingPosition.</summary>
-        private static void EmitTryFindNextPossibleStartingPosition(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers)
+        private static void EmitTryFindNextPossibleStartingPosition(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
         {
             RegexOptions options = rm.Options;
             RegexTree regexTree = rm.Tree;
@@ -502,6 +722,7 @@ namespace System.Text.RegularExpressions.Generator
                     switch (regexTree.FindOptimizations.FindMode)
                     {
                         case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                        case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
                         case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
                             EmitIndexOf_LeftToRight();
                             break;
@@ -550,7 +771,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // We're done.  Patch up any additional declarations.
-            ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
+            InsertAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
             return;
 
             // Emit a goto for the specified label.
@@ -736,14 +957,20 @@ namespace System.Text.RegularExpressions.Generator
             {
                 RegexFindOptimizations opts = regexTree.FindOptimizations;
 
-                string substring = "";
-                string offset = "";
-                string offsetDescription = "at the beginning of the pattern";
+                string substring = "", stringComparison = "", offset = "", offsetDescription = "";
 
                 switch (opts.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingString_LeftToRight:
                         substring = regexTree.FindOptimizations.LeadingPrefix;
+                        offsetDescription = "at the beginning of the pattern";
+                        Debug.Assert(!string.IsNullOrEmpty(substring));
+                        break;
+
+                    case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
+                        substring = regexTree.FindOptimizations.LeadingPrefix;
+                        stringComparison = ", StringComparison.OrdinalIgnoreCase";
+                        offsetDescription = "ordinal case-insensitive at the beginning of the pattern";
                         Debug.Assert(!string.IsNullOrEmpty(substring));
                         break;
 
@@ -764,7 +991,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 writer.WriteLine($"// The pattern has the literal {Literal(substring)} {offsetDescription}. Find the next occurrence.");
                 writer.WriteLine($"// If it can't be found, there's no match.");
-                writer.WriteLine($"int i = inputSpan.Slice(pos{offset}).IndexOf({Literal(substring)});");
+                writer.WriteLine($"int i = inputSpan.Slice(pos{offset}).IndexOf({Literal(substring)}{stringComparison});");
                 using (EmitBlock(writer, "if (i >= 0)"))
                 {
                     writer.WriteLine("base.runtextpos = pos + i;");
@@ -803,14 +1030,15 @@ namespace System.Text.RegularExpressions.Generator
                    $"// The pattern matches {DescribeSet(primarySet.Set)} at index {primarySet.Distance}.");
                 writer.WriteLine($"// Find the next occurrence. If it can't be found, there's no match.");
 
-                // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
-                // We can use it if this is a case-sensitive class with a small number of characters in the class.
-                // We avoid using it for the relatively common case of the starting set being '.', aka anything other than
-                // a newline, as it's very rare to have long, uninterrupted sequences of newlines.
+                // Use IndexOf{Any} to accelerate the skip loop via vectorization to match the first prefix.
+                // But we avoid using it for the relatively common case of the starting set being '.', aka anything other than
+                // a newline, as it's very rare to have long, uninterrupted sequences of newlines. And we avoid using it
+                // for the case of the starting set being anything (e.g. '.' with SingleLine), as in that case it'll always match
+                // the first char.
                 int setIndex = 0;
                 bool canUseIndexOf =
                     primarySet.Set != RegexCharClass.NotNewLineClass &&
-                    (primarySet.Chars is not null || primarySet.Range is not null);
+                    primarySet.Set != RegexCharClass.AnyClass;
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 FinishEmitBlock loopBlock = default;
@@ -835,21 +1063,49 @@ namespace System.Text.RegularExpressions.Generator
                         (true, _) => $"{span}.Slice(i + {primarySet.Distance})",
                     };
 
-                    string indexOf =
-                        primarySet.Chars is not null ? primarySet.Chars!.Length switch
+                    // Get the IndexOf* expression to use to perform the search.
+                    string indexOf;
+                    if (primarySet.Chars is not null)
+                    {
+                        // We have a chars array, so we can use IndexOf{Any}{Except} to search for it. Choose the best overload.
+                        string indexOfName = "IndexOf", indexOfAnyName = "IndexOfAny";
+                        if (primarySet.Negated)
                         {
-                            1 => $"{span}.IndexOf({Literal(primarySet.Chars[0])})",
-                            2 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
-                            3 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
-                            _ => $"{span}.IndexOfAny({Literal(new string(primarySet.Chars))})",
-                        } :
-                        (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Range.Value.Negated) switch
+                            indexOfName = indexOfAnyName = "IndexOfAnyExcept";
+                        }
+
+                        indexOf = primarySet.Chars.Length switch
+                        {
+                            1 => $"{span}.{indexOfName}({Literal(primarySet.Chars[0])})",
+                            2 => $"{span}.{indexOfAnyName}({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
+                            3 => $"{span}.{indexOfAnyName}({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
+                            _ => $"{span}.{indexOfAnyName}({EmitSearchValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
+                        };
+                    }
+                    else if (primarySet.AsciiSet is not null)
+                    {
+                        // We have a set of ASCII chars, so we can use IndexOfAny(SearchValues) to search for it.
+                        Debug.Assert(!primarySet.Negated);
+                        indexOf = $"{span}.IndexOfAny({EmitSearchValues(primarySet.AsciiSet, requiredHelpers)})";
+                    }
+                    else if (primarySet.Range is not null)
+                    {
+                        // We have a range, so we can use IndexOfAny{Except}InRange to search for it.  In the corner case,
+                        // where we end up with a set of a single char, we can use IndexOf instead.
+                        indexOf = (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Negated) switch
                         {
                             (false, false) => $"{span}.IndexOfAnyInRange({Literal(primarySet.Range.Value.LowInclusive)}, {Literal(primarySet.Range.Value.HighInclusive)})",
                             (true, false) => $"{span}.IndexOf({Literal(primarySet.Range.Value.LowInclusive)})",
                             (false, true) => $"{span}.IndexOfAnyExceptInRange({Literal(primarySet.Range.Value.LowInclusive)}, {Literal(primarySet.Range.Value.HighInclusive)})",
                             (true, true) => $"{span}.IndexOfAnyExcept({Literal(primarySet.Range.Value.LowInclusive)})",
                         };
+                    }
+                    else
+                    {
+                        // We have an arbitrary set of characters that includes at least one non-ASCII char.  We use a custom IndexOfAny helper that
+                        // will perform the search as efficiently as possible.
+                        indexOf = $"{span}.{EmitIndexOfAnyCustomHelper(primarySet.Set, requiredHelpers, checkOverflow)}()";
+                    }
 
                     if (needLoop)
                     {
@@ -912,7 +1168,7 @@ namespace System.Text.RegularExpressions.Generator
                         for (; setIndex < setsToUse; setIndex++)
                         {
                             string spanIndex = $"span[i{(sets[setIndex].Distance > 0 ? $" + {sets[setIndex].Distance}" : "")}]";
-                            string charInClassExpr = MatchCharacterClass(options, spanIndex, sets[setIndex].Set, negate: false, additionalDeclarations, requiredHelpers);
+                            string charInClassExpr = MatchCharacterClass(spanIndex, sets[setIndex].Set, negate: false, additionalDeclarations, requiredHelpers);
 
                             if (setIndex == start)
                             {
@@ -952,6 +1208,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (set.Chars is { Length: 1 })
                 {
+                    Debug.Assert(!set.Negated);
                     writer.WriteLine($"pos = inputSpan.Slice(0, pos).LastIndexOf({Literal(set.Chars[0])});");
                     using (EmitBlock(writer, "if (pos >= 0)"))
                     {
@@ -963,7 +1220,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, "while ((uint)--pos < (uint)inputSpan.Length)"))
                     {
-                        using (EmitBlock(writer, $"if ({MatchCharacterClass(options, "inputSpan[pos]", set.Set, negate: false, additionalDeclarations, requiredHelpers)})"))
+                        using (EmitBlock(writer, $"if ({MatchCharacterClass("inputSpan[pos]", set.Set, negate: false, additionalDeclarations, requiredHelpers)})"))
                         {
                             writer.WriteLine("base.runtextpos = pos + 1;");
                             writer.WriteLine("return true;");
@@ -1010,7 +1267,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             2 => $"IndexOfAny({Literal(literalChars[0])}, {Literal(literalChars[1])});",
                             3 => $"IndexOfAny({Literal(literalChars[0])}, {Literal(literalChars[1])}, {Literal(literalChars[2])});",
-                            _ => $"IndexOfAny({Literal(new string(literalChars))});",
+                            _ => $"IndexOfAny({EmitSearchValuesOrLiteral(literalChars, requiredHelpers)});",
                         });
 
                     FinishEmitBlock indexOfFoundBlock = default;
@@ -1029,7 +1286,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // We found the literal.  Walk backwards from it finding as many matches as we can against the loop.
                     writer.WriteLine("int prev = i - 1;");
-                    using (EmitBlock(writer, $"while ((uint)prev < (uint)slice.Length && {MatchCharacterClass(options, "slice[prev]", target.LoopNode.Str!, negate: false, additionalDeclarations, requiredHelpers)})"))
+                    using (EmitBlock(writer, $"while ((uint)prev < (uint)slice.Length && {MatchCharacterClass("slice[prev]", target.LoopNode.Str!, negate: false, additionalDeclarations, requiredHelpers)})"))
                     {
                         writer.WriteLine("prev--;");
                     }
@@ -1154,7 +1411,7 @@ namespace System.Text.RegularExpressions.Generator
             // We're done with the match.
 
             // Patch up any additional declarations.
-            ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
+            InsertAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
 
             // And emit any required helpers.
             if (additionalLocalFunctions.Count != 0)
@@ -2658,7 +2915,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (node.IsSetFamily)
                 {
-                    expr = MatchCharacterClass(options, expr, node.Str!, negate: true, additionalDeclarations, requiredHelpers);
+                    expr = MatchCharacterClass(expr, node.Str!, negate: true, additionalDeclarations, requiredHelpers);
                 }
                 else
                 {
@@ -2920,7 +3177,7 @@ namespace System.Text.RegularExpressions.Generator
                 if (!rtl &&
                     node.N > 1 && // no point in using IndexOf for small loops, in particular optionals
                     subsequent?.FindStartingLiteralNode() is RegexNode literalNode &&
-                    TryEmitIndexOf(literalNode, useLast: true, negate: false, out int literalLength, out string indexOfExpr))
+                    TryEmitIndexOf(requiredHelpers, literalNode, useLast: true, negate: false, out int literalLength, out string? indexOfExpr))
                 {
                     writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
 
@@ -3075,10 +3332,11 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     if (iterationCount is null &&
                         node.Kind is RegexNodeKind.Notonelazy &&
-                        subsequent?.FindStartingLiteral(4) is RegexNode.StartingLiteralData literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                        subsequent?.FindStartingLiteral(4) is RegexNode.StartingLiteralData literal && // 5 == max efficiently optimized by IndexOfAny, and we need to reserve 1 for node.Ch
                         !literal.Negated && // not negated; can't search for both the node.Ch and a negated subsequent char with an IndexOf* method
                         (literal.String is not null ||
                          literal.SetChars is not null ||
+                         (literal.AsciiChars is not null && node.Ch < 128) || // for ASCII sets, only allow when the target can be efficiently included in the set
                          literal.Range.LowInclusive == literal.Range.HighInclusive ||
                          (literal.Range.LowInclusive <= node.Ch && node.Ch <= literal.Range.HighInclusive))) // for ranges, only allow when the range overlaps with the target, since there's no accelerated way to search for the union
                     {
@@ -3104,11 +3362,23 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 (true, 2) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal.SetChars[0])}, {Literal(literal.SetChars[1])});",
                                 (true, 3) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal.SetChars[0])}, {Literal(literal.SetChars[1])}, {Literal(literal.SetChars[2])});",
-                                (true, _) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal.SetChars)});",
+                                (true, _) => $"{startingPos} = {sliceSpan}.IndexOfAny({EmitSearchValuesOrLiteral(literal.SetChars.AsSpan(), requiredHelpers)});",
 
                                 (false, 2) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(node.Ch)}, {Literal(literal.SetChars[0])}, {Literal(literal.SetChars[1])});",
-                                (false, _) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal($"{node.Ch}{literal.SetChars}")});",
+                                (false, _) => $"{startingPos} = {sliceSpan}.IndexOfAny({EmitSearchValuesOrLiteral($"{node.Ch}{literal.SetChars}".AsSpan(), requiredHelpers)});",
                             });
+                        }
+                        else if (literal.AsciiChars is not null) // set of only ASCII characters
+                        {
+                            char[] asciiChars = literal.AsciiChars;
+                            overlap = asciiChars.Contains(node.Ch);
+                            if (!overlap)
+                            {
+                                Debug.Assert(node.Ch < 128);
+                                Array.Resize(ref asciiChars, asciiChars.Length + 1);
+                                asciiChars[asciiChars.Length - 1] = node.Ch;
+                            }
+                            writer.WriteLine($"{startingPos} = {sliceSpan}.IndexOfAny({EmitSearchValues(asciiChars, requiredHelpers)});");
                         }
                         else if (literal.Range.LowInclusive == literal.Range.HighInclusive) // single char from a RegexNode.One
                         {
@@ -3144,7 +3414,7 @@ namespace System.Text.RegularExpressions.Generator
                         node.Kind is RegexNodeKind.Setlazy &&
                         node.Str == RegexCharClass.AnyClass &&
                         subsequent?.FindStartingLiteralNode() is RegexNode literal2 &&
-                        TryEmitIndexOf(literal2, useLast: false, negate: false, out _, out string? indexOfExpr))
+                        TryEmitIndexOf(requiredHelpers, literal2, useLast: false, negate: false, out _, out string? indexOfExpr))
                     {
                         // e.g. ".*?string" with RegexOptions.Singleline
                         // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
@@ -3592,7 +3862,7 @@ namespace System.Text.RegularExpressions.Generator
                     // For the loop, we're validating that each char matches the target node.
                     // For IndexOf, we're looking for the first thing that _doesn't_ match the target node,
                     // and thus similarly validating that everything does.
-                    if (TryEmitIndexOf(node, useLast: false, negate: true, out _, out string? indexOfExpr))
+                    if (TryEmitIndexOf(requiredHelpers, node, useLast: false, negate: true, out _, out string? indexOfExpr))
                     {
                         using (EmitBlock(writer, $"if ({sliceSpan}.Slice({sliceStaticPos}, {iterations}).{indexOfExpr} >= 0)"))
                         {
@@ -3662,7 +3932,7 @@ namespace System.Text.RegularExpressions.Generator
                         string expr = $"inputSpan[pos - {iterationLocal} - 1]";
                         if (node.IsSetFamily)
                         {
-                            expr = MatchCharacterClass(options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
+                            expr = MatchCharacterClass(expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
                         }
                         else
                         {
@@ -3685,7 +3955,7 @@ namespace System.Text.RegularExpressions.Generator
                     TransferSliceStaticPosToPos();
                     writer.WriteLine($"int {iterationLocal} = inputSpan.Length - pos;");
                 }
-                else if (maxIterations == int.MaxValue && TryEmitIndexOf(node, useLast: false, negate: true, out _, out string indexOfExpr))
+                else if (maxIterations == int.MaxValue && TryEmitIndexOf(requiredHelpers, node, useLast: false, negate: true, out _, out string? indexOfExpr))
                 {
                     // We're unbounded and we can use an IndexOf method to perform the search. The unbounded restriction is
                     // purely for simplicity; it could be removed in the future with additional code to handle that case.
@@ -3711,7 +3981,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     string expr = $"{sliceSpan}[{iterationLocal}]";
                     expr = node.IsSetFamily ?
-                        MatchCharacterClass(options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers) :
+                        MatchCharacterClass(expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers) :
                         $"{expr} {(node.IsOneFamily ? "==" : "!=")} {Literal(node.Ch)}";
 
                     if (minIterations != 0 || maxIterations != int.MaxValue)
@@ -3775,7 +4045,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (node.IsSetFamily)
                 {
-                    expr = MatchCharacterClass(options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
+                    expr = MatchCharacterClass(expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
                 }
                 else
                 {
@@ -4342,6 +4612,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="indexOfExpr">The resulting expression if it returns true; otherwise, null.</param>
         /// <returns>true if an expression could be produced; otherwise, false.</returns>
         private static bool TryEmitIndexOf(
+            Dictionary<string, string[]> requiredHelpers,
             RegexNode node,
             bool useLast, bool negate,
             out int literalLength, [NotNullWhen(true)] out string? indexOfExpr)
@@ -4351,8 +4622,8 @@ namespace System.Text.RegularExpressions.Generator
             if (node.Kind == RegexNodeKind.Multi)
             {
                 Debug.Assert(!negate, "Negation isn't appropriate for a multi");
-                indexOfExpr = $"{last}IndexOf({Literal(node.Str)})";
-                literalLength = node.Str.Length;
+                indexOfExpr = $"{last}IndexOf({Literal(node.Str!)})";
+                literalLength = node.Str!.Length;
                 return true;
             }
 
@@ -4375,8 +4646,22 @@ namespace System.Text.RegularExpressions.Generator
                 bool negated = RegexCharClass.IsNegated(node.Str) ^ negate;
 
                 Span<char> setChars = stackalloc char[5]; // current max that's vectorized
-                int setCharsCount;
-                if ((setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars)) > 0)
+                int setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars);
+
+                // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
+                if (setCharsCount is not (1 or 2) && RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
+                {
+                    string indexOfAnyInRangeName = !negated ?
+                        "IndexOfAnyInRange" :
+                        "IndexOfAnyExceptInRange";
+
+                    indexOfExpr = $"{last}{indexOfAnyInRangeName}({Literal(lowInclusive)}, {Literal(highInclusive)})";
+
+                    literalLength = 1;
+                    return true;
+                }
+
+                if (setCharsCount > 0)
                 {
                     (string indexOfName, string indexOfAnyName) = !negated ?
                         ("IndexOf", "IndexOfAny") :
@@ -4388,20 +4673,20 @@ namespace System.Text.RegularExpressions.Generator
                         1 => $"{last}{indexOfName}({Literal(setChars[0])})",
                         2 => $"{last}{indexOfAnyName}({Literal(setChars[0])}, {Literal(setChars[1])})",
                         3 => $"{last}{indexOfAnyName}({Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])})",
-                        _ => $"{last}{indexOfAnyName}({Literal(setChars.ToString())})",
+                        _ => $"{last}{indexOfAnyName}({EmitSearchValuesOrLiteral(setChars, requiredHelpers)})",
                     };
 
                     literalLength = 1;
                     return true;
                 }
 
-                if (RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
+                if (RegexCharClass.TryGetAsciiSetChars(node.Str, out char[]? asciiChars))
                 {
-                    string indexOfAnyInRangeName = !negated ?
-                        "IndexOfAnyInRange" :
-                        "IndexOfAnyExceptInRange";
+                    string indexOfAnyName = !negated ?
+                        "IndexOfAny" :
+                        "IndexOfAnyExcept";
 
-                    indexOfExpr = $"{last}{indexOfAnyInRangeName}({Literal(lowInclusive)}, {Literal(highInclusive)})";
+                    indexOfExpr = $"{last}{indexOfAnyName}({EmitSearchValues(asciiChars, requiredHelpers)})";
 
                     literalLength = 1;
                     return true;
@@ -4413,7 +4698,7 @@ namespace System.Text.RegularExpressions.Generator
             return false;
         }
 
-        private static string MatchCharacterClass(RegexOptions options, string chExpr, string charClass, bool negate, HashSet<string> additionalDeclarations, Dictionary<string, string[]> requiredHelpers)
+        private static string MatchCharacterClass(string chExpr, string charClass, bool negate, HashSet<string> additionalDeclarations, Dictionary<string, string[]> requiredHelpers)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
@@ -4542,11 +4827,16 @@ namespace System.Text.RegularExpressions.Generator
             Span<UnicodeCategory> categories = stackalloc UnicodeCategory[30]; // number of UnicodeCategory values (though it's unheard of to have a set with all of them)
             if (RegexCharClass.TryGetOnlyCategories(charClass, categories, out int numCategories, out bool negated))
             {
-                // TODO https://github.com/dotnet/roslyn/issues/58246: Use pattern matching instead of switch once C# code gen quality improves.
+                int categoryMask = 0;
+                foreach (UnicodeCategory category in categories.Slice(0, numCategories))
+                {
+                    categoryMask |= 1 << (int)category;
+                }
+
                 negate ^= negated;
                 return numCategories == 1 ?
                     $"(char.GetUnicodeCategory({chExpr}) {(negate ? "!=" : "==")} UnicodeCategory.{categories[0]})" :
-                    $"(char.GetUnicodeCategory({chExpr}) switch {{ {string.Join(" or ", categories.Slice(0, numCategories).ToArray().Select(c => $"UnicodeCategory.{c}"))} => {(negate ? "false" : "true")}, _ => {(negate ? "true" : "false")} }})";
+                    $"((0x{categoryMask:X} & (1 << (int)char.GetUnicodeCategory({chExpr}))) {(negate ? "==" : "!=")} 0)";
             }
 
             // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
@@ -4796,14 +5086,14 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>
-        /// Replaces <see cref="AdditionalDeclarationsPlaceholder"/> in <paramref name="writer"/> with
-        /// all of the variable declarations in <paramref name="declarations"/>.
+        /// Inserts all of the variable declarations in <paramref name="declarations"/> into the
+        /// <paramref name="writer"/> at <paramref name="position"/> with <paramref name="indent"/>.
         /// </summary>
         /// <param name="writer">The writer around a StringWriter to have additional declarations inserted into.</param>
         /// <param name="declarations">The additional declarations to insert.</param>
         /// <param name="position">The position into the writer at which to insert the additional declarations.</param>
         /// <param name="indent">The indentation to use for the additional declarations.</param>
-        private static void ReplaceAdditionalDeclarations(IndentedTextWriter writer, HashSet<string> declarations, int position, int indent)
+        private static void InsertAdditionalDeclarations(IndentedTextWriter writer, HashSet<string> declarations, int position, int indent)
         {
             if (declarations.Count != 0)
             {
@@ -4826,7 +5116,7 @@ namespace System.Text.RegularExpressions.Generator
         private static string Literal(char c) => SymbolDisplay.FormatLiteral(c, quote: true);
 
         /// <summary>Formats the string as valid C#.</summary>
-        private static string Literal(string s) => SymbolDisplay.FormatLiteral(s, quote: true);
+        private static string Literal(string s, bool quote = true) => SymbolDisplay.FormatLiteral(s, quote);
 
         private static string Literal(RegexOptions options)
         {
@@ -4925,14 +5215,12 @@ namespace System.Text.RegularExpressions.Generator
             {
                 RegexCharClass.AnyClass => "any character",
                 RegexCharClass.DigitClass => "a Unicode digit",
-                RegexCharClass.ECMADigitClass => "'0' through '9'",
                 RegexCharClass.ECMASpaceClass => "a whitespace character (ECMA)",
                 RegexCharClass.ECMAWordClass => "a word character (ECMA)",
                 RegexCharClass.NotDigitClass => "any character other than a Unicode digit",
-                RegexCharClass.NotECMADigitClass => "any character other than '0' through '9'",
-                RegexCharClass.NotECMASpaceClass => "any character other than a space character (ECMA)",
+                RegexCharClass.NotECMASpaceClass => "any character other than a whitespace character (ECMA)",
                 RegexCharClass.NotECMAWordClass => "any character other than a word character (ECMA)",
-                RegexCharClass.NotSpaceClass => "any character other than a space character",
+                RegexCharClass.NotSpaceClass => "any character other than a whitespace character",
                 RegexCharClass.NotWordClass => "any character other than a word character",
                 RegexCharClass.SpaceClass => "a whitespace character",
                 RegexCharClass.WordClass => "a word character",
@@ -4985,14 +5273,11 @@ namespace System.Text.RegularExpressions.Generator
                         _ => "",
                     };
 
-                    // Get a textual description of the node, making it safe for an XML comment (escaping the minimal amount necessary to
-                    // avoid compilation failures: we don't want to escape single and double quotes, as HtmlEncode would do).
                     string nodeDescription = DescribeNode(node, rm);
-                    nodeDescription = nodeDescription.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 
                     // Write out the line for the node.
                     const char BulletPoint = '\u25CB';
-                    writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{nodeDescription}<br/>");
+                    writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{EscapeXmlComment(nodeDescription)}<br/>");
                 }
 
                 // Process each child.

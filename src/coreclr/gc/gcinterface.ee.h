@@ -334,7 +334,7 @@ public:
     // Signals to the finalizer thread that there are objects ready to
     // be finalized.
     virtual
-    void EnableFinalization(bool foundFinalizers) = 0;
+    void EnableFinalization(bool gcHasWorkForFinalizerThread) = 0;
 
     // Signals to the EE that the GC encountered a fatal error and can't recover.
     virtual
@@ -446,11 +446,8 @@ public:
 
     virtual
     void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved) = 0;
-};
 
-class IGCToCLR2 : public IGCToCLR {
-public:
-
+    // The following method is available only with EE_INTERFACE_MAJOR_VERSION >= 1
     virtual
     void LogErrorToHost(const char *message) = 0;
 };

@@ -28,7 +28,7 @@ namespace System.Threading.Tests
         {
             var t = new Timer(_ => { });
             await t.DisposeAsync();
-            Assert.Throws<ObjectDisposedException>(() => t.Change(-1, -1));
+            Assert.False(t.Change(-1, -1));
         }
 
         [Fact]

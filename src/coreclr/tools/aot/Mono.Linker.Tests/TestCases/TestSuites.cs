@@ -9,7 +9,6 @@ namespace Mono.Linker.Tests.TestCases
 {
 	public class All
 	{
-
 		[Theory]
 		[MemberData(nameof(TestDatabase.DataFlow), MemberType = typeof(TestDatabase))]
 		public void DataFlow(string t)
@@ -25,6 +24,36 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData (nameof (TestDatabase.Generics), MemberType = typeof (TestDatabase))]
+		public void Generics (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.LinkXml), MemberType = typeof (TestDatabase))]
+		public void LinkXml (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.Reflection), MemberType = typeof (TestDatabase))]
+		public void Reflection (string t)
+		{
+			switch (t) {
+			case "TypeHierarchyReflectionWarnings":
+			case "ParametersUsedViaReflection":
+			case "UnsafeAccessor":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.Repro), MemberType = typeof (TestDatabase))]
 		public void Repro (string t)
 		{
@@ -36,6 +65,34 @@ namespace Mono.Linker.Tests.TestCases
 		public void RequiresCapability(string t)
 		{
 			Run(t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.SingleFile), MemberType = typeof (TestDatabase))]
+		public void SingleFile (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.UnreachableBlock), MemberType = typeof (TestDatabase))]
+		public void UnreachableBlock (string t)
+		{
+			switch (t) {
+			case "TryCatchBlocks":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.Warnings), MemberType = typeof (TestDatabase))]
+		public void Warnings (string t)
+		{
+			Run (t);
 		}
 
 		protected virtual void Run(string testName)

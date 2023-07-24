@@ -42,6 +42,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
         private string? _tempPath;
         private int _totalFiles;
         private int _numCompiled;
+        private static readonly char[] s_semicolon = new char[] { ';' };
+        private static readonly char[] s_equalTo = new char[] { '=' };
 
         public override bool Execute()
         {
@@ -78,7 +80,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
 
             _totalFiles = SourceFiles.Length;
-            IDictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
+            Dictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
             ConcurrentBag<ITaskItem> outputItems = new();
             try
             {
@@ -90,7 +92,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     string depMetadata = srcItem.GetMetadata("Dependencies");
                     string[] depFiles = string.IsNullOrEmpty(depMetadata)
                                             ? Array.Empty<string>()
-                                            : depMetadata.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                            : depMetadata.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries);
 
                     if (!ShouldCompile(srcFile, objFile, depFiles, out string reason))
                     {
@@ -238,7 +240,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
             ITaskItem CreateOutputItemFor(string srcFile, string objFile)
             {
-                ITaskItem newItem = new TaskItem(objFile);
+                TaskItem newItem = new TaskItem(objFile);
                 newItem.SetMetadata("SourceFile", srcFile);
                 return newItem;
             }
@@ -291,7 +293,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
         }
 
-        private IDictionary<string, string> GetEnvironmentVariablesDict()
+        private Dictionary<string, string> GetEnvironmentVariablesDict()
         {
             Dictionary<string, string> envVarsDict = new();
             if (EnvironmentVariables == null)
@@ -299,7 +301,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
             foreach (var item in EnvironmentVariables)
             {
-                var parts = item.ItemSpec.Split(new char[] {'='}, 2, StringSplitOptions.None);
+                var parts = item.ItemSpec.Split(s_equalTo, 2, StringSplitOptions.None);
                 if (parts.Length == 0)
                     continue;
 

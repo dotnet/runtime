@@ -15,7 +15,7 @@
  */
 
 static volatile uint32_t _ds_shutting_down_state = 0;
-static ds_rt_port_array_t _ds_port_array = { 0 };
+static dn_vector_ptr_t *_ds_port_array = NULL;
 
 // set this in get_next_available_stream, and then expose a callback that
 // allows us to track which connections have sent their ResumeRuntime commands
@@ -54,7 +54,7 @@ void
 ipc_stream_factory_split_port_config (
 	ep_char8_t *config,
 	const ep_char8_t *delimiters,
-	ds_rt_port_config_array_t *config_array);
+	dn_vector_ptr_t *config_array);
 
 static
 bool
@@ -65,7 +65,7 @@ ipc_stream_factory_build_and_add_port (
 
 static
 void
-ipc_log_poll_handles (ds_rt_ipc_poll_handle_array_t *ipc_poll_handles);
+ipc_log_poll_handles (dn_vector_t *ipc_poll_handles);
 
 static
 void
@@ -135,7 +135,7 @@ void
 ipc_stream_factory_split_port_config (
 	ep_char8_t *config,
 	const ep_char8_t *delimiters,
-	ds_rt_port_config_array_t *config_array)
+	dn_vector_ptr_t *config_array)
 {
 	ep_char8_t *part = NULL;
 	ep_char8_t *context = NULL;
@@ -147,7 +147,7 @@ ipc_stream_factory_split_port_config (
 
 	part = ep_rt_utf8_string_strtok (cursor, delimiters, &context);
 	while (part) {
-		ds_rt_port_config_array_append (config_array, part);
+		dn_vector_ptr_push_back (config_array, part);
 		part = ep_rt_utf8_string_strtok (NULL, delimiters, &context);
 	}
 }
@@ -178,7 +178,7 @@ ipc_stream_factory_build_and_add_port (
 		ipc = ds_ipc_alloc (builder->path, DS_IPC_CONNECTION_MODE_LISTEN, callback);
 		ep_raise_error_if_nok (ipc != NULL);
 		ep_raise_error_if_nok (ds_ipc_listen (ipc, callback));
-		ep_raise_error_if_nok (ds_rt_port_array_append (&_ds_port_array, (DiagnosticsPort *)ds_listen_port_alloc (ipc, builder)));
+		ep_raise_error_if_nok (dn_vector_ptr_push_back (_ds_port_array, (DiagnosticsPort *)ds_listen_port_alloc (ipc, builder)));
 #else
 		DS_LOG_INFO_0 ("ipc_stream_factory_build_and_add_port - LISTEN ports disabled");
 		ep_raise_error ();
@@ -187,7 +187,7 @@ ipc_stream_factory_build_and_add_port (
 #ifndef DS_IPC_DISABLE_CONNECT_PORTS
 		ipc = ds_ipc_alloc (builder->path, DS_IPC_CONNECTION_MODE_CONNECT, callback);
 		ep_raise_error_if_nok (ipc != NULL);
-		ep_raise_error_if_nok (ds_rt_port_array_append (&_ds_port_array, (DiagnosticsPort *)ds_connect_port_alloc (ipc, builder)));
+		ep_raise_error_if_nok (dn_vector_ptr_push_back (_ds_port_array, (DiagnosticsPort *)ds_connect_port_alloc (ipc, builder)));
 #else
 		DS_LOG_INFO_0 ("ipc_stream_factory_build_and_add_port - CONNECT ports disabled");
 		ep_raise_error ();
@@ -207,16 +207,15 @@ ep_on_error:
 
 static
 void
-ipc_log_poll_handles (ds_rt_ipc_poll_handle_array_t *ipc_poll_handles)
+ipc_log_poll_handles (dn_vector_t *ipc_poll_handles)
 {
 	// TODO: Should this be debug only?
-	DiagnosticsIpcPollHandle ipc_poll_handle;
 	ep_char8_t buffer [DS_IPC_MAX_TO_STRING_LEN];
 	uint32_t connection_id = 0;
 
-	ds_rt_ipc_poll_handle_array_iterator_t ipc_poll_handles_iterator = ds_rt_ipc_poll_handle_array_iterator_begin (ipc_poll_handles);
-	while (!ds_rt_ipc_poll_handle_array_iterator_end (ipc_poll_handles, &ipc_poll_handles_iterator)) {
-		ipc_poll_handle = ds_rt_ipc_poll_handle_array_iterator_value (&ipc_poll_handles_iterator);
+	EP_ASSERT (ipc_poll_handles != NULL);
+
+	DN_VECTOR_FOREACH_BEGIN (DiagnosticsIpcPollHandle, ipc_poll_handle, ipc_poll_handles) {
 		if (ipc_poll_handle.ipc) {
 			if (!(ds_ipc_to_string (ipc_poll_handle.ipc, buffer, (uint32_t)ARRAY_SIZE (buffer)) > 0))
 				buffer [0] = '\0';
@@ -226,18 +225,16 @@ ipc_log_poll_handles (ds_rt_ipc_poll_handle_array_t *ipc_poll_handles)
 				buffer [0] = '\0';
 			DS_LOG_DEBUG_2 ("\tCLIENT IpcPollHandle[%d] = %s", connection_id, buffer);
 		}
-		ds_rt_ipc_poll_handle_array_iterator_next (&ipc_poll_handles_iterator);
 		connection_id++;
-	}
+	} DN_VECTOR_FOREACH_END;
 }
 
 bool
 ds_ipc_stream_factory_init (void)
 {
 	ep_ipc_stream_factory_callback_set (ds_ipc_stream_factory_any_suspended_ports);
-
-	ds_rt_port_array_alloc (&_ds_port_array);
-	return ds_rt_port_array_is_valid (&_ds_port_array);
+	_ds_port_array = dn_vector_ptr_alloc ();
+	return _ds_port_array != NULL;
 }
 
 void
@@ -246,13 +243,12 @@ ds_ipc_stream_factory_fini (void)
 	// TODO: Race between server thread and shutdown, _ds_port_array and ports can not be freed without resolving
 	// that race first. Diagnostic server thread is currently designed to not break waits on
 	// shutdown unless clients activity wakes server thread.
-	/*ds_rt_port_array_iterator_t iterator = ds_rt_port_array_iterator_begin (&_ds_port_array);
-	while (!ds_rt_port_array_iterator_end (&_ds_port_array, &iterator)) {
-		ds_port_free_vcall (ds_rt_port_array_iterator_value (&iterator));
-		ds_rt_port_array_iterator_next (&iterator);
-	}
+	/*DN_VECTOR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
+		ds_port_free_vcall (port);
+	} DN_PTR_ARRAY_EX_FOREACH_END;
 
-	ds_rt_port_array_free (&_ds_port_array);*/
+	dn_vector_ptr_free (_ds_port_array);
+	_ds_port_array = NULL;*/
 
 	ep_ipc_stream_factory_callback_set (NULL);
 }
@@ -264,35 +260,35 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 
 	ep_char8_t *ports = ds_rt_config_value_get_ports ();
 	if (ports) {
-		DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY (port_configs);
-		DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY (port_config_parts);
 
-		ds_rt_port_config_array_init (&port_configs);
-		ds_rt_port_config_array_init (&port_config_parts);
+		DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size * 2);
 
-		if (ds_rt_port_config_array_is_valid (&port_configs) && ds_rt_port_config_array_is_valid (&port_config_parts)) {
-			ipc_stream_factory_split_port_config (ports, ";", &port_configs);
-			ds_rt_port_config_array_reverse_iterator_t port_configs_iterator = ds_rt_port_config_array_reverse_iterator_begin (&port_configs);
-			while (!ds_rt_port_config_array_reverse_iterator_end(&port_configs, &port_configs_iterator)) {
-				ep_char8_t *port_config = ds_rt_port_config_array_reverse_iterator_value (&port_configs_iterator);
+		dn_vector_ptr_custom_alloc_params_t params = {0, };
+		params.allocator = (dn_allocator_t *)&allocator;
+		params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
+
+		dn_vector_ptr_t *port_configs = dn_vector_ptr_custom_alloc (&params);
+		dn_vector_ptr_t *port_config_parts = dn_vector_ptr_custom_alloc (&params);
+
+		if (port_configs && port_config_parts) {
+			ipc_stream_factory_split_port_config (ports, ";", port_configs);
+			DN_VECTOR_PTR_FOREACH_RBEGIN (ep_char8_t *, port_config, port_configs) {
 				DS_LOG_INFO_1 ("ds_ipc_stream_factory_configure - Attempted to create Diagnostic Port from \"%s\".", port_config ? port_config : "");
 				if (port_config) {
-					ds_rt_port_config_array_clear (&port_config_parts);
-					ipc_stream_factory_split_port_config (port_config, ",", &port_config_parts);
+					dn_vector_ptr_clear (port_config_parts);
+					ipc_stream_factory_split_port_config (port_config, ",", port_config_parts);
 
-					size_t port_config_parts_index = ds_rt_port_config_array_size (&port_config_parts);
+					uint32_t port_config_parts_index = dn_vector_ptr_size (port_config_parts);
 					if (port_config_parts_index != 0) {
 						DiagnosticsPortBuilder port_builder;
 						if (ds_port_builder_init (&port_builder)) {
-							ds_rt_port_config_array_reverse_iterator_t port_config_parts_iterator = ds_rt_port_config_array_reverse_iterator_begin (&port_config_parts);
-							while (!ds_rt_port_config_array_reverse_iterator_end(&port_config_parts, &port_config_parts_iterator)) {
+							DN_VECTOR_PTR_FOREACH_RBEGIN (ep_char8_t *, port_config_part, port_config_parts) {
 								if (port_config_parts_index == 1)
-									port_builder.path = ds_rt_port_config_array_reverse_iterator_value (&port_config_parts_iterator);
+									port_builder.path = port_config_part;
 								else
-									ds_port_builder_set_tag (&port_builder, ds_rt_port_config_array_reverse_iterator_value (&port_config_parts_iterator));
-								ds_rt_port_config_array_reverse_iterator_next (&port_config_parts_iterator);
+									ds_port_builder_set_tag (&port_builder, port_config_part);
 								port_config_parts_index--;
-							}
+							} DN_VECTOR_PTR_FOREACH_END;
 							if (!ep_rt_utf8_string_is_null_or_empty (port_builder.path)) {
 									const bool build_success = ipc_stream_factory_build_and_add_port (&port_builder, callback, false);
 									DS_LOG_INFO_1 ("ds_ipc_stream_factory_configure - Diagnostic Port creation %s", build_success ? "succeeded" : "failed");
@@ -308,14 +304,13 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 						result &= false;
 					}
 				}
-				ds_rt_port_config_array_reverse_iterator_next (&port_configs_iterator);
-			}
+			} DN_VECTOR_PTR_FOREACH_END;
 		} else {
 			result &= false;
 		}
 
-		ds_rt_port_config_array_fini (&port_config_parts);
-		ds_rt_port_config_array_fini (&port_configs);
+		dn_vector_ptr_free (port_config_parts);
+		dn_vector_ptr_free (port_configs);
 		ep_rt_utf8_string_free (ports);
 	}
 
@@ -357,42 +352,37 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 	DS_LOG_DEBUG_0 ("ds_ipc_stream_factory_get_next_available_stream - ENTER");
 
 	DiagnosticsIpcStream *stream = NULL;
-	DiagnosticsIpcPollHandle ipc_poll_handle;
-	ds_rt_port_array_t *ports = &_ds_port_array;
-	DiagnosticsPort *port = NULL;
 
 	uint32_t poll_timeout_ms = DS_IPC_TIMEOUT_INFINITE;
 	bool connect_success = true;
 	uint32_t poll_attempts = 0;
 
-	DS_RT_DECLARE_LOCAL_IPC_POLL_HANDLE_ARRAY (ipc_poll_handles);
+	dn_vector_custom_alloc_params_t params = {0, };
+	params.capacity = _ds_default_poll_handle_array_size;
 
-	ds_rt_ipc_poll_handle_array_init_capacity (&ipc_poll_handles, _ds_default_poll_handle_array_size);
-	ep_raise_error_if_nok (ds_rt_ipc_poll_handle_array_is_valid (&ipc_poll_handles));
+	dn_vector_t ipc_poll_handles;
+	ep_raise_error_if_nok (dn_vector_custom_init_t (&ipc_poll_handles, &params, DiagnosticsIpcPollHandle));
 
 	while (!stream) {
 		connect_success = true;
-		ds_rt_port_array_iterator_t ports_iterator = ds_rt_port_array_iterator_begin (ports);
-		while (!ds_rt_port_array_iterator_end (ports, &ports_iterator)) {
-			port = ds_rt_port_array_iterator_value (&ports_iterator);
+		DN_VECTOR_PTR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
+			DiagnosticsIpcPollHandle ipc_poll_handle;
 			if (ds_port_get_ipc_poll_handle_vcall (port, &ipc_poll_handle, callback))
-				ep_raise_error_if_nok (ds_rt_ipc_poll_handle_array_append (&ipc_poll_handles, ipc_poll_handle));
+				ep_raise_error_if_nok (dn_vector_push_back (&ipc_poll_handles, ipc_poll_handle));
 			else
 				connect_success = false;
-
-			ds_rt_port_array_iterator_next (&ports_iterator);
-		}
+		} DN_VECTOR_PTR_FOREACH_END;
 
 		poll_timeout_ms = connect_success ?
 			DS_IPC_TIMEOUT_INFINITE :
 			ipc_stream_factory_get_next_timeout (poll_timeout_ms);
 
 		int32_t ret_val;
-		if ( ds_rt_ipc_poll_handle_array_size (&ipc_poll_handles) > 0) {
+		if (dn_vector_size (&ipc_poll_handles) > 0) {
 			poll_attempts++;
 			DS_LOG_DEBUG_2 ("ds_ipc_stream_factory_get_next_available_stream - Poll attempt: %d, timeout: %dms.", poll_attempts, poll_timeout_ms);
 			ipc_log_poll_handles (&ipc_poll_handles);
-			ret_val = ds_ipc_poll (ds_rt_ipc_poll_handle_array_data (&ipc_poll_handles), ds_rt_ipc_poll_handle_array_size (&ipc_poll_handles), poll_timeout_ms, callback);
+			ret_val = ds_ipc_poll (dn_vector_data_t (&ipc_poll_handles, DiagnosticsIpcPollHandle), dn_vector_size (&ipc_poll_handles), poll_timeout_ms, callback);
 		} else {
 			if (poll_timeout_ms == DS_IPC_TIMEOUT_INFINITE)
 				poll_timeout_ms = DS_IPC_POLL_TIMEOUT_MAX_MS;
@@ -405,10 +395,8 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 
 		if (ret_val != 0) {
 			uint32_t connection_id = 0;
-			ds_rt_ipc_poll_handle_array_iterator_t ipc_poll_handles_iterator = ds_rt_ipc_poll_handle_array_iterator_begin (&ipc_poll_handles);
-			while (!ds_rt_ipc_poll_handle_array_iterator_end (&ipc_poll_handles, &ipc_poll_handles_iterator)) {
-				ipc_poll_handle = ds_rt_ipc_poll_handle_array_iterator_value (&ipc_poll_handles_iterator);
-				port = (DiagnosticsPort *)ipc_poll_handle.user_data;
+			DN_VECTOR_FOREACH_BEGIN (DiagnosticsIpcPollHandle, ipc_poll_handle, &ipc_poll_handles) {
+				DiagnosticsPort *port = (DiagnosticsPort *)ipc_poll_handle.user_data;
 				switch (ipc_poll_handle.events) {
 				case DS_IPC_POLL_EVENTS_HANGUP:
 					EP_ASSERT (port != NULL);
@@ -440,9 +428,8 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 					break;
 				}
 
-				ds_rt_ipc_poll_handle_array_iterator_next (&ipc_poll_handles_iterator);
 				connection_id++;
-			}
+			} DN_VECTOR_FOREACH_END;
 		}
 
 		if (!stream && saw_error) {
@@ -451,12 +438,12 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 		}
 
 		// clear the view.
-		ds_rt_ipc_poll_handle_array_clear (&ipc_poll_handles);
+		dn_vector_clear (&ipc_poll_handles);
 	}
 
 ep_on_exit:
 	DS_LOG_DEBUG_2 ("ds_ipc_stream_factory_get_next_available_stream - EXIT :: Poll attempt: %d, stream using handle %d.", poll_attempts, stream ? ds_ipc_stream_get_handle_int32_t (stream) : -1);
-	ds_rt_ipc_poll_handle_array_fini (&ipc_poll_handles);
+	dn_vector_dispose (&ipc_poll_handles);
 	return stream;
 
 ep_on_error:
@@ -475,12 +462,10 @@ bool
 ds_ipc_stream_factory_any_suspended_ports (void)
 {
 	bool any_suspended_ports = false;
-	ds_rt_port_array_iterator_t iterator = ds_rt_port_array_iterator_begin (&_ds_port_array);
-	while (!ds_rt_port_array_iterator_end (&_ds_port_array, &iterator)) {
-		DiagnosticsPort *port = ds_rt_port_array_iterator_value (&iterator);
+	DN_VECTOR_PTR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
 		any_suspended_ports |= !(port->suspend_mode == DS_PORT_SUSPEND_MODE_NOSUSPEND || port->has_resumed_runtime);
-		ds_rt_port_array_iterator_next (&iterator);
-	}
+	} DN_VECTOR_PTR_FOREACH_END;
+
 	return any_suspended_ports;
 }
 
@@ -488,17 +473,15 @@ bool
 ds_ipc_stream_factory_has_active_ports (void)
 {
 	return !load_shutting_down_state () &&
-		ds_rt_port_array_size (&_ds_port_array) > 0;
+		dn_vector_ptr_size (_ds_port_array) > 0;
 }
 
 void
 ds_ipc_stream_factory_close_ports (ds_ipc_error_callback_func callback)
 {
-	ds_rt_port_array_iterator_t iterator = ds_rt_port_array_iterator_begin (&_ds_port_array);
-	while (!ds_rt_port_array_iterator_end (&_ds_port_array, &iterator)) {
-		ds_port_close (ds_rt_port_array_iterator_value (&iterator), false, callback);
-		ds_rt_port_array_iterator_next (&iterator);
-	}
+	DN_VECTOR_PTR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
+		ds_port_close (port, false, callback);
+	} DN_VECTOR_PTR_FOREACH_END;
 }
 
 bool
@@ -509,11 +492,9 @@ ds_ipc_stream_factory_shutdown (ds_ipc_error_callback_func callback)
 
 	store_shutting_down_state (true);
 
-	ds_rt_port_array_iterator_t iterator = ds_rt_port_array_iterator_begin (&_ds_port_array);
-	while (!ds_rt_port_array_iterator_end (&_ds_port_array, &iterator)) {
-		ds_port_close (ds_rt_port_array_iterator_value (&iterator), true, callback);
-		ds_rt_port_array_iterator_next (&iterator);
-	}
+	DN_VECTOR_PTR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
+		ds_port_close (port, true, callback);
+	} DN_VECTOR_PTR_FOREACH_END;
 
 	_ds_current_port = NULL;
 	return true;

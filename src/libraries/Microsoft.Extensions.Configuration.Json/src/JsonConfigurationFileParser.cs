@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Configuration.Json
         public static IDictionary<string, string?> Parse(Stream input)
             => new JsonConfigurationFileParser().ParseStream(input);
 
-        private IDictionary<string, string?> ParseStream(Stream input)
+        private Dictionary<string, string?> ParseStream(Stream input)
         {
             var jsonDocumentOptions = new JsonDocumentOptions
             {

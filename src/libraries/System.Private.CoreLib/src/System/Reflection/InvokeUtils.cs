@@ -29,8 +29,7 @@ namespace System.Reflection
             switch (dstElementType)
             {
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    bool boolValue = Convert.ToBoolean(srcObject);
-                    dstObject = dstType.IsEnum ? Enum.ToObject(dstType, boolValue ? 1 : 0) : boolValue;
+                    dstObject = Convert.ToBoolean(srcObject);
                     break;
 
                 case CorElementType.ELEMENT_TYPE_CHAR:
@@ -112,9 +111,15 @@ namespace System.Reflection
 
         private static bool TryConvertPointer(object srcObject, [NotNullWhen(true)] out object? dstPtr)
         {
-            if (srcObject is IntPtr or UIntPtr)
+            if (srcObject is IntPtr)
             {
                 dstPtr = srcObject;
+                return true;
+            }
+
+            if (srcObject is UIntPtr)
+            {
+                dstPtr = (IntPtr)(UIntPtr)srcObject;
                 return true;
             }
 

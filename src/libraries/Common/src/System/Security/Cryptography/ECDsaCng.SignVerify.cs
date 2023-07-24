@@ -20,15 +20,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(hash);
 
-            int estimatedSize = KeySize switch
-            {
-                256 => 64,
-                384 => 96,
-                521 => 132,
-                // If we got here, the range of legal key sizes for ECDsaCng was expanded and someone didn't update this switch.
-                // Since it isn't a fatal error to miscalculate the estimatedSize, don't throw an exception. Just truck along.
-                _ => KeySize / 4,
-            };
+            int estimatedSize = GetMaxSignatureSize(DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
 
             unsafe
             {

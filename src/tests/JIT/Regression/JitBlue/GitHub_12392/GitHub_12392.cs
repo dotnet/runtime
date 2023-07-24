@@ -3,6 +3,7 @@
 
 using System;
 using System.Reflection;
+using Xunit;
 
 namespace Test
 {
@@ -11,7 +12,8 @@ namespace Test
     public class Program
     {
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test t = new Test();
             if (!t.TestMethod())

@@ -55,6 +55,19 @@ namespace System.Diagnostics
             _arguments = arguments;
         }
 
+        /// <summary>
+        /// Specifies the name of the application that is to be started, as well as a set
+        /// of command line arguments to pass to the application.
+        /// </summary>
+        public ProcessStartInfo(string fileName, IEnumerable<string> arguments)
+        {
+            ArgumentNullException.ThrowIfNull(fileName);
+            ArgumentNullException.ThrowIfNull(arguments);
+
+            _fileName = fileName;
+            _argumentList = new Collection<string>(new List<string>(arguments));
+        }
+
         /// <devdoc>
         ///     Specifies the set of command line arguments to use when starting the application.
         /// </devdoc>

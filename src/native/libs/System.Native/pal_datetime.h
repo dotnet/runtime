@@ -11,3 +11,5 @@ PALEXPORT int64_t SystemNative_GetSystemTimeAsTicks(void);
 #if defined(TARGET_ANDROID) || defined(__APPLE__)
 PALEXPORT char* SystemNative_GetDefaultTimeZone(void);
 #endif
+
+PALEXPORT const char* SystemNative_GetTimeZoneData(const char* name, int* length);

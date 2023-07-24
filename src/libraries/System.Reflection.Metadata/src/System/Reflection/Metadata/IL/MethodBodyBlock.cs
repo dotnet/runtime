@@ -72,7 +72,7 @@ namespace System.Reflection.Metadata
         public ImmutableArray<byte> GetILContent()
         {
             byte[]? bytes = GetILBytes();
-            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
+            return ImmutableCollectionsMarshal.AsImmutableArray(bytes);
         }
 
         public BlobReader GetILReader()

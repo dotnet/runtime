@@ -5,7 +5,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PublishReadyToRunCrossgen2ExtraArgsList Include="--targetarch:$(TargetArchitecture)"/>
+      <PublishReadyToRunCrossgen2ExtraArgsList Include="--targetarch:$(TargetArchitecture) --targetos:$(TargetOS)"/>
 
       <!-- Only use mibc files if UsingToolIbcOptimization is false. Allows enabling/disabling using ibc instead of mibc data -->
       <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'" Include="@(OptimizationMibcFiles->'-m:%(Identity)')"/>
@@ -15,7 +15,7 @@
     <!-- The following property group can be simplified once runtime repo switches over to SDK 6.0 drop -->
     <PropertyGroup>
       <CrossDir />
-      <CrossDir Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">x64</CrossDir>
+      <CrossDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'">$(BuildArchitecture)</CrossDir>
       <Crossgen2Dll>$(CoreCLRArtifactsPath)\$(CrossDir)\crossgen2\crossgen2.dll</Crossgen2Dll>
 
       <PublishReadyToRunUseCrossgen2>true</PublishReadyToRunUseCrossgen2>

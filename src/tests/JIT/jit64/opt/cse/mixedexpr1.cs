@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 //((a+b)+c)
 
 //permutations for  ((a+b)+c)
@@ -317,7 +318,8 @@ namespace CseTest
     public class Test_Main
     {
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int ret = 100;
             int d = return_int(false, -17);

@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     {
         public sealed partial class ECDsaSecurityTransforms : ECDsa, IRuntimeAlgorithm
         {
-            private readonly EccSecurityTransforms _ecc = new EccSecurityTransforms(nameof(ECDsa));
+            private readonly EccSecurityTransforms _ecc = new EccSecurityTransforms(typeof(ECDsa));
 
             public ECDsaSecurityTransforms()
             {

@@ -161,7 +161,7 @@ namespace System.Collections.Frozen
             other switch
             {
                 HashSet<T> hs => _thisSet.Comparer.Equals(hs.Comparer),
-                SortedSet<T> ss => _thisSet.Comparer.Equals(ss.Comparer),
+                SortedSet<T> sortedSet => _thisSet.Comparer.Equals(sortedSet.Comparer),
                 ImmutableHashSet<T> ihs => _thisSet.Comparer.Equals(ihs.KeyComparer),
                 ImmutableSortedSet<T> iss => _thisSet.Comparer.Equals(iss.KeyComparer),
                 FrozenSet<T> fs => _thisSet.Comparer.Equals(fs.Comparer),
@@ -195,9 +195,10 @@ namespace System.Collections.Frozen
             int intArrayLength = (_thisSet.Count / BitsPerInt32) + 1;
 
             int[]? rentedArray = null;
-            Span<int> seenItems = intArrayLength <= 256 ?
-                stackalloc int[256] :
+            Span<int> seenItems = intArrayLength <= 128 ?
+                stackalloc int[128] :
                 (rentedArray = ArrayPool<int>.Shared.Rent(intArrayLength));
+            seenItems = seenItems.Slice(0, intArrayLength);
             seenItems.Clear();
 
             // Iterate through every item in the other collection.  For each, if it's

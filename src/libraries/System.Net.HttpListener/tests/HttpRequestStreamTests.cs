@@ -229,10 +229,7 @@ namespace System.Net.Tests
         public async Task Read_LargeLengthAsynchronous_Success(bool transferEncodingChunked)
         {
             var rand = new Random(42);
-            byte[] expected = Enumerable
-                .Range(0, 128*1024 + 1) // More than 128kb
-                .Select(_ => (byte)('a' + rand.Next(0, 26)))
-                .ToArray();
+            byte[] expected = rand.GetItems("abcdefghijklmnopqrstuvwxyz"u8, 128 * 1024 + 1);
 
             Task<HttpListenerContext> contextTask = _listener.GetContextAsync();
 
@@ -269,10 +266,7 @@ namespace System.Net.Tests
         public async Task Read_LargeLengthSynchronous_Success(bool transferEncodingChunked)
         {
             var rand = new Random(42);
-            byte[] expected = Enumerable
-                .Range(0, 128 * 1024 + 1) // More than 128kb
-                .Select(_ => (byte)('a' + rand.Next(0, 26)))
-                .ToArray();
+            byte[] expected = rand.GetItems("abcdefghijklmnopqrstuvwxyz"u8, 128 * 1024 + 1);
 
             Task<HttpListenerContext> contextTask = _listener.GetContextAsync();
 

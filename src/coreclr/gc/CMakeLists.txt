@@ -106,18 +106,18 @@ convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
 add_library_clr(clrgc SHARED ${GC_SOURCES})
 add_dependencies(clrgc eventing_headers)
-target_link_libraries(clrgc ${GC_LINK_LIBRARIES})
+target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
 install_clr(TARGETS clrgc DESTINATIONS . COMPONENT runtime)
 
 add_definitions(-DBUILD_AS_STANDALONE)
 add_definitions(-DFX_VER_INTERNALNAME_STR=clrgc.dll)
 add_definitions(-DVERIFY_HEAP)
-if(CLR_CMAKE_HOST_OSX)
-  # The implementation of GCToOSInterface on MacOS makes use of non-POSIX
+if(CLR_CMAKE_HOST_APPLE)
+  # The implementation of GCToOSInterface on Apple platforms makes use of non-POSIX
   # pthreads APIs, which by default are not included in the pthreads header
   # unless we define this macro.
   add_definitions(-D_DARWIN_C_SOURCE)
-endif(CLR_CMAKE_HOST_OSX)
+endif(CLR_CMAKE_HOST_APPLE)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)

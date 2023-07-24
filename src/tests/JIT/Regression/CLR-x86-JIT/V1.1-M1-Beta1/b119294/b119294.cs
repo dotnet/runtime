@@ -7,13 +7,15 @@ using System.Collections;
 //using System.Windows.Forms;
 using System.IO;
 using System.Text;
+using Xunit;
 
 public class Test_b119294
 {
     public int[,] m_nSourceDestMap;
     public static int m_coSourceLength = 100;
     public static int m_coDestLength = 100;
-    static public int Main()
+    [Fact]
+    static public int TestEntryPoint()
     {
         String testenv = Environment.GetEnvironmentVariable("URTBUILDENV");
         if ((testenv == null) || (testenv.ToUpper() != "FRE"))
@@ -29,7 +31,7 @@ public class Test_b119294
         return 100;
     }
 
-    public void EstablishIdentityTransform()
+    internal void EstablishIdentityTransform()
     {
         //MessageBox.Show("EstablishIdentityTransform() enter");
         int nSourceElements = m_coSourceLength;

@@ -28,7 +28,6 @@ namespace System
         {
             s_latchedExitCode = exitCode;
             ShutdownCore();
-            RuntimeImports.RhpShutdown();
             ExitRaw();
         }
 
@@ -64,18 +63,5 @@ namespace System
         }
 
         public static int TickCount => (int)TickCount64;
-
-        private static string[]? s_commandLineArgs;
-
-        public static string[] GetCommandLineArgs()
-        {
-            Debug.Assert(s_commandLineArgs != null, "VM did not properly setup application.");
-            return (string[])s_commandLineArgs.Clone();
-        }
-
-        internal static void SetCommandLineArgs(string[] cmdLineArgs)
-        {
-            s_commandLineArgs = cmdLineArgs;
-        }
     }
 }

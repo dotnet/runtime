@@ -95,43 +95,6 @@ typedef enum
     SCANF_TYPE_SPACE    = 7
 }SCANF_TYPES;
 
-/*******************************************************************************
-Function:
-  PAL_printf_arg_remover
-
-Parameters:
-  ap
-    - pointer to the va_list from which to remove arguments
-  Width
-    - the width of the current format option
-  Precision
-    - the precision of the current format option
-  Type
-    - the type of the argument for the current format option
-  Prefix
-    - the prefix for the current format option
-*******************************************************************************/
-void PAL_printf_arg_remover(va_list *ap, INT Width, INT Precision, INT Type, INT Prefix);
-
-/*++
-Function:
-  Silent_PAL_vsnprintf
-
-See MSDN doc.
---*/
-INT Silent_PAL_vsnprintf(LPSTR Buffer, INT Count, LPCSTR Format, va_list ap);
-
-/*++
-Function:
-  Silent_PAL_vfprintf
-
-See MSDN doc.
---*/
-int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap);
-
-
-
-
 /*++
 
 struct PAL_FILE.

@@ -3,12 +3,13 @@
 
 using System.Globalization;
 using System;
+using Xunit;
 
 namespace DefaultNamespace
 {
     public class Bug
     {
-        public virtual void runTest()
+        internal virtual void runTest()
         {
             CultureInfo en = new CultureInfo("en-US");
             Double d = Convert.ToDouble("1.0E19", en.NumberFormat);
@@ -21,7 +22,8 @@ namespace DefaultNamespace
                 Console.WriteLine("Test FAiLED");
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             new Bug().runTest();
             return 100;

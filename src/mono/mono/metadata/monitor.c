@@ -515,6 +515,12 @@ mono_monitor_inflate (MonoObject *obj)
 
 #define MONO_OBJECT_ALIGNMENT_SHIFT	3
 
+/*
+ * Wang's address-based hash function:
+ *   http://www.concentric.net/~Ttwang/tech/addrhash.htm
+ */
+#define HASH_OBJECT(obj) (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u
+
 int
 mono_object_hash_internal (MonoObject* obj)
 {
@@ -542,11 +548,14 @@ mono_object_hash_internal (MonoObject* obj)
 	 * another thread computes the hash at the same time, because it'll end up
 	 * with the same value.
 	 */
-	hash = (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
+	hash = HASH_OBJECT(obj);
 #if SIZEOF_VOID_P == 4
 	/* clear the top bits as they can be discarded */
 	hash &= ~(LOCK_WORD_STATUS_MASK << (32 - LOCK_WORD_STATUS_BITS));
 #endif
+	if (hash == 0) {
+		hash = 1;
+	}
 	if (lock_word_is_free (lw)) {
 		LockWord old_lw;
 		lw = lock_word_new_thin_hash (hash);
@@ -581,19 +590,48 @@ mono_object_hash_internal (MonoObject* obj)
 
 #else
 
-/*
- * Wang's address-based hash function:
- *   http://www.concentric.net/~Ttwang/tech/addrhash.htm
- */
-	return (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
+	unsigned int hash = HASH_OBJECT(obj);
+	if (hash == 0) {
+		hash = 1;
+	}
+	return hash;
+
 #endif
 
 }
 
 int
-mono_object_hash_icall (MonoObjectHandle obj, MonoError* error)
+mono_object_try_get_hash_internal (MonoObject* obj)
 {
-	return mono_object_hash_internal (MONO_HANDLE_RAW (obj));
+#ifdef HAVE_MOVING_COLLECTOR
+
+	LockWord lw;
+	if (!obj)
+		return 0;
+	lw.sync = obj->synchronisation;
+
+	LOCK_DEBUG (g_message("%s: (%d) Get hash for object %p; LW = %p", __func__, mono_thread_info_get_small_id (), obj, obj->synchronisation));
+
+	if (lock_word_has_hash (lw)) {
+		if (lock_word_is_inflated (lw)) {
+			return lock_word_get_inflated_lock (lw)->hash_code;
+		} else {
+			return lock_word_get_hash (lw);
+		}
+	}
+
+	return 0;
+
+#else
+
+	unsigned int hash = HASH_OBJECT(obj);
+	if (hash == 0) {
+		hash = 1;
+	}
+	return hash;
+
+#endif
+
 }
 
 /*
@@ -1070,20 +1108,6 @@ mono_monitor_exit (MonoObject *obj)
 	MONO_EXTERNAL_ONLY_VOID (mono_monitor_exit_internal (obj));
 }
 
-MonoGCHandle
-mono_monitor_get_object_monitor_gchandle (MonoObject *object)
-{
-	LockWord lw;
-
-	lw.sync = object->synchronisation;
-
-	if (lock_word_is_inflated (lw)) {
-		MonoThreadsSync *mon = lock_word_get_inflated_lock (lw);
-		return (MonoGCHandle)mon->data;
-	}
-	return NULL;
-}
-
 /*
  * mono_monitor_threads_sync_member_offset:
  * @status_offset: returns size and offset of the "status" member
@@ -1207,46 +1231,6 @@ mono_monitor_enter_v4_fast (MonoObject *obj, MonoBoolean *lock_taken)
 	gboolean const res = mono_monitor_try_enter_internal (obj, 0, TRUE) == 1;
 	*lock_taken = (MonoBoolean)res;
 	return (guint32)res;
-}
-
-MonoBoolean
-ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObjectHandle obj_handle, MonoError* error)
-{
-	MonoObject* const obj = MONO_HANDLE_RAW (obj_handle);
-
-	LockWord lw;
-
-	LOCK_DEBUG (g_message ("%s: Testing if %p is owned by thread %d", __func__, obj, mono_thread_info_get_small_id()));
-
-	lw.sync = obj->synchronisation;
-
-	if (lock_word_is_flat (lw)) {
-		return lock_word_get_owner (lw) == mono_thread_info_get_small_id ();
-	} else if (lock_word_is_inflated (lw)) {
-		return mon_status_get_owner (lock_word_get_inflated_lock (lw)->status) == mono_thread_info_get_small_id ();
-	}
-
-	return FALSE;
-}
-
-MonoBoolean
-ves_icall_System_Threading_Monitor_Monitor_test_synchronised (MonoObjectHandle obj_handle, MonoError* error)
-{
-	MonoObject* const obj = MONO_HANDLE_RAW (obj_handle);
-
-	LockWord lw;
-
-	LOCK_DEBUG (g_message("%s: (%d) Testing if %p is owned by any thread", __func__, mono_thread_info_get_small_id (), obj));
-
-	lw.sync = obj->synchronisation;
-
-	if (lock_word_is_flat (lw)) {
-		return !lock_word_is_free (lw);
-	} else if (lock_word_is_inflated (lw)) {
-		return mon_status_get_owner (lock_word_get_inflated_lock (lw)->status) != 0;
-	}
-
-	return FALSE;
 }
 
 /* All wait list manipulation in the pulse, pulseall and wait

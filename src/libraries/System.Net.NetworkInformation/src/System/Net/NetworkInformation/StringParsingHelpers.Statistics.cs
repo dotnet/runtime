@@ -413,27 +413,29 @@ namespace System.Net.NetworkInformation
                     string line = sr.ReadLine()!;
                     if (line.Contains(name))
                     {
-                        string[] pieces = line.Split(new char[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
+                        Span<Range> pieces = stackalloc Range[18]; // [0] skipped, [1]-[16] used, +1 to ensure any additional segment goes into [17]
+                        ReadOnlySpan<char> lineSpan = line;
+                        pieces = pieces.Slice(0, lineSpan.SplitAny(pieces, " :", StringSplitOptions.RemoveEmptyEntries));
 
                         return new IPInterfaceStatisticsTable()
                         {
-                            BytesReceived = ParseUInt64AndClampToInt64(pieces[1]),
-                            PacketsReceived = ParseUInt64AndClampToInt64(pieces[2]),
-                            ErrorsReceived = ParseUInt64AndClampToInt64(pieces[3]),
-                            IncomingPacketsDropped = ParseUInt64AndClampToInt64(pieces[4]),
-                            FifoBufferErrorsReceived = ParseUInt64AndClampToInt64(pieces[5]),
-                            PacketFramingErrorsReceived = ParseUInt64AndClampToInt64(pieces[6]),
-                            CompressedPacketsReceived = ParseUInt64AndClampToInt64(pieces[7]),
-                            MulticastFramesReceived = ParseUInt64AndClampToInt64(pieces[8]),
+                            BytesReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[1]]),
+                            PacketsReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[2]]),
+                            ErrorsReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[3]]),
+                            IncomingPacketsDropped = ParseUInt64AndClampToInt64(lineSpan[pieces[4]]),
+                            FifoBufferErrorsReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[5]]),
+                            PacketFramingErrorsReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[6]]),
+                            CompressedPacketsReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[7]]),
+                            MulticastFramesReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[8]]),
 
-                            BytesTransmitted = ParseUInt64AndClampToInt64(pieces[9]),
-                            PacketsTransmitted = ParseUInt64AndClampToInt64(pieces[10]),
-                            ErrorsTransmitted = ParseUInt64AndClampToInt64(pieces[11]),
-                            OutgoingPacketsDropped = ParseUInt64AndClampToInt64(pieces[12]),
-                            FifoBufferErrorsTransmitted = ParseUInt64AndClampToInt64(pieces[13]),
-                            CollisionsDetected = ParseUInt64AndClampToInt64(pieces[14]),
-                            CarrierLosses = ParseUInt64AndClampToInt64(pieces[15]),
-                            CompressedPacketsTransmitted = ParseUInt64AndClampToInt64(pieces[16]),
+                            BytesTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[9]]),
+                            PacketsTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[10]]),
+                            ErrorsTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[11]]),
+                            OutgoingPacketsDropped = ParseUInt64AndClampToInt64(lineSpan[pieces[12]]),
+                            FifoBufferErrorsTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[13]]),
+                            CollisionsDetected = ParseUInt64AndClampToInt64(lineSpan[pieces[14]]),
+                            CarrierLosses = ParseUInt64AndClampToInt64(lineSpan[pieces[15]]),
+                            CompressedPacketsTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[16]]),
                         };
                     }
                     index += 1;
@@ -443,9 +445,9 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static long ParseUInt64AndClampToInt64(string value)
+        private static long ParseUInt64AndClampToInt64(ReadOnlySpan<char> value)
         {
-            return (long)Math.Min((ulong)long.MaxValue, ulong.Parse(value, CultureInfo.InvariantCulture));
+            return (long)Math.Min(long.MaxValue, ulong.Parse(value, CultureInfo.InvariantCulture));
         }
     }
 }

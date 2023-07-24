@@ -12,7 +12,7 @@ namespace System.Composition.Hosting.Core
     {
         private readonly IDictionary<CompositionContract, ExportDescriptor[]> _partDefinitions;
         private readonly ExportDescriptorProvider[] _exportDescriptorProviders;
-        private readonly IDictionary<CompositionContract, UpdateResult> _updateResults = new Dictionary<CompositionContract, UpdateResult>();
+        private readonly Dictionary<CompositionContract, UpdateResult> _updateResults = new Dictionary<CompositionContract, UpdateResult>();
 
         private static readonly CompositionDependency[] s_noDependenciesValue = Array.Empty<CompositionDependency>();
         private static readonly Func<CompositionDependency[]> s_noDependencies = () => s_noDependenciesValue;

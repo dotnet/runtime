@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // The original repro for this test was an assertion after code generation that the actual maximum depth of the stack
 // was less than or identical to the estimated depth of the stack as calculated during morph. The calculation was
@@ -29,7 +30,8 @@ public static class C
         return 100;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return M(2.0);
     }

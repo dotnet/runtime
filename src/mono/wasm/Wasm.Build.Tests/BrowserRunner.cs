@@ -35,7 +35,7 @@ internal class BrowserRunner : IAsyncDisposable
     public BrowserRunner(ITestOutputHelper testOutput) => _testOutput = testOutput;
 
     // FIXME: options
-    public async Task<IPage> RunAsync(ToolCommand cmd, string args, bool headless = true, Action<IConsoleMessage>? onConsoleMessage = null)
+    public async Task<IPage> RunAsync(ToolCommand cmd, string args, bool headless = true, Action<IConsoleMessage>? onConsoleMessage = null, Func<string, string>? modifyBrowserUrl = null)
     {
         TaskCompletionSource<string> urlAvailable = new();
         Action<string?> outputHandler = msg =>
@@ -77,7 +77,7 @@ internal class BrowserRunner : IAsyncDisposable
             throw new Exception($"Process ended before the url was found");
         }
         if (!urlAvailable.Task.IsCompleted)
-            throw new Exception("Timed out waiting for the app host url");
+            throw new Exception("Timed out waiting for the web server url");
 
         var url = new Uri(urlAvailable.Task.Result);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
@@ -89,10 +89,14 @@ internal class BrowserRunner : IAsyncDisposable
             Args = chromeArgs
         });
 
+        string browserUrl = urlAvailable.Task.Result;
+        if (modifyBrowserUrl != null)
+            browserUrl = modifyBrowserUrl(browserUrl);
+
         IPage page = await Browser.NewPageAsync();
         if (onConsoleMessage is not null)
             page.Console += (_, msg) => onConsoleMessage(msg);
-        await page.GotoAsync(urlAvailable.Task.Result);
+        await page.GotoAsync(browserUrl);
         RunTask = runTask;
         return page;
     }

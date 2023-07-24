@@ -3,14 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using FluentAssertions;
 using ILCompiler;
-using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Mono.Cecil;
@@ -24,40 +21,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class AssemblyChecker
 	{
-		internal readonly struct AssemblyQualifiedToken : IEquatable<AssemblyQualifiedToken>
+		class LinkedEntity
 		{
-			public string? AssemblyName { get; }
-			public int Token { get; }
+			public TypeSystemEntity Entity { get; init; }
 
-			public AssemblyQualifiedToken (string? assemblyName, int token) => (AssemblyName, Token) = (assemblyName, token);
+			public LinkedEntity(TypeSystemEntity entity) => Entity = entity;
+		}
 
-			public AssemblyQualifiedToken (TypeSystemEntity entity) =>
-				(AssemblyName, Token) = entity switch {
-					EcmaType type => (type.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (type.Handle)),
-					EcmaMethod method => (method.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (method.Handle)),
-					PropertyPseudoDesc property => (((EcmaType) property.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (property.Handle)),
-					EventPseudoDesc @event => (((EcmaType) @event.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (@event.Handle)),
-					ILStubMethod => (null, 0), // Ignore compiler generated methods
-					_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {entity} yet.")
-				};
+		class LinkedMethodEntity : LinkedEntity
+		{
+			public bool IsReflected { get; init; }
 
-			public AssemblyQualifiedToken (IMemberDefinition member) =>
-				(AssemblyName, Token) = member switch {
-					TypeDefinition type => (type.Module.Assembly.Name.Name, type.MetadataToken.ToInt32 ()),
-					MethodDefinition method => (method.Module.Assembly.Name.Name, method.MetadataToken.ToInt32 ()),
-					PropertyDefinition property => (property.Module.Assembly.Name.Name, property.MetadataToken.ToInt32 ()),
-					EventDefinition @event => (@event.Module.Assembly.Name.Name, @event.MetadataToken.ToInt32 ()),
-					FieldDefinition field => (field.Module.Assembly.Name.Name, field.MetadataToken.ToInt32 ()),
-					_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {member} yet.")
-				};
+			public MethodDesc Method { get => (MethodDesc) Entity; }
 
-			public override int GetHashCode () => AssemblyName == null ? 0 : AssemblyName.GetHashCode () ^ Token.GetHashCode ();
-			public override string ToString () => $"{AssemblyName}: {Token}";
-			public bool Equals (AssemblyQualifiedToken other) =>
-				string.CompareOrdinal (AssemblyName, other.AssemblyName) == 0 && Token == other.Token;
-			public override bool Equals ([NotNullWhen (true)] object? obj) => ((AssemblyQualifiedToken?) obj)?.Equals (this) == true;
-
-			public bool IsNil => AssemblyName == null;
+			public LinkedMethodEntity (MethodDesc method, bool isReflected) : base (method) => IsReflected = isReflected;
 		}
 
 		private readonly BaseAssemblyResolver originalsResolver;
@@ -65,7 +42,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private readonly AssemblyDefinition originalAssembly;
 		private readonly ILCompilerTestCaseResult testResult;
 
-		private readonly Dictionary<AssemblyQualifiedToken, TypeSystemEntity> linkedMembers;
+		private readonly Dictionary<AssemblyQualifiedToken, LinkedEntity> linkedMembers;
 		private readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
 		private readonly HashSet<string> verifiedEventMethods = new HashSet<string> ();
 		private readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
@@ -79,7 +56,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				// Ignore NativeAOT injected members
 				"<Module>.StartupCodeMain(Int32,IntPtr)",
-				"<Module>.MainMethodWrapper()"
+				"<Module>.MainMethodWrapper()",
+
+				// Ignore compiler generated code which can't be reasonably matched to the source method
+				"<PrivateImplementationDetails>",
 			};
 
 		public AssemblyChecker (
@@ -131,9 +111,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 					linkedMembers.TryGetValue (
 						token,
-						out TypeSystemEntity? linkedMember);
+						out LinkedEntity? linkedMember);
 
-					VerifyTypeDefinition (td, linkedMember as TypeDesc);
+					VerifyTypeDefinition (td, linkedMember);
 					linkedMembers.Remove (token);
 
 					continue;
@@ -145,7 +125,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// Filter out all members which are not from the main assembly
 			// The Kept attributes are "optional" for non-main assemblies
 			string mainModuleName = originalAssembly.Name.Name;
-			List<AssemblyQualifiedToken> externalMembers = linkedMembers.Where (m => GetModuleName (m.Value) != mainModuleName).Select (m => m.Key).ToList ();
+			List<AssemblyQualifiedToken> externalMembers = linkedMembers.Where (m => GetModuleName (m.Value.Entity) != mainModuleName).Select (m => m.Key).ToList ();
 			foreach (var externalMember in externalMembers) {
 				linkedMembers.Remove (externalMember);
 			}
@@ -154,20 +134,44 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.True (
 					false,
 					"Linked output includes unexpected member:\n  " +
-					string.Join ("\n  ", linkedMembers.Values.Select (e => e.GetDisplayName ())));
+					string.Join ("\n  ", linkedMembers.Values.Select (e => e.Entity.GetDisplayName ())));
 		}
+
+		static bool IsCompilerGeneratedMemberName (string memberName)
+		{
+			return memberName.Length > 0 && memberName[0] == '<';
+		}
+
+		static bool IsCompilerGeneratedMember (IMemberDefinition member)
+		{
+			if (IsCompilerGeneratedMemberName (member.Name))
+				return true;
+
+			if (member.DeclaringType != null)
+				return IsCompilerGeneratedMember (member.DeclaringType);
+
+			return false;
+		}
+
+		static bool IsDelegateBackingFieldsType (TypeDefinition type) => type.Name == "<>O";
+
+		static bool IsPrivateImplementationDetailsType (TypeDefinition type) => string.IsNullOrEmpty (type.Namespace) && type.Name.StartsWith ("<PrivateImplementationDetails>");
 
 		private void PopulateLinkedMembers ()
 		{
-			foreach (TypeDesc? constructedType in testResult.TrimmingResults.ConstructedEETypes) {
-				AddType (constructedType);
+			foreach (TypeDesc type in testResult.TrimmingResults.AllEETypes) {
+				AddType (type);
 			}
 
-			foreach (MethodDesc? compiledMethod in testResult.TrimmingResults.CompiledMethodBodies) {
-				AddMethod (compiledMethod);
+			foreach (MethodDesc method in testResult.TrimmingResults.CompiledMethodBodies) {
+				AddMethod (method);
 			}
 
-			void AddMethod (MethodDesc method)
+			foreach (MethodDesc method in testResult.TrimmingResults.ReflectedMethods) {
+				AddMethod (method, isReflected: true);
+			}
+
+			void AddMethod (MethodDesc method, bool isReflected = false)
 			{
 				MethodDesc methodDef = method.GetTypicalMethodDefinition ();
 
@@ -181,7 +185,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (owningType?.IsDelegate == true)
 					return;
 
-				if (!AddMember (methodDef))
+				if (!AddTrimmedMethod (methodDef, isReflected))
 					return;
 
 				if (owningType is not null) {
@@ -212,9 +216,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (typeDef.IsDelegate) {
 					// AOT's handling of delegates is very different from the IL/metadata picture
 					// So to simplify this, we're going to automatically "mark" all of the delegate's methods
-					foreach (MethodDesc m in typeDef.GetMethods()) {
-						if (ShouldIncludeEntityByDisplayName(m)) {
-							AddMember (m);
+					foreach (MethodDesc m in typeDef.GetMethods ()) {
+						if (ShouldIncludeEntityByDisplayName (m)) {
+							AddTrimmedMethod (m, isReflected: false);
 						}
 					}
 				}
@@ -240,7 +244,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AddMember (@event);
 			}
 
-			bool AddMember (TypeSystemEntity entity) => linkedMembers.TryAdd (new AssemblyQualifiedToken (entity), entity);
+			bool AddMember (TypeSystemEntity entity)
+			{
+				Assert.False (entity is MethodDesc, "Use AddTrimmedMethod for all methods instead");
+				return linkedMembers.TryAdd (new AssemblyQualifiedToken (entity), new LinkedEntity(entity));
+			}
+
+			bool AddTrimmedMethod (MethodDesc method, bool isReflected = false)
+			{
+				var token = new AssemblyQualifiedToken (method);
+				bool addedNew = true;
+				if (linkedMembers.TryGetValue(token, out var existingValue)) {
+					addedNew = false;
+					LinkedMethodEntity existingMethod = (LinkedMethodEntity) existingValue;
+					if (existingMethod.IsReflected || !isReflected)
+						return addedNew;
+
+					linkedMembers.Remove (token);
+				}
+
+				linkedMembers.Add (token, new LinkedMethodEntity (method, isReflected));
+				return addedNew;
+			}
 
 			static bool ShouldIncludeEntityByDisplayName (TypeSystemEntity entity) => !ExcludeDisplayNames.Contains (entity.GetDisplayName ());
 
@@ -300,8 +325,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyCustomAttributes (original, linked);
 		}
 
-		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDesc? linked)
+		void VerifyTypeDefinition (TypeDefinition original, LinkedEntity? linkedEntity)
 		{
+			TypeDesc? linked = linkedEntity?.Entity as TypeDesc;
 			if (linked != null && NameUtils.GetActualOriginDisplayName (linked) is string linkedDisplayName && verifiedGeneratedTypes.Contains (linkedDisplayName))
 				return;
 
@@ -319,10 +345,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				original.AllMembers ().Any (HasActiveKeptDerivedAttribute);
 
 			if (!expectedKept) {
-				if (linked != null)
-					Assert.True (false, $"Type `{original}' should have been removed");
+				if (linked == null)
+					return;
 
-				return;
+				// Compiler generated members can't be annotated with `Kept` attributes directly
+				// For some of them we have special attributes (backing fields for example), but it's impractical to define
+				// special attributes for all types of compiler generated members (there are quite a few of them and they're
+				// going to change/increase over time).
+				// So we're effectively disabling Kept validation on compiler generated members
+				// Note that we still want to go "inside" each such member, as it might have additional attributes
+				// we do want to validate. There's no specific use case right now, but I can easily imagine one
+				// for more detailed testing of for example custom attributes on local functions, or similar.
+				if (!IsCompilerGeneratedMember (original))
+					Assert.True (false, $"Type `{original}' should have been removed");
 			}
 
 			bool prev = checkNames;
@@ -351,31 +386,41 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void VerifyTypeDefinitionKept (TypeDefinition original, TypeDesc? linked)
 		{
+			// NativeAOT will not keep delegate backing field type information, it's compiled down to a set of static fields
+			// this infra currently doesn't track fields in any way.
+			// Same goes for private implementation detail type.
+			if (IsDelegateBackingFieldsType (original) || IsPrivateImplementationDetailsType(original))
+				return;
+
 			if (linked == null) {
 				Assert.True (false, $"Type `{original}' should have been kept");
 				return;
 			}
 
 #if false
-			if (!original.IsInterface)
-				VerifyBaseType (original, linked);
+			// Skip verification of type metadata for compiler generated types (we don't currently need it yet)
+			if (!IsCompilerGeneratedMember (original)) {
+				VerifyKeptByAttributes (original, linked);
+				if (!original.IsInterface)
+					VerifyBaseType (original, linked);
 
-			VerifyInterfaces (original, linked);
-			VerifyPseudoAttributes (original, linked);
-			VerifyGenericParameters (original, linked);
-			VerifyCustomAttributes (original, linked);
-			VerifySecurityAttributes (original, linked);
+				VerifyInterfaces (original, linked);
+				VerifyPseudoAttributes (original, linked);
+				VerifyGenericParameters (original, linked);
+				VerifyCustomAttributes (original, linked);
+				VerifySecurityAttributes (original, linked);
 
-			VerifyFixedBufferFields (original, linked);
+				VerifyFixedBufferFields (original, linked);
+			}
 #endif
 
 			foreach (var td in original.NestedTypes) {
 				AssemblyQualifiedToken token = new (td);
 				linkedMembers.TryGetValue (
 					token,
-					out TypeSystemEntity? linkedMember);
+					out LinkedEntity? linkedMember);
 
-				VerifyTypeDefinition (td, linkedMember as TypeDesc);
+				VerifyTypeDefinition (td, linkedMember);
 				linkedMembers.Remove (token);
 			}
 
@@ -385,8 +430,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				linkedMembers.TryGetValue (
 					token,
-					out TypeSystemEntity? linkedMember);
-				VerifyProperty (p, linkedMember as PropertyPseudoDesc, linked);
+					out LinkedEntity? linkedMember);
+				VerifyProperty (p, linkedMember, linked);
 				linkedMembers.Remove (token);
 			}
 			// Need to check events before fields so that the KeptBackingFieldAttribute is handled correctly
@@ -395,8 +440,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				linkedMembers.TryGetValue (
 					token,
-					out TypeSystemEntity? linkedMember);
-				VerifyEvent (e, linkedMember as EventPseudoDesc, linked);
+					out LinkedEntity? linkedMember);
+				VerifyEvent (e, linkedMember, linked);
 				linkedMembers.Remove (token);
 			}
 
@@ -419,9 +464,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AssemblyQualifiedToken token = new (m);
 				linkedMembers.TryGetValue (
 					token,
-					out TypeSystemEntity? linkedMember);
+					out LinkedEntity? linkedMember);
 
-				VerifyMethod (m, linkedMember as MethodDesc);
+				VerifyMethod (m, linkedMember);
 				linkedMembers.Remove (token);
 			}
 		}
@@ -486,7 +531,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private void VerifyField (FieldDefinition src, FieldDesc? linked)
 		{
-			bool expectedKept = ShouldBeKept (src);
+			bool compilerGenerated = IsCompilerGeneratedMember (src);
+			bool expectedKept = ShouldBeKept (src) | compilerGenerated;
 
 			if (!expectedKept) {
 				if (linked != null)
@@ -495,10 +541,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 			}
 
-			VerifyFieldKept (src, linked);
+			VerifyFieldKept (src, linked, compilerGenerated);
 		}
 
-		private static void VerifyFieldKept (FieldDefinition src, FieldDesc? linked)
+		private static void VerifyFieldKept (FieldDefinition src, FieldDesc? linked, bool compilerGenerated)
 		{
 			if (linked == null) {
 				Assert.True (false, $"Field `{src}' should have been kept");
@@ -516,15 +562,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 #if false
 			VerifyPseudoAttributes (src, linked);
-			VerifyCustomAttributes (src, linked);
+			if (!compilerGenerated)
+				VerifyCustomAttributes (src, linked);
 #endif
 		}
 
-		private void VerifyProperty (PropertyDefinition src, PropertyPseudoDesc? linked, TypeDesc linkedType)
+		private void VerifyProperty (PropertyDefinition src, LinkedEntity? linkedEntity, TypeDesc linkedType)
 		{
+			PropertyPseudoDesc? linked = linkedEntity?.Entity as PropertyPseudoDesc;
 			VerifyMemberBackingField (src, linkedType);
 
-			bool expectedKept = ShouldBeKept (src);
+			bool compilerGenerated = IsCompilerGeneratedMember (src);
+			bool expectedKept = ShouldBeKept (src) || compilerGenerated;
 
 			if (!expectedKept) {
 				if (linked is not null)
@@ -548,15 +597,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 #if false
 			VerifyPseudoAttributes (src, linked);
-			VerifyCustomAttributes (src, linked);
+			if (!compilerGenerated)
+				VerifyCustomAttributes (src, linked);
 #endif
 		}
 
-		private void VerifyEvent (EventDefinition src, EventPseudoDesc? linked, TypeDesc linkedType)
+		private void VerifyEvent (EventDefinition src, LinkedEntity? linkedEntity, TypeDesc linkedType)
 		{
+			EventPseudoDesc? linked = linkedEntity?.Entity as EventPseudoDesc;
 			VerifyMemberBackingField (src, linkedType);
 
-			bool expectedKept = ShouldBeKept (src);
+			bool compilerGenerated = IsCompilerGeneratedMember (src);
+			bool expectedKept = ShouldBeKept (src) | compilerGenerated;
 
 			if (!expectedKept) {
 				if (linked is not null)
@@ -571,39 +623,50 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventAddMethodAttribute))) {
-				VerifyMethodInternal (src.AddMethod, linked.AddMethod, true);
+				// TODO: This is wrong - we can't validate that the method is present by looking at linked (as that is not actually linked)
+				//   we need to look into linkedMembers to see if the method was actually preserved by the compiler (and has an entry point)
+				VerifyMethodInternal (src.AddMethod, new LinkedMethodEntity(linked.AddMethod, false), true, compilerGenerated);
 				verifiedEventMethods.Add (src.AddMethod.FullName);
 				linkedMembers.Remove (new AssemblyQualifiedToken (src.AddMethod));
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventRemoveMethodAttribute))) {
-				VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true);
+				// TODO: This is wrong - we can't validate that the method is present by looking at linked (as that is not actually linked)
+				//   we need to look into linkedMembers to see if the method was actually preserved by the compiler (and has an entry point)
+				VerifyMethodInternal (src.RemoveMethod, new LinkedMethodEntity(linked.RemoveMethod, false), true, compilerGenerated);
 				verifiedEventMethods.Add (src.RemoveMethod.FullName);
 				linkedMembers.Remove (new AssemblyQualifiedToken (src.RemoveMethod));
 			}
 
 #if false
 			VerifyPseudoAttributes (src, linked);
-			VerifyCustomAttributes (src, linked);
+			if (!compilerGenerated)
+				VerifyCustomAttributes (src, linked);
 #endif
 		}
 
-		private void VerifyMethod (MethodDefinition src, MethodDesc? linked)
+		private void VerifyMethod (MethodDefinition src, LinkedEntity? linkedEntity)
 		{
+			LinkedMethodEntity? linked = linkedEntity as LinkedMethodEntity;
+			bool compilerGenerated = IsCompilerGeneratedMember (src);
 			bool expectedKept = ShouldMethodBeKept (src);
-			VerifyMethodInternal (src, linked, expectedKept);
+			VerifyMethodInternal (src, linked, expectedKept, compilerGenerated);
 		}
 
-		private void VerifyMethodInternal (MethodDefinition src, MethodDesc? linked, bool expectedKept)
+		private void VerifyMethodInternal (MethodDefinition src, LinkedMethodEntity? linked, bool expectedKept, bool compilerGenerated)
 		{
 			if (!expectedKept) {
-				if (linked != null)
-					Assert.True (false, $"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been removed");
+				if (linked == null)
+					return;
 
-				return;
+				// Similar to comment on types, compiler-generated methods can't be annotated with Kept attribute directly
+				// so we're not going to validate kept/remove on them. Note that we're still going to go validate "into" them
+				// to check for other properties (like parameter name presence/removal for example)
+				if (!compilerGenerated)
+					Assert.True (false, $"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been removed");
 			}
 
-			VerifyMethodKept (src, linked);
+			VerifyMethodKept (src, linked, compilerGenerated);
 		}
 
 		private void VerifyMemberBackingField (IMemberDefinition src, TypeDesc? linkedType)
@@ -630,12 +693,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 			}
 
-			VerifyFieldKept (srcField, linkedType?.GetFields ()?.FirstOrDefault (l => srcField.Name == l.Name));
+			VerifyFieldKept (srcField, linkedType?.GetFields ()?.FirstOrDefault (l => srcField.Name == l.Name), compilerGenerated: true);
 			verifiedGeneratedFields.Add (srcField.FullName);
 			linkedMembers.Remove (new AssemblyQualifiedToken (srcField));
 		}
 
-		protected virtual void VerifyMethodKept (MethodDefinition src, MethodDesc? linked)
+		void VerifyMethodKept (MethodDefinition src, LinkedMethodEntity? linked, bool compilerGenerated)
 		{
 			if (linked == null) {
 				Assert.True (false, $"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been kept");
@@ -645,14 +708,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #if false
 			VerifyPseudoAttributes (src, linked);
 			VerifyGenericParameters (src, linked);
-			VerifyCustomAttributes (src, linked);
-			VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
+			if (!compilerGenerated) {
+				VerifyCustomAttributes (src, linked);
+				VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
+			}
+#endif
 			VerifyParameters (src, linked);
+#if false
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
 
 			// Method bodies are not very different in Native AOT
 			VerifyMethodBody (src, linked);
+			VerifyKeptByAttributes (src, linked);
 #endif
 		}
 
@@ -1149,21 +1217,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		private void VerifyParameters (IMethodSignature src, IMethodSignature linked)
+		private void VerifyParameters (IMethodSignature src, LinkedMethodEntity linked)
 		{
-			Assert.Equal (src.HasParameters, linked.HasParameters);
+			Assert.Equal (src.HasParameters, linked.Method.Signature.Length > 0);
 			if (src.HasParameters) {
 				for (int i = 0; i < src.Parameters.Count; ++i) {
 					var srcp = src.Parameters[i];
-					var lnkp = linked.Parameters[i];
+					//var lnkp = linked.Parameters[i];
 
+#if false
 					VerifyCustomAttributes (srcp, lnkp);
+#endif
 
 					if (checkNames) {
 						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute)))
-							lnkp.Name.Should ().BeEmpty ("Expected empty parameter name");
+							linked.IsReflected.Should ().BeFalse ($"Expected no parameter name (non-reflectable). Parameter {i} of {(src as MethodDefinition)}");
 						else
-							lnkp.Name.Should ().Be (srcp.Name, "Mismatch in parameter name");
+							linked.IsReflected.Should ().BeTrue ($"Expected accessible parameter name (reflectable). Parameter {i} of {(src as MethodDefinition)}");
 					}
 				}
 			}
@@ -1232,7 +1302,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
-				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.NativeAot);
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.NativeAot);
 			});
 		}
 
@@ -1249,7 +1319,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
-				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.NativeAot);
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.NativeAot);
 			});
 		}
 

@@ -27,7 +27,7 @@ extends:
           jobParameters:
             # libraries test build platforms
             testBuildPlatforms:
-            - Linux_x64
+            - linux_x64
             - windows_x64
 
       #

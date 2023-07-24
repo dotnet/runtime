@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
@@ -13,6 +15,13 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class JsonSerializerWrapper
     {
+        // Ensure that the reflection-based serializer testing abstraction roots KeyValuePair<,>
+        // which is required by many tests in the reflection test suite.
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
+        protected JsonSerializerWrapper()
+        {
+        }
+
         public static JsonSerializerWrapper SpanSerializer { get; } = new SpanSerializerWrapper();
         public static JsonSerializerWrapper StringSerializer { get; } = new StringSerializerWrapper();
         public static StreamingJsonSerializerWrapper AsyncStreamSerializer { get; } = new AsyncStreamSerializerWrapper();
@@ -26,6 +35,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class SpanSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool SupportsNullValueOnDeserialize => true; // a 'null' value is supported via implicit operator.
 
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
@@ -86,6 +96,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class StringSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool SupportsNullValueOnDeserialize => true;
 
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
@@ -144,6 +155,7 @@ namespace System.Text.Json.Serialization.Tests
             private readonly bool _forceSmallBufferInOptions;
             private readonly bool _forceBomInsertions;
 
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool IsAsyncSerializer => true;
             public override bool ForceSmallBufferInOptions => _forceSmallBufferInOptions;
 
@@ -215,6 +227,7 @@ namespace System.Text.Json.Serialization.Tests
             private readonly bool _forceSmallBufferInOptions;
             private readonly bool _forceBomInsertions;
 
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool IsAsyncSerializer => false;
             public override bool ForceSmallBufferInOptions => _forceSmallBufferInOptions;
 
@@ -293,6 +306,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class ReaderWriterSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 using MemoryStream stream = new MemoryStream();
@@ -381,6 +395,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class DocumentSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 JsonDocument document = JsonSerializer.SerializeToDocument(value, inputType, options);
@@ -491,6 +506,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class ElementSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 JsonElement element = JsonSerializer.SerializeToElement(value, inputType, options);
@@ -564,6 +580,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class NodeSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool SupportsNullValueOnDeserialize => true;
 
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)

@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ILCompiler;
@@ -23,7 +25,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			ComputeDefaultOptions (out var targetOS, out var targetArchitecture);
 			var targetDetails = new TargetDetails (targetArchitecture, targetOS, TargetAbi.NativeAot);
 			CompilerTypeSystemContext typeSystemContext =
-				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All, genericCycleCutoffPoint: -1);
+				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All, genericCycleDepthCutoff: -1);
 
 			typeSystemContext.InputFilePaths = options.InputFilePaths;
 			typeSystemContext.ReferenceFilePaths = options.ReferenceFilePaths;
@@ -36,7 +38,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			foreach (var trimAssembly in options.TrimAssemblies) {
-				EcmaModule module = typeSystemContext.GetModuleFromPath (trimAssembly);
+				EcmaModule module = typeSystemContext.GetModuleForSimpleName (trimAssembly);
 				inputModules.Add (module);
 			}
 
@@ -57,23 +59,48 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					entrypointModule = module;
 				}
 
-				compilationRoots.Add (new ExportedMethodsRootProvider (module));
+				compilationRoots.Add (new UnmanagedEntryPointsRootProvider (module));
 			}
 
-			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options)));
+			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options), generateLibraryAndModuleInitializers: true));
+
+			foreach (var rootedAssembly in options.AdditionalRootAssemblies) {
+				EcmaModule module = typeSystemContext.GetModuleForSimpleName (rootedAssembly);
+
+				// We only root the module type. The rest will fall out because we treat rootedAssemblies
+				// same as conditionally rooted ones and here we're fulfilling the condition ("something is used").
+				compilationRoots.Add (
+					new GenericRootProvider<ModuleDesc> (module,
+					(ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddReflectionRoot (module.GetGlobalModuleType (), "Command line root")));
+			}
 
 			ILProvider ilProvider = new NativeAotILProvider ();
 
-			ilProvider = new FeatureSwitchManager (ilProvider, options.FeatureSwitches);
+			Logger logger = new Logger (
+				logWriter,
+				ilProvider,
+				isVerbose: true,
+				suppressedWarnings: Enumerable.Empty<int> (),
+				options.SingleWarn,
+				singleWarnEnabledModules: Enumerable.Empty<string> (),
+				singleWarnDisabledModules: Enumerable.Empty<string> (),
+				suppressedCategories: Enumerable.Empty<string> ());
 
-			Logger logger = new Logger (logWriter, ilProvider, isVerbose: true);
+			foreach (var descriptor in options.Descriptors) {
+				if (!File.Exists (descriptor))
+					throw new FileNotFoundException ($"'{descriptor}' doesn't exist");
+				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
+			}
+			
+			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches, default);
+
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 
 			UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager (
 				compilationGroup,
 				typeSystemContext,
 				new NoMetadataBlockingPolicy (),
-				new ManifestResourceBlockingPolicy (options.FeatureSwitches),
+				new ManifestResourceBlockingPolicy (logger, options.FeatureSwitches, new Dictionary<ModuleDesc, IReadOnlySet<string>>()),
 				logFile: null,
 				new NoStackTraceEmissionPolicy (),
 				new NoDynamicInvokeThunkGenerationPolicy (),
@@ -81,10 +108,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				UsageBasedMetadataGenerationOptions.ReflectionILScanning,
 				options: default,
 				logger,
-				Array.Empty<KeyValuePair<string, bool>> (),
+				options.FeatureSwitches,
 				Array.Empty<string> (),
 				options.AdditionalRootAssemblies.ToArray (),
-				options.TrimAssemblies.ToArray ());
+				options.TrimAssemblies.ToArray (),
+				Array.Empty<string> ());
 
 			PInvokeILEmitterConfiguration pinvokePolicy = new ILCompilerTestPInvokePolicy ();
 			InteropStateManager interopStateManager = new InteropStateManager (typeSystemContext.GeneratedAssembly);

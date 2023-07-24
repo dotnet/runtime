@@ -10,9 +10,7 @@
 // In this example, in Der1:M during tail call Caller arg6 points to the same location as Callee arg6
 // (which is null) and causes NullReferenceException.
 
-.assembly extern System.Runtime
-{
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
 .assembly GitHub_20625
 {

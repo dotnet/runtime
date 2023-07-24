@@ -21,6 +21,7 @@ parameters:
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
+  disableComponentGovernance: false
 
   variables: {} ## any extra variables to add to the defaults defined below
 
@@ -48,6 +49,7 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
     gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
     variables:
     - ${{ if ne(parameters.testGroup, '') }}:
@@ -73,18 +75,6 @@ jobs:
 
     - name: crossDacArtifactPath
       value: $(Build.SourcesDirectory)/artifacts/$(buildCrossDacArtifactName)
-
-    - name: buildMuslDacRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/alpine.$(archType).$(buildConfigUpper)'
-
-    - name: buildMuslDacStagingPath
-      value: '$(crossDacArtifactPath)/Linux_musl.$(archType).$(buildConfigUpper)'
-
-    - name: buildLinuxDacRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/Linux.$(archType).$(buildConfigUpper)'
-
-    - name: buildLinuxDacStagingPath
-      value: '$(crossDacArtifactPath)/Linux.$(archType).$(buildConfigUpper)'
 
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName
@@ -125,7 +115,7 @@ jobs:
           value: 'priority1'
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: priorityArg
-          value: '-priority=1'
+          value: '-priority 1'
 
     - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''
@@ -142,8 +132,8 @@ jobs:
     - name: osArg
       value: ''
 
-    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+    - ${{ if eq(parameters.osGroup, 'freebsd') }}:
       - name: osArg
-        value: -os FreeBSD
+        value: -os freebsd
 
     steps: ${{ parameters.steps }}

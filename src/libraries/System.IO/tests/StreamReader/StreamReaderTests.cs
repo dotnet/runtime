@@ -15,6 +15,8 @@ namespace System.IO.Tests
 {
     public partial class StreamReaderTests
     {
+        private const string LowerAlpha = "abcdefghijklmnopqrstuvwxyz";
+
         protected virtual Stream CreateStream()
         {
             return new MemoryStream();
@@ -400,12 +402,8 @@ namespace System.IO.Tests
         [InlineData(100, 50, 101)]
         public void Read_ReadsExpectedData(int readLength, int totalLength, int bufferSize)
         {
-            var data = new char[totalLength];
             var r = new Random(42);
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (char)('a' + r.Next(0, 26));
-            }
+            char[] data = r.GetItems<char>(LowerAlpha, totalLength);
 
             var result = new char[data.Length];
             Span<char> dst = result;
@@ -431,12 +429,8 @@ namespace System.IO.Tests
         [InlineData(100, 50, 101)]
         public void ReadBlock_ReadsExpectedData(int readLength, int totalLength, int bufferSize)
         {
-            var data = new char[totalLength];
             var r = new Random(42);
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (char)('a' + r.Next(0, 26));
-            }
+            char[] data = r.GetItems<char>(LowerAlpha, totalLength);
 
             var result = new char[data.Length];
             Span<char> dst = result;
@@ -462,12 +456,8 @@ namespace System.IO.Tests
         [InlineData(100, 50, 101)]
         public async Task ReadAsync_ReadsExpectedData(int readLength, int totalLength, int bufferSize)
         {
-            var data = new char[totalLength];
             var r = new Random(42);
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (char)('a' + r.Next(0, 26));
-            }
+            char[] data = r.GetItems<char>(LowerAlpha, totalLength);
 
             var result = new char[data.Length];
             Memory<char> dst = result;
@@ -493,12 +483,9 @@ namespace System.IO.Tests
         [InlineData(100, 50, 101)]
         public async Task ReadBlockAsync_ReadsExpectedData(int readLength, int totalLength, int bufferSize)
         {
-            var data = new char[totalLength];
             var r = new Random(42);
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (char)('a' + r.Next(0, 26));
-            }
+            char[] data = r.GetItems<char>(LowerAlpha, totalLength);
+
 
             var result = new char[data.Length];
             Memory<char> dst = result;

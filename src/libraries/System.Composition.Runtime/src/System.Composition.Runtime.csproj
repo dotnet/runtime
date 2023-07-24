@@ -4,6 +4,7 @@
     <RootNamespace>System.Composition</RootNamespace>
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsPackable>true</IsPackable>
     <PackageDescription>Contains runtime components of the Managed Extensibility Framework.

@@ -712,12 +712,13 @@ struct LC_Condition
     LC_Expr    op1;
     LC_Expr    op2;
     genTreeOps oper;
+    bool       compareUnsigned;
 
 #ifdef DEBUG
     void Print()
     {
         op1.Print();
-        printf(" %s ", GenTree::OpName(oper));
+        printf(" %s%s ", GenTree::OpName(oper), compareUnsigned ? "U" : "");
         op2.Print();
     }
 #endif
@@ -733,7 +734,8 @@ struct LC_Condition
     LC_Condition()
     {
     }
-    LC_Condition(genTreeOps oper, const LC_Expr& op1, const LC_Expr& op2) : op1(op1), op2(op2), oper(oper)
+    LC_Condition(genTreeOps oper, const LC_Expr& op1, const LC_Expr& op2, bool asUnsigned = false)
+        : op1(op1), op2(op2), oper(oper), compareUnsigned(asUnsigned)
     {
     }
 

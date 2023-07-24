@@ -2,9 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -144,7 +142,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		class FromStringConstantWithGenericInnerInner
 		{
-			[Kept]
+			[Kept (By = Tool.Trimmer)]
 			public void Method ()
 			{
 			}
@@ -155,7 +153,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		class FromStringConstantWithGenericInnerOne<
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 		T>
 		{
 		}
@@ -186,6 +184,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		[KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
+		[UnconditionalSuppressMessage("test", "IL3050", Justification = "The test applies DAM on System.Array, which contains CreateInstance method which has RDC on it.")]
 		static void TestFromStringConstantWithGeneric ()
 		{
 			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGeneric`1[[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInner]]");

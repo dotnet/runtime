@@ -48,7 +48,11 @@ public class TestAssemblyLoadContext : AssemblyLoadContext
     public int ExecuteAssembly(string path, string[] args)
     {
         Assembly assembly = LoadFromAssemblyPath(Path.Combine(_applicationBase, path));
-        object[] actualArgs = new object[] { args != null ? args : new string[0] };
+        object[] actualArgs = null;
+        if (assembly.EntryPoint.GetParameters().Length == 1)
+        {
+            actualArgs = new object[] { args != null ? args : new string[0] };
+        }
         return (int)assembly.EntryPoint.Invoke(null, actualArgs);
     }
 

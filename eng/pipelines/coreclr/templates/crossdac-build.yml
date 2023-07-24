@@ -8,7 +8,7 @@ parameters:
 steps:
   # Always build the crossdac, that way we know in CI/PR if things break to build.
   - ${{ if and(eq(parameters.osGroup, 'windows'), notin(parameters.archType, 'x86')) }}:
-    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os Linux -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
+    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os linux -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
       displayName: Build Cross OS Linux DAC for Windows
 
     - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os alpine -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
@@ -22,10 +22,7 @@ steps:
             [Parameter(Mandatory)][string]$targetDir
           )
 
-          if ('${{ parameters.archType }}' -ne '${{ parameters.hostArchType }}')
-          {
-            $crossDacDir = Join-Path $crossDacDir -ChildPath '${{ parameters.hostArchType }}'
-          }
+          $crossDacDir = Join-Path $crossDacDir -ChildPath '${{ parameters.hostArchType }}'
 
           $availableFiles = ls -File $crossDacDir
 
@@ -45,8 +42,15 @@ steps:
           $availableFiles | %{ cp $_.FullName $targetDir -v }
         }
 
-        CopyAndVerifyCrossOsAssets -CrossDacDir $(buildMuslDacRootFolderPath) -TargetDir '$(buildMuslDacStagingPath)/${{ parameters.hostArchType }}'
-        CopyAndVerifyCrossOsAssets -CrossDacDir $(buildLinuxDacRootFolderPath) -TargetDir '$(buildLinuxDacStagingPath)/${{ parameters.hostArchType }}'
+        $buildMuslDacRootFolderPath = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/alpine.${{ parameters.archType }}.$(buildConfigUpper)"
+        $buildMuslStagingPath = "$(crossDacArtifactPath)/Linux_musl.${{ parameters.archType }}.$(buildConfigUpper)/${{ parameters.hostArchType }}"
+        
+        $buildLinuxDacRootFolderPath = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/Linux.${{ parameters.archType }}.$(buildConfigUpper)"
+        $buildLinuxDacStagingPath = "$(crossDacArtifactPath)/Linux.${{ parameters.archType }}.$(buildConfigUpper)/${{ parameters.hostArchType }}"
+        
+        
+        CopyAndVerifyCrossOsAssets -CrossDacDir $buildMuslDacRootFolderPath -TargetDir $buildMuslStagingPath
+        CopyAndVerifyCrossOsAssets -CrossDacDir $buildLinuxDacRootFolderPath -TargetDir $buildLinuxDacStagingPath
 
         Write-Host "Final directory contents:"
         ls -R $(crossDacArtifactPath)
@@ -59,7 +63,7 @@ steps:
         isOfficialBuild: ${{ parameters.isOfficialBuild }}
         timeoutInMinutes: 30
 
-  - ${{ if eq(parameters.osGroup, 'Linux') }}:
+  - ${{ if eq(parameters.osGroup, 'linux') }}:
     - task: CopyFiles@2
       displayName: Gather runtime for CrossDac
       inputs:

@@ -7,14 +7,31 @@ function add(a, b) {
     return a + b;
 }
 
+let testAbort = true;
+let testError = true;
+
 try {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (url, fetchArgs) => {
+        console.log("fetching " + url);
+        // we are testing that we can retry loading of the assembly
+        if (testAbort && url.indexOf('System.Private.CoreLib') != -1) {
+            testAbort = false;
+            return originalFetch(url + "?testAbort=true", fetchArgs);
+        }
+        if (testError && url.indexOf('System.Console') != -1) {
+            testError = false;
+            return originalFetch(url + "?testError=true", fetchArgs);
+        }
+        return originalFetch(url, fetchArgs);
+    };
     const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet
         .withElementOnExit()
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
-        // It is prefered to use specific 'with***' methods instead in all other cases.
+        // It is preferred to use specific 'with***' methods instead in all other cases.
         .withModuleConfig({
-            configSrc: "./mono-config.json",
+            configSrc: "./blazor.boot.json",
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');

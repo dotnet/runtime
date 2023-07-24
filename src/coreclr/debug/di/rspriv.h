@@ -142,7 +142,7 @@ class CordbSafeHashTable;
 //
 // This is an encapsulation of the information necessary to connect to the debugger proxy on a remote machine.
 // It includes the IP address and the port number.  The IP address can be set via the env var
-// COMPlus_DbgTransportProxyAddress, and the port number is fixed when Mac debugging is configured.
+// DOTNET_DbgTransportProxyAddress, and the port number is fixed when Mac debugging is configured.
 //
 
 struct MachineInfo
@@ -5349,7 +5349,8 @@ class CordbFunction : public CordbBase,
                       public ICorDebugFunction,
                       public ICorDebugFunction2,
                       public ICorDebugFunction3,
-                      public ICorDebugFunction4
+                      public ICorDebugFunction4,
+                      public ICorDebugFunction5
 {
 public:
     //-----------------------------------------------------------
@@ -5411,6 +5412,12 @@ public:
     // ICorDebugFunction4
     //-----------------------------------------------------------
     COM_METHOD CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint);
+
+    //-----------------------------------------------------------
+    // ICorDebugFunction5
+    //-----------------------------------------------------------
+    COM_METHOD AreOptimizationsDisabled(BOOL *pOptimizationsDisabled);
+    COM_METHOD DisableOptimizations();
 
     //-----------------------------------------------------------
     // Internal members

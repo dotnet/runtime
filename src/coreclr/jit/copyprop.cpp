@@ -75,11 +75,11 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
 void Compiler::optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName)
 {
     JITDUMP("{ ");
-    for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
+    for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
-        unsigned             defLclNum  = iter.Get();
-        GenTreeLclVarCommon* lclDefNode = iter.GetValue()->Top().GetDefNode()->AsLclVarCommon();
-        LclSsaVarDsc*        ssaDef     = iter.GetValue()->Top().GetSsaDef();
+        unsigned             defLclNum  = iter->GetKey();
+        GenTreeLclVarCommon* lclDefNode = iter->GetValue()->Top().GetDefNode()->AsLclVarCommon();
+        LclSsaVarDsc*        ssaDef     = iter->GetValue()->Top().GetSsaDef();
 
         if (ssaDef != nullptr)
         {
@@ -158,16 +158,17 @@ int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDs
 bool Compiler::optCopyProp(
     BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName)
 {
-    assert(((tree->gtFlags & GTF_VAR_DEF) == 0) && (tree->GetLclNum() == lclNum) && tree->gtVNPair.BothDefined());
+    assert((tree->gtFlags & GTF_VAR_DEF) == 0);
+    assert(tree->GetLclNum() == lclNum);
 
     bool       madeChanges = false;
     LclVarDsc* varDsc      = lvaGetDesc(lclNum);
     ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
 
-    for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
+    for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
-        unsigned newLclNum = iter.Get();
+        unsigned newLclNum = iter->GetKey();
 
         // Nothing to do if same.
         if (lclNum == newLclNum)
@@ -175,7 +176,7 @@ bool Compiler::optCopyProp(
             continue;
         }
 
-        CopyPropSsaDef      newLclDef    = iter.GetValue()->Top();
+        CopyPropSsaDef      newLclDef    = iter->GetValue()->Top();
         LclSsaVarDsc* const newLclSsaDef = newLclDef.GetSsaDef();
 
         // Likewise, nothing to do if the most recent def is not available.
@@ -192,11 +193,8 @@ bool Compiler::optCopyProp(
             continue;
         }
 
-        // Do not copy propagate if the old and new lclVar have different 'doNotEnregister' settings.
-        // This is primarily to avoid copy propagating to IND(ADDR(LCL_VAR)) where the replacement lclVar
-        // is not marked 'lvDoNotEnregister'.
-        // However, in addition, it may not be profitable to propagate a 'doNotEnregister' lclVar to an
-        // existing use of an enregisterable lclVar.
+        // It may not be profitable to propagate a 'doNotEnregister' lclVar to an existing use of an
+        // enregisterable lclVar.
         LclVarDsc* const newLclVarDsc = lvaGetDesc(newLclNum);
         if (varDsc->lvDoNotEnregister != newLclVarDsc->lvDoNotEnregister)
         {
@@ -285,8 +283,8 @@ bool Compiler::optCopyProp(
 // optCopyPropPushDef: Push the new live SSA def on the stack for "lclNode".
 //
 // Arguments:
-//    defNode    - The definition node for this def (GT_ASG/GT_CALL) (will be "nullptr" for "use" defs)
-//    lclNode    - The local tree representing "the def" (that can actually be a use)
+//    defNode    - The definition node for this def (store/GT_CALL) (will be "nullptr" for "use" defs)
+//    lclNode    - The local tree representing "the def"
 //    curSsaName - The map of local numbers to stacks of their defs
 //
 void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName)
@@ -392,8 +390,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
             {
                 optCopyPropPushDef(tree, lclDefNode, curSsaName);
             }
-            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && ((tree->gtFlags & GTF_VAR_DEF) == 0) &&
-                     tree->AsLclVarCommon()->HasSsaName())
+            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && tree->AsLclVarCommon()->HasSsaName())
             {
                 unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
 
@@ -494,12 +491,12 @@ PhaseStatus Compiler::optVnCopyProp()
 
 #ifdef DEBUG
             // Verify the definitions remaining are only those we pushed for parameters.
-            for (LclNumToLiveDefsMap::KeyIterator iter = m_curSsaName.Begin(); !iter.Equal(m_curSsaName.End()); ++iter)
+            for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(&m_curSsaName))
             {
-                unsigned lclNum = iter.Get();
+                unsigned lclNum = iter->GetKey();
                 assert(m_compiler->lvaGetDesc(lclNum)->lvIsParam || (lclNum == m_compiler->info.compThisArg));
 
-                CopyPropSsaDefStack* defStack = iter.GetValue();
+                CopyPropSsaDefStack* defStack = iter->GetValue();
                 assert(defStack->Height() == 1);
             }
 #endif // DEBUG

@@ -67,27 +67,12 @@
 #if defined(TARGET_WINDOWS)
 #define LIB_PREFIX ""
 #define LIB_FILE_EXT ".dll"
-#define FALLBACK_HOST_RID _X("win10")
 #elif defined(TARGET_OSX)
 #define LIB_PREFIX "lib"
 #define LIB_FILE_EXT ".dylib"
-#define FALLBACK_HOST_RID _X("osx.10.12")
 #else
 #define LIB_PREFIX "lib"
 #define LIB_FILE_EXT ".so"
-#if defined(TARGET_FREEBSD)
-#define FALLBACK_HOST_RID _X("freebsd")
-#elif defined(TARGET_ILLUMOS)
-#define FALLBACK_HOST_RID _X("illumos")
-#elif defined(TARGET_SUNOS)
-#define FALLBACK_HOST_RID _X("solaris")
-#elif defined(TARGET_LINUX_MUSL)
-#define FALLBACK_HOST_RID _X("linux-musl")
-#elif defined(TARGET_ANDROID)
-#define FALLBACK_HOST_RID _X("linux-bionic")
-#else
-#define FALLBACK_HOST_RID _X("linux")
-#endif
 #endif
 
 #define _STRINGIFY(s) _X(s)
@@ -105,6 +90,15 @@
 #define PATH_MAX    4096
 #endif
 
+#if defined(TARGET_WINDOWS)
+    #define HOST_RID_PLATFORM "win"
+#elif defined(TARGET_OSX)
+    #define HOST_RID_PLATFORM "osx"
+#elif defined(TARGET_ANDROID)
+    #define HOST_RID_PLATFORM "linux-bionic"
+#else
+    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
+#endif
 
 namespace pal
 {
@@ -276,9 +270,7 @@ namespace pal
     string_t get_current_os_rid_platform();
     inline string_t get_current_os_fallback_rid()
     {
-        string_t fallbackRid(FALLBACK_HOST_RID);
-
-        return fallbackRid;
+        return _STRINGIFY(FALLBACK_HOST_OS);
     }
 
     const void* mmap_read(const string_t& path, size_t* length = nullptr);
@@ -352,6 +344,8 @@ namespace pal
     bool is_emulating_x64();
 
     bool are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2);
+
+    void initialize_createdump();
 }
 
 #endif // PAL_H

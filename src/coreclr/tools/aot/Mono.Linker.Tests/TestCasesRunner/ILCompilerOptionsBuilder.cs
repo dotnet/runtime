@@ -68,6 +68,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkXmlFile (string file)
 		{
+			Options.Descriptors.Add (file);
 		}
 
 		public virtual void AddResponseFile (NPath path)
@@ -84,7 +85,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkAssembly (string fileName)
 		{
-			Options.TrimAssemblies.Add (fileName);
+			Options.TrimAssemblies.Add (Path.GetFileNameWithoutExtension(fileName));
 		}
 
 		public virtual void LinkFromAssembly (string fileName)
@@ -117,10 +118,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 		public virtual void AddLinkSymbols (string value)
-		{
-		}
-
-		public virtual void AddKeepDebugMembers (string value)
 		{
 		}
 
@@ -161,6 +158,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			if (flag == "--feature") {
 				Options.FeatureSwitches.Add (values[0], bool.Parse (values[1]));
+			}
+			else if (flag == "--singlewarn") {
+				Options.SingleWarn = true;
 			}
 		}
 
@@ -203,9 +203,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (!string.IsNullOrEmpty (options.LinkSymbols))
 				AddLinkSymbols (options.LinkSymbols);
-
-			if (!string.IsNullOrEmpty (options.KeepDebugMembers))
-				AddKeepDebugMembers (options.KeepDebugMembers);
 
 			AddSkipUnresolved (options.SkipUnresolved);
 

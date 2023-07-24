@@ -475,17 +475,6 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE ThreadNative_UninterruptibleSleep0()
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    ClrSleepEx(0, false);
-
-    END_QCALL;
-}
-
 FCIMPL1(INT32, ThreadNative::GetManagedThreadId, ThreadBaseObject* th) {
     FCALL_CONTRACT;
 
@@ -1127,17 +1116,3 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
         pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
     }
 }
-
-FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
-{
-    FCALL_CONTRACT;
-
-#ifndef TARGET_UNIX
-    PROCESSOR_NUMBER proc_no_cpu_group;
-    GetCurrentProcessorNumberEx(&proc_no_cpu_group);
-    return (proc_no_cpu_group.Group << 6) | proc_no_cpu_group.Number;
-#else
-    return ::GetCurrentProcessorNumber();
-#endif //!TARGET_UNIX
-}
-FCIMPLEND;

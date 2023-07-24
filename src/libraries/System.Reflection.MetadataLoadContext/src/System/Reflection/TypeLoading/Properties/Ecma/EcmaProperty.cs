@@ -61,14 +61,13 @@ namespace System.Reflection.TypeLoading.Ecma
 
         protected sealed override object? ComputeRawConstantValue() => PropertyDefinition.GetDefaultValue().ToRawObject(Reader);
 
-        public sealed override Type[] GetOptionalCustomModifiers() => GetCustomModifiers(isRequired: false);
-        public sealed override Type[] GetRequiredCustomModifiers() => GetCustomModifiers(isRequired: true);
-
-        private Type[] GetCustomModifiers(bool isRequired)
+        public sealed override Type GetModifiedPropertyType()
         {
-            RoType type = PropertyDefinition.DecodeSignature(new EcmaModifiedTypeProvider(_module), TypeContext).ReturnType;
-            return type.ExtractCustomModifiers(isRequired);
+            return ModifiedType;
         }
+
+        public sealed override Type[] GetOptionalCustomModifiers() => ModifiedType.GetOptionalCustomModifiers();
+        public sealed override Type[] GetRequiredCustomModifiers() => ModifiedType.GetRequiredCustomModifiers();
 
         public sealed override string ToString()
         {

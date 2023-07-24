@@ -20,7 +20,7 @@ public enum FExistingEnum {
 public class ZExistingClass
 {
     public class PreviousNestedClass {
-        public static DateTime Now; // make the linker happy
+        public static DateTime Now; // make the trimming tools happy
         public static ICloneable C;
         public event EventHandler<string> E;
         public void R() { E(this,"123"); }

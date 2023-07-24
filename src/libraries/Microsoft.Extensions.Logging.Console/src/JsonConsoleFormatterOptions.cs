@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Logging.Console
 {
@@ -19,5 +20,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// Gets or sets JsonWriterOptions.
         /// </summary>
         public JsonWriterOptions JsonWriterOptions { get; set; }
+
+        internal override void Configure(IConfiguration configuration) => configuration.Bind(this);
     }
 }

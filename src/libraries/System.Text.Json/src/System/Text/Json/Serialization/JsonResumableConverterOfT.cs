@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization
             JsonTypeInfo jsonTypeInfo = options.GetTypeInfoInternal(typeToConvert);
             state.Initialize(jsonTypeInfo);
 
-            TryRead(ref reader, typeToConvert, options, ref state, out T? value);
+            TryRead(ref reader, typeToConvert, options, ref state, out T? value, out _);
             return value;
         }
 

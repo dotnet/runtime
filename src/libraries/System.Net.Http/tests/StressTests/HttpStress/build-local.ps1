@@ -3,7 +3,7 @@
 ## Usage:
 ## ./build-local.ps1 [StressConfiguration] [LibrariesConfiguration]
 
-$Version="7.0"
+$Version="8.0"
 $RepoRoot="$(git rev-parse --show-toplevel)"
 $DailyDotnetRoot= "./.dotnet-daily"
 
@@ -14,7 +14,7 @@ if (-not ([string]::IsNullOrEmpty($args[0]))) {
 
 $LibrariesConfiguration = "Release"
 if (-not ([string]::IsNullOrEmpty($args[1]))) {
-    $LibrariesConfiguration = $args[0]
+    $LibrariesConfiguration = $args[1]
 }
 
 $TestHostRoot="$RepoRoot/artifacts/bin/testhost/net$Version-windows-$LibrariesConfiguration-x64"
@@ -53,7 +53,7 @@ if (-not (Test-Path -Path "$TestHostRoot/shared/Microsoft.AspNetCore.App")) {
 Write-Host "Building solution."
 dotnet build -c $StressConfiguration
 
-$Runscript=".\run-stress-$LibrariesConfiguration-$StressConfiguration.ps1"
+$Runscript=".\run-stress-$StressConfiguration-$LibrariesConfiguration.ps1"
 if (-not (Test-Path $Runscript)) {
     Write-Host "Generating Runscript."
     Add-Content -Path $Runscript -Value "& '$TestHostRoot/dotnet' exec --roll-forward Major ./bin/$StressConfiguration/net$Version/HttpStress.dll `$args"

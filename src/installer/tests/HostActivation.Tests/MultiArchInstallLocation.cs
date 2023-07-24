@@ -143,7 +143,7 @@ namespace HostActivation.Tests
                     .Should().Fail()
                     .And.HaveUsedDotNetRootInstallLocation(projDir, fixture.CurrentRid)
                     // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
-                    .And.HaveStdErrContaining($"The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")} could not be found.");
+                    .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
             }
         }
 

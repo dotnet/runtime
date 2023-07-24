@@ -44,9 +44,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             GCHandle gcHandle = (GCHandle)slot.GCHandle;
             JSHostImplementation.TaskCallback? holder = (JSHostImplementation.TaskCallback?)gcHandle.Target;
-            if (holder == null) throw new NullReferenceException("JSHostImplementation.TaskCallback");
+            if (holder == null) throw new InvalidOperationException(SR.FailedToMarshalTaskCallback);
 
-            TaskCompletionSource tcs = new TaskCompletionSource(gcHandle);
+            TaskCompletionSource tcs = new TaskCompletionSource(holder);
             JSHostImplementation.ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
                 ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
@@ -83,9 +83,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             GCHandle gcHandle = (GCHandle)slot.GCHandle;
             JSHostImplementation.TaskCallback? holder = (JSHostImplementation.TaskCallback?)gcHandle.Target;
-            if (holder == null) throw new NullReferenceException("JSHostImplementation.TaskCallback");
+            if (holder == null) throw new InvalidOperationException(SR.FailedToMarshalTaskCallback);
 
-            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(gcHandle);
+            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
             JSHostImplementation.ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
                 ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
@@ -93,7 +93,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (arg_2.slot.Type != MarshalerType.None)
                 {
                     arg_2.ToManaged(out Exception? fail);
-                    if (fail == null) throw new NullReferenceException("Exception");
+                    if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
                     tcs.SetException(fail);
                 }
                 else
@@ -139,16 +139,18 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.JSHandle = jsHandle;
             JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
+#if FEATURE_WASM_THREADS
+            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+#else
             task.GetAwaiter().OnCompleted(Complete);
-
-            /* TODO multi-threading
-             * tasks could resolve on any thread and so this code will have race condition between task.IsCompleted and OnCompleted(Complete) callback
-             * This probably needs SynchronizationContext to marshal this call to main thread
-             */
-            Debug.Assert(!task.IsCompleted, "multithreading race condition");
+#endif
 
             void Complete()
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(promise);
+#endif
+
                 // When this task was never resolved/rejected
                 // promise (held by this lambda) would be collected by GC after the Task is collected
                 // and would also allow the JS promise to be collected
@@ -168,7 +170,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidProgramException(ex.Message, ex);
+                    throw new InvalidOperationException(ex.Message, ex);
                 }
                 finally
                 {
@@ -218,16 +220,18 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.JSHandle = jsHandle;
             JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
+#if FEATURE_WASM_THREADS
+            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+#else
             task.GetAwaiter().OnCompleted(Complete);
-
-            /* TODO multi-threading
-             * tasks could resolve on any thread and so this code will have race condition between task.IsCompleted and OnCompleted(Complete) callback
-             * This probably needs SynchronizationContext to marshal this call to main thread
-             */
-            Debug.Assert(!task.IsCompleted, "multithreading race condition");
+#endif
 
             void Complete()
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(promise);
+#endif
+
                 // When this task was never resolved/rejected
                 // promise (held by this lambda) would be collected by GC after the Task is collected
                 // and would also allow the JS promise to be collected
@@ -245,7 +249,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidProgramException(ex.Message, ex);
+                    throw new InvalidOperationException(ex.Message, ex);
                 }
                 finally
                 {
@@ -294,16 +298,17 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.JSHandle = jsHandle;
             JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
+#if FEATURE_WASM_THREADS
+            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+#else
             task.GetAwaiter().OnCompleted(Complete);
-
-            /* TODO multi-threading
-             * tasks could resolve on any thread and so this code will have race condition between task.IsCompleted and OnCompleted(Complete) callback
-             * This probably needs SynchronizationContext to marshal this call to main thread
-             */
-            Debug.Assert(!task.IsCompleted, "multithreading race condition");
+#endif
 
             void Complete()
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(promise);
+#endif
                 // When this task was never resolved/rejected
                 // promise (held by this lambda) would be collected by GC after the Task is collected
                 // and would also allow the JS promise to be collected
@@ -322,7 +327,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidProgramException(ex.Message, ex);
+                    throw new InvalidOperationException(ex.Message, ex);
                 }
                 finally
                 {
@@ -374,10 +379,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static void FailPromise(JSObject promise, Exception ex)
         {
-            if (promise.IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(promise));
-            }
+            ObjectDisposedException.ThrowIf(promise.IsDisposed, promise);
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -423,10 +425,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static void ResolveVoidPromise(JSObject promise)
         {
-            if (promise.IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(promise));
-            }
+            ObjectDisposedException.ThrowIf(promise.IsDisposed, promise);
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -448,10 +447,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static void ResolvePromise<T>(JSObject promise, T value, ArgumentToJSCallback<T> marshaler)
         {
-            if (promise.IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(promise));
-            }
+            ObjectDisposedException.ThrowIf(promise.IsDisposed, promise);
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];

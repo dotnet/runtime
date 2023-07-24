@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using Xunit;
 
 public enum TestEnum
 {
@@ -78,7 +79,8 @@ public class AA
 
 public class App
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

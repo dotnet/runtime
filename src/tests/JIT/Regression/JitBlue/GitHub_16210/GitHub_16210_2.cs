@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
  public struct float4
 {
@@ -35,7 +36,8 @@ public class X
         return E(ref test.x, i);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float v0 = P(0);
         float v1 = P(1);

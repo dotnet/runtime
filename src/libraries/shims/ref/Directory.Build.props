@@ -1,8 +1,0 @@
-<Project>
-  <Import Project="..\Directory.Build.props" />
-
-  <PropertyGroup>
-    <!-- Allow shim ref projects to reference source projects. -->
-    <SkipValidateReferenceAssemblyProjectReferences>true</SkipValidateReferenceAssemblyProjectReferences>
-  </PropertyGroup>
-</Project>

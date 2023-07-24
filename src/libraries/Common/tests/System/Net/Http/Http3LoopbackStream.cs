@@ -14,8 +14,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Test.Common
 {
-
-    internal sealed class Http3LoopbackStream : IAsyncDisposable
+    public sealed class Http3LoopbackStream : IAsyncDisposable
     {
         private const int MaximumVarIntBytes = 8;
         private const long VarIntMax = (1L << 62) - 1;
@@ -58,18 +57,16 @@ namespace System.Net.Test.Common
             await _stream.WriteAsync(buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
-        public async Task SendSettingsFrameAsync(ICollection<(long settingId, long settingValue)> settings = null)
+        public async Task SendSettingsFrameAsync(SettingsEntry[] settingsEntries)
         {
-            settings ??= Array.Empty<(long settingId, long settingValue)>();
-
-            var buffer = new byte[settings.Count * MaximumVarIntBytes * 2];
+            var buffer = new byte[settingsEntries.Length * MaximumVarIntBytes * 2];
 
             int bytesWritten = 0;
 
-            foreach ((long settingId, long settingValue) in settings)
+            foreach (SettingsEntry setting in settingsEntries)
             {
-                bytesWritten += EncodeHttpInteger(settingId, buffer.AsSpan(bytesWritten));
-                bytesWritten += EncodeHttpInteger(settingValue, buffer.AsSpan(bytesWritten));
+                bytesWritten += EncodeHttpInteger((int)setting.SettingId, buffer.AsSpan(bytesWritten));
+                bytesWritten += EncodeHttpInteger(setting.Value, buffer.AsSpan(bytesWritten));
             }
 
             await SendFrameAsync(SettingsFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);

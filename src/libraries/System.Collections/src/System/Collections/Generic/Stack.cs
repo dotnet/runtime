@@ -152,21 +152,14 @@ namespace System.Collections.Generic
         }
 
         // Returns an IEnumerator for this Stack.
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <internalonly/>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
+            Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<T>() :
+            GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         public void TrimExcess()
         {
@@ -174,7 +167,6 @@ namespace System.Collections.Generic
             if (_size < threshold)
             {
                 Array.Resize(ref _array, _size);
-                _version++;
             }
         }
 
@@ -296,7 +288,6 @@ namespace System.Collections.Generic
             if (_array.Length < capacity)
             {
                 Grow(capacity);
-                _version++;
             }
 
             return _array.Length;

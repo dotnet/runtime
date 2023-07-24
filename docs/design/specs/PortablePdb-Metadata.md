@@ -9,23 +9,23 @@ The format is based on the ECMA-335 Partition II metadata standard. The physical
 
 The ECMA-335-II standard is amended by an addition of the following tables to the “#~” metadata stream:
 
-* [Document](#DocumentTable)
-* [MethodDebugInformation](#MethodDebugInformationTable)
-* [LocalScope](#LocalScopeTable)
-* [LocalVariable](#LocalVariableTable)
-* [LocalConstant](#LocalConstantTable)
-* [ImportScope](#ImportScopeTable)
-* [StateMachineMethod](#StateMachineMethodTable)
-* [CustomDebugInformation](#CustomDebugInformationTable)
-    * [StateMachineHoistedLocalScopes](#StateMachineHoistedLocalScopes)
-    * [DynamicLocalVariables](#DynamicLocalVariables)
-    * [DefaultNamespace](#DefaultNamespace)
-    * [EditAndContinueLocalSlotMap](#EditAndContinueLocalSlotMap)
-    * [EditAndContinueLambdaAndClosureMap](#EditAndContinueLambdaAndClosureMap)
-    * [EmbeddedSource](#EmbeddedSource)
-    * [SourceLink](#SourceLink)
-    * [CompilationMetadataReferences](#CompilationMetadataReferences)
-    * [CompilationOptions](#CompilationOptions)
+* [Document](#document-table-0x30)
+* [MethodDebugInformation](#methoddebuginformation-table-0x31)
+* [LocalScope](#localscope-table-0x32)
+* [LocalVariable](#localvariable-table-0x33)
+* [LocalConstant](#localconstant-table-0x34)
+* [ImportScope](#importscope-table-0x35)
+* [StateMachineMethod](#statemachinemethod-table-0x36)
+* [CustomDebugInformation](#customdebuginformation-table-0x37)
+    * [StateMachineHoistedLocalScopes](#state-machine-hoisted-local-scopes-c--vb-compilers)
+    * [DynamicLocalVariables](#dynamic-local-variables-c-compiler)
+    * [DefaultNamespace](#default-namespace-vb-compiler)
+    * [EditAndContinueLocalSlotMap](#edit-and-continue-local-slot-map-c-and-vb-compilers)
+    * [EditAndContinueLambdaAndClosureMap](#edit-and-continue-lambda-and-closure-map-c-and-vb-compilers)
+    * [EmbeddedSource](#embedded-source-c-and-vb-compilers)
+    * [SourceLink](#source-link-c-and-vb-compilers)
+    * [CompilationMetadataReferences](#compilation-metadata-references-c-and-vb-compilers)
+    * [CompilationOptions](#compilation-options-c-and-vb-compilers)
 
 Debugging metadata tables may be embedded into type system metadata (and part of a PE file), or they may be stored separately in a metadata blob contained in a .pdb file. In the latter case additional information is included that connects the debugging metadata to the type system metadata.
 
@@ -33,7 +33,7 @@ Debugging metadata tables may be embedded into type system metadata (and part of
 
 When debugging metadata is generated to a separate data blob "#Pdb" and "#~" streams shall be present. The standalone debugging metadata may also include #Guid, #String and #Blob heaps, which have the same physical layout but are distinct from the corresponding streams of the type system metadata.
 
-#### <a name="PdbStream"></a>#Pdb stream
+#### #Pdb stream
 
 The #Pdb stream has the following structure:
 
@@ -50,10 +50,10 @@ The #Pdb stream has the following structure:
 
 References to heaps (strings, blobs, guids) are references to heaps of the debugging metadata. The sizes of references to type system tables are determined using the algorithm described in ECMA-335-II Chapter 24.2.6, except their respective row counts are found in _TypeSystemTableRows_ field of the #Pdb stream.
 
-### <a name="DocumentTable"></a>Document Table: 0x30
+### Document Table: 0x30
 
 The Document table has the following columns:
-* _Name_ (Blob heap index of [document name blob](#DocumentNameBlob))
+* _Name_ (Blob heap index of [document name blob](#document-name-blob))
 * _HashAlgorithm_ (Guid heap index)
 * _Hash_ (Blob heap index)
 * _Language_ (Guid heap index)
@@ -83,7 +83,7 @@ The values for which _HashAlgorithm_ has defined meaning are listed in the follo
 
 Otherwise, the meaning of _Language_, _HashAlgorithm_ and _Hash_ values is undefined and the reader can interpret them arbitrarily.
 
-#### <a name="DocumentNameBlob"></a>Document Name Blob
+#### Document Name Blob
 
 Document name blob is a sequence:
 
@@ -100,16 +100,16 @@ The document name is a concatenation of the _parts_ separated by the _separator_
 The representation is optimized for an efficient deserialization of the name into a UTF8 encoded string while minimizing the overall storage space for document names.
 - - -
 
-### <a name="MethodDebugInformationTable"></a>MethodDebugInformation Table: 0x31
+### MethodDebugInformation Table: 0x31
 
 MethodDebugInformation table is either empty (missing) or has exactly as many rows as MethodDef table and the following column:
 
 * _Document_       (The row id of the single document containing all sequence points of the method, or 0 if the method doesn't have sequence points or spans multiple documents)
-* _SequencePoints_ (Blob heap index, 0 if the method doesn’t have sequence points, encoding: [sequence points blob](#SequencePointsBlob))
+* _SequencePoints_ (Blob heap index, 0 if the method doesn’t have sequence points, encoding: [sequence points blob](#sequence-points-blob))
 
 The table is a logical extension of MethodDef table (adding a column to the table) and as such can be indexed by MethodDef row id.
 
-#### <a name="SequencePointsBlob"></a>Sequence Points Blob
+#### Sequence Points Blob
 Sequence point is a quintuple of integers and a document reference:
 
 * IL Offset
@@ -178,7 +178,7 @@ Each _SequencePointRecord_ represents a single sequence point. The sequence poin
 
 The values of _Start Line_, _Start Column_, _End Line_ and _End Column_ of a non-hidden sequence point are calculated based upon the values of the previous non-hidden sequence point (if any) and the data stored in the record.
 
-### <a name="LocalScopeTable"></a>LocalScope Table: 0x32
+### LocalScope Table: 0x32
 
 The LocalScope table has the following columns:
 
@@ -220,7 +220,7 @@ _StartOffset_ + _Length_ shall point to the starting byte of an instruction of t
 
 For each pair of scopes belonging to the same _Method_ the intersection of their respective ranges _R1_ and _R2_ shall be either _R1_ or _R2_ or empty.
 
-### <a name="LocalVariableTable"></a>LocalVariable Table: 0x33
+### LocalVariable Table: 0x33
 
 The LocalVariable table has the following columns:
 
@@ -236,23 +236,23 @@ There shall be no duplicate rows in the LocalVariable table, based upon owner an
 
 There shall be no duplicate rows in the LocalVariable table, based upon owner and _Name_.
 
-##### <a name="LocalVariableAttributes"></a>LocalVariableAttributes
+##### LocalVariableAttributes
 | flag  | value | description |
 |:------|:------|:------------|
 | DebuggerHidden | 0x0001 | Variable shouldn’t appear in the list of variables displayed by the debugger |
 
-### <a name="LocalConstantTable"></a>LocalConstant Table: 0x34
+### LocalConstant Table: 0x34
 
 The LocalConstant table has the following columns:
 
 * _Name_ (String heap index)
-* _Signature_ (Blob heap index, [LocalConstantSig blob](#LocalConstantSig))
+* _Signature_ (Blob heap index, [LocalConstantSig blob](#localconstantsig-blob))
 
 Conceptually, every row in the LocalConstant table is owned by one, and only one, row in the LocalScope table.
 
 There shall be no duplicate rows in the LocalConstant table, based upon owner and _Name_.
 
-#### <a name="LocalConstantSig"></a>LocalConstantSig Blob
+#### LocalConstantSig Blob
 
 The structure of the blob is
 
@@ -306,13 +306,13 @@ The encoding of the _GeneralValue_ is determined based upon the type expressed b
 | System        | Decimal  | sign (highest bit), scale (bits 0..7), low (uint32), mid (uint32), high (uint32) |
 | System        | DateTime | int64: ticks             |
 
-### <a name="ImportScopeTable"></a>ImportScope Table: 0x35
+### ImportScope Table: 0x35
 The ImportScope table has the following columns:
 
 * Parent (ImportScope row id or nil)
-* Imports (Blob index, encoding: [Imports blob](#ImportsBlob))
+* Imports (Blob index, encoding: [Imports blob](#imports-blob))
 
-#### <a name="ImportsBlob"></a>Imports Blob
+#### Imports Blob
 Imports blob represents all imports declared by an import scope.
 
 Imports blob has the following structure:
@@ -344,7 +344,7 @@ The exact import semantics are language specific.
 
 The blob may be empty. An empty import scope may still be target of custom debug information record.
 
-### <a name="StateMachineMethodTable"></a>StateMachineMethod Table: 0x36
+### StateMachineMethod Table: 0x36
 
 The StateMachineMethod table has the following columns:
 
@@ -359,7 +359,7 @@ There shall be no duplicate rows in the StateMachineMethod table, based upon _Mo
 
 There shall be no duplicate rows in the StateMachineMethod table, based upon _KickoffMethod_.
 
-### <a name="CustomDebugInformationTable"></a>CustomDebugInformation Table: 0x37
+### CustomDebugInformation Table: 0x37
 The CustomDebugInformation table has the following columns:
 
 * _Parent_ ([HasCustomDebugInformation](#HasCustomDebugInformation) coded index)
@@ -404,7 +404,7 @@ Kind is an id defined by the tool producing the information.
 
 The following _Custom Debug Information_ records are currently produced by C#, VB and F# compilers. In future the compilers and other tools may define new records. Once specified they may not change. If a change is needed the owner has to define a new record with a new kind (GUID).
 
-##### <a name="StateMachineHoistedLocalScopes"></a>State Machine Hoisted Local Scopes (C# & VB compilers)
+##### State Machine Hoisted Local Scopes (C# & VB compilers)
 Parent: MethodDef
 
 Kind: {6DA9A61E-F8C7-4874-BE62-68BC5630DF71}
@@ -427,7 +427,7 @@ _start-offset_ shall point to the starting byte of an instruction of the MoveNex
 
 _start-offset_ + _length_ shall point to the starting byte of an instruction or be equal to the size of the IL stream of the MoveNext method of the state machine type.
 
-##### <a name="DynamicLocalVariables"></a>Dynamic Local Variables (C# compiler)
+##### Dynamic Local Variables (C# compiler)
 Parent: LocalVariable or LocalConstant
 
 Kind: {83C563C4-B4F3-47D5-B824-BA5441477EA8}
@@ -442,7 +442,7 @@ Bits of the sequence are grouped by 8. If the sequence length is not a multiple 
 
 TODO: Specify the meaning of the bits in the sequence.
 
-##### <a name="DefaultNamespace"></a>Default Namespace (VB compiler)
+##### Default Namespace (VB compiler)
 Parent: Module
 
 Kind: {58b2eab6-209f-4e4e-a22c-b2d0f910c782}
@@ -455,7 +455,7 @@ Structure:
 |:---------|:---------|:-----------|
 | _namespace_ | UTF8 string | The default namespace for the module/project. |
 
-##### <a name="EditAndContinueLocalSlotMap"></a>Edit and Continue Local Slot Map (C# and VB compilers)
+##### Edit and Continue Local Slot Map (C# and VB compilers)
 Parent: MethodDef
 
 Kind: {755F52A8-91C5-45BE-B4B8-209571E552BD}
@@ -480,7 +480,7 @@ The blob has the following structure:
 
 The exact algorithm used to calculate syntax offsets and the algorithm that maps slots to syntax nodes is language and implementation specific and may change in future versions of the compiler.
 
-##### <a name="EditAndContinueLambdaAndClosureMap"></a>Edit and Continue Lambda and Closure Map (C# and VB compilers)
+##### Edit and Continue Lambda and Closure Map (C# and VB compilers)
 Parent: MethodDef
 
 Kind: {A643004C-0240-496F-A783-30D64F4979DE}
@@ -505,7 +505,7 @@ The number of lambda entries is determined by the size of the blob (the reader s
 
 The exact algorithm used to calculate syntax offsets and the algorithm that maps lambdas/closures to their implementing methods, types and syntax nodes is language and implementation specific and may change in future versions of the compiler.
 
-##### <a name="EmbeddedSource"></a>Embedded Source (C# and VB compilers)
+##### Embedded Source (C# and VB compilers)
 Parent: Document
 
 Kind: {0E8A571B-6926-466E-B4AD-8AB04611F5FE}
@@ -521,14 +521,14 @@ The blob has the following structure:
 | _format_  | int32            | Indicates how the content is serialized. 0 = raw bytes, uncompressed. Positive value = compressed by deflate algorithm and value indicates uncompressed size. Negative values reserved for future formats. |
 | _content_ | format-specific  | The text of the document in the specified format. The length is implied by the length of the blob minus four bytes for the format. |
 
-##### <a name="SourceLink"></a>Source Link (C# and VB compilers)
+##### Source Link (C# and VB compilers)
 Parent: Module
 
 Kind: {CC110556-A091-4D38-9FEC-25AB9A351A6A}
 
 The blob stores UTF8 encoded text file in JSON format that includes information on how to locate the content of documents listed in Document table on a source server.
 
-##### <a name="CompilationMetadataReferences"></a>Compilation Metadata References (C# and VB compilers)
+##### Compilation Metadata References (C# and VB compilers)
 Parent: Module
 
 Kind: {7E4D4708-096E-4C5C-AEDA-CB10BA6A740D}
@@ -562,7 +562,7 @@ The remaining bits are reserved for future use and have currently no meaning.
 > For example, the [Simple Symbol Query Protocol](https://github.com/dotnet/symstore/blob/master/docs/specs/Simple_Symbol_Query_Protocol.md) uses a combination of _file-name_, _time-stamp_ and _file-size_ as a [key](https://github.com/dotnet/symstore/blob/master/docs/specs/SSQP_Key_Conventions.md#pe-timestamp-filesize).
 > Other services might use the MVID as it uniquely identifies the module.
 
-##### <a name="CompilationOptions"></a>Compilation Options (C# and VB compilers)
+##### Compilation Options (C# and VB compilers)
 Parent: Module
 
 Kind: {B5FEEC05-8CD0-4A83-96DA-466284BB4BD8}
@@ -596,5 +596,5 @@ The order of the options in the list is insignificant.
 > The `runtime-version` is significant since the compiler may have used certain functionality from the runtime that impacts the compilation output (e.g. Unicode tables, etc.)
 
 > The purpose of this data is to allow a tool to reconstruct the compilation the module was built from.
-> The source files for the compilation are expected to be recovered from the source server using [SourceLink](#SourceLink) and/or from [sources embedded](#EmbeddedSource) in the PDB.
-> The metadata references for the compilation are expected to be recovered from a file indexing service (e.g. symbol server) using information in [Compilation Metadata References](#CompilationMetadataReferences) record.
+> The source files for the compilation are expected to be recovered from the source server using [SourceLink](#source-link-c-and-vb-compilers) and/or from [sources embedded](#embedded-source-c-and-vb-compilers) in the PDB.
+> The metadata references for the compilation are expected to be recovered from a file indexing service (e.g. symbol server) using information in [Compilation Metadata References](#compilation-metadata-references-c-and-vb-compilers) record.

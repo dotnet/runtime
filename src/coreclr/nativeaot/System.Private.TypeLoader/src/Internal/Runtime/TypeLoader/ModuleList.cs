@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
+
 using Internal.Runtime.Augments;
 using Internal.Metadata.NativeFormat;
 
@@ -322,205 +322,53 @@ namespace Internal.Runtime.TypeLoader
     }
 
     /// <summary>
-    /// Helper class that can construct an enumerator for the module handle map, possibly adjusting
-    /// the module order so that a given explicitly specified module goes first - this is used
-    /// as optimization in cases where a certain module is most likely to contain some metadata.
-    /// </summary>
-    public struct ModuleHandleEnumerable
-    {
-        /// <summary>
-        /// Module map to enumerate
-        /// </summary>
-        private readonly ModuleMap _moduleMap;
-
-        /// <summary>
-        /// Module handle that should be enumerated first, default(IntPtr) when not used.
-        /// </summary>
-        private readonly TypeManagerHandle _preferredModuleHandle;
-
-        /// <summary>
-        /// Store module map and preferred module to pass to the enumerator upon construction.
-        /// </summary>
-        /// <param name="moduleMap">Module map to enumerate</param>
-        /// <param name="preferredModuleHandle">Optional module handle to enumerate first</param>
-        internal ModuleHandleEnumerable(ModuleMap moduleMap, TypeManagerHandle preferredModuleHandle)
-        {
-            _moduleMap = moduleMap;
-            _preferredModuleHandle = preferredModuleHandle;
-        }
-
-        /// <summary>
-        /// Create the actual module handle enumerator.
-        /// </summary>
-        public ModuleHandleEnumerator GetEnumerator()
-        {
-            return new ModuleHandleEnumerator(_moduleMap, _preferredModuleHandle);
-        }
-    }
-
-    /// <summary>
-    /// Enumerator for module handles, optionally overriding module order with a given preferred
-    /// module to be enumerated first.
-    /// </summary>
-    public struct ModuleHandleEnumerator
-    {
-        /// <summary>
-        /// The underlying ModuleInfoEnumerator handles enumeration internals
-        /// </summary>
-        private ModuleInfoEnumerator _moduleInfoEnumerator;
-
-        /// <summary>
-        /// Construct the underlying module info enumerator used to iterate the module map
-        /// </summary>
-        /// <param name="moduleMap">Module map to enumerate</param>
-        /// <param name="preferredModuleHandle">Optional module handle to enumerate first</param>
-        internal ModuleHandleEnumerator(ModuleMap moduleMap, TypeManagerHandle preferredModuleHandle)
-        {
-            _moduleInfoEnumerator = new ModuleInfoEnumerator(moduleMap, preferredModuleHandle);
-        }
-
-        /// <summary>
-        /// Move to next element in the module map. Return true when an element is available,
-        /// false when the enumeration is finished.
-        /// </summary>
-        public bool MoveNext()
-        {
-            return _moduleInfoEnumerator.MoveNext();
-        }
-
-        /// <summary>
-        /// Return current module handle.
-        /// </summary>
-        public TypeManagerHandle Current
-        {
-            get { return _moduleInfoEnumerator.Current.Handle; }
-        }
-    }
-
-    /// <summary>
     /// Utilities for manipulating module list and metadata readers.
     /// </summary>
     public sealed class ModuleList
     {
-        /// <summary>
-        /// Map of module addresses to module info. Every time a new module is loaded,
-        /// the reference gets atomically updated to a newly copied instance of the dictionary
-        /// to that consumers of this dictionary can look at the reference and  enumerate / process it without locking, fear that the contents of the dictionary change
-        /// under its hands.
-        /// </summary>
-        private volatile ModuleMap _loadedModuleMap;
-
-        internal ModuleMap GetLoadedModuleMapInternal() { return _loadedModuleMap; }
+        private ModuleMap _loadedModuleMap;
 
         /// <summary>
-        /// List of callbacks to execute when a module gets registered.
+        /// Module list is a process-wide singleton that physically lives in the TypeLoaderEnvironment instance.
         /// </summary>
-        private Action<ModuleInfo> _moduleRegistrationCallbacks;
-
-        /// <summary>
-        /// Lock used for serializing module registrations.
-        /// </summary>
-        private Lock _moduleRegistrationLock;
+        public static ModuleList Instance { get; } = new ModuleList();
 
         /// <summary>
         /// Register initially (eagerly) loaded modules.
         /// </summary>
         internal ModuleList()
         {
-            _loadedModuleMap = new ModuleMap(new ModuleInfo[0]);
-            _moduleRegistrationCallbacks = default(Action<ModuleInfo>);
-            _moduleRegistrationLock = new Lock();
+            // Fetch modules that have already been registered with the runtime
+            int loadedModuleCount = RuntimeAugments.GetLoadedModules(null);
+            TypeManagerHandle[] loadedModuleHandles = new TypeManagerHandle[loadedModuleCount];
+            int loadedModuleCountUpdated = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
+            Debug.Assert(loadedModuleCount == loadedModuleCountUpdated);
 
-            RegisterNewModules();
-        }
+            ModuleInfo[] updatedModules = new ModuleInfo[loadedModuleHandles.Length];
 
-        /// <summary>
-        /// Module list is a process-wide singleton that physically lives in the TypeLoaderEnvironment instance.
-        /// </summary>
-        public static ModuleList Instance
-        {
-            get { return TypeLoaderEnvironment.Instance.ModuleList; }
-        }
-
-        /// <summary>
-        /// Register a new callback that gets called whenever a new module gets registered.
-        /// The module registration happens under a global lock so that the module registration
-        /// callbacks are never called concurrently.
-        /// </summary>
-        /// <param name="newModuleRegistrationCallback">Method to call whenever a new module is registered</param>
-        public static void AddModuleRegistrationCallback(Action<ModuleInfo> newModuleRegistrationCallback)
-        {
-            // Accumulate callbacks to be notified upon module registration
-            Instance._moduleRegistrationCallbacks += newModuleRegistrationCallback;
-
-            // Invoke the new callback for all modules that have already been registered
-            foreach (ModuleInfo moduleInfo in EnumerateModules())
+            for (int newModuleIndex = 0; newModuleIndex < loadedModuleHandles.Length; newModuleIndex++)
             {
-                newModuleRegistrationCallback(moduleInfo);
-            }
-        }
+                ModuleInfo newModuleInfo;
 
-        /// <summary>
-        /// Register all modules which were added (Registered) to the runtime and are not already registered with the TypeLoader.
-        /// </summary>
-        public void RegisterNewModules()
-        {
-            // prevent multiple threads from registering modules concurrently
-            using (LockHolder.Hold(_moduleRegistrationLock))
-            {
-                // Fetch modules that have already been registered with the runtime
-                int loadedModuleCount = RuntimeAugments.GetLoadedModules(null);
-                TypeManagerHandle[] loadedModuleHandles = new TypeManagerHandle[loadedModuleCount];
-                int loadedModuleCountUpdated = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
-                Debug.Assert(loadedModuleCount == loadedModuleCountUpdated);
-
-                LowLevelList<TypeManagerHandle> newModuleHandles = new LowLevelList<TypeManagerHandle>(loadedModuleHandles.Length);
-                foreach (TypeManagerHandle moduleHandle in loadedModuleHandles)
+                unsafe
                 {
-                    // Skip already registered modules.
-                    if (_loadedModuleMap.HandleToModuleIndex.TryGetValue(moduleHandle, out _))
+                    byte* pBlob;
+                    uint cbBlob;
+
+                    if (RuntimeAugments.FindBlob(loadedModuleHandles[newModuleIndex], (int)ReflectionMapBlob.EmbeddedMetadata, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
                     {
-                        continue;
+                        newModuleInfo = new NativeFormatModuleInfo(loadedModuleHandles[newModuleIndex], (IntPtr)pBlob, (int)cbBlob);
                     }
-
-                    newModuleHandles.Add(moduleHandle);
-                }
-
-                // Copy existing modules to new dictionary
-                int oldModuleCount = _loadedModuleMap.Modules.Length;
-                ModuleInfo[] updatedModules = new ModuleInfo[oldModuleCount + newModuleHandles.Count];
-                if (oldModuleCount > 0)
-                {
-                    Array.Copy(_loadedModuleMap.Modules, 0, updatedModules, 0, oldModuleCount);
-                }
-
-                for (int newModuleIndex = 0; newModuleIndex < newModuleHandles.Count; newModuleIndex++)
-                {
-                    ModuleInfo newModuleInfo;
-
-                    unsafe
+                    else
                     {
-                        byte* pBlob;
-                        uint cbBlob;
-
-                        if (RuntimeAugments.FindBlob(newModuleHandles[newModuleIndex], (int)ReflectionMapBlob.EmbeddedMetadata, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
-                        {
-                            newModuleInfo = new NativeFormatModuleInfo(newModuleHandles[newModuleIndex], (IntPtr)pBlob, (int)cbBlob);
-                        }
-                        else
-                        {
-                            newModuleInfo = new ModuleInfo(newModuleHandles[newModuleIndex]);
-                        }
+                        newModuleInfo = new ModuleInfo(loadedModuleHandles[newModuleIndex]);
                     }
-
-                    updatedModules[oldModuleCount + newModuleIndex] = newModuleInfo;
-
-                    _moduleRegistrationCallbacks?.Invoke(newModuleInfo);
                 }
 
-                // Atomically update the module map
-                _loadedModuleMap = new ModuleMap(updatedModules);
+                updatedModules[newModuleIndex] = newModuleInfo;
             }
+
+            _loadedModuleMap = new ModuleMap(updatedModules);
         }
 
         /// <summary>
@@ -632,26 +480,6 @@ namespace Internal.Runtime.TypeLoader
         public static NativeFormatModuleInfoEnumerable EnumerateModules(TypeManagerHandle preferredModule)
         {
             return new NativeFormatModuleInfoEnumerable(Instance._loadedModuleMap, preferredModule);
-        }
-
-        /// <summary>
-        /// Enumerate module handles (simplified version for code that only needs the module addresses).
-        /// </summary>
-        public static ModuleHandleEnumerable Enumerate()
-        {
-            return new ModuleHandleEnumerable(Instance._loadedModuleMap, default(TypeManagerHandle));
-        }
-
-        /// <summary>
-        /// Enumerate module handles (simplified version for code that only needs the module addresses).
-        /// Specify a module that should be enumerated first
-        /// - this is used as an optimization in cases when a certain binary module is more probable
-        /// to contain a certain information.
-        /// </summary>
-        /// <param name="preferredModule">Handle to the module which should be enumerated first</param>
-        public static ModuleHandleEnumerable Enumerate(TypeManagerHandle preferredModule)
-        {
-            return new ModuleHandleEnumerable(Instance._loadedModuleMap, preferredModule);
         }
     }
 

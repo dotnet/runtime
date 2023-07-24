@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Text;
 
 namespace System.Numerics
 {
@@ -30,25 +28,25 @@ namespace System.Numerics
 
         internal const int Count = 3;
 
-        /// <summary>Creates a new <see cref="System.Numerics.Vector3" /> object whose three elements have the same value.</summary>
+        /// <summary>Creates a new <see cref="Vector3" /> object whose three elements have the same value.</summary>
         /// <param name="value">The value to assign to all three elements.</param>
         [Intrinsic]
         public Vector3(float value) : this(value, value, value)
         {
         }
 
-        /// <summary>Creates a   new <see cref="System.Numerics.Vector3" /> object from the specified <see cref="System.Numerics.Vector2" /> object and the specified value.</summary>
+        /// <summary>Creates a   new <see cref="Vector3" /> object from the specified <see cref="Vector2" /> object and the specified value.</summary>
         /// <param name="value">The vector with two elements.</param>
-        /// <param name="z">The additional value to assign to the <see cref="System.Numerics.Vector3.Z" /> field.</param>
+        /// <param name="z">The additional value to assign to the <see cref="Z" /> field.</param>
         [Intrinsic]
         public Vector3(Vector2 value, float z) : this(value.X, value.Y, z)
         {
         }
 
         /// <summary>Creates a vector whose elements have the specified values.</summary>
-        /// <param name="x">The value to assign to the <see cref="System.Numerics.Vector3.X" /> field.</param>
-        /// <param name="y">The value to assign to the <see cref="System.Numerics.Vector3.Y" /> field.</param>
-        /// <param name="z">The value to assign to the <see cref="System.Numerics.Vector3.Z" /> field.</param>
+        /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
+        /// <param name="y">The value to assign to the <see cref="Y" /> field.</param>
+        /// <param name="z">The value to assign to the <see cref="Z" /> field.</param>
         [Intrinsic]
         public Vector3(float x, float y, float z)
         {
@@ -89,6 +87,7 @@ namespace System.Numerics
         /// <value>The vector <c>(1,0,0)</c>.</value>
         public static Vector3 UnitX
         {
+            [Intrinsic]
             get => new Vector3(1.0f, 0.0f, 0.0f);
         }
 
@@ -96,6 +95,7 @@ namespace System.Numerics
         /// <value>The vector <c>(0,1,0)</c>.</value>
         public static Vector3 UnitY
         {
+            [Intrinsic]
             get => new Vector3(0.0f, 1.0f, 0.0f);
         }
 
@@ -103,6 +103,7 @@ namespace System.Numerics
         /// <value>The vector <c>(0,0,1)</c>.</value>
         public static Vector3 UnitZ
         {
+            [Intrinsic]
             get => new Vector3(0.0f, 0.0f, 1.0f);
         }
 
@@ -112,63 +113,19 @@ namespace System.Numerics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public float this[int index]
         {
-            get => GetElement(this, index);
-            set => this = WithElement(this, index, value);
-        }
+            [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get => this.GetElement(index);
 
-        /// <summary>Gets the element at the specified index.</summary>
-        /// <param name="vector">The vector of the element to get.</param>
-        /// <param name="index">The index of the element to get.</param>
-        /// <returns>The value of the element at <paramref name="index" />.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
-        internal static float GetElement(Vector3 vector, int index)
-        {
-            if ((uint)index >= Count)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            return GetElementUnsafe(ref vector, index);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float GetElementUnsafe(ref Vector3 vector, int index)
-        {
-            Debug.Assert(index is >= 0 and < Count);
-            return Unsafe.Add(ref Unsafe.As<Vector3, float>(ref vector), index);
-        }
-
-        /// <summary>Sets the element at the specified index.</summary>
-        /// <param name="vector">The vector of the element to get.</param>
-        /// <param name="index">The index of the element to set.</param>
-        /// <param name="value">The value of the element to set.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
-        internal static Vector3 WithElement(Vector3 vector, int index, float value)
-        {
-            if ((uint)index >= Count)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            Vector3 result = vector;
-            SetElementUnsafe(ref result, index, value);
-            return result;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void SetElementUnsafe(ref Vector3 vector, int index, float value)
-        {
-            Debug.Assert(index is >= 0 and < Count);
-            Unsafe.Add(ref Unsafe.As<Vector3, float>(ref vector), index) = value;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => this = this.WithElement(index, value);
         }
 
         /// <summary>Adds two vectors together.</summary>
         /// <param name="left">The first vector to add.</param>
         /// <param name="right">The second vector to add.</param>
         /// <returns>The summed vector.</returns>
-        /// <remarks>The <see cref="System.Numerics.Vector3.op_Addition" /> method defines the addition operation for <see cref="System.Numerics.Vector3" /> objects.</remarks>
+        /// <remarks>The <see cref="op_Addition" /> method defines the addition operation for <see cref="Vector3" /> objects.</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator +(Vector3 left, Vector3 right)
@@ -184,7 +141,7 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The vector that results from dividing <paramref name="left" /> by <paramref name="right" />.</returns>
-        /// <remarks>The <see cref="System.Numerics.Vector3.op_Division" /> method defines the division operation for <see cref="System.Numerics.Vector3" /> objects.</remarks>
+        /// <remarks>The <see cref="Vector3.op_Division" /> method defines the division operation for <see cref="Vector3" /> objects.</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator /(Vector3 left, Vector3 right)
@@ -200,7 +157,8 @@ namespace System.Numerics
         /// <param name="value1">The vector.</param>
         /// <param name="value2">The scalar value.</param>
         /// <returns>The result of the division.</returns>
-        /// <remarks>The <see cref="System.Numerics.Vector3.op_Division" /> method defines the division operation for <see cref="System.Numerics.Vector3" /> objects.</remarks>
+        /// <remarks>The <see cref="Vector3.op_Division" /> method defines the division operation for <see cref="Vector3" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator /(Vector3 value1, float value2)
         {
@@ -211,7 +169,7 @@ namespace System.Numerics
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
         /// <returns><see langword="true" /> if <paramref name="left" /> and <paramref name="right" /> are equal; otherwise, <see langword="false" />.</returns>
-        /// <remarks>Two <see cref="System.Numerics.Vector3" /> objects are equal if each element in <paramref name="left" /> is equal to the corresponding element in <paramref name="right" />.</remarks>
+        /// <remarks>Two <see cref="Vector3" /> objects are equal if each element in <paramref name="left" /> is equal to the corresponding element in <paramref name="right" />.</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector3 left, Vector3 right)
@@ -236,7 +194,7 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The element-wise product vector.</returns>
-        /// <remarks>The <see cref="System.Numerics.Vector3.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector3" /> objects.</remarks>
+        /// <remarks>The <see cref="Vector3.op_Multiply" /> method defines the multiplication operation for <see cref="Vector3" /> objects.</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator *(Vector3 left, Vector3 right)
@@ -252,7 +210,8 @@ namespace System.Numerics
         /// <param name="left">The vector.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
-        /// <remarks>The <see cref="System.Numerics.Vector3.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector3" /> objects.</remarks>
+        /// <remarks>The <see cref="Vector3.op_Multiply" /> method defines the multiplication operation for <see cref="Vector3" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator *(Vector3 left, float right)
         {
@@ -263,7 +222,8 @@ namespace System.Numerics
         /// <param name="left">The vector.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
-        /// <remarks>The <see cref="System.Numerics.Vector3.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector3" /> objects.</remarks>
+        /// <remarks>The <see cref="Vector3.op_Multiply" /> method defines the multiplication operation for <see cref="Vector3" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator *(float left, Vector3 right)
         {
@@ -274,7 +234,7 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The vector that results from subtracting <paramref name="right" /> from <paramref name="left" />.</returns>
-        /// <remarks>The <see cref="System.Numerics.Vector3.op_Subtraction" /> method defines the subtraction operation for <see cref="System.Numerics.Vector3" /> objects.</remarks>
+        /// <remarks>The <see cref="op_Subtraction" /> method defines the subtraction operation for <see cref="Vector3" /> objects.</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator -(Vector3 left, Vector3 right)
@@ -289,7 +249,8 @@ namespace System.Numerics
         /// <summary>Negates the specified vector.</summary>
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
-        /// <remarks>The <see cref="System.Numerics.Vector3.op_UnaryNegation" /> method defines the unary negation operation for <see cref="System.Numerics.Vector3" /> objects.</remarks>
+        /// <remarks>The <see cref="op_UnaryNegation" /> method defines the unary negation operation for <see cref="Vector3" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator -(Vector3 value)
         {
@@ -314,6 +275,7 @@ namespace System.Numerics
         /// <param name="left">The first vector to add.</param>
         /// <param name="right">The second vector to add.</param>
         /// <returns>The summed vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Add(Vector3 left, Vector3 right)
         {
@@ -325,6 +287,7 @@ namespace System.Numerics
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>
         /// <returns>The restricted vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Clamp(Vector3 value1, Vector3 min, Vector3 max)
         {
@@ -350,6 +313,7 @@ namespace System.Numerics
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Distance(Vector3 value1, Vector3 value2)
         {
@@ -361,6 +325,7 @@ namespace System.Numerics
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance squared.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DistanceSquared(Vector3 value1, Vector3 value2)
         {
@@ -372,6 +337,7 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The vector resulting from the division.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Divide(Vector3 left, Vector3 right)
         {
@@ -382,6 +348,7 @@ namespace System.Numerics
         /// <param name="left">The vector.</param>
         /// <param name="divisor">The scalar value.</param>
         /// <returns>The vector that results from the division.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Divide(Vector3 left, float divisor)
         {
@@ -406,10 +373,11 @@ namespace System.Numerics
         /// <param name="value2">The second vector.</param>
         /// <param name="amount">A value between 0 and 1 that indicates the weight of <paramref name="value2" />.</param>
         /// <returns>The interpolated vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Lerp(Vector3 value1, Vector3 value2, float amount)
         {
-            return (value1 * (1f - amount)) + (value2 * amount);
+            return (value1 * (1.0f - amount)) + (value2 * amount);
         }
 
         /// <summary>Returns a vector whose elements are the maximum of each of the pairs of elements in two specified vectors.</summary>
@@ -446,6 +414,7 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The element-wise product vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Multiply(Vector3 left, Vector3 right)
         {
@@ -456,6 +425,7 @@ namespace System.Numerics
         /// <param name="left">The vector to multiply.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Multiply(Vector3 left, float right)
         {
@@ -466,6 +436,7 @@ namespace System.Numerics
         /// <param name="left">The scaled value.</param>
         /// <param name="right">The vector.</param>
         /// <returns>The scaled vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Multiply(float left, Vector3 right)
         {
@@ -475,6 +446,7 @@ namespace System.Numerics
         /// <summary>Negates a specified vector.</summary>
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Negate(Vector3 value)
         {
@@ -484,6 +456,7 @@ namespace System.Numerics
         /// <summary>Returns a vector with the same direction as the specified vector, but with a length of one.</summary>
         /// <param name="value">The vector to normalize.</param>
         /// <returns>The normalized vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Normalize(Vector3 value)
         {
@@ -498,7 +471,7 @@ namespace System.Numerics
         public static Vector3 Reflect(Vector3 vector, Vector3 normal)
         {
             float dot = Dot(vector, normal);
-            return vector - (2 * dot * normal);
+            return vector - (2.0f * (dot * normal));
         }
 
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
@@ -519,6 +492,7 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The difference vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Subtract(Vector3 left, Vector3 right)
         {
@@ -532,11 +506,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Transform(Vector3 position, Matrix4x4 matrix)
         {
-            return new Vector3(
-                (position.X * matrix.M11) + (position.Y * matrix.M21) + (position.Z * matrix.M31) + matrix.M41,
-                (position.X * matrix.M12) + (position.Y * matrix.M22) + (position.Z * matrix.M32) + matrix.M42,
-                (position.X * matrix.M13) + (position.Y * matrix.M23) + (position.Z * matrix.M33) + matrix.M43
-            );
+            return Vector4.Transform(position, in matrix.AsImpl()).AsVector128().AsVector3();
         }
 
         /// <summary>Transforms a vector by the specified Quaternion rotation value.</summary>
@@ -574,66 +544,74 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 TransformNormal(Vector3 normal, Matrix4x4 matrix)
         {
-            return new Vector3(
-                (normal.X * matrix.M11) + (normal.Y * matrix.M21) + (normal.Z * matrix.M31),
-                (normal.X * matrix.M12) + (normal.Y * matrix.M22) + (normal.Z * matrix.M32),
-                (normal.X * matrix.M13) + (normal.Y * matrix.M23) + (normal.Z * matrix.M33)
-            );
+            return TransformNormal(normal, in matrix.AsImpl());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector3 TransformNormal(Vector3 normal, in Matrix4x4.Impl matrix)
+        {
+            Vector4 result = matrix.X * normal.X;
+
+            result += matrix.Y * normal.Y;
+            result += matrix.Z * normal.Z;
+
+            return result.AsVector128().AsVector3();
         }
 
         /// <summary>Copies the elements of the vector to a specified array.</summary>
         /// <param name="array">The destination array.</param>
         /// <remarks><paramref name="array" /> must have at least three elements. The method copies the vector's elements starting at index 0.</remarks>
-        /// <exception cref="System.NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
-        /// <exception cref="System.ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
-        /// <exception cref="System.RankException"><paramref name="array" /> is multidimensional.</exception>
-        [Intrinsic]
+        /// <exception cref="NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
+        /// <exception cref="RankException"><paramref name="array" /> is multidimensional.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(float[] array)
         {
-            CopyTo(array, 0);
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+
+            if (array.Length < Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[0]), this);
         }
 
         /// <summary>Copies the elements of the vector to a specified array starting at a specified index position.</summary>
         /// <param name="array">The destination array.</param>
         /// <param name="index">The index at which to copy the first element of the vector.</param>
         /// <remarks><paramref name="array" /> must have a sufficient number of elements to accommodate the three vector elements. In other words, elements <paramref name="index" />, <paramref name="index" /> + 1, and <paramref name="index" /> + 2 must already exist in <paramref name="array" />.</remarks>
-        /// <exception cref="System.NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
-        /// <exception cref="System.ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="index" /> is less than zero.
+        /// <exception cref="NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> is less than zero.
         /// -or-
         /// <paramref name="index" /> is greater than or equal to the array length.</exception>
-        /// <exception cref="System.RankException"><paramref name="array" /> is multidimensional.</exception>
-        [Intrinsic]
+        /// <exception cref="RankException"><paramref name="array" /> is multidimensional.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(float[] array, int index)
         {
-            if (array is null)
-            {
-                ThrowHelper.ThrowNullReferenceException();
-            }
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
-            if ((index < 0) || (index >= array.Length))
+            if ((uint)index >= (uint)array.Length)
             {
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
-            if ((array.Length - index) < 3)
+            if ((array.Length - index) < Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            array[index] = X;
-            array[index + 1] = Y;
-            array[index + 2] = Z;
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[index]), this);
         }
 
         /// <summary>Copies the vector to the given <see cref="Span{T}" />. The length of the destination span must be at least 3.</summary>
         /// <param name="destination">The destination span which the values are copied into.</param>
-        /// <exception cref="System.ArgumentException">If number of elements in source vector is greater than those available in destination span.</exception>
+        /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(Span<float> destination)
         {
-            if (destination.Length < 3)
+            if (destination.Length < Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -644,22 +622,22 @@ namespace System.Numerics
         /// <summary>Attempts to copy the vector to the given <see cref="Span{Single}" />. The length of the destination span must be at least 3.</summary>
         /// <param name="destination">The destination span which the values are copied into.</param>
         /// <returns><see langword="true" /> if the source vector was successfully copied to <paramref name="destination" />. <see langword="false" /> if <paramref name="destination" /> is not large enough to hold the source vector.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool TryCopyTo(Span<float> destination)
         {
-            if (destination.Length < 3)
+            if (destination.Length < Count)
             {
                 return false;
             }
 
             Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
-
             return true;
         }
 
         /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><see langword="true" /> if the current instance and <paramref name="obj" /> are equal; otherwise, <see langword="false" />. If <paramref name="obj" /> is <see langword="null" />, the method returns <see langword="false" />.</returns>
-        /// <remarks>The current instance and <paramref name="obj" /> are equal if <paramref name="obj" /> is a <see cref="System.Numerics.Vector3" /> object and their corresponding elements are equal.</remarks>
+        /// <remarks>The current instance and <paramref name="obj" /> are equal if <paramref name="obj" /> is a <see cref="Vector3" /> object and their corresponding elements are equal.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals([NotNullWhen(true)] object? obj)
         {
@@ -669,7 +647,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether this instance and another vector are equal.</summary>
         /// <param name="other">The other vector.</param>
         /// <returns><see langword="true" /> if the two vectors are equal; otherwise, <see langword="false" />.</returns>
-        /// <remarks>Two vectors are equal if their <see cref="System.Numerics.Vector3.X" />, <see cref="System.Numerics.Vector3.Y" />, and <see cref="System.Numerics.Vector3.Z" /> elements are equal.</remarks>
+        /// <remarks>Two vectors are equal if their <see cref="X" />, <see cref="Y" />, and <see cref="Z" /> elements are equal.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Vector3 other)
         {
@@ -700,7 +678,8 @@ namespace System.Numerics
 
         /// <summary>Returns the length of this vector object.</summary>
         /// <returns>The vector's length.</returns>
-        /// <altmember cref="System.Numerics.Vector3.LengthSquared"/>
+        /// <altmember cref="LengthSquared"/>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float Length()
         {
@@ -710,8 +689,9 @@ namespace System.Numerics
 
         /// <summary>Returns the length of the vector squared.</summary>
         /// <returns>The vector's length squared.</returns>
-        /// <remarks>This operation offers better performance than a call to the <see cref="System.Numerics.Vector3.Length" /> method.</remarks>
-        /// <altmember cref="System.Numerics.Vector3.Length"/>
+        /// <remarks>This operation offers better performance than a call to the <see cref="Length" /> method.</remarks>
+        /// <altmember cref="Length"/>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float LengthSquared()
         {
@@ -720,7 +700,7 @@ namespace System.Numerics
 
         /// <summary>Returns the string representation of the current instance using default formatting.</summary>
         /// <returns>The string representation of the current instance.</returns>
-        /// <remarks>This method returns a string in which each element of the vector is formatted using the "G" (general) format string and the formatting conventions of the current thread culture. The "&lt;" and "&gt;" characters are used to begin and end the string, and the current culture's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
+        /// <remarks>This method returns a string in which each element of the vector is formatted using the "G" (general) format string and the formatting conventions of the current thread culture. The "&lt;" and "&gt;" characters are used to begin and end the string, and the current culture's <see cref="NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         public override readonly string ToString()
         {
             return ToString("G", CultureInfo.CurrentCulture);
@@ -729,7 +709,7 @@ namespace System.Numerics
         /// <summary>Returns the string representation of the current instance using the specified format string to format individual elements.</summary>
         /// <param name="format">A standard or custom numeric format string that defines the format of individual elements.</param>
         /// <returns>The string representation of the current instance.</returns>
-        /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and the current culture's formatting conventions. The "&lt;" and "&gt;" characters are used to begin and end the string, and the current culture's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
+        /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and the current culture's formatting conventions. The "&lt;" and "&gt;" characters are used to begin and end the string, and the current culture's <see cref="NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
         public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
@@ -741,7 +721,7 @@ namespace System.Numerics
         /// <param name="format">A standard or custom numeric format string that defines the format of individual elements.</param>
         /// <param name="formatProvider">A format provider that supplies culture-specific formatting information.</param>
         /// <returns>The string representation of the current instance.</returns>
-        /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and <paramref name="formatProvider" />. The "&lt;" and "&gt;" characters are used to begin and end the string, and the format provider's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
+        /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and <paramref name="formatProvider" />. The "&lt;" and "&gt;" characters are used to begin and end the string, and the format provider's <see cref="NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
         public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)

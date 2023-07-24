@@ -10,7 +10,7 @@ namespace System.Reflection.Runtime.TypeParsing
 	//
 	internal sealed class TypeLexer
 	{
-		public TypeLexer(String s)
+		public TypeLexer(string s)
 		{
 			// Turn the string into a char array with a NUL terminator.
 			char[] chars = new char[s.Length + 1];
@@ -35,7 +35,7 @@ namespace System.Reflection.Runtime.TypeParsing
 			{
 				SkipWhiteSpace();
 				int index = _index + 1;
-				while (Char.IsWhiteSpace(_chars[index]))
+				while (char.IsWhiteSpace(_chars[index]))
 					index++;
 				char c = _chars[index];
 				return CharToToken(c);
@@ -68,7 +68,7 @@ namespace System.Reflection.Runtime.TypeParsing
 		//
 		// Terminated by the first non-escaped reserved character ('[', ']', '+', '&', '*' or ',')
 		//
-		public String GetNextIdentifier()
+		public string GetNextIdentifier()
 		{
 			SkipWhiteSpace();
 
@@ -94,12 +94,12 @@ namespace System.Reflection.Runtime.TypeParsing
 						// Common sense would dictate throwing an ArgumentException but that's not what the desktop CLR does.
 						// The desktop CLR treats this case by returning FALSE from TypeName::TypeNameParser::GetIdentifier().
 						// Unfortunately, no one checks this return result. Instead, the CLR keeps parsing (unfortunately, the lexer
-						// was left in some strange state by the previous failure but typically, this goes unnoticed) and eventually, tries to resolve 
+						// was left in some strange state by the previous failure but typically, this goes unnoticed) and eventually, tries to resolve
 						// a Type whose name is the empty string. When it can't resolve that type, the CLR throws a TypeLoadException()
 						// complaining about be unable to find a type with the empty name.
 						//
 						// To emulate this accidental behavior, we'll throw a special exception that's caught by the TypeParser.
-						// 
+						//
 						throw new IllegalEscapeSequenceException();
 					}
 				}
@@ -107,11 +107,11 @@ namespace System.Reflection.Runtime.TypeParsing
 			}
 
 			_index = src;
-			return new String(buffer, 0, dst);
+			return new string(buffer, 0, dst);
 		}
 
 		//
-		// Lex the next segment as the assembly name at the end of an assembly-qualified type name. (Do not use for 
+		// Lex the next segment as the assembly name at the end of an assembly-qualified type name. (Do not use for
 		// assembly names embedded inside generic type arguments.)
 		//
 		// Terminated by NUL. There are no escape characters defined by the typename lexer (however, AssemblyName
@@ -133,14 +133,14 @@ namespace System.Reflection.Runtime.TypeParsing
 				buffer[dst++] = c;
 			}
 			_index = src;
-			String fullName = new String(buffer, 0, dst);
+			string fullName = new string(buffer, 0, dst);
 			return AssemblyNameParser.Parse(fullName);
 		}
 
 		//
 		// Lex the next segment as an assembly name embedded inside a generic argument type.
 		//
-		// Terminated by an unescaped ']'. 
+		// Terminated by an unescaped ']'.
 		//
 		public RuntimeAssemblyName GetNextEmbeddedAssemblyName()
 		{
@@ -167,7 +167,7 @@ namespace System.Reflection.Runtime.TypeParsing
 				buffer[dst++] = c;
 			}
 			_index = src;
-			String fullName = new String(buffer, 0, dst);
+			var fullName = new string(buffer, 0, dst);
 			return AssemblyNameParser.Parse(fullName);
 		}
 
@@ -198,8 +198,8 @@ namespace System.Reflection.Runtime.TypeParsing
 		}
 
 		//
-		// The desktop typename parser has a strange attitude towards whitespace. It throws away whitespace between punctuation tokens and whitespace 
-		// preceeding identifiers or assembly names (and this cannot be escaped away). But whitespace between the end of an identifier 
+		// The desktop typename parser has a strange attitude towards whitespace. It throws away whitespace between punctuation tokens and whitespace
+		// preceeding identifiers or assembly names (and this cannot be escaped away). But whitespace between the end of an identifier
 		// and the punctuation that ends it is *not* ignored.
 		//
 		// In other words, GetType("   Foo") searches for "Foo" but GetType("Foo   ") searches for "Foo   ".
@@ -209,7 +209,7 @@ namespace System.Reflection.Runtime.TypeParsing
 		//
 		private void SkipWhiteSpace()
 		{
-			while (Char.IsWhiteSpace(_chars[_index]))
+			while (char.IsWhiteSpace(_chars[_index]))
 				_index++;
 		}
 

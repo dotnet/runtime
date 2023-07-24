@@ -6,7 +6,7 @@ set(SOURCES IjwNativeCallingManagedDll.cpp)
 
 # add the shared library
 add_library (IjwNativeCallingManagedDll SHARED ${SOURCES})
-target_link_libraries(IjwNativeCallingManagedDll ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(IjwNativeCallingManagedDll PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets
 install (TARGETS IjwNativeCallingManagedDll DESTINATION bin)

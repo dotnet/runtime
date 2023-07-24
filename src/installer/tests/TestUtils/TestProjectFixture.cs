@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             RepoDirProvider = repoDirectoriesProvider;
 
-            Framework = framework ?? RepoDirProvider.GetTestContextVariable("MNA_TFM");
+            Framework = framework ?? RepoDirProvider.Tfm;
 
             SdkDotnet = new DotNetCli(repoDirectoriesProvider.DotnetSDK);
             CurrentRid = repoDirectoriesProvider.TargetRID;
@@ -285,6 +285,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 publishArgs.Add("--runtime");
                 publishArgs.Add(runtime);
+
+                if (selfContained == null)
+                {
+                    // This is to prevent bugs caused by SDK defaulting self-contained differently for various configurations.
+                    // We still want to allow selfContained to remain unspecified for simple cases, for example for building libraries.
+                    throw new ArgumentException("If runtime is specified, then the caller also has to specify selfContained value.");
+                }
             }
 
             if (framework != null)

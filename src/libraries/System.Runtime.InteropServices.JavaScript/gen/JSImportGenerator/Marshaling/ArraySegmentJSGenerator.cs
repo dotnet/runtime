@@ -10,7 +10,8 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class ArraySegmentJSGenerator : PrimitiveJSGenerator
     {
-        private MarshalerType _elementMarshalerType;
+        private readonly MarshalerType _elementMarshalerType;
+
         public ArraySegmentJSGenerator(MarshalerType elementMarshalerType)
             : base(MarshalerType.ArraySegment)
         {

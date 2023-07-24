@@ -94,8 +94,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             if (!(other is NativeFormatRuntimeFieldInfo otherField))
                 return false;
@@ -140,7 +139,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object? defaultValue)
         {
-            return DefaultValueParser.GetDefaultValueIfAny(_reader, _field.DefaultValue, FieldType, CustomAttributes, raw, out defaultValue);
+            return DefaultValueParser.GetDefaultValueFromConstantIfAny(_reader, _field.DefaultValue, FieldType, raw, out defaultValue);
         }
 
         protected sealed override FieldAccessor TryGetFieldAccessor()
@@ -162,6 +161,8 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
         protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.CustomAttributes);
 
         protected sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
+
+        public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldRuntimeType, _reader, FieldTypeHandle);
 
         private Handle FieldTypeHandle => _field.Signature.GetFieldSignature(_reader).Type;
 

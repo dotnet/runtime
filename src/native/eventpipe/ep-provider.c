@@ -19,6 +19,7 @@
 
 static
 void
+DN_CALLBACK_CALLTYPE
 event_free_func (void *ep_event);
 
 static
@@ -28,7 +29,8 @@ provider_prepare_callback_data (
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
 	const ep_char8_t *filter_data,
-	EventPipeProviderCallbackData *provider_callback_data);
+	EventPipeProviderCallbackData *provider_callback_data,
+	EventPipeSessionID session_id);
 
 // _Requires_lock_held (ep)
 static
@@ -57,6 +59,7 @@ provider_compute_event_enable_mask (
 
 static
 void
+DN_CALLBACK_CALLTYPE
 event_free_func (void *ep_event)
 {
 	ep_event_free ((EventPipeEvent *)ep_event);
@@ -69,7 +72,8 @@ provider_prepare_callback_data (
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
 	const ep_char8_t *filter_data,
-	EventPipeProviderCallbackData *provider_callback_data)
+	EventPipeProviderCallbackData *provider_callback_data,
+	EventPipeSessionID session_id)
 {
 	EP_ASSERT (provider != NULL);
 	EP_ASSERT (provider_callback_data != NULL);
@@ -81,7 +85,8 @@ provider_prepare_callback_data (
 		provider->callback_data,
 		keywords,
 		provider_level,
-		provider->sessions != 0);
+		provider->sessions != 0,
+		session_id);
 }
 
 static
@@ -92,11 +97,11 @@ provider_refresh_all_events (EventPipeProvider *provider)
 
 	ep_requires_lock_held ();
 
-	const ep_rt_event_list_t *event_list = &provider->event_list;
-	EP_ASSERT (event_list != NULL);
+	EP_ASSERT (provider->event_list != NULL);
 
-	for (ep_rt_event_list_iterator_t iterator = ep_rt_event_list_iterator_begin (event_list); !ep_rt_event_list_iterator_end (event_list, &iterator); ep_rt_event_list_iterator_next (&iterator))
-		provider_refresh_event_state (ep_rt_event_list_iterator_value (&iterator));
+	DN_LIST_FOREACH_BEGIN (EventPipeEvent *, current_event, provider->event_list) {
+		provider_refresh_event_state (current_event);
+	} DN_LIST_FOREACH_END;
 
 	ep_requires_lock_held ();
 	return;
@@ -166,7 +171,6 @@ ep_provider_alloc (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data)
 {
 	EP_ASSERT (config != NULL);
@@ -181,13 +185,12 @@ ep_provider_alloc (
 	instance->provider_name_utf16 = ep_rt_utf8_to_utf16le_string (provider_name, -1);
 	ep_raise_error_if_nok (instance->provider_name_utf16 != NULL);
 
-	ep_rt_event_list_alloc (&instance->event_list);
-	ep_raise_error_if_nok (ep_rt_event_list_is_valid (&instance->event_list));
+	instance->event_list = dn_list_alloc ();
+	ep_raise_error_if_nok (instance->event_list != NULL);
 
 	instance->keywords = 0;
 	instance->provider_level = EP_EVENT_LEVEL_CRITICAL;
 	instance->callback_func = callback_func;
-	instance->callback_data_free_func = callback_data_free_func;
 	instance->callback_data = callback_data;
 	instance->config = config;
 	instance->delete_deferred = false;
@@ -209,12 +212,10 @@ ep_provider_free (EventPipeProvider * provider)
 
 	ep_requires_lock_not_held ();
 
-	if (provider->callback_data_free_func)
-		provider->callback_data_free_func (provider->callback_func, provider->callback_data);
-
-	if (!ep_rt_event_list_is_empty (&provider->event_list)) {
+	if (provider->event_list) {
 		EP_LOCK_ENTER (section1)
-		ep_rt_event_list_free (&provider->event_list, event_free_func);
+			dn_list_custom_free (provider->event_list, event_free_func);
+			provider->event_list = NULL;
 		EP_LOCK_EXIT (section1)
 	}
 
@@ -269,7 +270,7 @@ ep_provider_add_event (
 
 	// Take the config lock before inserting a new event.
 	EP_LOCK_ENTER (section1)
-		ep_raise_error_if_nok_holding_lock (ep_rt_event_list_append (&provider->event_list, instance), section1);
+		ep_raise_error_if_nok_holding_lock (dn_list_push_back (provider->event_list, instance), section1);
 		provider_refresh_event_state (instance);
 	EP_LOCK_EXIT (section1)
 
@@ -291,13 +292,7 @@ ep_provider_set_delete_deferred (
 	EP_ASSERT (provider != NULL);
 	provider->delete_deferred = deferred;
 
-	// EventSources will be collected once they ungregister themselves,
-	// so we can't call back in to them.
-	if (provider->callback_func && provider->callback_data_free_func)
-		provider->callback_data_free_func (provider->callback_func, provider->callback_data);
-
 	provider->callback_func = NULL;
-	provider->callback_data_free_func = NULL;
 	provider->callback_data = NULL;
 }
 
@@ -310,7 +305,8 @@ provider_set_config (
 	int64_t keywords,
 	EventPipeEventLevel level,
 	const ep_char8_t *filter_data,
-	EventPipeProviderCallbackData *callback_data)
+	EventPipeProviderCallbackData *callback_data,
+	EventPipeSessionID session_id)
 {
 	EP_ASSERT (provider != NULL);
 	EP_ASSERT ((provider->sessions & session_mask) == 0);
@@ -322,7 +318,7 @@ provider_set_config (
 	provider->provider_level = level_for_all_sessions;
 
 	provider_refresh_all_events (provider);
-	provider_prepare_callback_data (provider, provider->keywords, provider->provider_level, filter_data, callback_data);
+	provider_prepare_callback_data (provider, provider->keywords, provider->provider_level, filter_data, callback_data, session_id);
 
 	ep_requires_lock_held ();
 	return callback_data;
@@ -351,7 +347,7 @@ provider_unset_config (
 	provider->provider_level = level_for_all_sessions;
 
 	provider_refresh_all_events (provider);
-	provider_prepare_callback_data (provider, provider->keywords, provider->provider_level, filter_data, callback_data);
+	provider_prepare_callback_data (provider, provider->keywords, provider->provider_level, filter_data, callback_data, (EventPipeSessionID)0);
 
 	ep_requires_lock_held ();
 	return callback_data;
@@ -371,6 +367,7 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 	int64_t keywords = ep_provider_callback_data_get_keywords (provider_callback_data);
 	EventPipeEventLevel provider_level = ep_provider_callback_data_get_provider_level (provider_callback_data);
 	void *callback_data = ep_provider_callback_data_get_callback_data (provider_callback_data);
+	EventPipeSessionID session_id = ep_provider_callback_data_get_session_id (provider_callback_data);
 
 	bool is_event_filter_desc_init = false;
 	EventFilterDescriptor event_filter_desc;
@@ -416,7 +413,7 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 	if (callback_function && !ep_rt_process_shutdown ()) {
 		ep_rt_provider_invoke_callback (
 			callback_function,
-			NULL, /* provider_id */
+			(uint8_t *)(session_id == 0 ? NULL : &session_id), /* session_id */
 			enabled ? 1 : 0, /* ControlCode */
 			(uint8_t)provider_level,
 			(uint64_t)keywords,
@@ -440,12 +437,11 @@ EventPipeProvider *
 provider_create_register (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	ep_requires_lock_held ();
-	return config_create_provider (ep_config_get (), provider_name, callback_func, callback_data_free_func, callback_data, provider_callback_data_queue);
+	return config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, provider_callback_data_queue);
 }
 
 void
@@ -464,11 +460,7 @@ provider_free (EventPipeProvider * provider)
 
 	ep_requires_lock_held ();
 
-	if (provider->callback_data_free_func)
-		provider->callback_data_free_func (provider->callback_func, provider->callback_data);
-
-	if (!ep_rt_event_list_is_empty (&provider->event_list))
-		ep_rt_event_list_free (&provider->event_list, event_free_func);
+	dn_list_custom_free (provider->event_list, event_free_func);
 
 	ep_rt_utf16_string_free (provider->provider_name_utf16);
 	ep_rt_utf8_string_free (provider->provider_name);
@@ -502,7 +494,7 @@ provider_add_event (
 
 	ep_raise_error_if_nok (instance != NULL);
 
-	ep_raise_error_if_nok (ep_rt_event_list_append (&provider->event_list, instance));
+	ep_raise_error_if_nok (dn_list_push_back (provider->event_list, instance));
 	provider_refresh_event_state (instance);
 
 ep_on_exit:

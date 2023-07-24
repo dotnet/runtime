@@ -5,7 +5,6 @@
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Composite file and directory providers for Microsoft.Extensions.FileProviders.</PackageDescription>
   </PropertyGroup>
 

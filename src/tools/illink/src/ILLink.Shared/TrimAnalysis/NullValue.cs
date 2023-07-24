@@ -8,7 +8,7 @@ using ILLink.Shared.DataFlow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	sealed record NullValue : SingleValue
+	internal sealed record NullValue : SingleValue
 	{
 		private NullValue ()
 		{

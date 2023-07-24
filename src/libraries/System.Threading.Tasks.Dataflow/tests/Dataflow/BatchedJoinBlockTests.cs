@@ -276,8 +276,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestPrecanceled2()
         {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
             var b = new BatchedJoinBlock<int, int>(42,
-                new GroupingDataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1 });
+                new GroupingDataflowBlockOptions { CancellationToken = cts.Token, MaxNumberOfGroups = 1 });
 
             Tuple<IList<int>, IList<int>> ignoredValue;
             IList<Tuple<IList<int>, IList<int>>> ignoredValues;
@@ -300,14 +303,17 @@ namespace System.Threading.Tasks.Dataflow.Tests
             b.Target1.Complete();
             b.Target2.Complete();
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, b.Completion);
         }
 
         [Fact]
         public async Task TestPrecanceled3()
         {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
             var b = new BatchedJoinBlock<int, int, int>(42,
-                new GroupingDataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1 });
+                new GroupingDataflowBlockOptions { CancellationToken = cts.Token, MaxNumberOfGroups = 1 });
 
             Tuple<IList<int>, IList<int>, IList<int>> ignoredValue;
             IList<Tuple<IList<int>, IList<int>, IList<int>>> ignoredValues;
@@ -330,7 +336,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             b.Target1.Complete();
             b.Target2.Complete();
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, b.Completion);
         }
 
         [Fact]

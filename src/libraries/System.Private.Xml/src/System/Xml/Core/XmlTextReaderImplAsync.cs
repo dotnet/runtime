@@ -934,12 +934,12 @@ namespace System.Xml
             _ps.appendMode = true;
             await ReadDataAsync().ConfigureAwait(false);
         }
-        private Task InitTextReaderInputAsync(string baseUriStr, TextReader input)
+        private Task<int> InitTextReaderInputAsync(string baseUriStr, TextReader input)
         {
             return InitTextReaderInputAsync(baseUriStr, null, input);
         }
 
-        private Task InitTextReaderInputAsync(string baseUriStr, Uri? baseUri, TextReader input)
+        private Task<int> InitTextReaderInputAsync(string baseUriStr, Uri? baseUri, TextReader input)
         {
             Debug.Assert(_ps.charPos == 0 && _ps.charsUsed == 0 && _ps.stream == null);
             Debug.Assert(baseUriStr != null);

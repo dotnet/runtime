@@ -946,7 +946,7 @@ FORCEINLINE void StubRelease(TYPE* value)
     if (value)
     {
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
         LOGGER::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__);
 #else
         LOGGER::LogUsage(__FILE__, __LINE__, __FUNCTION__);

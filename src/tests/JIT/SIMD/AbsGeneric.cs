@@ -3,10 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Xunit;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         const float EPS = Single.Epsilon * 5;
 
@@ -20,7 +21,8 @@ namespace VectorMathTests
             return arr;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             short[] arr = GenerateArray(60, 5);
             var a = new System.Numerics.Vector<short>(arr);

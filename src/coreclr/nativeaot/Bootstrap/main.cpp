@@ -94,7 +94,6 @@ static char& __unbox_z = __stop___unbox;
 #endif // _MSC_VER
 
 extern "C" bool RhInitialize();
-extern "C" void RhpShutdown();
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 extern "C" bool RhRegisterOSModule(void * pModule,
@@ -116,6 +115,7 @@ extern "C" void IDynamicCastableGetInterfaceImplementation();
 extern "C" void ObjectiveCMarshalTryGetTaggedMemory();
 extern "C" void ObjectiveCMarshalGetIsTrackedReferenceCallback();
 extern "C" void ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback();
+extern "C" void ObjectiveCMarshalGetUnhandledExceptionPropagationHandler();
 #endif
 
 typedef void(*pfn)();
@@ -135,7 +135,9 @@ static const pfn c_classlibFunctions[] = {
     &ObjectiveCMarshalTryGetTaggedMemory,
     &ObjectiveCMarshalGetIsTrackedReferenceCallback,
     &ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback,
+    &ObjectiveCMarshalGetUnhandledExceptionPropagationHandler,
 #else
+    nullptr,
     nullptr,
     nullptr,
     nullptr,
@@ -213,12 +215,17 @@ int main(int argc, char* argv[])
     if (initval != 0)
         return initval;
 
-    int retval = __managed__Main(argc, argv);
-
-    RhpShutdown();
-
-    return retval;
+    return __managed__Main(argc, argv);
 }
+
+#ifdef HAS_ADDRESS_SANITIZER
+// We need to build the bootstrapper as a single object file, to ensure
+// the linker can detect that we have ASAN components early enough in the build.
+// Include our asan support sources for executable projects here to ensure they
+// are compiled into the bootstrapper object.
+#include "minipal/asansupport.cpp"
+#endif // HAS_ADDRESS_SANITIZER
+
 #endif // !NATIVEAOT_DLL
 
 #ifdef NATIVEAOT_DLL

@@ -59,6 +59,10 @@ struct _EventPipeSession_Internal {
 	// we expect to remove it in the future once that limitation is resolved other scenarios are discouraged from using this given that
 	// we plan to make it go away
 	bool paused;
+	// Set via environment variable to enable or disable stack collection globally
+	bool enable_stackwalk;
+	// Indicate that session is fully running (streaming thread started).
+	volatile uint32_t started;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_GETTER_SETTER)
@@ -75,6 +79,7 @@ EP_DEFINE_GETTER(EventPipeSession *, session, bool, rundown_requested)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_time)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_timestamp)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeFile *, file)
+EP_DEFINE_GETTER(EventPipeSession *, session, bool, enable_stackwalk)
 
 EventPipeSession *
 ep_session_alloc (
@@ -107,7 +112,7 @@ ep_session_enable_rundown (EventPipeSession *session);
 void
 ep_session_execute_rundown (
 	EventPipeSession *session,
-	ep_rt_execution_checkpoint_array_t *execution_checkpoints);
+	dn_vector_ptr_t *execution_checkpoints);
 
 // Force all in-progress writes to either finish or cancel
 // This is required to ensure we can safely flush and delete the buffers
@@ -195,6 +200,9 @@ ep_session_pause (EventPipeSession *session);
 // Please do not use this function, see EventPipeSession paused field for more information.
 void
 ep_session_resume (EventPipeSession *session);
+
+bool
+ep_session_has_started (EventPipeSession *session);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_SESSION_H__ */

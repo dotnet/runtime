@@ -13,21 +13,21 @@ namespace System.Threading.RateLimiting
     internal sealed class DefaultPartitionedRateLimiter<TResource, TKey> : PartitionedRateLimiter<TResource> where TKey : notnull
     {
         private readonly Func<TResource, RateLimitPartition<TKey>> _partitioner;
-        private static TimeSpan _idleTimeLimit = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan s_idleTimeLimit = TimeSpan.FromSeconds(10);
 
         // TODO: Look at ConcurrentDictionary to try and avoid a global lock
-        private Dictionary<TKey, Lazy<RateLimiter>> _limiters;
+        private readonly Dictionary<TKey, Lazy<RateLimiter>> _limiters;
         private bool _disposed;
-        private TaskCompletionSource<object?> _disposeComplete = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<object?> _disposeComplete = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Used by the Timer to call TryRelenish on ReplenishingRateLimiters
         // We use a separate list to avoid running TryReplenish (which might be user code) inside our lock
         // And we cache the list to amortize the allocation cost to as close to 0 as we can get
-        private List<KeyValuePair<TKey, Lazy<RateLimiter>>> _cachedLimiters = new();
+        private readonly List<KeyValuePair<TKey, Lazy<RateLimiter>>> _cachedLimiters = new();
         private bool _cacheInvalid;
-        private List<RateLimiter> _limitersToDispose = new();
-        private TimerAwaitable _timer;
-        private Task _timerTask;
+        private readonly List<RateLimiter> _limitersToDispose = new();
+        private readonly TimerAwaitable _timer;
+        private readonly Task _timerTask;
 
         // Use the Dictionary as the lock field so we don't need to allocate another object for a lock and have another field in the object
         private object Lock => _limiters;
@@ -45,7 +45,6 @@ namespace System.Threading.RateLimiting
             _limiters = new Dictionary<TKey, Lazy<RateLimiter>>(equalityComparer);
             _partitioner = partitioner;
 
-            // TODO: Figure out what interval we should use
             _timer = new TimerAwaitable(timerInterval, timerInterval);
             _timerTask = RunTimer();
         }
@@ -57,9 +56,14 @@ namespace System.Threading.RateLimiting
             {
                 try
                 {
-                    await Heartbeat().ConfigureAwait(false);
+                    await Heartbeat().ConfigureAwait(
+#if NET8_0_OR_GREATER
+                        ConfigureAwaitOptions.SuppressThrowing
+#else
+                        false
+#endif
+                        );
                 }
-                // TODO: Can we log to EventSource or somewhere? Maybe dispatch throwing the exception so it is at least an unhandled exception?
                 catch { }
             }
             _timer.Dispose();
@@ -226,13 +230,13 @@ namespace System.Threading.RateLimiting
                 {
                     continue;
                 }
-                if (rateLimiter.Value.Value.IdleDuration is TimeSpan idleDuration && idleDuration > _idleTimeLimit)
+                if (rateLimiter.Value.Value.IdleDuration is TimeSpan idleDuration && idleDuration > s_idleTimeLimit)
                 {
                     lock (Lock)
                     {
                         // Check time again under lock to make sure no one calls Acquire or WaitAsync after checking the time and removing the limiter
                         idleDuration = rateLimiter.Value.Value.IdleDuration ?? TimeSpan.Zero;
-                        if (idleDuration > _idleTimeLimit)
+                        if (idleDuration > s_idleTimeLimit)
                         {
                             // Remove limiter from the lookup table and mark cache as invalid
                             // If a request for this partition comes in it will have to create a new limiter now

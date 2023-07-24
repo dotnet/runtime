@@ -15,6 +15,13 @@ namespace DebuggerTests
 {
     public class GetPropertiesTests : DebuggerTests
     {
+        public enum AutoEvaluate
+        {
+            On,
+            Off,
+            Unset,
+        }
+
         public GetPropertiesTests(ITestOutputHelper testOutput) : base(testOutput)
         {}
 
@@ -253,24 +260,9 @@ namespace DebuggerTests
         [MemberData(nameof(ClassGetPropertiesTestData), parameters: false)]
         [MemberData(nameof(StructGetPropertiesTestData), parameters: true)]
         [MemberData(nameof(StructGetPropertiesTestData), parameters: false)]
-        public async Task InspectTypeInheritedMembers(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.GetPropertiesTests.{type_name}",
-            $"InstanceMethod{(is_async ? "Async" : "")}", 1, $"DebuggerTests.GetPropertiesTests.{type_name}." + (is_async ? "InstanceMethodAsync" : "InstanceMethod"),
-            $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.{type_name}:run'); }})",
-            wait_for_event_fn: async (pause_location) =>
-            {
-                var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var frame_locals = await GetProperties(frame_id);
-                var this_obj = GetAndAssertObjectWithName(frame_locals, "this");
-                var this_props = await GetProperties(this_obj["value"]?["objectId"]?.Value<string>(), own_properties: own_properties, accessors_only: accessors_only);
-
-                AssertHasOnlyExpectedProperties(expected_names, this_props.Values<JObject>());
-                await CheckExpectedProperties(expected_names, name => GetAndAssertObjectWithName(this_props, name), all_props);
-
-                // indexer properties shouldn't show up here
-                var item = this_props.FirstOrDefault(jt => jt["name"]?.Value<string>() == "Item");
-                Assert.Null(item);
-            });
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
+        public async Task InspectTypeInheritedMembers(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) => 
+            await InspectTypeInheritedMembersInternal(type_name, own_properties, accessors_only, expected_names, all_props, is_async, AutoEvaluate.Unset);
 
         public static IEnumerable<object[]> MembersForLocalNestedStructData(bool is_async)
             => StructGetPropertiesTestData(false).Select(datum => datum[1..]);
@@ -444,7 +436,7 @@ namespace DebuggerTests
             );
         }
 
-        private async Task CheckExpectedProperties(string[] expected_names, Func<string, JToken> get_actual_prop, Dictionary<string, (JObject, bool)> all_props)
+        private async Task CheckExpectedProperties(string[] expected_names, Func<string, JToken> get_actual_prop, Dictionary<string, (JObject, bool)> all_props, bool autoEvaluate = false)
         {
             foreach (var exp_name in expected_names)
             {
@@ -463,7 +455,13 @@ namespace DebuggerTests
                     // from `{name: "..", value: {}, ..}
                     // but for getters we actually have: `{name: "..", get: {..} }`
                     // and no `value`
-                    await CheckValue(actual_prop, exp_prop, exp_name);
+                    if (!autoEvaluate)
+                        await CheckValue(actual_prop, exp_prop, exp_name);
+                    else
+                    {
+                        if (exp_prop["value"].Type != JTokenType.Null)
+                            await CheckValue(actual_prop["value"], exp_prop["value"], exp_name);
+                    }
                 }
                 else
                 {
@@ -623,5 +621,46 @@ namespace DebuggerTests
                 await CheckProps(pubInternalAndProtected, expectedPublicInternalAndProtected, "result");
                 await CheckProps(priv, expectedPriv, "private");
             });
+        
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [MemberData(nameof(ClassGetPropertiesTestData), parameters: true)]
+        [MemberData(nameof(ClassGetPropertiesTestData), parameters: false)]
+        [MemberData(nameof(StructGetPropertiesTestData), parameters: true)]
+        [MemberData(nameof(StructGetPropertiesTestData), parameters: false)]
+        public async Task InspectTypeInheritedMembersAutoEvaluateOn(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) =>
+            await InspectTypeInheritedMembersInternal(type_name, own_properties, accessors_only, expected_names, all_props, is_async, AutoEvaluate.On);
+
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [MemberData(nameof(ClassGetPropertiesTestData), parameters: true)]
+        [MemberData(nameof(ClassGetPropertiesTestData), parameters: false)]
+        [MemberData(nameof(StructGetPropertiesTestData), parameters: true)]
+        [MemberData(nameof(StructGetPropertiesTestData), parameters: false)]
+        public async Task InspectTypeInheritedMembersAutoEvaluateOff(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) =>
+            await InspectTypeInheritedMembersInternal(type_name, own_properties, accessors_only, expected_names, all_props, is_async, AutoEvaluate.Off);
+
+        public async Task InspectTypeInheritedMembersInternal(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async, AutoEvaluate auto_evaluate_status)
+        {
+            if (auto_evaluate_status == AutoEvaluate.On)
+                await cli.SendCommand("DotnetDebugger.setEvaluationOptions", JObject.FromObject(new { options = new { noFuncEval = false } }), token);
+            else if (auto_evaluate_status == AutoEvaluate.Off)
+                await cli.SendCommand("DotnetDebugger.setEvaluationOptions", JObject.FromObject(new { options = new { noFuncEval = true } }), token);
+            await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.GetPropertiesTests.{type_name}",
+            $"InstanceMethod{(is_async ? "Async" : "")}", 1, $"DebuggerTests.GetPropertiesTests.{type_name}." + (is_async ? "InstanceMethodAsync" : "InstanceMethod"),
+            $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.{type_name}:run'); }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var frame_locals = await GetProperties(frame_id);
+                var this_obj = GetAndAssertObjectWithName(frame_locals, "this");
+                var this_props = await GetProperties(this_obj["value"]?["objectId"]?.Value<string>(), own_properties: own_properties, accessors_only: accessors_only);
+                AssertHasOnlyExpectedProperties(expected_names, this_props.Values<JObject>());
+                await CheckExpectedProperties(expected_names, name => GetAndAssertObjectWithName(this_props, name), all_props, auto_evaluate_status == AutoEvaluate.On);
+
+                // indexer properties shouldn't show up here
+                var item = this_props.FirstOrDefault(jt => jt["name"]?.Value<string>() == "Item");
+                Assert.Null(item);
+            });
+        }
     }
 }

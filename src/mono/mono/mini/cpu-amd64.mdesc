@@ -600,6 +600,15 @@ loadu2_mem: dest:i len:16
 
 #SIMD
 
+xbinop: dest:x src1:x src2:x len:7 clob:1
+xbinop_forceint: dest:x src1:x src2:x len:7 clob:1
+ones_complement: dest:x src1:x len:16 clob:1
+negate: dest:x src1:x len:24 clob:1
+xlower: dest:x src1:x len:16
+xupper: dest:x src1:x len:16
+convert_fp_to_si: dest:x src1:x len:16
+convert_si_to_fp: dest:x src1:x len:16
+
 addps: dest:x src1:x src2:x len:4 clob:1
 divps: dest:x src1:x src2:x len:4 clob:1
 mulps: dest:x src1:x src2:x len:4 clob:1
@@ -769,19 +778,26 @@ cvttps2dq: dest:x src1:x len:5 clob:1
 xmove: dest:x src1:x len:5
 xzero: dest:x len:5
 xones: dest:x len:5
+xconst: dest:x len:12
 
 iconv_to_x: dest:x src1:i len:5
-extract_i4: dest:i src1:x len:5
 
+extract_i4: dest:i src1:x len:16
 extract_i8: dest:i src1:x len:9
-
 extract_i2: dest:i src1:x len:13
 extract_i1: dest:i src1:x len:13
 extract_r8: dest:f src1:x len:5
+extract_r4: dest:f src1:x len:24
+xextract: dest:i src1:x len:24
 
 iconv_to_r4_raw: dest:f src1:i len:10
 
+insert_i1: dest:x src1:x src2:i len:7 clob:1
 insert_i2: dest:x src1:x src2:i len:6 clob:1
+insert_i4: dest:x src1:x src2:i len:7 clob:1
+insert_i8: dest:x src1:x src2:i len:7 clob:1
+insert_r4: dest:x src1:x src2:f len:7 clob:1
+insert_r8: dest:x src1:x src2:f len:24 clob:1
 
 extractx_u2: dest:i src1:x len:6
 insertx_u1_slow: dest:x src1:i src2:i len:18 clob:x
@@ -809,6 +825,11 @@ expand_i4: dest:x src1:i len:11
 expand_i8: dest:x src1:i len:11
 expand_r4: dest:x src1:f len:16
 expand_r8: dest:x src1:f len:13
+xop_x_x_x: dest:x src1:x src2:x len:16 clob:1
+xop_x_x: dest:x src1:x len:16 clob:1
+sse41_dpps_imm: dest:x src1:x src2:x len:7 clob:1
+sse41_dppd_imm: dest:x src1:x src2:x len:7 clob:1
+vector_andnot: dest:x src1:x src2:x len:7 clob:1
 
 roundp: dest:x src1:x len:10
 

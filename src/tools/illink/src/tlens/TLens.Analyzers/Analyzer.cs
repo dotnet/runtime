@@ -55,4 +55,3 @@ namespace TLens.Analyzers
 		}
 	}
 }
-

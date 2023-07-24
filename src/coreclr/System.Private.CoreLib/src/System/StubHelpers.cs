@@ -532,7 +532,7 @@ namespace System.StubHelpers
         // Needs to match exactly with MngdNativeArrayMarshaler in ilmarshalers.h
         internal struct MarshalerState
         {
-#pragma warning disable CA1823 // not used by managed code
+#pragma warning disable CA1823, IDE0044 // not used by managed code
             private IntPtr m_pElementMT;
             private IntPtr m_Array;
             private IntPtr m_pManagedNativeArrayMarshaler;
@@ -643,7 +643,7 @@ namespace System.StubHelpers
         }
 
         // Pointer to MngdNativeArrayMarshaler, ownership not assumed.
-        private IntPtr pvArrayMarshaler;
+        private readonly IntPtr pvArrayMarshaler;
 
         // Type of action to perform after the CLR-to-unmanaged call.
         private BackPropAction backPropAction;
@@ -1074,7 +1074,7 @@ namespace System.StubHelpers
             m_obj = obj;
         }
 
-        private object m_obj;
+        private readonly object m_obj;
 
         protected override void DestroyCore()
         {
@@ -1092,7 +1092,7 @@ namespace System.StubHelpers
             m_handle = handle;
         }
 
-        private SafeHandle m_handle;
+        private readonly SafeHandle m_handle;
 
         // This field is passed by-ref to SafeHandle.DangerousAddRef.
         // DestroyCore ignores this element if m_owned is not set to true.
@@ -1113,9 +1113,6 @@ namespace System.StubHelpers
 
     internal static class StubHelpers
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetNDirectTarget(IntPtr pMD);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetDelegateTarget(Delegate pThis);
 
@@ -1297,7 +1294,7 @@ namespace System.StubHelpers
 #endif
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr NextCallReturnAddress();
     }  // class StubHelpers
 }

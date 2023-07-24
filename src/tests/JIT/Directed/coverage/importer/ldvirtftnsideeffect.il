@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly ldvirtftnsideeffect {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib { }
 .assembly extern System.Console
 {
@@ -17,7 +18,11 @@ ret
 //-------------------------
 // Entry point - Main     -
 //-------------------------
+.class public auto ansi ldvirtftnsideeffect {
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .locals	(int32, class MyTest)
 .entrypoint
 .maxstack	4
@@ -41,6 +46,7 @@ FAIL:
 	ldc.i4	0x0
 END:
 	ret
+}
 }
 // ---------------------------------------------------------
 

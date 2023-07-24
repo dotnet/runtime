@@ -1,5 +1,4 @@
-﻿using System;
-using Mono.Linker.Tests.Cases.Expectations.Assertions;
+﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
@@ -22,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
 	{
 		static void Main ()
 		{
-			// Use some stuff so that we can verify that the linker output correct results
+			// Use some stuff so that we can verify that the trimmer output correct results
 			SomeMethod ();
 			LibraryWithPdb.SomeMethod ();
 		}

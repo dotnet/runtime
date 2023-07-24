@@ -13,6 +13,9 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestCtor()
         {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
             var blocks = new[] {
                 new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable),
                 new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable, new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 }),
@@ -27,15 +30,15 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
             blocks = new[] {
                 new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable,
-                    new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(true) }),
+                    new ExecutionDataflowBlockOptions { CancellationToken = cts.Token }),
                 new TransformManyBlock<int, int>(i => Task.Run(() => DataflowTestHelpers.ToEnumerable(i)),
-                    new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(true) })
+                    new ExecutionDataflowBlockOptions { CancellationToken = cts.Token })
             };
             foreach (var block in blocks)
             {
                 Assert.Equal(expected: 0, actual: block.InputCount);
                 Assert.Equal(expected: 0, actual: block.OutputCount);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => block.Completion);
+                await AssertExtensions.CanceledAsync(cts.Token, block.Completion);
             }
         }
 
@@ -297,7 +300,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var tb = new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable, new ExecutionDataflowBlockOptions() { CancellationToken = cts.Token });
             tb.Post(1);
             cts.Cancel();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tb.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, tb.Completion);
             Assert.Equal(expected: 0, actual: tb.InputCount);
             Assert.Equal(expected: 0, actual: tb.OutputCount);
 
@@ -417,8 +420,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestPrecanceled()
         {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
             var bb = new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable,
-                new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true) });
+                new ExecutionDataflowBlockOptions { CancellationToken = cts.Token });
 
             int ignoredValue;
             IList<int> ignoredValues;
@@ -436,7 +442,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(bb.TryReceive(out ignoredValue));
 
             Assert.NotNull(bb.Completion);
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, bb.Completion);
             bb.Complete(); // just make sure it doesn't throw
         }
 
@@ -496,7 +502,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 else
                 {
                     cts.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tb.Completion);
+                    await AssertExtensions.CanceledAsync(cts.Token, tb.Completion);
                 }
 
                 Assert.Equal(expected: 0, actual: tb.InputCount);

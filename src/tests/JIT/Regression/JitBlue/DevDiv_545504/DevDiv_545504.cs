@@ -13,6 +13,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class DevDiv_545504
 {
@@ -103,7 +104,8 @@ public class DevDiv_545504
         Console.WriteLine("Result: " + result);
         return result;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = (int)test(10);
         if (result != 267386880)

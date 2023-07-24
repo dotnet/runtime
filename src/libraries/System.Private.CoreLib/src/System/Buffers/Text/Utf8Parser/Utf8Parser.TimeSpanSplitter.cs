@@ -38,7 +38,7 @@ namespace System.Buffers.Text
                 byte c = default;
 
                 // Unlike many other data types, TimeSpan allow leading whitespace.
-                while (srcIndex != source.Length)
+                while (srcIndex < source.Length)
                 {
                     c = source[srcIndex];
                     if (!(c == ' ' || c == '\t'))

@@ -16,7 +16,7 @@ namespace System
         static partial void SetEnvironmentVariableFromRegistry(string variable, string? value, bool fromMachine);
 
 #pragma warning disable IDE0060
-        private static IDictionary GetEnvironmentVariablesFromRegistry(bool fromMachine) => new Hashtable();
+        private static Hashtable GetEnvironmentVariablesFromRegistry(bool fromMachine) => new Hashtable();
 #pragma warning restore IDE0060
     }
 }

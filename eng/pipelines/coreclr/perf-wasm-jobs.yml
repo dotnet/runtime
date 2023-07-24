@@ -20,9 +20,9 @@ jobs:
         buildConfig: Release
         runtimeFlavor: mono
         platforms:
-        - Browser_wasm
+        - browser_wasm
         jobParameters:
-          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           nameSuffix: wasm
           isOfficialBuild: false
           extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
@@ -36,7 +36,7 @@ jobs:
       buildConfig: Release
       runtimeFlavor: wasm
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -87,9 +87,9 @@ jobs:
         buildConfig: Release
         runtimeFlavor: mono
         platforms:
-        - Browser_wasm
+        - browser_wasm
         jobParameters:
-          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           nameSuffix: wasm
           isOfficialBuild: false
           extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
@@ -103,7 +103,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: wasm
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -115,7 +115,8 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
-        additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
+        # passed to ci_setup.py to work with 8.0 sdk when using tfm!=net8.0
+        #additionalSetupParameters: '--dotnet-versions 8.0.0'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
@@ -141,7 +142,8 @@ jobs:
         runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
-        additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
+        # passed to ci_setup.py to work with 8.0 sdk when using tfm!=net8.0
+        #additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
@@ -155,7 +157,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: wasm
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -164,7 +166,8 @@ jobs:
         projectFile: blazor_perf.proj
         runKind: blazor_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
+        # passed to ci_setup.py to work with 8.0 sdk when using tfm!=net8.0
+        # additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}

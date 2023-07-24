@@ -156,24 +156,24 @@ namespace System.Net
                 throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
-            return RunAsync(static (s, stopwatch) => {
-                IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified, stopwatch);
+            return RunAsync(static (s, startingTimestamp) => {
+                IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified, startingTimestamp);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
             }, address, CancellationToken.None);
         }
 
         public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject) =>
-            TaskToApm.Begin(GetHostEntryAsync(address), requestCallback, stateObject);
+            TaskToAsyncResult.Begin(GetHostEntryAsync(address), requestCallback, stateObject);
 
         public static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback? requestCallback, object? stateObject) =>
-            TaskToApm.Begin(GetHostEntryAsync(hostNameOrAddress), requestCallback, stateObject);
+            TaskToAsyncResult.Begin(GetHostEntryAsync(hostNameOrAddress), requestCallback, stateObject);
 
         public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult)
         {
             ArgumentNullException.ThrowIfNull(asyncResult);
 
-            return TaskToApm.End<IPHostEntry>(asyncResult);
+            return TaskToAsyncResult.End<IPHostEntry>(asyncResult);
         }
 
         public static IPAddress[] GetHostAddresses(string hostNameOrAddress)
@@ -241,13 +241,13 @@ namespace System.Net
             (Task<IPAddress[]>)GetHostEntryOrAddressesCoreAsync(hostNameOrAddress, justReturnParsedIp: true, throwOnIIPAny: true, justAddresses: true, family, cancellationToken);
 
         public static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback? requestCallback, object? state) =>
-            TaskToApm.Begin(GetHostAddressesAsync(hostNameOrAddress), requestCallback, state);
+            TaskToAsyncResult.Begin(GetHostAddressesAsync(hostNameOrAddress), requestCallback, state);
 
         public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult)
         {
             ArgumentNullException.ThrowIfNull(asyncResult);
 
-            return TaskToApm.End<IPAddress[]>(asyncResult);
+            return TaskToAsyncResult.End<IPAddress[]>(asyncResult);
         }
 
         [Obsolete("GetHostByName has been deprecated. Use GetHostEntry instead.")]
@@ -265,14 +265,14 @@ namespace System.Net
 
         [Obsolete("BeginGetHostByName has been deprecated. Use BeginGetHostEntry instead.")]
         public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
-            TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
+            TaskToAsyncResult.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
         [Obsolete("EndGetHostByName has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult)
         {
             ArgumentNullException.ThrowIfNull(asyncResult);
 
-            return TaskToApm.End<IPHostEntry>(asyncResult);
+            return TaskToAsyncResult.End<IPHostEntry>(asyncResult);
         }
 
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
@@ -328,7 +328,7 @@ namespace System.Net
 
         [Obsolete("BeginResolve has been deprecated. Use BeginGetHostEntry instead.")]
         public static IAsyncResult BeginResolve(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
-            TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: false, throwOnIIPAny: false, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
+            TaskToAsyncResult.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: false, throwOnIIPAny: false, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
         [Obsolete("EndResolve has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndResolve(IAsyncResult asyncResult)
@@ -337,16 +337,11 @@ namespace System.Net
 
             try
             {
-                ipHostEntry = TaskToApm.End<IPHostEntry>(asyncResult);
+                ipHostEntry = TaskToAsyncResult.End<IPHostEntry>(asyncResult);
             }
             catch (SocketException ex)
             {
-                object? asyncState = asyncResult switch
-                {
-                    Task t => t.AsyncState,
-                    TaskToApm.TaskAsyncResult twar => twar._task.AsyncState,
-                    _ => null
-                };
+                object? asyncState = TaskToAsyncResult.Unwrap(asyncResult).AsyncState;
 
                 IPAddress? address = asyncState switch
                 {
@@ -367,20 +362,18 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        private static IPHostEntry GetHostEntryCore(string hostName, AddressFamily addressFamily, long startingTimestamp = 0) =>
+        private static IPHostEntry GetHostEntryCore(string hostName, AddressFamily addressFamily, long? startingTimestamp = null) =>
             (IPHostEntry)GetHostEntryOrAddressesCore(hostName, justAddresses: false, addressFamily, startingTimestamp);
 
-        private static IPAddress[] GetHostAddressesCore(string hostName, AddressFamily addressFamily, long startingTimestamp = 0) =>
+        private static IPAddress[] GetHostAddressesCore(string hostName, AddressFamily addressFamily, long? startingTimestamp = null) =>
             (IPAddress[])GetHostEntryOrAddressesCore(hostName, justAddresses: true, addressFamily, startingTimestamp);
 
-        private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily, long startingTimestamp = 0)
+        private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily, long? startingTimestamp = null)
         {
             ValidateHostName(hostName);
 
-            if (startingTimestamp == 0)
-            {
-                startingTimestamp = NameResolutionTelemetry.Log.BeforeResolution(hostName);
-            }
+            // startingTimestamp may have already been set if we're being called from RunAsync.
+            startingTimestamp ??= NameResolutionTelemetry.Log.BeforeResolution(hostName);
 
             object result;
             try
@@ -413,24 +406,22 @@ namespace System.Net
             return result;
         }
 
-        private static IPHostEntry GetHostEntryCore(IPAddress address, AddressFamily addressFamily, long startingTimestamp = 0) =>
+        private static IPHostEntry GetHostEntryCore(IPAddress address, AddressFamily addressFamily, long? startingTimestamp = null) =>
             (IPHostEntry)GetHostEntryOrAddressesCore(address, justAddresses: false, addressFamily, startingTimestamp);
 
-        private static IPAddress[] GetHostAddressesCore(IPAddress address, AddressFamily addressFamily, long startingTimestamp) =>
+        private static IPAddress[] GetHostAddressesCore(IPAddress address, AddressFamily addressFamily, long? startingTimestamp = null) =>
             (IPAddress[])GetHostEntryOrAddressesCore(address, justAddresses: true, addressFamily, startingTimestamp);
 
         // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
-        private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses, AddressFamily addressFamily, long startingTimestamp)
+        private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses, AddressFamily addressFamily, long? startingTimestamp = null)
         {
             // Try to get the data for the host from its address.
             // We need to call getnameinfo first, because getaddrinfo w/ the ipaddress string
             // will only return that address and not the full list.
 
             // Do a reverse lookup to get the host name.
-            if (startingTimestamp == 0)
-            {
-                startingTimestamp = NameResolutionTelemetry.Log.BeforeResolution(address);
-            }
+            // startingTimestamp may have already been set if we're being called from RunAsync.
+            startingTimestamp ??= NameResolutionTelemetry.Log.BeforeResolution(address);
 
             SocketError errorCode;
             string? name;
@@ -540,12 +531,11 @@ namespace System.Net
                     ValidateHostName(hostName);
 
                     Task? t;
-                    if (NameResolutionTelemetry.Log.IsEnabled())
+                    if (NameResolutionTelemetry.Log.IsEnabled() || NameResolutionMetrics.IsEnabled())
                     {
                         t = justAddresses
                             ? GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken)
                             : GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken);
-
                     }
                     else
                     {
@@ -604,7 +594,7 @@ namespace System.Net
 
             static async Task<T> CompleteAsync(Task task, string hostName, long startingTimestamp)
             {
-                _  = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+                _ = NameResolutionTelemetry.Log.BeforeResolution(hostName);
                 T? result = null;
                 try
                 {
@@ -638,7 +628,7 @@ namespace System.Net
             }
         }
 
-        private static bool LogFailure(long startingTimestamp)
+        private static bool LogFailure(long? startingTimestamp)
         {
             NameResolutionTelemetry.Log.AfterResolution(startingTimestamp, successful: false);
             return false;
@@ -712,11 +702,7 @@ namespace System.Net
             return task;
         }
 
-        private static Exception CreateException(SocketError error, int nativeError)
-        {
-            SocketException e = new SocketException((int)error);
-            e.HResult = nativeError;
-            return e;
-        }
+        private static SocketException CreateException(SocketError error, int nativeError) =>
+            new SocketException((int)error) { HResult = nativeError };
     }
 }

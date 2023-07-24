@@ -1,14 +1,13 @@
 <?xml version="1.0"?>
-<manifest xmlns:a="http://schemas.android.com/apk/res/android" 
+<manifest xmlns:a="http://schemas.android.com/apk/res/android"
           package="%PackageName%"
           a:versionCode="1"
           a:versionName="1.0">
-  <uses-sdk a:minSdkVersion="%MinSdkLevel%" />
+  <uses-sdk a:minSdkVersion="%MinSdkLevel%" a:targetSdkVersion="%TargetSdkVersion%" />
   <uses-permission a:name="android.permission.INTERNET"/>
   <uses-permission a:name="android.permission.READ_EXTERNAL_STORAGE"/>
   <uses-permission a:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
   <application a:label="%PackageName%"
-               %NetworkSecurityConfig%
                a:largeHeap="true">
     <activity a:name="net.dot.MainActivity" a:exported="true">
       <intent-filter>

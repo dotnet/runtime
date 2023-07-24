@@ -68,14 +68,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestNameUnknownBindingFlags (BindingFlags bindingFlags)
 		{
-			// Since the binding flags are not known linker should mark all events on the type
+			// Since the binding flags are not known trimming tools should mark all events on the type
 			var eventInfo = typeof (UnknownBindingFlags).GetEvent ("PrivateEvent", bindingFlags);
 		}
 
 		[Kept]
 		static void TestNameUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
 		{
-			// Since the binding flags are not known linker should mark all events on the type
+			// Since the binding flags are not known trimming tools should mark all events on the type
 			var eventInfo = typeof (UnknownBindingFlagsAndName).GetEvent (name, bindingFlags);
 		}
 

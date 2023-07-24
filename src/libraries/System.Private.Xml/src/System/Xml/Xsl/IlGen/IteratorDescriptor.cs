@@ -243,6 +243,7 @@ namespace System.Xml.Xsl.IlGen
     /// Iterators are joined together, are nested within each other, and reference each other.  This internal class
     /// contains detailed information about iteration next labels, caching, iterator item location, etc.
     /// </summary>
+    [RequiresDynamicCode("Creates DynamicMethods")]
     internal sealed class IteratorDescriptor
     {
         private GenerateHelper _helper;

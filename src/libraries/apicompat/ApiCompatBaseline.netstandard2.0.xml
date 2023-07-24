@@ -1,5 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Lazy`2</Target>
+    <Left>netstandard2.0/System.ComponentModel.Composition.dll</Left>
+    <Right>right</Right>
+  </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.ComponentModel.BaseNumberConverter.#ctor</Target>
@@ -125,6 +132,12 @@
     <Target>M:System.Xml.Schema.XmlSchemaGroupBase.#ctor</Target>
     <Left>netstandard2.0/System.Xml.dll</Left>
     <Right>net8.0/System.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0004</DiagnosticId>
+    <Target>System.ComponentModel.Composition, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</Target>
+    <Left>netstandard2.0/System.ComponentModel.Composition.dll</Left>
+    <Right>right</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0009</DiagnosticId>
@@ -2762,19 +2775,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
-    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
-    <Left>netstandard2.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
     <Target>P:System.Timers.Timer.Interval:[T:System.ComponentModel.DefaultValueAttribute]</Target>
-    <Left>netstandard2.0/System.dll</Left>
-    <Right>net8.0/System.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
     <Left>netstandard2.0/System.dll</Left>
     <Right>net8.0/System.dll</Right>
   </Suppression>

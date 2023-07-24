@@ -394,7 +394,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> NodeTest ::= NameTest | 'comment ()' | 'text ()' | 'node ()' | 'processing-instruction ('  Literal ? ')'
-        private AstNode ParseNodeTest(AstNode? qyInput, Axis.AxisType axisType, XPathNodeType nodeType)
+        private Axis ParseNodeTest(AstNode? qyInput, Axis.AxisType axisType, XPathNodeType nodeType)
         {
             string nodeName, nodePrefix;
 
@@ -499,7 +499,7 @@ namespace MS.Internal.Xml.XPath
             return opnd;
         }
 
-        private AstNode ParseMethod(AstNode? qyInput)
+        private Function ParseMethod(AstNode? qyInput)
         {
             List<AstNode> argList = new List<AstNode>();
             string name = _scanner.Name;
@@ -650,7 +650,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> IdKeyPattern ::= 'id' '(' Literal ')' | 'key' '(' Literal ',' Literal ')'
-        private AstNode? ParseIdKeyPattern()
+        private Function? ParseIdKeyPattern()
         {
             Debug.Assert(_scanner.CanBeFunction);
             List<AstNode> argList = new List<AstNode>();

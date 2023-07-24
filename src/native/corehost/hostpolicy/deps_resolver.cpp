@@ -32,6 +32,8 @@ namespace
         "    path: '%s'\n"
         "    previously found assembly: '%s'");
 
+    const int AppFxLevel = 0;
+
     // -----------------------------------------------------------------------------
     // A uniqifying append helper that doesn't let two "paths" to be identical in
     // the "output" string.
@@ -257,7 +259,7 @@ void deps_resolver_t::setup_probe_config(
         trace::verbose(_X("-- Probe configurations:"));
         for (const auto& pc : m_probes)
         {
-            pc.print();
+            trace::verbose(_X("  probe %s"), pc.as_str().c_str());
         }
     }
 }
@@ -278,10 +280,9 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
     for (const auto& config : m_probes)
     {
-        trace::verbose(_X("  Considering entry [%s/%s/%s], probe dir [%s], probe fx level:%d, entry fx level:%d"),
-            entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str(), config.probe_dir.c_str(), config.fx_level, fx_level);
+        trace::verbose(_X("  Using probe config: %s"), config.as_str().c_str());
 
-        if (config.only_serviceable_assets && !entry.is_serviceable)
+        if (config.is_servicing() && !entry.is_serviceable)
         {
             trace::verbose(_X("    Skipping... not serviceable asset"));
             continue;
@@ -291,68 +292,74 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             trace::verbose(_X("    Skipping... not runtime asset"));
             continue;
         }
-
-        const pal::string_t& probe_dir = config.probe_dir;
-        uint32_t search_options = m_needs_file_existence_checks ? deps_entry_t::search_options::file_existence : deps_entry_t::search_options::none;
-
-        if (config.is_fx())
+        if (config.is_app() && fx_level != AppFxLevel)
         {
-            assert(config.fx_level > 0);
-
+            trace::verbose(_X("    Skipping... not app asset"));
+            continue;
+        }
+        if (config.is_fx() && fx_level > config.fx_level)
+        {
             // Only probe frameworks that are the same level or lower than the current entry because
             // a lower-level fx should not have a dependency on a higher-level fx and because starting
             // with fx_level allows it to override a higher-level fx location if the entry is newer.
             // Note that fx_level 0 is the highest level (the app)
-            if (fx_level <= config.fx_level)
+            trace::verbose(_X("    Skipping... framework is a higher level than entry"));
+            continue;
+        }
+
+        uint32_t search_options = m_needs_file_existence_checks ? deps_entry_t::search_options::file_existence : deps_entry_t::search_options::none;
+
+        if (config.is_fx())
+        {
+            assert(fx_level <= config.fx_level);
+
+            // If the deps json has the package name and version, then someone has already done rid selection and
+            // put the right asset in the dir. So checking just package name and version would suffice.
+            // No need to check further for the exact asset relative sub path.
+            if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(config.probe_dir, candidate, search_options, found_in_bundle))
             {
-                // If the deps json has the package name and version, then someone has already done rid selection and
-                // put the right asset in the dir. So checking just package name and version would suffice.
-                // No need to check further for the exact asset relative sub path.
-                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, candidate, search_options, found_in_bundle))
-                {
-                    assert(!found_in_bundle);
-                    trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
-                    return true;
-                }
+                assert(!found_in_bundle);
+                trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
+                return true;
             }
 
             trace::verbose(_X("    Skipping... not found in deps json."));
         }
         else if (config.is_app())
         {
-            // This is a published dir probe, so look up rid specific assets in the rid folders.
-            assert(config.fx_level == 0);
-
-            if (fx_level <= config.fx_level)
+            assert(fx_level == AppFxLevel);
+            if (entry.is_rid_specific)
             {
-                if (entry.is_rid_specific)
+                // Look up rid specific assets in the rid folders.
+                if (entry.to_rel_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle))
                 {
-                    if (entry.to_rel_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle))
-                    {
-                        trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
-                        return true;
-                    }
+                    trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
+                    return true;
                 }
-                else
+            }
+            else
+            {
+                // Non-rid assets, lookup in the published dir.
+                if (entry.to_dir_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle, found_in_bundle))
                 {
-                    // Non-rid assets, lookup in the published dir.
-                    if (entry.to_dir_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle, found_in_bundle))
-                    {
-                        trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
-                        return true;
-                    }
+                    trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
+                    return true;
                 }
             }
 
             trace::verbose(_X("    Skipping... not found in deps dir '%s'"), deps_dir.c_str());
         }
-        else if (entry.to_full_path(probe_dir, candidate, search_options | (config.only_serviceable_assets ? deps_entry_t::search_options::is_servicing : 0)))
+        else
         {
-            trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
-            return true;
+            if (entry.to_full_path(config.probe_dir, candidate, search_options | (config.is_servicing() ? deps_entry_t::search_options::is_servicing : 0)))
+            {
+                trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
+                return true;
+            }
+
+            trace::verbose(_X("    Skipping... not found in probe dir '%s'"), config.probe_dir.c_str());
         }
 
-        trace::verbose(_X("    Skipping... not found in probe dir '%s'"), probe_dir.c_str());
         // continue to try next probe config
     }
     return false;
@@ -423,7 +430,8 @@ bool deps_resolver_t::resolve_tpa_list(
             return true;
         }
 
-        trace::info(_X("Processing TPA for deps entry [%s, %s, %s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
+        trace::info(_X("Processing TPA for deps entry [%s, %s, %s] with fx level: %d"),
+            entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str(), fx_level);
 
         pal::string_t resolved_path;
 
@@ -487,7 +495,7 @@ bool deps_resolver_t::resolve_tpa_list(
                         }
                     }
                 }
-                else if (fx_level != 0)
+                else if (fx_level != AppFxLevel)
                 {
                     // The framework is missing a newer package, so this is an error.
                     // For compat, it is not an error for the app; this can occur for the main application assembly when using --depsfile
@@ -600,7 +608,7 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     }
 }
 
-void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps_serialized, const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
+void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps_serialized, const deps_json_t::rid_resolution_options_t& rid_resolution_options)
 {
     if (!m_is_framework_dependent
         || m_host_mode == host_mode_t::libhost)
@@ -638,8 +646,7 @@ void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps
                 trace::verbose(_X("Using specified additional deps.json: '%s'"),
                     additional_deps_path.c_str());
 
-                m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
-                    new deps_json_t(true, additional_deps_path, rid_fallback_graph)));
+                m_additional_deps.push_back(deps_json_t::create_for_framework_dependent(additional_deps_path, rid_resolution_options));
             }
             else
             {
@@ -699,8 +706,7 @@ void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps
                         trace::verbose(_X("Using specified additional deps.json: '%s'"),
                             json_full_path.c_str());
 
-                        m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
-                            new deps_json_t(true, json_full_path, rid_fallback_graph)));
+                        m_additional_deps.push_back(deps_json_t::create_for_framework_dependent(json_full_path, rid_resolution_options));
                     }
                 }
             }

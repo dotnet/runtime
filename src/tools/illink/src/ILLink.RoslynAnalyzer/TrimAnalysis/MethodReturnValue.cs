@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial record MethodReturnValue
+	internal partial record MethodReturnValue
 	{
 		public MethodReturnValue (IMethodSymbol methodSymbol)
 		{

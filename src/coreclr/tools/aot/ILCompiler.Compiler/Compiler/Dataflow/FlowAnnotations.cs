@@ -41,13 +41,18 @@ namespace ILLink.Shared.TrimAnalysis
             CompilerGeneratedState = compilerGeneratedState;
         }
 
-        public bool RequiresDataflowAnalysis(MethodDesc method)
+        /// <summary>
+        /// Determines if the method has any annotations on its parameters or return values.
+        /// </summary>
+        public bool RequiresDataflowAnalysisDueToSignature(MethodDesc method)
         {
             try
             {
                 method = method.GetTypicalMethodDefinition();
-                return GetAnnotations(method.OwningType).TryGetAnnotation(method, out var methodAnnotations)
-                    && (methodAnnotations.ReturnParameterAnnotation != DynamicallyAccessedMemberTypes.None || methodAnnotations.ParameterAnnotations != null);
+                TypeAnnotations typeAnnotations = GetAnnotations(method.OwningType);
+                // This will return true even if the method has annotations on generic parameters,
+                // but the callers don't rely on that - it's just easier to leave it this way (and it makes very little difference)
+                return typeAnnotations.TryGetAnnotation(method, out _);
             }
             catch (TypeSystemException)
             {
@@ -68,12 +73,16 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        public bool RequiresDataflowAnalysis(FieldDesc field)
+        /// <summary>
+        /// Determines if the field has any annotations on itself (not looking at owning type).
+        /// </summary>
+        public bool RequiresDataflowAnalysisDueToSignature(FieldDesc field)
         {
             try
             {
                 field = field.GetTypicalFieldDefinition();
-                return GetAnnotations(field.OwningType).TryGetAnnotation(field, out _);
+                TypeAnnotations typeAnnotations = GetAnnotations(field.OwningType);
+                return typeAnnotations.TryGetAnnotation(field, out _);
             }
             catch (TypeSystemException)
             {
@@ -81,11 +90,11 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        public bool RequiresGenericArgumentDataFlowAnalysis(GenericParameterDesc genericParameter)
+        public bool HasGenericParameterAnnotation(TypeDesc type)
         {
             try
             {
-                return GetGenericParameterAnnotation(genericParameter) != DynamicallyAccessedMemberTypes.None;
+                return GetAnnotations(type.GetTypeDefinition()).HasGenericParameterAnnotation();
             }
             catch (TypeSystemException)
             {
@@ -93,11 +102,12 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        public bool HasAnyAnnotations(TypeDesc type)
+        public bool HasGenericParameterAnnotation(MethodDesc method)
         {
             try
             {
-                return !GetAnnotations(type.GetTypeDefinition()).IsDefault;
+                method = method.GetTypicalMethodDefinition();
+                return GetAnnotations(method.OwningType).TryGetAnnotation(method, out var annotation) && annotation.GenericParameterAnnotations != null;
             }
             catch (TypeSystemException)
             {
@@ -218,7 +228,7 @@ namespace ILLink.Shared.TrimAnalysis
             //   class DerivedAtRuntimeFromBase
             //   {
             //       // No point in adding annotation on the return value - nothing will look at it anyway
-            //       // Linker will not see this code, so there are no checks
+            //       // ILLink will not see this code, so there are no checks
             //       public override Type GetTypeWithFields() { return typeof(TestType); }
             //   }
             //
@@ -304,6 +314,11 @@ namespace ILLink.Shared.TrimAnalysis
                 return (DynamicallyAccessedMemberTypes)blobReader.ReadUInt32();
             }
 
+            private static DynamicallyAccessedMemberTypes GetMemberTypesForConstraints(GenericParameterDesc genericParameter)
+                => genericParameter.HasDefaultConstructorConstraint ?
+                    DynamicallyAccessedMemberTypes.PublicParameterlessConstructor :
+                    DynamicallyAccessedMemberTypes.None;
+
             protected override bool CompareKeyToValue(TypeDesc key, TypeAnnotations value) => key == value.Type;
             protected override bool CompareValueToValue(TypeAnnotations value1, TypeAnnotations value2) => value1.Type == value2.Type;
             protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
@@ -330,7 +345,7 @@ namespace ILLink.Shared.TrimAnalysis
                 try
                 {
                     // Also inherit annotation from bases
-                    TypeDesc baseType = key.BaseType;
+                    DefType baseType = key.BaseType;
                     while (baseType != null)
                     {
                         var ecmaBaseType = (EcmaType)baseType.GetTypeDefinition();
@@ -440,8 +455,6 @@ namespace ILLink.Shared.TrimAnalysis
                                 continue;
                             }
 
-                            // We convert indices from metadata space to IL space here.
-                            // IL space assigns index 0 to the `this` parameter on instance methods.
                             paramAnnotations ??= new DynamicallyAccessedMemberTypes[method.GetParametersCount()];
                             paramAnnotations[parameter.SequenceNumber - 1 + (signature.IsStatic ? 0 : 1)] = pa;
                         }
@@ -452,6 +465,7 @@ namespace ILLink.Shared.TrimAnalysis
                     {
                         GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
                         var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
+                        annotation |= GetMemberTypesForConstraints(genericParameter);
                         if (annotation != DynamicallyAccessedMemberTypes.None)
                         {
                             genericParameterAnnotations ??= new DynamicallyAccessedMemberTypes[method.Instantiation.Length];
@@ -613,6 +627,7 @@ namespace ILLink.Shared.TrimAnalysis
                         genericParameter = (attrs?[genericParameterIndex] as EcmaGenericParameter) ?? genericParameter;
                         GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
                         var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
+                        annotation |= GetMemberTypesForConstraints(genericParameter);
                         if (annotation != DynamicallyAccessedMemberTypes.None)
                         {
                             typeGenericParameterAnnotations ??= new DynamicallyAccessedMemberTypes[ecmaType.Instantiation.Length];
@@ -792,8 +807,8 @@ namespace ILLink.Shared.TrimAnalysis
                     break;
                 case GenericParameterDesc genericParameterOverride:
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides,
-                        genericParameterOverride.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(new GenericParameterOrigin(genericParameterOverride)),
-                        ((GenericParameterDesc)baseProvider).Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(new GenericParameterOrigin((GenericParameterDesc)baseProvider)));
+                        genericParameterOverride.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(genericParameterOverride),
+                        ((GenericParameterDesc)baseProvider).Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName((GenericParameterDesc)baseProvider));
                     break;
                 case TypeDesc:
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides,
@@ -884,6 +899,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                 return false;
             }
+
+            public bool HasGenericParameterAnnotation() => _genericParameterAnnotations != null;
         }
 
         private readonly struct MethodAnnotations
@@ -931,7 +948,7 @@ namespace ILLink.Shared.TrimAnalysis
         }
 
         internal partial bool MethodRequiresDataFlowAnalysis(MethodProxy method)
-            => RequiresDataflowAnalysis(method.Method);
+            => RequiresDataflowAnalysisDueToSignature(method.Method);
 
 #pragma warning disable CA1822 // Other partial implementations are not in the ilc project
         internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
@@ -1005,6 +1022,10 @@ namespace ILLink.Shared.TrimAnalysis
                 }
                 // All values except for Nullable<T>, including Nullable<> (with no type arguments)
                 return new SystemTypeValue(genericArgumentType);
+            }
+            else if (genericArgument is ArrayType arrayType)
+            {
+                return new SystemTypeValue(arrayType);
             }
             else
             {

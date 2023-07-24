@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <!-- Generated shell script and corresponding assembly have different names -->
-    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'Android'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'android'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTestWithMcj.cs" />
@@ -28,10 +28,6 @@ set "DOTNET_GCName="
 set "DOTNET_GCStress="
 set "DOTNET_HeapVerify="
 set "DOTNET_ReadyToRun="
-set "COMPlus_GCName="
-set "COMPlus_GCStress="
-set "COMPlus_HeapVerify="
-set "COMPlus_ReadyToRun="
 
 "%CORE_ROOT%\corerun" %CORE_ROOT%\crossgen2\crossgen2.dll --out r2r\$(MSBuildProjectName).dll $(MSBuildProjectName).dll -r %CORE_ROOT%\*.dll
 
@@ -42,14 +38,12 @@ set CLRCustomTestLauncher=RunBasicTestWithMcj.cmd --runCustomTest
 $(CLRTestBashPreCommands)
 mkdir r2r
 
-# Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+# Suppress some DOTNET variables for the duration of Crossgen2 execution
 export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
-export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 
 "$CORE_ROOT/corerun" $CORE_ROOT/crossgen2/crossgen2.dll --out r2r/$(MSBuildProjectName).dll $(MSBuildProjectName).dll -r $CORE_ROOT/*.dll
 
 export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
-export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 chmod +x ./RunBasicTestWithMcj.sh
 export CLRCustomTestLauncher="./RunBasicTestWithMcj.sh --runCustomTest"
 ]]></CLRTestBashPreCommands>

@@ -13,10 +13,5 @@
     <WasmExtraFilesToDeploy Include="package.json" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <_SampleProject>Wasm.Console.Node.Sample.csproj</_SampleProject>
-    <_SampleAssembly>Wasm.Console.Node.Sample.dll</_SampleAssembly>
-  </PropertyGroup>
-
   <Target Name="RunSample" DependsOnTargets="RunSampleWithNode" />
 </Project>

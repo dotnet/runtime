@@ -209,7 +209,10 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestPrecancellation()
         {
-            var b = new BroadcastBlock<int>(null, new DataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true) });
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            var b = new BroadcastBlock<int>(null, new DataflowBlockOptions { CancellationToken = cts.Token });
 
             Assert.NotNull(b.LinkTo(DataflowBlock.NullTarget<int>()));
             Assert.False(b.Post(42));
@@ -223,7 +226,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.NotNull(b.Completion);
             b.Complete(); // verify doesn't throw
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, b.Completion);
         }
 
         [Fact]
@@ -270,7 +273,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 else
                 {
                     cts.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+                    await AssertExtensions.CanceledAsync(cts.Token, bb.Completion);
                 }
 
                 await Task.WhenAll(sends);

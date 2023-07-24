@@ -87,11 +87,12 @@ namespace ILCompiler
 
         public override TypeSystemContext Context => _type.Context;
 
-        #region Do not use these
-        public override bool Equals(object obj) => throw new NotImplementedException();
-        public override int GetHashCode() => throw new NotImplementedException();
-        public static bool operator ==(EventPseudoDesc a, EventPseudoDesc b) => throw new NotImplementedException();
-        public static bool operator !=(EventPseudoDesc a, EventPseudoDesc b) => throw new NotImplementedException();
-        #endregion
+        public override bool Equals(object obj) => obj is not EventPseudoDesc @event ? false : this == @event;
+
+        public override int GetHashCode() => _type.GetHashCode() ^ _handle.GetHashCode();
+
+        public static bool operator ==(EventPseudoDesc a, EventPseudoDesc b) => a._type == b._type && a._handle == b._handle;
+
+        public static bool operator !=(EventPseudoDesc a, EventPseudoDesc b) => !(a == b);
     }
 }

@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.WebAssembly.Diagnostics;
 using Xunit.Abstractions;
 
@@ -34,8 +35,18 @@ namespace DebuggerTests
         private static readonly ConcurrentDictionary<int, WeakReference<Action<RunLoopExitState>>> s_exitHandlers = new();
         private static readonly ConcurrentDictionary<string, RunLoopExitState> s_statusTable = new();
 
-        public static Task Start(string appPath, string pagePath, string url, ITestOutputHelper testOutput)
+        public static Task Start(string appPath, string pagePath, string url, ITestOutputHelper testOutput, string locale = "en-US")
         {
+            TestHarnessOptions options = new()
+            {
+                AppPath = appPath,
+                PagePath = pagePath,
+                DevToolsUrl = new Uri(url),
+                WebServerUseCors = false,
+                WebServerUseCrossOriginPolicy = true,
+                Locale = locale
+            };
+
             lock (proxyLock)
             {
                 if (hostTask != null)
@@ -76,13 +87,17 @@ namespace DebuggerTests
                     })
                     .ConfigureServices((ctx, services) =>
                     {
-                        services.Configure<TestHarnessOptions>(ctx.Configuration);
-                        services.Configure<TestHarnessOptions>(options =>
+                        if (options.WebServerUseCors)
                         {
-                            options.AppPath = appPath;
-                            options.PagePath = pagePath;
-                            options.DevToolsUrl = new Uri(url);
-                        });
+                            services.AddCors(o => o.AddPolicy("AnyCors", builder =>
+                                {
+                                    builder.AllowAnyOrigin()
+                                        .AllowAnyMethod()
+                                        .AllowAnyHeader()
+                                        .WithExposedHeaders("*");
+                                }));
+                        }
+                        services.AddSingleton(Options.Create(options));
                     })
                     .UseStartup<TestHarnessStartup>()
                     .UseUrls(Endpoint.ToString())
@@ -117,7 +132,7 @@ namespace DebuggerTests
             s_statusTable[id] = status;
             // we have the explicit state now, so we can drop the reference
             // to the proxy
-            s_proxyTable.TryRemove(id, out WeakReference<DebuggerProxyBase> _);
+            s_proxyTable.TryRemove(id, out _);
 
             if (s_exitHandlers.TryRemove(intId, out WeakReference<Action<RunLoopExitState>>? handlerRef)
                 && handlerRef.TryGetTarget(out Action<RunLoopExitState>? handler))

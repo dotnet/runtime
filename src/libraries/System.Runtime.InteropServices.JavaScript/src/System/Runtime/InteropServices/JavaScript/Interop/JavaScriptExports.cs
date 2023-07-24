@@ -1,9 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -24,7 +28,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg_1.ToManaged(out IntPtr entrypointPtr);
                 if (entrypointPtr == IntPtr.Zero)
                 {
-                    throw new MissingMethodException("Missing entrypoint");
+                    throw new MissingMethodException(SR.MissingManagedEntrypointHandle);
                 }
 
                 RuntimeMethodHandle methodHandle = JSHostImplementation.GetMethodHandleFromIntPtr(entrypointPtr);
@@ -32,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 MethodInfo? method = MethodBase.GetMethodFromHandle(methodHandle) as MethodInfo;
                 if (method == null)
                 {
-                    throw new InvalidProgramException("Can't resolve entrypoint handle");
+                    throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
                 }
 
                 arg_2.ToManaged(out string?[]? args);
@@ -75,7 +79,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidProgramException($"Return type '{method.ReturnType.FullName}' from main method in not supported");
+                    throw new InvalidOperationException(SR.Format(SR.ReturnTypeNotSupportedForMain, method.ReturnType.FullName));
                 }
                 arg_result.ToJS(result, (ref JSMarshalerArgument arg, int value) =>
                 {
@@ -91,6 +95,41 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        public static void LoadLazyAssembly(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
+            ref JSMarshalerArgument arg_2 = ref arguments_buffer[3];
+            try
+            {
+                arg_1.ToManaged(out byte[]? dllBytes);
+                arg_2.ToManaged(out byte[]? pdbBytes);
+
+                if (dllBytes != null)
+                    JSHostImplementation.LoadLazyAssembly(dllBytes, pdbBytes);
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
+
+        public static void LoadSatelliteAssembly(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
+            try
+            {
+                arg_1.ToManaged(out byte[]? dllBytes);
+
+                if (dllBytes != null)
+                    JSHostImplementation.LoadSatelliteAssembly(dllBytes);
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
@@ -125,8 +164,12 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 JSHostImplementation.TaskCallback holder = new JSHostImplementation.TaskCallback();
+#if FEATURE_WASM_THREADS
+                holder.OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
+                holder.SynchronizationContext = SynchronizationContext.Current ?? new SynchronizationContext();
+#endif
                 arg_return.slot.Type = MarshalerType.Object;
-                arg_return.slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
+                arg_return.slot.GCHandle = holder.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
             }
             catch (Exception ex)
             {
@@ -154,7 +197,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidOperationException("ToManagedCallback is null");
+                    throw new InvalidOperationException(SR.NullToManagedCallback);
                 }
             }
             catch (Exception ex)
@@ -181,7 +224,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidOperationException("TaskCallback is null");
+                    throw new InvalidOperationException(SR.NullTaskCallback);
                 }
             }
             catch (Exception ex)
@@ -206,7 +249,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidOperationException("Exception is null");
+                    throw new InvalidOperationException(SR.UnableToResolveHandleAsException);
                 }
             }
             catch (Exception ex)
@@ -219,11 +262,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // the marshaled signature is:
         // void InstallSynchronizationContext()
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.WebWorker", "System.Runtime.InteropServices.JavaScript")]
         public static void InstallSynchronizationContext (JSMarshalerArgument* arguments_buffer) {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             try
             {
-                JSSynchronizationContext.Install();
+                JSHostImplementation.InstallWebWorkerInterop(true, true);
             }
             catch (Exception ex)
             {
@@ -243,9 +287,8 @@ namespace System.Runtime.InteropServices.JavaScript
         public static unsafe void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {
             if (len == 0)
-                throw new JSException("Profile data length is 0");
+                throw new InvalidOperationException(SR.EmptyProfileData);
 
-            var arr = new byte[len];
             fixed (void* p = &buf)
             {
                 var span = new ReadOnlySpan<byte>(p, len);

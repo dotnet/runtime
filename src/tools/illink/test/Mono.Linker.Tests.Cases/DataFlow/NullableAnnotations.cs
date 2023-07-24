@@ -282,7 +282,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				// At runtime this returns null and thus should actually throw (calling GetFields on null)
-				// Linker should not produce warnings but should also not mark anything
+				// Trimming should not produce warnings but should also not mark anything
 				Nullable.GetUnderlyingType (typeof (GetUnderlyingTypeOnNonNullableKnownType)).GetFields ();
 			}
 		}
@@ -299,7 +299,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		// https://github.com/dotnet/linker/issues/2755
-		[ExpectedWarning ("IL2075", "GetFields", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2075", "GetFields", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		static void MakeGenericTypeWithKnowAndUnknownArray (Type[] unknownTypes = null, int p = 0)
 		{
 			Type[] types = p switch {

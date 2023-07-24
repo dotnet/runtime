@@ -26,6 +26,7 @@ import zipfile
 import re
 
 from coreclr_arguments import *
+from jitutil import TempDir, ChangeDir, determine_jit_name
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -66,7 +67,7 @@ arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture.
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
 
-host_os_help = "OS (windows, OSX, Linux). Default: current OS."
+host_os_help = "OS (windows, osx, linux). Default: current OS."
 
 spmi_location_help = """\
 Directory in which to put SuperPMI files, such as downloaded MCH files, asm diffs, and repro .MC files.
@@ -125,72 +126,6 @@ list_parser.add_argument("--all", action="store_true", help="Show all JITs, not 
 list_parser.add_argument("--global_all", action="store_true", help="Show all JITs in Azure Storage")
 
 ################################################################################
-# Helper classes
-################################################################################
-
-
-class TempDir:
-    """ Class to create a temporary working directory, or use one that is passed as an argument.
-
-        Use with: "with TempDir() as temp_dir" to change to that directory and then automatically
-        change back to the original working directory afterwards and remove the temporary
-        directory and its contents (if args.skip_cleanup is False).
-    """
-
-    def __init__(self, path=None):
-        self.mydir = tempfile.mkdtemp() if path is None else path
-        self.cwd = None
-
-    def __enter__(self):
-        self.cwd = os.getcwd()
-        os.chdir(self.mydir)
-        return self.mydir
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
-        # Note: we are using the global `args`, not coreclr_args. This works because
-        # the `skip_cleanup` argument is not processed by CoreclrArguments, but is
-        # just copied there.
-        if not args.skip_cleanup:
-            shutil.rmtree(self.mydir)
-
-
-class ChangeDir:
-    """ Class to temporarily change to a given directory. Use with "with".
-    """
-
-    def __init__(self, mydir):
-        self.mydir = mydir
-        self.cwd = None
-
-    def __enter__(self):
-        self.cwd = os.getcwd()
-        os.chdir(self.mydir)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
-
-
-def determine_jit_name(coreclr_args):
-    """ Determine the jit based on the OS. If "-altjit" is specified, then use the specified altjit,
-        or an appropriate altjit based on target.
-
-    Args:
-        coreclr_args (CoreclrArguments): parsed args
-
-    Return:
-        jit_name(str) : name of the jit for this os
-    """
-
-    jit_base_name = "clrjit"
-    if coreclr_args.host_os == "OSX":
-        return "lib" + jit_base_name + ".dylib"
-    elif coreclr_args.host_os == "Linux":
-        return "lib" + jit_base_name + ".so"
-    elif coreclr_args.host_os == "windows":
-        return jit_base_name + ".dll"
-    else:
-        raise RuntimeError("Unknown OS.")
 
 
 def process_git_hash_arg(coreclr_args, return_first_hash=False):
@@ -447,7 +382,7 @@ def upload_command(coreclr_args):
     files = []
 
     # First, find the primary JIT that we expect to find.
-    jit_name = determine_jit_name(coreclr_args)
+    jit_name = determine_jit_name(coreclr_args.host_os)
     jit_path = os.path.join(coreclr_args.product_location, jit_name)
     if not os.path.isfile(jit_path):
         logging.error("Error: Couldn't find JIT at {}".format(jit_path))
@@ -468,10 +403,10 @@ def upload_command(coreclr_args):
     # We don't do a recursive walk because the JIT is also copied to the "sharedFramework" subdirectory,
     # so we don't want to pick that up.
 
-    if coreclr_args.host_os == "OSX":
+    if coreclr_args.host_os == "osx":
         allowed_extensions = [ ".dylib" ]
         # Add .dwarf for debug info
-    elif coreclr_args.host_os == "Linux":
+    elif coreclr_args.host_os == "linux":
         allowed_extensions = [ ".so" ]
         # Add .dbg for debug info
     elif coreclr_args.host_os == "windows":

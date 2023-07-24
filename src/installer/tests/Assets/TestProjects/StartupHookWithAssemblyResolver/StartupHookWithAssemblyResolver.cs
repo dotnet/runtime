@@ -4,29 +4,42 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 
 internal class StartupHook
 {
     public static void Initialize()
     {
-        AssemblyLoadContext.Default.Resolving += SharedHostPolicy.SharedAssemblyResolver.Resolve;
-    }
-}
+        Console.WriteLine($"Hello from startup hook in {(typeof(StartupHook).Assembly.GetName().Name)}!");
 
-namespace SharedHostPolicy
-{
-    public class SharedAssemblyResolver
-    {
-        public static Assembly Resolve(AssemblyLoadContext context, AssemblyName assemblyName)
+        bool addResolver = Environment.GetEnvironmentVariable("TEST_STARTUPHOOK_ADD_RESOLVER") == true.ToString();
+        if (addResolver)
         {
-            if (assemblyName.Name == "SharedLibrary")
-            {
-                string startupHookDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string sharedLibrary = Path.GetFullPath(Path.Combine(startupHookDirectory, "SharedLibrary.dll"));
-                return AssemblyLoadContext.Default.LoadFromAssemblyPath(sharedLibrary);
-            }
-            return null;
+            AssemblyLoadContext.Default.Resolving += OnResolving;
         }
+
+        bool useDependency = Environment.GetEnvironmentVariable("TEST_STARTUPHOOK_USE_DEPENDENCY") == true.ToString();
+        if (useDependency)
+        {
+            UseDependency();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void UseDependency()
+    {
+        Console.WriteLine($"SharedLibrary.Value: {SharedLibrary.SharedType.Value}");
+    }
+
+    private static Assembly OnResolving(AssemblyLoadContext context, AssemblyName assemblyName)
+    {
+        if (assemblyName.Name != "SharedLibrary")
+            return null;
+
+        Console.WriteLine($"Resolving {assemblyName.Name} in startup hook");
+        string startupHookDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string sharedLibrary = Path.GetFullPath(Path.Combine(startupHookDirectory, "SharedLibrary.dll"));
+        return AssemblyLoadContext.Default.LoadFromAssemblyPath(sharedLibrary);
     }
 }

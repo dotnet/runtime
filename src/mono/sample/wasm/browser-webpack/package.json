@@ -4,12 +4,12 @@
   "license": "MIT",
   "main": "index.js",
   "scripts": {
-    "build": "dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug",
+    "build": "dotnet build /p:TargetOS=browser /p:TargetArchitecture=wasm -c Debug",
     "webpack": "webpack"
   },
   "devDependencies": {
-    "webpack": "5.68.0",
-    "webpack-cli": "4.9.1"
+    "webpack": "5.88.1",
+    "webpack-cli": "5.1.4"
   },
   "dependencies": {
     "@microsoft/dotnet-runtime": "file:bin/dotnet-runtime",

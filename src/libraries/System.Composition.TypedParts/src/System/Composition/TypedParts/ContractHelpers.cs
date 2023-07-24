@@ -29,7 +29,7 @@ namespace System.Composition.TypedParts
         public static ImportInfo GetImportInfo(Type memberType, object[] attributes, object site)
         {
             var importedContract = new CompositionContract(memberType);
-            IDictionary<string, object> importMetadata = null;
+            Dictionary<string, object> importMetadata = null;
             var allowDefault = false;
             var explicitImportsApplied = 0;
 

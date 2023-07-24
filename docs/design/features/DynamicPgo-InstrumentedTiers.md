@@ -1,8 +1,8 @@
-# Instrumented Tiers
+# Dynamic PGO: Instrumented Tiers
 
-[#70941](https://github.com/dotnet/runtime/pull/70941) introduced separate tiers to focus on instrumenting only the hot code. It's done to address the following problems:
-1) R2R code should still benefit from Dynamic PGO despite being not instrumented in the first place
-2) Overhead from the instrumentation in Tier0 should not slow startup
+[#70941](https://github.com/dotnet/runtime/pull/70941) introduced a new tier to instrument only hot code. It's mainly done to address the following problems:
+1) R2R code should still benefit from Dynamic PGO despite being not instrumented in the first place.
+2) Overhead from the instrumentation in Tier0 should not slow startup down (compared to the mode where DynamicPGO is disabled) and methods which never reach the next tier should not be instrumented at all.
 
 To address these problems the following workflow was introduced:
 
@@ -36,202 +36,164 @@ flowchart
 Now, any code is eligible for Dynamic PGO if it's hot enough. It's easier to explain this on a concrete example:
 
 ```csharp
-class Program : IDisposable
+class MyDisposableImpl : IDisposable
 {
-    static int Main()
+    public void Dispose() => Console.WriteLine("disposed");
+}
+
+class Program
+{
+    static void Main()
     {
-        Program p = new();
-        for (int i = 0; i < 500; i++)
+        for (int i = 0; i < 100; i++)
         {
-            HotLoop(p);
-            Thread.Sleep(40); // cold loop
+            CallDispose(new MyDisposableImpl());
+            // Give VM some time to promote CallDispose
+            Thread.Sleep(15);
         }
-
-        Console.ReadKey();
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void HotLoop(IDisposable d)
-    {
-        for (int i = 0; i < 500000; i++) // hot loop
-            d?.Dispose();
-    }
-
-    public void Dispose() => Test();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    void Test() { }
+    static void CallDispose(IDisposable d) => d?.Dispose(); // virtual (interface) call
 }
 ```
 
-The method we'll be looking at is `HotLoop`. The method itself has a hot loop (to show how this work interacts with OSR) but the whole method is expected to be promoted to Tier1 too since it's invoked also in a loop (cold loop). The method also has a virtual call to showcase GDV.
+The method we'll be inspecting is `CallDispose`. It has an unknown interface call + two branches (the `?` operator).
 
-# Case 1: `HotLoop` is prejitted (R2R)
+# Case 1: `CallDispose` is initially prejitted (R2R)
 
-Let's see what happens when the method we're inspecting has an AOT version on start:
+Let's see what happens when the method we're inspecting has an AOT version on start (e.g. our app was published with `/p:PublishReadyToRun=true`):
 
-1) When we start the app, VM picks up R2R'd version of `HotLoop` that looks like this:
+### 1) R2R version of `CallDispose` is picked up:
 
 ```asm
-; Assembly listing for method Program:HotLoop(System.IDisposable)
+; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; ReadyToRun compilation
 ; optimized code
 ; No PGO data
-G_M43040_IG01:              ;; offset=0000H
-       57                   push     rdi
-       56                   push     rsi
+G_M10906_IG01:              ;; offset=0000H
        4883EC28             sub      rsp, 40
-       488BF1               mov      rsi, rcx
-						;; size=9 bbWeight=1    PerfScore 2.50
-G_M43040_IG02:              ;; offset=0009H
-       33FF                 xor      edi, edi
-						;; size=2 bbWeight=1    PerfScore 0.25
-G_M43040_IG03:              ;; offset=000BH
-       4885F6               test     rsi, rsi
-       740D                 je       SHORT G_M43040_IG05
-						;; size=5 bbWeight=4    PerfScore 5.00
-G_M43040_IG04:              ;; offset=0010H
-       488BCE               mov      rcx, rsi
-       4C8D1D00000000       lea      r11, [(reloc 0x4000000000420270)]
+						;; size=4 bbWeight=1 PerfScore 0.25
+G_M10906_IG02:              ;; offset=0004H
+       4885C9               test     rcx, rcx
+       740A                 je       SHORT G_M10906_IG04
+						;; size=5 bbWeight=1 PerfScore 1.25
+G_M10906_IG03:              ;; offset=0009H
+       4C8D1D00000000       lea      r11, [(reloc 0x4000000000420240)]
        41FF13               call     [r11]System.IDisposable:Dispose():this
-						;; size=13 bbWeight=2    PerfScore 7.50
-G_M43040_IG05:              ;; offset=001DH
-       FFC7                 inc      edi
-       81FF20A10700         cmp      edi, 0x7A120
-       7CE4                 jl       SHORT G_M43040_IG03
-						;; size=10 bbWeight=4    PerfScore 6.00
-G_M43040_IG06:              ;; offset=0027H
+						;; size=10 bbWeight=0.50 PerfScore 1.75
+G_M10906_IG04:              ;; offset=0013H
+       90                   nop      
+						;; size=1 bbWeight=1 PerfScore 0.25
+G_M10906_IG05:              ;; offset=0014H
        4883C428             add      rsp, 40
-       5E                   pop      rsi
-       5F                   pop      rdi
        C3                   ret      
-						;; size=7 bbWeight=1    PerfScore 2.25
-; Total bytes of code 46
+						;; size=5 bbWeight=1 PerfScore 1.25
+; Total bytes of code 25
+; ============================================================
 ```
 
-As we can see from the codegen: it's not instrumented (we never instrument R2R'd code - it would increase the binary size by quite a lot), it doesn't have patchpoints for OSR (since it's already optimized) and is optimized. Technically, it can be optimized with a Static PGO but, presumably, it's a rare case in the real world due to complexity, so we left that virtual call here non-devirtualized.
+As we can see from the codegen: it's not instrumented (we never instrument R2R'd code - that is a lot of additional size increase) and is optimized already. The interface call is not devirtualized yet as we don't have any profile for it.
 
-2) HotLoop is invoked >30 times meaning it's likely a hot method so VM "promotes" it to Tier1Instrumented:
+### 2) `CallDispose` is promoted to Tier1Instrumented
+
+ `CallDispose` is invoked more than 30 times so VM "promotes" it to Tier1Instrumented for instrumentation:
 ```asm
-; Assembly listing for method Program:HotLoop(System.IDisposable)
+; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; Tier-1 compilation
 ; optimized code
 ; instrumented for collecting profile data
 ; No PGO data
-G_M43040_IG01:              ;; offset=0000H
-       57                   push     rdi
+G_M10906_IG01:              ;; offset=0000H
        56                   push     rsi
-       4883EC28             sub      rsp, 40
+       4883EC20             sub      rsp, 32
        488BF1               mov      rsi, rcx
-                                                ;; size=9 bbWeight=1    PerfScore 2.50
-G_M43040_IG02:              ;; offset=0009H
-       FF05F9FE5500         inc      dword ptr [(reloc 0x7ffd5edb4948)]
-       33FF                 xor      edi, edi
-       EB3B                 jmp      SHORT G_M43040_IG05
-                                                ;; size=10 bbWeight=1    PerfScore 5.25
-G_M43040_IG03:              ;; offset=0013H
-       FF05F3FE5500         inc      dword ptr [(reloc 0x7ffd5edb494c)]
+                                                ;; size=8 bbWeight=1 PerfScore 1.50
+G_M10906_IG02:              ;; offset=0008H
        4885F6               test     rsi, rsi
-       7428                 je       SHORT G_M43040_IG04
-       FF05ECFE5500         inc      dword ptr [(reloc 0x7ffd5edb4950)]
+       7428                 je       SHORT G_M10906_IG04
+                                                ;; size=5 bbWeight=1 PerfScore 1.25
+G_M10906_IG03:              ;; offset=000DH
+       FF057D366600         inc      dword ptr [(reloc 0x7ffbea03b250)]
        488BCE               mov      rcx, rsi
-       48BA5849DB5EFD7F0000 mov      rdx, 0x7FFD5EDB4958
-       E81ACB105F           call     CORINFO_HELP_CLASSPROFILE32
+       48BA58B203EAFB7F0000 mov      rdx, 0x7FFBEA03B258
+       E89B77505F           call     CORINFO_HELP_CLASSPROFILE32
        488BCE               mov      rcx, rsi
-       49BB5000595EFD7F0000 mov      r11, 0x7FFD5E590050      ; code for System.IDisposable:Dispose
+       49BB500071E9FB7F0000 mov      r11, 0x7FFBE9710050      ; code for System.IDisposable:Dispose():this
        41FF13               call     [r11]System.IDisposable:Dispose():this
-                                                ;; size=51 bbWeight=2    PerfScore 24.50
-G_M43040_IG04:              ;; offset=0046H
-       FF0514FF5500         inc      dword ptr [(reloc 0x7ffd5edb49a0)]
-       FFC7                 inc      edi
-                                                ;; size=8 bbWeight=2    PerfScore 6.50
-G_M43040_IG05:              ;; offset=004EH
-       FF0510FF5500         inc      dword ptr [(reloc 0x7ffd5edb49a4)]
-       81FF20A10700         cmp      edi, 0x7A120
-       7CB7                 jl       SHORT G_M43040_IG03
-                                                ;; size=14 bbWeight=8    PerfScore 34.00
-G_M43040_IG06:              ;; offset=005CH
-       FF0506FF5500         inc      dword ptr [(reloc 0x7ffd5edb49a8)]
-                                                ;; size=6 bbWeight=1    PerfScore 3.00
-G_M43040_IG07:              ;; offset=0062H
-       4883C428             add      rsp, 40
+                                                ;; size=40 bbWeight=0.50 PerfScore 4.00
+G_M10906_IG04:              ;; offset=0035H
+       FF05A5366600         inc      dword ptr [(reloc 0x7ffbea03b2a0)]
+                                                ;; size=6 bbWeight=1 PerfScore 3.00
+G_M10906_IG05:              ;; offset=003BH
+       4883C420             add      rsp, 32
        5E                   pop      rsi
-       5F                   pop      rdi
        C3                   ret
-                                                ;; size=7 bbWeight=1    PerfScore 2.25
-; Total bytes of code 105
+                                                ;; size=6 bbWeight=1 PerfScore 1.75
+; Total bytes of code 65
+; ============================================================
 ```
 
-We had to instrument **optimized** code here to mitigate two issues:
-1) We don't want to see a significant performance degradation (even temporarily) after fast R2R
-2) Unoptimized code tends to spawn a lot of new unnecessary jit compilations because it doesn't inline code, even simple properties
+The code is optimized, it has a helper call to record types of objects passed to that virtual call (`Dispose()`).
+Also, there are two edge counters (`inc [reloc]`) to get a better understanding which branch is more popular (where d is null or where it is not).
+It is worth noting that we had to instrument **optimized** code here to mitigate two issues:
+1) We don't want to see a significant performance degradation (even temporarily) after fast R2R.
+2) Unoptimized code tends to spawn a lot of new unnecessary jit compilations because it doesn't inline code, even simple getters/setters.
 
-As a downside - the profile is less accurate and it doesn't instrument inlinees.
+As a downside, the profile is less accurate and it doesn't instrument inlinees.
 
-3) The new code version of `HotLoop` is also invoked >30 times leading to the final promotion to Tier1:
+### 3) `CallDispose` is promoted to Tier1
+
+The new code version of `CallDispose` is also invoked >30 times leading to the final promotion to Tier1:
 ```asm
-; Assembly listing for method Program:HotLoop(System.IDisposable)
+; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; Tier-1 compilation
 ; optimized code
 ; optimized using profile data
-; with Dynamic PGO: edge weights are invalid, and fgCalledCount is 48
+; with Dynamic PGO: edge weights are valid, and fgCalledCount is 48
 ; 0 inlinees with PGO data; 1 single block inlinees; 0 inlinees without PGO data
-G_M43040_IG01:              ;; offset=0000H
-       57                   push     rdi
-       56                   push     rsi
+G_M10906_IG01:              ;; offset=0000H
        4883EC28             sub      rsp, 40
-       488BF1               mov      rsi, rcx
-                                                ;; size=9 bbWeight=1    PerfScore 2.50
-G_M43040_IG02:              ;; offset=0009H
-       33FF                 xor      edi, edi
-       4885F6               test     rsi, rsi
-       7424                 je       SHORT G_M43040_IG05
-       48B9A023C861FD7F0000 mov      rcx, 0x7FFD61C823A0      ; Program
-       48390E               cmp      qword ptr [rsi], rcx
-       7515                 jne      SHORT G_M43040_IG05
-                                                ;; size=22 bbWeight=1    PerfScore 5.75
-G_M43040_IG03:              ;; offset=001FH
-       488BCE               mov      rcx, rsi
-       FF1550771B00         call     [Program:Test():this]
-       FFC7                 inc      edi
-       81FF20A10700         cmp      edi, 0x7A120
-       7CED                 jl       SHORT G_M43040_IG03
-                                                ;; size=19 bbWeight=484693.69 PerfScore 2302295.02
-G_M43040_IG04:              ;; offset=0032H
-       EB27                 jmp      SHORT G_M43040_IG07
-                                                ;; size=2 bbWeight=1    PerfScore 2.00
-G_M43040_IG05:              ;; offset=0034H
-       4885F6               test     rsi, rsi
-       7418                 je       SHORT G_M43040_IG06
-       48B9A023C861FD7F0000 mov      rcx, 0x7FFD61C823A0      ; Program
-       48390E               cmp      qword ptr [rsi], rcx
-       751A                 jne      SHORT G_M43040_IG08
-       488BCE               mov      rcx, rsi
-       FF1527771B00         call     [Program:Test():this]
-                                                ;; size=29 bbWeight=4895.90 PerfScore 42839.09
-G_M43040_IG06:              ;; offset=0051H
-       FFC7                 inc      edi
-       81FF20A10700         cmp      edi, 0x7A120
-       7CD9                 jl       SHORT G_M43040_IG05
-                                                ;; size=10 bbWeight=4895.90 PerfScore 7343.84
-G_M43040_IG07:              ;; offset=005BH
+                                                ;; size=4 bbWeight=1 PerfScore 0.25
+G_M10906_IG02:              ;; offset=0004H
+       4885C9               test     rcx, rcx
+       741F                 je       SHORT G_M10906_IG03
+       48B8688CFBE9FB7F0000 mov      rax, 0x7FFBE9FB8C68      ; MyDisposableImpl
+       483901               cmp      qword ptr [rcx], rax
+       7516                 jne      SHORT G_M10906_IG05
+       48B908855A29EE010000 mov      rcx, 0x1EE295A8508      ; 'disposed'
+       FF1538535A00         call     [System.Console:WriteLine(System.String)]
+                                                ;; size=36 bbWeight=1 PerfScore 8.75
+G_M10906_IG03:              ;; offset=0028H
+       90                   nop
+                                                ;; size=1 bbWeight=1 PerfScore 0.25
+G_M10906_IG04:              ;; offset=0029H
        4883C428             add      rsp, 40
-       5E                   pop      rsi
-       5F                   pop      rdi
        C3                   ret
-                                                ;; size=7 bbWeight=0.98 PerfScore 2.20
-G_M43040_IG08:              ;; offset=0062H
-       488BCE               mov      rcx, rsi
-       49BB10007E61FD7F0000 mov      r11, 0x7FFD617E0010      ; code for System.IDisposable:Dispose
+                                                ;; size=5 bbWeight=1 PerfScore 1.25
+G_M10906_IG05:              ;; offset=002EH
+       49BB580071E9FB7F0000 mov      r11, 0x7FFBE9710058      ; code for System.IDisposable:Dispose():this
        41FF13               call     [r11]System.IDisposable:Dispose():this
-       EBDD                 jmp      SHORT G_M43040_IG06
-; Total bytes of code 116
+       EBEB                 jmp      SHORT G_M10906_IG03
+                                                ;; size=15 bbWeight=0 PerfScore 0.00
+; Total bytes of code 61
+; ============================================================
 ```
-The codegen looks a bit bulky but if we look closer we'll see that we cloned the loop to have a fast version with a devirtualized call inside (see `G_M43040_IG03`) with guards hoisted out of that loop. To summarize what happened with `HotLoop` we can take a look at this part of the diagram:
+PGO helped us to optimize two things in the final tier:
+1) We know that `d` object is rarely/never null so we mark that path as cold
+2) We know that `d` is mostly/always `MyDisposableImpl` so we optimized an unknown interface call to basically this:
+```csharp
+if (d is MyDisposableImpl)
+    Console.WriteLine("disposed"); // MyDisposableImpl.Dispose inlined
+else
+    d.Dispose(); // fallback, interface call in case if a new type is added/loaded and used here
+```
+There are more things JIT can optimize with help of PGO, e.g. be more aggressive inlining methods on hot paths, etc.
+
+Thus, R2R didn't lead to a missing oportunity to run Dynamic PGO here. To summarize what happened with `CallDispose` we can take a look at this part of the diagram:
 ```mermaid
 flowchart
     hasR2R("...") -->|Yes| R2R
@@ -245,319 +207,145 @@ flowchart
     ishot5-.->|No,<br/>keep running...|ishot5
 ```
 
+# Case 2: `CallDispose` is not initially prejitted
 
-# Case 2: `HotLoop` is not initially prejitted
+### 1) `CallDispose` is compiled to Tier0
 
-This case is a bit more complicated since it involves OSR for this case.
-
-1) Since no R2R version exists for `HotLoop` VM has to ask JIT to compile a Tier0 version of it as fast as it can:
+Since there is no R2R version for `CallDispose`, VM has to ask JIT to compile a Tier0 version of it as fast as it can (because it needs to execute it and there is no any code version of it available):
 ```asm
-; Assembly listing for method Program:HotLoop(System.IDisposable)
+; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; Tier-0 compilation
 ; MinOpts code
-G_M43040_IG01:              ;; offset=0000H
+G_M10906_IG01:              ;; offset=0000H
        55                   push     rbp
-       4883EC70             sub      rsp, 112
-       488D6C2470           lea      rbp, [rsp+70H]
-       33C0                 xor      eax, eax
-       8945C4               mov      dword ptr [rbp-3CH], eax
+       4883EC20             sub      rsp, 32
+       488D6C2420           lea      rbp, [rsp+20H]
        48894D10             mov      gword ptr [rbp+10H], rcx
-                                                ;; size=19 bbWeight=1    PerfScore 4.00
-G_M43040_IG02:              ;; offset=0013H
-       33C9                 xor      ecx, ecx
-       894DC4               mov      dword ptr [rbp-3CH], ecx
-       C745B8E8030000       mov      dword ptr [rbp-48H], 0x3E8
-       EB20                 jmp      SHORT G_M43040_IG05
-                                                ;; size=14 bbWeight=1    PerfScore 4.25
-G_M43040_IG03:              ;; offset=0021H
+                                                ;; size=14 bbWeight=1 PerfScore 2.75
+G_M10906_IG02:              ;; offset=000EH
        48837D1000           cmp      gword ptr [rbp+10H], 0
-       7411                 je       SHORT G_M43040_IG04
+       7411                 je       SHORT G_M10906_IG03
        488B4D10             mov      rcx, gword ptr [rbp+10H]
-       49BB90027E61FD7F0000 mov      r11, 0x7FFD617E0290      ; code for System.IDisposable:Dispose
+       49BB78020E3CFC7F0000 mov      r11, 0x7FFC3C0E0278      ; code for System.IDisposable:Dispose():this
        41FF13               call     [r11]System.IDisposable:Dispose():this
-                                                ;; size=24 bbWeight=1    PerfScore 7.25
-G_M43040_IG04:              ;; offset=0039H
-       8B45C4               mov      eax, dword ptr [rbp-3CH]
-       FFC0                 inc      eax
-       8945C4               mov      dword ptr [rbp-3CH], eax
-                                                ;; size=8 bbWeight=1    PerfScore 2.25
-G_M43040_IG05:              ;; offset=0041H
-       8B4DB8               mov      ecx, dword ptr [rbp-48H]
-       FFC9                 dec      ecx
-       894DB8               mov      dword ptr [rbp-48H], ecx
-       837DB800             cmp      dword ptr [rbp-48H], 0
-       7F0E                 jg       SHORT G_M43040_IG07
-                                                ;; size=14 bbWeight=1    PerfScore 5.25
-G_M43040_IG06:              ;; offset=004FH
-       488D4DB8             lea      rcx, [rbp-48H]
-       BA11000000           mov      edx, 17
-       E8338F045F           call     CORINFO_HELP_PATCHPOINT
-                                                ;; size=14 bbWeight=0.01 PerfScore 0.02
-G_M43040_IG07:              ;; offset=005DH
-       817DC420A10700       cmp      dword ptr [rbp-3CH], 0x7A120
-       7CBB                 jl       SHORT G_M43040_IG03
-                                                ;; size=9 bbWeight=1    PerfScore 3.00
-G_M43040_IG08:              ;; offset=0066H
-       4883C470             add      rsp, 112
+                                                ;; size=24 bbWeight=1 PerfScore 7.25
+G_M10906_IG03:              ;; offset=0026H
+       90                   nop
+                                                ;; size=1 bbWeight=1 PerfScore 0.25
+G_M10906_IG04:              ;; offset=0027H
+       4883C420             add      rsp, 32
        5D                   pop      rbp
        C3                   ret
-                                                ;; size=6 bbWeight=1    PerfScore 1.75
-; Total bytes of code 108
+                                                ;; size=6 bbWeight=1 PerfScore 1.75
+; Total bytes of code 45
+; ============================================================
 ```
 
-The codegen is unoptimized, with patchpoints for OSR and without instrumentation (to avoid spending time on it for methods which will never make it to Tier1 - as the practice shows: only 10-20% of methods make it to Tier1)
+The codegen is not optimized and doesn't have any instrumentation (to avoid spending time on it for methods which will never make it to Tier1 - as the practice shows: only 10-20% of methods make it to Tier1)
 
-2) Its loop body triggers OSR after `DOTNET_TC_OnStackReplacement_InitialCounter` iterations (see jitconfigvalue.h):
+### 2) `CallDispose` is promoted to Tier0Instrumented
+
+`CallDispose` is invoked more than 30 times and that triggers promotion to Tier0Instrumented (when VM is busy serving other Tier0 requests):
 ```asm
-; Assembly listing for method Program:HotLoop(System.IDisposable)
-; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
-; Tier-1 compilation
-; OSR variant for entry point 0x11
-; optimized code
-; No PGO data
-G_M43040_IG01:              ;; offset=0000H
-       4883EC38             sub      rsp, 56
-       4889BC24A8000000     mov      qword ptr [rsp+A8H], rdi
-       4889B424A0000000     mov      qword ptr [rsp+A0H], rsi
-       488BB424C0000000     mov      rsi, gword ptr [rsp+C0H]
-       8B7C2474             mov      edi, dword ptr [rsp+74H]
-                                                ;; size=32 bbWeight=1    PerfScore 6.25
-G_M43040_IG02:              ;; offset=0020H
-       81FF20A10700         cmp      edi, 0x7A120
-       7D1F                 jge      SHORT G_M43040_IG06
-                                                ;; size=8 bbWeight=1    PerfScore 1.25
-G_M43040_IG03:              ;; offset=0028H
-       4885F6               test     rsi, rsi
-       7410                 je       SHORT G_M43040_IG05
-                                                ;; size=5 bbWeight=4    PerfScore 5.00
-G_M43040_IG04:              ;; offset=002DH
-       488BCE               mov      rcx, rsi
-       49BB98027E61FD7F0000 mov      r11, 0x7FFD617E0298      ; code for System.IDisposable:Dispose
-       41FF13               call     [r11]System.IDisposable:Dispose():this
-                                                ;; size=16 bbWeight=2    PerfScore 7.00
-G_M43040_IG05:              ;; offset=003DH
-       FFC7                 inc      edi
-       81FF20A10700         cmp      edi, 0x7A120
-       7CE1                 jl       SHORT G_M43040_IG03
-                                                ;; size=10 bbWeight=4    PerfScore 6.00
-G_M43040_IG06:              ;; offset=0047H
-       4881C4A0000000       add      rsp, 160
-       5E                   pop      rsi
-       5F                   pop      rdi
-       5D                   pop      rbp
-       C3                   ret
-                                                ;; size=11 bbWeight=1    PerfScore 2.75
-; Total bytes of code 82
-```
-
-Now the loop is faster because of optimizations but is still not instrumented/devirtualized. In theory, we could start instrumenting at least the loop body at this stage, but it's left as is for now, see notes below.
-
-3) `HotLoop` itself is invoked > 30 times, that triggers promotion to Tier0Instrumented:
-```asm
-; Assembly listing for method Program:HotLoop(System.IDisposable)
+; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; Tier-0 compilation
 ; MinOpts code
 ; instrumented for collecting profile data
-G_M43040_IG01:              ;; offset=0000H
+G_M10906_IG01:              ;; offset=0000H
        55                   push     rbp
-       4881EC80000000       sub      rsp, 128
-       488DAC2480000000     lea      rbp, [rsp+80H]
+       4883EC30             sub      rsp, 48
+       488D6C2430           lea      rbp, [rsp+30H]
        33C0                 xor      eax, eax
-       488945A8             mov      qword ptr [rbp-58H], rax
-       C5D857E4             vxorps   xmm4, xmm4
-       C5F97F65B0           vmovdqa  xmmword ptr [rbp-50H], xmm4
-       488945C0             mov      qword ptr [rbp-40H], rax
+       488945F8             mov      qword ptr [rbp-08H], rax
+       488945F0             mov      qword ptr [rbp-10H], rax
        48894D10             mov      gword ptr [rbp+10H], rcx
-                                                ;; size=39 bbWeight=1    PerfScore 7.33
-G_M43040_IG02:              ;; offset=0027H
-       FF05A3846000         inc      dword ptr [(reloc 0x7ffd6214fc10)]
-       33C9                 xor      ecx, ecx
-       894DC4               mov      dword ptr [rbp-3CH], ecx
-       C745B8E8030000       mov      dword ptr [rbp-48H], 0x3E8
-       EB55                 jmp      SHORT G_M43040_IG05
-                                                ;; size=20 bbWeight=1    PerfScore 7.25
-G_M43040_IG03:              ;; offset=003BH
-       FF0593846000         inc      dword ptr [(reloc 0x7ffd6214fc14)]
+                                                ;; size=24 bbWeight=1 PerfScore 5.00
+G_M10906_IG02:              ;; offset=0018H
        48837D1000           cmp      gword ptr [rbp+10H], 0
-       743A                 je       SHORT G_M43040_IG04
-       FF058A846000         inc      dword ptr [(reloc 0x7ffd6214fc18)]
+       743A                 je       SHORT G_M10906_IG03
+       FF05832A7500         inc      dword ptr [(reloc 0x7ffc3cbac2f8)]
        488B4D10             mov      rcx, gword ptr [rbp+10H]
-       48894DB0             mov      gword ptr [rbp-50H], rcx
-       488B4DB0             mov      rcx, gword ptr [rbp-50H]
-       48BA20FC1462FD7F0000 mov      rdx, 0x7FFD6214FC20
-       E8E79D045F           call     CORINFO_HELP_CLASSPROFILE32
-       488B4DB0             mov      rcx, gword ptr [rbp-50H]
-       48894DA8             mov      gword ptr [rbp-58H], rcx
-       488B4DA8             mov      rcx, gword ptr [rbp-58H]
-       49BBA0027E61FD7F0000 mov      r11, 0x7FFD617E02A0      ; code for System.IDisposable:Dispose
-       41FF13               call     [r11]System.IDisposable:Dispose():this
-                                                ;; size=71 bbWeight=1    PerfScore 19.50
-G_M43040_IG04:              ;; offset=0082H
-       FF05A0846000         inc      dword ptr [(reloc 0x7ffd6214fc68)]
-       8B45C4               mov      eax, dword ptr [rbp-3CH]
-       FFC0                 inc      eax
-       8945C4               mov      dword ptr [rbp-3CH], eax
-                                                ;; size=14 bbWeight=1    PerfScore 5.25
-G_M43040_IG05:              ;; offset=0090H
-       8B4DB8               mov      ecx, dword ptr [rbp-48H]
-       FFC9                 dec      ecx
-       894DB8               mov      dword ptr [rbp-48H], ecx
-       837DB800             cmp      dword ptr [rbp-48H], 0
-       7F0E                 jg       SHORT G_M43040_IG07
-                                                ;; size=14 bbWeight=1    PerfScore 5.25
-G_M43040_IG06:              ;; offset=009EH
-       488D4DB8             lea      rcx, [rbp-48H]
-       BA11000000           mov      edx, 17
-       E8248C045F           call     CORINFO_HELP_PATCHPOINT
-                                                ;; size=14 bbWeight=0.01 PerfScore 0.02
-G_M43040_IG07:              ;; offset=00ACH
-       FF057A846000         inc      dword ptr [(reloc 0x7ffd6214fc6c)]
-       817DC420A10700       cmp      dword ptr [rbp-3CH], 0x7A120
-       7C80                 jl       SHORT G_M43040_IG03
-       FF056F846000         inc      dword ptr [(reloc 0x7ffd6214fc70)]
-                                                ;; size=21 bbWeight=1    PerfScore 9.00
-G_M43040_IG08:              ;; offset=00C1H
-       4881C480000000       add      rsp, 128
+       48894DF8             mov      gword ptr [rbp-08H], rcx
+       488B4DF8             mov      rcx, gword ptr [rbp-08H]
+       48BA00C3BA3CFC7F0000 mov      rdx, 0x7FFC3CBAC300
+       E8F05A455F           call     CORINFO_HELP_CLASSPROFILE32
+       488B4DF8             mov      rcx, gword ptr [rbp-08H]
+       48894DF0             mov      gword ptr [rbp-10H], rcx
+       488B4DF0             mov      rcx, gword ptr [rbp-10H]
+       49BB90020E3CFC7F0000 mov      r11, 0x7FFC3C0E0290      ; code for System.IDisposable:Dispose():this
+      disposed
+ 41FF13               call     [r11]System.IDisposable:Dispose():this
+                                                ;; size=65 bbWeight=1 PerfScore 16.50
+G_M10906_IG03:              ;; offset=0059H
+       FF05992A7500         inc      dword ptr [(reloc 0x7ffc3cbac348)]
+                                                ;; size=6 bbWeight=1 PerfScore 3.00
+G_M10906_IG04:              ;; offset=005FH
+       4883C430             add      rsp, 48
        5D                   pop      rbp
        C3                   ret
-                                                ;; size=9 bbWeight=1    PerfScore 1.75
-; Total bytes of code 202
+                                                ;; size=6 bbWeight=1 PerfScore 1.75
+; Total bytes of code 101
+; ============================================================
 ```
-Now the whole method is compiled to Tier0 with instrumentation and patchpoints. No optimizations.
+Now the whole method is compiled to Tier0 with instrumentation. No optimizations.
 We decided to promote hot Tier0 to Tier0Instrumented without optimizations for the following reasons:
-1) We won't notice a big performance regression from going from Tier0 to Tier0Instrumented
-2) Tier0Instrumented is faster to compile
-3) Its profile is more accurate
+* We won't notice a big performance regression from transitioning from Tier0 to Tier0Instrumented
+* Tier0Instrumented is faster to compile
+* Its profile is more accurate - better performance for Tier1
 
-Although, in this specific case we could consider using Tier1Instrumented since we had a faster loop in the previous code version due to Tier1-OSR, but since OSR events are rare and we don't want to produce a less accurate profile that we had before https://github.com/dotnet/runtime/pull/70941 it's left as is. We might re-consider this when we improve instrumentation for the optimized code to produce a more accurate profile including inlinees.
+### 3) ``CallDispose` is promoted to Tier1
 
-4) The loop of `HotLoop` triggered OSR once again:
+``CallDispose` method is invoked more than 30 times again and this time it triggers the final promotion to the last tier - Tier1:
 ```asm
-; Assembly listing for method Program:HotLoop(System.IDisposable)
-; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
-; Tier-1 compilation
-; OSR variant for entry point 0x11
-; optimized code
-; optimized using profile data
-; with Dynamic PGO: edge weights are invalid, and fgCalledCount is 9999
-; 0 inlinees with PGO data; 1 single block inlinees; 0 inlinees without PGO data
-G_M43040_IG01:              ;; offset=0000H
-       4883EC38             sub      rsp, 56
-       4889BC24B8000000     mov      qword ptr [rsp+B8H], rdi
-       4889B424B0000000     mov      qword ptr [rsp+B0H], rsi
-       488BB424D0000000     mov      rsi, gword ptr [rsp+D0H]
-       8BBC2484000000       mov      edi, dword ptr [rsp+84H]
-                                                ;; size=35 bbWeight=1    PerfScore 6.25
-G_M43040_IG02:              ;; offset=0023H
-       81FF20A10700         cmp      edi, 0x7A120
-       7D50                 jge      SHORT G_M43040_IG06
-       4885F6               test     rsi, rsi
-       7424                 je       SHORT G_M43040_IG04
-       48B9C86CCC61FD7F0000 mov      rcx, 0x7FFD61CC6CC8      ; Program
-       48390E               cmp      qword ptr [rsi], rcx
-       7515                 jne      SHORT G_M43040_IG04
-                                                ;; size=28 bbWeight=1    PerfScore 6.75
-G_M43040_IG03:              ;; offset=003FH
-       488BCE               mov      rcx, rsi
-       FF15605A1500         call     [Program:Test():this]
-       FFC7                 inc      edi
-       81FF20A10700         cmp      edi, 0x7A120
-       7D29                 jge      SHORT G_M43040_IG06
-       EBEB                 jmp      SHORT G_M43040_IG03
-                                                ;; size=21 bbWeight=0.99 PerfScore 6.68
-G_M43040_IG04:              ;; offset=0054H
-       4885F6               test     rsi, rsi
-       7418                 je       SHORT G_M43040_IG05
-       48B9C86CCC61FD7F0000 mov      rcx, 0x7FFD61CC6CC8      ; Program
-       48390E               cmp      qword ptr [rsi], rcx
-       751E                 jne      SHORT G_M43040_IG07
-       488BCE               mov      rcx, rsi
-       FF15375A1500         call     [Program:Test():this]
-                                                ;; size=29 bbWeight=0.01 PerfScore 0.09
-G_M43040_IG05:              ;; offset=0071H
-       FFC7                 inc      edi
-       81FF20A10700         cmp      edi, 0x7A120
-       7CD9                 jl       SHORT G_M43040_IG04
-                                                ;; size=10 bbWeight=0.01 PerfScore 0.02
-G_M43040_IG06:              ;; offset=007BH
-       4881C4B0000000       add      rsp, 176
-       5E                   pop      rsi
-       5F                   pop      rdi
-       5D                   pop      rbp
-       C3                   ret
-                                                ;; size=11 bbWeight=0    PerfScore 0.00
-G_M43040_IG07:              ;; offset=0086H
-       488BCE               mov      rcx, rsi
-       49BBA8027E61FD7F0000 mov      r11, 0x7FFD617E02A8      ; code for System.IDisposable:Dispose
-       41FF13               call     [r11]System.IDisposable:Dispose():this
-       EBD9                 jmp      SHORT G_M43040_IG05
-                                                ;; size=18 bbWeight=0    PerfScore 0.00
-; Total bytes of code 152
-```
-We ended up with a very fast version of the method with optimal loop `G_M43040_IG03` that calls devirtualized call each iteration without any guards. The outsides of the loop are still unoptimized Tier0 codegen.
-
-5) ``HotLoop` method is invoked 30 more times and triggers the final promotion to the last tier:
-```asm
-; Assembly listing for method Program:HotLoop(System.IDisposable)
+; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; Tier-1 compilation
 ; optimized code
 ; optimized using profile data
-; with Dynamic PGO: edge weights are invalid, and fgCalledCount is 48
+; with Dynamic PGO: edge weights are valid, and fgCalledCount is 47
 ; 0 inlinees with PGO data; 1 single block inlinees; 0 inlinees without PGO data
-G_M43040_IG01:              ;; offset=0000H
-       57                   push     rdi
-       56                   push     rsi
+G_M10906_IG01:              ;; offset=0000H
        4883EC28             sub      rsp, 40
-       488BF1               mov      rsi, rcx
-                                                ;; size=9 bbWeight=1    PerfScore 2.50
-G_M43040_IG02:              ;; offset=0009H
-       33FF                 xor      edi, edi
-       4885F6               test     rsi, rsi
-       7424                 je       SHORT G_M43040_IG04
-       48B9C86CCC61FD7F0000 mov      rcx, 0x7FFD61CC6CC8      ; Program
-       48390E               cmp      qword ptr [rsi], rcx
-       7515                 jne      SHORT G_M43040_IG04
-                                                ;; size=22 bbWeight=1    PerfScore 5.75
-G_M43040_IG03:              ;; offset=001FH
-       488BCE               mov      rcx, rsi
-       FF15C0591500         call     [Program:Test():this]
-       FFC7                 inc      edi
-       81FF20A10700         cmp      edi, 0x7A120
-       7D29                 jge      SHORT G_M43040_IG06
-       EBEB                 jmp      SHORT G_M43040_IG03
-                                                ;; size=21 bbWeight=1158.09 PerfScore 7817.13
-G_M43040_IG04:              ;; offset=0034H
-       4885F6               test     rsi, rsi
-       7418                 je       SHORT G_M43040_IG05
-       48B9C86CCC61FD7F0000 mov      rcx, 0x7FFD61CC6CC8      ; Program
-       48390E               cmp      qword ptr [rsi], rcx
-       751A                 jne      SHORT G_M43040_IG07
-       488BCE               mov      rcx, rsi
-       FF1597591500         call     [Program:Test():this]
-                                                ;; size=29 bbWeight=11.70 PerfScore 102.36
-G_M43040_IG05:              ;; offset=0051H
-       FFC7                 inc      edi
-       81FF20A10700         cmp      edi, 0x7A120
-       7CD9                 jl       SHORT G_M43040_IG04
-                                                ;; size=10 bbWeight=11.70 PerfScore 17.55
-G_M43040_IG06:              ;; offset=005BH
+                                                ;; size=4 bbWeight=1 PerfScore 0.25
+G_M10906_IG02:              ;; offset=0004H
+       4885C9               test     rcx, rcx
+       741F                 je       SHORT G_M10906_IG04
+                                                ;; size=5 bbWeight=1 PerfScore 1.25
+G_M10906_IG03:              ;; offset=0009H
+       48B8E89FB33CFC7F0000 mov      rax, 0x7FFC3CB39FE8      ; MyDisposableImpl
+       483901               cmp      qword ptr [rcx], rax
+       7516                 jne      SHORT G_M10906_IG06
+       48B9507B2D45C0020000 mov      rcx, 0x2C0452D7B50      ; 'disposed'
+       FF1560346900         call     [System.Console:WriteLine(System.String)]
+                                                ;; size=31 bbWeight=1.02 PerfScore 7.66
+G_M10906_IG04:              ;; offset=0028H
+       90                   nop
+                                                ;; size=1 bbWeight=1.02 PerfScore 0.26disposed
+G_M10906_IG05:              ;; offset=0029H
        4883C428             add      rsp, 40
-       5E                   pop      rsi
-       5F                   pop      rdi
        C3                   ret
-                                                ;; size=7 bbWeight=0    PerfScore 0.00
-G_M43040_IG07:              ;; offset=0062H
-       488BCE               mov      rcx, rsi
-       49BBB0027E61FD7F0000 mov      r11, 0x7FFD617E02B0      ; code for System.IDisposable:Dispose
+                                                ;; size=5 bbWeight=1.02 PerfScore 1.28
+G_M10906_IG06:              ;; offset=002EH
+       49BB98020E3CFC7F0000 mov      r11, 0x7FFC3C0E0298      ; code for System.IDisposable:Dispose():this
        41FF13               call     [r11]System.IDisposable:Dispose():this
-       EBDD                 jmp      SHORT G_M43040_IG05
-                                                ;; size=18 bbWeight=0    PerfScore 0.00
-; Total bytes of code 116
+       EBEB                 jmp      SHORT G_M10906_IG04
+                                                ;; size=15 bbWeight=0 PerfScore 0.00
+; Total bytes of code 61
+; ============================================================
 ```
-Again, to summarize the workflow for non-prejitted case let's take a look at this branch of the diagram (OSR details are omitted to showcase the most common case):
+Just like in case of initially prejitte app, PGO helped us to optimize two things in the final tier:
+1) We know that `d` object is rarely/never null so we mark that path as cold
+2) We know that `d` is mostly/always `MyDisposableImpl` so we optimized an unknown interface call to basically this:
+```csharp
+if (d is MyDisposableImpl)
+    Console.WriteLine("disposed"); // MyDisposableImpl.Dispose inlined
+else
+    d.Dispose(); // fallback, interface call in case if a new type is added/loaded and used here
+```
+
+Again, to summarize the workflow for non-prejitted case let's take a look at this branch of the diagram:
 
 ```mermaid
 flowchart
@@ -571,11 +359,6 @@ flowchart
     ishot5{"Is hot?<br/>(called >30 times)"}-->|Yes|tier1pgo2
     ishot5-.->|No,<br/>keep running...|ishot5
 ```
-
-It's worth noting that we analyzed the worst (in case of working set) case with OSR, normally (in 99.8% of cases) we end up only with three code versions for hot code:
-1) Tier0/R2R
-2) Instrumented Tier (with or without optimizations)
-3) Tier1 optimized with profile
 
 # Working Set Impact
 
@@ -594,7 +377,7 @@ The general rule of thumb that only 10-20% of methods make it to Tier1 and about
 
 ![IL Histogram 1](DynamicPgo-InstrumentedTiers-ilsize-histogram1.png)
 
-In this app Tier1 code occupies 8.22MB in the loader heap (we can add a few megabytes on top of it for call counting stubs, jump-stubs, etc.) meaning that instrumentated tier is expected to add a similar amount (~13MB). The total working set of the service is 10GB so instrumentated tiers contribute ~0.1% of that. We're adding +30k new jit compilations which we can fully compensate with https://github.com/dotnet/runtime/issues/76402 work to avoid potential problems connected with too big queues of methods pending call counting installation/promotions to tier1.
+In this app Tier1 code occupies 8.22MB in the loader heap (we can add a few megabytes on top of it for call counting stubs, jump-stubs, etc.) meaning that Instrumented tier is expected to add a similar amount (~13MB). The total working set of the service is 10GB so Instrumented tiers contribute ~0.1% of that. We're adding +30k new jit compilations which we can fully compensate with https://github.com/dotnet/runtime/issues/76402 work to avoid potential problems connected with too big queues of methods pending call counting installation/promotions to tier1.
 
 ## 2) A desktop OSS application [AvaloniaILSpy](https://github.com/icsharpcode/AvaloniaILSpy)
 
@@ -635,10 +418,10 @@ Legend:
 * Black  - `DOTNET_TieredPGO=1`, `DOTNET_ReadyToRun=1`
 * Yellow - `DOTNET_TieredPGO=1`, `DOTNET_ReadyToRun=0`
 
-Yellow line provides the highest level of performance (RPS) by sacrificing start up speed (and, hence, time it takes to process the first request). It happens because the benchmark is quite simple and most of its code is already prejitted so we can only instrument it when we completely drop R2R and compile everything from scratch. It also explains why the black line (when we enable Dynamic PGO but still rely on R2R) didn't really show a lot of improvements. With the separate instrumentated tiers for hot R2R we achieve "Yellow"-level of performance while maintaining the same start up speed as it was before. Also, for the mode where we have to compile a lot of code to Tier0, switching to "instrument only hot Tier0 code" strategy shows ~8% time-to-first-request reduction across all TE benchmarks.
+Yellow line provides the highest level of performance (RPS) by sacrificing start up speed (and, hence, time it takes to process the first request). It happens because the benchmark is quite simple and most of its code is already prejitted so we can only instrument it when we completely drop R2R and compile everything from scratch. It also explains why the black line (when we enable Dynamic PGO but still rely on R2R) didn't really show a lot of improvements. With the separate Instrumented tiers for hot R2R we achieve "Yellow"-level of performance while maintaining the same start up speed as it was before. Also, for the mode where we have to compile a lot of code to Tier0, switching to "instrument only hot Tier0 code" strategy shows ~8% time-to-first-request reduction across all TE benchmarks.
 
 ![Plaintext](DynamicPgo-InstrumentedTiers-Plaintext-opt.png)
-(_Predicted results according to local runs_)
+(_Predicted results according to local runs_. **UPD**: we observed the same on real benchmarks - [aka.ms/aspnet/benchmarks](aka.ms/aspnet/benchmarks))
 
 ## AvaloniaILSpy
 
@@ -650,7 +433,7 @@ For this experiment we modified the source code of the app to send an event once
 | R2R=0, PGO=1               |      2.26s |
 | R2R=0, PGO=1, Instr. Tiers |      2.03s |
 
-As we can see, instrumentated tiers help to mitigate the start time regression from Dynamic PGO.
+As we can see, Instrumented tiers help to mitigate the start time regression from Dynamic PGO.
 
 ## Microsoft internal service
 
@@ -661,3 +444,7 @@ Throughput of the service after startup:
 X axis - time in seconds after start, Y axis - Throughput in MB/s.
 
 Here Dynamic PGO without instrumented tiers (red line) is not able to show benefits because the service is prejitted thus prejitted code doesn't benefit from Dynamic PGO. Instrumented tiers help with that by instrumenting hot R2R code to achieve the best performance, hence, the throughput is higher (green line).
+
+## Known limitations
+* Methods with loop bypass non-instrumented Tier0 and are promoted to Instrumented Tier if they're eligible for OSR - we want to avoid cases where a cold method with a hot loop won't benefit from PGO because it itself won't be ever promoted, only the loop body part (via OSR). See https://github.com/dotnet/runtime/pull/81051 for more details.
+* Instrumentation after R2R is less efficient compared to Tier0 IL-only because of optimizations and e.g. inlinees aren't instrumented.

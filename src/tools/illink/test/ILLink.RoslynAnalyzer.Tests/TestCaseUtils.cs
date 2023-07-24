@@ -26,9 +26,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		public static readonly ReferenceAssemblies Net6PreviewAssemblies =
 		new ReferenceAssemblies (
-				"net7.0",
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", "7.0.0-preview.5.22301.12"),
-				Path.Combine ("ref", "net7.0"))
+				"net8.0",
+				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0-alpha.1.23060.19"),
+				Path.Combine ("ref", "net8.0"))
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 
 		private static ImmutableArray<MetadataReference> s_net6Refs;
@@ -74,6 +74,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			var (comp, model, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (
 					tree,
+					consoleApplication: false,
 					msbuildProperties,
 					additionalSources: testDependenciesSource,
 					additionalFiles: additionalFiles);
@@ -159,7 +160,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var LinkerTestDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.LinkerTestDir")!;
 			var configuration = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.Configuration")!;
 
-			const string tfm = "net7.0";
+			const string tfm = "net8.0";
 
 			rootSourceDirectory = Path.GetFullPath(Path.Combine(LinkerTestDirectory, "Mono.Linker.Tests.Cases"));
 			testAssemblyPath = Path.GetFullPath(Path.Combine(artifactsBinDirectory, "ILLink.RoslynAnalyzer.Tests", configuration, tfm));

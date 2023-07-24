@@ -1939,6 +1939,19 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
 
     CorElementType type = pMT->GetClass()->GetInternalCorElementType();
 
+    // For underlying types that are signed integers, replace them with their
+    // unsigned counterparts, as expected by the managed Enum implementation.
+    // See the comment in Enum.cs for an explanation.
+    switch (type)
+    {
+        case ELEMENT_TYPE_I1: type = ELEMENT_TYPE_U1; break;
+        case ELEMENT_TYPE_I2: type = ELEMENT_TYPE_U2; break;
+        case ELEMENT_TYPE_I4: type = ELEMENT_TYPE_U4; break;
+        case ELEMENT_TYPE_I8: type = ELEMENT_TYPE_U8; break;
+        case ELEMENT_TYPE_I:  type = ELEMENT_TYPE_U;  break;
+        default: break;
+    }
+
     mdFieldDef field;
     while (pImport->EnumNext(&fieldEnum, &field))
     {
@@ -1979,8 +1992,7 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
         GCPROTECT_BEGIN(gc);
 
         {
-            // The managed side expects ELEMENT_TYPE_U1 as the underlying type for boolean
-            gc.values = (BASEARRAYREF) AllocatePrimitiveArray((type == ELEMENT_TYPE_BOOLEAN) ? ELEMENT_TYPE_U1 : type, cFields);
+            gc.values = (BASEARRAYREF) AllocatePrimitiveArray(type, cFields);
 
             BYTE* pToValues = gc.values->GetDataPtr();
             size_t elementSize = gc.values->GetComponentSize();

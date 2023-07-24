@@ -71,14 +71,16 @@ namespace System
         {
             if (!char.IsAscii(value))
             {
-                return CompareInfo.Invariant.IndexOf(this, value, CompareOptions.OrdinalIgnoreCase);
+                return Ordinal.IndexOfOrdinalIgnoreCase(this, new ReadOnlySpan<char>(in value));
             }
 
             if (char.IsAsciiLetter(value))
             {
                 char valueUc = (char)(value | 0x20);
                 char valueLc = (char)(value & ~0x20);
-                return SpanHelpers.IndexOfAnyChar(ref _firstChar, valueLc, valueUc, Length);
+                return PackedSpanHelpers.PackedIndexOfIsSupported
+                    ? PackedSpanHelpers.IndexOfAny(ref _firstChar, valueLc, valueUc, Length)
+                    : SpanHelpers.IndexOfAnyChar(ref _firstChar, valueLc, valueUc, Length);
             }
 
             return SpanHelpers.IndexOfChar(ref _firstChar, value, Length);
