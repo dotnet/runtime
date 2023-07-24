@@ -17,6 +17,9 @@ namespace System.Buffers
         private static readonly SearchValues<char> s_asciiLetters =
             SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 
+        private static readonly SearchValues<char> s_allAsciiExceptLowercase =
+            SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~\u007F");
+
         public static SearchValues<string> Create(ReadOnlySpan<string> values, bool ignoreCase)
         {
             if (values.Length == 0)
@@ -78,7 +81,7 @@ namespace System.Buffers
 
             static string NormalizeIfNeeded(string value, bool ignoreCase)
             {
-                if (ignoreCase && (value.AsSpan().ContainsAnyInRange('a', 'z') || !Ascii.IsValid(value)))
+                if (ignoreCase && value.AsSpan().ContainsAnyExcept(s_allAsciiExceptLowercase))
                 {
                     string upperCase = string.FastAllocateString(value.Length);
                     int charsWritten = Ordinal.ToUpperOrdinal(value, new Span<char>(ref upperCase.GetRawStringData(), upperCase.Length));
