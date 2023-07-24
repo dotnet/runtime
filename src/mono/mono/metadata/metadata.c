@@ -56,7 +56,7 @@ static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoG
 
 static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, int equiv_flags);
 static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only);
-static gboolean mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gboolean signature_only);
+static gboolean mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, int equiv_flags);
 static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
 						    gboolean signature_only);
 static void free_generic_inst (MonoGenericInst *ginst);
@@ -5701,26 +5701,52 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 		return do_mono_metadata_type_equal (c1_type->data.type, c2_type->data.type, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
 	if (signature_only &&
 		(c1_type->type == MONO_TYPE_FNPTR) && (c2_type->type == MONO_TYPE_FNPTR))
-		return mono_metadata_fnptr_equal (c1_type->data.method, c2_type->data.method, signature_only);
+		return mono_metadata_fnptr_equal (c1_type->data.method, c2_type->data.method, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
 	return FALSE;
 }
 
+static int
+mono_metadata_check_call_convention_category (unsigned int call_convention)
+{
+	switch (call_convention) {
+	case MONO_CALL_DEFAULT:
+		return 1;
+	case MONO_CALL_C:
+	case MONO_CALL_STDCALL:
+	case MONO_CALL_THISCALL:
+	case MONO_CALL_FASTCALL:
+	case MONO_CALL_UNMANAGED_MD:
+		return 2;
+	case MONO_CALL_VARARG:
+		return 3;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 static gboolean
-mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gboolean signature_only)
+mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, int equiv_flags)
 {
 	gpointer iter1 = 0, iter2 = 0;
 
 	if (s1 == s2)
 		return TRUE;
-	if (s1->call_convention != s2->call_convention)
-		return FALSE;
+
+	if ((equiv_flags & MONO_TYPE_EQ_FLAG_IGNORE_CMODS) == 0) {
+		if (s1->call_convention != s2->call_convention)
+			return FALSE;
+	} else {
+		if (mono_metadata_check_call_convention_category (s1->call_convention) != mono_metadata_check_call_convention_category (s2->call_convention))
+			return FALSE;
+	}
+
 	if (s1->sentinelpos != s2->sentinelpos)
 		return FALSE;
 	if (s1->hasthis != s2->hasthis)
 		return FALSE;
 	if (s1->explicit_this != s2->explicit_this)
 		return FALSE;
-	if (! do_mono_metadata_type_equal (s1->ret, s2->ret, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0))
+	if (! do_mono_metadata_type_equal (s1->ret, s2->ret, equiv_flags))
 		return FALSE;
 	if (s1->param_count != s2->param_count)
 		return FALSE;
@@ -5731,7 +5757,7 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
 
 		if (t1 == NULL || t2 == NULL)
 			return (t1 == t2);
-		if (! do_mono_metadata_type_equal (t1, t2, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0))
+		if (! do_mono_metadata_type_equal (t1, t2, equiv_flags))
 			return FALSE;
 	}
 }
@@ -5841,7 +5867,7 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, int equiv_flags)
 			t1->data.generic_param, t2->data.generic_param, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_FNPTR:
-		result = mono_metadata_fnptr_equal (t1->data.method, t2->data.method, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
+		result = mono_metadata_fnptr_equal (t1->data.method, t2->data.method, equiv_flags);
 		break;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
