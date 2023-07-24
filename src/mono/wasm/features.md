@@ -31,3 +31,7 @@ NodeJS needs to install `node-fetch` and `node-abort-controller` npm packages.
 # WebSocket browser API
 Is required if the application uses [WebSocketClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.websockets.clientwebsocket)
 NodeJS needs to install `ws` npm package.
+
+# Shell environments - NodeJS & V8
+We pass most of the unit tests with NodeJS v 14 but it's not fully supported target platform. We would like to hear about community use-cases.
+We also use v8 engine version 11 or higher to run some of the tests. The engine is lacking many APIs and features.

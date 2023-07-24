@@ -37,15 +37,16 @@ export async function verifyEnvironmentAsync() {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
         const process = await import(/* webpackIgnore: true */"process");
-        if (process.versions.node.split(".")[0] < 14) {
-            throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
+        const minNodeVersion = 14;
+        if (process.versions.node.split(".")[0] < minNodeVersion) {
+            throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}', please use at least ${minNodeVersion}. See also https://aka.ms/dotnet-wasm-features`);
         }
     }
     if (WasmEnableSIMD) {
-        mono_assert(await simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version.");
+        mono_assert(await simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
     if (WasmEnableExceptionHandling) {
-        mono_assert(await exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version.");
+        mono_assert(await exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
 }
 
