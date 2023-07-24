@@ -162,18 +162,15 @@ namespace System.Net.Http.Json
                 JsonTypeInfo<TValue> jsonTypeInfo,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
-
                 using HttpResponseMessage response = await client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                     .ConfigureAwait(false);
-
                 response.EnsureSuccessStatusCode();
 
-                using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(
-                    response.Content, cancellationToken).ConfigureAwait(false);
+                using Stream readStream = await GetHttpResponseStreamAsync(client, response, false, cancellationToken)
+                    .ConfigureAwait(false);
 
                 await foreach (TValue? value in JsonSerializer.DeserializeAsyncEnumerable<TValue>(
-                    contentStream, jsonTypeInfo, cancellationToken).ConfigureAwait(false))
+                    readStream, jsonTypeInfo, cancellationToken).ConfigureAwait(false))
                 {
                     yield return value;
                 }
