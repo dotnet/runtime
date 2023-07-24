@@ -33,7 +33,7 @@ namespace System.Runtime
 #if TARGET_UNIX
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCreateCrashDumpIfEnabled")]
-        internal static extern void RhCreateCrashDumpIfEnabled();
+        internal static extern void RhCreateCrashDumpIfEnabled(IntPtr pExAddress, IntPtr pExContext, IntPtr triageBufferAddress, int triageBufferSize);
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

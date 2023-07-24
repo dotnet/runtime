@@ -430,6 +430,12 @@ PalCreateCrashDumpIfEnabled()
     PalCreateCrashDumpIfEnabled(SIGABRT, nullptr);
 }
 
+void
+PalCreateCrashDumpIfEnabled(void* pExAddress, void* pExContext, void* triageBuffer, int triageBufferSize)
+{
+    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr);
+}
+
 /*++
 Function:
   PalGenerateCoreDump

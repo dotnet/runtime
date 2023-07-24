@@ -19,6 +19,7 @@
 #include "UnixSignals.h"
 #include "UnixContext.h"
 #include "HardwareExceptions.h"
+#include "PalCreateDump.h"
 #include "cgroupcpu.h"
 #include "threadstore.h"
 #include "thread.h"
@@ -84,9 +85,6 @@ static const int tccSecondsToNanoSeconds = 1000000000;
 static const int tccMilliSecondsToMicroSeconds = 1000;
 static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
-
-extern bool PalCreateDumpInitialize();
-extern void PalCreateCrashDumpIfEnabled();
 
 extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, uint32_t arg3)
 {
