@@ -8,6 +8,7 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -298,11 +299,12 @@ namespace System.ComponentModel
                         // own cache state against the type. There shouldn't be
                         // more than one of these, but walk anyway. Walk in
                         // reverse order so that the most derived takes precidence.
-                        var attrs = type.GetCustomAttributes<TypeDescriptionProviderAttribute>(false);
+                        var attrs = type.GetCustomAttributes<TypeDescriptionProviderAttribute>(false)
+                            .ToArray();
                         bool providerAdded = false;
-                        foreach (var currentAttr in attrs)
+                        for (int i = 0; i != attrs.Length; i++)
                         {
-                            Type? providerType = Type.GetType(currentAttr.TypeName);
+                            Type? providerType = Type.GetType(attrs[i].TypeName);
                             if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
                             {
                                 TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
