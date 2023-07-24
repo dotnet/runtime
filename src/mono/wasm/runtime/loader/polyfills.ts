@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { exceptions, simd } from "wasm-feature-detect";
+
 import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableSIMD from "consts:wasmEnableSIMD";
+import WasmEnableExceptionHandling from "consts:wasmEnableExceptionHandling";
 
 import type { DotnetModuleInternal } from "../types/internal";
 import { INTERNAL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, ENVIRONMENT_IS_WEB, mono_assert } from "./globals";
@@ -29,6 +33,23 @@ export function verifyEnvironment() {
 
     // TODO detect other (WASM) features that are required for the runtime
     // See https://github.com/dotnet/runtime/issues/84574
+}
+
+export async function verifyEnvironmentAsync() {
+    if (ENVIRONMENT_IS_NODE) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore:
+        const process = await import(/* webpackIgnore: true */"process");
+        if (process.versions.node.split(".")[0] < 14) {
+            throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
+        }
+    }
+    if (WasmEnableSIMD) {
+        mono_assert(await simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version.");
+    }
+    if (WasmEnableExceptionHandling) {
+        mono_assert(await exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version.");
+    }
 }
 
 export async function detect_features_and_polyfill(module: DotnetModuleInternal): Promise<void> {

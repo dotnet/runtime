@@ -25,6 +25,7 @@
     <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">true</WasmEnableSIMD>
+    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
@@ -517,7 +518,7 @@
 
   <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
     <PropertyGroup>
-      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),DISABLE_LEGACY_JS_INTEROP:$(_DisableLegacyJsInterop),MonoDiagnosticsMock:$(MonoDiagnosticsMock),ContinuousIntegrationBuild:$(ContinuousIntegrationBuild)</MonoRollupEnvironment>
+      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),WasmEnableSIMD:$(WasmEnableSIMD),WasmEnableExceptionHandling:$(WasmEnableExceptionHandling),DISABLE_LEGACY_JS_INTEROP:$(_DisableLegacyJsInterop),MonoDiagnosticsMock:$(MonoDiagnosticsMock),ContinuousIntegrationBuild:$(ContinuousIntegrationBuild)</MonoRollupEnvironment>
     </PropertyGroup>
 
     <PropertyGroup>

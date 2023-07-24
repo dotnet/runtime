@@ -11,7 +11,7 @@ import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./c
 import { mono_exit } from "./exit";
 import { setup_proxy_console, mono_log_info } from "./logging";
 import { resolve_asset_path, start_asset_download } from "./assets";
-import { detect_features_and_polyfill } from "./polyfills";
+import { detect_features_and_polyfill, verifyEnvironmentAsync } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
@@ -350,14 +350,7 @@ export class HostBuilder implements DotnetHostBuilder {
                 if (ENVIRONMENT_IS_WEB && (module.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
                     setup_proxy_console("main", globalThis.console, globalThis.location.origin);
                 }
-                if (ENVIRONMENT_IS_NODE) {
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-ignore:
-                    const process = await import(/* webpackIgnore: true */"process");
-                    if (process.versions.node.split(".")[0] < 14) {
-                        throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
-                    }
-                }
+                await verifyEnvironmentAsync();
                 mono_assert(module, "Null moduleConfig");
                 mono_assert(module.config, "Null moduleConfig.config");
                 await createEmscripten(module);
