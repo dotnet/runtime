@@ -10756,7 +10756,6 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
 //    the given tree.
 //
 // Arguments:
-//    vnStore    - ValueNumStore object
 //    tree       - tree node to inspect
 //    byteOffset - [Out] resulting byte offset
 //    pObj       - [Out] constant object handle
@@ -10764,10 +10763,7 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
 // Return Value:
 //    true if the given tree is a ObjHandle + CNS
 //
-static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
-                                     GenTree*               tree,
-                                     ssize_t*               byteOffset,
-                                     CORINFO_OBJECT_HANDLE* pObj)
+bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORINFO_OBJECT_HANDLE* pObj)
 {
     if (!tree->gtVNPair.BothEqual())
     {
@@ -10854,7 +10850,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         }
     }
     else if (!tree->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT) &&
-             GetObjectHandleAndOffset(vnStore, tree->gtGetOp1(), &byteOffset, &obj))
+             GetObjectHandleAndOffset(tree->gtGetOp1(), &byteOffset, &obj))
     {
         // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
         assert(obj != nullptr);

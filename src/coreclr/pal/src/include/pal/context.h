@@ -28,6 +28,8 @@ extern "C"
 #include <signal.h>
 #include <pthread.h>
 
+#include <minipal/cpuid.h>
+
 /* A type to wrap the native context type, which is ucontext_t on some
  * platforms and another type elsewhere. */
 #if HAVE_UCONTEXT_T
