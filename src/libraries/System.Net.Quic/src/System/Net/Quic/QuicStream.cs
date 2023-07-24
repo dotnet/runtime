@@ -109,7 +109,6 @@ public sealed partial class QuicStream
         }
     };
     private MsQuicBuffers _sendBuffers = new MsQuicBuffers();
-    private readonly object _sendBuffersLock = new object();
 
     private readonly long _defaultErrorCode;
 
@@ -341,7 +340,7 @@ public sealed partial class QuicStream
     /// <param name="buffer">The region of memory to write data from.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
     /// <param name="completeWrites">Notifies the peer about gracefully closing the write side, i.e.: sends FIN flag with the data.</param>
-    public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
+    public async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
@@ -355,11 +354,11 @@ public sealed partial class QuicStream
             NetEventSource.Info(this, $"{this} Stream writing memory of '{buffer.Length}' bytes while {(completeWrites ? "completing" : "not completing")} writes.");
         }
 
-        if (_sendTcs.IsCompleted && cancellationToken.IsCancellationRequested)
+        if (_sendTcs.IsCompleted)
         {
             // Special case exception type for pre-canceled token while we've already transitioned to a final state and don't need to abort write.
             // It must happen before we try to get the value task, since the task source is versioned and each instance must be awaited.
-            return ValueTask.FromCanceled(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         // Concurrent call, this one lost the race.
@@ -371,7 +370,8 @@ public sealed partial class QuicStream
         // No need to call anything since we already have a result, most likely an exception.
         if (valueTask.IsCompleted)
         {
-            return valueTask;
+            await valueTask.ConfigureAwait(false);
+            return;
         }
 
         // For an empty buffer complete immediately, close the writing side of the stream if necessary.
@@ -382,41 +382,27 @@ public sealed partial class QuicStream
             {
                 CompleteWrites();
             }
-            return valueTask;
+            await valueTask.ConfigureAwait(false);
+            return;
         }
 
-        lock (_sendBuffersLock)
+        unsafe
         {
-            ObjectDisposedException.ThrowIf(_disposed == 1, this); // TODO: valueTask is left unobserved
-            unsafe
+            _sendBuffers.Initialize(buffer);
+            int status = MsQuicApi.Api.StreamSend(
+                _handle,
+                _sendBuffers.Buffers,
+                (uint)_sendBuffers.Count,
+                completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
+                null);
+            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
             {
-                if (_sendBuffers.Count > 0 && _sendBuffers.Buffers[0].Buffer != null)
-                {
-                    // _sendBuffers are not reset, meaning SendComplete for the previous WriteAsync call didn't arrive yet.
-                    // In case of cancellation, the task from _sendTcs is finished before the aborting. It is technically possible for subsequent
-                    // WriteAsync to grab the next task from _sendTcs and start executing before SendComplete event occurs for the previous (canceled) write.
-                    // This is not an "invalid nested call", because the previous task has finished. Best guess is to mimic OperationAborted as it will be from Abort
-                    // that would execute soon enough, if not already. Not final, because Abort should be the one to set final exception.
-                    _sendTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted), final: false);
-                    return valueTask;
-                }
-
-                _sendBuffers.Initialize(buffer);
-                int status = MsQuicApi.Api.StreamSend(
-                    _handle,
-                    _sendBuffers.Buffers,
-                    (uint)_sendBuffers.Count,
-                    completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
-                    null);
-                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
-                {
-                    _sendBuffers.Reset();
-                    _sendTcs.TrySetException(exception, final: true);
-                }
+                _sendBuffers.Reset();
+                _sendTcs.TrySetException(exception, final: true);
             }
         }
 
-        return valueTask;
+        await valueTask.ConfigureAwait(false);
     }
 
     /// <summary>
@@ -538,12 +524,7 @@ public sealed partial class QuicStream
     }
     private unsafe int HandleEventSendComplete(ref SEND_COMPLETE_DATA data)
     {
-        // In case of cancellation, the task from _sendTcs is finished before the aborting. It is technically possible for subsequent WriteAsync to grab the next task
-        // from _sendTcs and start executing before SendComplete event occurs for the previous (canceled) write
-        lock (_sendBuffersLock)
-        {
-            _sendBuffers.Reset();
-        }
+        _sendBuffers.Reset();
         if (data.Canceled == 0)
         {
             _sendTcs.TrySetResult();
@@ -706,11 +687,8 @@ public sealed partial class QuicStream
         Debug.Assert(_sendTcs.KeepAliveReleased);
         _handle.Dispose();
 
-        lock (_sendBuffersLock)
-        {
-            // TODO: memory leak if not disposed
-            _sendBuffers.Dispose();
-        }
+        // TODO: memory leak if not disposed
+        _sendBuffers.Dispose();
 
         unsafe void StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {
