@@ -11,12 +11,15 @@ namespace System.IO.Tests
 {
     public partial class RandomAccess_FlushToDisk : RandomAccess_Base<long>
     {
-        public static IEnumerable<object[]> RandomBufferByteCounts => new[]
+        public static IEnumerable<object[]> BufferByteCounts => new[]
         {
-            // To ensure that flushing works correctly for a variety of sizes, we want to test with
-            // buffers that are smaller than a page (e.g. just 1 byte) and buffers that are several
-            // times larger than a page (e.g. up to 10 pages).
-            new object[] { Random.Shared.Next(1, Environment.SystemPageSize * 10) },
+            // To ensure that flushing works correctly, we use a wide variety of buffer sizes.
+            new object[] { 1                              }, // Single-byte buffer.
+            new object[] { Environment.SystemPageSize - 1 }, // Buffer that's slightly smaller than a page.
+            new object[] { Environment.SystemPageSize + 1 }, // Buffer that's slightly larger than a page.
+            new object[] { Environment.SystemPageSize     }, // Buffer that's exactly one page.
+            new object[] { Environment.SystemPageSize * 2 }, // Buffer that's an even multiple of a page.
+            new object[] { Environment.SystemPageSize * 7 }, // Buffer that's an odd multiple of a page.
         };
 
         protected override bool UsesOffsets => false;
@@ -30,7 +33,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData(nameof(RandomBufferByteCounts))]
+        [MemberData(nameof(BufferByteCounts))]
         public void UpdatesFileLastWriteTime(int bufferByteCount)
         {
             // Sanity check: we expect the byte count to be > 0 so the test uses a non-empty buffer.
