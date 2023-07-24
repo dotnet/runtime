@@ -348,64 +348,32 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public void AssertIcuAssets(AssertBundleOptionsBase assertOptions)
     {
         List<string> expected = new();
-        bool expectEFIGS = false;
-        bool expectCJK = false;
-        bool expectNOCJK = false;
-        bool expectFULL = false;
-        bool expectHYBRID = false;
         switch (assertOptions.GlobalizationMode)
         {
             case GlobalizationMode.Invariant:
                 break;
             case GlobalizationMode.FullIcu:
-                expectFULL = true;
+                expected.Add("icudt.dat");
                 break;
             case GlobalizationMode.Hybrid:
-                expectHYBRID = true;
+                expected.Add("icudt_hybrid.dat");
                 break;
             case GlobalizationMode.PredefinedIcu:
                 if (string.IsNullOrEmpty(assertOptions.PredefinedIcudt))
                     throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
+
                 // predefined ICU name can be identical with the icu files from runtime pack
-                switch (assertOptions.PredefinedIcudt)
-                {
-                    case "icudt.dat":
-                        expectFULL = true;
-                        break;
-                    case "icudt_EFIGS.dat":
-                        expectEFIGS = true;
-                        break;
-                    case "icudt_CJK.dat":
-                        expectCJK = true;
-                        break;
-                    case "icudt_no_CJK.dat":
-                        expectNOCJK = true;
-                        break;
-                    default:
-                        expected.Add(assertOptions.PredefinedIcudt);
-                        break;
-                }
+                expected.Add(assertOptions.PredefinedIcudt);
                 break;
             case GlobalizationMode.Default:
                 // icu shard chosen based on the locale
-                expectCJK = true;
-                expectEFIGS = true;
-                expectNOCJK = true;
+                expected.Add("icudt_CJK.dat");
+                expected.Add("icudt_EFIGS.dat");
+                expected.Add("icudt_no_CJK.dat");
                 break;
             default:
                 throw new NotImplementedException($"Unknown {nameof(assertOptions.GlobalizationMode)} = {assertOptions.GlobalizationMode}");
         }
-
-        if (expectFULL)
-            expected.Add("icudt.dat");
-        if (expectEFIGS)
-            expected.Add("icudt_EFIGS.dat");
-        if (expectNOCJK)
-            expected.Add("icudt_no_CJK.dat");
-        if (expectCJK)
-            expected.Add("icudt_CJK.dat");
-        if (expectHYBRID)
-            expected.Add("icudt_hybrid.dat");
 
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
         AssertFilesOnDisk(expected, actual);
