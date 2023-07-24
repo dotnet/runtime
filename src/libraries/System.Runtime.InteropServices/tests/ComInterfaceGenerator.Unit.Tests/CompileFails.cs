@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -742,10 +743,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithLocation(1)
                     .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
-            // Pinned arrays cannot be [In]
-            var inAttributeNotSupportedOnBlittableArray = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments(SR.InAttributeNotSupportedWithoutOutBlittableArray, paramName);
             var inAttributeNotSupportedOnPinnedParameter = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
                     .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
@@ -791,24 +788,20 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                //https://github.com/dotnet/runtime/issues/88708
                 new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
             };
 
-            // [Out] Should not warn
-            // https://github.com/dotnet/runtime/issues/88708
-            //yield return new object[] {
-            //    ID(),
-            //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
-            //    new DiagnosticResult[] { }
-            //};
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
+                new DiagnosticResult[] { }
+            };
 
-            // https://github.com/dotnet/runtime/issues/88708
-            //yield return new object[] {
-            //    ID(),
-            //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-            //    new DiagnosticResult[] { }
-            //};
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
+                new DiagnosticResult[] { }
+            };
         }
 
         [Theory]
@@ -822,8 +815,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
-                // https://github.com/dotnet/runtime/issues/88708
-                CompilerDiagnostics = diagnostics.Length != 0 ? CompilerDiagnostics.None : CompilerDiagnostics.Errors,
             };
             test.ExpectedDiagnostics.AddRange(diagnostics);
             await test.RunAsync();

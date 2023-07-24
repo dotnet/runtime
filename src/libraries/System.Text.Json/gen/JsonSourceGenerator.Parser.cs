@@ -1454,6 +1454,14 @@ namespace System.Text.Json.SourceGeneration
             private TypeRef? GetConverterTypeFromJsonConverterAttribute(INamedTypeSymbol contextType, ISymbol declaringSymbol, AttributeData attributeData)
             {
                 Debug.Assert(_knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeData.AttributeClass));
+
+                if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.JsonConverterAttributeType))
+                {
+                    ReportDiagnostic(DiagnosticDescriptors.DerivedJsonConverterAttributesNotSupported, attributeData.GetDiagnosticLocation(), attributeData.AttributeClass!.ToDisplayString());
+                    return null;
+                }
+
+                Debug.Assert(attributeData.ConstructorArguments.Length == 1 && attributeData.ConstructorArguments[0].Value is null or ITypeSymbol);
                 var converterType = (ITypeSymbol?)attributeData.ConstructorArguments[0].Value;
                 return GetConverterTypeFromAttribute(contextType, converterType, declaringSymbol, attributeData);
             }
@@ -1699,6 +1707,9 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(knownSymbols.DateTimeOffsetType);
                 AddTypeIfNotNull(knownSymbols.DateOnlyType);
                 AddTypeIfNotNull(knownSymbols.TimeOnlyType);
+                AddTypeIfNotNull(knownSymbols.Int128Type);
+                AddTypeIfNotNull(knownSymbols.UInt128Type);
+                AddTypeIfNotNull(knownSymbols.HalfType);
                 AddTypeIfNotNull(knownSymbols.GuidType);
                 AddTypeIfNotNull(knownSymbols.UriType);
                 AddTypeIfNotNull(knownSymbols.VersionType);

@@ -22,6 +22,16 @@
         <target state="translated">Tipo de propriedade de extensão de dados inválido.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
+        <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
+        <target state="new">The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
+        <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
+        <target state="new">Attributes deriving from JsonConverterAttribute are not supported by the source generator.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">Existem vários tipos chamados {0}. A fonte foi gerada para o primeiro detectado. Use 'JsonSerializableAttribute.TypeInfoPropertyName' para resolver esta colisão.</target>

@@ -49,6 +49,8 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/handletablescan.cpp
     ${GC_DIR}/objecthandle.cpp
     ${GC_DIR}/softwarewritewatch.cpp
+
+    ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
 )
 
 set(SERVER_GC_SOURCES
@@ -115,10 +117,6 @@ if (WIN32)
   list(APPEND FULL_RUNTIME_SOURCES windows/CoffNativeCodeManager.cpp)
 
   set(ASM_SUFFIX asm)
-
-  if (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-    set(RUNTIME_SOURCES_ARCH_ASM ${ARCH_SOURCES_DIR}/GC.${ASM_SUFFIX})
-  endif()
 else()
 
   include_directories(unix)
@@ -249,6 +247,7 @@ else()
   endif()
   add_definitions(-DNO_UI_ASSERT)
   include(unix/configure.cmake)
+  include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 

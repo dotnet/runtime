@@ -22,6 +22,16 @@
         <target state="translated">数据扩展属性类型无效。</target>
         <note />
       </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
+        <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
+        <target state="new">The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
+        <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
+        <target state="new">Attributes deriving from JsonConverterAttribute are not supported by the source generator.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">有多个名为 {0} 的类型。已为第一个检测到类型的生成源。请使用 'JsonSerializableAttribute.TypeInfoPropertyName' 以解决此冲突。</target>

@@ -346,11 +346,17 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '7.0'))">
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\Int128Converter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt128Converter.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System.Text.Json.Typeforwards.netcoreapp.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DateOnlyConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\TimeOnlyConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\HalfConverter.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
