@@ -188,8 +188,13 @@ namespace System.Threading
             return registeredWaitHandle;
         }
 
-        private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
-            IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
+        private static unsafe void NativeOverlappedCallback(nint overlappedPtr)
+        {
+            if (NativeRuntimeEventSource.Log.IsEnabled())
+                NativeRuntimeEventSource.Log.ThreadPoolIODequeue(overlappedPtr);
+
+            return IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
+        }
 
         [SupportedOSPlatform("windows")]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
