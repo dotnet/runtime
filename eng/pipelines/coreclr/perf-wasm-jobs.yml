@@ -172,7 +172,7 @@ jobs:
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
 
-- ${{if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+- ${{if or(and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')), parameters.TestHybridGlobalization) }}:
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:

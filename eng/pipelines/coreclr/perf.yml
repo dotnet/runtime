@@ -20,6 +20,11 @@ trigger:
 variables:
   - template: /eng/pipelines/common/variables.yml
 
+parameters:
+- name: TestHybridGlobalization
+  type: boolean
+  default: true
+
 #
 # For the 'schedule' case, only wasm/jsc perf jobs are run.
 # And the rest are build jobs - wasm, mono, coreclr, and libraries.
@@ -45,8 +50,8 @@ extends:
       - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
         parameters:
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-          #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-          #  runProfile: 'non-v8'
+          ${{ or(and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')), parameters.TestHybridGlobalization) }}:
+            runProfile: 'non-v8'
           ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
             runProfile: 'v8'
 
