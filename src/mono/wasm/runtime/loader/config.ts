@@ -92,11 +92,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
                 await initializeBootConfig(configResponse, loadedAnyConfig, module);
                 deep_merge_config(loaderHelpers.config, loadedAnyConfig);
             } else {
-                // Otherwise we found mono config schema
-                const loadedConfig = loadedAnyConfig as MonoConfigInternal;
-                if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
-                    throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
-                deep_merge_config(loaderHelpers.config, loadedConfig);
+                throw new Error("Loaded boot config has invalid schema");
             }
         }
 
