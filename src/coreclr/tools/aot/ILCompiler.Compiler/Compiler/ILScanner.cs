@@ -726,7 +726,7 @@ namespace ILCompiler
 
 #if DEBUG
                         // do not inline storage for some types in debug - for test coverage
-                        if (i % 8 == 0)
+                        if (i % 800 == 0)
                             continue;
 #endif
 

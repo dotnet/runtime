@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-class P1<T>
+class P1
 {
     [ThreadStatic]
     public static long z;
@@ -33,14 +33,14 @@ class Program
         //Program.x = 5;
         ////Program.y = "a";
         //Program.list = new List();
-        P1<int>.z = 0x900DF00E;
+        P1.z = 0x900DF00E;
         Program.x = 0x900DF00D;
         Program obj = new Program();
         obj.Test(1);
         //Console.WriteLine("Hello");
-        //Console.WriteLine(Program.x + P1.z);
+        Console.WriteLine(Program.x);
         //Console.WriteLine(Program.y);
-        //Console.WriteLine(Program.z);
+        Console.WriteLine(P1.z);
         //Console.WriteLine(Program.x + Program.z | P1.z);
 
         //Program.z = 15;
@@ -48,7 +48,7 @@ class Program
         Console.WriteLine(CultureInfo.CurrentCulture);
 
         Console.WriteLine(Program.x);
-        Console.WriteLine(P1<int>.z);
+        Console.WriteLine(P1.z);
         //Console.WriteLine(Program.z);
         //Console.WriteLine(P1<int>.list);
     }
@@ -61,11 +61,14 @@ class Program
     {
         //for (int i = 0; i < n; i++)
         {
+            //Console.WriteLine(CultureInfo.CurrentCulture);
+            //Console.WriteLine(CultureInfo.CurrentCulture);
+            //Console.WriteLine(CultureInfo.CurrentCulture);
             Program.x = 0x900DF00D;
             //Program.z = 23;
             //Program.y = "a";
             //P1<int>.list = new List<int>();
-            //P1.z = 0x900DF00E;
+            P1.z = 0x900DF00E;
         }
         return 0;
     }

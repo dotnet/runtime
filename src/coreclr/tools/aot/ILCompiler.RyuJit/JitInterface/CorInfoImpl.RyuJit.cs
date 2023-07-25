@@ -2152,18 +2152,12 @@ namespace Internal.JitInterface
                             {
                                 if (!_compilation.HasLazyStaticConstructor(field.OwningType))
                                 {
-                                    Console.WriteLine("Done: {0}.{1}", field.OwningType.Name, field.Name);
                                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
                                 }
                                 else
                                 {
-                                    Console.WriteLine("Lazy: {0}.{1}", field.OwningType.Name, field.Name);
                                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY;
                                 }
-                            }
-                            else
-                            {
-                                Console.WriteLine("Non-TypeThreadStaticIndexNode: {0}.{1}", field.OwningType.Name, field.Name);
                             }
                         }
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;

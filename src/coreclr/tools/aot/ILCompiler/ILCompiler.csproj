@@ -74,8 +74,5 @@
       <SingleFileHostSourcePath></SingleFileHostSourcePath>
     </PropertyGroup>
   </Target>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="echo &quot;Running ILC D:\git\runtime2\artifacts\bin\coreclr\windows.x64.Debug\ilc\net8.0\ilc.exe @D:\git\runtime2\artifacts\bin\repro\x64\Debug\compile-with-Release-libs.rsp -O" />
-  </Target>
   <!-- END: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
 </Project>

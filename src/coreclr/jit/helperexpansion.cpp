@@ -452,10 +452,16 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
     assert(opts.IsReadyToRun());
     BasicBlock* block = *pBlock;
     assert(call->IsHelperCall());
-    if (!(call->IsExpTLSFieldAccess() && call->IsExpTLSFieldAccessLazyCtor()))
+    if (!(call->IsExpTLSFieldAccess() || call->IsExpTLSFieldAccessLazyCtor()))
     {
         return false;
     }
+
+    //if (info.compMethodHashPrivate == 0x2f7ba577) // 0xx009bf64b
+    //{
+    //    printf("BEFORE:\n");
+    //    fgDispBasicBlocks(true);
+    //}
 
     JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum);
     DISPTREE(call);
@@ -491,9 +497,29 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
     var_types callType       = call->TypeGet();
     assert(prevBb != nullptr && block != nullptr);
 
+    BasicBlock* targetSymbCondBB = nullptr;
+    BasicBlock* lazyCtorBB       = nullptr;
+
+    unsigned finalLclNum         = lvaGrabTemp(true DEBUGARG("Final offset"));
+    lvaTable[finalLclNum].lvType = TYP_I_IMPL;
+    GenTree* finalLcl            = gtNewLclVarNode(finalLclNum);
+
     if (hasLazyStaticCtor)
     {
-        BasicBlock* lazyCtorBlock = nullptr;
+        // targetSymbCondBB (BBJ_COND):                                     [weight: 1.0]
+        //      targetSymbolAddr = [targetSymbol + size]
+        //      if (*targetSymbolAddr == 0)
+        //          goto tlsAccessBB;
+        //
+        // lazyCtorBlock (BBJ_ALWAYS):                                      [weight: 0] ???? Check if this is true
+        //      tlsRoot = HelperCall(0, -1, targetSymbolAddr);
+        //      goto block;
+        //
+        // tlsAccessBB (BBJ_ALWAYS):                                        [weight: 1.0]
+        //      tlsRoot = ...;
+        //
+        // block (...):                                                     [weight: 1.0]
+        //      use(tlsRoot);
 
         CORINFO_CONST_LOOKUP classCtorRunHelper;
         CORINFO_CONST_LOOKUP targetSymbol;
@@ -503,13 +529,22 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
             info.compCompHnd->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(call->gtInitClsHnd, &classCtorRunHelper, &targetSymbol);
 
         // target symbol
-        GenTree* targetSymbolAddr = gtNewIconHandleNode((size_t)classCtorRunHelper.addr, GTF_ICON_OBJ_HDL);
-        targetSymbolAddr          = gtNewOperNode(GT_ADD, TYP_I_IMPL, targetSymbolAddr, gtNewIconNode(size, TYP_UINT));
-        targetSymbolAddr          = gtNewIndir(TYP_I_IMPL, targetSymbolAddr);
+        GenTree* targetSymbolAddr = gtNewIconHandleNode((size_t)targetSymbol.addr, GTF_ICON_OBJ_HDL);
+        targetSymbolAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, targetSymbolAddr, gtNewIconNode(size, TYP_I_IMPL));
+        GenTree* targetSymbolAddrVal = gtNewIndir(TYP_I_IMPL, targetSymbolAddr);
 
-        GenTree* targetSymbolNullCond = gtNewOperNode(GT_NE, TYP_INT, targetSymbolAddr, gtNewIconNode(0, TYP_I_IMPL));
+        //// Cache the TlsRootAddr value
+        //unsigned targetSymAddrLclNum         = lvaGrabTemp(true DEBUGARG("targetSymbAddr access"));
+        //lvaTable[targetSymAddrLclNum].lvType = TYP_I_IMPL;
+        //GenTree* targetSymAddrDef            = gtNewStoreLclVarNode(targetSymAddrLclNum, gtCloneExpr(targetSymbolAddr));
+        targetSymbCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtCloneExpr(targetSymbolAddr), debugInfo);
+
+        //GenTree* targetSymAddrUse = gtNewLclVarNode(targetSymAddrLclNum);
+
+        GenTree* targetSymbolNullCond =
+            gtNewOperNode(GT_EQ, TYP_INT, targetSymbolAddrVal, gtNewIconNode(0, TYP_I_IMPL));
         targetSymbolNullCond          = gtNewOperNode(GT_JTRUE, TYP_VOID, targetSymbolNullCond);
-
+        fgInsertStmtAfter(targetSymbCondBB, targetSymbCondBB->firstStmt(), fgNewStmtFromTree(targetSymbolNullCond));
 
         GenTreeCall* classCtorRunHelperCall =
             gtNewIndCallNode(gtNewIconHandleNode((size_t)classCtorRunHelper.addr, GTF_ICON_FTN_ADDR), TYP_I_IMPL);
@@ -522,22 +557,39 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
 
         // arg2: NonGCStatics targetSymbol
         classCtorRunHelperCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(targetSymbolAddr)));
+        //classCtorRunHelperCall->gtArgs.PushBack(this, NewCallArg::Primitive(targetSymAddrUse));
 
         fgMorphArgs(classCtorRunHelperCall);
 
-        // tlsRootNullCondBB (BBJ_COND):                                    [weight: 1.0]
-        //      targetSymbolAddr = [targetSymbol + size]
-        //      if (*targetSymbolAddr != 0)
-        //          goto fastPathBb;
-        //
-        // fallbackBb (BBJ_ALWAYS):                                         [weight: 0] ???? Check if this is true
-        //      tlsRoot = HelperCall(0, -1, targetSymbolAddr);
-        //      goto block;
-        //
-        // tlsAccess(BBJ_ALWAYS):                                          [weight: 1.0]
-        //      tlsRoot = fastPathValue;
+        // lazyCtorBB
+        //unsigned targetLclNum         = lvaGrabTemp(true DEBUGARG("Target addr"));
+        //lvaTable[targetLclNum].lvType = TYP_I_IMPL;
+        //GenTree*    lazyCtorValueDef  = gtNewStoreLclVarNode(targetLclNum, classCtorRunHelperCall);
+        //GenTree* lazyCtorLcl          = gtNewLclVarNode(targetLclNum);
+        //lazyCtorBB = fgNewBBFromTreeAfter(BBJ_ALWAYS, targetSymbCondBB, lazyCtorValueDef, debugInfo, true);
 
-        prevBb = lazyCtorBlock;
+        //*callUse = lazyCtorLcl;
+        GenTree* lazyCtorValueDef = gtNewStoreLclVarNode(finalLclNum, classCtorRunHelperCall);
+        lazyCtorBB = fgNewBBFromTreeAfter(BBJ_ALWAYS, targetSymbCondBB, lazyCtorValueDef, debugInfo, true);
+
+        fgRemoveRefPred(block, prevBb);
+        fgAddRefPred(targetSymbCondBB, prevBb);
+        fgAddRefPred(lazyCtorBB, targetSymbCondBB);
+        fgAddRefPred(block, lazyCtorBB);
+
+        lazyCtorBB->bbJumpDest = block;
+
+        // Inherit the weights
+        block->inheritWeight(prevBb);
+        targetSymbCondBB->inheritWeight(prevBb);
+        
+        targetSymbCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
+        lazyCtorBB->bbNatLoopNum       = prevBb->bbNatLoopNum;
+
+        assert(BasicBlock::sameEHRegion(prevBb, targetSymbCondBB));
+        assert(BasicBlock::sameEHRegion(prevBb, lazyCtorBB));
+
+        prevBb = lazyCtorBB;
     }
 
     // Block ops inserted by the split need to be morphed here since we are after morph.
@@ -558,6 +610,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
 
     if (TargetOS::IsWindows)
     {
+#pragma region  block logic
+
         // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
         tlsValue = gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
@@ -591,12 +645,15 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         GenTree* tlsRootVal = gtNewIndir(TYP_I_IMPL, tlsRootAddrUse, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
         // Cache the TlsRoot value
-        unsigned tlsRootLclNum             = lvaGrabTemp(true DEBUGARG("TlsRoot access"));
-        lvaTable[tlsRootLclNum].lvType     = TYP_I_IMPL;
-        GenTree* tlsRootDef                = gtNewStoreLclVarNode(tlsRootLclNum, tlsRootVal);
-        GenTree* tlsRootUse                = gtNewLclVarNode(tlsRootLclNum);
+        //unsigned tlsRootLclNum             = lvaGrabTemp(true DEBUGARG("TlsRoot access"));
+        //lvaTable[tlsRootLclNum].lvType     = TYP_I_IMPL;
+        //GenTree* tlsRootDef                = gtNewStoreLclVarNode(tlsRootLclNum, tlsRootVal);
+        //GenTree* tlsRootLcl                = gtNewLclVarNode(tlsRootLclNum);
 
-        GenTree* tlsRootNullCond = gtNewOperNode(GT_NE, TYP_INT, tlsRootUse, gtNewIconNode(0, TYP_I_IMPL));
+        GenTree* tlsRootDef = gtNewStoreLclVarNode(finalLclNum, tlsRootVal);
+
+        //GenTree* tlsRootNullCond = gtNewOperNode(GT_NE, TYP_INT, tlsRootLcl, gtNewIconNode(0, TYP_I_IMPL));
+        GenTree* tlsRootNullCond = gtNewOperNode(GT_NE, TYP_INT, gtCloneExpr(finalLcl), gtNewIconNode(0, TYP_I_IMPL));
         tlsRootNullCond          = gtNewOperNode(GT_JTRUE, TYP_VOID, tlsRootNullCond);
 
         // prevBb (BBJ_NONE):                                               [weight: 1.0]
@@ -632,20 +689,20 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         fgMorphArgs(slowHelper);
 
         // fallbackBb
-        GenTree*    fallbackValueDef = gtNewStoreLclVarNode(tlsRootLclNum, slowHelper);
+        GenTree*    fallbackValueDef = gtNewStoreLclVarNode(finalLclNum, slowHelper);
+        //GenTree*    fallbackValueDef = gtNewStoreLclVarNode(tlsRootLclNum, slowHelper);
         BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, true);
 
-        GenTree*    fastPathValueDef = gtNewStoreLclVarNode(tlsRootLclNum, gtCloneExpr(tlsRootUse));
+        GenTree*    fastPathValueDef = gtNewStoreLclVarNode(finalLclNum, gtCloneExpr(finalLcl));
+        //GenTree*    fastPathValueDef = gtNewStoreLclVarNode(tlsRootLclNum, gtCloneExpr(tlsRootLcl));
         BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
 
-        //GenTreeLclVar* threadStaticBlockLcl = nullptr;
+        //if (!hasLazyStaticCtor)
+        //{
+        //    *callUse = gtClone(tlsRootLcl);
+        //}
 
-        //// Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
-        //unsigned threadStaticBlockLclNum         = lvaGrabTemp(true DEBUGARG("TLS field access"));
-        //lvaTable[threadStaticBlockLclNum].lvType = callType;
-        //threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, callType);
-
-        *callUse = gtClone(tlsRootUse);
+        *callUse = finalLcl;
 
         fgMorphStmtBlockOps(block, stmt);
         gtUpdateStmtSideEffects(stmt);
@@ -653,9 +710,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         //
         // Update preds in all new blocks
         //
-        fgRemoveRefPred(block, prevBb);
-        fgAddRefPred(tlsRootNullCondBB, prevBb);
-
+#pragma endregion
         fgAddRefPred(fallbackBb, tlsRootNullCondBB);
         fgAddRefPred(fastPathBb, tlsRootNullCondBB);
 
@@ -674,6 +729,27 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         // fallback will just execute first time
         fallbackBb->bbSetRunRarely();
 
+        if (hasLazyStaticCtor)
+        {
+            assert(targetSymbCondBB != nullptr);
+            assert(lazyCtorBB != nullptr);
+
+            targetSymbCondBB->bbJumpDest = tlsRootNullCondBB;
+            lazyCtorBB->bbJumpDest       = block;
+
+            fgAddRefPred(tlsRootNullCondBB, targetSymbCondBB);
+            //fgAddRefPred(block, lazyCtorBB);
+            //fgAddRefPred(tlsRootNullCondBB, lazyCtorBB);
+
+            // lazyCtorBB will just execute first time
+            lazyCtorBB->bbSetRunRarely();
+        }
+        else
+        {
+            fgRemoveRefPred(block, prevBb);
+            fgAddRefPred(tlsRootNullCondBB, prevBb);
+        }
+
         //
         // Update loop info if loop table is known to be valid
         //
@@ -685,6 +761,12 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         assert(BasicBlock::sameEHRegion(prevBb, block));
         assert(BasicBlock::sameEHRegion(prevBb, tlsRootNullCondBB));
         assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
+
+        //if (info.compMethodHashPrivate == 0x2f7ba577) // 0x009bf64b
+        //{
+        //    printf("AFTER:\n");
+        //    fgDispBasicBlocks(true);
+        //}
 
         return true;
     }
@@ -1091,6 +1173,11 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
     if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
     {
         fgReorderBlocks(/* useProfileData */ false);
+        //if (info.compMethodHashPrivate == 0x2f7ba577) // 0x009bf64b
+        //{
+        //    printf("Reorder:\n");
+        //    fgDispBasicBlocks(true);
+        //}
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
     }
 
