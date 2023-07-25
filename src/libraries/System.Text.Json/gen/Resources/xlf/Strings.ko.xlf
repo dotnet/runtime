@@ -24,12 +24,12 @@
       </trans-unit>
       <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
         <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
-        <target state="new">The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</target>
+        <target state="translated">JsonConverterAttribute에서 파생된 사용자 지정 속성 '{0}'은(는) 원본 생성기에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
         <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
-        <target state="new">Attributes deriving from JsonConverterAttribute are not supported by the source generator.</target>
+        <target state="translated">JsonConverterAttribute에서 파생되는 특성은 소스 생성기에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">

@@ -24,12 +24,12 @@
       </trans-unit>
       <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
         <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
-        <target state="new">The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</target>
+        <target state="translated">Generátor zdroje nepodporuje vlastní atribut „{0}“ odvozený od atributu JsonConverterAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
         <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
-        <target state="new">Attributes deriving from JsonConverterAttribute are not supported by the source generator.</target>
+        <target state="translated">Zdrojový generátor nepodporuje atributy odvozené od atributu JsonConverterAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
