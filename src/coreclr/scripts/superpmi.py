@@ -649,7 +649,13 @@ class SuperPMICollect:
 
         self.collection_shim_path = os.path.join(self.core_root, self.collection_shim_name)
 
-        self.jit_path = os.path.join(coreclr_args.core_root, get_jit_name(coreclr_args))
+        jit_name = get_jit_name(coreclr_args)
+        jit_name_ext = os.path.splitext(jit_name)[1]
+        jit_name_without_ext = os.path.splitext(jit_name)[0]
+        self.jit_path = os.path.join(coreclr_args.core_root, jit_name)
+        self.superpmi_jit_path = os.path.join(coreclr_args.core_root, jit_name_without_ext + "_superpmi." + jit_name_ext)
+        shutil.copyfile(self.jit_path, self.superpmi_jit_path)
+
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.mcs_path = determine_mcs_tool_path(coreclr_args)
 
@@ -797,7 +803,7 @@ class SuperPMICollect:
 
             root_env = {}
             root_env["SuperPMIShimLogPath"] = self.temp_location
-            root_env["SuperPMIShimPath"] = self.jit_path
+            root_env["SuperPMIShimPath"] = self.superpmi_jit_path
 
             dotnet_env = {}
             dotnet_env["EnableExtraSuperPmiQueries"] = "1"
