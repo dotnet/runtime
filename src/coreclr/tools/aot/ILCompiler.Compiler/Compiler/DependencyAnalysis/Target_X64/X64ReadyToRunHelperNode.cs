@@ -237,47 +237,7 @@ namespace ILCompiler.DependencyAnalysis
             // bool isInitialExecutable = factory.CompilationModuleGroup.IsSingleFileCompilation;
             bool isInitialExecutable = false;
 
-            if (factory.Target.IsWindows)
-            {
-                if (isInitialExecutable)
-                {
-                    // mov         rax,qword ptr gs:[58h]
-                    encoder.Builder.EmitBytes(new byte[] { 0x65, 0x48, 0x8B, 0x04, 0x25, 0x58, 0x00, 0x00, 0x00 });
-
-                    // mov         ecx, SECTIONREL tlsRoot
-                    encoder.Builder.EmitBytes(new byte[] { 0xB9 });
-                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_SECREL);
-
-                    // add         rcx,qword ptr [rax]
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x03, 0x08 });
-                }
-                else
-                {
-                    // mov         ecx,dword ptr [_tls_index]
-                    encoder.Builder.EmitBytes(new byte[] { 0x8B, 0x0D });
-                    encoder.Builder.EmitReloc(factory.ExternSymbol("_tls_index"), RelocType.IMAGE_REL_BASED_REL32);
-
-                    // mov         rax,qword ptr gs:[58h]
-                    encoder.Builder.EmitBytes(new byte[] { 0x65, 0x48, 0x8B, 0x04, 0x25, 0x58, 0x00, 0x00, 0x00 });
-
-                    // mov         rax,qword ptr [rax+rcx*8]
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8B, 0x04, 0xC8 });
-
-                    // mov         ecx, SECTIONREL tlsRoot
-                    encoder.Builder.EmitBytes(new byte[] { 0xB9 });
-                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_SECREL);
-
-                    // add         rcx,rax
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x01, 0xC1 });
-                }
-
-                // mov rax, qword ptr[rcx]
-                encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8b, 0x01 });
-                encoder.EmitCompareToZero(Register.RAX);
-                encoder.EmitJE(getInlinedThreadStaticBaseSlow);
-                encoder.EmitRET();
-            }
-            else if (factory.Target.OperatingSystem == TargetOS.Linux)
+            if (factory.Target.OperatingSystem == TargetOS.Linux)
             {
                 if (isInitialExecutable)
                 {
