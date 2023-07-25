@@ -28,6 +28,7 @@
 #     c    all caller-saved registers
 
 nop: len:4
+relaxed_nop: len:4
 not_reached: len:0
 not_null: src1:i len:0
 dummy_use: src1:i len:0
@@ -89,6 +90,7 @@ atomic_add_i4: dest:i src1:i src2:i len:4
 atomic_store_u1: dest:b src1:i len:8
 atomic_store_i4: dest:b src1:i len:8
 atomic_store_u8: dest:b src1:i len:8
+atomic_load_u1: dest:b src1:i len:12
 atomic_load_i4: dest:b src1:i len:12
 atomic_load_i8: dest:b src1:i len:12
 atomic_load_u8: dest:b src1:i len:12
@@ -108,6 +110,8 @@ int_add: dest:i src1:i src2:i len:4
 long_add: dest:i src1:i src2:i len:4
 int_sub: dest:i src1:i src2:i len:4
 long_sub: dest:i src1:i src2:i len:4
+float_sub: dest:f src1:f src2:f len:4
+float_neg: dest:f src1:f len:4
 int_mul: dest:i src1:i src2:i len:4
 r4_mul: dest:f src1:f src2:f len:4
 long_mul: dest:i src1:i src2:i len:4
@@ -117,7 +121,7 @@ long_div: dest:i src1:i src2:i len:32
 int_div_un: dest:i src1:i src2:i len:32
 long_div_un: dest:i src1:i src2:i len:32
 r4_div: dest:f src1:f src2:f len:36
-float_div: dest:f src1:f src2:f len:4
+float_div: dest:f src1:f src2:f len:36
 int_rem: dest:i src1:i src2:i len:32
 long_rem: dest:i src1:i src2:i len:32
 int_rem_un: dest:i src1:i src2:i len:32
@@ -132,6 +136,7 @@ r4_conv_to_i4: dest:i src1:f len:4
 float_conv_to_i4: dest:i src1:f len:4
 float_conv_to_r4: dest:f src1:f len:4
 float_ceq: dest:i src1:f src2:f len:4
+float_cle: dest:i src1:f src2:f len:4
 float_clt: dest:i src1:f src2:f len:4
 float_clt_un: dest:i src1:f src2:f len:4
 r4_clt: dest:i src1:f src2:f len:4
@@ -154,6 +159,7 @@ int_xor: dest:i src1:i src2:i len:4
 int_xor_imm: dest:i src1:i len:4
 int_shl: dest:i src1:i src2:i len:4
 int_shl_imm: dest:i src1:i len:4
+int_shr: dest:i src1:i src2:i len:4
 int_shr_un: dest:i src1:i src2:i len:4
 int_shr_imm: dest:i src1:i len:4
 int_shr_un_imm: dest:i src1:i len:4
@@ -163,6 +169,7 @@ long_and_imm: dest:i src1:i len:4
 long_or: dest:i src1:i src2:i len:4
 long_xor: dest:i src1:i src2:i len:4
 long_or_imm: dest:i src1:i len:4
+long_shl: dest:i src1:i src2:i len:4
 long_shl_imm: dest:i src1:i len:4
 long_shr_un: dest:i src1:i src2:i len:4
 long_shr_imm: dest:i src1:i len:4

@@ -67,6 +67,7 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
         return ptr as T;
 }
 
+// when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
@@ -74,6 +75,7 @@ export type MonoConfigInternal = MonoConfig & {
     waitForDebugger?: number,
     appendElementOnExit?: boolean
     assertAfterExit?: boolean // default true for shell/nodeJS
+    interopCleanupOnExit?: boolean
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
@@ -196,6 +198,7 @@ export type RuntimeHelpers = {
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (x: boolean) => string,
+    forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
 }
 
 export type AOTProfilerOptions = {

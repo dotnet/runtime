@@ -253,7 +253,7 @@ namespace System.Runtime.CompilerServices
             {
                 ThrowHelper.ThrowNotSupportedException();
             }
-            return As<TFrom, TTo>(ref source);
+            return ReadUnaligned<TTo>(ref As<TFrom, byte>(ref source));
         }
 
         /// <summary>

@@ -150,6 +150,30 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
             }
         }
 
+        if (ehblk->HasFinallyOrFaultHandler() && (ehblk->ebdHndBeg == blk))
+        {
+            // block is a finally or fault handler; all enclosing filters are predecessors
+            unsigned enclosing = ehblk->ebdEnclosingTryIndex;
+            while (enclosing != EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                EHblkDsc* enclosingDsc = ehGetDsc(enclosing);
+                if (enclosingDsc->HasFilter())
+                {
+                    for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
+                         filterBlk             = filterBlk->bbNext)
+                    {
+                        res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+
+                        assert(filterBlk->VisitEHSecondPassSuccs(this, [blk](BasicBlock* succ) {
+                            return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
+                        }) == BasicBlockVisit::Abort);
+                    }
+                }
+
+                enclosing = enclosingDsc->ebdEnclosingTryIndex;
+            }
+        }
+
 #ifdef DEBUG
         unsigned hash = SsaStressHashHelper();
         if (hash != 0)

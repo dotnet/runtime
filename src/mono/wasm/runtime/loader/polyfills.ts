@@ -81,9 +81,10 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     }
 }
 
-const hasFetch = typeof (globalThis.fetch) === "function";
 export async function fetch_like(url: string, init?: RequestInit): Promise<Response> {
     try {
+        // this need to be detected only after we import node modules in onConfigLoaded
+        const hasFetch = typeof (globalThis.fetch) === "function";
         if (ENVIRONMENT_IS_NODE) {
             const isFileUrl = url.startsWith("file://");
             if (!isFileUrl && hasFetch) {
