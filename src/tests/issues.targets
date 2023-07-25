@@ -1247,19 +1247,19 @@
 
     <!-- The mobile wrappers don't support multiple entry points. The tests will be enabled once the parallel AOT compilation on Helix is introduced in https://github.com/dotnet/runtime/pull/87773. -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
-        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/FrameworkStrings/*">
+        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/FrameworkStrings/">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/PInvoke/*">
+        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/PInvoke/">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/SharedLibrary/*">
+        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/StackTraceMetadata/">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/StackTraceMetadata/*">
+        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/HardwareIntrinsics/">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/HardwareIntrinsics/*">
+        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/Exceptions/">
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
