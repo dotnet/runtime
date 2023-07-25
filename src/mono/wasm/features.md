@@ -20,7 +20,7 @@ JavaScript interop with managed code via `[JSExport]`/`[JSImport]` on the WebWor
 
 Is performance optimization enabled by default. It requires recent version of browser.
 
-You can disable it by `<WasmEnableSIMD>false</WasmEnableSIMD><WasmBuildNative>true</WasmBuildNative>`.
+You can disable it by `<WasmEnableSIMD>false</WasmEnableSIMD>`.
 
 See also WebAssembly proposal [SIMD.md](https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md)
 
@@ -29,7 +29,7 @@ Some older devices or operating systems don't have the necessary CPU instruction
 ## EH - Exception handling
 Is performance optimization enabled by default. It requires recent version of browser.
 
-You can disable it by `<WasmEnableExceptionHandling>false</WasmEnableExceptionHandling><WasmBuildNative>true</WasmBuildNative>`.
+You can disable it by `<WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>`.
 
 See also WebAssembly proposal [Exceptions.md](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
 
