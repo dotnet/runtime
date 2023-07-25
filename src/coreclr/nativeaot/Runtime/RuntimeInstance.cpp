@@ -52,9 +52,9 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCrashInfoBuffer, (int32_t* pcbMaxSize))
 
 #if TARGET_UNIX
 #include "PalCreateDump.h"
-COOP_PINVOKE_HELPER(void, RhCreateCrashDumpIfEnabled, (void* pExAddress, void* pExContext, void* triageBuffer, int triageBufferSize))
+COOP_PINVOKE_HELPER(void, RhCreateCrashDumpIfEnabled, (PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext))
 {
-    PalCreateCrashDumpIfEnabled(pExAddress, pExContext, triageBuffer, triageBufferSize);
+    PalCreateCrashDumpIfEnabled(pExceptionRecord, pExContext);
 }
 #endif
 

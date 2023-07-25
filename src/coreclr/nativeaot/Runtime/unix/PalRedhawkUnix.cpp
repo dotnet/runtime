@@ -1114,6 +1114,9 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
     if (status != 0)
     {
+        // Causes creation of a crash dump if enabled
+        PalCreateCrashDumpIfEnabled();
+
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
         // if the thread doesn't exist anymore.

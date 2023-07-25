@@ -431,7 +431,7 @@ PalCreateCrashDumpIfEnabled()
 }
 
 void
-PalCreateCrashDumpIfEnabled(void* pExAddress, void* pExContext, void* triageBuffer, int triageBufferSize)
+PalCreateCrashDumpIfEnabled(void* pExceptionRecord, void* pExContext)
 {
     PalCreateCrashDumpIfEnabled(SIGABRT, nullptr);
 }
