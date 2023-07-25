@@ -225,7 +225,7 @@ extern const USHORT c_nCoreLibFieldDescriptions;
 
 const CoreLibClassDescription c_rgCoreLibClassDescriptions[] =
 {
-    #define TYPEINFO(e,ns,c,s,g,ia,ip,if,im,gv)   { ns, c },
+    #define TYPEINFO(e,ns,c,s,g,ia,ip,if,im,gv,ic)   { ns, c },
     #include "cortypeinfo.h"
     #undef TYPEINFO
 

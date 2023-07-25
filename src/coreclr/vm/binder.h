@@ -40,7 +40,7 @@ struct HardCodedMetaSig
 
 enum BinderClassID
 {
-#define TYPEINFO(e,ns,c,s,g,ia,ip,if,im,gv)   CLASS__ ## e,
+#define TYPEINFO(e,ns,c,s,g,ia,ip,if,im,gv,ic)   CLASS__ ## e,
 #include "cortypeinfo.h"
 #undef TYPEINFO
 

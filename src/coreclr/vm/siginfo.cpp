@@ -28,8 +28,8 @@
 /*******************************************************************/
 const CorTypeInfo::CorTypeInfoEntry CorTypeInfo::info[ELEMENT_TYPE_MAX] =
 {
-#define TYPEINFO(enumName,nameSpace,className,size,gcType,isArray,isPrim,isFloat,isModifier,isGenVar) \
-    { nameSpace, className, enumName, size, gcType, isArray, isPrim, isFloat, isModifier, isGenVar },
+#define TYPEINFO(enumName,nameSpace,className,size,gcType,isArray,isPrim,isFloat,isModifier,isGenVar,isConstValue) \
+    { nameSpace, className, enumName, size, gcType, isArray, isPrim, isFloat, isModifier, isGenVar, isConstValue },
 #include "cortypeinfo.h"
 #   undef TYPEINFO
 };

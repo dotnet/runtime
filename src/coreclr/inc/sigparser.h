@@ -799,7 +799,7 @@ protected:
         unsigned       isFloat      : 1;
         unsigned       isModifier   : 1;
         unsigned       isGenVar     : 1;
-        // 1 more byte here to use for 32-bit
+        unsigned       isConst      : 1;
     };
 
 protected:
@@ -918,21 +918,29 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return GetTypeInfo(type).isGenVar &&
-            (type == CorElementType::ELEMENT_TYPE_CVAR || type == CorElementType::ELEMENT_TYPE_MCVAR);
+        CorTypeInfoEntry info = GetTypeInfo(type);
+        return info.isGenVar && info.isConst;
     }
     FORCEINLINE static BOOL IsConstGenericVariable_NoThrow(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-
-        return GetTypeInfo_NoThrow(type).isGenVar &&
-            (type == CorElementType::ELEMENT_TYPE_CVAR || type == CorElementType::ELEMENT_TYPE_MCVAR);
+        
+        CorTypeInfoEntry info = GetTypeInfo_NoThrow(type);
+        return info.isGenVar && info.isConst;
     }
-    FORCEINLINE static BOOL IsConstGenericTypeArgument_NoThrow(CorElementType type)
+    FORCEINLINE static BOOL IsConstValue(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
 
-        return type == CorElementType::ELEMENT_TYPE_CTARG;
+        CorTypeInfoEntry info = GetTypeInfo(type);
+        return !info.isGenVar && info.isConst;
+    }
+    FORCEINLINE static BOOL IsConstValue_NoThrow(CorElementType type)
+    {
+        WRAPPER_NO_CONTRACT;
+        
+        CorTypeInfoEntry info = GetTypeInfo_NoThrow(type);
+        return !info.isGenVar && info.isConst;
     }
     FORCEINLINE static BOOL IsArray(CorElementType type)
     {
