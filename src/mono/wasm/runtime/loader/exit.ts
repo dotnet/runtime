@@ -147,18 +147,20 @@ function appendElementOnExit(exit_code: number) {
 }
 
 function logErrorOnExit(exit_code: number, reason: any) {
-    if (exit_code !== 0 && reason) {
-        if (reason instanceof Error) {
+    if (exit_code !== 0 && reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
+        if (typeof reason == "string") {
+            mono_log_error(reason);
+        }
+        else if (reason.stack && reason.message) {
             if (runtimeHelpers.stringify_as_error_with_stack) {
                 mono_log_error(runtimeHelpers.stringify_as_error_with_stack(reason));
             } else {
                 mono_log_error(reason.message + "\n" + reason.stack);
             }
         }
-        else if (typeof reason == "string")
-            mono_log_error(reason);
-        else
+        else {
             mono_log_error(JSON.stringify(reason));
+        }
     }
     if (loaderHelpers.config && loaderHelpers.config.logExitCode) {
         if (consoleWebSocket) {
