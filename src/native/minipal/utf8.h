@@ -6,6 +6,7 @@
 
 #include <minipal/utils.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define MINIPAL_MB_NO_REPLACE_INVALID_CHARS 0x00000008
 #define MINIPAL_TREAT_AS_LITTLE_ENDIAN 0x00000016

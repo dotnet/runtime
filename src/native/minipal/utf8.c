@@ -3,7 +3,6 @@
 
 #include <minipal/utf8.h>
 
-#include <stdbool.h>
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
