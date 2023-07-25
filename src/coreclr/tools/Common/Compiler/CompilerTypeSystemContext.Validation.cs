@@ -214,7 +214,6 @@ namespace ILCompiler
 
         private static TypeDesc EnsureLoadableTypeUncached(TypeDesc type)
         {
-            bool containsSignatureOrGenericParameters = type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true);
             if (type.TypeIdentifierData != null)
             {
                 if (!type.TypeHasCharacteristicsRequiredToBeLoadableTypeEquivalentType)
