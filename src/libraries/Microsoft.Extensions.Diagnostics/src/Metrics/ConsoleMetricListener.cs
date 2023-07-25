@@ -13,31 +13,17 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         internal TextWriter _textWriter = Console.Out;
         private IMetricsSource? _source;
         private Timer _timer;
-        private int _instrumentCount;
 
         public ConsoleMetricListener()
         {
-            _timer = new Timer(OnTimer);
+            _timer = new Timer(OnTimer, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
         }
 
         public string Name => "Console";
 
-        public object? InstrumentPublished(Instrument instrument)
-        {
-            if (Interlocked.Increment(ref _instrumentCount) == 1)
-            {
-                _timer.Change(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-            }
-            return null;
-        }
+        public object? InstrumentPublished(Instrument instrument) => null;
 
-        public void MeasurementsCompleted(Instrument instrument, object? userState)
-        {
-            if (Interlocked.Decrement(ref _instrumentCount) == 0)
-            {
-                _timer.Change(Timeout.Infinite, Timeout.Infinite);
-            }
-        }
+        public void MeasurementsCompleted(Instrument instrument, object? userState) { }
 
         public void SetSource(IMetricsSource source) => _source = source;
         public MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct => MeasurementHandler;

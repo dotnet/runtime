@@ -154,11 +154,11 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             var alreadyListening = !listeners.IsEmpty;
             foreach (var rule in _rules)
             {
-                if (Matches(rule, instrument))
+                if (RuleMatchesInstrument(rule, instrument))
                 {
                     foreach (var listener in _listeners)
                     {
-                        if (Matches(rule, instrument, listener))
+                        if (RuleMatchesListener(rule, instrument, listener))
                         {
                             newListeners.Add(listener);
                         }
@@ -196,7 +196,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             }
         }
 
-        private static bool Matches(InstrumentEnableRule rule, Instrument instrument)
+        private bool RuleMatchesInstrument(InstrumentEnableRule rule, Instrument instrument)
         {
             if (!string.IsNullOrEmpty(rule.InstrumentName) &&
                 !string.Equals(rule.InstrumentName, instrument.Name, StringComparison.OrdinalIgnoreCase))
@@ -204,18 +204,20 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 return false;
             }
 
-            if (!string.IsNullOrEmpty(rule.MeterName) &&
-                !string.Equals(rule.MeterName, instrument.Meter.Name, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(rule.MeterName))
             {
-                return false;
+                // TODO: StartsWith. E.g. "System.Net.Http" or "System.Net.Http.*" should match "System.Net.Http.SocketsHttpHandler" and "System.Net.Http.HttpClient".
+                if (!string.Equals(rule.MeterName, instrument.Meter.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
             }
 
-            // TODO: Scopes?
-
-            return true;
+            return rule.Scopes.HasFlag(MeterScope.Global) && instrument.Meter.Scope == null
+                || rule.Scopes.HasFlag(MeterScope.Local) && instrument.Meter.Scope == this;
         }
 
-        private static bool Matches(InstrumentEnableRule rule, Instrument instrument, IMetricsListener listener)
+        private static bool RuleMatchesListener(InstrumentEnableRule rule, Instrument instrument, IMetricsListener listener)
         {
             if (rule.Filter != null)
             {
@@ -289,16 +291,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 _cachedMeters.Clear();
             }
 
-            lock (_connections)
-            {
-                foreach (var instrumentPair in _connections)
-                {
-                    foreach (var listenerPair in instrumentPair.Value)
-                    {
-                        listenerPair.Key.MeasurementsCompleted(instrumentPair.Key, listenerPair.Value);
-                    }
-                }
-            }
+            _meterListener.Dispose();
         }
 
         internal sealed class FactoryMeter : Meter

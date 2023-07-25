@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
             ServiceCollection services = new ServiceCollection();
             services.AddMetrics(builder =>
             {
-                builder.AddConsole();
+                builder.AddDebugConsole();
                 builder.EnableMetrics<ConsoleMetricListener>("TestMeter");
             });
             using var sp = services.BuildServiceProvider();

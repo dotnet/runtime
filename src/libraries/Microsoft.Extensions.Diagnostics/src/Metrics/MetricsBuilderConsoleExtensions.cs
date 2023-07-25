@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// </summary>
         /// <param name="builder">The metrics builder.</param>
         /// <returns>The original metrics builder for chaining.</returns>
-        public static IMetricsBuilder AddConsole(this IMetricsBuilder builder)
+        public static IMetricsBuilder AddDebugConsole(this IMetricsBuilder builder)
         {
             ThrowHelper.ThrowIfNull(builder);
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IMetricsListener, ConsoleMetricListener>());

@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             => options.AddRule(meterName: meterName, scopes: scopes, filter: (_, instrument) => filter(instrument));
 
         public static MetricsEnableOptions EnableMetrics<T>(this MetricsEnableOptions options, string? meterName, MeterScope scopes, Func<Instrument, bool> filter)
-            where T : IMetricsListener => options.AddRule(meterName: meterName, scopes: scopes, filter: (_, instrument) => filter(instrument));
+            where T : IMetricsListener => options.AddRule(meterName: meterName, scopes: scopes, filter: (_, instrument) => filter(instrument), listenerName: typeof(T).FullName);
 
         private static IMetricsBuilder ConfigureRule(this IMetricsBuilder builder, Action<MetricsEnableOptions> configureOptions)
         {
@@ -86,8 +86,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             return builder;
         }
 
-        private static MetricsEnableOptions AddRule(this MetricsEnableOptions options, string? listenerName = null, string? meterName = null, MeterScope scopes = MeterScope.Local,
-            string? instrumentName = null, Func<string?, Instrument, bool>? filter = null)
+        private static MetricsEnableOptions AddRule(this MetricsEnableOptions options, string? meterName = null, MeterScope scopes = MeterScope.Local | MeterScope.Global,
+            string? instrumentName = null, Func<string?, Instrument, bool>? filter = null, string? listenerName = null)
         {
             ThrowHelper.ThrowIfNull(options);
             options.Rules.Add(new InstrumentEnableRule(listenerName, meterName, scopes, instrumentName, filter));
