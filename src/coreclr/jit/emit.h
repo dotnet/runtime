@@ -2305,7 +2305,7 @@ private:
 #if defined(TARGET_AMD64)
     regMaskTP rbmFltCalleeTrash;
 
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
@@ -2314,7 +2314,7 @@ private:
 #if defined(TARGET_XARCH)
     regMaskTP rbmMskCalleeTrash;
 
-    regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }

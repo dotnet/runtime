@@ -1717,6 +1717,19 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
             NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
 
+            GenTree* nestedOp1           = nullptr;
+            GenTree* nestedOp2           = nullptr;
+            bool     isEmbeddedBroadcast = false;
+
+            if (op1Intrinsic->GetOperandCount() == 2)
+            {
+                nestedOp1 = op1Intrinsic->Op(1);
+                nestedOp2 = op1Intrinsic->Op(2);
+
+                assert(!nestedOp1->isContained());
+                isEmbeddedBroadcast = nestedOp2->isContained() && nestedOp2->OperIsHWIntrinsic();
+            }
+
             switch (op1IntrinsicId)
             {
                 case NI_SSE_And:
@@ -1726,8 +1739,14 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                 {
                     // We can optimize to TestZ(op1.op1, op1.op2)
 
-                    node->Op(1) = op1Intrinsic->Op(1);
-                    node->Op(2) = op1Intrinsic->Op(2);
+                    if (isEmbeddedBroadcast)
+                    {
+                        // PTEST doesn't support embedded broadcast
+                        break;
+                    }
+
+                    node->Op(1) = nestedOp1;
+                    node->Op(2) = nestedOp2;
 
                     BlockRange().Remove(op1);
                     BlockRange().Remove(op2);
@@ -1742,10 +1761,17 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                 case NI_AVX2_AndNot:
                 {
                     // We can optimize to TestC(op1.op1, op1.op2)
+
+                    if (isEmbeddedBroadcast)
+                    {
+                        // PTEST doesn't support embedded broadcast
+                        break;
+                    }
+
                     cmpCnd = (cmpOp == GT_EQ) ? GenCondition::C : GenCondition::NC;
 
-                    node->Op(1) = op1Intrinsic->Op(1);
-                    node->Op(2) = op1Intrinsic->Op(2);
+                    node->Op(1) = nestedOp1;
+                    node->Op(2) = nestedOp2;
 
                     BlockRange().Remove(op1);
                     BlockRange().Remove(op2);
@@ -8879,6 +8905,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             //
                             // Because of this, the operand must be loaded into a register
                             // and cannot be contained.
+                            return;
+                        }
+
+                        case NI_AVX512F_ShiftLeftMask:
+                        case NI_AVX512F_ShiftRightMask:
+                        {
+                            // These intrinsics don't support a memory operand and
+                            // we don't currently generate a jmp table fallback.
+
+                            assert(isContainedImm);
                             return;
                         }
 

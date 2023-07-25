@@ -63,11 +63,11 @@ public:
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
 
-    regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
@@ -80,11 +80,11 @@ public:
     // Call this function after the equivalent fields in Compiler have been initialized.
     void CopyRegisterInfo();
 
-    regMaskTP get_RBM_ALLMASK() const
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }
