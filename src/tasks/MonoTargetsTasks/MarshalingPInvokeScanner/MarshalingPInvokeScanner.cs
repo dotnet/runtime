@@ -112,9 +112,10 @@ namespace MonoTargetsTasks
             {
                 mdtReader = peReader.GetMetadataReader();
             }
-            catch(InvalidOperationException)
+            catch(InvalidOperationException ex)
             {
                 // If the DLL does not have metadata, the previous call will fail with InvalidOperationException.
+                Log.LogMessage(MessageImportance.Low, string.Format("Cannot read metadata in file {0}: {1}.", assyPath, ex.Message));
                 return false;
             }
 
