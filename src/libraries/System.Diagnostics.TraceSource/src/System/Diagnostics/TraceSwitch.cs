@@ -94,14 +94,14 @@ namespace System.Diagnostics
 
         protected override void OnValueChanged()
         {
+            // Parse the new value and set the switch setting accordingly. Parse should throw an exception if the value is invalid.
             SwitchSetting = (int)Enum.Parse<TraceLevel>(Value, true);
 
-            Debug.Assert(Value.Length > 0, "Unexpected 'Value' zero Length");
-            if (char.IsDigit(Value[0]))
-            {
-                // Convert digit value representation to TraceLevel representation
-                SetSwitchValueString(((TraceLevel)SwitchSetting).ToString());
-            }
+            // Ensure the new value is within the valid range.
+            OnSwitchSettingChanged();
+
+            // Update the switch value string accordingly.
+            SetSwitchValueString(((TraceLevel)SwitchSetting).ToString());
         }
     }
 }
