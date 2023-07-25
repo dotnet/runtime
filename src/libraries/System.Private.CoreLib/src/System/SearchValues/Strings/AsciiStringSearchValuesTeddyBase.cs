@@ -135,6 +135,7 @@ namespace System.Buffers
             Vector128<byte> prev0 = Vector128<byte>.AllBitsSet;
 
         Loop:
+            ValidateReadPosition(span, ref searchSpace);
             Vector128<byte> input = TStartCaseSensitivity.TransformInput(LoadAndPack16AsciiChars(ref searchSpace));
 
             (Vector128<byte> result, prev0) = ProcessInputN2(input, prev0, n0Low, n0High, n1Low, n1High);
@@ -186,6 +187,7 @@ namespace System.Buffers
             Vector256<byte> prev0 = Vector256<byte>.AllBitsSet;
 
         Loop:
+            ValidateReadPosition(span, ref searchSpace);
             Vector256<byte> input = TStartCaseSensitivity.TransformInput(LoadAndPack32AsciiChars(ref searchSpace));
 
             (Vector256<byte> result, prev0) = ProcessInputN2(input, prev0, n0Low, n0High, n1Low, n1High);
@@ -237,6 +239,7 @@ namespace System.Buffers
             Vector512<byte> prev0 = Vector512<byte>.AllBitsSet;
 
         Loop:
+            ValidateReadPosition(span, ref searchSpace);
             Vector512<byte> input = TStartCaseSensitivity.TransformInput(LoadAndPack64AsciiChars(ref searchSpace));
 
             (Vector512<byte> result, prev0) = ProcessInputN2(input, prev0, n0Low, n0High, n1Low, n1High);
@@ -303,6 +306,7 @@ namespace System.Buffers
         Loop:
             // Load the input characters and normalize them to their uppercase variant if we're ignoring casing.
             // These characters may not be ASCII, but we know that the starting 3 characters of each value are.
+            ValidateReadPosition(span, ref searchSpace);
             Vector128<byte> input = TStartCaseSensitivity.TransformInput(LoadAndPack16AsciiChars(ref searchSpace));
 
             // Find which buckets contain potential matches for each input position.
@@ -362,6 +366,7 @@ namespace System.Buffers
             Vector256<byte> prev1 = Vector256<byte>.AllBitsSet;
 
         Loop:
+            ValidateReadPosition(span, ref searchSpace);
             Vector256<byte> input = TStartCaseSensitivity.TransformInput(LoadAndPack32AsciiChars(ref searchSpace));
 
             (Vector256<byte> result, prev0, prev1) = ProcessInputN3(input, prev0, prev1, n0Low, n0High, n1Low, n1High, n2Low, n2High);
@@ -416,6 +421,7 @@ namespace System.Buffers
             Vector512<byte> prev1 = Vector512<byte>.AllBitsSet;
 
         Loop:
+            ValidateReadPosition(span, ref searchSpace);
             Vector512<byte> input = TStartCaseSensitivity.TransformInput(LoadAndPack64AsciiChars(ref searchSpace));
 
             (Vector512<byte> result, prev0, prev1) = ProcessInputN3(input, prev0, prev1, n0Low, n0High, n1Low, n1High, n2Low, n2High);
@@ -467,6 +473,8 @@ namespace System.Buffers
                 offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref MemoryMarshal.GetReference(span), ref matchRef) / 2);
                 int lengthRemaining = span.Length - offsetFromStart;
 
+                ValidateReadPosition(span, ref matchRef, lengthRemaining);
+
                 // 'candidateMask' encodes which buckets contain potential matches, starting at 'matchRef'.
                 uint candidateMask = result.GetElementUnsafe(matchOffset);
 
@@ -512,6 +520,8 @@ namespace System.Buffers
                 offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref MemoryMarshal.GetReference(span), ref matchRef) / 2);
                 int lengthRemaining = span.Length - offsetFromStart;
 
+                ValidateReadPosition(span, ref matchRef, lengthRemaining);
+
                 uint candidateMask = result.GetElementUnsafe(matchOffset);
 
                 do
@@ -554,6 +564,8 @@ namespace System.Buffers
                 ref char matchRef = ref Unsafe.Add(ref searchSpace, matchOffset - matchStartOffset);
                 offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref MemoryMarshal.GetReference(span), ref matchRef) / 2);
                 int lengthRemaining = span.Length - offsetFromStart;
+
+                ValidateReadPosition(span, ref matchRef, lengthRemaining);
 
                 uint candidateMask = result.GetElementUnsafe(matchOffset);
 

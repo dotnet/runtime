@@ -123,6 +123,8 @@ namespace System.Buffers
 
                 while (true)
                 {
+                    ValidateReadPosition(span, ref current);
+
                     if (Unsafe.Add(ref bucketsRef, hash % BucketCount) is string[] bucket)
                     {
                         int startOffset = (int)((nuint)Unsafe.ByteOffset(ref MemoryMarshal.GetReference(span), ref current) / sizeof(char));

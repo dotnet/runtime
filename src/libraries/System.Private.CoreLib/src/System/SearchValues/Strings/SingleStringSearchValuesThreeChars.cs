@@ -83,6 +83,10 @@ namespace System.Buffers
 
                 while (true)
                 {
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count);
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count + (int)(_ch2ByteOffset / 2));
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count + (int)(_ch3ByteOffset / 2));
+
                     // Find which starting positions likely contain a match (likely match all 3 anchor characters).
                     Vector512<byte> result = GetComparisonResult(ref searchSpace, ch2ByteOffset, ch3ByteOffset, ch1, ch2, ch3);
 
@@ -110,7 +114,7 @@ namespace System.Buffers
 
                 CandidateFound:
                     // We found potential matches, but they may be false-positives, so we must verify each one.
-                    if (TryMatch(ref searchSpaceStart, ref searchSpace, result.ExtractMostSignificantBits(), out int offset))
+                    if (TryMatch(ref searchSpaceStart, searchSpaceLength, ref searchSpace, result.ExtractMostSignificantBits(), out int offset))
                     {
                         return offset;
                     }
@@ -127,6 +131,10 @@ namespace System.Buffers
 
                 while (true)
                 {
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<ushort>.Count);
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<ushort>.Count + (int)(_ch2ByteOffset / 2));
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<ushort>.Count + (int)(_ch3ByteOffset / 2));
+
                     // Find which starting positions likely contain a match (likely match all 3 anchor characters).
                     Vector256<byte> result = GetComparisonResult(ref searchSpace, ch2ByteOffset, ch3ByteOffset, ch1, ch2, ch3);
 
@@ -153,7 +161,7 @@ namespace System.Buffers
 
                 CandidateFound:
                     // We found potential matches, but they may be false-positives, so we must verify each one.
-                    if (TryMatch(ref searchSpaceStart, ref searchSpace, result.ExtractMostSignificantBits(), out int offset))
+                    if (TryMatch(ref searchSpaceStart, searchSpaceLength, ref searchSpace, result.ExtractMostSignificantBits(), out int offset))
                     {
                         return offset;
                     }
@@ -170,6 +178,10 @@ namespace System.Buffers
 
                 while (true)
                 {
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<ushort>.Count);
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<ushort>.Count + (int)(_ch2ByteOffset / 2));
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<ushort>.Count + (int)(_ch3ByteOffset / 2));
+
                     // Find which starting positions likely contain a match (likely match all 3 anchor characters).
                     Vector128<byte> result = GetComparisonResult(ref searchSpace, ch2ByteOffset, ch3ByteOffset, ch1, ch2, ch3);
 
@@ -196,7 +208,7 @@ namespace System.Buffers
 
                 CandidateFound:
                     // We found potential matches, but they may be false-positives, so we must verify each one.
-                    if (TryMatch(ref searchSpaceStart, ref searchSpace, result.ExtractMostSignificantBits(), out int offset))
+                    if (TryMatch(ref searchSpaceStart, searchSpaceLength, ref searchSpace, result.ExtractMostSignificantBits(), out int offset))
                     {
                         return offset;
                     }
@@ -298,7 +310,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryMatch(ref char searchSpaceStart, ref char searchSpace, uint mask, out int offsetFromStart)
+        private bool TryMatch(ref char searchSpaceStart, int searchSpaceLength, ref char searchSpace, uint mask, out int offsetFromStart)
         {
             // 'mask' encodes the input positions where at least 3 characters likely matched.
             // Verify each one to see if we've found a match, otherwise return back to the vectorized loop.
@@ -308,6 +320,8 @@ namespace System.Buffers
                 Debug.Assert(bitPos % 2 == 0);
 
                 ref char matchRef = ref Unsafe.AddByteOffset(ref searchSpace, bitPos);
+
+                ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref matchRef, _value.Length);
 
                 if (TCaseSensitivity.Equals(ref matchRef, _value))
                 {
@@ -324,7 +338,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryMatch(ref char searchSpaceStart, ref char searchSpace, ulong mask, out int offsetFromStart)
+        private bool TryMatch(ref char searchSpaceStart, int searchSpaceLength, ref char searchSpace, ulong mask, out int offsetFromStart)
         {
             // 'mask' encodes the input positions where at least 3 characters likely matched.
             // Verify each one to see if we've found a match, otherwise return back to the vectorized loop.
@@ -334,6 +348,8 @@ namespace System.Buffers
                 Debug.Assert(bitPos % 2 == 0);
 
                 ref char matchRef = ref Unsafe.AddByteOffset(ref searchSpace, bitPos);
+
+                ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref matchRef, _value.Length);
 
                 if (TCaseSensitivity.Equals(ref matchRef, _value))
                 {

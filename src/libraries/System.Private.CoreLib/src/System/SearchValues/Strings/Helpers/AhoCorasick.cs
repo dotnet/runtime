@@ -120,7 +120,7 @@ namespace System.Buffers
 
         LoopWithoutRangeCheck:
             // Read the next input character and either find the next potential match prefix or transition back to the root node.
-            Debug.Assert(i < span.Length);
+            Debug.Assert((uint)i < (uint)span.Length);
             char c = TCaseSensitivity.TransformInput(Unsafe.Add(ref MemoryMarshal.GetReference(span), i));
 
             while (true)
@@ -133,6 +133,7 @@ namespace System.Buffers
                     // We were able to extend the current match. If this node contains a potential match, remember that.
                     nodeIndex = childIndex;
 
+                    Debug.Assert((uint)nodeIndex < (uint)_nodes.Length);
                     int matchLength = Unsafe.Add(ref nodes, (uint)nodeIndex).MatchLength;
                     if (matchLength != 0)
                     {
@@ -228,7 +229,7 @@ namespace System.Buffers
 
         LoopWithoutRangeCheck:
             // Read the next input character and either find the next potential match prefix or transition back to the root node.
-            Debug.Assert(i < span.Length);
+            Debug.Assert((uint)i < (uint)span.Length);
             char c;
             if (lowSurrogateUpper != LowSurrogateNotSet)
             {
@@ -281,6 +282,7 @@ namespace System.Buffers
                     // We were able to extend the current match. If this node contains a potential match, remember that.
                     nodeIndex = childIndex;
 
+                    Debug.Assert((uint)nodeIndex < (uint)_nodes.Length);
                     int matchLength = Unsafe.Add(ref nodes, (uint)nodeIndex).MatchLength;
                     if (matchLength != 0)
                     {
