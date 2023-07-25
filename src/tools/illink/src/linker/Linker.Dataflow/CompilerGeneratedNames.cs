@@ -5,7 +5,7 @@ namespace Mono.Linker.Dataflow
 {
 	sealed class CompilerGeneratedNames
 	{
-		internal static bool IsGeneratedMemberName (string memberName)
+		private static bool IsGeneratedMemberName (string memberName)
 		{
 			return memberName.Length > 0 && memberName[0] == '<';
 		}
@@ -47,7 +47,7 @@ namespace Mono.Linker.Dataflow
 			return fieldName.Length > i + 1 && fieldName[i + 1] == '2';
 		}
 
-		internal static bool IsGeneratedType (string name) => IsStateMachineType (name) || IsLambdaDisplayClass (name);
+		internal static bool IsStateMachineOrDisplayClass (string name) => IsStateMachineType (name) || IsLambdaDisplayClass (name);
 
 		internal static bool IsLambdaOrLocalFunction (string methodName) => IsLambdaMethod (methodName) || IsLocalFunction (methodName);
 

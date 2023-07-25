@@ -217,7 +217,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
-        public void GetScalar()
+        public void Get_Scalar()
         {
             var dic = new Dictionary<string, string>
             {
@@ -239,7 +239,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
-        public void GetScalarNullable()
+        public void Get_ScalarNullable()
         {
             var dic = new Dictionary<string, string>
             {
@@ -258,6 +258,50 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.True((bool)config.GetValue(typeof(bool?), "Boolean"));
             Assert.Equal(-2, (int)config.GetValue(typeof(int?), "Integer"));
             Assert.Equal(11, (int)config.GetValue(typeof(int?), "Nested:Integer"));
+        }
+
+        [Fact]
+        public void GetValue_Scalar()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            Assert.True(config.GetSection("Boolean").Get<bool>());
+            Assert.Equal(-2, config.GetSection("Integer").Get<int>());
+            Assert.Equal(11, config.GetSection("Nested:Integer").Get<int>());
+
+            Assert.True((bool)config.GetSection("Boolean").Get(typeof(bool)));
+            Assert.Equal(-2, (int)config.GetSection("Integer").Get(typeof(int)));
+            Assert.Equal(11, (int)config.GetSection("Nested:Integer").Get(typeof(int)));
+        }
+
+        [Fact]
+        public void GetValue_ScalarNullable()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            Assert.True(config.GetSection("Boolean").Get<bool?>());
+            Assert.Equal(-2, config.GetSection("Integer").Get<int?>());
+            Assert.Equal(11, config.GetSection("Nested:Integer").Get<int?>());
+
+            Assert.True(config.GetSection("Boolean").Get(typeof(bool?)) is true);
+            Assert.Equal(-2, (int)config.GetSection("Integer").Get(typeof(int?)));
+            Assert.Equal(11, (int)config.GetSection("Nested:Integer").Get(typeof(int?)));
         }
 
         [Fact]
@@ -1358,18 +1402,35 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         [Fact]
         public void CanBindRecordStructOptions()
         {
-            var dic = new Dictionary<string, string>
-            {
-                {"Length", "42"},
-                {"Color", "Green"},
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
+            IConfiguration config = GetConfiguration("Length", "Color");
+            Validate(config.Get<RecordStructTypeOptions>());
+            Validate(config.Get<RecordStructTypeOptions?>().Value);
 
-            var options = config.Get<RecordStructTypeOptions>();
-            Assert.Equal(42, options.Length);
-            Assert.Equal("Green", options.Color);
+            config = GetConfiguration("Options.Length", "Options.Color");
+            // GetValue works for only primitives.
+            //Reflection impl handles them by honoring `TypeConverter` only.
+            // Source-gen supports based on an allow-list.
+            Assert.Equal(default(RecordStructTypeOptions), config.GetValue<RecordStructTypeOptions>("Options"));
+            Assert.False(config.GetValue<RecordStructTypeOptions?>("Options").HasValue);
+
+            static void Validate(RecordStructTypeOptions options)
+            {
+                Assert.Equal(42, options.Length);
+                Assert.Equal("Green", options.Color);
+            }
+
+            static IConfiguration GetConfiguration(string key1, string key2)
+            {
+                var dic = new Dictionary<string, string>
+                {
+                    { key1, "42" },
+                    { key2, "Green" },
+                };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                return configurationBuilder.Build();
+            }
         }
 
         [Fact]
