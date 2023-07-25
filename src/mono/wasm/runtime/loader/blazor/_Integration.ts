@@ -15,14 +15,38 @@ import { appendUniqueQuery } from "../assets";
 let resourceLoader: WebAssemblyResourceLoader;
 
 export async function loadBootConfig(config: MonoConfigInternal, module: DotnetModuleInternal) {
-    const bootConfigPromise = BootConfigResult.initAsync(loaderHelpers.loadBootResource, config.applicationEnvironment);
-    const bootConfigResult: BootConfigResult = await bootConfigPromise;
-    await initializeBootConfig(bootConfigResult, module, loaderHelpers.loadBootResource);
+    const defaultBootJsonLocation = "_framework/blazor.boot.json";
+    const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
+        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultBootJsonLocation, "") :
+        defaultLoadBlazorBootJson(defaultBootJsonLocation);
+
+    let bootConfigResponse: Response;
+
+    if (!loaderResponse) {
+        bootConfigResponse = await defaultLoadBlazorBootJson(defaultBootJsonLocation);
+    } else if (typeof loaderResponse === "string") {
+        bootConfigResponse = await defaultLoadBlazorBootJson(loaderResponse);
+    } else {
+        bootConfigResponse = await loaderResponse;
+    }
+
+    const bootConfig: BootJsonData = await bootConfigResponse.json();
+    const bootConfigResult = await BootConfigResult.fromFetchResponse(bootConfigResponse, bootConfig, config.applicationEnvironment);
+
+    await initializeBootConfig(bootConfigResult.bootConfig, bootConfigResult.applicationEnvironment, module, loaderHelpers.loadBootResource);
+
+    function defaultLoadBlazorBootJson(url: string): Promise<Response> {
+        return fetch(url, {
+            method: "GET",
+            credentials: "include",
+            cache: "no-cache",
+        });
+    }
 }
 
-export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, loadBootResource?: LoadBootResourceCallback) {
-    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, loadBootResource);
-    mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
+export async function initializeBootConfig(bootConfig: BootJsonData, applicationEnvironment: string, module: DotnetModuleInternal, loadBootResource?: LoadBootResourceCallback) {
+    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfig, loadBootResource);
+    mapBootConfigToMonoConfig(loaderHelpers.config, applicationEnvironment);
 
     if (ENVIRONMENT_IS_WEB) {
         setupModuleForBlazor(module);

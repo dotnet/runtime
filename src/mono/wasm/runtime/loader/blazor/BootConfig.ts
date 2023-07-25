@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { BootJsonData } from "../../types/blazor";
-import type { LoadBootResourceCallback } from "../../types";
 import { loaderHelpers } from "../globals";
 
 export class BootConfigResult {
@@ -20,35 +19,6 @@ export class BootConfigResult {
         bootConfig.aspnetCoreBrowserTools = bootConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
 
         return new BootConfigResult(bootConfig, applicationEnvironment);
-    }
-
-    static async initAsync(loadBootResource?: LoadBootResourceCallback, environment?: string): Promise<BootConfigResult> {
-        const defaultBootJsonLocation = "_framework/blazor.boot.json";
-
-        const loaderResponse = loadBootResource !== undefined ?
-            loadBootResource("manifest", "blazor.boot.json", defaultBootJsonLocation, "") :
-            defaultLoadBlazorBootJson(defaultBootJsonLocation);
-
-        let bootConfigResponse: Response;
-
-        if (!loaderResponse) {
-            bootConfigResponse = await defaultLoadBlazorBootJson(defaultBootJsonLocation);
-        } else if (typeof loaderResponse === "string") {
-            bootConfigResponse = await defaultLoadBlazorBootJson(loaderResponse);
-        } else {
-            bootConfigResponse = await loaderResponse;
-        }
-
-        const bootConfig: BootJsonData = await bootConfigResponse.json();
-        return BootConfigResult.fromFetchResponse(bootConfigResponse, bootConfig, environment);
-
-        function defaultLoadBlazorBootJson(url: string): Promise<Response> {
-            return fetch(url, {
-                method: "GET",
-                credentials: "include",
-                cache: "no-cache",
-            });
-        }
     }
 }
 
