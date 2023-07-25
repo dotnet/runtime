@@ -150,7 +150,7 @@ function logOnExit(exit_code: number, reason: any) {
     if (exit_code !== 0 && reason) {
         // ExitStatus usually is not real JS error and so stack strace is not very useful.
         // We will use debug level for it, which will print only when diagnosticTracing is set.
-        const mono_log = reason instanceof runtimeHelpers.ExitStatus
+        const mono_log = runtimeHelpers.ExitStatus && reason instanceof runtimeHelpers.ExitStatus
             ? mono_log_debug
             : mono_log_error;
         if (typeof reason == "string") {
