@@ -5806,7 +5806,8 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
         return false;
     }
 
-    if (Level <= Context.EventPipeProvider.Level)
+    if ((Level <= Context.EventPipeProvider.Level) ||
+        (Context.EventPipeProvider.Level == EP_EVENT_LEVEL_LOGALWAYS))
     {
         return (Keyword == (ULONGLONG)0) || (Keyword & Context.EventPipeProvider.EnabledKeywordsBitmask) != 0;
     }

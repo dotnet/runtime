@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Source generators must target netstandard2.0 which doesn't support nullable reference types. In order
+         to enable the nullable reference type compiler checks, we also target NetCoreAppCurrent. -->
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
     <CLSCompliant>false</CLSCompliant>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
@@ -32,4 +35,5 @@
     <Compile Include="SymbolLoader.cs" />
     <Compile Include="TypeDeclarationSyntaxReceiver.cs" />
   </ItemGroup>
+
 </Project>

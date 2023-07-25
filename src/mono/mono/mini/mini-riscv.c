@@ -405,12 +405,6 @@ gpointer
 mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
 {
 	MonoObject *this = (MonoObject *)regs [RISCV_A0];
-	// FIXME:
-	// The Mono will treat first parameter as this_pointer,
-	// it get conflict with RISC-V ABI.
-	// more information refer to get_call_info().
-	if (!this->vtable)
-		this = (MonoObject *)regs [RISCV_A1];
 	return (gpointer)this;
 }
 
@@ -962,6 +956,14 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	}
 }
 
+static int
+call_info_size (MonoMethodSignature *sig)
+{
+	int n = sig->hasthis + sig->param_count;
+
+	return sizeof (CallInfo) + (sizeof (ArgInfo) * n);
+}
+
 /**
  * get_call_info:
  * 	create call info here.
@@ -974,12 +976,14 @@ static CallInfo *
 get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	CallInfo *cinfo;
+	gboolean is_pinvoke = sig->pinvoke;
 	int paramNum = sig->hasthis + sig->param_count;
 	int pindex;
+	int size = call_info_size (sig);
 	if (mp)
-		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * paramNum));
+		cinfo = mono_mempool_alloc0 (mp, size);
 	else
-		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * paramNum));
+		cinfo = g_malloc0 (size);
 
 	cinfo->nargs = paramNum;
 
@@ -988,32 +992,28 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	cinfo->next_farg = RISCV_FA0;
 	add_param (cinfo, &cinfo->ret, sig->ret);
 
-	// The ABI specify that
-	// If the reture value would have been passed by reference,
-	// the caller will allocates memory for the return value, and
-	// passes the address as an implicit first parameter.
-
-	// FIXME:
-	// The Mono will treat first parameter as this_pointer
-	// reference to `mono_vcall_trampoline()`. 
-	// They are conflict a bit. 
-	if (cinfo->ret.storage == ArgVtypeByRef) {
-		g_assert (cinfo->ret.reg == RISCV_A0);
-		cinfo->next_arg = RISCV_A1;
-	}
-	else
-		cinfo->next_arg = RISCV_A0;
-
+	cinfo->next_arg = RISCV_A0;
 	cinfo->next_farg = RISCV_FA0;
 	// reset status
 	cinfo->stack_usage = 0;
 
-	// add this pointer as first argument if hasthis == true
-	if (sig->hasthis)
+	guint32 paramStart = 0;
+	if (cinfo->ret.storage == ArgVtypeByRef && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (mini_get_underlying_type (sig->params [0]))))) {
 		add_arg (cinfo, cinfo->args + 0, sizeof (host_mgreg_t), FALSE);
+		if (!sig->hasthis)
+			paramStart = 1;
+		add_param (cinfo, &cinfo->ret, sig->ret);
+	}
+	else{
+		// add this pointer as first argument if hasthis == true
+		if (sig->hasthis)
+			add_arg (cinfo, cinfo->args + 0, sizeof (host_mgreg_t), FALSE);
+
+		if (cinfo->ret.storage == ArgVtypeByRef)
+			add_param (cinfo, &cinfo->ret, sig->ret);
+	}
 
 	// other general Arguments
-	guint32 paramStart = 0;
 	guint32 argStack = 0;
 	for (pindex = paramStart; pindex < sig->param_count; ++pindex) {
 		ArgInfo *ainfo = cinfo->args + sig->hasthis + pindex;
@@ -1082,12 +1082,34 @@ arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
 	NOT_IMPLEMENTED;
 }
 
+gpointer
+mono_arch_get_interp_native_call_info (MonoMemoryManager *mem_manager, MonoMethodSignature *sig)
+{
+    CallInfo *cinfo = get_call_info (NULL, sig);
+	if (mem_manager) {
+		int size = call_info_size (sig);
+		gpointer res = mono_mem_manager_alloc0 (mem_manager, size);
+		memcpy (res, cinfo, size);
+		g_free (cinfo);
+		return res;
+	} else {
+		return cinfo;
+	}
+}
+
+void
+mono_arch_free_interp_native_call_info (gpointer call_info)
+{
+	/* Allocated by get_call_info () */
+	g_free (call_info);
+}
+
 /* Set arguments in the ccontext (for i2n entry) */
 void
-mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info)
 {
 	const MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
-	CallInfo *cinfo = get_call_info (NULL, sig);
+	CallInfo *cinfo = (CallInfo*)call_info;
 	gpointer storage;
 	ArgInfo *ainfo;
 
@@ -1100,7 +1122,6 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		ainfo = &cinfo->ret;
 		if (ainfo->storage == ArgVtypeByRef) {
-			g_assert (cinfo->ret.reg == RISCV_A0);
 			storage = interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, -1);
 			ccontext->gregs [cinfo->ret.reg] = (gsize)storage;
 		}
@@ -1112,8 +1133,8 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		ainfo = &cinfo->args [i];
 
 		if (ainfo->storage == ArgVtypeByRef) {
-			ccontext->gregs [ainfo->reg] =
-			    (host_mgreg_t)interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, i);
+			storage = arg_get_storage (ccontext, ainfo);
+			*(gpointer *)storage = interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, i);
 			continue;
 		}
 
@@ -1128,30 +1149,28 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
 	}
-
-	g_free (cinfo);
 }
 
 /* Set return value in the ccontext (for n2i return) */
 void
-mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer retp)
+mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info, gpointer retp)
 {
 	NOT_IMPLEMENTED;
 }
 
 /* Gets the arguments from ccontext (for n2i entry) */
 gpointer
-mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info)
 {
 	NOT_IMPLEMENTED;
 }
 
 /* Gets the return value from ccontext (for i2n exit) */
 void
-mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info)
 {
 	const MonoEECallbacks *interp_cb;
-	CallInfo *cinfo;
+	CallInfo *cinfo = (CallInfo*)call_info;
 	ArgInfo *ainfo;
 	gpointer storage;
 
@@ -1159,7 +1178,6 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		return;
 
 	interp_cb = mini_get_interp_callbacks ();
-	cinfo = get_call_info (NULL, sig);
 	ainfo = &cinfo->ret;
 
 	if (ainfo->storage != ArgVtypeByRef) {
@@ -1172,8 +1190,6 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 			storage = arg_get_storage (ccontext, ainfo);
 		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
 	}
-
-	g_free (cinfo);
 }
 
 #ifndef DISABLE_JIT
@@ -1502,8 +1518,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->arch.vret_addr_loc->dreg, call->vret_var->dreg);
 		break;
 	case ArgVtypeByRef:
-		/* Pass the vtype return address in A0 */
-		g_assert (cinfo->ret.reg == RISCV_A0);
 		g_assert (!MONO_IS_TAILCALL_OPCODE (call) || call->vret_var == cfg->vret_addr);
 		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
 		vtarg->sreg1 = call->vret_var->dreg;
@@ -1915,7 +1929,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			break;
 		case ArgVtypeByRef:
 			/**
-			 * Caller pass the address of return value by A0 as an implicit param.
+			 * Caller pass the address of return value as an implicit param.
 			 * It will be saved in the prolog
 			 */
 			cfg->vret_addr->opcode = OP_REGOFFSET;
@@ -3621,6 +3635,7 @@ guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
 	guint8 *code;
+	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
 
 	cfg->code_size = MAX (cfg->header->code_size * 4, 1024);
 	code = cfg->native_code = g_malloc (cfg->code_size);
@@ -3690,7 +3705,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		MonoInst *ins = cfg->vret_addr;
 
 		g_assert (ins->opcode == OP_REGOFFSET);
-		code = mono_riscv_emit_store (code, RISCV_A0, ins->inst_basereg, ins->inst_offset, 0);
+		code = mono_riscv_emit_store (code, sig->hasthis ? RISCV_A1 : RISCV_A0, ins->inst_basereg, ins->inst_offset, 0);
 	}
 
 	/* Save mrgctx received in MONO_ARCH_RGCTX_REG */

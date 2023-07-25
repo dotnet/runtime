@@ -22,6 +22,16 @@
         <target state="translated">데이터 확장 속성 형식이 잘못되었습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
+        <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
+        <target state="new">The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
+        <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
+        <target state="new">Attributes deriving from JsonConverterAttribute are not supported by the source generator.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">이름이 {0}인 형식이 여러 개 있습니다. 처음 검색한 원본에 대해 원본이 생성되었습니다. 이 충돌을 해결하려면 'JsonSerializableAttribute.TypeInfoPropertyName'을 사용하세요.</target>
@@ -64,12 +74,12 @@
       </trans-unit>
       <trans-unit id="JsonConstructorInaccessibleMessageFormat">
         <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
-        <target state="new">The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</target>
+        <target state="translated">'{0}' 형식의 생성자에 JsonConstructorAttribute로 주석이 추가되었지만 원본 생성기에서 액세스할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConstructorInaccessibleTitle">
         <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
-        <target state="new">Constructor annotated with JsonConstructorAttribute is inaccessible.</target>
+        <target state="translated">JsonConstructorAttribute로 주석이 추가된 생성자에 액세스할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">

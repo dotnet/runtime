@@ -159,6 +159,7 @@ async function getCacheKey(): Promise<string | null> {
 
     // Now we remove assets collection from the hash.
     delete inputs.assets;
+    delete inputs.resources;
     // some things are calculated at runtime, so we need to add them to the hash
     inputs.preferredIcuAsset = loaderHelpers.preferredIcuAsset;
     // timezone is part of env variables, so it is already in the hash
@@ -167,6 +168,8 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.forwardConsoleLogsToWS;
     delete inputs.diagnosticTracing;
     delete inputs.appendElementOnExit;
+    delete inputs.assertAfterExit;
+    delete inputs.interopCleanupOnExit;
     delete inputs.logExitCode;
     delete inputs.pthreadPoolSize;
     delete inputs.asyncFlushOnExit;
@@ -176,7 +179,7 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.maxParallelDownloads;
     delete inputs.enableDownloadRetry;
     delete inputs.exitAfterSnapshot;
-    delete inputs.assetUniqueQuery;
+    delete inputs.extensions;
 
     inputs.GitHash = GitHash;
     inputs.ProductVersion = ProductVersion;

@@ -346,6 +346,26 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void DerivedJsonConverterAttributeTypeWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithDerivedJsonConverterAttributeAnnotations();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location typeAttrLocation = compilation.GetSymbolsWithName("ClassWithConverterDeclaration").First().GetAttributes()[0].GetLocation();
+            Location jsonSerializableAttrLocation = compilation.GetSymbolsWithName("JsonContext").First().GetAttributes()[0].GetLocation();
+            Location propAttrLocation = compilation.GetSymbolsWithName("Value").First().GetAttributes()[0].GetLocation();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, typeAttrLocation, "The custom attribute 'HelloWorld.MyJsonConverterAttribute' deriving from JsonConverterAttribute is not supported by the source generator."),
+                new(DiagnosticSeverity.Warning, jsonSerializableAttrLocation, "Did not generate serialization metadata for type 'HelloWorld.ClassWithConverterDeclaration'."),
+                new(DiagnosticSeverity.Warning, propAttrLocation, "The custom attribute 'HelloWorld.MyJsonConverterAttribute' deriving from JsonConverterAttribute is not supported by the source generator."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
         public void UnboundGenericTypeDeclarationWarns()
         {
             Compilation compilation = CompilationHelper.CreateContextWithUnboundGenericTypeDeclarations();
@@ -409,6 +429,57 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     }
 
                     [JsonSerializable(typeof(MyClass))]
+                    public partial class MyJsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: parseOptions);
+
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+
+        [Theory]
+        [InlineData(LanguageVersion.Default)]
+        [InlineData(LanguageVersion.Preview)]
+        [InlineData(LanguageVersion.Latest)]
+        [InlineData(LanguageVersion.LatestMajor)]
+        [InlineData(LanguageVersion.CSharp9)]
+#if ROSLYN4_4_OR_GREATER
+        [InlineData(LanguageVersion.CSharp10)]
+        [InlineData(LanguageVersion.CSharp11)]
+#endif
+        public void SupportedLanguageVersions_Memory_SucceedCompilation(LanguageVersion langVersion)
+        {
+            string source = """
+                using System;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                { 
+                    public class MyClass<T>
+                    {
+                        public MyClass(
+                            Memory<T> memoryOfT,
+                            Memory<byte> memoryByte,
+                            ReadOnlyMemory<T> readOnlyMemoryOfT,
+                            ReadOnlyMemory<byte> readOnlyMemoryByte)
+                        {
+                            MemoryOfT = memoryOfT;
+                            MemoryByte = memoryByte;
+                            ReadOnlyMemoryOfT = readOnlyMemoryOfT;
+                            ReadOnlyMemoryByte = readOnlyMemoryByte;
+                        }
+
+                        public Memory<T> MemoryOfT { get; set; }
+                        public Memory<byte> MemoryByte { get; set; }
+                        public ReadOnlyMemory<T> ReadOnlyMemoryOfT { get; set; }
+                        public ReadOnlyMemory<byte> ReadOnlyMemoryByte { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(MyClass<int>))]
                     public partial class MyJsonContext : JsonSerializerContext
                     {
                     }

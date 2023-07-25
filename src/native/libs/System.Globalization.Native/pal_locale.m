@@ -13,7 +13,7 @@ char* DetectDefaultAppleLocaleName(void)
 {
     NSLocale *currentLocale = [NSLocale currentLocale];
     NSString *localeName = @"";
-    
+
     if (!currentLocale)
     {
         return strdup([localeName UTF8String]);
@@ -27,7 +27,7 @@ char* DetectDefaultAppleLocaleName(void)
     {
         localeName = currentLocale.localeIdentifier;
     }
-    
+
     return strdup([localeName UTF8String]);
 }
 
@@ -143,7 +143,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
         case LocaleString_MonetaryThousandSeparator:
         case LocaleString_Iso639LanguageThreeLetterName:
         case LocaleString_ParentName:
-        case LocaleString_Iso3166CountryName2:            
+        case LocaleString_Iso3166CountryName2:
         default:
             value = "";
             break;
@@ -169,14 +169,14 @@ NormalizeNumericPattern
 Returns a numeric string pattern in a format that we can match against the
 appropriate managed pattern. Examples:
 For PositiveMonetaryNumberFormat "¤#,##0.00" becomes "Cn"
-For NegativeNumberFormat "#,##0.00;(#,##0.00)" becomes "(n)"                                         
+For NegativeNumberFormat "#,##0.00;(#,##0.00)" becomes "(n)"
 */
 static char* NormalizeNumericPattern(const char* srcPattern, int isNegative)
 {
     int iStart = 0;
     int iEnd = strlen(srcPattern);
 
-    // ';'  separates positive and negative subpatterns. 
+    // ';'  separates positive and negative subpatterns.
     // When there is no explicit negative subpattern,
     // an implicit negative subpattern is formed from the positive pattern with a prefixed '-'.
     char * ptrNegativePattern = strrchr(srcPattern,';');
@@ -328,7 +328,7 @@ static int GetPatternIndex(char* normalizedPattern,const char* patterns[], int p
 
 static int32_t GetValueForNumberFormat(NSLocale *currentLocale, LocaleNumberData localeNumberData)
 {
-    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
     numberFormatter.locale = currentLocale;
     const char *pFormat;
     int32_t value;
@@ -390,7 +390,9 @@ static int32_t GetValueForNumberFormat(NSLocale *currentLocale, LocaleNumberData
 
 int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, LocaleNumberData localeNumberData)
 {
+#ifndef NDEBUG
     bool isSuccess = true;
+#endif
     int32_t value;
     NSString *locName = [NSString stringWithFormat:@"%s", localeName];
     NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
@@ -402,12 +404,12 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             const char *measurementSystem = [[currentLocale objectForKey:NSLocaleMeasurementSystem] UTF8String];
             NSLocale *usLocale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
             const char *us_measurementSystem = [[usLocale objectForKey:NSLocaleMeasurementSystem] UTF8String];
-            value = (measurementSystem == us_measurementSystem) ? 1 : 0;        
+            value = (measurementSystem == us_measurementSystem) ? 1 : 0;
             break;
         }
         case LocaleNumber_FractionalDigitsCount:
         {
-            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
             numberFormatter.locale = currentLocale;
             numberFormatter.numberStyle = NSNumberFormatterDecimalStyle;
             value = (int32_t)numberFormatter.maximumFractionDigits;
@@ -415,12 +417,12 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         }
         case LocaleNumber_MonetaryFractionalDigitsCount:
         {
-            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
             numberFormatter.locale = currentLocale;
             numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
             value = (int32_t)numberFormatter.maximumFractionDigits;
             break;
-        }        
+        }
         case LocaleNumber_PositiveMonetaryNumberFormat:
         case LocaleNumber_NegativeMonetaryNumberFormat:
         case LocaleNumber_NegativeNumberFormat:
@@ -428,10 +430,12 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         case LocaleNumber_PositivePercentFormat:
         {
             value = GetValueForNumberFormat(currentLocale, localeNumberData);
+#ifndef NDEBUG
             if (value < 0)
             {
                 isSuccess = false;
             }
+#endif
             break;
         }
         case LocaleNumber_FirstWeekOfYear:
@@ -451,12 +455,14 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
                 value = WeekRule_FirstFourDayWeek;
             }
             else
-            { 
+            {
                 value = -1;
+#ifndef NDEBUG
                 isSuccess = false;
+#endif
             }
             break;
-        }        
+        }
         case LocaleNumber_ReadingLayout:
         {
             NSLocaleLanguageDirection langDir = [NSLocale characterDirectionForLanguage:[currentLocale objectForKey:NSLocaleLanguageCode]];
@@ -473,7 +479,9 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         }
         default:
             value = -1;
+#ifndef NDEBUG
             isSuccess = false;
+#endif
             break;
     }
 
@@ -490,11 +498,10 @@ Returns primary grouping size for decimal and currency
 */
 int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* localeName, LocaleNumberData localeGroupingData)
 {
-    bool isSuccess = true;
     NSString *locName = [NSString stringWithFormat:@"%s", localeName];
     NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
-    numberFormatter.locale = currentLocale;    
+    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+    numberFormatter.locale = currentLocale;
 
     switch (localeGroupingData)
     {
@@ -505,11 +512,10 @@ int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* l
             numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
             break;
         default:
-            isSuccess = false;
-            assert(isSuccess);
+            assert(false);
             break;
     }
-    return [numberFormatter groupingSize];    
+    return [numberFormatter groupingSize];
 }
 
 /*
@@ -520,11 +526,10 @@ Returns secondary grouping size for decimal and currency
 */
 int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char* localeName, LocaleNumberData localeGroupingData)
 {
-    bool isSuccess = true;
     NSString *locName = [NSString stringWithFormat:@"%s", localeName];
     NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
-    numberFormatter.locale = currentLocale;    
+    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+    numberFormatter.locale = currentLocale;
 
     switch (localeGroupingData)
     {
@@ -535,8 +540,7 @@ int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char*
             numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
             break;
         default:
-            isSuccess = false;
-            assert(isSuccess);
+            assert(false);
             break;
     }
 
