@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />
@@ -24,7 +23,9 @@
 
 
   <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
-  <Target Name="_FixIlcTargetTriple" AfterTargets="SetupOSSpecificProps" Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">
+  <Target Name="_FixIlcTargetTriple"
+          AfterTargets="SetupOSSpecificProps"
+          Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">
     <!-- Compute CrossCompileRid, and copy the downstream logic as-is. -->
     <PropertyGroup>
       <CrossCompileRid>$(RuntimeIdentifier)</CrossCompileRid>
@@ -45,12 +46,17 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="LocateNativeCompiler" Condition="'$(NativeAotSupported)' == 'true' and '$(HostOS)' != 'windows'" BeforeTargets="SetupOSSpecificProps">
+  <Target Name="LocateNativeCompiler"
+          Condition="'$(NativeAotSupported)' == 'true' and '$(HostOS)' != 'windows'"
+          BeforeTargets="SetupOSSpecificProps">
     <PropertyGroup>
       <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
     </PropertyGroup>
 
-    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2&gt;/dev/null" EchoOff="true" ConsoleToMsBuild="true" StandardOutputImportance="Low">
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2>/dev/null"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
     </Exec>
 
@@ -65,11 +71,15 @@
     <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows' and '$(_IsApplePlatform)' != 'true'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
   </ItemGroup>
 
-  <Target Name="PublishCompiler" Condition="'$(BuildingInsideVisualStudio)' != 'true'" AfterTargets="Build" DependsOnTargets="Publish;StompSingleFileHostPath" />
+  <Target Name="PublishCompiler"
+          Condition="'$(BuildingInsideVisualStudio)' != 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish;StompSingleFileHostPath" />
 
   <!--  HACK: liveBuilds stomps over SingleFileHostSourcePath, setting it to the host that we just built.
         That's unfortunate because it's not the host we're supposed to use here. -->
-  <Target Name="StompSingleFileHostPath" BeforeTargets="ResolveFrameworkReferences">
+  <Target Name="StompSingleFileHostPath"
+          BeforeTargets="ResolveFrameworkReferences">
     <PropertyGroup>
       <SingleFileHostSourcePath></SingleFileHostSourcePath>
     </PropertyGroup>
