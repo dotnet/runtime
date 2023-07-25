@@ -106,7 +106,17 @@ namespace MonoTargetsTasks
         {
             using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using PEReader peReader = new PEReader(file);
-            MetadataReader mdtReader = peReader.GetMetadataReader();
+            MetadataReader mdtReader;
+
+            try
+            {
+                mdtReader = peReader.GetMetadataReader();
+            }
+            catch(InvalidOperationException)
+            {
+                // If the DLL does not have metadata, the previous call will fail with InvalidOperationException.
+                return false;
+            }
 
             foreach(CustomAttributeHandle attrHandle in mdtReader.CustomAttributes)
             {
