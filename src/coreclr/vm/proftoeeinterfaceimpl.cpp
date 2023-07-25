@@ -10760,10 +10760,16 @@ HCIMPL_PROLOG(ProfileEnter)
 {
     FCALL_CONTRACT;
 
-    if (GET_THREAD() == NULL)
+    if (GetThreadNULLOk() == NULL)
     {
-        return;
+        Thread *pThread = SetupThreadNoThrow();
+        if (pThread == NULL)
+        {
+            return;
+        }
     }
+
+    GCX_COOP();
 
 #ifdef PROFILING_SUPPORTED
 
@@ -10937,11 +10943,16 @@ HCIMPL_PROLOG(ProfileLeave)
 {
     FCALL_CONTRACT;
 
-    if (GET_THREAD() == NULL)
+    if (GetThreadNULLOk() == NULL)
     {
-        return;
+        Thread *pThread = SetupThreadNoThrow();
+        if (pThread == NULL)
+        {
+            return;
+        }
     }
 
+    GCX_COOP();
     FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
 
 #ifdef PROFILING_SUPPORTED
