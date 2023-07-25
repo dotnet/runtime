@@ -30,6 +30,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var instance1 = first.GetPropertyAsJSObject("instance");
             var instance2 = second.GetPropertyAsJSObject("instance");
             Assert.Same(instance1, instance2);
+            first.Dispose();
+            second.Dispose();
+            instance1.Dispose();
         }
 
         [Fact]
@@ -39,20 +42,24 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var exTask = Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs", cts.Token));
             cts.Cancel();
             var actualEx2 = await exTask;
-            Assert.Equal("OperationCanceledException", actualEx2.Message);
+            Assert.Equal("Error: OperationCanceledException", actualEx2.Message);
 
             var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs", new CancellationToken(true)));
-            Assert.Equal("OperationCanceledException", actualEx.Message);
+            Assert.Equal("Error: OperationCanceledException", actualEx.Message);
         }
 
         [Fact]
         public unsafe void GlobalThis()
         {
-            Assert.Null(JSHost.GlobalThis.GetPropertyAsString("dummy"));
-            Assert.False(JSHost.GlobalThis.HasProperty("dummy"));
-            Assert.Equal("undefined", JSHost.GlobalThis.GetTypeOfProperty("dummy"));
-            Assert.Equal("function", JSHost.GlobalThis.GetTypeOfProperty("Array"));
-            Assert.NotNull(JSHost.GlobalThis.GetPropertyAsJSObject("javaScriptTestHelper"));
+            var globalThis = JSHost.GlobalThis;
+            Assert.Null(globalThis.GetPropertyAsString("dummy"));
+            Assert.False(globalThis.HasProperty("dummy"));
+            Assert.Equal("undefined", globalThis.GetTypeOfProperty("dummy"));
+            Assert.Equal("function", globalThis.GetTypeOfProperty("Array"));
+            var javaScriptTestHelper = globalThis.GetPropertyAsJSObject("javaScriptTestHelper");
+            Assert.NotNull(javaScriptTestHelper);
+            globalThis.Dispose();
+            javaScriptTestHelper.Dispose();
         }
 
         [Fact]
@@ -317,10 +324,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(expected, actual);
 
             if (expected != null) for (int i = 0; i < expected.Length; i++)
-                {
-                    var actualI = JavaScriptTestHelper.store_ObjectArray(expected, i);
-                    Assert.Equal(expected[i], actualI);
-                }
+            {
+                var actualI = JavaScriptTestHelper.store_ObjectArray(expected, i);
+                Assert.Equal(expected[i], actualI);
+            }
         }
 
         public static IEnumerable<object[]> MarshalObjectArrayCasesToDouble()
@@ -2101,7 +2108,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await JavaScriptTestHelper.InitializeAsync();
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
+        public async Task DisposeAsync()
+        {
+            await JavaScriptTestHelper.DisposeAsync();
+        }
 
         // js Date doesn't have nanosecond precision
         public static DateTime TrimNano(DateTime date)

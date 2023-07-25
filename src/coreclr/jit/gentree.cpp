@@ -8781,7 +8781,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 
         FINISH_CLONING_LCL_NODE:
             // Remember that the local node has been cloned. Below the flag will be set on 'copy' too.
-            tree->gtFlags |= GTF_VAR_CLONED;
+            tree->gtFlags |= GTF_VAR_MOREUSES;
             copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
             assert(!copy->AsLclVarCommon()->HasSsaName() || ((copy->gtFlags & GTF_VAR_DEF) == 0));
             break;
@@ -8952,7 +8952,7 @@ GenTree* Compiler::gtCloneExpr(
                 else
                 {
                     // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
-                    tree->gtFlags |= GTF_VAR_CLONED;
+                    tree->gtFlags |= GTF_VAR_MOREUSES;
                     copy = gtNewLclvNode(tree->AsLclVar()->GetLclNum(),
                                          tree->gtType DEBUGARG(tree->AsLclVar()->gtLclILoffs));
                     copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
@@ -8967,7 +8967,7 @@ GenTree* Compiler::gtCloneExpr(
                 else
                 {
                     // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
-                    tree->gtFlags |= GTF_VAR_CLONED;
+                    tree->gtFlags |= GTF_VAR_MOREUSES;
                     copy = new (this, GT_LCL_FLD)
                         GenTreeLclFld(GT_LCL_FLD, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
                                       tree->AsLclFld()->GetLclOffs(), tree->AsLclFld()->GetLayout());
@@ -9032,14 +9032,14 @@ GenTree* Compiler::gtCloneExpr(
         {
             case GT_STORE_LCL_VAR:
                 // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
-                tree->gtFlags |= GTF_VAR_CLONED;
+                tree->gtFlags |= GTF_VAR_MOREUSES;
                 copy = new (this, GT_STORE_LCL_VAR)
                     GenTreeLclVar(tree->TypeGet(), tree->AsLclVar()->GetLclNum(), tree->AsLclVar()->Data());
                 break;
 
             case GT_STORE_LCL_FLD:
                 // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
-                tree->gtFlags |= GTF_VAR_CLONED;
+                tree->gtFlags |= GTF_VAR_MOREUSES;
                 copy = new (this, GT_STORE_LCL_FLD)
                     GenTreeLclFld(tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->GetLclOffs(),
                                   tree->AsLclFld()->Data(), tree->AsLclFld()->GetLayout());
@@ -16074,7 +16074,9 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             // helper needs pointer to struct, not struct itself
             if (pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
             {
-                assg = impGetStructAddr(assg, CHECK_SPILL_ALL, true);
+                // TODO-Bug?: verify if flags matter here
+                GenTreeFlags indirFlags = GTF_EMPTY;
+                assg                    = impGetNodeAddr(assg, CHECK_SPILL_ALL, &indirFlags);
             }
             else if (lclTyp == TYP_DOUBLE && assg->TypeGet() == TYP_FLOAT)
             {
@@ -16149,8 +16151,10 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             {
                 if (!varTypeIsStruct(lclTyp))
                 {
-                    result = impGetStructAddr(result, CHECK_SPILL_ALL, true);
-                    result = gtNewIndir(lclTyp, result);
+                    // get the result as primitive type
+                    GenTreeFlags indirFlags = GTF_EMPTY;
+                    result                  = impGetNodeAddr(result, CHECK_SPILL_ALL, &indirFlags);
+                    result                  = gtNewIndir(lclTyp, result, indirFlags);
                 }
             }
             else if (varTypeIsSmall(lclTyp))

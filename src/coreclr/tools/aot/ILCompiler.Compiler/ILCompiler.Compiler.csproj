@@ -209,6 +209,9 @@
     <Compile Include="..\..\Common\Internal\Runtime\RuntimeConstants.cs">
       <Link>Common\RuntimeConstants.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\Internal\Runtime\StackTraceData.cs">
+      <Link>Common\StackTraceData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\UniversalGenericParameterLayout.cs">
       <Link>Common\UniversalGenericParameterLayout.cs</Link>
     </Compile>
