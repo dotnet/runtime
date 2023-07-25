@@ -10,6 +10,8 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using System.Text;
+using System.Threading.Tasks;
+using System.Threading;
 
 #nullable enable
 
@@ -52,7 +54,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: false,
-                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : null,
+                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Default,
                                 CreateProject: true));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.Chrome, id: id);
@@ -77,12 +79,15 @@ namespace Wasm.Build.NativeRebuild.Tests
                 File.WriteAllText(Path.Combine(_projectDir!, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
             buildArgs = newBuildArgs;
 
+            // artificial delay to have new enough timestamps
+            Thread.Sleep(5000);
+
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
             (_, string output) = BuildProject(buildArgs,
                                             id: id,
                                             new BuildProjectOptions(
                                                 DotnetWasmFromRuntimePack: false,
-                                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : null,
+                                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Default,
                                                 CreateProject: false,
                                                 UseCache: false,
                                                 Verbosity: verbosity));

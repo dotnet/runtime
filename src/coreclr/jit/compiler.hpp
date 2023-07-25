@@ -313,6 +313,94 @@ inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
     }
 
 //------------------------------------------------------------------------------
+// VisitEHSecondPassSuccs: Given a block, if it is a filter (i.e. invoked in
+// first-pass EH), then visit all successors that control may flow to as part
+// of second-pass EH.
+//
+// Arguments:
+//   comp - Compiler instance
+//   func - Callback
+//
+// Returns:
+//   Whether or not the visiting should proceed.
+//
+// Remarks:
+//   This function handles the semantics of first and second pass EH where the
+//   EH subsystem may invoke any enclosed finally/fault right after invoking a
+//   filter.
+//
+template <typename TFunc>
+BasicBlockVisit BasicBlock::VisitEHSecondPassSuccs(Compiler* comp, TFunc func)
+{
+    if (!hasHndIndex())
+    {
+        return BasicBlockVisit::Continue;
+    }
+
+    const unsigned thisHndIndex   = getHndIndex();
+    EHblkDsc*      enclosingHBtab = comp->ehGetDsc(thisHndIndex);
+
+    if (!enclosingHBtab->InFilterRegionBBRange(this))
+    {
+        return BasicBlockVisit::Continue;
+    }
+
+    assert(enclosingHBtab->HasFilter());
+
+    // Search the EH table for enclosed regions.
+    //
+    // All the enclosed regions will be lower numbered and
+    // immediately prior to and contiguous with the enclosing
+    // region in the EH tab.
+    unsigned index = thisHndIndex;
+
+    while (index > 0)
+    {
+        index--;
+        bool     inTry;
+        unsigned enclosingIndex = comp->ehGetEnclosingRegionIndex(index, &inTry);
+        bool     isEnclosed     = false;
+
+        // To verify this is an enclosed region, search up
+        // through the enclosing regions until we find the
+        // region associated with the filter.
+        while (enclosingIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            if (enclosingIndex == thisHndIndex)
+            {
+                isEnclosed = true;
+                break;
+            }
+
+            enclosingIndex = comp->ehGetEnclosingRegionIndex(enclosingIndex, &inTry);
+        }
+
+        // If we found an enclosed region, check if the region
+        // is a try fault or try finally, and if so, invoke the callback
+        // for the enclosed region's handler.
+        if (isEnclosed)
+        {
+            if (inTry)
+            {
+                EHblkDsc* enclosedHBtab = comp->ehGetDsc(index);
+
+                if (enclosedHBtab->HasFinallyOrFaultHandler())
+                {
+                    RETURN_ON_ABORT(func(enclosedHBtab->ebdHndBeg));
+                }
+            }
+        }
+        // Once we run across a non-enclosed region, we can stop searching.
+        else
+        {
+            break;
+        }
+    }
+
+    return BasicBlockVisit::Continue;
+}
+
+//------------------------------------------------------------------------------
 // VisitEHSuccessors: Given a block inside a handler region, visit all handlers
 // that control may flow to as part of EH.
 //
@@ -329,41 +417,39 @@ inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
 //   if a basic block BB1 occurs in a try block, we consider the first basic
 //   block BB2 of the corresponding handler to be an "EH successor" of BB1.
 //
-//   TODO-BUG: This function currently does not take into account that filters
-//   are invoked in the first pass of EH, which means that enclosed finally
-//   blocks may be successors of filter blocks (as part of the second pass of
-//   EH). See fgGetHandlerLiveVars for code that does take this into account.
-//
 template <typename TFunc>
 static BasicBlockVisit VisitEHSuccessors(Compiler* comp, BasicBlock* block, TFunc func)
 {
-    EHblkDsc* eh = comp->ehGetBlockExnFlowDsc(block);
-    if (eh == nullptr)
+    if (!block->HasPotentialEHSuccs(comp))
     {
         return BasicBlockVisit::Continue;
     }
 
-    while (true)
+    EHblkDsc* eh = comp->ehGetBlockExnFlowDsc(block);
+    if (eh != nullptr)
     {
-        // If the original block whose EH successors we're iterating over
-        // is a BBJ_CALLFINALLY, that finally clause's first block
-        // will be yielded as a normal successor.  Don't also yield as
-        // an exceptional successor.
-        BasicBlock* flowBlock = eh->ExFlowBlock();
-        if (!block->KindIs(BBJ_CALLFINALLY) || (block->bbJumpDest != flowBlock))
+        while (true)
         {
-            RETURN_ON_ABORT(func(flowBlock));
-        }
+            // If the original block whose EH successors we're iterating over
+            // is a BBJ_CALLFINALLY, that finally clause's first block
+            // will be yielded as a normal successor.  Don't also yield as
+            // an exceptional successor.
+            BasicBlock* flowBlock = eh->ExFlowBlock();
+            if (!block->KindIs(BBJ_CALLFINALLY) || (block->bbJumpDest != flowBlock))
+            {
+                RETURN_ON_ABORT(func(flowBlock));
+            }
 
-        if (eh->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            break;
-        }
+            if (eh->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                break;
+            }
 
-        eh = comp->ehGetDsc(eh->ebdEnclosingTryIndex);
+            eh = comp->ehGetDsc(eh->ebdEnclosingTryIndex);
+        }
     }
 
-    return BasicBlockVisit::Continue;
+    return block->VisitEHSecondPassSuccs(comp, func);
 }
 
 //------------------------------------------------------------------------------
@@ -566,6 +652,32 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 }
 
 #undef RETURN_ON_ABORT
+
+//------------------------------------------------------------------------------
+// HasPotentialEHSuccs: Fast check to see if this block could have successors
+// that control may flow to as part of EH.
+//
+// Arguments:
+//   comp  - Compiler instance
+//
+// Returns:
+//   True if so.
+//
+inline bool BasicBlock::HasPotentialEHSuccs(Compiler* comp)
+{
+    if (hasTryIndex())
+    {
+        return true;
+    }
+
+    EHblkDsc* hndDesc = comp->ehGetBlockHndDsc(this);
+    if (hndDesc == nullptr)
+    {
+        return false;
+    }
+
+    return hndDesc->InFilterRegionBBRange(this);
+}
 
 #if defined(FEATURE_EH_FUNCLETS)
 
