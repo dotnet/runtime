@@ -52,7 +52,7 @@ void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, si
 
     // Build fake stack frame to enable the stack unwinder to unwind from signal_handler_worker to the faulting instruction
     // pushed RA
-    *--sp = (size_t)ucontext->uc_mcontext.__pc;
+    *--sp = (size_t)MCREG_Pc(ucontext->uc_mcontext)
     // pushed frame pointer
     *--sp = (size_t)MCREG_Fp(ucontext->uc_mcontext);
 
