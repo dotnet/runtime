@@ -9,7 +9,7 @@ include(CheckTypeSize)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 
-if (CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_APPLE)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)

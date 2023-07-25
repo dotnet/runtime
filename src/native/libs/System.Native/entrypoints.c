@@ -34,6 +34,7 @@
 static const Entry s_sysNative[] =
 {
     DllImportEntry(SystemNative_FStat)
+#if !defined(TARGET_APPLE) || defined(TARGET_OSX)
     DllImportEntry(SystemNative_GetWindowSize)
     DllImportEntry(SystemNative_SetWindowSize)
     DllImportEntry(SystemNative_IsATty)
@@ -47,6 +48,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_ReadStdin)
     DllImportEntry(SystemNative_GetSignalForBreak)
     DllImportEntry(SystemNative_SetSignalForBreak)
+#endif
     DllImportEntry(SystemNative_GetSystemTimeAsTicks)
     DllImportEntry(SystemNative_GetDefaultTimeZone)
     DllImportEntry(SystemNative_GetTimeZoneData)

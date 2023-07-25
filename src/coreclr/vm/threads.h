@@ -5707,7 +5707,7 @@ inline BOOL IsWriteBarrierCopyEnabled()
 #ifdef DACCESS_COMPILE
     return FALSE;
 #else // DACCESS_COMPILE
-#ifdef HOST_OSX
+#ifdef HOST_APPLE
     return TRUE;
 #else
     return ExecutableAllocator::IsWXORXEnabled();

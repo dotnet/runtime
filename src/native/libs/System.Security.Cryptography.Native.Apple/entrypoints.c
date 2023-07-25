@@ -8,7 +8,6 @@
 #include "pal_ecc.h"
 #include "pal_hmac.h"
 #include "pal_keyagree.h"
-#include "pal_keychain_macos.h"
 #include "pal_keyderivation.h"
 #include "pal_random.h"
 #include "pal_rsa.h"
@@ -19,17 +18,25 @@
 #include "pal_ssl.h"
 #include "pal_swiftbindings.h"
 #include "pal_symmetric.h"
-#include "pal_trust_macos.h"
 #include "pal_x509.h"
-#include "pal_x509_macos.h"
 #include "pal_x509chain.h"
+#if defined(TARGET_OSX)
+#include "pal_trust_macos.h"
+#include "pal_keychain_macos.h"
+#include "pal_x509_macos.h"
+#else
+#include "pal_keychain_ios.h"
+#include "pal_x509_ios.h"
+#endif
 
 static const Entry s_cryptoAppleNative[] =
 {
+#ifdef TARGET_OSX
     DllImportEntry(AppleCryptoNative_AesGcmEncrypt)
     DllImportEntry(AppleCryptoNative_AesGcmDecrypt)
     DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Encrypt)
     DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Decrypt)
+#endif
     DllImportEntry(AppleCryptoNative_DigestFree)
     DllImportEntry(AppleCryptoNative_DigestCreate)
     DllImportEntry(AppleCryptoNative_DigestUpdate)
@@ -48,15 +55,21 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_HmacFinal)
     DllImportEntry(AppleCryptoNative_HmacCurrent)
     DllImportEntry(AppleCryptoNative_HmacOneShot)
+#ifdef TARGET_OSX
     DllImportEntry(AppleCryptoNative_SecKeychainItemCopyKeychain)
     DllImportEntry(AppleCryptoNative_SecKeychainCopyDefault)
     DllImportEntry(AppleCryptoNative_SecKeychainCreate)
     DllImportEntry(AppleCryptoNative_SecKeychainDelete)
+#endif
     DllImportEntry(AppleCryptoNative_SecKeychainEnumerateCerts)
+#ifdef TARGET_OSX
     DllImportEntry(AppleCryptoNative_SecKeychainOpen)
     DllImportEntry(AppleCryptoNative_SecKeychainUnlock)
+#endif
     DllImportEntry(AppleCryptoNative_SecKeychainEnumerateIdentities)
+#ifdef TARGET_OSX
     DllImportEntry(AppleCryptoNative_SetKeychainNeverLock)
+#endif
     DllImportEntry(AppleCryptoNative_SslCopyCADistinguishedNames)
     DllImportEntry(AppleCryptoNative_SslCopyCertChain)
     DllImportEntry(AppleCryptoNative_SslIsHostnameMatch)
@@ -77,8 +90,10 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_RsaEncryptionPrimitive)
     DllImportEntry(AppleCryptoNative_RsaVerificationPrimitive)
     DllImportEntry(AppleCryptoNative_SecCopyErrorMessageString)
+#ifdef TARGET_OSX
     DllImportEntry(AppleCryptoNative_SecKeyExport)
     DllImportEntry(AppleCryptoNative_SecKeyImportEphemeral)
+#endif
     DllImportEntry(AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes)
     DllImportEntry(AppleCryptoNative_SecKeyCreateSignature)
     DllImportEntry(AppleCryptoNative_SecKeyVerifySignature)
@@ -105,10 +120,12 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_CryptorCreate)
     DllImportEntry(AppleCryptoNative_CryptorUpdate)
     DllImportEntry(AppleCryptoNative_CryptorReset)
+#ifdef TARGET_OSX
     DllImportEntry(AppleCryptoNative_StoreEnumerateUserRoot)
     DllImportEntry(AppleCryptoNative_StoreEnumerateMachineRoot)
     DllImportEntry(AppleCryptoNative_StoreEnumerateUserDisallowed)
     DllImportEntry(AppleCryptoNative_StoreEnumerateMachineDisallowed)
+#endif
     DllImportEntry(AppleCryptoNative_X509ChainCreate)
     DllImportEntry(AppleCryptoNative_X509DemuxAndRetainHandle)
     DllImportEntry(AppleCryptoNative_X509GetContentType)
@@ -117,10 +134,14 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_X509CopyPrivateKeyFromIdentity)
     DllImportEntry(AppleCryptoNative_X509ImportCollection)
     DllImportEntry(AppleCryptoNative_X509ImportCertificate)
+#ifdef TARGET_OSX
     DllImportEntry(AppleCryptoNative_X509ExportData)
+#endif
     DllImportEntry(AppleCryptoNative_X509GetRawData)
+#ifdef TARGET_OSX
     DllImportEntry(AppleCryptoNative_X509CopyWithPrivateKey)
     DllImportEntry(AppleCryptoNative_X509MoveToKeychain)
+#endif
     DllImportEntry(AppleCryptoNative_X509ChainCreateDefaultPolicy)
     DllImportEntry(AppleCryptoNative_X509ChainCreateRevocationPolicy)
     DllImportEntry(AppleCryptoNative_X509ChainEvaluate)

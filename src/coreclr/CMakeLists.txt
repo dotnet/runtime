@@ -29,10 +29,6 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS)
-  set(FEATURE_STANDALONE_GC 0)
-endif()
-
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
 #----------------------------------------------------
@@ -59,7 +55,7 @@ include(components.cmake)
 #---------------------------
 # Build the single file host
 #---------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
+if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
@@ -101,8 +97,9 @@ if(CLR_CMAKE_HOST_UNIX)
       add_linker_flag(-Wl,-z,notext)
     endif()
 
+    add_subdirectory(pal)
+
     if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
-      add_subdirectory(pal)
       add_subdirectory(hosts)
     endif()
 else()
@@ -125,9 +122,7 @@ add_subdirectory(pal/prebuilt/inc)
 set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
 include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
 
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
-  add_subdirectory(debug/debug-pal)
-endif()
+add_subdirectory(debug/debug-pal)
 
 add_subdirectory(minipal)
 
@@ -242,32 +237,33 @@ if(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
+add_subdirectory(utilcode)
+add_subdirectory(inc)
+
+if(CLR_CMAKE_HOST_UNIX)
+    add_subdirectory(palrt)
+endif(CLR_CMAKE_HOST_UNIX)
+
+add_subdirectory(ilasm)
+add_subdirectory(ildasm)
+add_subdirectory(gcinfo)
+add_subdirectory(jit)
+add_subdirectory(vm)
+add_subdirectory(md)
+add_subdirectory(debug)
+add_subdirectory(binder)
+add_subdirectory(classlibnative)
+add_subdirectory(dlls)
+add_subdirectory(unwinder)
+add_subdirectory(interop)
+
 if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
-  add_subdirectory(utilcode)
-  add_subdirectory(inc)
-
-  if(CLR_CMAKE_HOST_UNIX)
-      add_subdirectory(palrt)
-  endif(CLR_CMAKE_HOST_UNIX)
-
-  add_subdirectory(ilasm)
-  add_subdirectory(ildasm)
-  add_subdirectory(gcinfo)
-  add_subdirectory(jit)
-  add_subdirectory(vm)
-  add_subdirectory(md)
-  add_subdirectory(debug)
-  add_subdirectory(binder)
-  add_subdirectory(classlibnative)
-  add_subdirectory(dlls)
   add_subdirectory(tools)
-  add_subdirectory(unwinder)
-  add_subdirectory(interop)
-
-  if(CLR_CMAKE_HOST_WIN32)
-    add_subdirectory(hosts)
-  endif(CLR_CMAKE_HOST_WIN32)
 endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+
+if(CLR_CMAKE_HOST_WIN32)
+  add_subdirectory(hosts)
+endif(CLR_CMAKE_HOST_WIN32)
 
 #----------------------------------------------------
 # Cross target Component install configuration

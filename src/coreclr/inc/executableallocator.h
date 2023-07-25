@@ -285,7 +285,7 @@ class ExecutableWriterHolder
 
     void Unmap()
     {
-#if defined(HOST_OSX) && defined(HOST_ARM64) && !defined(DACCESS_COMPILE)
+#if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(DACCESS_COMPILE)
         if (m_addressRX != NULL)
         {
             PAL_JitWriteProtect(false);
@@ -321,7 +321,7 @@ public:
     ExecutableWriterHolder(T* addressRX, size_t size, ExecutableAllocator::CacheableMapping cacheMapping = ExecutableAllocator::AddToCache)
     {
         m_addressRX = addressRX;
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
         m_addressRW = addressRX;
         PAL_JitWriteProtect(true);
 #else
