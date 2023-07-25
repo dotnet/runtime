@@ -191,9 +191,9 @@ namespace System.Threading
         private static unsafe void NativeOverlappedCallback(nint overlappedPtr)
         {
             if (NativeRuntimeEventSource.Log.IsEnabled())
-                NativeRuntimeEventSource.Log.ThreadPoolIODequeue(overlappedPtr);
+                NativeRuntimeEventSource.Log.ThreadPoolIODequeue((NativeOverlapped*)overlappedPtr);
 
-            return IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
+            IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
         }
 
         [SupportedOSPlatform("windows")]

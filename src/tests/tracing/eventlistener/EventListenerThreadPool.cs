@@ -41,7 +41,8 @@ namespace Tracing.Tests
             {
                 Interlocked.Increment(ref TPWorkerThreadWaitCount);
                 TPWaitEvent.Set();
-            } else if (eventData.EventName.Equals("IOPack"))
+            }
+            else if (eventData.EventName.Equals("ThreadPoolIOPack"))
             {
                 Interlocked.Increment(ref TPIOPack);
                 TPWaitEvent.Set();
