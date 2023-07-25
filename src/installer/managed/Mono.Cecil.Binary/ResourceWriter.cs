@@ -26,27 +26,22 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics;
 using System.Text;
 
 namespace Mono.Cecil.Binary
 {
-    using System.Collections;
-
     public sealed class ResourceWriter
     {
         ResourceDirectoryTable m_table;
         Section m_rsrc;
         MemoryBinaryWriter m_writer;
 
-        ArrayList m_dataEntries;
-        ArrayList m_stringEntries;
+        readonly List<ResourceDirectoryTable> _directoryTables;
+        readonly List<ResourceDataEntry> _dataEntries;
+        readonly List<ResourceDirectoryString> _stringEntries;
 
         long m_pos;
-
-        public ResourceWriter(Image img, Section rsrc, MemoryBinaryWriter writer)
-            : this(img.ResourceDirectoryRoot, rsrc, writer)
-        {
-        }
 
         public ResourceWriter(ResourceDirectoryTable table, Section rsrc, MemoryBinaryWriter writer)
         {
@@ -54,8 +49,9 @@ namespace Mono.Cecil.Binary
             m_rsrc = rsrc;
             m_writer = writer;
 
-            m_dataEntries = new ArrayList();
-            m_stringEntries = new ArrayList();
+            _directoryTables = new List<ResourceDirectoryTable>();
+            _dataEntries = new List<ResourceDataEntry>();
+            _stringEntries = new List<ResourceDirectoryString>();
         }
 
         public void Write()
@@ -64,53 +60,61 @@ namespace Mono.Cecil.Binary
                 return;
 
             ComputeOffset(m_table);
-            WriteResourceDirectoryTable(m_table);
-        }
 
-        public void Patch()
-        {
-            foreach (ResourceDataEntry rde in m_dataEntries)
-            {
-                GotoOffset(rde.Offset);
-                m_writer.Write((uint)rde.Data + m_rsrc.VirtualAddress);
-                RestoreOffset();
-            }
+            foreach (ResourceDirectoryTable table in _directoryTables)
+                WriteResourceDirectoryTable(table);
+            foreach (ResourceDataEntry data in _dataEntries)
+                WriteResourceDataEntry(data);
+            foreach (ResourceDirectoryString name in _stringEntries)
+                WriteResourceDirectoryString(name);
         }
 
         void ComputeOffset(ResourceDirectoryTable root)
         {
             int offset = 0;
 
-            Queue directoryTables = new Queue();
-            directoryTables.Enqueue(root);
+            _directoryTables.Add(root);
 
-            while (directoryTables.Count > 0)
+            for (int i = 0; i < _directoryTables.Count; i++)
             {
-                ResourceDirectoryTable rdt = directoryTables.Dequeue() as ResourceDirectoryTable;
+                ResourceDirectoryTable rdt = _directoryTables[i];
                 rdt.Offset = offset;
                 offset += 16;
 
-                foreach (ResourceDirectoryEntry rde in rdt.Entries)
+                ResourceDirectoryEntry[] namedEntries = rdt.Entries.Cast<ResourceDirectoryEntry>().Where(x => x.IdentifiedByName).ToArray();
+                ResourceDirectoryEntry[] idEntries = rdt.Entries.Cast<ResourceDirectoryEntry>().Where(x => !x.IdentifiedByName).ToArray();
+
+                foreach (ResourceDirectoryEntry rde in namedEntries)
                 {
                     rde.Offset = offset;
                     offset += 8;
-                    if (rde.IdentifiedByName)
-                        m_stringEntries.Add(rde.Name);
+                    _stringEntries.Add(rde.Name);
 
-                    if (rde.Child is ResourceDirectoryTable)
-                        directoryTables.Enqueue(rde.Child);
+                    if (rde.Child is ResourceDirectoryTable table)
+                        _directoryTables.Add(table);
                     else
-                        m_dataEntries.Add(rde.Child);
+                        _dataEntries.Add((ResourceDataEntry)rde.Child);
+                }
+
+                foreach (ResourceDirectoryEntry rde in idEntries)
+                {
+                    rde.Offset = offset;
+                    offset += 8;
+
+                    if (rde.Child is ResourceDirectoryTable table)
+                        _directoryTables.Add(table);
+                    else
+                        _dataEntries.Add((ResourceDataEntry)rde.Child);
                 }
             }
 
-            foreach (ResourceDataEntry rde in m_dataEntries)
+            foreach (ResourceDataEntry rde in _dataEntries)
             {
                 rde.Offset = offset;
                 offset += 16;
             }
 
-            foreach (ResourceDirectoryString rds in m_stringEntries)
+            foreach (ResourceDirectoryString rds in _stringEntries)
             {
                 rds.Offset = offset;
                 byte[] str = Encoding.Unicode.GetBytes(rds.String);
@@ -120,7 +124,7 @@ namespace Mono.Cecil.Binary
                 offset &= ~3;
             }
 
-            foreach (ResourceDataEntry rde in m_dataEntries)
+            foreach (ResourceDataEntry rde in _dataEntries)
             {
                 rde.Data = (uint)offset;
 
@@ -141,29 +145,18 @@ namespace Mono.Cecil.Binary
             m_writer.Write(rdt.MajorVersion);
             m_writer.Write(rdt.MinorVersion);
 
-            ResourceDirectoryEntry[] namedEntries = GetEntries(rdt, true);
-            ResourceDirectoryEntry[] idEntries = GetEntries(rdt, false);
+            ResourceDirectoryEntry[] namedEntries = rdt.Entries.Cast<ResourceDirectoryEntry>().Where(x => x.IdentifiedByName).ToArray();
+            ResourceDirectoryEntry[] idEntries = rdt.Entries.Cast<ResourceDirectoryEntry>().Where(x => !x.IdentifiedByName).ToArray();
 
             m_writer.Write((ushort)namedEntries.Length);
             m_writer.Write((ushort)idEntries.Length);
+            RestoreOffset();
 
             foreach (ResourceDirectoryEntry rde in namedEntries)
                 WriteResourceDirectoryEntry(rde);
 
             foreach (ResourceDirectoryEntry rde in idEntries)
                 WriteResourceDirectoryEntry(rde);
-
-            RestoreOffset();
-        }
-
-        ResourceDirectoryEntry[] GetEntries(ResourceDirectoryTable rdt, bool identifiedByName)
-        {
-            ArrayList entries = new ArrayList();
-            foreach (ResourceDirectoryEntry rde in rdt.Entries)
-                if (rde.IdentifiedByName == identifiedByName)
-                    entries.Add(rde);
-
-            return entries.ToArray(typeof(ResourceDirectoryEntry)) as ResourceDirectoryEntry[];
         }
 
         void WriteResourceDirectoryEntry(ResourceDirectoryEntry rde)
@@ -171,24 +164,15 @@ namespace Mono.Cecil.Binary
             GotoOffset(rde.Offset);
 
             if (rde.IdentifiedByName)
-            {
                 m_writer.Write((uint)rde.Name.Offset | 0x80000000);
-                WriteResourceDirectoryString(rde.Name);
-            }
             else
                 m_writer.Write((uint)rde.ID);
 
-            if (rde.Child is ResourceDirectoryTable)
-            {
-                m_writer.Write((uint)rde.Child.Offset | 0x80000000);
-                WriteResourceDirectoryTable(rde.Child as ResourceDirectoryTable);
-            }
-            else
-            {
-                m_writer.Write(rde.Child.Offset);
-                WriteResourceDataEntry(rde.Child as ResourceDataEntry);
-            }
 
+            if (rde.Child is ResourceDirectoryTable table)
+                m_writer.Write((uint)table.Offset | 0x80000000);
+            else
+                m_writer.Write(rde.Child.Offset);
             RestoreOffset();
         }
 
@@ -196,7 +180,7 @@ namespace Mono.Cecil.Binary
         {
             GotoOffset(rde.Offset);
 
-            m_writer.Write(0);
+            m_writer.Write(rde.Data + m_rsrc.VirtualAddress);
             m_writer.Write((uint)rde.ResourceData.Length);
             m_writer.Write(rde.Codepage);
             m_writer.Write(rde.Reserved);
@@ -212,7 +196,7 @@ namespace Mono.Cecil.Binary
             GotoOffset(name.Offset);
 
             byte[] str = Encoding.Unicode.GetBytes(name.String);
-            m_writer.Write((ushort)str.Length);
+            m_writer.Write((ushort)name.String.Length);
             m_writer.Write(str);
 
             RestoreOffset();
@@ -220,6 +204,7 @@ namespace Mono.Cecil.Binary
 
         void GotoOffset(int offset)
         {
+            Debug.Assert(m_pos == 0, "GotoOffset in GotoOffset-RestoreOffset pair detected.");
             m_pos = m_writer.BaseStream.Position;
             m_writer.BaseStream.Position = offset;
         }
@@ -227,6 +212,7 @@ namespace Mono.Cecil.Binary
         void RestoreOffset()
         {
             m_writer.BaseStream.Position = m_pos;
+            m_pos = 0;
         }
     }
 }

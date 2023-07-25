@@ -247,8 +247,6 @@ namespace Microsoft.NET.HostModel
             var rsrcSectionData = new MemoryBinaryWriter();
             var resourceWriter = new ResourceWriter(resourceDirectory, resourceSection, rsrcSectionData);
             resourceWriter.Write();
-            // patch immediate because position of rsrc will not be changed
-            resourceWriter.Patch();
 
             uint rsrcSectionDataSize = (uint)rsrcSectionData.MemoryStream.Length;
             uint newSectionSize = GetAligned(rsrcSectionDataSize, image.PEOptionalHeader.NTSpecificFields.FileAlignment);
