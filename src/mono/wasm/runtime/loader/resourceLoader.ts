@@ -183,7 +183,7 @@ export async function initCacheToUseIfEnabled(config: MonoConfig): Promise<void>
 
 async function getCacheToUseIfEnabled(config: MonoConfig): Promise<Cache | null> {
     // caches will be undefined if we're running on an insecure origin (secure means https or localhost)
-    if (!config.cacheBootResources || typeof caches === "undefined") {
+    if (!config.cacheBootResources || typeof globalThis.caches === "undefined" || typeof globalThis.document === "undefined") {
         return null;
     }
 
@@ -197,7 +197,7 @@ async function getCacheToUseIfEnabled(config: MonoConfig): Promise<Cache | null>
     // Blazor application running on the same origin. We need this so that we're free
     // to purge from the cache anything we're not using and don't let it keep growing,
     // since we don't want to be worst offenders for space usage.
-    const relativeBaseHref = document.baseURI.substring(document.location.origin.length);
+    const relativeBaseHref = globalThis.document.baseURI.substring(globalThis.document.location.origin.length);
     const cacheName = `dotnet-resources-${relativeBaseHref}`;
 
     try {

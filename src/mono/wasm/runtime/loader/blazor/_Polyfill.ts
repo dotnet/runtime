@@ -6,6 +6,9 @@ import { loaderHelpers } from "../globals";
 
 let testAnchor: HTMLAnchorElement;
 export function toAbsoluteUri(relativeUri: string): string {
+    if (!globalThis.document)
+        return loaderHelpers.locateFile(relativeUri);
+
     testAnchor = testAnchor || document.createElement("a");
     testAnchor.href = relativeUri;
     return testAnchor.href;

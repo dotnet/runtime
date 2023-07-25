@@ -90,6 +90,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
                 // If we found boot config schema
                 normalizeConfig();
                 await initializeBootConfig(loadedAnyConfig, configResponse, loadedAnyConfig, module);
+                deep_merge_config(loaderHelpers.config, loadedAnyConfig);
             } else {
                 // Otherwise we found mono config schema
                 const loadedConfig = loadedAnyConfig as MonoConfigInternal;
