@@ -19,8 +19,8 @@ const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === 
 const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
-const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "true" ? true : false;
-const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "true" ? true : false;
+const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
+const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
 const wasmEnableLegacyJsInterop = process.env.DISABLE_LEGACY_JS_INTEROP !== "1" ? true : false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
 const terserConfig = {
