@@ -12,14 +12,16 @@ import { appendUniqueQuery } from "../assets";
 import { hasDebuggingEnabled } from "../config";
 
 export async function loadBootConfig(module: DotnetModuleInternal) {
+    const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
+
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
-        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", module.configSrc!, "") :
-        defaultLoadBlazorBootJson(module.configSrc!);
+        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "") :
+        defaultLoadBlazorBootJson(defaultConfigSrc);
 
     let bootConfigResponse: Response;
 
     if (!loaderResponse) {
-        bootConfigResponse = await defaultLoadBlazorBootJson(module.configSrc!);
+        bootConfigResponse = await defaultLoadBlazorBootJson(defaultConfigSrc);
     } else if (typeof loaderResponse === "string") {
         bootConfigResponse = await defaultLoadBlazorBootJson(loaderResponse);
     } else {
@@ -62,10 +64,10 @@ function readBootConfigResponseHeaders(bootConfigResponse: Response) {
     }
 }
 
-export async function initializeBootConfig(bootConfigResponse: Response, bootConfig: BootJsonData, module: DotnetModuleInternal) {
+async function initializeBootConfig(bootConfigResponse: Response, bootConfig: BootJsonData, module: DotnetModuleInternal) {
     readBootConfigResponseHeaders(bootConfigResponse);
-    await initCacheToUseIfEnabled();
     mapBootConfigToMonoConfig(bootConfig);
+    await initCacheToUseIfEnabled();
     hookDownloadResource(module);
 }
 
@@ -91,7 +93,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "dotnetwasm": "dotnetwasm",
 };
 
-export function hookDownloadResource(module: DotnetModuleInternal) {
+function hookDownloadResource(module: DotnetModuleInternal) {
     // it would not `loadResource` on types for which there is no typesMap mapping
     const downloadResource = (asset: AssetEntry): LoadingResource | undefined => {
         // GOTCHA: the mapping to blazor asset type may not cover all mono owned asset types in the future in which case:
@@ -117,7 +119,7 @@ export function hookDownloadResource(module: DotnetModuleInternal) {
     loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
 }
 
-export function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
+function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
     const config = loaderHelpers.config;
     const resources = bootConfig.resources;
 

@@ -5,7 +5,7 @@ import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
-import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
+import { loadBootConfig } from "./blazor/_Integration";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
@@ -78,23 +78,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     }
     mono_log_debug("mono_wasm_load_config");
     try {
-        if (loaderHelpers.loadBootResource) {
-            // If we have custom loadBootResource
-            await loadBootConfig(module);
-        } else {
-            // Otherwise load using fetch_like
-            const resolveSrc = loaderHelpers.locateFile(configFilePath);
-            const configResponse = await loaderHelpers.fetch_like(resolveSrc);
-            const loadedAnyConfig: any = (await configResponse.json()) || {};
-            if (loadedAnyConfig.resources) {
-                // If we found boot config schema
-                normalizeConfig();
-                await initializeBootConfig(configResponse, loadedAnyConfig, module);
-                deep_merge_config(loaderHelpers.config, loadedAnyConfig);
-            } else {
-                throw new Error("Loaded boot config has invalid schema");
-            }
-        }
+        await loadBootConfig(module);
 
         normalizeConfig();
 
