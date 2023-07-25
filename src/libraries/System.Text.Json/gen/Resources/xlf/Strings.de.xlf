@@ -24,12 +24,12 @@
       </trans-unit>
       <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
         <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
-        <target state="new">The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</target>
+        <target state="translated">Das von JsonConverterAttribute abgeleitete benutzerdefinierte Attribut "{0}" wird vom Quellgenerator nicht unterstützt.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
         <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
-        <target state="new">Attributes deriving from JsonConverterAttribute are not supported by the source generator.</target>
+        <target state="translated">Von JsonConverterAttribute abgeleitete Attribute werden vom Quellgenerator nicht unterstützt.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
