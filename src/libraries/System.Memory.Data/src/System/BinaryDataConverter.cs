@@ -9,13 +9,13 @@ namespace System.Text.Json.Serialization
     public sealed class BinaryDataJsonConverter : JsonConverter<BinaryData>
     {
         /// <inheritdoc/>
-        public sealed override BinaryData? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override BinaryData? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return BinaryData.FromBytes(reader.GetBytesFromBase64());
         }
 
         /// <inheritdoc/>
-        public sealed override void Write(Utf8JsonWriter writer, BinaryData value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, BinaryData value, JsonSerializerOptions options)
         {
             writer.WriteBase64StringValue(value.ToMemory().Span);
         }

@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization
     public sealed partial class BinaryDataJsonConverter : System.Text.Json.Serialization.JsonConverter<System.BinaryData>
     {
         public BinaryDataJsonConverter() { }
-        public sealed override System.BinaryData? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
-        public sealed override void Write(System.Text.Json.Utf8JsonWriter writer, System.BinaryData value, System.Text.Json.JsonSerializerOptions options) { }
+        public override System.BinaryData? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+        public override void Write(System.Text.Json.Utf8JsonWriter writer, System.BinaryData value, System.Text.Json.JsonSerializerOptions options) { }
     }
 }
