@@ -137,6 +137,7 @@ typedef struct
 #include "crashreportwriter.h"
 #include "dumpwriter.h"
 #include "runtimeinfo.h"
+#include "specialdiaginfo.h"
 #endif
 
 #ifndef MAX_LONGPATH

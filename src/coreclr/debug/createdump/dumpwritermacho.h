@@ -42,6 +42,7 @@ public:
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
+    bool WriteDiagInfo(int size);
     void BuildSegmentLoadCommands();
     void BuildThreadLoadCommands();
     bool WriteHeader(uint64_t* pFileOffset);
