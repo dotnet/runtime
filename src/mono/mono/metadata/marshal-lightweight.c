@@ -2448,9 +2448,8 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 	if (!is_ok (find_method_error) || target_method == NULL) {
 		if (mono_error_get_error_code (find_method_error) == MONO_ERROR_GENERIC)
 			mono_mb_emit_exception_for_error (mb, find_method_error);
-		else {
+		else
 			emit_missing_method_error (mb, find_method_error, "constructor");
-		}
 		mono_error_cleanup (find_method_error);
 		return;
 	}
@@ -2497,9 +2496,8 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	if (!is_ok (find_method_error) || target_method == NULL) {
 		if (mono_error_get_error_code (find_method_error) == MONO_ERROR_GENERIC)
 			mono_mb_emit_exception_for_error (mb, find_method_error);
-		else {
+		else
 			emit_missing_method_error (mb, find_method_error, member_name);
-		}
 		mono_error_cleanup (find_method_error);
 		return;
 	}
