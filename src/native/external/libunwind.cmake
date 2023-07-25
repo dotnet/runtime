@@ -447,7 +447,7 @@ if(CLR_CMAKE_HOST_UNIX)
         list(APPEND libunwind_setjmp_la_SOURCES     riscv/siglongjmp.S)
     endif()
 
-    if(CLR_CMAKE_HOST_OSX)
+    if(CLR_CMAKE_HOST_APPLE)
         set(LIBUNWIND_SOURCES_BASE
           remote/mac/missing-functions.c
           ${libunwind_remote_la_SOURCES}
@@ -463,7 +463,7 @@ if(CLR_CMAKE_HOST_UNIX)
           ${libunwind_dwarf_generic_la_SOURCES}
           ${libunwind_elf_la_SOURCES}
         )
-    endif(CLR_CMAKE_HOST_OSX)
+    endif(CLR_CMAKE_HOST_APPLE)
 
 else(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_TARGET_ARCH_ARM64)
