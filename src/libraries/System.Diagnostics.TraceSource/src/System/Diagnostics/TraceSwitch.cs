@@ -38,7 +38,7 @@ namespace System.Diagnostics
             {
                 if (value < TraceLevel.Off || value > TraceLevel.Verbose)
                     throw new ArgumentException(SR.TraceSwitchInvalidLevel);
-                SetSwitchValueString((int)value, value.ToString());
+                SetSwitchValues((int)value, value.ToString());
             }
         }
 
@@ -107,7 +107,7 @@ namespace System.Diagnostics
 
 
             // Update the switch value string accordingly.
-            SetSwitchValueString((int)level, level.ToString());
+            SetSwitchValues((int)level, level.ToString());
         }
     }
 }

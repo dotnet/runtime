@@ -165,7 +165,7 @@ namespace System.Diagnostics
 
         protected internal virtual string[]? GetSupportedAttributes() => null;
 
-        internal void SetSwitchValueString(int switchSetting, string switchValueString)
+        internal void SetSwitchValues(int switchSetting, string switchValueString)
         {
             Initialize();
 
