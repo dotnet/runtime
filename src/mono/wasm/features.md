@@ -63,7 +63,7 @@ _TODO_
 
 ## Timezones
 
-Browsers don't offer API for working with time zone database and so we have to bring the time zone data as part of the application. 
+Browsers don't offer API for working with time zone database and so we have to bring the time zone data as part of the application.
 
 If your application doesn't need to work with TZ, you can reduce download size by `<InvariantTimezone>true</InvariantTimezone>`.
 This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
@@ -90,7 +90,7 @@ dotnet is complex and large application, it consists of
 - integration with the browser JavaScript APIs, for example HTTP and WebSocket client
 - application code
 
-All of the mentioned code and data need to be downloaded and loaded into the browser memory during the dotnet startup sequence. 
+All of the mentioned code and data need to be downloaded and loaded into the browser memory during the dotnet startup sequence.
 Browser itself will run JIT compilation of the WASM and JS code, which consumes memory and CPU cycles too.
 
 ## WASM linear memory
@@ -107,7 +107,7 @@ Is browser specific JIT compiler which optimizes small fragments of code which a
 You can enable Ahead Of Time compilation by `<RunAOTCompilation>true</RunAOTCompilation>`.
 This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
-It will compile managed code as native WASM instructions and include them in the `dotnet.native.wasm` file. 
+It will compile managed code as native WASM instructions and include them in the `dotnet.native.wasm` file.
 AOT compiled code is running faster but it will significantly increase size of the file and the download time.
 
 ## IL trimming
