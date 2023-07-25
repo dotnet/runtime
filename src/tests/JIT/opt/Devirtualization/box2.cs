@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 class Program
 {
-    static async Task<int> Main()
+    static async Task TestTask()
     {
         for (int i = 0; i < 10; i++)
         {
@@ -17,7 +17,10 @@ class Program
             // extra context argument.
             await new ValueTask<string>(Task.Delay(1).ContinueWith(_ => default(string))).ConfigureAwait(false);
         }
+    }
 
-        return 100;
+    public static void TestEntryPoint()
+    {
+        Task.Run(TestTask);
     }
 }
