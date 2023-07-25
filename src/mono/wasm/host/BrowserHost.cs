@@ -38,6 +38,7 @@ internal sealed class BrowserHost
                                               CancellationToken token)
     {
         var args = new BrowserArguments(commonArgs);
+        args.Validate();
         var host = new BrowserHost(args, logger);
         await host.RunAsync(loggerFactory, token);
 
@@ -124,12 +125,12 @@ internal sealed class BrowserHost
 
         devServerOptions = null;
 
-        string targetDirectory = GetTargetDirectory(args.CommonConfig.RuntimeConfigPath);
+        string appPath = args.CommonConfig.AppPath;
         if (args.CommonConfig.HostProperties.MainAssembly != null)
         {
             // If we have main assembly name, try to find static web assets manifest by precise name.
 
-            var mainAssemblyPath = Path.Combine(targetDirectory, args.CommonConfig.HostProperties.MainAssembly);
+            var mainAssemblyPath = Path.Combine(appPath, args.CommonConfig.HostProperties.MainAssembly);
             var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV2Extension);
             if (File.Exists(staticWebAssetsPath))
             {
@@ -146,8 +147,8 @@ internal sealed class BrowserHost
         {
             // If we don't have main assembly name, try to find static web assets manifest by search in the directory.
 
-            var staticWebAssetsPath = FindFirstFileWithExtension(targetDirectory, staticWebAssetsV2Extension)
-                ?? FindFirstFileWithExtension(targetDirectory, staticWebAssetsV1Extension);
+            var staticWebAssetsPath = FindFirstFileWithExtension(appPath, staticWebAssetsV2Extension)
+                ?? FindFirstFileWithExtension(appPath, staticWebAssetsV1Extension);
 
             if (staticWebAssetsPath != null)
                 devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
@@ -165,27 +166,8 @@ internal sealed class BrowserHost
         Urls: urls
     );
 
-    private static string GetTargetDirectory(string? runtimeConfigPath)
-    {
-        if (!string.IsNullOrEmpty(runtimeConfigPath))
-        {
-            runtimeConfigPath = Path.GetFullPath(runtimeConfigPath);
-            string? targetPath = Path.GetDirectoryName(runtimeConfigPath);
-            if (!string.IsNullOrEmpty(targetPath))
-                return targetPath;
-        }
-
-        return Environment.CurrentDirectory;
-    }
-
     private static string? FindFirstFileWithExtension(string directory, string extension)
-    {
-        string[] files = Directory.EnumerateFiles(directory, "*" + extension).ToArray();
-        if (files.Length == 0)
-            return null;
-
-        return files[0];
-    }
+        => Directory.EnumerateFiles(directory, "*" + extension).First();
 
     private async Task RunConsoleMessagesPump(WebSocket socket, WasmTestMessagesProcessor messagesProcessor, CancellationToken token)
     {

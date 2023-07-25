@@ -36,4 +36,8 @@ internal sealed class BrowserArguments
         if (properties?.TryGetValue("forward-console", out JsonElement forwardConsoleElement) == true)
             ForwardConsoleOutput = forwardConsoleElement.GetBoolean();
     }
+
+    public void Validate()
+    {
+    }
 }

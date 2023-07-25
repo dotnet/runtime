@@ -119,7 +119,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string Configuration,
         string TestScenario,
         Dictionary<string, string> BrowserQueryString = null,
-        bool ForPublish = false,
         Action<IConsoleMessage, IPage> OnConsoleMessage = null,
         int? ExpectedExitCode = 0
     );
