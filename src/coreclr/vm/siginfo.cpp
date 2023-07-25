@@ -129,7 +129,7 @@ DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_INTERNAL,       -1,                   TYPE_GC
 
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_CVAR,           -1,                   TYPE_GC_OTHER, 1)
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_MCVAR,          -1,                   TYPE_GC_OTHER, 1)
-DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_CTARG,          -1,                   TYPE_GC_OTHER, 0)
+DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_CTARG,          8,                    TYPE_GC_OTHER, 0)
 };
 
 unsigned GetSizeForCorElementType(CorElementType etyp)
