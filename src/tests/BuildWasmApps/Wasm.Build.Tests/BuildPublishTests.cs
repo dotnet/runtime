@@ -70,11 +70,15 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
-        public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", testUnicode: false)]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", testUnicode: false)]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", testUnicode: true)]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", testUnicode: true)]
+        public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id, bool testUnicode)
         {
-            string projectName = $"build_publish_{buildArgs.Config}";
+            string projectName = testUnicode ?
+                $"build_publish_{buildArgs.Config}_{s_unicodeChar}" :
+                $"build_publish_{buildArgs.Config}";
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<_WasmDevel>true</_WasmDevel>");
@@ -111,24 +115,27 @@ namespace Wasm.Build.Tests
 
             // FIXME: relinking for paths with unicode does not work:
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
+            // remove the condition when the issue is fixed
+            if (!testUnicode)
+            {
+                // relink by default for Release+publish
+                (_, output) = BuildProject(buildArgs,
+                                    id: id,
+                                    new BuildProjectOptions(
+                                        DotnetWasmFromRuntimePack: false,
+                                        CreateProject: false,
+                                        Publish: true,
+                                        UseCache: false,
+                                        Label: "first_publish"));
 
-            // relink by default for Release+publish
-            // (_, output) = BuildProject(buildArgs,
-            //                         id: id,
-            //                         new BuildProjectOptions(
-            //                             DotnetWasmFromRuntimePack: false,
-            //                             CreateProject: false,
-            //                             Publish: true,
-            //                             UseCache: false,
-            //                             Label: "first_publish"));
+                var publishStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+                Assert.True(publishStat["pinvoke.o"].Exists);
+                Assert.True(publishStat[$"{mainDll}.bc"].Exists);
+                CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output);
+                CompareStat(firstBuildStat, publishStat, pathsDict.Values);
 
-            // var publishStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
-            // Assert.True(publishStat["pinvoke.o"].Exists);
-            // Assert.True(publishStat[$"{mainDll}.bc"].Exists);
-            // CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output);
-            // CompareStat(firstBuildStat, publishStat, pathsDict.Values);
-
-            // Run(expectAOT: true);
+                Run(expectAOT: true);
+            }
 
             // second build
             (_, output) = BuildProject(buildArgs,
@@ -146,7 +153,10 @@ namespace Wasm.Build.Tests
 
             // no native files changed
             pathsDict.UpdateTo(unchanged: true);
-            // CompareStat(publishStat, secondBuildStat, pathsDict.Values);
+            if (!testUnicode)
+            {
+                CompareStat(publishStat, secondBuildStat, pathsDict.Values);
+            }
 
             void Run(bool expectAOT) => RunAndTestWasmApp(
                                 buildArgs with { AOT = expectAOT },
