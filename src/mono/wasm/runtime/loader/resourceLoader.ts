@@ -4,7 +4,6 @@
 import type { MonoConfig, WebAssemblyBootResourceType } from "../types";
 import type { ResourceList } from "../types/blazor";
 import { loaderHelpers } from "./globals";
-import { toAbsoluteUri } from "./blazor/_Polyfill";
 const networkFetchCacheMode = "no-cache";
 
 const cacheSkipResourceTypes = ["configuration"];
@@ -23,7 +22,7 @@ export function loadResource(name: string, url: string, contentHash: string, res
         ? loadResourceWithCaching(cacheIfUsed, name, url, contentHash, resourceType)
         : loadResourceWithoutCaching(name, url, contentHash, resourceType);
 
-    const absoluteUrl = toAbsoluteUri(url);
+    const absoluteUrl = loaderHelpers.locateFile(url);
 
     if (resourceType == "assembly") {
         loaderHelpers.loadedAssemblies.push(absoluteUrl);
@@ -92,7 +91,7 @@ async function loadResourceWithCaching(cache: Cache, name: string, url: string, 
         throw new Error("Content hash is required");
     }
 
-    const cacheKey = toAbsoluteUri(`${url}.${contentHash}`);
+    const cacheKey = loaderHelpers.locateFile(`${url}.${contentHash}`);
     usedCacheKeys[cacheKey] = true;
 
     let cachedResponse: Response | undefined;

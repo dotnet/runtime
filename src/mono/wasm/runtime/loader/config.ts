@@ -122,3 +122,13 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         throw err;
     }
 }
+
+export function hasDebuggingEnabled(config: MonoConfigInternal): boolean {
+    // Copied from blazor MonoDebugger.ts/attachDebuggerHotkey
+    if (!globalThis.navigator) {
+        return false;
+    }
+
+    const hasReferencedPdbs = !!config.resources!.pdb;
+    return (hasReferencedPdbs || config.debugLevel != 0) && (loaderHelpers.isChromium || loaderHelpers.isFirefox);
+}

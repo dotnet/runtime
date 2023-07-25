@@ -7,9 +7,9 @@ import type { BootJsonData } from "../../types/blazor";
 
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "../globals";
 import { initCacheToUseIfEnabled, loadResource } from "../resourceLoader";
-import { hasDebuggingEnabled } from "./_Polyfill";
 import { ICUDataMode } from "../../types/blazor";
 import { appendUniqueQuery } from "../assets";
+import { hasDebuggingEnabled } from "../config";
 
 export async function loadBootConfig(config: MonoConfigInternal, module: DotnetModuleInternal) {
     const defaultBootJsonLocation = "_framework/blazor.boot.json";
@@ -187,7 +187,7 @@ export function mapBootConfigToMonoConfig(config: MonoConfigInternal, bootConfig
         };
         assets.push(asset);
     }
-    if (hasDebuggingEnabled(config) && resources.pdb) {
+    if (config.debugLevel != 0 && resources.pdb) {
         for (const name in resources.pdb) {
             const asset: AssetEntry = {
                 name,
