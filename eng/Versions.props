@@ -211,7 +211,7 @@
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>8.0.0-rc.1.23374.1</MicrosoftNETILLinkTasksVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23371.1</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23374.2</MicrosoftDotNetCecilVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-rc.1.23374.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
