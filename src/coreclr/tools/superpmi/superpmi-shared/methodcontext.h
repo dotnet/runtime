@@ -194,6 +194,7 @@ public:
     void repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWORD* exceptionCode);
 
     void recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                        CORINFO_RESOLVED_TOKEN* pConstrainedResolvedTokenIn,
                         CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                         CORINFO_METHOD_HANDLE   callerHandle,
                         CORINFO_CALLINFO_FLAGS  flags,

@@ -1403,6 +1403,7 @@ void MethodContext::repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWOR
 }
 
 void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                   CORINFO_RESOLVED_TOKEN* pConstrainedResolvedTokenIn,
                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                    CORINFO_METHOD_HANDLE   callerHandle,
                                    CORINFO_CALLINFO_FLAGS  flags,
@@ -1416,10 +1417,9 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.ResolvedToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetCallInfo);
 
-    if (pConstrainedResolvedToken != nullptr)
+    if (pConstrainedResolvedTokenIn != nullptr)
     {
-        key.ConstrainedResolvedToken =
-            SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pConstrainedResolvedToken, GetCallInfo);
+        key.ConstrainedResolvedToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pConstrainedResolvedTokenIn, GetCallInfo);
     }
 
     key.callerHandle = CastHandle(callerHandle);
