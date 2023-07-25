@@ -119,6 +119,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<InvalidOperationException>(() => ilGenerator.DeclareLocal(typeof(int)));
         }
 
+        [Fact]
         public void DeclareLocal_Pinned()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
