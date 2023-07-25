@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,22 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace XUnitWrapperGenerator;
+
+internal struct CompData
+{
+    internal CompData(string assemblyName, IMethodSymbol? entryPoint, IEnumerable<IMethodSymbol> possibleEntryPoints, OutputKind outputKind)
+    {
+        AssemblyName = assemblyName;
+        EntryPoint = entryPoint;
+        PossibleEntryPoints = possibleEntryPoints;
+        OutputKind = outputKind;
+    }
+
+    public string AssemblyName { get; private set; }
+    public IMethodSymbol? EntryPoint { get; private set; }
+    public IEnumerable<IMethodSymbol> PossibleEntryPoints { get; private set; }
+    public OutputKind OutputKind { get; private set; }
+}
 
 [Generator]
 public sealed class XUnitWrapperGenerator : IIncrementalGenerator
@@ -58,9 +75,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             return aliasMap.ToImmutable();
         }).WithComparer(new ImmutableDictionaryValueComparer<string, string>(EqualityComparer<string>.Default));
 
-        var assemblyName = context.CompilationProvider.Select((comp, ct) => comp.Assembly.MetadataName);
-
-        var alwaysWriteEntryPoint = context.CompilationProvider.Select((comp, ct) => comp.Options.OutputKind == OutputKind.ConsoleApplication && comp.GetEntryPoint(ct) is null);
+        var compData = context.CompilationProvider.Select((comp, ct) => new CompData(
+            assemblyName: comp.Assembly.MetadataName,
+            entryPoint: comp.GetEntryPoint(ct),
+            possibleEntryPoints: RoslynUtils.GetPossibleEntryPoints(comp, ct),
+            outputKind: comp.Options.OutputKind));
 
         var testsInSource =
             methodsInSource
@@ -112,13 +131,39 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             .Collect()
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Combine(aliasMap)
-            .Combine(assemblyName)
-            .Combine(alwaysWriteEntryPoint),
+            .Combine(compData),
             static (context, data) =>
             {
-                var ((((methods, configOptions), aliasMap), assemblyName), alwaysWriteEntryPoint) = data;
+                var (((methods, configOptions), aliasMap), compData) = data;
 
-                if (methods.Length == 0 && !alwaysWriteEntryPoint)
+                foreach (IMethodSymbol entryPoint in compData.PossibleEntryPoints)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        new DiagnosticDescriptor(
+                            "XUW1001",
+                            "No explicit entry point",
+                            "Projects in merged tests group should not contain entry points",
+                            "XUnitWrapperGenerator",
+                            DiagnosticSeverity.Error,
+                            isEnabledByDefault: true),
+                        entryPoint.Locations[0]));
+                }
+
+                if (methods.IsEmpty && (compData.OutputKind != OutputKind.DynamicallyLinkedLibrary))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        new DiagnosticDescriptor(
+                            "XUW1002",
+                            "Merged tests group projects should contain tests",
+                            "Merged test group project does not contain any tests",
+                            "XUnitWrapperGenerator",
+                            DiagnosticSeverity.Warning,
+                            isEnabledByDefault: true),
+                        null));
+                }
+
+                bool alwaysWriteEntryPoint = compData.OutputKind == OutputKind.ConsoleApplication && (compData.EntryPoint is null);
+                if (methods.IsEmpty && !alwaysWriteEntryPoint)
                 {
                     // If we have no test methods, assume that this project is not migrated to the new system yet
                     // and that we shouldn't generate a no-op Main method.
@@ -127,6 +172,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
                 bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
                 configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
+                string assemblyName = compData.AssemblyName;
 
                 if (isMergedTestRunnerAssembly)
                 {
