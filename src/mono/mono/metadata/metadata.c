@@ -48,7 +48,7 @@ typedef struct {
 
 enum {
 	MONO_TYPE_EQ_FLAGS_SIG_ONLY = 1,
-	MONO_TYPE_EQ_FLAG_IGNORE_CMODS = 2
+	MONO_TYPE_EQ_FLAG_IGNORE_CMODS = 2,
 };
 
 static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container, gboolean transient,
@@ -5905,7 +5905,7 @@ mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_on
 
 enum {
 	SIG_EQUIV_FLAG_NO_RET = 1,
-	SIG_EQUIV_FLAG_IGNORE_CMODS = 2
+	SIG_EQUIV_FLAG_IGNORE_CMODS = 2,
 };
 
 gboolean
