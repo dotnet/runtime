@@ -1325,8 +1325,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     const int MaxU8BufferSizeInBytes = 256;
     uint8_t   bufferU8[MaxU8BufferSizeInBytes];
 
-    const int srcLenU8 =
-        (int)minipal_convert_utf16_to_utf8(bufferU16, srcLenCnsU16, (char*)bufferU8, MaxU8BufferSizeInBytes, 0);
+    const int srcLenU8 = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)bufferU16, srcLenCnsU16, (char*)bufferU8,
+                                                            MaxU8BufferSizeInBytes, 0);
     if (srcLenU8 <= 0)
     {
         // E.g. output buffer is too small
