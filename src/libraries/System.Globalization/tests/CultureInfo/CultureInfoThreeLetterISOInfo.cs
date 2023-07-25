@@ -13,9 +13,9 @@ namespace System.Globalization.Tests
             yield return new object[] { 0x409, 244, "en-US", "USA", "eng" };
             yield return new object[] { 0x411, 122, "ja-JP", "JPN", "jpn" };
             yield return new object[] { 0x804, 45, "zh-CN", "CHN", "zho" };
-            yield return new object[] { 0x401, 205,"ar-SA", "SAU", "ara" };
-            yield return new object[] { 0x412, 134,"ko-KR", "KOR", "kor" };
-            yield return new object[] { 0x40d, 117,"he-IL", "ISR", "heb" };
+            yield return new object[] { 0x401, 205, "ar-SA", "SAU", "ara" };
+            yield return new object[] { 0x412, 134, "ko-KR", "KOR", "kor" };
+            yield return new object[] { 0x40d, 117, "he-IL", "ISR", "heb" };
         }
 
         [Theory]
