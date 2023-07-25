@@ -364,12 +364,14 @@ namespace Microsoft.Interop
         private readonly ExpressionSyntax _numElementsExpression;
         private readonly ElementsMarshalling _elementsMarshalling;
         private readonly bool _cleanupElements;
+        private readonly TypeSyntax _unmanagedCollectionType;
 
         public StatefulLinearCollectionMarshalling(
             ICustomTypeMarshallingStrategy innerMarshaller,
             MarshallerShape shape,
             ExpressionSyntax numElementsExpression,
             ElementsMarshalling elementsMarshalling,
+            TypeSyntax unmanagedCollectionType,
             bool cleanupElements)
         {
             _innerMarshaller = innerMarshaller;
@@ -377,6 +379,7 @@ namespace Microsoft.Interop
             _numElementsExpression = numElementsExpression;
             _elementsMarshalling = elementsMarshalling;
             _cleanupElements = cleanupElements;
+            _unmanagedCollectionType = unmanagedCollectionType;
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
