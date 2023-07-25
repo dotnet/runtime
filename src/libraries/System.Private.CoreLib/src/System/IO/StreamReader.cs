@@ -265,7 +265,7 @@ namespace System.IO
                 // Dispose of our resources if this StreamReader is closable.
                 if (_closable && !_disposed)
                 {
-                    // Attempt to close the stream even
+                    // Attempt to close the stream
                     // Note that Stream.Close() can potentially throw here.
                     // In this case, we still need to ensure
                     // cleaning up internal resources, hence the finally block.
