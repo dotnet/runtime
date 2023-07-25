@@ -14,12 +14,71 @@ using static System.Buffers.TeddyHelper;
 
 namespace System.Buffers
 {
-    // For a description of the Teddy multi-substring matching algorithm,
-    // see https://github.com/BurntSushi/aho-corasick/blob/master/src/packed/teddy/README.md
+    // This is an implementation of the "Teddy" vectorized multi-substring matching algorithm.
+    //
+    // We have several vectorized string searching approaches implemented as part of SearchValues, among them are:
+    // - 'IndexOfAnyAsciiSearcher', which can quickly find the next position of any character in a set.
+    // - 'SingleStringSearchValuesThreeChars', which can determine the likely positions where a value may start.
+    // The fast scan for starting positions is followed by a verification step that rules out false positives.
+    // To reduce the number of false positives, the initial scan looks for multiple characters at different positions,
+    // and only considers candidates where all of those match at the same time.
+    //
+    // Teddy combines the two to search for multiple values at the same time.
+    // Similar to 'SingleStringSearchValuesThreeChars', it employs the starting positions scan and verification steps.
+    // To reduce the number of values we have to check during verification, it also checks multiple characters in the initial scan.
+    // We could implement that by just merging the two approaches: check for any of the value characters at position 0, 1, 2, then
+    // AND those results together and verify potential matches. The issue with this approach is that we would always have to check
+    // all values in the verification step, and we would be hitting many false positives as the number of values increased.
+    //
+    // What is special about Teddy is how we perform that initial scan to not only determine the possible starting locations,
+    // but also which values are the potential matches at each of those offsets.
+    // Instead of encoding all starting characters at a given position into a bitmap that can only answer yes/no whether a given
+    // character is present in the set, we want to encode both the character and the values in which it appears.
+    // We only have 128* bits to work with, so we do this by encoding 8 bits of information for each nibble (half byte).
+    // Those 8 bits represent a bitmask of values that contain that nibble at that location.
+    // If we compare the input against two such bitmaps and AND the results together, we can determine which positions in the input
+    // contained a matching character, and which of our values matched said character at that position.
+    // We repeat this a few more times (checking 3 bytes or 6 nibbles for N=3) at different offsets to reduce the number of false positives.
+    // See 'TeddyBucketizer.GenerateNonBucketizedFingerprint' for details around how such a bitmap is constructed.
+    //
+    // For example if we are searching for strings "Teddy" and "Bear", we will look for 'T' or 'B' at position 0, 'e' at position 1, ...
+    // To look for 'T' (0x54) or 'B' (0x42), we will check for a high nibble of 5 or 4, and lower nibble of 4 or 2.
+    // Our bitmaps will look like so (bit 1 represents "Teddy", 2 represents "Bear"):
+    // high:  [0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    // low:   [0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    //               ^     ^  ^  ^
+    // For an input like "TeddyBearFactory", our result will be
+    // input: [T, e, d, d, y, B, e, a, r, F, a, c, t, o, r, y]
+    // high:  [1, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0]
+    // low:   [1, 0, 1, 1, 0, 2, 0, 0, 2, 0, 0, 0, 1, 0, 2, 0]
+    // AND:   [1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    //         ^              ^
+    // Note how we had quite a few false positives for individual nibbles that we ruled away after checking both nibbles.
+    // See 'TeddyHelper.ProcessInputN3' for details about how we combine results for multiple characters at different offsets.
+    //
+    // The description above states that we can only encode the information about 8 values. To get around that limitation
+    // we group multiple values together into buckets. Instead of looking for positions where a single value may match,
+    // we look for positions where any value from a given bucket may match.
+    // When creating the bitmap we don't set the bit for just one nibble value, but for each of the values in that bucket.
+    // For example if "Teddy" and "Bear" were both in the same bucket, the high nibble bitmap would map both 5 and 4 to the same bucket.
+    // We may see more false positives ('R' (0x52) and 'D' (0x44) would now also map to the same bucket), but we get to search for
+    // many more values at the same time. Instead of 8 values, we are now capable of looking for 8 buckets of values at the same time.
+    // See 'TeddyBucketizer.Bucketize' for details about how values are grouped into buckets.
+    // See 'TeddyBucketizer.GenerateBucketizedFingerprint' for details around how such a bitmap is constructed.
+    //
+    // To handle case-insensitive matching, all values are normalized to their uppercase equivalents ahead of time and the bitmaps are
+    // generated as if all characters were uppercase. During the search, the input is also transformed into uppercase before being compared.
+    //
+    // * With wider vectors (256- and 512-bit), we have more bits available, but we currently only duplicate the original 128 bits
+    // and perform the search on more characters at a time. We could instead choose to encode more information per nibble to trade
+    // the number of characters we check per loop iteration for fewer false positives we then have to rule out during the verification step.
+    //
+    // For an alternative description of the algorithm, see
+    // https://github.com/BurntSushi/aho-corasick/blob/8d735471fc12f0ca570cead8e17342274fae6331/src/packed/teddy/README.md
     internal abstract class AsciiStringSearchValuesTeddyBase<TBucketized, TStartCaseSensitivity, TCaseSensitivity> : StringSearchValuesRabinKarp<TCaseSensitivity>
         where TBucketized : struct, SearchValues.IRuntimeConst
-        where TStartCaseSensitivity : struct, ICaseSensitivity
-        where TCaseSensitivity : struct, ICaseSensitivity
+        where TStartCaseSensitivity : struct, ICaseSensitivity  // Refers to the characters being matched by Teddy
+        where TCaseSensitivity : struct, ICaseSensitivity       // Refers to the rest of the value for the verification step
     {
         // We may be using N2 or N3 mode depending on whether we're checking 2 or 3 starting bytes for each bucket.
         // The result of ProcessInputN2 and ProcessInputN3 are offset by 1 and 2 positions respectively (MatchStartOffsetN2 and MatchStartOffsetN3).
