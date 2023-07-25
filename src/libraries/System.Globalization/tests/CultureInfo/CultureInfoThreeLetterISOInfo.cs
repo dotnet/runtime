@@ -20,7 +20,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(RegionInfo_TestData))]
-        public void MiscTest(int lcid, int geoId,string name, string threeLetterISORegionName, string threeLetterISOLanguageName)
+        public void MiscTest(int lcid, int geoId, string name, string threeLetterISORegionName, string threeLetterISOLanguageName)
         {
             RegionInfo ri = new RegionInfo(lcid); // create it with lcid
             Assert.Equal(geoId, ri.GeoId);

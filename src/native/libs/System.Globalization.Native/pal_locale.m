@@ -48,47 +48,7 @@ const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
  */
 #define FULLNAME_CAPACITY 157
 
-int static strnicmp(const char *str1, const char *str2, uint32_t n) {
-    if (str1 == NULL) {
-        if (str2 == NULL) {
-            return 0;
-        } else {
-            return -1;
-        }
-    } else if (str2 == NULL) {
-        return 1;
-    } else {
-        /* compare non-NULL strings lexically with lowercase */
-        int rc;
-        unsigned char c1, c2;
-
-        for (; n--;) {
-            c1 = (unsigned char)*str1;
-            c2 = (unsigned char)*str2;
-            if (c1 == 0) {
-                if (c2 == 0) {
-                    return 0;
-                } else {
-                    return -1;
-                }
-            } else if (c2 == 0) {
-                return 1;
-            } else {
-                /* compare non-zero characters with lowercase */
-                rc = (int)(unsigned char)tolower(c1) - (int)(unsigned char)tolower(c2);
-                if (rc != 0) {
-                    return rc;
-                }
-            }
-            ++str1;
-            ++str2;
-        }
-    }
-
-    return 0;
-}
-
-void static GetParent(const char* localeID, char* parent, int32_t parentCapacity)
+static void GetParent(const char* localeID, char* parent, int32_t parentCapacity)
 {
     const char *lastUnderscore;
     int32_t i;
@@ -97,19 +57,26 @@ void static GetParent(const char* localeID, char* parent, int32_t parentCapacity
         localeID = [NSLocale systemLocale].localeIdentifier.UTF8String;
 
     lastUnderscore = strrchr(localeID, '-');
-    if (lastUnderscore != NULL) {
+    if (lastUnderscore != NULL)
+    {
         i = (int32_t)(lastUnderscore - localeID);
-    } else {
+    }
+    else
+    {
         i = 0;
     }
 
-    if (i > 0) {
+    if (i > 0)
+    {
         // primary lang subtag und (undefined).
-        if (strnicmp(localeID, "und-", 4) == 0) {
+        if (strncasecmp(localeID, "und-", 4) == 0)
+        {
             localeID += 3;
             i -= 3;
             memmove(parent, localeID, MIN(i, parentCapacity));
-        } else if (parent != localeID) {
+        }
+        else if (parent != localeID)
+        {
             memcpy(parent, localeID, MIN(i, parentCapacity));
         }
     }
@@ -117,8 +84,6 @@ void static GetParent(const char* localeID, char* parent, int32_t parentCapacity
     // terminate chars 
     if (i >= 0 && i < parentCapacity)
        parent[i] = 0;
-
-    return;
 }
 
 /* ### Data tables **************************************************/
