@@ -269,7 +269,6 @@ export type DotnetModuleConfig = {
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 
     imports?: any;
     exports?: string[];

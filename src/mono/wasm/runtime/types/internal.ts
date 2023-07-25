@@ -141,7 +141,6 @@ export type LoaderHelpers = {
     downloadResource?: (request: ResourceRequest) => LoadingResource | undefined
     out(message: string): void;
     err(message: string): void;
-    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 
     hasDebuggingEnabled(config: MonoConfig): boolean,
     loadResources(resources: ResourceList, url: (name: string) => string, resourceType: WebAssemblyBootResourceType): LoadingResource[],

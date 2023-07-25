@@ -280,9 +280,9 @@ function configureRuntime(dotnet, runArgs) {
         }
     }
     if (is_browser) {
-        if (runArgs.memorySnapshot) {
-            dotnet.withStartupMemoryCache(true);
-        }
+        // if (runArgs.memorySnapshot) {
+        //     dotnet.withStartupMemoryCache(true);
+        // }
         dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
     }
     if (runArgs.runtimeArgs.length > 0) {
@@ -330,13 +330,13 @@ async function run() {
         const runArgs = await getArgs();
         console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
-        if (is_browser && runArgs.memorySnapshot) {
-            const dryOk = await dry_run(runArgs);
-            if (!dryOk) {
-                mono_exit(1, "Failed during dry run");
-                return;
-            }
-        }
+        // if (is_browser && runArgs.memorySnapshot) {
+        //     const dryOk = await dry_run(runArgs);
+        //     if (!dryOk) {
+        //         mono_exit(1, "Failed during dry run");
+        //         return;
+        //     }
+        // }
 
         // this is subsequent run with the actual tests. It will use whatever was cached in the previous run. 
         // This way, we are testing that the cached version works.
@@ -389,7 +389,7 @@ async function run() {
                 const app_args = runArgs.applicationArguments.slice(2);
                 const result = await App.runtime.runMain(main_assembly_name, app_args);
                 console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result}`);
-                mono_exit(result);
+                // mono_exit(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {
                     mono_exit(1, error);

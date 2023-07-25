@@ -54,7 +54,6 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     loaderHelpers.out = console.log;
     // eslint-disable-next-line no-console
     loaderHelpers.err = console.error;
-    loaderHelpers.getApplicationEnvironment = module.getApplicationEnvironment;
 
     if (ENVIRONMENT_IS_WEB && globalThis.navigator) {
         const navigator: any = globalThis.navigator;

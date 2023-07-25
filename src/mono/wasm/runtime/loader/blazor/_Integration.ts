@@ -44,7 +44,6 @@ function readBootConfigResponseHeaders(bootConfigResponse: Response) {
     const config = loaderHelpers.config;
 
     config.applicationEnvironment = config.applicationEnvironment
-        || (loaderHelpers.getApplicationEnvironment && loaderHelpers.getApplicationEnvironment(bootConfigResponse))
         || bootConfigResponse.headers.get("Blazor-Environment")
         || bootConfigResponse.headers.get("DotNet-Environment")
         || "Production";
