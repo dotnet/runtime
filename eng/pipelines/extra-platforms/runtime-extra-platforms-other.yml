@@ -212,12 +212,12 @@ jobs:
       value: 180
     jobParameters:
       timeoutInMinutes: 240
-      nameSuffix: NativeAOT
+      nameSuffix: NativeAOT_Pri0
       buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       extraStepsParameters:
         creator: dotnet-bot
-        testBuildArgs: 'nativeaot'
+        testBuildArgs: 'nativeaot /p:IlcUseServerGc=false'
         liveLibrariesBuildConfig: Release
       testRunNamePrefixSuffix: NativeAOT_Pri0_$(_BuildConfig)
       extraVariablesTemplates:
