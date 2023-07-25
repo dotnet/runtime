@@ -119,7 +119,8 @@ typedef struct
     int Signal;
     int SignalCode;
     int SignalErrno;
-    void* SignalAddress;
+    uint64_t SignalAddress;
+    uint64_t ExceptionRecord;
 } CreateDumpOptions;
 
 #ifdef HOST_UNIX

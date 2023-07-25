@@ -37,7 +37,7 @@ bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
 #include "shash.inl"
 
 #define MAX_CRASHINFOBUFFER_SIZE 8192
-uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE];
+uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE] = { 0 };
 
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {

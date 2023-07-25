@@ -343,11 +343,12 @@ Function:
 Parameters:
     signal - POSIX signal number or 0
     siginfo - signal info or nullptr
+    exceptionRecord - address of exception record or nullptr
 
 (no return value)
 --*/
 void
-PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
+PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* exceptionRecord)
 {
     // If enabled, launch the create minidump utility and wait until it completes
     if (g_argvCreateDump[0] != nullptr)
@@ -358,6 +359,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
         char* signalCodeArg = nullptr;
         char* signalErrnoArg = nullptr;
         char* signalAddressArg = nullptr;
+        char* exceptionRecordArg = nullptr;
 
         // Copy the createdump argv
         int argc = 0;
@@ -388,7 +390,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
                 argv[argc++] = crashThreadArg;
             }
 
-            if (siginfo != nullptr)
+            if (siginfo != nullptr && argc < MAX_ARGV_ENTRIES)
             {
                 signalCodeArg = FormatInt(siginfo->si_code);
                 if (signalCodeArg != nullptr)
@@ -410,6 +412,16 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
                 }
             }
 
+            if (exceptionRecord != nullptr && argc < MAX_ARGV_ENTRIES)
+            {
+                exceptionRecordArg = FormatInt64((uint64_t)exceptionRecord);
+                if (exceptionRecordArg != nullptr)
+                {
+                    argv[argc++] = "--exception-record";
+                    argv[argc++] = exceptionRecordArg;
+                }
+            }
+
             argv[argc++] = nullptr;
             assert(argc < MAX_ARGV_ENTRIES);
         }
@@ -421,19 +433,20 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
         free(signalCodeArg);
         free(signalErrnoArg);
         free(signalAddressArg);
+        free(exceptionRecordArg);
     }
 }
 
 void
 PalCreateCrashDumpIfEnabled()
 {
-    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr);
+    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr);
 }
 
 void
 PalCreateCrashDumpIfEnabled(void* pExceptionRecord, void* pExContext)
 {
-    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr);
+    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, pExceptionRecord);
 }
 
 /*++
