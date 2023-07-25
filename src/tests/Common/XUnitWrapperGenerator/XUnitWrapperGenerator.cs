@@ -358,7 +358,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
             builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests, ""{assemblyName}"", args.Length != 0 ? args[0] : null, testExclusionList);");
         }
-        builder.AppendLine("catch(System.Exception ex)");
+        builder.AppendLine("catch (System.Exception ex)");
         using (builder.NewBracesScope())
         {
             builder.AppendLine("System.Console.WriteLine(ex.ToString());");
@@ -481,7 +481,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         builder.Append(testInfo.GenerateTestExecution(reporter));
                     }
                 }
-                builder.AppendLine("catch(System.Exception ex)");
+                builder.AppendLine("catch (System.Exception ex)");
                 using (builder.NewBracesScope())
                 {
                     builder.AppendLine("System.Console.WriteLine(ex.ToString());");
