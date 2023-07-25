@@ -11,7 +11,7 @@ import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./c
 import { mono_exit } from "./exit";
 import { setup_proxy_console, mono_log_info } from "./logging";
 import { resolve_asset_path, start_asset_download } from "./assets";
-import { detect_features_and_polyfill, verifyEnvironmentAsync } from "./polyfills";
+import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
@@ -363,7 +363,6 @@ export class HostBuilder implements DotnetHostBuilder {
                 if (ENVIRONMENT_IS_WEB && (module.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
                     setup_proxy_console("main", globalThis.console, globalThis.location.origin);
                 }
-                await verifyEnvironmentAsync();
                 mono_assert(module, "Null moduleConfig");
                 mono_assert(module.config, "Null moduleConfig.config");
                 await createEmscripten(module);
@@ -445,7 +444,7 @@ function importModules() {
     ];
 }
 
-function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
+async function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
     const { initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
     const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
@@ -484,7 +483,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     // TODO call mono_download_assets(); here in parallel ?
     const es6Modules = await Promise.all(promises);
-    initializeModules(es6Modules as any);
+    await initializeModules(es6Modules as any);
 
     await runtimeHelpers.dotnetReady.promise;
 
@@ -500,7 +499,7 @@ async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
 
     const promises = importModules();
     const es6Modules = await Promise.all(promises);
-    initializeModules(es6Modules as any);
+    await initializeModules(es6Modules as any);
 
     return module;
 }
