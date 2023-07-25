@@ -2440,7 +2440,6 @@ namespace Internal.JitInterface
         private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
         {
             pInfo->offsetOfThreadLocalStoragePointer = 0x58;
-            //pInfo->tlsIndex = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
             // Implemented for JIT only for now.
         }
 

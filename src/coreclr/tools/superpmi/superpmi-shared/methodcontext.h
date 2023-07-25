@@ -474,6 +474,27 @@ public:
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
     void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
 
+    void recGetTlsRootInfo(CORINFO_CONST_LOOKUP* result);
+    void dmpGetTlsRootInfo(DWORD key, const Agnostic_CORINFO_CONST_LOOKUP& value);
+    void repGetTlsRootInfo(CORINFO_CONST_LOOKUP* addr);
+
+    void recGetTlsIndexInfo(CORINFO_CONST_LOOKUP* addr);
+    void dmpGetTlsIndexInfo(DWORD key, const Agnostic_CORINFO_CONST_LOOKUP& value);
+    void repGetTlsIndexInfo(CORINFO_CONST_LOOKUP* addr);
+
+    void recGetThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* addr);
+    void dmpGetThreadStaticBaseSlowInfo(DWORD key, const Agnostic_CORINFO_CONST_LOOKUP& value);
+    void repGetThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* addr);
+
+    void recGetEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_HANDLE  cls,
+                                                             CORINFO_CONST_LOOKUP* addr,
+                                                             CORINFO_CONST_LOOKUP* targetSymbol, int pSize);
+    void dmpGetEnsureClassCtorRunAndReturnThreadStaticBaseHelper(DWORDLONG                                      key,
+                                                                const Agnostic_GetClassCtorInitializationInfo& value);
+    int repGetEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_HANDLE  cls,
+                                                                CORINFO_CONST_LOOKUP* addr,
+                                                                CORINFO_CONST_LOOKUP* targetSymbol);
+
     void recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection, CORINFO_METHOD_HANDLE result);
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
     CORINFO_METHOD_HANDLE repEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection);
@@ -1130,9 +1151,13 @@ enum mcPackets
     Packet_GetStaticBaseAddress = 206,
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
-    Packet_GetRISCV64PassStructInRegisterFlags = 209,
-    Packet_GetObjectContent = 210,
-    Packet_GetTypeLayout = 211,
+    Packet_GetTlsRootInfo = 209,
+    Packet_GetTlsIndexInfo = 210,
+    Packet_GetThreadStaticBaseSlowInfo = 211,
+    Packet_GetEnsureClassCtorRunAndReturnThreadStaticBaseHelper = 212,
+    Packet_GetRISCV64PassStructInRegisterFlags = 213,
+    Packet_GetObjectContent = 214,
+    Packet_GetTypeLayout = 215,
 };
 
 void SetDebugDumpVariables();

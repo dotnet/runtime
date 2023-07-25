@@ -2790,7 +2790,6 @@ public:
             bool                                isGCType
             ) = 0;
 
-    //TODO: Rename the method names to get*Helper
     virtual void getTlsRootInfo(CORINFO_CONST_LOOKUP* addr) = 0;
     virtual void getTlsIndexInfo(CORINFO_CONST_LOOKUP* addr) = 0;
     virtual void getThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* addr) = 0;

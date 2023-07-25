@@ -1308,6 +1308,31 @@ static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS
 
 
 /*********************************************************************/
+
+void CEEInfo::getTlsRootInfo(CORINFO_CONST_LOOKUP* addr)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called with NativeAOT.
+}
+void CEEInfo::getTlsIndexInfo(CORINFO_CONST_LOOKUP* addr)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called with NativeAOT.
+}
+
+void CEEInfo::getThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* addr)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called with NativeAOT.
+}
+
+int CEEInfo::getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, CORINFO_CONST_LOOKUP* targetSymbol)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called with NativeAOT.
+    return 0;
+}
+
 uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
 {
     CONTRACTL {

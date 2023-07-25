@@ -539,6 +539,13 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     DWORD                         offsetOfGCDataPointer;
 };
 
+struct Agnostic_GetClassCtorInitializationInfo
+{
+    Agnostic_CORINFO_CONST_LOOKUP addr;
+    Agnostic_CORINFO_CONST_LOOKUP targetAddr;
+    int                           size;
+};
+
 struct Agnostic_GetThreadLocalFieldInfo
 {
     DWORD staticBlockIndex;

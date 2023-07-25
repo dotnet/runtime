@@ -3239,17 +3239,22 @@ namespace Internal.JitInterface
 
         private void getTlsRootInfo(ref CORINFO_CONST_LOOKUP addr)
         {
-            // Implemented for JIT and NativeAOT only for now.
+            // Implemented for NativeAOT only for now.
+        }
+
+        private void getTlsIndexInfo(ref CORINFO_CONST_LOOKUP addr)
+        {
+            // Implemented for NativeAOT only for now.
         }
 
         private void getThreadStaticBaseSlowInfo(ref CORINFO_CONST_LOOKUP addr)
         {
-            // Implemented for JIT and NativeAOT only for now.
+            // Implemented for NativeAOT only for now.
         }
 
         private int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref CORINFO_CONST_LOOKUP targetSymbol)
         {
-            // Implemented for JIT and NativeAOT only for now.
+            // Implemented for NativeAOT only for now.
             return 0;
         }
 #pragma warning restore CA1822 // Mark members as static

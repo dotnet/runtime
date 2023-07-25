@@ -878,6 +878,32 @@ void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* p
     jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
+void MyICJI::getTlsRootInfo(CORINFO_CONST_LOOKUP* pInfo)
+{
+    jitInstance->mc->cr->AddCall("getTlsRootInfo");
+    jitInstance->mc->repGetTlsRootInfo(pInfo);
+}
+
+void MyICJI::getTlsIndexInfo(CORINFO_CONST_LOOKUP* pInfo)
+{
+    jitInstance->mc->cr->AddCall("getTlsIndexInfo");
+    jitInstance->mc->repGetTlsIndexInfo(pInfo);
+}
+
+void MyICJI::getThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* pInfo)
+{
+    jitInstance->mc->cr->AddCall("getThreadStaticBaseSlowInfo");
+    jitInstance->mc->repGetThreadStaticBaseSlowInfo(pInfo);
+}
+
+int MyICJI::getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_HANDLE  cls,
+                                                                  CORINFO_CONST_LOOKUP* addr,
+                                                                  CORINFO_CONST_LOOKUP* targetSymbol)
+{
+    jitInstance->mc->cr->AddCall("getEnsureClassCtorRunAndReturnThreadStaticBaseHelper");
+    return jitInstance->mc->repGetEnsureClassCtorRunAndReturnThreadStaticBaseHelper(cls, addr, targetSymbol);
+}   
+
 // Returns true iff "fldHnd" represents a static field.
 bool MyICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {
