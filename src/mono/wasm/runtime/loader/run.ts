@@ -16,6 +16,7 @@ import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { invokeLibraryInitializers } from "./libraryInitializers";
+import { initCacheToUseIfEnabled } from "./resourceLoader";
 
 const module = globalObjectsRoot.module;
 const monoConfig = module.config as MonoConfigInternal;
@@ -474,6 +475,8 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
     await mono_wasm_load_config(module);
 
     const promises = importModules();
+
+    await initCacheToUseIfEnabled();
 
     const wasmModuleAsset = resolve_asset_path("dotnetwasm");
     start_asset_download(wasmModuleAsset).then(asset => {

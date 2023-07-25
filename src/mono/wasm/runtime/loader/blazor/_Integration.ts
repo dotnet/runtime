@@ -6,7 +6,7 @@ import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadingR
 import type { BootJsonData } from "../../types/blazor";
 
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "../globals";
-import { initCacheToUseIfEnabled, loadResource } from "../resourceLoader";
+import { loadResource } from "../resourceLoader";
 import { ICUDataMode } from "../../types/blazor";
 import { appendUniqueQuery } from "../assets";
 import { hasDebuggingEnabled } from "../config";
@@ -67,7 +67,6 @@ function readBootConfigResponseHeaders(bootConfigResponse: Response) {
 async function initializeBootConfig(bootConfigResponse: Response, bootConfig: BootJsonData, module: DotnetModuleInternal) {
     readBootConfigResponseHeaders(bootConfigResponse);
     mapBootConfigToMonoConfig(bootConfig);
-    await initCacheToUseIfEnabled();
     hookDownloadResource(module);
 }
 
