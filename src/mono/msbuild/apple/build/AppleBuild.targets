@@ -94,7 +94,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_ScanAssembliesDecideLightweightMarshaler" DependsOnTargets="_AppleResolveReferences">
+  <Target Name="_ScanAssembliesDecideLightweightMarshaler" DependsOnTargets="_AppleResolveReferences" Condition="'$(UseNativeAOTRuntime)' == 'true'">
     <PropertyGroup Condition="'$(RuntimeComponents)'=='*'">
       <ForceAllComponents>true</ForceAllComponents>
     </PropertyGroup>
