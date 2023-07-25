@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include <minipal/utf8.h>
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -1324,8 +1325,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     const int MaxU8BufferSizeInBytes = 256;
     uint8_t   bufferU8[MaxU8BufferSizeInBytes];
 
-    const int srcLenU8 = WszWideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)bufferU16, (int)srcLenCnsU16, (LPSTR)bufferU8,
-                                                MaxU8BufferSizeInBytes, nullptr, nullptr);
+    const int srcLenU8 = (int)minipal_convert_utf16_to_utf8(bufferU16, srcLenCnsU16, (char*)bufferU8, MaxU8BufferSizeInBytes, 0);
     if (srcLenU8 <= 0)
     {
         // E.g. output buffer is too small
