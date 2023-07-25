@@ -11,7 +11,7 @@ import { ICUDataMode } from "../../types/blazor";
 import { appendUniqueQuery } from "../assets";
 import { hasDebuggingEnabled } from "../config";
 
-export async function loadBootConfig(config: MonoConfigInternal, module: DotnetModuleInternal) {
+export async function loadBootConfig(module: DotnetModuleInternal) {
     const defaultBootJsonLocation = "_framework/blazor.boot.json";
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
         loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultBootJsonLocation, "") :
@@ -29,7 +29,7 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
 
     const bootConfig: BootJsonData = await bootConfigResponse.json();
 
-    await initializeBootConfig(config, bootConfigResponse, bootConfig, module);
+    await initializeBootConfig(bootConfigResponse, bootConfig, module);
 
     function defaultLoadBlazorBootJson(url: string): Promise<Response> {
         return fetch(url, {
@@ -40,7 +40,9 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
     }
 }
 
-function readBootConfigResponseHeaders(config: MonoConfigInternal, bootConfigResponse: Response) {
+function readBootConfigResponseHeaders(bootConfigResponse: Response) {
+    const config = loaderHelpers.config;
+
     config.applicationEnvironment = config.applicationEnvironment
         || (loaderHelpers.getApplicationEnvironment && loaderHelpers.getApplicationEnvironment(bootConfigResponse))
         || bootConfigResponse.headers.get("Blazor-Environment")
@@ -63,10 +65,10 @@ function readBootConfigResponseHeaders(config: MonoConfigInternal, bootConfigRes
     }
 }
 
-export async function initializeBootConfig(config: MonoConfigInternal, bootConfigResponse: Response, bootConfig: BootJsonData, module: DotnetModuleInternal) {
-    readBootConfigResponseHeaders(config, bootConfigResponse);
-    await initCacheToUseIfEnabled(config);
-    mapBootConfigToMonoConfig(config, bootConfig);
+export async function initializeBootConfig(bootConfigResponse: Response, bootConfig: BootJsonData, module: DotnetModuleInternal) {
+    readBootConfigResponseHeaders(bootConfigResponse);
+    await initCacheToUseIfEnabled();
+    mapBootConfigToMonoConfig(bootConfig);
     hookDownloadResource(module);
 }
 
@@ -118,7 +120,8 @@ export function hookDownloadResource(module: DotnetModuleInternal) {
     loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
 }
 
-export function mapBootConfigToMonoConfig(config: MonoConfigInternal, bootConfig: BootJsonData) {
+export function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
+    const config = loaderHelpers.config;
     const resources = bootConfig.resources;
 
     const assets: AssetEntry[] = [];

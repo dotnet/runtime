@@ -176,8 +176,8 @@ async function addToCacheAsync(cache: Cache, name: string, cacheKey: string, res
     }
 }
 
-export async function initCacheToUseIfEnabled(config: MonoConfig): Promise<void> {
-    cacheIfUsed = await getCacheToUseIfEnabled(config);
+export async function initCacheToUseIfEnabled(): Promise<void> {
+    cacheIfUsed = await getCacheToUseIfEnabled(loaderHelpers.config);
 }
 
 async function getCacheToUseIfEnabled(config: MonoConfig): Promise<Cache | null> {
