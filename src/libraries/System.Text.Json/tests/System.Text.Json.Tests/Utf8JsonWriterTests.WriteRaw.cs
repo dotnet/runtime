@@ -342,6 +342,7 @@ namespace System.Text.Json.Tests
         /// time the memory is accessed which triggers the full memory allocation.
         /// Also see <see cref="WriteLargeJsonToStreamWithoutFlushing"/>
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88272")]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
