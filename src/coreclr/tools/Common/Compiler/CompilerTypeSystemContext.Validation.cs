@@ -14,7 +14,7 @@ namespace ILCompiler
     public partial class CompilerTypeSystemContext
     {
         [ThreadStatic]
-        static List<TypeLoadabilityCheckInProgress> t_typeLoadCheckInProgressStack;
+        private static List<TypeLoadabilityCheckInProgress> t_typeLoadCheckInProgressStack;
         private static List<TypeDesc> EmptyList = new List<TypeDesc>();
         private readonly ValidTypeHashTable _validTypes = new ValidTypeHashTable();
 
@@ -39,7 +39,7 @@ namespace ILCompiler
             // interface IInterface<T> {}
             // interface IPassThruInterface<T> : IInterface<T> {}
             // interface ISimpleInterface {}
-            // class A<T> : IInterface<A<T>>, IPassThruInterface<A<T>>, ISimpleInterface { }
+            // class A<T> : IInterface<A<T>>, IPassThruInterface<A<T>>, ISimpleInterface {}
             // class B : A<B> {}
             //
             // We call EnsureLoadableType on B
@@ -58,7 +58,7 @@ namespace ILCompiler
             //  This stack indicates that IInterface<A<B>> can be considered loadable if A<B> is considered loadable. We must defer
             //  marking IInterface<A<B>> as loadable until we are able to mark A<B> as loadable. Based on the stack above, that can
             //  only happen once B is considered loadable.
-            // 
+            //
             // B -> A<B> -> IPassthruInterface<A<B>> -> IInterface<A<B>>
             //  This stack indicates that IPassthruInterface<A<B>> can be considered loadable if IInterface<A<B>> is considered
             //  loadable. If this happens after the IInterface<A<B>> is marked as being loadable once B is considered loadable
@@ -80,7 +80,7 @@ namespace ILCompiler
             }
         }
 
-        private class TypeLoadabilityCheckInProgress
+        private sealed class TypeLoadabilityCheckInProgress
         {
             public TypeDesc TypeInLoadabilityCheck;
             public bool MarkTypeAsSuccessfullyLoadedIfNoExceptionThrown;
@@ -99,10 +99,9 @@ namespace ILCompiler
         }
 
         // Returns true to indicate the type should be considered to be loadable (although it might not be, actually safety may require more code to execute)
-        private bool PushTypeLoadInProgress(TypeDesc type)
+        private static bool PushTypeLoadInProgress(TypeDesc type)
         {
-            if (t_typeLoadCheckInProgressStack == null)
-                t_typeLoadCheckInProgressStack = new List<TypeLoadabilityCheckInProgress>();
+            t_typeLoadCheckInProgressStack ??= new List<TypeLoadabilityCheckInProgress>();
 
             // Walk stack to see if the specified type is already in the process of being type checked.
             int typeLoadCheckInProgressStackOffset = -1;
@@ -166,7 +165,7 @@ namespace ILCompiler
             return true;
         }
 
-        void PopTypeLoadabilityCheckInProgress(bool exceptionThrown)
+        private void PopTypeLoadabilityCheckInProgress(bool exceptionThrown)
         {
             Debug.Assert(EmptyList.Count == 0);
             var typeLoadabilityCheck = t_typeLoadCheckInProgressStack[t_typeLoadCheckInProgressStack.Count - 1];
@@ -207,7 +206,7 @@ namespace ILCompiler
         {
             protected override bool CompareKeyToValue(TypeDesc key, TypeDesc value) => key == value;
             protected override bool CompareValueToValue(TypeDesc value1, TypeDesc value2) => value1 == value2;
-            protected override TypeDesc CreateValueFromKey(TypeDesc key) => EnsureLoadableTypeUncached(key);
+            protected override TypeDesc CreateValueFromKey(TypeDesc key) => key;
             protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(TypeDesc value) => value.GetHashCode();
         }
@@ -335,7 +334,7 @@ namespace ILCompiler
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type.BaseType);
+                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(typeArg);
                 }
 
                 if (!defType.IsCanonicalSubtype(CanonicalFormKind.Any) && !defType.CheckConstraints())
