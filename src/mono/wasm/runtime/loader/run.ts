@@ -472,7 +472,7 @@ function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModu
 }
 
 async function createEmscriptenMain(): Promise<RuntimeAPI> {
-    if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.assets)) {
+    if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.resources)) {
         // if config file location nor assets are provided
         module.configSrc = "./blazor.boot.json";
     }

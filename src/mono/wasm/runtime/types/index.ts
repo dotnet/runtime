@@ -33,10 +33,6 @@ export type MonoConfig = {
      */
     assemblyRootFolder?: string,
     /**
-     * A list of assets to load along with the runtime.
-     */
-    assets?: AssetEntry[],
-    /**
      * Additional search locations for assets.
      */
     remoteSources?: string[], // Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".

@@ -100,10 +100,6 @@ type MonoConfig = {
      */
     assemblyRootFolder?: string;
     /**
-     * A list of assets to load along with the runtime.
-     */
-    assets?: AssetEntry[];
-    /**
      * Additional search locations for assets.
      */
     remoteSources?: string[];
