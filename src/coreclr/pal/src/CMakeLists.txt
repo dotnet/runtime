@@ -1,7 +1,7 @@
-if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
+if(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
+endif(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -16,7 +16,7 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep)
 
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
-elseif(NOT CLR_CMAKE_TARGET_OSX)
+elseif(NOT CLR_CMAKE_TARGET_APPLE)
   find_unwind_libs(UNWIND_LIBS)
 else()
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
@@ -71,13 +71,18 @@ if(CLR_CMAKE_TARGET_OSX)
   if(CLR_CMAKE_TARGET_ARCH_AMD64)
     add_definitions(-DXSTATE_SUPPORTED)
   endif()
+endif()
+
+if(CLR_CMAKE_TARGET_APPLE)
+  add_definitions(-DTARGET_APPLE)
+  add_definitions(-D_XOPEN_SOURCE)
   set(PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/context.S
     arch/${PAL_ARCH_SOURCES_DIR}/dispatchexceptionwrapper.S
     exception/machexception.cpp
     exception/machmessage.cpp
   )
-endif(CLR_CMAKE_TARGET_OSX)
+endif(CLR_CMAKE_TARGET_APPLE)
 
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
@@ -108,12 +113,12 @@ set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
 )
 
-if(NOT CLR_CMAKE_TARGET_OSX)
+if(NOT CLR_CMAKE_TARGET_APPLE)
   list(APPEND PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
   )
-endif(NOT CLR_CMAKE_TARGET_OSX)
+endif(NOT CLR_CMAKE_TARGET_APPLE)
 
 if(CLR_CMAKE_HOST_ARCH_ARM)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -224,7 +229,7 @@ add_library(coreclrpal
 )
 
 # Build separate pal library for DAC (addition to regular pal library)
-if(CLR_CMAKE_TARGET_OSX)
+if(CLR_CMAKE_TARGET_APPLE)
   set(LIBUNWIND_DAC_OBJECTS $<TARGET_OBJECTS:libunwind_dac>)
 
   add_library(coreclrpal_dac STATIC
@@ -239,7 +244,7 @@ else()
       exception/remote-unwind.cpp
     )
   endif(NOT FEATURE_CROSSBITNESS)
-endif(CLR_CMAKE_TARGET_OSX)
+endif(CLR_CMAKE_TARGET_APPLE)
 
 if(NOT FEATURE_CROSSBITNESS)
   target_include_directories(coreclrpal_dac PUBLIC

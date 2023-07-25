@@ -66,13 +66,14 @@ Revision History:
 #include <machine/vmparam.h>
 #endif  // HAVE_MACHINE_VMPARAM_H
 
-#if defined(TARGET_OSX)
+#if defined(TARGET_APPLE)
 #include <mach/vm_statistics.h>
 #include <mach/mach_types.h>
 #include <mach/mach_init.h>
 #include <mach/mach_host.h>
-#endif // defined(TARGET_OSX)
+#endif // defined(TARGET_APPLE)
 
+#if !defined(TARGET_IOS)
 // On some platforms sys/user.h ends up defining _DEBUG; if so
 // remove the definition before including the header and put
 // back our definition afterwards
@@ -86,6 +87,7 @@ Revision History:
 #define _DEBUG OLD_DEBUG
 #undef OLD_DEBUG
 #endif
+#endif // !TARGET_IOS
 
 #include "pal/dbgmsg.h"
 #include "pal/process.h"
@@ -223,6 +225,8 @@ GetSystemInfo(
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) (1ull << 47);
 #elif defined(__sun)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) 0xfffffd7fffe00000ul;
+#elif defined(VM_MAX_PAGE_ADDRESS)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) VM_MAX_PAGE_ADDRESS;
 #elif defined(USERLIMIT)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USERLIMIT;
 #elif defined(HOST_64BIT)
@@ -588,7 +592,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
     if (cacheSize == 0)
     {
         // We expect to get the L3 cache size for Arm64 but  currently expected to be missing that info
@@ -638,7 +642,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
     if (cacheLevel != 3)
     {
         // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info

@@ -14,7 +14,7 @@ if(POLICY CMP0075)
     cmake_policy(SET CMP0075 NEW)
 endif()
 
-if (CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_APPLE)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
