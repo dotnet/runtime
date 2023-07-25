@@ -6,8 +6,6 @@ import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal
 import type { DotnetModuleConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
-import { BootConfigResult } from "./blazor/BootConfig";
-import { BootJsonData } from "../types/blazor";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
@@ -91,8 +89,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
             if (loadedAnyConfig.resources) {
                 // If we found boot config schema
                 normalizeConfig();
-                const bootConfigResult = BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment);
-                await initializeBootConfig(bootConfigResult.bootConfig, bootConfigResult.applicationEnvironment, module, loaderHelpers.loadBootResource);
+                await initializeBootConfig(loadedAnyConfig, configResponse, loadedAnyConfig, module, loaderHelpers.loadBootResource);
             } else {
                 // Otherwise we found mono config schema
                 const loadedConfig = loadedAnyConfig as MonoConfigInternal;

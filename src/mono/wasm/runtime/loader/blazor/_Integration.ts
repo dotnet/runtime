@@ -6,7 +6,6 @@ import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadBoot
 import type { BootJsonData } from "../../types/blazor";
 
 import { ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers } from "../globals";
-import { BootConfigResult } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 import { ICUDataMode } from "../../types/blazor";
@@ -31,9 +30,8 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
     }
 
     const bootConfig: BootJsonData = await bootConfigResponse.json();
-    const bootConfigResult = await BootConfigResult.fromFetchResponse(bootConfigResponse, bootConfig, config.applicationEnvironment);
 
-    await initializeBootConfig(bootConfigResult.bootConfig, bootConfigResult.applicationEnvironment, module, loaderHelpers.loadBootResource);
+    await initializeBootConfig(config, bootConfigResponse, bootConfig, module, loaderHelpers.loadBootResource);
 
     function defaultLoadBlazorBootJson(url: string): Promise<Response> {
         return fetch(url, {
@@ -44,9 +42,33 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
     }
 }
 
-export async function initializeBootConfig(bootConfig: BootJsonData, applicationEnvironment: string, module: DotnetModuleInternal, loadBootResource?: LoadBootResourceCallback) {
+function readBootConfigResponseHeaders(config: MonoConfigInternal, bootConfigResponse: Response) {
+    config.applicationEnvironment = config.applicationEnvironment
+        || (loaderHelpers.getApplicationEnvironment && loaderHelpers.getApplicationEnvironment(bootConfigResponse))
+        || bootConfigResponse.headers.get("Blazor-Environment")
+        || bootConfigResponse.headers.get("DotNet-Environment")
+        || "Production";
+
+    if (!config.environmentVariables)
+        config.environmentVariables = {};
+
+    const modifiableAssemblies = bootConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
+    if (modifiableAssemblies) {
+        // Configure the app to enable hot reload in Development.
+        config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = modifiableAssemblies;
+    }
+
+    const aspnetCoreBrowserTools = bootConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
+    if (aspnetCoreBrowserTools) {
+        // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
+        config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = aspnetCoreBrowserTools;
+    }
+}
+
+export async function initializeBootConfig(config: MonoConfigInternal, bootConfigResponse: Response, bootConfig: BootJsonData, module: DotnetModuleInternal, loadBootResource?: LoadBootResourceCallback) {
+    readBootConfigResponseHeaders(config, bootConfigResponse);
     INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfig, loadBootResource);
-    mapBootConfigToMonoConfig(loaderHelpers.config, applicationEnvironment);
+    mapBootConfigToMonoConfig(config);
 
     if (ENVIRONMENT_IS_WEB) {
         setupModuleForBlazor(module);
@@ -101,7 +123,7 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
     loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
 }
 
-export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, applicationEnvironment: string) {
+export function mapBootConfigToMonoConfig(config: MonoConfigInternal) {
     const resources = resourceLoader.bootConfig.resources;
 
     const assets: AssetEntry[] = [];
@@ -109,16 +131,14 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         // From boot config
         ...(resourceLoader.bootConfig.environmentVariables || {}),
         // From JavaScript
-        ...(moduleConfig.environmentVariables || {})
+        ...(config.environmentVariables || {})
     };
 
-    moduleConfig.applicationEnvironment = applicationEnvironment;
-
-    moduleConfig.remoteSources = (resourceLoader.bootConfig.resources as any).remoteSources;
-    moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
-    moduleConfig.assets = assets;
-    moduleConfig.extensions = resourceLoader.bootConfig.extensions;
-    moduleConfig.resources = {
+    config.remoteSources = (resourceLoader.bootConfig.resources as any).remoteSources;
+    config.assetsHash = resourceLoader.bootConfig.resources.hash;
+    config.assets = assets;
+    config.extensions = resourceLoader.bootConfig.extensions;
+    config.resources = {
         extensions: resources.extensions
     };
 
@@ -127,8 +147,8 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
     // - Publish (debug)    => debugBuild=false & debugLevel=-1 => 0
     // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
-    moduleConfig.debugLevel = hasDebuggingEnabled(resourceLoader.bootConfig) ? resourceLoader.bootConfig.debugLevel : 0;
-    moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
+    config.debugLevel = hasDebuggingEnabled(resourceLoader.bootConfig) ? resourceLoader.bootConfig.debugLevel : 0;
+    config.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
 
     const anyBootConfig = (resourceLoader.bootConfig as any);
     for (const key in resourceLoader.bootConfig) {
@@ -140,18 +160,18 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     }
 
     // FIXME this mix of both formats is ugly temporary hack
-    Object.assign(moduleConfig, {
+    Object.assign(config, {
         ...resourceLoader.bootConfig,
     });
 
-    moduleConfig.environmentVariables = environmentVariables;
+    config.environmentVariables = environmentVariables;
 
     if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
-        moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
+        config.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
     }
 
     if (resourceLoader.bootConfig.runtimeOptions) {
-        moduleConfig.runtimeOptions = [...(moduleConfig.runtimeOptions || []), ...resourceLoader.bootConfig.runtimeOptions];
+        config.runtimeOptions = [...(config.runtimeOptions || []), ...resourceLoader.bootConfig.runtimeOptions];
     }
 
     // any runtime owned assets, with proper behavior already set
@@ -181,8 +201,8 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             assets.push(asset);
         }
     }
-    const applicationCulture = moduleConfig.applicationCulture || (ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
-    const icuDataResourceName = getICUResourceName(resourceLoader.bootConfig, moduleConfig, applicationCulture);
+    const applicationCulture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
+    const icuDataResourceName = getICUResourceName(resourceLoader.bootConfig, config, applicationCulture);
     let hasIcuData = false;
     for (const name in resources.runtime) {
         const behavior = behaviorByName(name) as any;
@@ -213,7 +233,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         assets.push(asset);
     }
 
-    if (moduleConfig.loadAllSatelliteResources && resources.satelliteResources) {
+    if (config.loadAllSatelliteResources && resources.satelliteResources) {
         for (const culture in resources.satelliteResources) {
             for (const name in resources.satelliteResources[culture]) {
                 assets.push({
@@ -227,12 +247,12 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     }
 
     for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
-        const config = resourceLoader.bootConfig.config[i];
-        const configFileName = fileName(config);
-        if (configFileName === "appsettings.json" || configFileName === `appsettings.${applicationEnvironment}.json`) {
+        const configUrl = resourceLoader.bootConfig.config[i];
+        const configFileName = fileName(configUrl);
+        if (configFileName === "appsettings.json" || configFileName === `appsettings.${config.applicationEnvironment}.json`) {
             assets.push({
                 name: configFileName,
-                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(config), "vfs"),
+                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(configUrl), "vfs"),
                 behavior: "vfs",
             });
         }
@@ -252,7 +272,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     }
 
     if (!hasIcuData) {
-        moduleConfig.globalizationMode = GlobalizationMode.Invariant;
+        config.globalizationMode = GlobalizationMode.Invariant;
     }
 
     if (resourceLoader.bootConfig.modifiableAssemblies) {
@@ -265,17 +285,17 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = resourceLoader.bootConfig.aspnetCoreBrowserTools;
     }
 
-    if (moduleConfig.applicationCulture) {
+    if (config.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
-        environmentVariables["LANG"] = `${moduleConfig.applicationCulture}.UTF-8`;
+        environmentVariables["LANG"] = `${config.applicationCulture}.UTF-8`;
     }
 
     if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
-        moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
+        config.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
     }
 
     if (resourceLoader.bootConfig.runtimeOptions) {
-        moduleConfig.runtimeOptions = [...(moduleConfig.runtimeOptions || []), ...(resourceLoader.bootConfig.runtimeOptions || [])];
+        config.runtimeOptions = [...(config.runtimeOptions || []), ...(resourceLoader.bootConfig.runtimeOptions || [])];
     }
 }
 
