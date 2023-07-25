@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI } from ".";
-import type { BootJsonData } from "./blazor";
+import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceList, ResourceRequest, RuntimeAPI, WebAssemblyBootResourceType } from ".";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -69,6 +68,7 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
 
 // when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
+    linkerEnabled?: boolean,
     assets?: AssetEntry[],
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
@@ -143,7 +143,9 @@ export type LoaderHelpers = {
     err(message: string): void;
     getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 
-    hasDebuggingEnabled(bootConfig: BootJsonData): boolean,
+    hasDebuggingEnabled(config: MonoConfig): boolean,
+    loadResources(resources: ResourceList, url: (name: string) => string, resourceType: WebAssemblyBootResourceType): LoadingResource[],
+    loadResource(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): LoadingResource,
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,

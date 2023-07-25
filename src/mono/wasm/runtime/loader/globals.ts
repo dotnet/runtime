@@ -9,6 +9,7 @@ import { mono_download_assets, resolve_asset_path } from "./assets";
 import { mono_log_error, setup_proxy_console } from "./logging";
 import { hasDebuggingEnabled } from "./blazor/_Polyfill";
 import { invokeLibraryInitializers } from "./libraryInitializers";
+import { loadResource, loadResources } from "./resourceLoader";
 
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB = typeof window == "object";
@@ -92,6 +93,8 @@ export function setLoaderGlobals(
         setup_proxy_console,
 
         hasDebuggingEnabled,
+        loadResource,
+        loadResources,
         invokeLibraryInitializers,
 
     } as Partial<LoaderHelpers>);

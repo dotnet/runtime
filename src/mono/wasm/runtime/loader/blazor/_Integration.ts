@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/internal";
-import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadBootResourceCallback, type LoadingResource, type WebAssemblyBootResourceType } from "../../types";
+import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadingResource, type WebAssemblyBootResourceType } from "../../types";
 import type { BootJsonData } from "../../types/blazor";
 
-import { ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers } from "../globals";
-import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
+import { ENVIRONMENT_IS_WEB, loaderHelpers } from "../globals";
+import { initCacheToUseIfEnabled, loadResource } from "../resourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 import { ICUDataMode } from "../../types/blazor";
 import { appendUniqueQuery } from "../assets";
-
-let resourceLoader: WebAssemblyResourceLoader;
 
 export async function loadBootConfig(config: MonoConfigInternal, module: DotnetModuleInternal) {
     const defaultBootJsonLocation = "_framework/blazor.boot.json";
@@ -31,7 +29,7 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
 
     const bootConfig: BootJsonData = await bootConfigResponse.json();
 
-    await initializeBootConfig(config, bootConfigResponse, bootConfig, module, loaderHelpers.loadBootResource);
+    await initializeBootConfig(config, bootConfigResponse, bootConfig, module);
 
     function defaultLoadBlazorBootJson(url: string): Promise<Response> {
         return fetch(url, {
@@ -65,14 +63,11 @@ function readBootConfigResponseHeaders(config: MonoConfigInternal, bootConfigRes
     }
 }
 
-export async function initializeBootConfig(config: MonoConfigInternal, bootConfigResponse: Response, bootConfig: BootJsonData, module: DotnetModuleInternal, loadBootResource?: LoadBootResourceCallback) {
+export async function initializeBootConfig(config: MonoConfigInternal, bootConfigResponse: Response, bootConfig: BootJsonData, module: DotnetModuleInternal) {
     readBootConfigResponseHeaders(config, bootConfigResponse);
-    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfig, loadBootResource);
-    mapBootConfigToMonoConfig(config);
-
-    if (ENVIRONMENT_IS_WEB) {
-        setupModuleForBlazor(module);
-    }
+    await initCacheToUseIfEnabled(config);
+    mapBootConfigToMonoConfig(config, bootConfig);
+    hookDownloadResource(module);
 }
 
 let resourcesLoaded = 0;
@@ -97,7 +92,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "dotnetwasm": "dotnetwasm",
 };
 
-export function setupModuleForBlazor(module: DotnetModuleInternal) {
+export function hookDownloadResource(module: DotnetModuleInternal) {
     // it would not `loadResource` on types for which there is no typesMap mapping
     const downloadResource = (asset: AssetEntry): LoadingResource | undefined => {
         // GOTCHA: the mapping to blazor asset type may not cover all mono owned asset types in the future in which case:
@@ -106,7 +101,7 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
         // C) or we could return `undefined` and let the runtime to load the asset. In which case the progress will not be reported on it and blazor will not be able to cache it.
         const type = monoToBlazorAssetTypeMap[asset.behavior];
         if (type !== undefined) {
-            const res = resourceLoader.loadResource(asset.name, asset.resolvedUrl!, asset.hash!, type);
+            const res = loadResource(asset.name, asset.resolvedUrl!, asset.hash!, type);
 
             totalResources.add(asset.name!);
             res.response.then(() => {
@@ -123,21 +118,23 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
     loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
 }
 
-export function mapBootConfigToMonoConfig(config: MonoConfigInternal) {
-    const resources = resourceLoader.bootConfig.resources;
+export function mapBootConfigToMonoConfig(config: MonoConfigInternal, bootConfig: BootJsonData) {
+    const resources = bootConfig.resources;
 
     const assets: AssetEntry[] = [];
     const environmentVariables: any = {
         // From boot config
-        ...(resourceLoader.bootConfig.environmentVariables || {}),
+        ...(bootConfig.environmentVariables || {}),
         // From JavaScript
         ...(config.environmentVariables || {})
     };
 
-    config.remoteSources = (resourceLoader.bootConfig.resources as any).remoteSources;
-    config.assetsHash = resourceLoader.bootConfig.resources.hash;
+    config.cacheBootResources = bootConfig.cacheBootResources;
+    config.linkerEnabled = bootConfig.linkerEnabled;
+    config.remoteSources = (resources as any).remoteSources;
+    config.assetsHash = bootConfig.resources.hash;
     config.assets = assets;
-    config.extensions = resourceLoader.bootConfig.extensions;
+    config.extensions = bootConfig.extensions;
     config.resources = {
         extensions: resources.extensions
     };
@@ -147,11 +144,11 @@ export function mapBootConfigToMonoConfig(config: MonoConfigInternal) {
     // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
     // - Publish (debug)    => debugBuild=false & debugLevel=-1 => 0
     // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
-    config.debugLevel = hasDebuggingEnabled(resourceLoader.bootConfig) ? resourceLoader.bootConfig.debugLevel : 0;
-    config.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
+    config.debugLevel = hasDebuggingEnabled(config) ? bootConfig.debugLevel : 0;
+    config.mainAssemblyName = bootConfig.entryAssembly;
 
-    const anyBootConfig = (resourceLoader.bootConfig as any);
-    for (const key in resourceLoader.bootConfig) {
+    const anyBootConfig = (bootConfig as any);
+    for (const key in bootConfig) {
         if (Object.prototype.hasOwnProperty.call(anyBootConfig, key)) {
             if (anyBootConfig[key] === null) {
                 delete anyBootConfig[key];
@@ -161,17 +158,17 @@ export function mapBootConfigToMonoConfig(config: MonoConfigInternal) {
 
     // FIXME this mix of both formats is ugly temporary hack
     Object.assign(config, {
-        ...resourceLoader.bootConfig,
+        ...bootConfig,
     });
 
     config.environmentVariables = environmentVariables;
 
-    if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
-        config.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
+    if (bootConfig.startupMemoryCache !== undefined) {
+        config.startupMemoryCache = bootConfig.startupMemoryCache;
     }
 
-    if (resourceLoader.bootConfig.runtimeOptions) {
-        config.runtimeOptions = [...(config.runtimeOptions || []), ...resourceLoader.bootConfig.runtimeOptions];
+    if (bootConfig.runtimeOptions) {
+        config.runtimeOptions = [...(config.runtimeOptions || []), ...(bootConfig.runtimeOptions || [])];
     }
 
     // any runtime owned assets, with proper behavior already set
@@ -190,7 +187,7 @@ export function mapBootConfigToMonoConfig(config: MonoConfigInternal) {
         };
         assets.push(asset);
     }
-    if (hasDebuggingEnabled(resourceLoader.bootConfig) && resources.pdb) {
+    if (hasDebuggingEnabled(config) && resources.pdb) {
         for (const name in resources.pdb) {
             const asset: AssetEntry = {
                 name,
@@ -202,13 +199,13 @@ export function mapBootConfigToMonoConfig(config: MonoConfigInternal) {
         }
     }
     const applicationCulture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
-    const icuDataResourceName = getICUResourceName(resourceLoader.bootConfig, config, applicationCulture);
+    const icuDataResourceName = getICUResourceName(bootConfig, config, applicationCulture);
     let hasIcuData = false;
     for (const name in resources.runtime) {
         const behavior = behaviorByName(name) as any;
         let loadRemote = false;
         if (behavior === "icu") {
-            if (resourceLoader.bootConfig.icuDataMode === ICUDataMode.Invariant) {
+            if (bootConfig.icuDataMode === ICUDataMode.Invariant) {
                 continue;
             }
             if (name !== icuDataResourceName) {
@@ -246,8 +243,8 @@ export function mapBootConfigToMonoConfig(config: MonoConfigInternal) {
         }
     }
 
-    for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
-        const configUrl = resourceLoader.bootConfig.config[i];
+    for (let i = 0; i < bootConfig.config.length; i++) {
+        const configUrl = bootConfig.config[i];
         const configFileName = fileName(configUrl);
         if (configFileName === "appsettings.json" || configFileName === `appsettings.${config.applicationEnvironment}.json`) {
             assets.push({
@@ -275,27 +272,19 @@ export function mapBootConfigToMonoConfig(config: MonoConfigInternal) {
         config.globalizationMode = GlobalizationMode.Invariant;
     }
 
-    if (resourceLoader.bootConfig.modifiableAssemblies) {
+    if (bootConfig.modifiableAssemblies) {
         // Configure the app to enable hot reload in Development.
-        environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = resourceLoader.bootConfig.modifiableAssemblies;
+        environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = bootConfig.modifiableAssemblies;
     }
 
-    if (resourceLoader.bootConfig.aspnetCoreBrowserTools) {
+    if (bootConfig.aspnetCoreBrowserTools) {
         // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
-        environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = resourceLoader.bootConfig.aspnetCoreBrowserTools;
+        environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = bootConfig.aspnetCoreBrowserTools;
     }
 
     if (config.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
         environmentVariables["LANG"] = `${config.applicationCulture}.UTF-8`;
-    }
-
-    if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
-        config.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
-    }
-
-    if (resourceLoader.bootConfig.runtimeOptions) {
-        config.runtimeOptions = [...(config.runtimeOptions || []), ...(resourceLoader.bootConfig.runtimeOptions || [])];
     }
 }
 

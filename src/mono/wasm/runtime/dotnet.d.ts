@@ -130,6 +130,10 @@ type MonoConfig = {
      */
     debugLevel?: number;
     /**
+     * Gets a value that determines whether to enable caching of the 'resources' inside a CacheStorage instance within the browser.
+     */
+    cacheBootResources?: boolean;
+    /**
     * Enables diagnostic log messages during startup
     */
     diagnosticTracing?: boolean;

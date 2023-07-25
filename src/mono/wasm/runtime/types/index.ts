@@ -62,6 +62,11 @@ export type MonoConfig = {
      * debugLevel < 0 enables debugging and disables debug logging.
      */
     debugLevel?: number,
+
+    /**
+     * Gets a value that determines whether to enable caching of the 'resources' inside a CacheStorage instance within the browser.
+     */
+    cacheBootResources?: boolean,
     /**
     * Enables diagnostic log messages during startup
     */
