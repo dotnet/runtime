@@ -507,8 +507,8 @@
   <data name="SerializeTypeInstanceNotSupported" xml:space="preserve">
     <value>Serialization and deserialization of '{0}' instances is not supported.</value>
   </data>
-  <data name="JsonIncludeOnNonPublicInvalid" xml:space="preserve">
-    <value>The non-public property '{0}' on type '{1}' is annotated with 'JsonIncludeAttribute' which is invalid.</value>
+  <data name="JsonIncludeOnInaccessibleProperty" xml:space="preserve">
+    <value>The property '{0}' on type '{1}' which is annotated with 'JsonIncludeAttribute' is not accesible by the source generator.</value>
   </data>
   <data name="CannotSerializeInvalidMember" xml:space="preserve">
     <value>The type '{0}' of property '{1}' on type '{2}' is invalid for serialization or deserialization because it is a pointer type, is a ref struct, or contains generic parameters that have not been replaced by specific types.</value>
@@ -689,5 +689,14 @@
   </data>
   <data name="ObjectCreationHandlingPropertyCannotAllowReferenceHandling" xml:space="preserve">
     <value>JsonObjectCreationHandling.Populate is incompatible with reference handling.</value>
+  </data>
+  <data name="FormatInt128" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for an Int128.</value>
+  </data>
+  <data name="FormatUInt128" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for an UInt128.</value>
+  </data>
+  <data name="FormatHalf" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for a Half.</value>
   </data>
 </root>

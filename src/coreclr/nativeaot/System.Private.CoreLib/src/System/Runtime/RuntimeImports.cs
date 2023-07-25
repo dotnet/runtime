@@ -26,6 +26,14 @@ namespace System.Runtime
     {
         private const string RuntimeLibrary = "*";
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetCrashInfoBuffer")]
+        internal static extern unsafe byte* RhGetCrashInfoBuffer(out int cbMaxSize);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetRuntimeVersion")]
+        internal static extern unsafe byte* RhGetRuntimeVersion(out int cbLength);
+
         [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
@@ -630,24 +638,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
-
-        internal unsafe struct GCFrameRegistration
-        {
-            private nuint m_reserved1;
-            private nuint m_reserved2;
-            private void* m_pObjRefs;
-            private uint m_numObjRefs;
-            private int m_MaybeInterior;
-
-            public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
-            {
-                m_reserved1 = 0;
-                m_reserved2 = 0;
-                m_pObjRefs = allocation;
-                m_numObjRefs = elemCount;
-                m_MaybeInterior = areByRefs ? 1 : 0;
-            }
-        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhRegisterForGCReporting")]

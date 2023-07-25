@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <target state="translated">定数または静的メンバー {0} に検証属性を適用できません。</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <target state="translated">定数、静的フィールド、またはプロパティを検証できません。</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
@@ -60,6 +60,16 @@
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
         <target state="translated">'OptionsValidatorAttribute' の注釈が付けられた型が、必要とされるインターフェイスを実装していません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeMessage">
+        <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
+        <target state="translated">メンバー '{0}' の検証属性 '{1}' は、検証コントロールの種類 '{2}'からアクセスできません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeTitle">
+        <source>Validation attribute on the member is inaccessible from the validator type..</source>
+        <target state="translated">メンバーの検証属性は、検証コントロールの種類からアクセスできません...</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">

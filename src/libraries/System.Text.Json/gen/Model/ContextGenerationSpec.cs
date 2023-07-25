@@ -35,16 +35,6 @@ namespace System.Text.Json.SourceGeneration
 
         public required ImmutableEquatableArray<string> ContextClassDeclarations { get; init; }
 
-        public required JsonIgnoreCondition DefaultIgnoreCondition { get; init; }
-
-        public required bool IgnoreReadOnlyFields { get; init; }
-
-        public required bool IgnoreReadOnlyProperties { get; init; }
-
-        public required bool IncludeFields { get; init; }
-
-        public required JsonKnownNamingPolicy PropertyNamingPolicy { get; init; }
-
-        public required bool WriteIndented { get; init; }
+        public required SourceGenerationOptionsSpec? GeneratedOptionsSpec { get; init; }
     }
 }

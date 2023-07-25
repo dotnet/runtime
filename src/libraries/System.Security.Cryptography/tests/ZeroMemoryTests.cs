@@ -57,6 +57,8 @@ namespace System.Security.Cryptography.Tests
             {
                 Assert.Equal(0, testSpan[i]);
             }
+
+            ArrayPool<byte>.Shared.Return(rented, clearArray: false);
         }
 
         [Fact]

@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <target state="translated">Impossible d’appliquer les attributs de validation au membre constant ou statique {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <target state="translated">Impossible de valider les constantes, les champs statiques ou les propriétés.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
@@ -60,6 +60,16 @@
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
         <target state="translated">Un type annoté avec 'OptionsValidatorAttribute' n’implémente pas l’interface nécessaire.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeMessage">
+        <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
+        <target state="translated">L’attribut de validation '{0}' sur le membre '{1}' n’est pas accessible à partir du type de validateur '{2}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeTitle">
+        <source>Validation attribute on the member is inaccessible from the validator type..</source>
+        <target state="translated">L’attribut de validation sur le membre n’est pas accessible à partir du type de validateur.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">

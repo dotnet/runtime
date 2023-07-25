@@ -22,6 +22,16 @@
         <target state="translated">Nieprawidłowy typ właściwości rozszerzenia danych.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
+        <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
+        <target state="new">The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
+        <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
+        <target state="new">Attributes deriving from JsonConverterAttribute are not supported by the source generator.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">Istnieje wiele typów o nazwie {0}. Wygenerowano źródło dla pierwszego wykrytego elementu. Aby rozwiązać tę kolizję, użyj „JsonSerializableAttribute. TypeInfoPropertyName”.</target>
@@ -60,6 +70,16 @@
       <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
         <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
         <target state="translated">Deserializacja właściwości tylko do inicjowania nie jest obecnie obsługiwana w trybie generowania źródła.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
+        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
+        <target state="translated">W przypadku konstruktora w zakresie typu „{0}” dokonano adnotacji przy użyciu atrybutu JsonConstructorAttribute, ale nie jest on dostępny dla generatora źródła.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleTitle">
+        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
+        <target state="translated">Konstruktor, w przypadku którego dokonano adnotacji za pomocą atrybutu JsonConstructorAttribute, jest niedostępny.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">

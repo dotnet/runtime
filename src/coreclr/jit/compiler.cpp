@@ -2266,7 +2266,7 @@ void Compiler::compSetProcessor()
 // the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
     // Get the preferred vector bitwidth, rounding down to the nearest multiple of 128-bits
-    uint32_t preferredVectorBitWidth   = (JitConfig.PreferredVectorBitWidth() / 128) * 128;
+    uint32_t preferredVectorBitWidth   = (ReinterpretHexAsDecimal(JitConfig.PreferredVectorBitWidth()) / 128) * 128;
     uint32_t preferredVectorByteLength = preferredVectorBitWidth / 8;
 
     if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
@@ -2298,7 +2298,7 @@ void Compiler::compSetProcessor()
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
 
-        if ((preferredVectorByteLength == 0) && opts.Vector512Throttling())
+        if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
         {
             // Some architectures can experience frequency throttling when
             // executing 512-bit width instructions. To account for this we set the
@@ -2306,13 +2306,10 @@ void Compiler::compSetProcessor()
             // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
             // allow using such instructions where hardware support is available.
             //
-            // Under stress, sometimes leave the preferred vector width at 512, even if that means
-            // throttling. This helps with test coverage on test machines that might be older.
+            // Do not condition this based on stress mode as it makes the support
+            // reported inconsistent across methods and breaks expectations/functionality
 
-            if (!compStressCompile(STRESS_GENERIC_VARN, 20))
-            {
-                preferredVectorByteLength = 256 / 8;
-            }
+            preferredVectorByteLength = 256 / 8;
         }
     }
 
@@ -3041,6 +3038,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (opts.disAsm)
 #endif
     {
+        if (JitConfig.JitDisasmTesting())
+        {
+            opts.disTesting = true;
+        }
         if (JitConfig.JitDisasmWithAlignmentBoundaries())
         {
             opts.disAlignment = true;
@@ -4735,6 +4736,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    // Expose candidates for implicit byref last-use copy elision.
+    DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, &Compiler::fgMarkImplicitByRefCopyOmissionCandidates);
+
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
 
@@ -4877,6 +4881,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doBranchOpt               = true;
         bool doCse                     = true;
         bool doAssertionProp           = true;
+        bool doVNBasedIntrinExpansion  = true;
         bool doRangeAnalysis           = true;
         bool doVNBasedDeadStoreRemoval = true;
         int  iterations                = 1;
@@ -4890,6 +4895,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
         doCse                     = doValueNum;
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
+        doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 
@@ -4971,6 +4977,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Assertion propagation
                 //
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
+            }
+
+            if (doVNBasedIntrinExpansion)
+            {
+                // Expand some intrinsics based on VN data
+                //
+                DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, &Compiler::fgVNBasedIntrinsicExpansion);
             }
 
             if (doRangeAnalysis)
@@ -9647,9 +9660,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_ITERATOR]");
                 }
-                if (tree->gtFlags & GTF_VAR_CLONED)
+                if (tree->gtFlags & GTF_VAR_MOREUSES)
                 {
-                    chars += printf("[VAR_CLONED]");
+                    chars += printf("[VAR_MOREUSES]");
                 }
                 if (!comp->lvaGetDesc(tree->AsLclVarCommon())->lvPromoted)
                 {

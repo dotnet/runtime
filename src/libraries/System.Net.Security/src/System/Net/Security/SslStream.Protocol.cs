@@ -52,7 +52,12 @@ namespace System.Net.Security
         {
             get
             {
-                return _selectedClientCertificate;
+                if (_selectedClientCertificate != null && CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!))
+                {
+                    return _selectedClientCertificate;
+                }
+
+                return null;
             }
         }
 

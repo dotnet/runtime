@@ -107,11 +107,11 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
-      runtimeFlavor: mono
+      runtimeFlavor: coreclr
       platforms:
       - ios_arm64
       jobParameters:
-        buildArgs: -s clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
+        buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
         nameSuffix: iOSNativeAOT
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
@@ -223,7 +223,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
       buildConfig: release
-      runtimeFlavor: mono
+      runtimeFlavor: coreclr
       platforms:
         - osx_x64
       jobParameters:
@@ -239,7 +239,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
       buildConfig: release
-      runtimeFlavor: mono
+      runtimeFlavor: coreclr
       platforms:
         - osx_x64
       jobParameters:

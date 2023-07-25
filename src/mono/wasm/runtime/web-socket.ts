@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { createPromiseController } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, mono_assert } from "./globals";
 import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
@@ -26,7 +26,20 @@ let mono_wasm_web_socket_close_warning = false;
 const ws_send_buffer_blocking_threshold = 65536;
 const emptyBuffer = new Uint8Array();
 
+function verifyEnvironment() {
+    if (ENVIRONMENT_IS_SHELL) {
+        throw new Error("WebSockets are not supported in shell JS engine.");
+    }
+    if (typeof globalThis.WebSocket !== "function") {
+        const message = ENVIRONMENT_IS_NODE
+            ? "Please install `ws` npm package to enable networking support."
+            : "This browser doesn't support WebSocket API. Please use a modern browser.";
+        throw new Error(message);
+    }
+}
+
 export function ws_wasm_create(uri: string, sub_protocols: string[] | null, receive_status_ptr: VoidPtr, onClosed: (code: number, reason: string) => void): WebSocketExtension {
+    verifyEnvironment();
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
 
     const ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
@@ -166,17 +179,17 @@ export function ws_wasm_abort(ws: WebSocketExtension): void {
     ws[wasm_ws_is_aborted] = true;
     const open_promise_control = ws[wasm_ws_pending_open_promise];
     if (open_promise_control) {
-        open_promise_control.reject("OperationCanceledException");
+        open_promise_control.reject(new Error("OperationCanceledException"));
     }
     for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
-        close_promise_control.reject("OperationCanceledException");
+        close_promise_control.reject(new Error("OperationCanceledException"));
     }
     for (const send_promise_control of ws[wasm_ws_pending_send_promises]) {
-        send_promise_control.reject("OperationCanceledException");
+        send_promise_control.reject(new Error("OperationCanceledException"));
     }
 
     ws[wasm_ws_pending_receive_promise_queue].drain(receive_promise_control => {
-        receive_promise_control.reject("OperationCanceledException");
+        receive_promise_control.reject(new Error("OperationCanceledException"));
     });
 
     // this is different from Managed implementation

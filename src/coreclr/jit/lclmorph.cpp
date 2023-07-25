@@ -1133,7 +1133,7 @@ private:
             }
 #endif // FEATURE_HW_INTRINSICS
 
-            if (!isDef)
+            if ((!isDef) && (offset == 0))
             {
                 if (varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
                 {

@@ -107,6 +107,8 @@ namespace System.Net.Http
             }
         }
 
+        internal ClientCertificateOption ClientCertificateOptions;
+
         public const bool SupportsAutomaticDecompression = false;
         public const bool SupportsProxy = false;
         public const bool SupportsRedirectConfiguration = true;
@@ -287,7 +289,6 @@ namespace System.Net.Http
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(request);
             bool? allowAutoRedirect = _isAllowAutoRedirectTouched ? AllowAutoRedirect : null;
 #if FEATURE_WASM_THREADS
             return JSHost.CurrentOrMainJSSynchronizationContext.Send(() =>

@@ -237,7 +237,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilationWithConstructorInitOnlyProperties();
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
-        
+
         [Fact]
         public void DoNotWarnOnClassesWithMixedInitOnlyProperties()
         {
@@ -270,16 +270,22 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Location idLocation = compilation.GetSymbolsWithName("Id").First().Locations[0];
             Location address2Location = compilation.GetSymbolsWithName("Address2").First().Locations[0];
             Location countryLocation = compilation.GetSymbolsWithName("Country").First().Locations[0];
-            Location internalFieldLocation = compilation.GetSymbolsWithName("internalField").First().Locations[0];
             Location privateFieldLocation = compilation.GetSymbolsWithName("privateField").First().Locations[0];
+            Location protectedFieldLocation = compilation.GetSymbolsWithName("protectedField").First().Locations[0];
+            Location protectedPropertyLocation = compilation.GetSymbolsWithName("ProtectedProperty").First().Locations[0];
+            Location internalPropertyWithPrivateGetterLocation = compilation.GetSymbolsWithName("InternalPropertyWithPrivateGetter").First().Locations[0];
+            Location internalPropertyWithPrivateSetterLocation = compilation.GetSymbolsWithName("InternalPropertyWithPrivateSetter").First().Locations[0];
 
             var expectedDiagnostics = new DiagnosticData[]
             {
                 new(DiagnosticSeverity.Warning, idLocation, "The member 'Location.Id' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
                 new(DiagnosticSeverity.Warning, address2Location, "The member 'Location.Address2' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
                 new(DiagnosticSeverity.Warning, countryLocation, "The member 'Location.Country' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                new(DiagnosticSeverity.Warning, internalFieldLocation, "The member 'Location.internalField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
                 new(DiagnosticSeverity.Warning, privateFieldLocation, "The member 'Location.privateField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+                new(DiagnosticSeverity.Warning, protectedFieldLocation, "The member 'Location.protectedField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+                new(DiagnosticSeverity.Warning, protectedPropertyLocation, "The member 'Location.ProtectedProperty' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+                new(DiagnosticSeverity.Warning, internalPropertyWithPrivateGetterLocation, "The member 'Location.InternalPropertyWithPrivateGetter' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+                new(DiagnosticSeverity.Warning, internalPropertyWithPrivateSetterLocation, "The member 'Location.InternalPropertyWithPrivateSetter' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
@@ -334,6 +340,26 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 new(DiagnosticSeverity.Warning, value1PropLocation, "The 'JsonConverterAttribute' type 'null' specified on member 'HelloWorld.MyClass.Value1' is not a converter type or does not contain an accessible parameterless constructor."),
                 new(DiagnosticSeverity.Warning, value2PropLocation, "The 'JsonConverterAttribute' type 'int' specified on member 'HelloWorld.MyClass.Value2' is not a converter type or does not contain an accessible parameterless constructor."),
                 new(DiagnosticSeverity.Warning, value3PropLocation, "The 'JsonConverterAttribute' type 'HelloWorld.InacessibleConverter' specified on member 'HelloWorld.MyClass.Value3' is not a converter type or does not contain an accessible parameterless constructor."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void DerivedJsonConverterAttributeTypeWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithDerivedJsonConverterAttributeAnnotations();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location typeAttrLocation = compilation.GetSymbolsWithName("ClassWithConverterDeclaration").First().GetAttributes()[0].GetLocation();
+            Location jsonSerializableAttrLocation = compilation.GetSymbolsWithName("JsonContext").First().GetAttributes()[0].GetLocation();
+            Location propAttrLocation = compilation.GetSymbolsWithName("Value").First().GetAttributes()[0].GetLocation();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, typeAttrLocation, "The custom attribute 'HelloWorld.MyJsonConverterAttribute' deriving from JsonConverterAttribute is not supported by the source generator."),
+                new(DiagnosticSeverity.Warning, jsonSerializableAttrLocation, "Did not generate serialization metadata for type 'HelloWorld.ClassWithConverterDeclaration'."),
+                new(DiagnosticSeverity.Warning, propAttrLocation, "The custom attribute 'HelloWorld.MyJsonConverterAttribute' deriving from JsonConverterAttribute is not supported by the source generator."),
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
@@ -416,6 +442,57 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Theory]
+        [InlineData(LanguageVersion.Default)]
+        [InlineData(LanguageVersion.Preview)]
+        [InlineData(LanguageVersion.Latest)]
+        [InlineData(LanguageVersion.LatestMajor)]
+        [InlineData(LanguageVersion.CSharp9)]
+#if ROSLYN4_4_OR_GREATER
+        [InlineData(LanguageVersion.CSharp10)]
+        [InlineData(LanguageVersion.CSharp11)]
+#endif
+        public void SupportedLanguageVersions_Memory_SucceedCompilation(LanguageVersion langVersion)
+        {
+            string source = """
+                using System;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                { 
+                    public class MyClass<T>
+                    {
+                        public MyClass(
+                            Memory<T> memoryOfT,
+                            Memory<byte> memoryByte,
+                            ReadOnlyMemory<T> readOnlyMemoryOfT,
+                            ReadOnlyMemory<byte> readOnlyMemoryByte)
+                        {
+                            MemoryOfT = memoryOfT;
+                            MemoryByte = memoryByte;
+                            ReadOnlyMemoryOfT = readOnlyMemoryOfT;
+                            ReadOnlyMemoryByte = readOnlyMemoryByte;
+                        }
+
+                        public Memory<T> MemoryOfT { get; set; }
+                        public Memory<byte> MemoryByte { get; set; }
+                        public ReadOnlyMemory<T> ReadOnlyMemoryOfT { get; set; }
+                        public ReadOnlyMemory<byte> ReadOnlyMemoryByte { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(MyClass<int>))]
+                    public partial class MyJsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: parseOptions);
+
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+
+        [Theory]
         [InlineData(LanguageVersion.CSharp1)]
         [InlineData(LanguageVersion.CSharp2)]
         [InlineData(LanguageVersion.CSharp3)]
@@ -456,6 +533,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             var expectedDiagnostics = new DiagnosticData[]
             {
                 new(DiagnosticSeverity.Error, contextLocation, $"The System.Text.Json source generator is not available in C# '{langVersion.ToDisplayString()}'. Please use language version 9.0 or greater.")
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void TypesWithJsonConstructorAnnotations_WarnAsExpected()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithJsonConstructorAttributeAnnotations();
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location protectedCtorLocation = compilation.GetSymbolsWithName("ClassWithProtectedCtor").First().Locations[0];
+            Location privateCtorLocation = compilation.GetSymbolsWithName("ClassWithPrivateCtor").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, protectedCtorLocation, "The constructor on type 'HelloWorld.ClassWithProtectedCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
+                new(DiagnosticSeverity.Warning, privateCtorLocation, "The constructor on type 'HelloWorld.ClassWithPrivateCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);

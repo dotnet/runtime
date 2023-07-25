@@ -9,14 +9,20 @@ set(AOT_EVENTPIPE_SHIM_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set (CONTAINER_SOURCES "")
 set (CONTAINER_HEADERS "")
+set (MINIPAL_SOURCES "")
 set (EVENTPIPE_SOURCES "")
 set (EVENTPIPE_HEADERS "")
 set (GEN_EVENTPIPE_SOURCES "")
 
 set (SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers")
 set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
+set (SHARED_MINIPAL_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/minipal")
 include (${SHARED_EVENTPIPE_SOURCE_PATH}/eventpipe.cmake)
 include (${SHARED_CONTAINERS_SOURCE_PATH}/containers.cmake)
+
+list(APPEND MINIPAL_SOURCES
+  utf8.c
+)
 
 if(CLR_CMAKE_HOST_WIN32)
   list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
@@ -50,6 +56,7 @@ list(APPEND EVENTPIPE_HEADERS
 
 addprefix(CONTAINER_SOURCES ${SHARED_CONTAINERS_SOURCE_PATH} "${SHARED_CONTAINER_SOURCES}")
 addprefix(CONTAINER_HEADERS ${SHARED_CONTAINERS_SOURCE_PATH} "${SHARED_CONTAINER_HEADERS}")
+addprefix(MINIPAL_SOURCES ${SHARED_MINIPAL_SOURCE_PATH} "${MINIPAL_SOURCES}")
 
 addprefix(EVENTPIPE_SOURCES ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_SOURCES}")
 addprefix(EVENTPIPE_HEADERS ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_HEADERS}")
@@ -87,6 +94,7 @@ list(APPEND AOT_EVENTPIPE_SHIM_HEADERS
 )
 
 list(APPEND GEN_EVENTPIPE_SOURCES
+  ${AOT_EVENTPIPE_SHIM_DIR}/clretwallmain.cpp
   ${AOT_EVENTPIPE_SHIM_DIR}/dotnetruntime.cpp
 )
 
@@ -98,21 +106,41 @@ list(APPEND AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES
    ${RUNTIME_DIR}/runtimeeventinternal.cpp
 )
 
+if (FEATURE_EVENT_TRACE)
+  list(APPEND AOT_EVENTTRACE_SOURCES
+    ${RUNTIME_DIR}/eventtrace.cpp
+    ${RUNTIME_DIR}/profheapwalkhelper.cpp
+  )
+
+  # These are carry-overs from .NET Native and only included for ETW currently
+  #   bulktype : directly emits via ETW with EventWrite
+  #   gcheap : GCHeapDump, GCHeapSurvivalAndMovement - not prioritizing for nativeaot yet
+  if (FEATURE_ETW)
+    list(APPEND AOT_EVENTTRACE_SOURCES
+      ${RUNTIME_DIR}/eventtrace_bulktype.cpp
+      ${RUNTIME_DIR}/eventtrace_gcheap.cpp
+    )
+  endif()
+endif()
+
 list(APPEND EVENTPIPE_SOURCES
   ${AOT_EVENTPIPE_SHIM_SOURCES}
   ${AOT_EVENTPIPE_SHIM_HEADERS}
   ${AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES}
+  ${AOT_EVENTTRACE_SOURCES}
   ${SHARED_EVENTPIPE_CONFIG_HEADERS}
   ${GEN_EVENTPIPE_SOURCES}
   ${CONTAINER_SOURCES}
   ${CONTAINER_HEADERS}
+  ${MINIPAL_SOURCES}
 )
 
 list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
   ${RUNTIME_DIR}/DisabledEventPipeInterface.cpp
   ${RUNTIME_DIR}/disabledeventpipeinternal.cpp
+  ${RUNTIME_DIR}/disabledeventtrace.cpp
   ${RUNTIME_DIR}/disabledruntimeeventinternal.cpp
-  ${AOT_EVENTPIPE_SHIM_DIR}/disableddotnetruntime.cpp
+  ${AOT_EVENTPIPE_SHIM_DIR}/disabledclretwallmain.cpp
 )
 
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
