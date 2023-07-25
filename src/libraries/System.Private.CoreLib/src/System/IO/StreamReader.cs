@@ -245,27 +245,67 @@ namespace System.IO
             {
                 return;
             }
-            _disposed = true;
-
-            // Dispose of our resources if this StreamReader is closable.
-            if (_closable)
+            try
             {
-                try
+                if (!_disposed && disposing)
                 {
-                    // Note that Stream.Close() can potentially throw here. So we need to
-                    // ensure cleaning up internal resources, inside the finally block.
+                    CheckAsyncTaskInProgress();
+                }
+            }
+            finally
+            {
+                CloseStreamFromDispose(disposing);
+            }
+        }
+
+        private void CloseStreamFromDispose(bool disposing)
+        {
+            try
+            {
+                // Dispose of our resources if this StreamReader is closable.
+                if (_closable && !_disposed)
+                {
+                    // Attempt to close the stream even
+                    // Note that Stream.Close() can potentially throw here.
+                    // In this case, we still need to ensure
+                    // cleaning up internal resources, hence the finally block.
                     if (disposing)
                     {
                         _stream.Close();
                     }
                 }
-                finally
+            }
+            finally
+            {
+                _disposed = true;
+                _charPos = 0;
+                _charLen = 0;
+                base.Dispose(disposing);
+            }
+        }
+
+        public override ValueTask DisposeAsync() =>
+            GetType() != typeof(StreamReader) ?
+                base.DisposeAsync() :
+                DisposeAsyncCore();
+
+        private ValueTask DisposeAsyncCore()
+        {
+            // Same logic as in Dispose().
+            Debug.Assert(GetType() == typeof(StreamReader));
+            try
+            {
+                if (!_disposed)
                 {
-                    _charPos = 0;
-                    _charLen = 0;
-                    base.Dispose(disposing);
+                    CheckAsyncTaskInProgress();
                 }
             }
+            finally
+            {
+                CloseStreamFromDispose(disposing: true);
+            }
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
         }
 
         public virtual Encoding CurrentEncoding => _encoding;

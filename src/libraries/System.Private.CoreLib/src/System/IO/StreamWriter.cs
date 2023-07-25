@@ -189,13 +189,17 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
+            if (_disposed)
+            {
+                return;
+            }
             try
             {
                 // We need to flush any buffered data if we are being closed/disposed.
                 // Also, we never close the handles for stdout & friends.  So we can safely
                 // write any buffered data to those streams even during finalization, which
                 // is generally the right thing to do.
-                if (!_disposed && disposing)
+                if (disposing)
                 {
                     // Note: flush on the underlying stream can throw (ex., low disk space)
                     CheckAsyncTaskInProgress();
@@ -210,10 +214,10 @@ namespace System.IO
 
         private void CloseStreamFromDispose(bool disposing)
         {
-            // Dispose of our resources if this StreamWriter is closable.
-            if (_closable && !_disposed)
+            try
             {
-                try
+                // Dispose of our resources if this StreamWriter is closable.
+                if (_closable && !_disposed)
                 {
                     // Attempt to close the stream even if there was an IO error from Flushing.
                     // Note that Stream.Close() can potentially throw here (may or may not be
@@ -224,12 +228,12 @@ namespace System.IO
                         _stream.Close();
                     }
                 }
-                finally
-                {
-                    _disposed = true;
-                    _charLen = 0;
-                    base.Dispose(disposing);
-                }
+            }
+            finally
+            {
+                _disposed = true;
+                _charLen = 0;
+                base.Dispose(disposing);
             }
         }
 
