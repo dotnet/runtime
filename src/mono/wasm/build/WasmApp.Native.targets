@@ -116,6 +116,12 @@
       <!-- removing legacy interop needs relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableLegacyJsInterop)' == 'false'" >true</WasmBuildNative>
 
+      <!-- disabling SIMD needs relink -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableSIMD)' == 'false'" >true</WasmBuildNative>
+
+      <!-- disabling EH needs relink -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableExceptionHandling)' == 'false'" >true</WasmBuildNative>
+
       <!-- InvariantTimezone and InvariantGlobalization need rebuild -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantTimezone)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantGlobalization)' == 'true'">true</WasmBuildNative>
