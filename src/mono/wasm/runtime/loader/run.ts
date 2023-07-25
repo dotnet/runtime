@@ -3,7 +3,7 @@
 
 import BuildConfiguration from "consts:configuration";
 
-import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions, LoadBootResourceCallback } from "../types";
+import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, LoadBootResourceCallback } from "../types";
 import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot, mono_assert } from "./globals";
@@ -314,13 +314,6 @@ export class HostBuilder implements DotnetHostBuilder {
             mono_exit(1, err);
             throw err;
         }
-    }
-
-    withStartupOptions(startupOptions: Partial<WebAssemblyStartOptions>): DotnetHostBuilder {
-        return this
-            .withApplicationEnvironment(startupOptions.environment)
-            .withApplicationCulture(startupOptions.applicationCulture)
-            .withResourceLoader(startupOptions.loadBootResource);
     }
 
     withApplicationEnvironment(applicationEnvironment?: string): DotnetHostBuilder {
