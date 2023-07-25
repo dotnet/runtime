@@ -165,10 +165,16 @@ namespace System.Diagnostics
 
         protected internal virtual string[]? GetSupportedAttributes() => null;
 
-        internal void SetSwitchValueString(string switchValueString)
+        internal void SetSwitchValueString(int switchSetting, string switchValueString)
         {
+            Initialize();
+
             Debug.Assert(switchValueString is not null, "Unexpected 'switchValueString' null value");
-            _switchValueString = switchValueString;
+            lock (InitializedLock)
+            {
+                _switchSetting = switchSetting;
+                _switchValueString = switchValueString;
+            }
         }
 
         /// <summary>
