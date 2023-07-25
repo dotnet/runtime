@@ -347,6 +347,11 @@ namespace Microsoft.NET.HostModel
                 buffer, resourceSection.PointerToRawData,
                 rsrcSectionDataSize);
 
+            // clear rest
+            //Array.Fill is standard 2.1
+            for (uint i = rsrcSectionDataSize; i < newSectionSize; i++)
+                buffer[resourceSection.PointerToRawData + i] = 0;
+
             // write back the buffer data
             stream.Seek(0, SeekOrigin.Begin);
             stream.Write(buffer, 0, buffer.Length);
