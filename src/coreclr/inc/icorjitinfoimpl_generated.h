@@ -399,6 +399,9 @@ void getThreadLocalStaticBlocksInfo(
 void getTlsRootInfo(
           CORINFO_CONST_LOOKUP* addr) override;
 
+void getTlsIndexInfo(
+          CORINFO_CONST_LOOKUP* addr) override;
+
 void getThreadStaticBaseSlowInfo(
           CORINFO_CONST_LOOKUP* addr) override;
 

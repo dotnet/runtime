@@ -940,6 +940,14 @@ void WrapICorJitInfo::getTlsRootInfo(
     API_LEAVE(getTlsRootInfo);
 }
 
+void WrapICorJitInfo::getTlsIndexInfo(
+          CORINFO_CONST_LOOKUP* addr)
+{
+    API_ENTER(getTlsIndexInfo);
+    wrapHnd->getTlsIndexInfo(addr);
+    API_LEAVE(getTlsIndexInfo);
+}
+
 void WrapICorJitInfo::getThreadStaticBaseSlowInfo(
           CORINFO_CONST_LOOKUP* addr)
 {

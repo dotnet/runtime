@@ -2427,6 +2427,11 @@ namespace Internal.JitInterface
             addr = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
         }
 
+        private void getTlsIndexInfo(ref CORINFO_CONST_LOOKUP addr)
+        {
+            addr = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
+        }
+
         private void getThreadStaticBaseSlowInfo(ref CORINFO_CONST_LOOKUP addr)
         {
             addr = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
@@ -2435,8 +2440,7 @@ namespace Internal.JitInterface
         private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
         {
             pInfo->offsetOfThreadLocalStoragePointer = 0x58;
-            pInfo->tlsIndex = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
-            pInfo->tlsRoot = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
+            //pInfo->tlsIndex = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
             // Implemented for JIT only for now.
         }
 

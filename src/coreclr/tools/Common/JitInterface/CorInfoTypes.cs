@@ -1157,7 +1157,6 @@ namespace Internal.JitInterface
         public uint offsetOfMaxThreadStaticBlocks;
         public uint offsetOfThreadStaticBlocks;
         public uint offsetOfGCDataPointer;
-        public CORINFO_CONST_LOOKUP tlsRoot;
     };
 
     // System V struct passing

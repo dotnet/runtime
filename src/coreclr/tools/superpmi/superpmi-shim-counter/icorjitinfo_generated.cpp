@@ -770,6 +770,13 @@ void interceptor_ICJI::getTlsRootInfo(
     original_ICorJitInfo->getTlsRootInfo(addr);
 }
 
+void interceptor_ICJI::getTlsIndexInfo(
+          CORINFO_CONST_LOOKUP* addr)
+{
+    mcs->AddCall("getTlsIndexInfo");
+    original_ICorJitInfo->getTlsIndexInfo(addr);
+}
+
 void interceptor_ICJI::getThreadStaticBaseSlowInfo(
           CORINFO_CONST_LOOKUP* addr)
 {

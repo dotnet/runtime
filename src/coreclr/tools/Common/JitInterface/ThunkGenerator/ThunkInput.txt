@@ -256,6 +256,7 @@ FUNCTIONS
     uint32_t getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCtype)
     void getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
     void getTlsRootInfo(CORINFO_CONST_LOOKUP* addr)
+    void getTlsIndexInfo(CORINFO_CONST_LOOKUP* addr)
     void getThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* addr)
     int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, CORINFO_CONST_LOOKUP* targetSymbol)
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
