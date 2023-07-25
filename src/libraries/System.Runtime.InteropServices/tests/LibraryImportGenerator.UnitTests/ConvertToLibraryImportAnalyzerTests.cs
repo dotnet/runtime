@@ -64,7 +64,7 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public async Task FunctionPointer_ReportsDiagnostic()
         {
-            string source = "delegate* unmanaged<void>";
+            string source = DllImportWithType("delegate* unmanaged<void>");
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
                 VerifyCS.Diagnostic(ConvertToLibraryImport)
