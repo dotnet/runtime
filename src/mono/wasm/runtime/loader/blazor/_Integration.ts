@@ -12,15 +12,14 @@ import { appendUniqueQuery } from "../assets";
 import { hasDebuggingEnabled } from "../config";
 
 export async function loadBootConfig(module: DotnetModuleInternal) {
-    const defaultBootJsonLocation = "_framework/blazor.boot.json";
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
-        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultBootJsonLocation, "") :
-        defaultLoadBlazorBootJson(defaultBootJsonLocation);
+        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", module.configSrc!, "") :
+        defaultLoadBlazorBootJson(module.configSrc!);
 
     let bootConfigResponse: Response;
 
     if (!loaderResponse) {
-        bootConfigResponse = await defaultLoadBlazorBootJson(defaultBootJsonLocation);
+        bootConfigResponse = await defaultLoadBlazorBootJson(module.configSrc!);
     } else if (typeof loaderResponse === "string") {
         bootConfigResponse = await defaultLoadBlazorBootJson(loaderResponse);
     } else {
@@ -32,7 +31,7 @@ export async function loadBootConfig(module: DotnetModuleInternal) {
     await initializeBootConfig(bootConfigResponse, bootConfig, module);
 
     function defaultLoadBlazorBootJson(url: string): Promise<Response> {
-        return fetch(url, {
+        return loaderHelpers.fetch_like(url, {
             method: "GET",
             credentials: "include",
             cache: "no-cache",
@@ -43,10 +42,9 @@ export async function loadBootConfig(module: DotnetModuleInternal) {
 function readBootConfigResponseHeaders(bootConfigResponse: Response) {
     const config = loaderHelpers.config;
 
-    config.applicationEnvironment = config.applicationEnvironment
-        || bootConfigResponse.headers.get("Blazor-Environment")
-        || bootConfigResponse.headers.get("DotNet-Environment")
-        || "Production";
+    if (!config.applicationEnvironment) {
+        config.applicationEnvironment = bootConfigResponse.headers.get("Blazor-Environment") || bootConfigResponse.headers.get("DotNet-Environment") || "Production";
+    }
 
     if (!config.environmentVariables)
         config.environmentVariables = {};
