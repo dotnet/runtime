@@ -57,6 +57,8 @@ In order to enable it, please set HTTP headers similar to `Content-Security-Poli
 
 See also [CSP on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
 
+See also [wasm-unsafe-eval](https://github.com/WebAssembly/content-security-policy/blob/main/proposals/CSP.md#the-wasm-unsafe-eval-source-directive)
+
 ## ICU
 
 _TODO_
@@ -71,15 +73,15 @@ This requires that you have [wasm-tools workload](#wasm-tools-workload) installe
 # Shell environments - NodeJS & V8
 We pass most of the unit tests with NodeJS v 14 but it's not fully supported target platform. We would like to hear about community use-cases.
 
-We also use v8 engine version 11 or higher to run some of the tests. The engine is lacking many APIs and features.
+We also use the d8 command-line shell, version 11 or higher, to run some of the tests. This shell lacks most browser APIs and features.
 
 # Mobile phones
 
-Recent mobile phones have browser integration which could be upgraded separately from the operating system.
+Recent mobile phones distribute their browser as an application that can be upgraded separately from the operating system.
 
-Also note that all browsers on iOS are just wrapper for Safari engine and so it's limited by Safari features and version, rather than wrapper version and brand.
+Note that all browsers on iOS and iPadOS are required to use the Safari browser engine, so their level of support for WASM features depends on the version of Safari installed on the device.
 
-Mobile phones usually have limited resources. Memory and download speed are major concern.
+Mobile browsers typically have strict limits on the amount of memory they can use, and many users are on slow internet connections. A WebAssembly application that works well on desktop PCs may take minutes to download or run out of memory before it is able to start.
 
 ## Resources consumed on the target device
 
@@ -95,32 +97,57 @@ Browser itself will run JIT compilation of the WASM and JS code, which consumes 
 
 ## WASM linear memory
 
-You can override initial size of the WASM linear memory by `<EmccInitialHeapSize>16777216</EmccInitialHeapSize>`.
+Setting an initial size based on how much memory your application typically uses will reduce the number of times the heap needs to grow, which may enable it to run on devices with lower memory.
+
+You can override initial size of the WASM linear memory by `<EmccInitialHeapSize>16777216</EmccInitialHeapSize>`. Where number of bytes must be aligned to next 16KB page size.
+
 This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
 ## JITerpreter
 
 Is browser specific JIT compiler which optimizes small fragments of code which are otherwise interpreted by dotnet mono interpreter. It's enabled by default.
 
+It boosts performance of simple methods and consumes some WASM linear and browser memory.
+
+You can disable it by `<BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>`.
+
+For detailed design see also [jiterpreter.md](../../../docs/design/mono/jiterpreter.md)
+
 ## AOT
 
+AOT compilation greatly improves application performance but will increase the size of the application, resulting in longer downloads and slower startup.
+
 You can enable Ahead Of Time compilation by `<RunAOTCompilation>true</RunAOTCompilation>`.
-This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
 It will compile managed code as native WASM instructions and include them in the `dotnet.native.wasm` file.
-AOT compiled code is running faster but it will significantly increase size of the file and the download time.
+
+This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
 ## IL trimming
 
+Trimming will remove unused code from your application, which reduces download time and memory usage.
+
+When AOT compilation is in use, trimming will also reduce the amount of time spent to compile the application.
+
 You can trim size of the managed code in the assemblies by `<PublishTrimmed>true</PublishTrimmed>`.
 
+Some applications will break if trimming is used without further configuration due to the trimmer not knowing which code is used, for example via reflection.
+
+WARNING: Make sure that you tested trimmed/published release version of your application.
+
+See also [trimming guidance](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained)
+
 ## C code or native linked libraries
+
+Native rebuild will cause the .NET runtime to be re-built alongside your application, which allows you to link additional libraries into the WASM binary or change compiler configuration flags.
 
 You can enable native rebuild by `<WasmBuildNative>true</WasmBuildNative>`.
 This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
 ## wasm-tools workload
 
-Is set of compiler tools which allow you to optimize your wasm application.
+The wasm-tools workload contains all of the tools and libraries necessary to perform native rebuild or AOT compilation and other optimizations of your application.
+
+Although it's optional for Blazor, we strongly recommend using it!
 
 You can install it by running `dotnet workload install wasm-tools` on your command line.
