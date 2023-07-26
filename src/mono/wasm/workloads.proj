@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <!--<Import Project="..\Directory.Build.props" />-->
-  <!--<Import Project="$(RepositoryEngineeringDir)testing\tests.browser.targets" />-->
-  <!--<Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />-->
-
+  <!-- helper project for workload testing -->
   <ItemGroup Label="Cross compiler package">
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
     <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
@@ -19,7 +16,4 @@
     <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
                       AdditionalProperties="@(_PropsForAOTCrossBuild,';')" />
   </ItemGroup>
-  <!--<Target Name="Build" DependsOnTargets="_GetNugetsForAOT;_PreparePackagesForWorkloadInstall">-->
-  <!--</Target>-->
-  <!--<Import Project="..\Directory.Build.targets" />-->
 </Project>
