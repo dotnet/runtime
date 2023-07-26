@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceList, ResourceRequest, RuntimeAPI } from ".";
+import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceList, RuntimeAPI } from ".";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -138,13 +138,13 @@ export type LoaderHelpers = {
     setup_proxy_console: (id: string, console: Console, origin: string) => void
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     locateFile: (path: string, prefix?: string) => string,
-    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined
     out(message: string): void;
     err(message: string): void;
 
     hasDebuggingEnabled(config: MonoConfig): boolean,
     loadResources(resources: ResourceList, url: (name: string) => string, behavior: AssetBehaviours): LoadingResource[],
     loadResource(name: string, url: string, contentHash: string, behavior: AssetBehaviours): LoadingResource,
+    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,

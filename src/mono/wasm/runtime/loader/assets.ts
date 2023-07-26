@@ -7,6 +7,7 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, 
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
 import { mono_exit } from "./exit";
+import { loadResource } from "./resourceLoader";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -391,22 +392,20 @@ export function appendUniqueQuery(attemptUrl: string, behavior: AssetBehaviours)
     return attemptUrl;
 }
 
-
+let resourcesLoaded = 0;
+const totalResources = new Set<string>();
 
 function download_resource(request: ResourceRequest): LoadingResource {
     try {
-        if (typeof loaderHelpers.downloadResource === "function") {
-            const loading = loaderHelpers.downloadResource(request);
-            if (loading) return loading;
-        }
-        const options: any = {};
-        if (request.hash) {
-            options.integrity = request.hash;
-        }
-        const response = loaderHelpers.fetch_like(request.resolvedUrl!, options);
-        return {
-            name: request.name, url: request.resolvedUrl!, response
-        };
+        const response = loadResource(request.name, request.resolvedUrl!, request.hash!, request.behavior);
+
+        totalResources.add(request.name!);
+        response.response.then(() => {
+            resourcesLoaded++;
+            if (loaderHelpers.onDownloadResourceProgress)
+                loaderHelpers.onDownloadResourceProgress(resourcesLoaded, totalResources.size);
+        });
+        return response;
     } catch (err) {
         const response = <Response><any>{
             ok: false,

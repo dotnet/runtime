@@ -281,7 +281,6 @@ export type DotnetModuleConfig = {
 
     imports?: any;
     exports?: string[];
-    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined
 } & Partial<EmscriptenModule>
 
 export type APIType = {

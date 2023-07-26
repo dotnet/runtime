@@ -5,7 +5,7 @@ import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
-import { hookDownloadResource, mapResourcesToAssets } from "./blazor/_Integration";
+import { mapResourcesToAssets } from "./blazor/_Integration";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
@@ -150,7 +150,6 @@ async function loadBootConfig(module: DotnetModuleInternal) {
 
     readBootConfigResponseHeaders(loadConfigResponse);
     mapResourcesToAssets(loadedConfig);
-    hookDownloadResource(module);
 
     function defaultLoadBootConfig(url: string): Promise<Response> {
         return loaderHelpers.fetch_like(url, {

@@ -1,50 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { DotnetModuleInternal } from "../../types/internal";
-import { GlobalizationMode, type AssetEntry, type LoadingResource, type WebAssemblyBootResourceType, MonoConfig } from "../../types";
+import { GlobalizationMode, type AssetEntry, MonoConfig } from "../../types";
 
 import { ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert } from "../globals";
-import { loadResource } from "../resourceLoader";
 import { appendUniqueQuery } from "../assets";
 import { deep_merge_config } from "../config";
-
-let resourcesLoaded = 0;
-const totalResources = new Set<string>();
-
-const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
-    "assembly": "assembly",
-    "pdb": "pdb",
-    "icu": "globalization",
-    "vfs": "configuration",
-    "dotnetwasm": "dotnetwasm",
-};
-
-export function hookDownloadResource(module: DotnetModuleInternal) {
-    // it would not `loadResource` on types for which there is no typesMap mapping
-    const downloadResource = (asset: AssetEntry): LoadingResource | undefined => {
-        // GOTCHA: the mapping to blazor asset type may not cover all mono owned asset types in the future in which case:
-        // A) we may need to add such asset types to the mapping and to WebAssemblyBootResourceType
-        // B) or we could add generic "runtime" type to WebAssemblyBootResourceType as fallback
-        // C) or we could return `undefined` and let the runtime to load the asset. In which case the progress will not be reported on it and blazor will not be able to cache it.
-        const type = monoToBlazorAssetTypeMap[asset.behavior];
-        if (type !== undefined) {
-            const res = loadResource(asset.name, asset.resolvedUrl!, asset.hash!, type);
-
-            totalResources.add(asset.name!);
-            res.response.then(() => {
-                resourcesLoaded++;
-                if (module.onDownloadResourceProgress)
-                    module.onDownloadResourceProgress(resourcesLoaded, totalResources.size);
-            });
-
-            return res;
-        }
-        return undefined;
-    };
-
-    loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
-}
 
 export function mapResourcesToAssets(loadedConfig: MonoConfig) {
     mono_assert(loadedConfig.resources, "Loaded config does not contain resources");
