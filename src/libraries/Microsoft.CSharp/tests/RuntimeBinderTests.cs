@@ -4,8 +4,11 @@
 using System;
 using System.Collections;
 using System.ComponentModel;
+using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+#if NET
+using System.Runtime.Loader;
+#endif
 using Xunit;
 
 // IVT to "Microsoft.CSharp.RuntimeBinder.Binder", just to use IVT in a test (see: InternalsVisibleToTest below)
@@ -391,5 +394,39 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Func<CallSite, ICounterBoth, object> target2 = getter.Target;
             Assert.Equal(message, Assert.Throws<RuntimeBinderException>(() => target2(getter, null)).Message);
         }
+
+#if NET
+        [Fact]
+        public void UnloadabilityTest()
+        {
+            WeakReference alcRef = CreateAlc();
+
+            for (int i = 0; i < 10 && alcRef.IsAlive; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            Assert.False(alcRef.IsAlive, "Could not unload assembly");
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static WeakReference CreateAlc()
+            {
+                var alc = new AssemblyLoadContext(nameof(UnloadabilityTest), true);
+                alc.LoadFromAssemblyPath(typeof(RuntimeBinderTests).Assembly.Location)
+                   .GetType(nameof(RuntimeBinderTests), true)!
+                   .GetMethod(nameof(TestMethod), BindingFlags.Static | BindingFlags.NonPublic)!
+                   .Invoke(null, null);
+                return new WeakReference(alc, true);
+            }
+        }
+
+        private static int TestMethod()
+        {
+            dynamic x = 0;
+            x++;
+            return x;
+        }
+#endif
     }
 }
