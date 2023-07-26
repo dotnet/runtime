@@ -11,17 +11,18 @@ import { invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
+    // If source has collection fields set to null (produced by boot config for example), we should maintain the target values
     const providedConfig: MonoConfigInternal = { ...source };
-    if (providedConfig.assets) {
+    if (providedConfig.assets !== undefined) {
         providedConfig.assets = [...(target.assets || []), ...(providedConfig.assets || [])];
     }
-    if (providedConfig.resources) {
+    if (providedConfig.resources !== undefined) {
         providedConfig.resources = { ...(target.resources || {}), ...(providedConfig.resources || {}) };
     }
-    if (providedConfig.environmentVariables) {
+    if (providedConfig.environmentVariables !== undefined) {
         providedConfig.environmentVariables = { ...(target.environmentVariables || {}), ...(providedConfig.environmentVariables || {}) };
     }
-    if (providedConfig.runtimeOptions) {
+    if (providedConfig.runtimeOptions !== undefined) {
         providedConfig.runtimeOptions = [...(target.runtimeOptions || []), ...(providedConfig.runtimeOptions || [])];
     }
     return Object.assign(target, providedConfig);
