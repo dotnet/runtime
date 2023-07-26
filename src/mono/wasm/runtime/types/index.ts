@@ -101,6 +101,11 @@ export type MonoConfig = {
     resources?: ResourceGroups;
 
     /**
+     * appsettings files to load to VFS
+     */
+    config?: string[];
+
+    /**
      * config extensions declared in MSBuild items @(WasmBootConfigExtension)
      */
     extensions?: { [name: string]: any };

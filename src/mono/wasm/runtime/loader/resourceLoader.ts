@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { MonoConfig, WebAssemblyBootResourceType } from "../types";
-import type { ResourceList } from "../types/blazor";
+import type { MonoConfig, ResourceList, WebAssemblyBootResourceType } from "../types";
 import { loaderHelpers } from "./globals";
 const networkFetchCacheMode = "no-cache";
 

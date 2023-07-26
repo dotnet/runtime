@@ -17,7 +17,16 @@ public class BootJsonData
     /// <summary>
     /// Gets the name of the assembly with the application entry point
     /// </summary>
+    /// <remarks>
+    /// Deprecated in .NET 8. Use <see cref="mainAssemblyName"/>
+    /// </remarks>
     public string entryAssembly { get; set; }
+
+    public string mainAssemblyName
+    {
+        get => entryAssembly;
+        set => entryAssembly = value;
+    }
 
     /// <summary>
     /// Gets the set of resources needed to boot the application. This includes the transitive

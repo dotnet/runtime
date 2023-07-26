@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/internal";
-import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadingResource, type WebAssemblyBootResourceType } from "../../types";
-import type { BootJsonData } from "../../types/blazor";
+import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadingResource, type WebAssemblyBootResourceType, MonoConfig } from "../../types";
 
 import { ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert } from "../globals";
 import { loadResource } from "../resourceLoader";
@@ -15,23 +14,25 @@ export async function loadBootConfig(module: DotnetModuleInternal) {
 
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
         loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "") :
-        defaultLoadBlazorBootJson(defaultConfigSrc);
+        defaultLoadBootConfig(defaultConfigSrc);
 
-    let bootConfigResponse: Response;
+    let loadConfigResponse: Response;
 
     if (!loaderResponse) {
-        bootConfigResponse = await defaultLoadBlazorBootJson(defaultConfigSrc);
+        loadConfigResponse = await defaultLoadBootConfig(defaultConfigSrc);
     } else if (typeof loaderResponse === "string") {
-        bootConfigResponse = await defaultLoadBlazorBootJson(loaderResponse);
+        loadConfigResponse = await defaultLoadBootConfig(loaderResponse);
     } else {
-        bootConfigResponse = await loaderResponse;
+        loadConfigResponse = await loaderResponse;
     }
 
-    const bootConfig: BootJsonData = await bootConfigResponse.json();
+    const loadedConfig: MonoConfig = await loadConfigResponse.json();
 
-    await initializeBootConfig(bootConfigResponse, bootConfig, module);
+    readBootConfigResponseHeaders(loadConfigResponse);
+    mapBootConfigToMonoConfig(loadedConfig);
+    hookDownloadResource(module);
 
-    function defaultLoadBlazorBootJson(url: string): Promise<Response> {
+    function defaultLoadBootConfig(url: string): Promise<Response> {
         return loaderHelpers.fetch_like(url, {
             method: "GET",
             credentials: "include",
@@ -40,33 +41,27 @@ export async function loadBootConfig(module: DotnetModuleInternal) {
     }
 }
 
-function readBootConfigResponseHeaders(bootConfigResponse: Response) {
+function readBootConfigResponseHeaders(loadConfigResponse: Response) {
     const config = loaderHelpers.config;
 
     if (!config.applicationEnvironment) {
-        config.applicationEnvironment = bootConfigResponse.headers.get("Blazor-Environment") || bootConfigResponse.headers.get("DotNet-Environment") || "Production";
+        config.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || "Production";
     }
 
     if (!config.environmentVariables)
         config.environmentVariables = {};
 
-    const modifiableAssemblies = bootConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
+    const modifiableAssemblies = loadConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
     if (modifiableAssemblies) {
         // Configure the app to enable hot reload in Development.
         config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = modifiableAssemblies;
     }
 
-    const aspnetCoreBrowserTools = bootConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
+    const aspnetCoreBrowserTools = loadConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
     if (aspnetCoreBrowserTools) {
         // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
         config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = aspnetCoreBrowserTools;
     }
-}
-
-async function initializeBootConfig(bootConfigResponse: Response, bootConfig: BootJsonData, module: DotnetModuleInternal) {
-    readBootConfigResponseHeaders(bootConfigResponse);
-    mapBootConfigToMonoConfig(bootConfig);
-    hookDownloadResource(module);
 }
 
 let resourcesLoaded = 0;
@@ -117,23 +112,25 @@ function hookDownloadResource(module: DotnetModuleInternal) {
     loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
 }
 
-function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
+function mapBootConfigToMonoConfig(loadedConfig: MonoConfigInternal) {
+    mono_assert(loadedConfig.resources, "Loaded config does not contain resources");
+
     const config = loaderHelpers.config;
-    const resources = bootConfig.resources;
+    const resources = loadedConfig.resources;
 
     const assets: AssetEntry[] = [];
     const environmentVariables: any = {
         // From boot config
-        ...(bootConfig.environmentVariables || {}),
+        ...(loadedConfig.environmentVariables || {}),
         // From JavaScript
         ...(config.environmentVariables || {})
     };
 
-    config.cacheBootResources = bootConfig.cacheBootResources;
-    config.linkerEnabled = bootConfig.linkerEnabled;
+    config.cacheBootResources = loadedConfig.cacheBootResources;
+    config.linkerEnabled = loadedConfig.linkerEnabled;
     config.remoteSources = (resources as any).remoteSources;
     config.assets = assets;
-    config.extensions = bootConfig.extensions;
+    config.extensions = loadedConfig.extensions;
     config.resources = {
         extensions: resources.extensions
     };
@@ -143,11 +140,11 @@ function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
     // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
     // - Publish (debug)    => debugBuild=false & debugLevel=-1 => 0
     // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
-    config.debugLevel = hasDebuggingEnabled(config) ? bootConfig.debugLevel : 0;
-    config.mainAssemblyName = bootConfig.entryAssembly;
+    config.debugLevel = hasDebuggingEnabled(config) ? loadedConfig.debugLevel : 0;
+    config.mainAssemblyName = loadedConfig.mainAssemblyName;
 
-    const anyBootConfig = (bootConfig as any);
-    for (const key in bootConfig) {
+    const anyBootConfig = (loadedConfig as any);
+    for (const key in loadedConfig) {
         if (Object.prototype.hasOwnProperty.call(anyBootConfig, key)) {
             if (anyBootConfig[key] === null) {
                 delete anyBootConfig[key];
@@ -157,17 +154,17 @@ function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
 
     // FIXME this mix of both formats is ugly temporary hack
     Object.assign(config, {
-        ...bootConfig,
+        ...loadedConfig,
     });
 
     config.environmentVariables = environmentVariables;
 
-    if (bootConfig.startupMemoryCache !== undefined) {
-        config.startupMemoryCache = bootConfig.startupMemoryCache;
+    if (loadedConfig.startupMemoryCache !== undefined) {
+        config.startupMemoryCache = loadedConfig.startupMemoryCache;
     }
 
-    if (bootConfig.runtimeOptions) {
-        config.runtimeOptions = [...(config.runtimeOptions || []), ...(bootConfig.runtimeOptions || [])];
+    if (loadedConfig.runtimeOptions) {
+        config.runtimeOptions = [...(config.runtimeOptions || []), ...(loadedConfig.runtimeOptions || [])];
     }
 
     for (const name in resources.assembly) {
@@ -191,13 +188,13 @@ function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
         }
     }
     const applicationCulture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
-    const icuDataResourceName = getICUResourceName(bootConfig, config, applicationCulture);
+    const icuDataResourceName = getICUResourceName(loadedConfig, config, applicationCulture);
     let hasIcuData = false;
     for (const name in resources.runtime) {
         const behavior = behaviorByName(name) as any;
         let loadRemote = false;
         if (behavior === "icu") {
-            if (bootConfig.globalizationMode === GlobalizationMode.Invariant) {
+            if (loadedConfig.globalizationMode === GlobalizationMode.Invariant) {
                 continue;
             }
             if (name !== icuDataResourceName) {
@@ -233,28 +230,32 @@ function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
         }
     }
 
-    for (let i = 0; i < bootConfig.config.length; i++) {
-        const configUrl = bootConfig.config[i];
-        const configFileName = fileName(configUrl);
-        if (configFileName === "appsettings.json" || configFileName === `appsettings.${config.applicationEnvironment}.json`) {
-            assets.push({
-                name: configFileName,
-                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(configUrl), "vfs"),
-                behavior: "vfs",
-            });
+    if (loadedConfig.config) {
+        for (let i = 0; i < loadedConfig.config.length; i++) {
+            const configUrl = loadedConfig.config[i];
+            const configFileName = fileName(configUrl);
+            if (configFileName === "appsettings.json" || configFileName === `appsettings.${config.applicationEnvironment}.json`) {
+                assets.push({
+                    name: configFileName,
+                    resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(configUrl), "vfs"),
+                    behavior: "vfs",
+                });
+            }
         }
     }
 
-    for (const virtualPath in resources.vfs) {
-        for (const name in resources.vfs[virtualPath]) {
-            const asset: AssetEntry = {
-                name,
-                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), "vfs"),
-                hash: resources.vfs[virtualPath][name],
-                behavior: "vfs",
-                virtualPath
-            };
-            assets.push(asset);
+    if (resources.vfs) {
+        for (const virtualPath in resources.vfs) {
+            for (const name in resources.vfs[virtualPath]) {
+                const asset: AssetEntry = {
+                    name,
+                    resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), "vfs"),
+                    hash: resources.vfs[virtualPath][name],
+                    behavior: "vfs",
+                    virtualPath
+                };
+                assets.push(asset);
+            }
         }
     }
 
