@@ -4,11 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text.Json;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Xunit;
+using System.Collections.Immutable;
 
 namespace Microsoft.Extensions
 #if BUILDING_SOURCE_GENERATOR_TESTS
@@ -713,6 +714,34 @@ namespace Microsoft.Extensions
         public class GeolocationWrapper
         {
             public Geolocation Location { get; set; }
+        }
+
+        public class GraphWithUnsupportedMember
+        {
+            public JsonWriterOptions WriterOptions { get; set; }
+        }
+
+        public record RemoteAuthenticationOptions<TRemoteAuthenticationProviderOptions> where TRemoteAuthenticationProviderOptions : new()
+        {
+            public TRemoteAuthenticationProviderOptions GenericProp { get; } = new();
+            public OidcProviderOptions NonGenericProp { get; } = new();
+
+            public TRemoteAuthenticationProviderOptions _genericField { get; } = new();
+            public OidcProviderOptions _nonGenericField { get; } = new();
+
+            public static TRemoteAuthenticationProviderOptions StaticGenericProp { get; } = new();
+            public static OidcProviderOptions StaticNonGenericProp { get; } = new();
+
+            public static TRemoteAuthenticationProviderOptions s_GenericField = new();
+            public static OidcProviderOptions s_NonGenericField = new();
+
+            public TRemoteAuthenticationProviderOptions? NullGenericProp { get; }
+            public static OidcProviderOptions? s_NullNonGenericField;
+        }
+
+        public record OidcProviderOptions
+        {
+            public string? Authority { get; set; }
         }
     }
 }
