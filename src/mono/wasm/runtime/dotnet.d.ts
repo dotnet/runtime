@@ -182,7 +182,7 @@ interface ResourceGroups {
     readonly assembly?: ResourceList;
     readonly lazyAssembly?: ResourceList;
     readonly pdb?: ResourceList;
-    readonly runtime?: ResourceList;
+    readonly native?: NativeResources;
     readonly satelliteResources?: {
         [cultureName: string]: ResourceList;
     };
@@ -194,6 +194,14 @@ interface ResourceGroups {
     readonly vfs?: {
         [virtualPath: string]: ResourceList;
     };
+}
+interface NativeResources {
+    readonly jsModuleWorker: ResourceList;
+    readonly jsModuleNative: ResourceList;
+    readonly jsModuleRuntime: ResourceList;
+    readonly wasmNative: ResourceList;
+    readonly symbols: ResourceList;
+    readonly icu: ResourceList;
 }
 type ResourceList = {
     [name: string]: string;

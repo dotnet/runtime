@@ -118,7 +118,7 @@ export interface ResourceGroups {
     readonly assembly?: ResourceList; // nullable only temporarily
     readonly lazyAssembly?: ResourceList; // nullable only temporarily
     readonly pdb?: ResourceList;
-    readonly runtime?: ResourceList; // nullable only temporarily
+    readonly native?: NativeResources; // nullable only temporarily
     readonly satelliteResources?: { [cultureName: string]: ResourceList };
     readonly libraryStartupModules?: {
         readonly onRuntimeConfigLoaded?: ResourceList,
@@ -126,6 +126,15 @@ export interface ResourceGroups {
     },
     readonly extensions?: ResourceExtensions
     readonly vfs?: { [virtualPath: string]: ResourceList };
+}
+
+export interface NativeResources {
+    readonly jsModuleWorker: ResourceList;
+    readonly jsModuleNative: ResourceList;
+    readonly jsModuleRuntime: ResourceList;
+    readonly wasmNative: ResourceList;
+    readonly symbols: ResourceList;
+    readonly icu: ResourceList;
 }
 
 export type ResourceList = { [name: string]: string };

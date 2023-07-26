@@ -158,19 +158,26 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
             var itemHash = Utils.ComputeIntegrity(item.ItemSpec);
 
-            if (name.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".wasm", StringComparison.OrdinalIgnoreCase))
-            {
-                if (bootConfig.resources.runtimeAssets == null)
-                    bootConfig.resources.runtimeAssets = new();
+            bootConfig.resources.native ??= new();
+            Dictionary<string, string>? resourceList = null;
 
-                bootConfig.resources.runtimeAssets[name] = new()
-                {
-                    hash = itemHash,
-                    behavior = "dotnetwasm"
-                };
-            }
+            if (name.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".js", StringComparison.OrdinalIgnoreCase))
+                resourceList = bootConfig.resources.native.jsModuleWorker ??= new();
+            else if (name.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".js", StringComparison.OrdinalIgnoreCase))
+                resourceList = bootConfig.resources.native.jsModuleNative ??= new();
+            else if (name.StartsWith("dotnet.runtime", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".js", StringComparison.OrdinalIgnoreCase))
+                resourceList = bootConfig.resources.native.jsModuleRuntime ??= new();
+            else if (name.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".wasm", StringComparison.OrdinalIgnoreCase))
+                resourceList = bootConfig.resources.native.wasmNative ??= new();
+            else if (name.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".js", StringComparison.OrdinalIgnoreCase))
+                continue;
+            else if (name.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".symbols", StringComparison.OrdinalIgnoreCase))
+                resourceList = bootConfig.resources.native.symbols ??= new();
+            else if (name.StartsWith("icudt", StringComparison.OrdinalIgnoreCase))
+                resourceList = bootConfig.resources.native.icu ??= new();
 
-            bootConfig.resources.runtime[name] = itemHash;
+            if (resourceList != null)
+                resourceList[name] = itemHash;
         }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");
@@ -312,7 +319,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     return false;
                 }
 
-                bootConfig.resources.runtime[Path.GetFileName(idfn)] = Utils.ComputeIntegrity(idfn);
+                bootConfig.resources.native ??= new();
+                bootConfig.resources.native.icu ??= new();
+                bootConfig.resources.native.icu[Path.GetFileName(idfn)] = Utils.ComputeIntegrity(idfn);
             }
         }
 
@@ -374,12 +383,23 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
             static void AddDictionary(StringBuilder sb, Dictionary<string, string> res)
             {
+                if (res == null)
+                    return;
+
                 foreach (var asset in res)
                     sb.Append(asset.Value);
             }
 
             AddDictionary(sb, bootConfig.resources.assembly);
+
+            AddDictionary(sb, bootConfig.resources.native.jsModuleWorker);
+            AddDictionary(sb, bootConfig.resources.native.jsModuleNative);
+            AddDictionary(sb, bootConfig.resources.native.jsModuleRuntime);
+            AddDictionary(sb, bootConfig.resources.native.wasmNative);
+            AddDictionary(sb, bootConfig.resources.native.symbols);
+            AddDictionary(sb, bootConfig.resources.native.icu);
             AddDictionary(sb, bootConfig.resources.runtime);
+            AddDictionary(sb, bootConfig.resources.lazyAssembly);
 
             if (bootConfig.resources.lazyAssembly != null)
                 AddDictionary(sb, bootConfig.resources.lazyAssembly);

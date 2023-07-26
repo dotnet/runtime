@@ -195,12 +195,36 @@ public class GenerateWasmBootJson : Task
                         string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase))
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a native application resource.", resource.ItemSpec);
-                    if (fileName.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
-                    {
-                        behavior = "dotnetwasm";
-                    }
 
-                    resourceList = resourceData.runtime;
+                    if (IsTargeting80OrLater())
+                    {
+                        resourceData.native ??= new();
+                        if (resourceName.StartsWith("dotnet.native.worker") && resourceName.EndsWith(".js"))
+                            resourceList = resourceData.native.jsModuleWorker ??= new();
+                        else if (resourceName.StartsWith("dotnet.native") && resourceName.EndsWith(".js"))
+                            resourceList = resourceData.native.jsModuleNative ??= new();
+                        else if (resourceName.StartsWith("dotnet.runtime") && resourceName.EndsWith(".js"))
+                            resourceList = resourceData.native.jsModuleRuntime ??= new();
+                        else if (resourceName.StartsWith("dotnet.native") && resourceName.EndsWith(".wasm"))
+                            resourceList = resourceData.native.wasmNative ??= new();
+                        else if (resourceName.StartsWith("dotnet") && resourceName.EndsWith(".js"))
+                            continue;
+                        else if (resourceName.StartsWith("dotnet.native") && resourceName.EndsWith(".symbols"))
+                            resourceList = resourceData.native.symbols ??= new();
+                        else if (resourceName.StartsWith("icudt"))
+                            resourceList = resourceData.native.icu ??= new();
+                        else
+                            Log.LogError($"The resource '{resourceName}' is not recognized as any native asset");
+                    }
+                    else
+                    {
+                        if (fileName.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
+                        {
+                            behavior = "dotnetwasm";
+                        }
+
+                        resourceList = resourceData.runtime ??= new();
+                    }
                 }
                 else if (string.Equals("JSModule", assetTraitName, StringComparison.OrdinalIgnoreCase) &&
                     string.Equals(assetTraitValue, "JSLibraryModule", StringComparison.OrdinalIgnoreCase))
@@ -355,17 +379,25 @@ public class GenerateWasmBootJson : Task
     {
         var sb = new StringBuilder();
 
-        static void AddDictionary(StringBuilder sb, Dictionary<string, string> res)
+        static void AddDictionary(StringBuilder sb, ResourceHashesByNameDictionary res)
         {
+            if (res == null)
+                return;
+
             foreach (var asset in res)
                 sb.Append(asset.Value);
         }
 
         AddDictionary(sb, bootConfig.resources.assembly);
-        AddDictionary(sb, bootConfig.resources.runtime);
 
-        if (bootConfig.resources.lazyAssembly != null)
-            AddDictionary(sb, bootConfig.resources.lazyAssembly);
+        AddDictionary(sb, bootConfig.resources.native?.jsModuleWorker);
+        AddDictionary(sb, bootConfig.resources.native?.jsModuleNative);
+        AddDictionary(sb, bootConfig.resources.native?.jsModuleRuntime);
+        AddDictionary(sb, bootConfig.resources.native?.wasmNative);
+        AddDictionary(sb, bootConfig.resources.native?.symbols);
+        AddDictionary(sb, bootConfig.resources.native?.icu);
+        AddDictionary(sb, bootConfig.resources.runtime);
+        AddDictionary(sb, bootConfig.resources.lazyAssembly);
 
         if (bootConfig.resources.satelliteResources != null)
         {

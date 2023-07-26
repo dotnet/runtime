@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleInternal } from "../../types/internal";
-import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadingResource, type WebAssemblyBootResourceType, MonoConfig } from "../../types";
+import { GlobalizationMode, type AssetEntry, type LoadingResource, type WebAssemblyBootResourceType, MonoConfig } from "../../types";
 
 import { ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert } from "../globals";
 import { loadResource } from "../resourceLoader";
@@ -11,17 +11,6 @@ import { deep_merge_config } from "../config";
 
 let resourcesLoaded = 0;
 const totalResources = new Set<string>();
-
-const behaviorByName = (name: string): AssetBehaviours | "other" => {
-    return name === "dotnet.native.wasm" ? "dotnetwasm"
-        : (name.startsWith("dotnet.native.worker") && name.endsWith(".js")) ? "js-module-threads"
-            : (name.startsWith("dotnet.native") && name.endsWith(".js")) ? "js-module-native"
-                : (name.startsWith("dotnet.runtime") && name.endsWith(".js")) ? "js-module-runtime"
-                    : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
-                        : (name.startsWith("dotnet.native") && name.endsWith(".symbols")) ? "symbols"
-                            : name.startsWith("icudt") ? "icu"
-                                : "other";
-};
 
 const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
     "assembly": "assembly",
@@ -62,6 +51,7 @@ export function mapResourcesToAssets(loadedConfig: MonoConfig) {
 
     const config = loaderHelpers.config;
     const resources = loadedConfig.resources;
+    const nativeResources = resources.native!;
 
     deep_merge_config(config, loadedConfig);
 
@@ -91,34 +81,70 @@ export function mapResourcesToAssets(loadedConfig: MonoConfig) {
             assets.push(asset);
         }
     }
+
+    for (const name in nativeResources.jsModuleWorker) {
+        const behavior = "js-module-threads";
+        assets.push({
+            name,
+            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
+            hash: nativeResources.jsModuleWorker[name],
+            behavior
+        });
+    }
+
+    for (const name in nativeResources.jsModuleNative) {
+        const behavior = "js-module-native";
+        assets.push({
+            name,
+            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
+            hash: nativeResources.jsModuleNative[name],
+            behavior
+        });
+    }
+
+    for (const name in nativeResources.jsModuleRuntime) {
+        const behavior = "js-module-runtime";
+        assets.push({
+            name,
+            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
+            hash: nativeResources.jsModuleRuntime[name],
+            behavior
+        });
+    }
+
+    for (const name in nativeResources.wasmNative) {
+        const behavior = "dotnetwasm";
+        assets.push({
+            name,
+            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
+            hash: nativeResources.wasmNative[name],
+            behavior
+        });
+    }
+
+    for (const name in nativeResources.symbols) {
+        const behavior = "symbols";
+        assets.push({
+            name,
+            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
+            hash: nativeResources.symbols[name],
+            behavior
+        });
+    }
+
     const applicationCulture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
     const icuDataResourceName = getICUResourceName(loadedConfig, config, applicationCulture);
     let hasIcuData = false;
-    for (const name in resources.runtime) {
-        const behavior = behaviorByName(name) as any;
-        let loadRemote = false;
-        if (behavior === "icu") {
-            if (loadedConfig.globalizationMode === GlobalizationMode.Invariant) {
-                continue;
-            }
-            if (name !== icuDataResourceName) {
-                continue;
-            }
-            loadRemote = true;
-            hasIcuData = true;
-        } else if (behavior === "js-module-dotnet") {
-            continue;
-        }
-
-        const resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(name), behavior);
-        const asset: AssetEntry = {
-            name,
-            resolvedUrl,
-            hash: resources.runtime[name],
+    if (icuDataResourceName != null) {
+        const behavior = "icu";
+        hasIcuData = true;
+        assets.push({
+            name: icuDataResourceName,
+            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(icuDataResourceName), behavior),
+            hash: nativeResources.icu[icuDataResourceName],
             behavior,
-            loadRemote
-        };
-        assets.push(asset);
+            loadRemote: true
+        });
     }
 
     if (config.loadAllSatelliteResources && resources.satelliteResources) {
@@ -176,13 +202,15 @@ function fileName(name: string) {
     return name.substring(lastIndexOfSlash);
 }
 
-function getICUResourceName(loadedConfig: MonoConfig, config: MonoConfig, culture: string | undefined): string {
-    mono_assert(loadedConfig.resources?.runtime, "Boot config does not contain runtime resources");
+function getICUResourceName(loadedConfig: MonoConfig, config: MonoConfig, culture: string | undefined): string | null {
+    if (!loadedConfig.resources?.native?.icu) {
+        config.globalizationMode = GlobalizationMode.Invariant;
+        return null;
+    }
+
+    const icuFiles = Object.keys(loadedConfig.resources.native.icu);
 
     if (loadedConfig.globalizationMode === GlobalizationMode.Custom) {
-        const icuFiles = Object
-            .keys(loadedConfig.resources.runtime)
-            .filter(n => n.startsWith("icudt") && n.endsWith(".dat"));
         if (icuFiles.length === 1) {
             config.globalizationMode = GlobalizationMode.Custom;
             const customIcuFile = icuFiles[0];
@@ -190,6 +218,16 @@ function getICUResourceName(loadedConfig: MonoConfig, config: MonoConfig, cultur
         }
     }
 
+    const icuFile = getICUResourceNameForCulture(loadedConfig, config, culture);
+    if (icuFile && icuFiles.includes(icuFile)) {
+        return icuFile;
+    }
+
+    config.globalizationMode = GlobalizationMode.Invariant;
+    return null;
+}
+
+function getICUResourceNameForCulture(loadedConfig: MonoConfig, config: MonoConfig, culture: string | undefined): string | null {
     if (loadedConfig.globalizationMode === GlobalizationMode.Hybrid) {
         config.globalizationMode = GlobalizationMode.Hybrid;
         const reducedICUResourceName = "icudt_hybrid.dat";
@@ -217,6 +255,7 @@ function getICUResourceName(loadedConfig: MonoConfig, config: MonoConfig, cultur
         ].includes(culture)) {
         return "icudt_EFIGS.dat";
     }
+
     if ([
         "zh",
         "ko",
@@ -224,6 +263,6 @@ function getICUResourceName(loadedConfig: MonoConfig, config: MonoConfig, cultur
     ].includes(prefix)) {
         return "icudt_CJK.dat";
     }
+
     return "icudt_no_CJK.dat";
 }
-

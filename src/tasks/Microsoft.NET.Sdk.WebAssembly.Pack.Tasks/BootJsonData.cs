@@ -123,7 +123,15 @@ public class ResourcesData
     /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
     /// </summary>
-    public ResourceHashesByNameDictionary runtime { get; set; } = new ResourceHashesByNameDictionary();
+    /// <remarks>
+    /// Deprecated in .NET 8, use <see cref="native"/>.
+    /// </remarks>
+    public ResourceHashesByNameDictionary runtime { get; set; }
+
+    /// <summary>
+    /// Native runtime assets (dotnet.wasm, dotnet.js, etc).
+    /// </summary>
+    public NativeResources native { get; set; }
 
     /// <summary>
     /// "assembly" (.dll) resources
@@ -180,6 +188,28 @@ public class ResourcesData
 
     [DataMember(EmitDefaultValue = false)]
     public List<string> remoteSources { get; set; }
+}
+
+[DataContract]
+public class NativeResources
+{
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleRuntime { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary wasmNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary symbols { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary icu { get; set; }
 }
 
 [DataContract]
