@@ -29,6 +29,10 @@ namespace System.Buffers
     // We could implement that by just merging the two approaches: check for any of the value characters at position 0, 1, 2, then
     // AND those results together and verify potential matches. The issue with this approach is that we would always have to check
     // all values in the verification step, and we would be hitting many false positives as the number of values increased.
+    // For example, if you are searching for "Teddy" and "Bear", position 0 could be either 'T' or 'B', position 1 could be 'e',
+    // and position 2 could be 'd' or 'a'. We would do separate comparisons for each of those positions and then AND together the result.
+    // Because there is no correlation between the values, we would get false positives for inputs like "Bed" and "Tea",
+    // and we wouldn't know whether the match location was because of "Teddy" or "Bear", and thus which to proceed to verify.
     //
     // What is special about Teddy is how we perform that initial scan to not only determine the possible starting locations,
     // but also which values are the potential matches at each of those offsets.
@@ -43,16 +47,21 @@ namespace System.Buffers
     //
     // For example if we are searching for strings "Teddy" and "Bear", we will look for 'T' or 'B' at position 0, 'e' at position 1, ...
     // To look for 'T' (0x54) or 'B' (0x42), we will check for a high nibble of 5 or 4, and lower nibble of 4 or 2.
-    // Our bitmaps will look like so (bit 1 represents "Teddy", 2 represents "Bear"):
-    // high:  [0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    // low:   [0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    //               ^     ^  ^  ^
+    // Each value's presence is indicated by 1 bit. We will use 1 (0b00000001) for the first value ("Teddy") and 2 (0b00000010) for "Bear".
+    // Our bitmaps will look like so (1 is set for high 5 and low 4, 2 is set for high 4 and low 2):
+    // bitmapHigh: [0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    // bitmapLow:  [0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    //              ^     ^  ^  ^
+    //
+    // To map an input nibble to its corresponding bitmask, we use 'Shuffle(bitmap, nibble)'.
     // For an input like "TeddyBearFactory", our result will be
-    // input: [T, e, d, d, y, B, e, a, r, F, a, c, t, o, r, y]
-    // high:  [1, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0]
-    // low:   [1, 0, 1, 1, 0, 2, 0, 0, 2, 0, 0, 0, 1, 0, 2, 0]
-    // AND:   [1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    //         ^              ^
+    // input:      [T, e, d, d, y, B, e, a, r, F, a, c, t, o, r, y]
+    // inputHigh:  [5, 6, 6, 6, 7, 4, 6, 6, 7, 4, 6, 6, 7, 6, 7, 7] (values in hex)
+    // inputLow:   [4, 5, 4, 4, 9, 2, 5, 1, 2, 6, 1, 3, 4, F, 2, 9] (values in hex)
+    // resultHigh: [1, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0]
+    // resultLow:  [1, 0, 1, 1, 0, 2, 0, 0, 2, 0, 0, 0, 1, 0, 2, 0]
+    // result:     [1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] (resultHigh & resultLow)
+    //               ^              ^
     // Note how we had quite a few false positives for individual nibbles that we ruled away after checking both nibbles.
     // See 'TeddyHelper.ProcessInputN3' for details about how we combine results for multiple characters at different offsets.
     //
@@ -65,6 +74,13 @@ namespace System.Buffers
     // many more values at the same time. Instead of 8 values, we are now capable of looking for 8 buckets of values at the same time.
     // See 'TeddyBucketizer.Bucketize' for details about how values are grouped into buckets.
     // See 'TeddyBucketizer.GenerateBucketizedFingerprint' for details around how such a bitmap is constructed.
+    //
+    // Teddy works in terms of bytes, but .NET chars represent UTF-16 code units.
+    // We currently only use Teddy if the 2 or 3 starting characters are all ASCII. This limitation could be lifted in the future if needed.
+    // Since we know that all of the characters we are looking for are ASCII, we also know that only other ASCII characters will match against them.
+    // Making use of that fact, we narrow UTF-16 code units into bytes when reading the input (see 'TeddyHelper.LoadAndPack16AsciiChars').
+    // While such narrowing does corrupt non-ASCII values, they are all mapped to values outside of ASCII, so they won't match anyway.
+    // ASCII values remain unaffected since their high byte in UTF-16 representation is 0.
     //
     // To handle case-insensitive matching, all values are normalized to their uppercase equivalents ahead of time and the bitmaps are
     // generated as if all characters were uppercase. During the search, the input is also transformed into uppercase before being compared.
