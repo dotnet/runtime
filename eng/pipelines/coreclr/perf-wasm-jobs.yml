@@ -8,7 +8,6 @@ parameters:
   downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
   collectHelixLogsScript: ''
   perfForkToUse: {} # url, branch
-  TestHybridGlobalization: false
 
 jobs:
 
@@ -173,7 +172,7 @@ jobs:
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
 
-- ${{if or(and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')), parameters.TestHybridGlobalization) }}:
+- ${{if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
