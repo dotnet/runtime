@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using ILCompiler;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 using Debug = System.Diagnostics.Debug;
@@ -139,7 +140,7 @@ namespace Internal.IL.Stubs
             Debug.Assert(_interopStateManager != null);
 
             int numInstanceFields = 0;
-            foreach (var field in ManagedType.GetFields())
+            foreach (var field in ManagedType.GetInstanceFieldsWithImpliedRepeatedFields())
             {
                 if (field.IsStatic)
                     continue;
@@ -160,13 +161,8 @@ namespace Internal.IL.Stubs
 
             int index = 0;
 
-            foreach (FieldDesc field in ManagedType.GetFields())
+            foreach (FieldDesc field in ManagedType.GetInstanceFieldsWithImpliedRepeatedFields())
             {
-                if (field.IsStatic)
-                {
-                    continue;
-                }
-
                 marshallers[index] = Marshaller.CreateMarshaller(field.FieldType,
                                                                     null,   /* parameterIndex */
                                                                     null,   /* customModifierData */
@@ -195,13 +191,8 @@ namespace Internal.IL.Stubs
             IEnumerator<FieldDesc> nativeEnumerator = NativeType.GetFields().GetEnumerator();
 
             int index = 0;
-            foreach (var managedField in ManagedType.GetFields())
+            foreach (var managedField in ManagedType.GetInstanceFieldsWithInlineArrayRepeatedFields())
             {
-                if (managedField.IsStatic)
-                {
-                    continue;
-                }
-
                 bool notEmpty = nativeEnumerator.MoveNext();
                 Debug.Assert(notEmpty);
 
@@ -262,13 +253,8 @@ namespace Internal.IL.Stubs
             ILCodeStream codeStream = pInvokeILCodeStreams.MarshallingCodeStream;
             IEnumerator<FieldDesc> nativeEnumerator = NativeType.GetFields().GetEnumerator();
             int index = 0;
-            foreach (var managedField in ManagedType.GetFields())
+            foreach (var managedField in ManagedType.GetInstanceFieldsWithImpliedRepeatedFields())
             {
-                if (managedField.IsStatic)
-                {
-                    continue;
-                }
-
                 bool notEmpty = nativeEnumerator.MoveNext();
                 Debug.Assert(notEmpty);
 

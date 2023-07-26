@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
@@ -788,6 +790,41 @@ namespace ILCompiler
                             && firstField.Offset.AsInt == 0
                             && mdType.HasLayout()
                             && ((mdType.GetElementSize().AsInt % firstFieldElementType.GetElementSize().AsInt) == 0);
+        }
+
+        public static IEnumerable<FieldDesc> GetInstanceFieldsWithInlineArrayRepeatedFields(this TypeDesc typeDesc)
+        {
+            return typeDesc.GetInstanceFieldsWithImpliedRepeatedFields(typeDesc is MetadataType { IsInlineArray: true });
+        }
+
+        public static IEnumerable<FieldDesc> GetInstanceFieldsWithImpliedRepeatedFields(this TypeDesc typeDesc)
+        {
+            bool hasImpliedRepeatedFields = typeDesc is MetadataType mdType && mdType.HasImpliedRepeatedFields();
+            return typeDesc.GetInstanceFieldsWithImpliedRepeatedFields(hasImpliedRepeatedFields);
+        }
+
+        private static IEnumerable<FieldDesc> GetInstanceFieldsWithImpliedRepeatedFields(this TypeDesc typeDesc, bool hasImpliedRepeatedFields)
+        {
+            foreach (FieldDesc field in typeDesc.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                if (hasImpliedRepeatedFields)
+                {
+                    int numRepetitions = typeDesc.GetElementSize().AsInt / field.FieldType.GetElementSize().AsInt;
+                    yield return field;
+                    for (int i = 1; i < numRepetitions; i++)
+                    {
+                        yield return new ImpliedRepeatedFieldDesc(field, i);
+                    }
+                    break;
+                }
+                else
+                {
+                    yield return field;
+                }
+            }
         }
     }
 }

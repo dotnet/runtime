@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using ILCompiler;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Interop
@@ -199,25 +200,16 @@ namespace Internal.TypeSystem.Interop
             bool isAnsi = ManagedStructType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass;
 
             int numFields = 0;
-            foreach (FieldDesc field in ManagedStructType.GetFields())
+            foreach (FieldDesc field in ManagedStructType.GetInstanceFieldsWithInlineArrayRepeatedFields())
             {
-                if (field.IsStatic)
-                {
-                    continue;
-                }
                 numFields++;
             }
 
             _fields = new NativeStructField[numFields];
 
             int index = 0;
-            foreach (FieldDesc field in ManagedStructType.GetFields())
+            foreach (FieldDesc field in ManagedStructType.GetInstanceFieldsWithInlineArrayRepeatedFields())
             {
-                if (field.IsStatic)
-                {
-                    continue;
-                }
-
                 var managedType = field.FieldType;
 
                 TypeDesc nativeType;

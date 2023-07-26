@@ -64,31 +64,6 @@ namespace Internal.JitInterface
             public int[]                       FieldOffsets;
         };
 
-        private static class FieldEnumerator
-        {
-            internal static IEnumerable<FieldDesc> GetInstanceFields(TypeDesc typeDesc, bool hasImpliedRepeatedFields, int numIntroducedFields)
-            {
-                foreach (FieldDesc field in typeDesc.GetFields())
-                {
-                    if (field.IsStatic)
-                        continue;
-
-                    if (hasImpliedRepeatedFields)
-                    {
-                        for (int i = 0; i < numIntroducedFields; i++)
-                        {
-                            yield return field;
-                        }
-                        break;
-                    }
-                    else
-                    {
-                        yield return field;
-                    }
-                }
-            }
-        }
-
         public static void GetSystemVAmd64PassStructInRegisterDescriptor(TypeDesc typeDesc, out SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structPassInRegDescPtr)
         {
             structPassInRegDescPtr = default;
@@ -263,11 +238,11 @@ namespace Internal.JitInterface
             }
 
             int fieldIndex = 0;
-            foreach (FieldDesc field in FieldEnumerator.GetInstanceFields(typeDesc, hasImpliedRepeatedFields, numIntroducedFields))
+            foreach (FieldDesc field in typeDesc.GetInstanceFieldsWithImpliedRepeatedFields())
             {
                 Debug.Assert(fieldIndex < numIntroducedFields);
 
-                int fieldOffset = hasImpliedRepeatedFields ? fieldIndex * firstFieldSize : field.Offset.AsInt;
+                int fieldOffset = field.Offset.AsInt;
                 int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
                 int fieldSize = field.FieldType.GetElementSize().AsInt;

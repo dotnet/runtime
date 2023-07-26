@@ -11,7 +11,7 @@ namespace Internal.TypeSystem
     {
         private LayoutInt _offset = FieldAndOffset.InvalidOffset;
 
-        public LayoutInt Offset
+        public virtual LayoutInt Offset
         {
             get
             {
