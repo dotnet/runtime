@@ -335,7 +335,7 @@ namespace System
 
         internal static long GetGenerationBudget(int generation)
         {
-            return 0;
+            return -1;
         }
     }
 }

@@ -213,8 +213,6 @@ extern "C" int QCALLTYPE GCInterface_EndNoGCRegion();
 
 extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
 
-extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation);
-
 extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
@@ -222,6 +220,8 @@ extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configu
 extern "C" int  QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
 extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
+
+extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation);
 
 class COMInterlocked
 {
