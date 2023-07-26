@@ -273,16 +273,6 @@ function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
         config.globalizationMode = GlobalizationMode.Invariant;
     }
 
-    if (bootConfig.modifiableAssemblies) {
-        // Configure the app to enable hot reload in Development.
-        environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = bootConfig.modifiableAssemblies;
-    }
-
-    if (bootConfig.aspnetCoreBrowserTools) {
-        // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
-        environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = bootConfig.aspnetCoreBrowserTools;
-    }
-
     if (config.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
         environmentVariables["LANG"] = `${config.applicationCulture}.UTF-8`;
