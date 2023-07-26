@@ -852,7 +852,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         tnb.Append(W("const "));
         AppendType(tnb, ty.AsConstValue()->GetConstValueType(), Instantiation(), format & ~FormatAssembly);
         tnb.Append(W("("));
-        AppendConstValue(tnb, ty.AsConstValue()->GetConstValueType().GetInternalCorElementType(), ty.AsConstValue()->GetConstValue<uint64_t>());
+        AppendConstValue(tnb, ty.AsConstValue()->GetConstValueType().GetInternalCorElementType(), ty.AsConstValue()->GetConstValue());
         tnb.Append(W(")"));
     }
 

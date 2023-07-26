@@ -1044,13 +1044,12 @@ BOOL TypeHandle::IsConstValue() const
             (GetSignatureCorElementType() == ELEMENT_TYPE_CTARG));
 }
 
-template<typename T>
-T TypeHandle::GetConstValue() const
+uint64_t TypeHandle::GetConstValue() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(IsTypeDesc());
-    return AsConstValue()->GetConstValue<T>();
+    return AsConstValue()->GetConstValue();
 }
 
 CorElementType TypeHandle::GetConstValueType() const

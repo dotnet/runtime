@@ -54,6 +54,7 @@ uint8_t*,byte*
 uint8_t**,byte**
 GSCookie*,IntPtr*
 GSCookie**,IntPtr**
+uint64_t,unsigned long long
 
 bool*,ref bool
 BoolStar,byte*,bool*,bool*
@@ -247,6 +248,9 @@ FUNCTIONS
     unsigned getArrayRank(CORINFO_CLASS_HANDLE cls)
     CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn)
     void* getArrayInitializationData(CORINFO_FIELD_HANDLE field, uint32_t size)
+    bool isConstValue(CORINFO_CLASS_HANDLE cls)
+    uint64_t getConstValue(CORINFO_CLASS_HANDLE cls)
+    CorInfoType getConstValueType(CORINFO_CLASS_HANDLE cls)
     CorInfoIsAccessAllowedResult canAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper)
     size_t printFieldName(CORINFO_FIELD_HANDLE field, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field)

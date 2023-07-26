@@ -237,7 +237,7 @@ static DWORD HashTypeHandle(TypeHandle t)
     else if (t.IsConstValue())
     {
         ConstValueTypeDesc* pTD = t.AsConstValue();
-        retVal = HashConstValueType(pTD->GetConstValueType(), pTD->GetConstValue<uint64_t>());
+        retVal = HashConstValueType(pTD->GetConstValueType(), pTD->GetConstValue());
     }
     else if (t.IsGenericVariable())
     {

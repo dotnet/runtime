@@ -695,6 +695,27 @@ void* interceptor_ICJI::getArrayInitializationData(
     return original_ICorJitInfo->getArrayInitializationData(field, size);
 }
 
+bool interceptor_ICJI::isConstValue(
+          CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("isConstValue");
+    return original_ICorJitInfo->isConstValue(cls);
+}
+
+uint64_t interceptor_ICJI::getConstValue(
+          CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("getConstValue");
+    return original_ICorJitInfo->getConstValue(cls);
+}
+
+CorInfoType interceptor_ICJI::getConstValueType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("getConstValueType");
+    return original_ICorJitInfo->getConstValueType(cls);
+}
+
 CorInfoIsAccessAllowedResult interceptor_ICJI::canAccessClass(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_METHOD_HANDLE callerHandle,

@@ -850,6 +850,33 @@ void* WrapICorJitInfo::getArrayInitializationData(
     return temp;
 }
 
+bool WrapICorJitInfo::isConstValue(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isConstValue);
+    bool temp = wrapHnd->isConstValue(cls);
+    API_LEAVE(isConstValue);
+    return temp;
+}
+
+uint64_t WrapICorJitInfo::getConstValue(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getConstValue);
+    uint64_t temp = wrapHnd->getConstValue(cls);
+    API_LEAVE(getConstValue);
+    return temp;
+}
+
+CorInfoType WrapICorJitInfo::getConstValueType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getConstValueType);
+    CorInfoType temp = wrapHnd->getConstValueType(cls);
+    API_LEAVE(getConstValueType);
+    return temp;
+}
+
 CorInfoIsAccessAllowedResult WrapICorJitInfo::canAccessClass(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_METHOD_HANDLE callerHandle,

@@ -360,6 +360,15 @@ void* getArrayInitializationData(
           CORINFO_FIELD_HANDLE field,
           uint32_t size) override;
 
+bool isConstValue(
+          CORINFO_CLASS_HANDLE cls) override;
+
+uint64_t getConstValue(
+          CORINFO_CLASS_HANDLE cls) override;
+
+CorInfoType getConstValueType(
+          CORINFO_CLASS_HANDLE cls) override;
+
 CorInfoIsAccessAllowedResult canAccessClass(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_METHOD_HANDLE callerHandle,

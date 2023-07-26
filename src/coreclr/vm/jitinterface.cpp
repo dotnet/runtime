@@ -3041,11 +3041,13 @@ static bool IsSignatureForTypicalInstantiation(SigPointer sigptr, CorElementType
 {
     STANDARD_VM_CONTRACT;
 
+    CorElementType alternativeVarType = varType == ELEMENT_TYPE_VAR ? ELEMENT_TYPE_CVAR : ELEMENT_TYPE_MCVAR;
+
     for (uint32_t i = 0; i < ntypars; i++)
     {
         CorElementType type;
         IfFailThrow(sigptr.GetElemType(&type));
-        if (type != varType)
+        if (type != varType || type != alternativeVarType)
             return false;
 
         uint32_t data;
@@ -3162,7 +3164,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
             CorElementType type;
             IfFailThrow(sigptr.GetElemType(&type));
-            if (type == ELEMENT_TYPE_MVAR)
+            if (type == ELEMENT_TYPE_MVAR || type == ELEMENT_TYPE_MCVAR)
             {
                 pResult->indirections = 2;
                 pResult->testForNull = 0;
@@ -3237,7 +3239,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
             CorElementType type;
             IfFailThrow(sigptr.GetElemType(&type));
-            if (type == ELEMENT_TYPE_VAR)
+            if (type == ELEMENT_TYPE_VAR || type == ELEMENT_TYPE_CVAR)
             {
                 pResult->indirections = 3;
                 pResult->testForNull = 0;
@@ -4966,6 +4968,67 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
 
     EE_TO_JIT_TRANSITION();
     return isAccessAllowed;
+}
+
+
+// Check if this is a const value
+bool CEEInfo::isConstValue(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = false;
+    
+    JIT_TO_EE_TRANSITION();
+
+    result = ((TypeHandle)cls).IsConstValue();
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+// Return the const value if this is a const value type
+uint64_t CEEInfo::getConstValue(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+    
+    uint64_t result = 0;
+    
+    JIT_TO_EE_TRANSITION();
+    
+    result = ((TypeHandle)cls).GetConstValue();
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+// Return the type of the const value if this is a const value type
+CorInfoType CEEInfo::getConstValueType(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+    
+    CorInfoType result = CorInfoType::CORINFO_TYPE_COUNT;
+    
+    JIT_TO_EE_TRANSITION();
+    
+    result = CEEInfo::asCorInfoType(((TypeHandle)cls).GetConstValueType());
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 //---------------------------------------------------------------------------------------
@@ -6760,6 +6823,7 @@ mdToken FindGenericMethodArgTypeSpec(IMDInternalImport* pInternalImport)
     mdToken token;
 
     static const BYTE signature[] = { ELEMENT_TYPE_MVAR, 0 };
+    static const BYTE cSignature[] = { ELEMENT_TYPE_MVAR, 0 };
 
     hEnumTypeSpecs.EnumAllInit(mdtTypeSpec);
     while (hEnumTypeSpecs.EnumNext(&token))
@@ -6768,6 +6832,8 @@ mdToken FindGenericMethodArgTypeSpec(IMDInternalImport* pInternalImport)
         ULONG cbSig;
         IfFailThrow(pInternalImport->GetTypeSpecFromToken(token, &pSig, &cbSig));
         if (cbSig == sizeof(signature) && memcmp(pSig, signature, cbSig) == 0)
+            return token;
+        if (cbSig == sizeof(cSignature) && memcmp(pSig, cSignature, cbSig) == 0)
             return token;
     }
 
@@ -9490,6 +9556,8 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     switch (type) {
       case ELEMENT_TYPE_VAR :
       case ELEMENT_TYPE_MVAR :
+      case ELEMENT_TYPE_CVAR :
+      case ELEMENT_TYPE_MCVAR :
       case ELEMENT_TYPE_VALUETYPE :
       case ELEMENT_TYPE_TYPEDBYREF :
       case ELEMENT_TYPE_INTERNAL :

@@ -484,7 +484,7 @@ public:
 
     // CTARG
     BOOL IsConstValue() const;
-    template<typename T> T GetConstValue() const;
+    uint64_t GetConstValue() const;
     CorElementType GetConstValueType() const;
 
     // BYREF

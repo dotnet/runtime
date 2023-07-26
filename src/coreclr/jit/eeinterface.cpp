@@ -94,6 +94,77 @@ void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
 }
 
 //------------------------------------------------------------------------
+// eePrintConstValue:
+//   Print a const value.
+//
+// Arguments:
+//    printer - the printer
+//    valueType - the value type
+//    value - the value
+//
+void Compiler::eePrintConstValue(StringPrinter* printer, CorInfoType valueType, uint64_t value)
+{
+    printer->Append("const ");
+    printer->Append(varTypeName(JitType2PreciseVarType(valueType)));
+    printer->Append("(");
+    char buffer[64];
+    switch (valueType)
+    {
+        case CORINFO_TYPE_BOOL:
+            printer->Append(*(uint8_t*)&value == 0 ? "true" : "false");
+            break;
+        case CORINFO_TYPE_CHAR:
+            sprintf_s(buffer, 64, "%c", *(char*)&value);
+            printer->Append(buffer);
+            break;
+        case CORINFO_TYPE_BYTE:
+            sprintf_s(buffer, 64, "%hhd", *(int8_t*)&value);
+            printer->Append(buffer);
+            break;
+        case CORINFO_TYPE_UBYTE:
+            sprintf_s(buffer, 64, "%hhu", *(uint8_t*)&value);
+            printer->Append(buffer);
+            break;
+        case CORINFO_TYPE_SHORT:
+            sprintf_s(buffer, 64, "%hd", *(int16_t*)&value);
+            printer->Append(buffer);
+            break;
+        case CORINFO_TYPE_USHORT:
+            sprintf_s(buffer, 64, "%hu", *(uint16_t*)&value);
+            printer->Append(buffer);
+            break;
+        case CORINFO_TYPE_INT:
+            sprintf_s(buffer, 64, "%d", *(int32_t*)&value);
+            printer->Append(buffer);
+            break;
+        case CORINFO_TYPE_UINT:
+            sprintf_s(buffer, 64, "%u", *(uint32_t*)&value);
+            printer->Append(buffer);
+            break;
+        case CORINFO_TYPE_LONG:
+            sprintf_s(buffer, 64, "%lld", *(int64_t*)&value);
+            printer->Append(buffer);
+            break;
+        case CORINFO_TYPE_ULONG:
+            sprintf_s(buffer, 64, "%llu", *(uint64_t*)&value);
+            printer->Append(buffer);
+            break;
+        case CORINFO_TYPE_FLOAT:
+            sprintf_s(buffer, 64, "%f", *(float*)&value);
+            printer->Append(buffer);
+            break;
+        case CORINFO_TYPE_DOUBLE:
+            sprintf_s(buffer, 64, "%lf", *(double*)&value);
+            printer->Append(buffer);
+            break;
+        default:
+            _ASSERTE(!"UNKNOWN VALUE TYPE");
+            break;
+    }
+    printer->Append(")");
+}
+
+//------------------------------------------------------------------------
 // eeAppendPrint:
 //   Append the output of one of the JIT-EE 'print' functions to a StringPrinter.
 //
@@ -202,6 +273,10 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter* printer, CORINFO_CLASS_HANDL
     if ((typ == CORINFO_TYPE_CLASS) || (typ == CORINFO_TYPE_VALUECLASS))
     {
         eePrintType(printer, clsHnd, includeInstantiation);
+    }
+    else if (typ == CORINFO_TYPE_CTARG)
+    {
+        eePrintConstValue(printer, info.compCompHnd->getConstValueType(clsHnd), info.compCompHnd->getConstValue(clsHnd));
     }
     else
     {

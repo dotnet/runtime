@@ -2735,6 +2735,21 @@ public:
             CORINFO_HELPER_DESC *    pAccessHelper /* If canAccessMethod returns something other
                                                       than ALLOWED, then this is filled in. */
             ) = 0;
+    
+    // Check if this is a const value
+    virtual bool isConstValue(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    // Return the const value if this is a const value type
+    virtual uint64_t getConstValue(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    // Return the type of the const value if this is a const value type
+    virtual CorInfoType getConstValueType(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
 
     /**********************************************************************************/
     //

@@ -348,13 +348,12 @@ public:
         return m_type;
     }
 
-    template<typename T>
-    T GetConstValue()
+    uint64_t GetConstValue()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return *(T*)&m_value;
+        return m_value.asUint64;
     }
     
 private:
