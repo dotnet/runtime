@@ -650,6 +650,7 @@ namespace System
                             // AVX-512 returns comparison results in a mask register, so we want to optimize
                             // the core check to simply be an "none match" check. This will slightly increase
                             // the cost for the early match case, but greatly improves perf otherwise.
+
                             if (!Vector512.EqualsAny(search, Vector512<ushort>.Zero))
                             {
                                 // Zero flags set so no matches
