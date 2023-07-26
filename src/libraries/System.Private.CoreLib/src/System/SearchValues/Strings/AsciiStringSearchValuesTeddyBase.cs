@@ -61,7 +61,7 @@ namespace System.Buffers
     // resultHigh: [1, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0]
     // resultLow:  [1, 0, 1, 1, 0, 2, 0, 0, 2, 0, 0, 0, 1, 0, 2, 0]
     // result:     [1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] (resultHigh & resultLow)
-    //               ^              ^
+    //              ^              ^
     // Note how we had quite a few false positives for individual nibbles that we ruled away after checking both nibbles.
     // See 'TeddyHelper.ProcessInputN3' for details about how we combine results for multiple characters at different offsets.
     //
