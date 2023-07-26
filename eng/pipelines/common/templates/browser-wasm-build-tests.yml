@@ -32,18 +32,13 @@ jobs:
               eq(variables['System.PullRequest.TargetBranch'], 'main'))
             ]
         - name: wbtProjectArg
-          ${{ if in(platform, 'browser_wasm_win', 'wasi_win') }}:
+          ${{ if eq(platform, 'browser_wasm_win') }}:
             value: '-projects'
           ${{ else }}:
             value: '--projects'
-
         - name: shouldRunOnDefaultPipelines
-          value: $[
-            or(
-              eq(variables['wasmDarcDependenciesChanged'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
-            ]
+          value: $(shouldRunWasmBuildTestsOnDefaultPipeline)
+
       jobParameters:
         dependsOn:
           - ${{ if eq(platform, 'browser_wasm') }}:
@@ -57,39 +52,41 @@ jobs:
         nameSuffix: WasmBuildTests
 
         preBuildSteps:
-          # Download runtime packs, and tasks needed to build WBT
+          # Download single threaded runtime packs, and tasks needed to build WBT
           - task: DownloadBuildArtifacts@0
             displayName: Download built nugets for singlethreaded runtime
             inputs:
               buildType: current
-              artifactName: 'BuildArtifactsForWBT_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
+              artifactName: 'BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
               downloadType: single
               downloadPath: '$(Build.SourcesDirectory)/artifacts'
 
           - task: CopyFiles@2
             displayName: Copy single threaded assets
             inputs:
-              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifactsForWBT_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
+          # Download for multi-threaded
           - ${{ if eq(parameters.downloadMultithreadedRuntime, true) }}:
             - task: DownloadBuildArtifacts@0
               displayName: Download built nugets for multi-threaded runtime
               inputs:
                 buildType: current
-                artifactName: BuildArtifactsForWBT_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
+                artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
                 downloadType: single
                 downloadPath: '$(Build.SourcesDirectory)/artifacts'
 
             - task: CopyFiles@2
               displayName: Copy multithreading runtime pack
               inputs:
-                SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifactsForWBT_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
+                SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
                 Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.*
                 TargetFolder: '$(Build.SourcesDirectory)/artifacts'
                 CleanTargetFolder: false
 
+        # build WBT
         buildArgs: >-
           /p:Configuration=$(_BuildConfig)
           $(wbtProjectArg) $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj

@@ -27,5 +27,5 @@ steps:
     displayName: Publish intermediate artifacts
     inputs:
       pathToPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'
-      artifactName: BuildArtifactsForWBT_${{ parameters.osGroup }}_wasm_$(_hostedOs)_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+      artifactName: BuildArtifacts_${{ parameters.osGroup }}_wasm_$(_hostedOs)_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
       artifactType: container
