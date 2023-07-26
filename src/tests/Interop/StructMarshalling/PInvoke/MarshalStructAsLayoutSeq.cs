@@ -330,6 +330,10 @@ public class Managed
     [DllImport("MarshalStructAsParam")]
     static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(FixedArrayClassificationTest str, float f);
     [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(InlineArrayClassificationTest str, float f);
+    [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(InlineArrayWithWrappedIntClassificationTest str, float f);
+    [DllImport("MarshalStructAsParam")]
     static extern bool MarshalStructAsParam_AsSeqByValUnicodeCharArrayClassification(UnicodeCharArrayClassification str, float f);
     [DllImport("MarshalStructAsParam")]
     static extern int GetStringLength(AutoString str);
@@ -688,10 +692,45 @@ public class Managed
                         },
                         f = 56.789f
                     };
+
                     if (!MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(fixedArrayTest, fixedArrayTest.f))
                     {
                         Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest. Expected:True;Actual:False");
                         failures++;
+                    }
+
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest with inline array...");
+                    {
+                        InlineArrayClassificationTest inlineArrayTest = new()
+                        {
+                            f = 56.789f
+                        };
+                        inlineArrayTest.arr[0] = 123456;
+                        inlineArrayTest.arr[1] = 78910;
+                        inlineArrayTest.arr[2] = 1234;
+
+                        if (!MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(inlineArrayTest, inlineArrayTest.f))
+                        {
+                            Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest. Expected:True;Actual:False");
+                            failures++;
+                        }
+                    }
+
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest with inline array...");
+                    {
+                        InlineArrayWithWrappedIntClassificationTest inlineArrayTest = new()
+                        {
+                            f = 56.789f
+                        };
+                        inlineArrayTest.arr[0] = new(123456);
+                        inlineArrayTest.arr[1] = new(78910);
+                        inlineArrayTest.arr[2] = new(1234);
+
+                        if (!MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(inlineArrayTest, inlineArrayTest.f))
+                        {
+                            Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest. Expected:True;Actual:False");
+                            failures++;
+                        }
                     }
                     break;
                 case StructID.UnicodeCharArrayClassificationId:

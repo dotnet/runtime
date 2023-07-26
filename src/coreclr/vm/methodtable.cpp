@@ -2340,21 +2340,27 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     FieldDesc *pFieldStart = GetApproxFieldDescListRaw();
 
-    CorElementType firstFieldElementType = pFieldStart->GetFieldType();
+    // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+    bool isFixedBuffer = GetClass()->IsInlineArray();
 
-    // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-    // and who's size is an exact multiple of the size of the field.
-    // It is possible that we catch a false positive with this check, but that chance is extremely slim
-    // and the user can always change their structure to something more descriptive of what they want
-    // instead of adding additional padding at the end of a one-field structure.
-    // We do this check here to save looking up the FixedBufferAttribute when loading the field
-    // from metadata.
-    bool isFixedBuffer = numIntroducedFields == 1
-                                && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
-                                    || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
-                                && (pFieldStart->GetOffset() == 0)
-                                && HasLayout()
-                                && (GetNumInstanceFieldBytes() % pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0)) == 0);
+    if (!isFixedBuffer)
+    {
+        CorElementType firstFieldElementType = pFieldStart->GetFieldType();;
+
+        // A fixed buffer type is always a value type that has exactly one value type field at offset 0
+        // and who's size is an exact multiple of the size of the field.
+        // It is possible that we catch a false positive with this check, but that chance is extremely slim
+        // and the user can always change their structure to something more descriptive of what they want
+        // instead of adding additional padding at the end of a one-field structure.
+        // We do this check here to save looking up the FixedBufferAttribute when loading the field
+        // from metadata.
+        isFixedBuffer = numIntroducedFields == 1
+                        && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
+                            || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
+                        && (pFieldStart->GetOffset() == 0)
+                        && HasLayout()
+                        && (GetNumInstanceFieldBytes() % pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0)) == 0);
+    }
 
     if (isFixedBuffer)
     {
@@ -2365,13 +2371,13 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
     {
         FieldDesc* pField;
         DWORD fieldOffset;
-        unsigned int fieldIndexForSize = fieldIndex;
+        unsigned int fieldIndexForCacheLookup = fieldIndex;
 
         if (isFixedBuffer)
         {
             pField = pFieldStart;
-            fieldIndexForSize = 0;
-            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForSize));
+            fieldIndexForCacheLookup = 0;
+            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
         }
         else
         {
@@ -2381,7 +2387,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         unsigned int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
-        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForSize));
+        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
         _ASSERTE(fieldSize != (unsigned int)-1);
 
         // The field can't span past the end of the struct.
@@ -2402,7 +2408,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         {
             TypeHandle th;
             if (pByValueClassCache != NULL)
-                th = TypeHandle(pByValueClassCache[fieldIndex]);
+                th = TypeHandle(pByValueClassCache[fieldIndexForCacheLookup]);
             else
                 th = pField->GetApproxFieldTypeHandleThrowing();
             _ASSERTE(!th.IsNull());
@@ -2542,21 +2548,28 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     {
         return false;
     }
+    
+    // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+    bool isFixedBuffer = GetClass()->IsInlineArray();
 
-    // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-    // and who's size is an exact multiple of the size of the field.
-    // It is possible that we catch a false positive with this check, but that chance is extremely slim
-    // and the user can always change their structure to something more descriptive of what they want
-    // instead of adding additional padding at the end of a one-field structure.
-    // We do this check here to save looking up the FixedBufferAttribute when loading the field
-    // from metadata.
-    CorElementType firstFieldElementType = pNativeFieldDescs->GetFieldDesc()->GetFieldType();
-    bool isFixedBuffer = numIntroducedFields == 1
-                                && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
-                                    || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
-                                && (pNativeFieldDescs->GetExternalOffset() == 0)
-                                && IsValueType()
-                                && (pNativeLayoutInfo->GetSize() % pNativeFieldDescs->NativeSize() == 0);
+    if (!isFixedBuffer)
+    {
+        CorElementType firstFieldElementType = pNativeFieldDescs->GetFieldDesc()->GetFieldType();
+
+        // A fixed buffer type is always a value type that has exactly one value type field at offset 0
+        // and who's size is an exact multiple of the size of the field.
+        // It is possible that we catch a false positive with this check, but that chance is extremely slim
+        // and the user can always change their structure to something more descriptive of what they want
+        // instead of adding additional padding at the end of a one-field structure.
+        // We do this check here to save looking up the FixedBufferAttribute when loading the field
+        // from metadata.
+        isFixedBuffer = numIntroducedFields == 1
+                        && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
+                            || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
+                        && (pNativeFieldDescs->GetExternalOffset() == 0)
+                        && IsValueType()
+                        && (pNativeLayoutInfo->GetSize() % pNativeFieldDescs->NativeSize() == 0);
+    }
 
     if (isFixedBuffer)
     {
@@ -2999,11 +3012,16 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                bool isFixedBuffer = GetClass()->IsInlineArray();
+
+                if (!isFixedBuffer)
+                {
+                    isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
                                         || fieldType == ELEMENT_TYPE_VALUETYPE)
                                     && (pFieldStart->GetOffset() == 0)
                                     && pMethodTable->HasLayout()
                                     && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                }
 
                 if (isFixedBuffer)
                 {
@@ -3249,11 +3267,16 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                bool isFixedBuffer = GetClass()->IsInlineArray();
+
+                if (!isFixedBuffer)
+                {
+                    isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
                                         || fieldType == ELEMENT_TYPE_VALUETYPE)
                                     && (pFieldStart->GetOffset() == 0)
                                     && pMethodTable->HasLayout()
                                     && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                }
 
                 if (isFixedBuffer)
                 {
@@ -3619,11 +3642,16 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                bool isFixedBuffer = GetClass()->IsInlineArray();
+
+                if (!isFixedBuffer)
+                {
+                    isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
                                         || fieldType == ELEMENT_TYPE_VALUETYPE)
                                     && (pFieldStart->GetOffset() == 0)
                                     && pMethodTable->HasLayout()
                                     && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                }
 
                 if (isFixedBuffer)
                 {
@@ -3869,11 +3897,16 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                bool isFixedBuffer = GetClass()->IsInlineArray();
+
+                if (!isFixedBuffer)
+                {
+                    isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
                                         || fieldType == ELEMENT_TYPE_VALUETYPE)
                                     && (pFieldStart->GetOffset() == 0)
                                     && pMethodTable->HasLayout()
                                     && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                }
 
                 if (isFixedBuffer)
                 {
