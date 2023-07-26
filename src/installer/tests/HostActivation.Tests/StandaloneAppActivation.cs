@@ -238,9 +238,7 @@ namespace HostActivation.Tests
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-
-            UseBuiltAppHost(appExe);
-            AppHostExtensions.BindAppHost(appExe);
+            fixture.TestProject.BuiltApp.CreateAppHost();
 
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
@@ -261,7 +259,7 @@ namespace HostActivation.Tests
 
             // Mark the apphost as GUI, but don't bind it to anything - this will cause it to fail
             UseBuiltAppHost(appExe);
-            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+            PEUtils.SetWindowsGraphicalUserInterfaceBit(appExe);
 
             Command.Create(appExe)
                 .CaptureStdErr()
@@ -282,7 +280,7 @@ namespace HostActivation.Tests
 
             // Mark the apphost as GUI, but don't bind it to anything - this will cause it to fail
             UseBuiltAppHost(appExe);
-            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+            PEUtils.SetWindowsGraphicalUserInterfaceBit(appExe);
 
             string traceFilePath;
             Command.Create(appExe)
