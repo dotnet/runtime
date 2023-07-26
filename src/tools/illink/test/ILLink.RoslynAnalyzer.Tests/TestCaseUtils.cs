@@ -162,7 +162,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			const string tfm = "net8.0";
 
-			rootSourceDirectory = Path.GetFullPath(Path.Combine(LinkerTestDirectory, "Mono.Linker.Tests.Cases"));
+			rootSourceDirectory = Path.GetFullPath(Path.Combine(LinkerTestDirectory, MonoLinkerTestsCases));
 			testAssemblyPath = Path.GetFullPath(Path.Combine(artifactsBinDirectory, "ILLink.RoslynAnalyzer.Tests", configuration, tfm));
 		}
 

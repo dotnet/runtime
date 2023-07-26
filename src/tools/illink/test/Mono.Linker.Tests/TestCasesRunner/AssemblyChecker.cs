@@ -91,6 +91,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static bool IsCompilerGeneratedMember (IMemberDefinition member)
 		{
+			if (member is MethodDefinition method && method.Name.Contains("<Main>$"))
+				return false;
+
 			if (IsCompilerGeneratedMemberName (member.Name))
 				return true;
 
