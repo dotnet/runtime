@@ -66,7 +66,6 @@ class   ArrayClass;
 class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;
-class   ConstValueClass;
 class   DictionaryLayout;
 class   FCallMethodDesc;
 class   EEClass;
@@ -2024,39 +2023,6 @@ public:
     LoaderHeap *GetStubHeap();
 #endif // !DACCESS_COMPILE
 
-};
-
-typedef DPTR(ConstValueClass) PTR_ConstValueClass;
-
-class ConstValueClass : public EEClass
-{
-private:
-    DAC_ALIGNAS(EEClass)  // Align the first member to the alignment of the base class
-    ULONG              m_value;
-    CorElementType     m_type;
-
-public:
-#ifndef DACCESS_COMPILE
-    ConstValueClass() : EEClass(sizeof(ConstValueClass)) { LIMITED_METHOD_CONTRACT; }
-#endif // !DACCESS_COMPILE
-
-    CorElementType GetValueType() {
-        LIMITED_METHOD_CONTRACT;
-        return m_type;
-    }
-
-    template<typename T>
-    void SetValue(CorElementType type, T value) {
-        LIMITED_METHOD_CONTRACT;
-        m_value = *(ULONG*)(void*)&value;
-        m_type = type;
-    }
-    
-    template<typename T>
-    T GetValue() {
-        LIMITED_METHOD_CONTRACT;
-        return *(T*)(void*)&m_value;
-    }
 };
 
 typedef DPTR(ArrayClass) PTR_ArrayClass;

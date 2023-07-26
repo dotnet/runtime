@@ -566,6 +566,7 @@ public:
     static Module * ComputeLoaderModule(TypeKey * typeKey);
     inline static PTR_Module ComputeLoaderModuleForFunctionPointer(TypeHandle * pRetAndArgTypes, DWORD NumArgsPlusRetType);
     inline static PTR_Module ComputeLoaderModuleForParamType(TypeHandle paramType);
+    inline static PTR_Module ComputeLoaderModuleForConstValue(TypeHandle valueType);
 
 private:
     static PTR_Module ComputeLoaderModuleWorker(Module *pDefinitionModule,      // the module that declares the generic type or method

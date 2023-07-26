@@ -160,6 +160,25 @@ class SigParser
             return hr;
         }
 
+        //------------------------------------------------------------------------
+        // Remove one compressed const type argument value (using CorSigUncompressConstArgData) 
+        // from the head of the stream and return it.
+        //------------------------------------------------------------------------
+        __checkReturn
+        FORCEINLINE HRESULT GetConstArgData(PCCOR_SIGNATURE* pData, uint32_t* pCb)
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+
+            uint32_t sizeOfData = 0;
+
+            sizeOfData = CorSigUncompressConstTypeArgData(m_ptr);
+            SkipBytes(sizeOfData);
+            if (pCb) *pCb = sizeOfData;
+            if (pData) *pData = m_ptr;
+
+            return S_OK;
+        }
 
         //-------------------------------------------------------------------------
         // Remove one byte and return it.

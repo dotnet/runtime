@@ -56,6 +56,20 @@ inline PTR_Module ClassLoader::ComputeLoaderModuleForParamType(TypeHandle paramT
     return paramType.GetLoaderModule();
 }
 
+inline PTR_Module ClassLoader::ComputeLoaderModuleForConstValue(TypeHandle type)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    return type.GetLoaderModule();
+}
+
 //******************************************************************************
 
 inline void AccessCheckOptions::Initialize(

@@ -115,10 +115,6 @@ MethodTableBuilder::CreateClass( Module *pModule,
     {
         pEEClass = new (pAllocator->GetLowFrequencyHeap(), pamTracker) DelegateEEClass();
     }
-    else if (fIsConstValue)
-    {
-        pEEClass = new (pAllocator->GetLowFrequencyHeap(), pamTracker) ConstValueClass();
-    }
     else
     {
         pEEClass = new (pAllocator->GetLowFrequencyHeap(), pamTracker) EEClass(sizeof(EEClass));

@@ -204,6 +204,7 @@ private:
     static void AppendInst(TypeNameBuilder& tnb, Instantiation inst, DWORD format = FormatNamespace);
     static void AppendType(TypeNameBuilder& tnb, TypeHandle t, Instantiation typeInstantiation, DWORD format = FormatNamespace); // ????
     static void AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD format = FormatNamespace);
+    static void AppendConstValue(TypeNameBuilder& tnb, CorElementType valueType, uint64_t value);
     static void AppendParamTypeQualifier(TypeNameBuilder& tnb, CorElementType kind, DWORD rank);
     static void EscapeSimpleTypeName(SString* ssTypeName, SString* ssEscapedTypeName);
     static bool ContainsReservedChar(LPCWSTR pTypeName);

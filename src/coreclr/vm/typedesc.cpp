@@ -72,6 +72,11 @@ PTR_Module TypeDesc::GetLoaderModule()
     {
         return dac_cast<PTR_TypeVarTypeDesc>(this)->GetModule();
     }
+    else if (IsConstValue())
+    {
+        PTR_ConstValueTypeDesc asConstValue = dac_cast<PTR_ConstValueTypeDesc>(this);
+        return ClassLoader::ComputeLoaderModuleForConstValue(asConstValue->GetConstValueType());
+    }
     else
     {
         PTR_Module retVal = NULL;
@@ -144,7 +149,7 @@ PTR_Module TypeDesc::GetModule() {
         return asVar->GetModule();
     }
 
-    _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
+    _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR || GetInternalCorElementType() == ELEMENT_TYPE_CTARG);
 
     return GetLoaderModule();
 }

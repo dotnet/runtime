@@ -141,14 +141,6 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 #define TARGET_MAIN_CLR_DLL_NAME_W    MAKE_TARGET_DLLNAME_W(MAIN_CLR_MODULE_NAME_W)
 #define TARGET_MAIN_CLR_DLL_NAME_A    MAKE_TARGET_DLLNAME_A(MAIN_CLR_MODULE_NAME_A)
 
-#ifdef TARGET_64BIT
-#define IN_TARGET_64BIT(x)     x
-#define IN_TARGET_32BIT(x)
-#else
-#define IN_TARGET_64BIT(x)
-#define IN_TARGET_32BIT(x)     x
-#endif
-
 //*****************************************************************************
 //*****************************************************************************
 //
@@ -1833,15 +1825,11 @@ inline ULONG CorSigUncompressConstTypeArgData(
         case ELEMENT_TYPE_I4           :
         case ELEMENT_TYPE_U4           :
         case ELEMENT_TYPE_R4           :
-        IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
-        IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
             size = size << 2;
             break;
         case ELEMENT_TYPE_I8           :
         case ELEMENT_TYPE_U8           :
         case ELEMENT_TYPE_R8           :
-        IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
-        IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
             size = size << 3;
             break;
         default:

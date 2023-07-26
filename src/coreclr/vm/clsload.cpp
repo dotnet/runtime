@@ -236,7 +236,7 @@ Module *ClassLoader::ComputeLoaderModule(TypeKey *typeKey)
     else if (typeKey->GetKind() == ELEMENT_TYPE_FNPTR)
         return ComputeLoaderModuleForFunctionPointer(typeKey->GetRetAndArgTypes(), typeKey->GetNumArgs() + 1);
     else if (typeKey->GetKind() == ELEMENT_TYPE_CTARG)
-        return typeKey->GetConstValueType().GetLoaderModule();
+        return ComputeLoaderModuleForConstValue(typeKey->GetConstValueType());
     else
         return ComputeLoaderModuleForParamType(typeKey->GetElementType());
 }
@@ -3012,7 +3012,6 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
         PREFIX_ASSUME(pLoaderModule != NULL);
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ConstValueTypeDesc)) + S_SIZE_T(sizeof(TypeHandle))));
         typeHnd = TypeHandle(new(mem)  ConstValueTypeDesc(pKey->GetConstValueType(), pKey->GetConstValue()));
-        _ASSERTE(!"NYI: Build MethodTable for Const Value");
     }
     else
     {

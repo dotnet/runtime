@@ -891,7 +891,11 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
     // or a const value
     else if (ty.IsConstValue())
     {
-
+        tnb.Append(W("const "));
+        AppendType(tnb, ty.AsConstValue()->GetConstValueType(), Instantiation(), format);
+        tnb.Append(W("("));
+        AppendConstValue(tnb, ty.AsConstValue()->GetConstValueType().GetInternalCorElementType(), ty.AsConstValue()->GetConstValue<uint64_t>());
+        tnb.Append(W(")"));
     }
 
     // ...otherwise it's just a plain type def or an instantiated type
@@ -1226,6 +1230,15 @@ void TypeString::AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD fo
     {
         RETURN;
     }
+    else if (kind == ELEMENT_TYPE_CTARG)
+    {
+        tnb.Append(W("const "));
+        TypeHandle valueType = pTypeKey->GetConstValueType();
+        AppendType(tnb, valueType, Instantiation(), format);
+        tnb.Append(W("("));
+        AppendConstValue(tnb, valueType.GetInternalCorElementType(), pTypeKey->GetConstValue());
+        tnb.Append(W(")"));
+    }
 
     // ...otherwise it's just a plain type def or an instantiated type
     else
@@ -1283,6 +1296,69 @@ void TypeString::AppendTypeKey(SString& ss, TypeKey *pTypeKey, DWORD format)
         AppendTypeKey(tnb, pTypeKey, format);
     }
 
+    RETURN;
+}
+
+void TypeString::AppendConstValue(TypeNameBuilder& tnb, CorElementType valueType, uint64_t value)
+{
+    CONTRACT_VOID
+    {
+        MODE_ANY;
+        GC_NOTRIGGER;
+        THROWS;
+    }
+    CONTRACT_END
+
+    WCHAR buffer[64]{};
+    SString pValueString = SString(buffer, 64);
+    switch (valueType)
+    {
+    case ELEMENT_TYPE_BOOLEAN:
+        if (*(uint8_t*)&value == 0)
+            pValueString.Printf("false");
+        else 
+            pValueString.Printf("true");
+        break;
+    case ELEMENT_TYPE_CHAR:
+        pValueString.Printf("%c", *(char*)&value);
+        break;
+    case ELEMENT_TYPE_I1:
+        pValueString.Printf("%hhd", *(uint8_t*)&value);
+        break;
+    case ELEMENT_TYPE_U1:
+        pValueString.Printf("%hhu", *(int8_t*)&value);
+        break;
+    case ELEMENT_TYPE_I2:
+        pValueString.Printf("%hd", *(uint16_t*)&value);
+        break;
+    case ELEMENT_TYPE_U2:
+        pValueString.Printf("%hu", *(int16_t*)&value);
+        break;
+    case ELEMENT_TYPE_I4:
+        pValueString.Printf("%d", *(uint32_t*)&value);
+        break;
+    case ELEMENT_TYPE_U4:
+        pValueString.Printf("%u", *(int32_t*)&value);
+        break;
+    case ELEMENT_TYPE_I8:
+        pValueString.Printf("%lld", *(uint64_t*)&value);
+        break;
+    case ELEMENT_TYPE_U8:
+        pValueString.Printf("%llu", *(int64_t*)&value);
+        break;
+    case ELEMENT_TYPE_R4:
+        pValueString.Printf("%f", *(float*)&value);
+        break;
+    case ELEMENT_TYPE_R8:
+        pValueString.Printf("%lf", *(double*)&value);
+        break;
+    default:
+        _ASSERTE(!"UNKONWN CONST VALUE TYPE");
+        pValueString.Printf("/* UNKNOWN CONST VALUE*/");
+        break;
+    }
+    tnb.Append(pValueString.GetUnicode());
+    
     RETURN;
 }
 

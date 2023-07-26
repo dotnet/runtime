@@ -1049,28 +1049,16 @@ T TypeHandle::GetConstValue() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (!IsTypeDesc())
-    {
-        return AsMethodTable()->GetConstValue<T>();
-    }
-    else
-    {
-        return AsConstValue()->GetConstValue<T>();
-    }
+    _ASSERTE(IsTypeDesc());
+    return AsConstValue()->GetConstValue<T>();
 }
 
 CorElementType TypeHandle::GetConstValueType() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     
-    if (!IsTypeDesc())
-    {
-        return AsMethodTable()->GetConstValueType();
-    }
-    else
-    {
-        return AsConstValue()->GetConstValueType().GetInternalCorElementType();
-    }
+    _ASSERTE(IsTypeDesc());
+    return AsConstValue()->GetConstValueType().GetInternalCorElementType();
 }
 
 BOOL TypeHandle::IsRestored_NoLogging() const
