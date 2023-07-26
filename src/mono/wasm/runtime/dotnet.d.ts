@@ -339,7 +339,6 @@ type DotnetModuleConfig = {
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     imports?: any;
     exports?: string[];
-    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
 } & Partial<EmscriptenModule>;
 type APIType = {
     runMain: (mainAssemblyName: string, args: string[]) => Promise<number>;
