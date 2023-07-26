@@ -638,20 +638,21 @@ namespace System
         }
 
         /// <summary>
-        /// Register a callback to be invoked when we allocated a certain amount of memory in the no GC region.
-        /// <param name="totalSize">The total size of the no GC region. Must be a number > 0 or an ArgumentOutOfRangeException will be thrown.</param>
-        /// <param name="callback">The callback to be executed when we allocated a certain amount of memory in the no GC region..</param>
-        /// <exception cref="ArgumentOutOfRangeException"> The <paramref name="totalSize"/> argument is less than or equal to 0.</exception>
+        /// Registers a callback to be invoked when a certain amount of memory is allocated in the no GC region.
+        /// </summary>
+        /// <param name="totalSize">The total size of the no GC region.</param>
+        /// <param name="callback">The callback to be executed.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="totalSize"/> is less than or equal to 0.</exception>
         /// <exception cref="ArgumentNullException">The <paramref name="callback"/> argument is null.</exception>
-        /// <exception cref="InvalidOperationException"><para>The GC is not currently under a NoGC region.</para>
+        /// <exception cref="InvalidOperationException"><para>The GC is not currently under a no GC region.</para>
         /// <para>-or-</para>
         /// <para>Another callback is already registered.</para>
         /// <para>-or-</para>
-        /// <para>The <paramref name="totalSize"/> exceeds the size of the No GC region.</para>
+        /// <para><paramref name="totalSize"/> exceeds the size of the no GC region.</para>
         /// <para>-or-</para>
-        /// <para>We failed to withheld memory for the callback before of already made allocation.</para>
+        /// <para>The operation to withold memory for the callback failed.</para>
         /// </exception>
-        /// </summary>
         public static unsafe void RegisterNoGCRegionCallback(long totalSize, Action callback)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalSize);
