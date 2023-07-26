@@ -22,6 +22,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
                 builder.EnableMetrics<ConsoleMetricListener>("TestMeter");
             });
             using var sp = services.BuildServiceProvider();
+            sp.GetRequiredService<IMetricsSubscriptionManager>().Start();
 
             var listener = sp.GetRequiredService<IMetricsListener>();
             var consoleListener = Assert.IsType<ConsoleMetricListener>(listener);
