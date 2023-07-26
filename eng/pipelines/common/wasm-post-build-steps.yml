@@ -1,0 +1,31 @@
+parameters:
+  nameSuffix: ''
+  buildConfig: ''
+  hostedOs: ''
+  osGroup: ''
+  publishArtifactsForWorkload: always()
+
+steps:
+
+  - task: CopyFiles@2
+    displayName: Copy artifacts needed for running WBT
+    condition: and(succeeded(), ${{ parameters.publishArtifactsForWorkload }})
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)/artifacts'
+      Contents: |
+        packages/$(_BuildConfig)/Shipping/**
+        packages/$(_BuildConfig)/NonShipping/**
+        bin/WasmAppBuilder/**/*
+        bin/WasmBuildTasks/**
+        bin/WorkloadBuildTasks/**
+        bin/installer.tasks/**
+        bin/Crossgen2Tasks/**
+      TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts'
+      CleanTargetFolder: true
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish intermediate artifacts
+    inputs:
+      pathToPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'
+      artifactName: BuildArtifactsForWBT_${{ parameters.osGroup }}_wasm_$(_hostedOs)_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+      artifactType: container

@@ -1,9 +1,11 @@
+# The conditions here are wbt specific right now
 parameters:
   alwaysRun: false
   extraBuildArgs: ''
   isExtraPlatformsBuild: false
   nameSuffix: ''
   platforms: []
+  publishArtifactsForWorkload: false
 
 jobs:
 
@@ -13,7 +15,6 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
@@ -26,14 +27,19 @@ jobs:
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true))
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
           ]
+      - name: workloadSubsetArg
+        ${{ if eq(parameters.publishArtifactsForWorkload, true) }}:
+          value: '+mono.wasmworkload'
+        ${{ else }}:
+          value: ''
+
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: ${{ parameters.nameSuffix }}_BuildOnly
-      buildArgs: -s mono+libs+host -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs+packs$(workloadSubsetArg) -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 240
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
@@ -44,3 +50,6 @@ jobs:
         or(
           eq(variables['alwaysRunVar'], true),
           eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      extraStepsTemplate: /eng/pipelines/common/wasm-post-build-steps.yml
+      extraStepsParameters:
+        publishArtifactsForWorkload: ${{ parameters.publishArtifactsForWorkload }}
