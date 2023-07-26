@@ -8,6 +8,8 @@
 
 #ifdef INTERP_ENABLE_SIMD
 
+gboolean interp_simd_enabled = TRUE;
+
 typedef gint64 v128_i8 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef guint64 v128_u8 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef gint32 v128_i4 __attribute__ ((vector_size (SIZEOF_V128)));
