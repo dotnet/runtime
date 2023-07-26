@@ -186,7 +186,6 @@ interface ResourceGroups {
     readonly satelliteResources?: {
         [cultureName: string]: ResourceList;
     };
-    readonly libraryInitializers?: ResourceList;
     readonly libraryStartupModules?: {
         readonly onRuntimeConfigLoaded?: ResourceList;
         readonly onRuntimeReady?: ResourceList;

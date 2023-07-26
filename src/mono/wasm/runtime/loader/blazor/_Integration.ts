@@ -1,68 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/internal";
+import type { DotnetModuleInternal } from "../../types/internal";
 import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadingResource, type WebAssemblyBootResourceType, MonoConfig } from "../../types";
 
 import { ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert } from "../globals";
 import { loadResource } from "../resourceLoader";
 import { appendUniqueQuery } from "../assets";
-import { hasDebuggingEnabled } from "../config";
-
-export async function loadBootConfig(module: DotnetModuleInternal) {
-    const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
-
-    const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
-        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "") :
-        defaultLoadBootConfig(defaultConfigSrc);
-
-    let loadConfigResponse: Response;
-
-    if (!loaderResponse) {
-        loadConfigResponse = await defaultLoadBootConfig(defaultConfigSrc);
-    } else if (typeof loaderResponse === "string") {
-        loadConfigResponse = await defaultLoadBootConfig(loaderResponse);
-    } else {
-        loadConfigResponse = await loaderResponse;
-    }
-
-    const loadedConfig: MonoConfig = await loadConfigResponse.json();
-
-    readBootConfigResponseHeaders(loadConfigResponse);
-    mapBootConfigToMonoConfig(loadedConfig);
-    hookDownloadResource(module);
-
-    function defaultLoadBootConfig(url: string): Promise<Response> {
-        return loaderHelpers.fetch_like(url, {
-            method: "GET",
-            credentials: "include",
-            cache: "no-cache",
-        });
-    }
-}
-
-function readBootConfigResponseHeaders(loadConfigResponse: Response) {
-    const config = loaderHelpers.config;
-
-    if (!config.applicationEnvironment) {
-        config.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || "Production";
-    }
-
-    if (!config.environmentVariables)
-        config.environmentVariables = {};
-
-    const modifiableAssemblies = loadConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
-    if (modifiableAssemblies) {
-        // Configure the app to enable hot reload in Development.
-        config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = modifiableAssemblies;
-    }
-
-    const aspnetCoreBrowserTools = loadConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
-    if (aspnetCoreBrowserTools) {
-        // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
-        config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = aspnetCoreBrowserTools;
-    }
-}
+import { deep_merge_config } from "../config";
 
 let resourcesLoaded = 0;
 const totalResources = new Set<string>();
@@ -86,7 +31,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "dotnetwasm": "dotnetwasm",
 };
 
-function hookDownloadResource(module: DotnetModuleInternal) {
+export function hookDownloadResource(module: DotnetModuleInternal) {
     // it would not `loadResource` on types for which there is no typesMap mapping
     const downloadResource = (asset: AssetEntry): LoadingResource | undefined => {
         // GOTCHA: the mapping to blazor asset type may not cover all mono owned asset types in the future in which case:
@@ -112,60 +57,15 @@ function hookDownloadResource(module: DotnetModuleInternal) {
     loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
 }
 
-function mapBootConfigToMonoConfig(loadedConfig: MonoConfigInternal) {
+export function mapResourcesToAssets(loadedConfig: MonoConfig) {
     mono_assert(loadedConfig.resources, "Loaded config does not contain resources");
 
     const config = loaderHelpers.config;
     const resources = loadedConfig.resources;
 
-    const assets: AssetEntry[] = [];
-    const environmentVariables: any = {
-        // From boot config
-        ...(loadedConfig.environmentVariables || {}),
-        // From JavaScript
-        ...(config.environmentVariables || {})
-    };
+    deep_merge_config(config, loadedConfig);
 
-    config.cacheBootResources = loadedConfig.cacheBootResources;
-    config.linkerEnabled = loadedConfig.linkerEnabled;
-    config.remoteSources = (resources as any).remoteSources;
-    config.assets = assets;
-    config.extensions = loadedConfig.extensions;
-    config.resources = {
-        extensions: resources.extensions
-    };
-
-    // Default values (when WasmDebugLevel is not set)
-    // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
-    // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
-    // - Publish (debug)    => debugBuild=false & debugLevel=-1 => 0
-    // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
-    config.debugLevel = hasDebuggingEnabled(config) ? loadedConfig.debugLevel : 0;
-    config.mainAssemblyName = loadedConfig.mainAssemblyName;
-
-    const anyBootConfig = (loadedConfig as any);
-    for (const key in loadedConfig) {
-        if (Object.prototype.hasOwnProperty.call(anyBootConfig, key)) {
-            if (anyBootConfig[key] === null) {
-                delete anyBootConfig[key];
-            }
-        }
-    }
-
-    // FIXME this mix of both formats is ugly temporary hack
-    Object.assign(config, {
-        ...loadedConfig,
-    });
-
-    config.environmentVariables = environmentVariables;
-
-    if (loadedConfig.startupMemoryCache !== undefined) {
-        config.startupMemoryCache = loadedConfig.startupMemoryCache;
-    }
-
-    if (loadedConfig.runtimeOptions) {
-        config.runtimeOptions = [...(config.runtimeOptions || []), ...(loadedConfig.runtimeOptions || [])];
-    }
+    const assets = config.assets!;
 
     for (const name in resources.assembly) {
         const asset: AssetEntry = {
@@ -262,11 +162,6 @@ function mapBootConfigToMonoConfig(loadedConfig: MonoConfigInternal) {
     if (!hasIcuData) {
         config.globalizationMode = GlobalizationMode.Invariant;
     }
-
-    if (config.applicationCulture) {
-        // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
-        environmentVariables["LANG"] = `${config.applicationCulture}.UTF-8`;
-    }
 }
 
 function fileName(name: string) {
@@ -277,33 +172,33 @@ function fileName(name: string) {
     return name.substring(lastIndexOfSlash);
 }
 
-function getICUResourceName(bootConfig: MonoConfigInternal, moduleConfig: MonoConfigInternal, culture: string | undefined): string {
-    mono_assert(bootConfig.resources?.runtime, "Boot config does not contain runtime resources");
+function getICUResourceName(loadedConfig: MonoConfig, config: MonoConfig, culture: string | undefined): string {
+    mono_assert(loadedConfig.resources?.runtime, "Boot config does not contain runtime resources");
 
-    if (bootConfig.globalizationMode === GlobalizationMode.Custom) {
+    if (loadedConfig.globalizationMode === GlobalizationMode.Custom) {
         const icuFiles = Object
-            .keys(bootConfig.resources.runtime)
+            .keys(loadedConfig.resources.runtime)
             .filter(n => n.startsWith("icudt") && n.endsWith(".dat"));
         if (icuFiles.length === 1) {
-            moduleConfig.globalizationMode = GlobalizationMode.Custom;
+            config.globalizationMode = GlobalizationMode.Custom;
             const customIcuFile = icuFiles[0];
             return customIcuFile;
         }
     }
 
-    if (bootConfig.globalizationMode === GlobalizationMode.Hybrid) {
-        moduleConfig.globalizationMode = GlobalizationMode.Hybrid;
+    if (loadedConfig.globalizationMode === GlobalizationMode.Hybrid) {
+        config.globalizationMode = GlobalizationMode.Hybrid;
         const reducedICUResourceName = "icudt_hybrid.dat";
         return reducedICUResourceName;
     }
 
-    if (!culture || bootConfig.globalizationMode === GlobalizationMode.All) {
-        moduleConfig.globalizationMode = GlobalizationMode.All;
+    if (!culture || loadedConfig.globalizationMode === GlobalizationMode.All) {
+        config.globalizationMode = GlobalizationMode.All;
         const combinedICUResourceName = "icudt.dat";
         return combinedICUResourceName;
     }
 
-    moduleConfig.globalizationMode = GlobalizationMode.Sharded;
+    config.globalizationMode = GlobalizationMode.Sharded;
     const prefix = culture.split("-")[0];
     if (prefix === "en" ||
         [

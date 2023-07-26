@@ -120,7 +120,6 @@ export interface ResourceGroups {
     readonly pdb?: ResourceList;
     readonly runtime?: ResourceList; // nullable only temporarily
     readonly satelliteResources?: { [cultureName: string]: ResourceList };
-    readonly libraryInitializers?: ResourceList,
     readonly libraryStartupModules?: {
         readonly onRuntimeConfigLoaded?: ResourceList,
         readonly onRuntimeReady?: ResourceList

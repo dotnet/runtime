@@ -3,9 +3,9 @@
 
 import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
-import type { DotnetModuleConfig } from "../types";
+import type { DotnetModuleConfig, MonoConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
-import { loadBootConfig } from "./blazor/_Integration";
+import { hookDownloadResource, mapResourcesToAssets } from "./blazor/_Integration";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
@@ -14,6 +14,9 @@ export function deep_merge_config(target: MonoConfigInternal, source: MonoConfig
     const providedConfig: MonoConfigInternal = { ...source };
     if (providedConfig.assets) {
         providedConfig.assets = [...(target.assets || []), ...(providedConfig.assets || [])];
+    }
+    if (providedConfig.resources) {
+        providedConfig.resources = { ...(target.resources || {}), ...(providedConfig.resources || {}) };
     }
     if (providedConfig.environmentVariables) {
         providedConfig.environmentVariables = { ...(target.environmentVariables || {}), ...(providedConfig.environmentVariables || {}) };
@@ -46,9 +49,22 @@ export function normalizeConfig() {
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;
     }
+
+    // Default values (when WasmDebugLevel is not set)
+    // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
+    // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
+    // - Publish (debug)    => debugBuild=false & debugLevel=-1 => 0
+    // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
+    config.debugLevel = hasDebuggingEnabled(config) ? config.debugLevel : 0;
+
     if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
         config.diagnosticTracing = true;
     }
+    if (config.applicationCulture) {
+        // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
+        config.environmentVariables!["LANG"] = `${config.applicationCulture}.UTF-8`;
+    }
+
     runtimeHelpers.diagnosticTracing = loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
     config.startupMemoryCache = !!config.startupMemoryCache;
@@ -60,7 +76,6 @@ export function normalizeConfig() {
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
         && typeof globalThis.performance.measure === "function";
-
 }
 
 let configLoaded = false;
@@ -111,4 +126,59 @@ export function hasDebuggingEnabled(config: MonoConfigInternal): boolean {
 
     const hasReferencedPdbs = !!config.resources!.pdb;
     return (hasReferencedPdbs || config.debugLevel != 0) && (loaderHelpers.isChromium || loaderHelpers.isFirefox);
+}
+
+async function loadBootConfig(module: DotnetModuleInternal) {
+    const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
+
+    const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
+        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "") :
+        defaultLoadBootConfig(defaultConfigSrc);
+
+    let loadConfigResponse: Response;
+
+    if (!loaderResponse) {
+        loadConfigResponse = await defaultLoadBootConfig(defaultConfigSrc);
+    } else if (typeof loaderResponse === "string") {
+        loadConfigResponse = await defaultLoadBootConfig(loaderResponse);
+    } else {
+        loadConfigResponse = await loaderResponse;
+    }
+
+    const loadedConfig: MonoConfig = await loadConfigResponse.json();
+
+    readBootConfigResponseHeaders(loadConfigResponse);
+    mapResourcesToAssets(loadedConfig);
+    hookDownloadResource(module);
+
+    function defaultLoadBootConfig(url: string): Promise<Response> {
+        return loaderHelpers.fetch_like(url, {
+            method: "GET",
+            credentials: "include",
+            cache: "no-cache",
+        });
+    }
+}
+
+function readBootConfigResponseHeaders(loadConfigResponse: Response) {
+    const config = loaderHelpers.config;
+
+    if (!config.applicationEnvironment) {
+        config.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || "Production";
+    }
+
+    if (!config.environmentVariables)
+        config.environmentVariables = {};
+
+    const modifiableAssemblies = loadConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
+    if (modifiableAssemblies) {
+        // Configure the app to enable hot reload in Development.
+        config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = modifiableAssemblies;
+    }
+
+    const aspnetCoreBrowserTools = loadConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
+    if (aspnetCoreBrowserTools) {
+        // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
+        config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = aspnetCoreBrowserTools;
+    }
 }
