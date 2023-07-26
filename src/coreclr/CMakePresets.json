@@ -46,12 +46,52 @@
             }
         },
         {
+            "name": "x86",
+            "hidden": true,
+            "architecture": {
+                "value": "x86",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CLR_CMAKE_HOST_ARCH": "x86"
+            }
+        },
+        {
+            "name": "ARM64",
+            "hidden": true,
+            "architecture": {
+                "value": "ARM64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CLR_CMAKE_HOST_ARCH": "ARM64"
+            }
+        },
+        {
             "name": "windows.x64.Debug",
             "displayName": "windows.x64.Debug",
             "inherits": [
                 "windows-base",
                 "Debug",
                 "x64"
+            ]
+        },
+        {
+            "name": "windows.x86.Debug",
+            "displayName": "windows.x86.Debug",
+            "inherits": [
+                "windows-base",
+                "Debug",
+                "x86"
+            ]
+        },
+        {
+            "name": "windows.arm64.Debug",
+            "displayName": "windows.arm64.Debug",
+            "inherits": [
+                "windows-base",
+                "Debug",
+                "ARM64"
             ]
         }
     ]
