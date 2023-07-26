@@ -3175,16 +3175,16 @@ public:
 
     // Returns instructions on how to make the call. See code:CORINFO_CALL_INFO for possible return values.
     virtual void getCallInfo(
-            // Token info
+            // Token info (in)
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
-            // Generics info
+            // Generics info (in)
             CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
 
-            // Security info
+            // Security info (in)
             CORINFO_METHOD_HANDLE   callerHandle,
 
-            // Jit info
+            // Jit info (in)
             CORINFO_CALLINFO_FLAGS  flags,
 
             // out params
