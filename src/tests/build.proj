@@ -341,6 +341,7 @@
       <TestProjectName>$(AssemblyName)</TestProjectName>
       <IgnoreForCI Condition="@(TestDlls->Count()) == 0">true</IgnoreForCI>
       <UseRuntimeComponents>true</UseRuntimeComponents>
+      <IncludesTestRunner>false</IncludesTestRunner>
     </PropertyGroup>
 
     <UpdateRunScriptToHandleMultipleEntryPoints EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)" Condition="'$(BuildTestsOnHelix)' == 'true'">
