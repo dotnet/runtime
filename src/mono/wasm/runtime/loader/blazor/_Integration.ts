@@ -7,7 +7,7 @@ import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadingR
 import { ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert } from "../globals";
 import { loadResource } from "../resourceLoader";
 import { appendUniqueQuery } from "../assets";
-import { deep_merge_config, normalizeConfig } from "../config";
+import { deep_merge_config } from "../config";
 
 let resourcesLoaded = 0;
 const totalResources = new Set<string>();
