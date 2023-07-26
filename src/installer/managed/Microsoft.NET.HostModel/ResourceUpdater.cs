@@ -16,9 +16,10 @@ namespace Microsoft.NET.HostModel
     /// </summary>
     public class ResourceUpdater : IDisposable
     {
-        private readonly FileStream stream;
+        private readonly Stream stream;
         private readonly PEReader _reader;
         private readonly ResourceData _resourceData;
+        private readonly bool leaveOpen;
 
         ///<summary>
         /// Determines if the ResourceUpdater is supported by the current operating system.
@@ -39,17 +40,32 @@ namespace Microsoft.NET.HostModel
         /// updates.
         /// </summary>
         public ResourceUpdater(string peFile)
+            : this(new FileStream(peFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            stream = null;
+        }
+
+        /// <summary>
+        /// Create a resource updater for the given PE file. This will
+        /// acquire a native resource update handle for the file,
+        /// preparing it for updates. Resources can be added to this
+        /// updater, which will queue them for update. The target PE
+        /// file will not be modified until Update() is called, after
+        /// which the ResourceUpdater can not be used for further
+        /// updates.
+        /// </summary>
+        public ResourceUpdater(Stream stream, bool leaveOpen = false)
+        {
+            this.stream = stream;
+            this.leaveOpen = leaveOpen;
             try
             {
-                stream = new FileStream(peFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-                _reader = new PEReader(stream, PEStreamOptions.LeaveOpen);
+                _reader = new PEReader(this.stream, PEStreamOptions.LeaveOpen);
                 _resourceData = new ResourceData(_reader);
             }
             catch (Exception)
             {
-                stream?.Dispose();
+                if (!leaveOpen)
+                    this.stream?.Dispose();
                 throw;
             }
         }
@@ -298,8 +314,9 @@ namespace Microsoft.NET.HostModel
 
         public void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && !leaveOpen)
             {
+                _reader.Dispose();
                 stream.Dispose();
             }
         }
