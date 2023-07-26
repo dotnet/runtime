@@ -220,7 +220,7 @@ namespace Microsoft.NET.HostModel
                 }
             }
 
-            if (newSectionSize != resourceSection.SizeOfRawData)
+            if (rsrcSectionDataSize != resourceSection.VirtualSize)
             {
                 // update size of .rsrc section
                 uint resourceSectionBase = sectionBase + oneSectionHeaderSize * (uint)resourceSectionIndex;
