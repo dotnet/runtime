@@ -475,7 +475,8 @@ private:
                     // info.
                 }
 
-                m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr,
+                CORINFO_CONTEXT_HANDLE contextInput = context;
+                m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
                 m_madeChanges = true;
             }

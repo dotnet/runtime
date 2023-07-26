@@ -68,13 +68,18 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 {
 }
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH)
 void CodeGenInterface::CopyRegisterInfo()
 {
+#if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-}
 #endif // TARGET_AMD64
+
+    rbmAllMask        = compiler->rbmAllMask;
+    rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
+}
+#endif // TARGET_XARCH
 
 /*****************************************************************************/
 
