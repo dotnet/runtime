@@ -1286,6 +1286,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         }
 
         case ELEMENT_TYPE_VAR:
+        case ELEMENT_TYPE_CVAR:
         {
             if ((pSubst != NULL) && !pSubst->GetInst().IsNull())
             {
@@ -1320,20 +1321,11 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         }
 
         case ELEMENT_TYPE_MVAR:
+        case ELEMENT_TYPE_MCVAR:
         {
             thRet = (psig.GetTypeVariableThrowing(pModule, typ, fLoadTypes, pTypeContext));
             if (fLoadTypes == ClassLoader::LoadTypes)
                 ClassLoader::EnsureLoaded(thRet, level);
-            break;
-        }
-        
-        case ELEMENT_TYPE_CVAR:
-        {
-            break;
-        }
-        
-        case ELEMENT_TYPE_MCVAR:
-        {
             break;
         }
         
