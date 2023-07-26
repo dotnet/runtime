@@ -1,4 +1,4 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{A18337A4-46D6-470C-A995-CA70E5311F19}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.CSharp", "ref\Microsoft.CSharp.csproj", "{BF947490-D7AE-46E1-B4E0-D8A6D1EA8E5A}"
@@ -20,6 +20,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{7223E4B2-40ED-48FB-9BFA-07002AD674DB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime", "..\System.Runtime\ref\System.Runtime.csproj", "{C89FC14C-795C-469E-A053-A2844C0B7AA8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader", "..\System.Runtime.Loader\ref\System.Runtime.Loader.csproj", "{280E69E8-8C02-408F-87C2-9882A5B6C690}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E6224881-0E5B-4FDC-99C4-DDE6E59F806B}"
 EndProject
@@ -79,6 +81,10 @@ Global
 		{C89FC14C-795C-469E-A053-A2844C0B7AA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C89FC14C-795C-469E-A053-A2844C0B7AA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C89FC14C-795C-469E-A053-A2844C0B7AA8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{280E69E8-8C02-408F-87C2-9882A5B6C690}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{280E69E8-8C02-408F-87C2-9882A5B6C690}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{280E69E8-8C02-408F-87C2-9882A5B6C690}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{280E69E8-8C02-408F-87C2-9882A5B6C690}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -95,6 +101,7 @@ Global
 		{BB30502C-6FBE-467E-AE6B-380EC60BD666} = {9C11B257-64B7-4EC9-BF3E-4859FB66281D}
 		{B78B9BD0-6D82-400A-A373-C42051D9C3D8} = {9C11B257-64B7-4EC9-BF3E-4859FB66281D}
 		{7223E4B2-40ED-48FB-9BFA-07002AD674DB} = {9C11B257-64B7-4EC9-BF3E-4859FB66281D}
+		{280E69E8-8C02-408F-87C2-9882A5B6C690} = {85A4D137-FEEC-4F3C-9358-F2BFFFF6D2DE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A1ECF510-F5DB-4E7F-853E-DD3C0CE04C12}

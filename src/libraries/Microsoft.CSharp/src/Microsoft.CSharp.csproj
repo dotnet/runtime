@@ -252,6 +252,7 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>

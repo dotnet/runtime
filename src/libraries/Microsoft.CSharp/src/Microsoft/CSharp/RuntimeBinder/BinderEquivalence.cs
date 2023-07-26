@@ -3,8 +3,10 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
+using System;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -26,16 +28,27 @@ namespace Microsoft.CSharp.RuntimeBinder
         // it does not need to be very precise either
         private static int cachedBinderCount;
 
-        // it is unlikely to see a lot of contention on the binder cache.
-        // creating binders is not a very frequent operation.
-        // typically a dynamic operation in the source will create just one binder lazily when first executed.
-        private static readonly ConcurrentDictionary<ICSharpBinder, ICSharpBinder> binderEquivalenceCache =
-            new ConcurrentDictionary<ICSharpBinder, ICSharpBinder>(concurrencyLevel: 2, capacity: 32, new BinderEqualityComparer());
+        // Keep a separate cache per ALC to allow unloadability.
+        private static readonly ConditionalWeakTable<AssemblyLoadContext,
+            ConcurrentDictionary<ICSharpBinder, ICSharpBinder>> binderEquivalenceCache =
+            new ConditionalWeakTable<AssemblyLoadContext, ConcurrentDictionary<ICSharpBinder, ICSharpBinder>>();
 
-        internal static T TryGetExisting<T>(this T binder)
+        internal static T TryGetExisting<T>(this T binder, Type context)
             where T : ICSharpBinder
         {
-            var fromCache = binderEquivalenceCache.GetOrAdd(binder, binder);
+            var alc = AssemblyLoadContext.GetLoadContext(context.Assembly);
+            if (alc is null)
+            {
+                // In the rare case the type is not a runtime type, don't cache the binder.
+                return binder;
+            }
+
+            var cache = binderEquivalenceCache.GetValue(alc, _ =>
+                // it is unlikely to see a lot of contention on the binder cache.
+                // creating binders is not a very frequent operation.
+                // typically a dynamic operation in the source will create just one binder lazily when first executed.
+                new ConcurrentDictionary<ICSharpBinder, ICSharpBinder>(concurrencyLevel: 2, capacity: 32, new BinderEqualityComparer()));
+            var fromCache = cache.GetOrAdd(binder, binder);
             if (fromCache == (object)binder)
             {
                 var count = Interlocked.Increment(ref cachedBinderCount);

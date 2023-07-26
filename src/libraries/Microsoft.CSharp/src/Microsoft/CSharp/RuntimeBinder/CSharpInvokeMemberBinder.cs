@@ -145,7 +145,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion)
         {
-            CSharpInvokeBinder c = new CSharpInvokeBinder(Flags, CallingContext, _argumentInfo).TryGetExisting();
+            CSharpInvokeBinder c = new CSharpInvokeBinder(Flags, CallingContext, _argumentInfo).TryGetExisting(CallingContext);
             return c.Defer(target, args);
         }
     }
