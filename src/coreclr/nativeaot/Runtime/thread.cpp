@@ -1096,6 +1096,20 @@ void Thread::SetActivationPending(bool isPending)
     }
 }
 
+#ifdef FEATURE_EVENT_TRACE
+const GUID* Thread::GetActivityId() const
+{
+    return &m_activityId;
+}
+void Thread::SetActivityId(const GUID* pActivityId)
+{
+    _ASSERTE(pActivityId != NULL);
+
+    m_activityId = *pActivityId;
+}
+#endif // FEATURE_EVENT_TRACE
+
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()
