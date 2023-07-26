@@ -978,6 +978,10 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
         if (hr != S_FALSE)
         {
+            // Validity of the InlineArray attribute is checked at type-load time,
+            // so we only assert here as we should have already checked this and failed
+            // type load if this condition is false.
+            _ASSERTE(cbVal >= (sizeof(INT32) + 2));
             if (cbVal >= (sizeof(INT32) + 2))
             {
                 INT32 repeat = GET_UNALIGNED_VAL32((byte*)pVal + 2);

@@ -2340,12 +2340,13 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     FieldDesc *pFieldStart = GetApproxFieldDescListRaw();
 
+    // InlineArray types and fixed buffer types have implied repeated fields.
     // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-    bool isFixedBuffer = GetClass()->IsInlineArray();
+    bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
 
-    if (!isFixedBuffer)
+    if (!hasImpliedRepeatedFields)
     {
-        CorElementType firstFieldElementType = pFieldStart->GetFieldType();;
+        CorElementType firstFieldElementType = pFieldStart->GetFieldType();
 
         // A fixed buffer type is always a value type that has exactly one value type field at offset 0
         // and who's size is an exact multiple of the size of the field.
@@ -2354,7 +2355,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         // instead of adding additional padding at the end of a one-field structure.
         // We do this check here to save looking up the FixedBufferAttribute when loading the field
         // from metadata.
-        isFixedBuffer = numIntroducedFields == 1
+        hasImpliedRepeatedFields = numIntroducedFields == 1
                         && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
                             || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
                         && (pFieldStart->GetOffset() == 0)
@@ -2362,7 +2363,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                         && (GetNumInstanceFieldBytes() % pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0)) == 0);
     }
 
-    if (isFixedBuffer)
+    if (hasImpliedRepeatedFields)
     {
         numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0));
     }
@@ -2373,7 +2374,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         DWORD fieldOffset;
         unsigned int fieldIndexForCacheLookup = fieldIndex;
 
-        if (isFixedBuffer)
+        if (hasImpliedRepeatedFields)
         {
             pField = pFieldStart;
             fieldIndexForCacheLookup = 0;
@@ -2549,10 +2550,11 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         return false;
     }
     
+    // InlineArray types and fixed buffer types have implied repeated fields.
     // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-    bool isFixedBuffer = GetClass()->IsInlineArray();
+    bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
 
-    if (!isFixedBuffer)
+    if (!hasImpliedRepeatedFields)
     {
         CorElementType firstFieldElementType = pNativeFieldDescs->GetFieldDesc()->GetFieldType();
 
@@ -2563,7 +2565,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         // instead of adding additional padding at the end of a one-field structure.
         // We do this check here to save looking up the FixedBufferAttribute when loading the field
         // from metadata.
-        isFixedBuffer = numIntroducedFields == 1
+        hasImpliedRepeatedFields = numIntroducedFields == 1
                         && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
                             || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
                         && (pNativeFieldDescs->GetExternalOffset() == 0)
@@ -2571,7 +2573,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
                         && (pNativeLayoutInfo->GetSize() % pNativeFieldDescs->NativeSize() == 0);
     }
 
-    if (isFixedBuffer)
+    if (hasImpliedRepeatedFields)
     {
         numIntroducedFields = pNativeLayoutInfo->GetSize() / pNativeFieldDescs->NativeSize();
     }
@@ -2610,7 +2612,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
     {
         const NativeFieldDescriptor* pNFD;
-        if (isFixedBuffer)
+        if (hasImpliedRepeatedFields)
         {
             // Reuse the first field marshaler for all fields if a fixed buffer.
             pNFD = pNativeFieldDescs;
@@ -2632,7 +2634,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         unsigned int fieldNativeSize = pNFD->NativeSize();
         DWORD fieldOffset = pNFD->GetExternalOffset();
 
-        if (isFixedBuffer)
+        if (hasImpliedRepeatedFields)
         {
             // Since we reuse the NativeFieldDescriptor for fixed buffers, we need to adjust the offset.
             fieldOffset += fieldIndex * fieldNativeSize;
@@ -3012,18 +3014,20 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = GetClass()->IsInlineArray();
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
 
-                if (!isFixedBuffer)
+                if (!hasImpliedRepeatedFields)
                 {
-                    isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                    hasImpliedRepeatedFields = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
                                         || fieldType == ELEMENT_TYPE_VALUETYPE)
                                     && (pFieldStart->GetOffset() == 0)
                                     && pMethodTable->HasLayout()
                                     && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
                 }
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields != 1)
@@ -3267,18 +3271,20 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = GetClass()->IsInlineArray();
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
 
-                if (!isFixedBuffer)
+                if (!hasImpliedRepeatedFields)
                 {
-                    isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                    hasImpliedRepeatedFields = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
                                         || fieldType == ELEMENT_TYPE_VALUETYPE)
                                     && (pFieldStart->GetOffset() == 0)
                                     && pMethodTable->HasLayout()
                                     && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
                 }
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields > 2)
@@ -3642,18 +3648,20 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = GetClass()->IsInlineArray();
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
 
-                if (!isFixedBuffer)
+                if (!hasImpliedRepeatedFields)
                 {
-                    isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                    hasImpliedRepeatedFields = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
                                         || fieldType == ELEMENT_TYPE_VALUETYPE)
                                     && (pFieldStart->GetOffset() == 0)
                                     && pMethodTable->HasLayout()
                                     && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
                 }
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields != 1)
@@ -3897,18 +3905,20 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = GetClass()->IsInlineArray();
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
 
-                if (!isFixedBuffer)
+                if (!hasImpliedRepeatedFields)
                 {
-                    isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                    hasImpliedRepeatedFields = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
                                         || fieldType == ELEMENT_TYPE_VALUETYPE)
                                     && (pFieldStart->GetOffset() == 0)
                                     && pMethodTable->HasLayout()
                                     && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
                 }
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields > 2)

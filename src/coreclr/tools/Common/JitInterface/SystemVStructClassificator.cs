@@ -66,14 +66,14 @@ namespace Internal.JitInterface
 
         private static class FieldEnumerator
         {
-            internal static IEnumerable<FieldDesc> GetInstanceFields(TypeDesc typeDesc, bool isFixedBuffer, int numIntroducedFields)
+            internal static IEnumerable<FieldDesc> GetInstanceFields(TypeDesc typeDesc, bool hasImpliedRepeatedFields, int numIntroducedFields)
             {
                 foreach (FieldDesc field in typeDesc.GetFields())
                 {
                     if (field.IsStatic)
                         continue;
 
-                    if (isFixedBuffer)
+                    if (hasImpliedRepeatedFields)
                     {
                         for (int i = 0; i < numIntroducedFields; i++)
                         {
@@ -256,9 +256,10 @@ namespace Internal.JitInterface
             TypeDesc firstFieldElementType = firstField.FieldType;
             int firstFieldSize = firstFieldElementType.GetElementSize().AsInt;
 
-            bool isFixedBuffer = mdType.IsInlineArray;
+            // InlineArray types and fixed buffer types have implied repeated fields.
+            bool hasImpliedRepeatedFields = mdType.IsInlineArray;
 
-            if (!isFixedBuffer)
+            if (!hasImpliedRepeatedFields)
             {
                 // A fixed buffer type is always a value type that has exactly one value type field at offset 0
                 // and who's size is an exact multiple of the size of the field.
@@ -267,24 +268,24 @@ namespace Internal.JitInterface
                 // instead of adding additional padding at the end of a one-field structure.
                 // We do this check here to save looking up the FixedBufferAttribute when loading the field
                 // from metadata.
-                isFixedBuffer = numIntroducedFields == 1
+                hasImpliedRepeatedFields = numIntroducedFields == 1
                                 && firstFieldElementType.IsValueType
                                 && firstField.Offset.AsInt == 0
                                 && mdType.HasLayout()
                                 && ((typeDesc.GetElementSize().AsInt % firstFieldSize) == 0);
             }
 
-            if (isFixedBuffer)
+            if (hasImpliedRepeatedFields)
             {
                 numIntroducedFields = typeDesc.GetElementSize().AsInt / firstFieldSize;
             }
 
             int fieldIndex = 0;
-            foreach (FieldDesc field in FieldEnumerator.GetInstanceFields(typeDesc, isFixedBuffer, numIntroducedFields))
+            foreach (FieldDesc field in FieldEnumerator.GetInstanceFields(typeDesc, hasImpliedRepeatedFields, numIntroducedFields))
             {
                 Debug.Assert(fieldIndex < numIntroducedFields);
 
-                int fieldOffset = isFixedBuffer ? fieldIndex * firstFieldSize : field.Offset.AsInt;
+                int fieldOffset = hasImpliedRepeatedFields ? fieldIndex * firstFieldSize : field.Offset.AsInt;
                 int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
                 int fieldSize = field.FieldType.GetElementSize().AsInt;
