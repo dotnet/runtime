@@ -89,7 +89,7 @@ namespace Microsoft.Interop
                     case StubCodeContext.Stage.CleanupFailure:
                         if (!MarshallerHelpers.MarshalsOut(marshaller.TypeInfo, context))
                             continue;
-                        localContext = new MarshalOutContext(context with { CurrentStage = StubCodeContext.Stage.Cleanup });
+                        //localContext = new MarshalOutContext(context with { CurrentStage = StubCodeContext.Stage.Cleanup });
                         break;
                 }
                 statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, localContext));
@@ -185,7 +185,7 @@ namespace Microsoft.Interop
             catchClauseBuilder.AddRange(
                 managedExceptionMarshaller.Generator.Generate(
                     managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.PinnedMarshal }));
-            catchClauseBuilder.AddRange(GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.CleanupFailure }));
+            catchClauseBuilder.AddRange(GenerateStatementsForStubContext(marshallers, new MarshalOutContext(context with { CurrentStage = StubCodeContext.Stage.CleanupFailure })));
             if (!marshallers.IsUnmanagedVoidReturn)
             {
                 catchClauseBuilder.Add(ReturnStatement(IdentifierName(context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo).native)));

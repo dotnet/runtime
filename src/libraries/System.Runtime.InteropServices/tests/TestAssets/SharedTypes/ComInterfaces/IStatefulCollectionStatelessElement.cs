@@ -23,9 +23,9 @@ namespace SharedTypes.ComInterfaces
             out int size);
         [return: MarshalUsing(CountElementName = nameof(size))]
         StatefulCollection<StatelessType> Return(int size);
-        //[PreserveSig]
-        //[return: MarshalUsing(CountElementName = nameof(size))]
-        //StatefulCollection<StatelessType> ReturnPreserveSig(int size);
+        [PreserveSig]
+        [return: MarshalUsing(CountElementName = nameof(size))]
+        StatefulCollection<StatelessType> ReturnPreserveSig(int size);
     }
 
     [NativeMarshalling(typeof(StatefulCollectionMarshaller<,>))]

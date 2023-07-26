@@ -584,7 +584,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_cleanupElementsAndSpace && !(context is MarshalOutContext))
+            if (!(_cleanupElementsAndSpace || context.CurrentStage is StubCodeContext.Stage.CleanupFailure))
             {
                 yield break;
             }

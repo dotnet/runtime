@@ -19,4 +19,57 @@ namespace SharedTypes.ComInterfaces
         void MethodContentsOut([MarshalUsing(CountElementName = nameof(size))][Out] StatelessType[] param, int size);
         void MethodContentsInOut([MarshalUsing(CountElementName = nameof(size))][In, Out] StatelessType[] param, int size);
     }
+
+    [GeneratedComClass]
+    internal partial class ArrayOfStatelessElements : IArrayOfStatelessElements
+    {
+        public void Method(StatelessType[] param, int size)
+        {
+        }
+        public void MethodContentsIn(StatelessType[] param, int size)
+        {
+            // We should be able to modify the contents and the caller shouldn't see it
+            for (int i = 0; i < size; i++)
+            {
+                param[i] = new StatelessType() { I = param[i].I * 2 };
+            }
+        }
+        public void MethodContentsInOut(StatelessType[] param, int size)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                param[i] = new StatelessType() { I = param[i].I * 2 };
+            }
+        }
+        public void MethodContentsOut(StatelessType[] param, int size)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                param[i] = new StatelessType() { I = i };
+            }
+        }
+        public void MethodIn(in StatelessType[] param, int size)
+        {
+            // We should be able to modify the contents and the caller shouldn't see it
+            for (int i = 0; i < size; i++)
+            {
+                param[i] = new StatelessType() { I = param[i].I * 2 };
+            }
+        }
+        public void MethodOut(out StatelessType[] param, int size)
+        {
+            param = new StatelessType[size];
+            for (int i = 0; i < size; i++)
+            {
+                param[i] = new StatelessType() { I = i };
+            }
+        }
+        public void MethodRef(ref StatelessType[] param, int size)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                param[i] = new StatelessType() { I = param[i].I * 2 };
+            }
+        }
+    }
 }

@@ -99,16 +99,17 @@ namespace Microsoft.Interop
                         return _nativeTypeMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
                     }
                     break;
-                case StubCodeContext.Stage.Cleanup:
+                case StubCodeContext.Stage.Cleanup when info.RefKind is not RefKind.Out:
+                case StubCodeContext.Stage.CleanupFailure when !info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out):
                     // We don't correctly clean up the [out] parameters https://github.com/dotnet/runtime/issues/88438
-                    if (context is MarshalOutContext
-                        && (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
-                            || info.RefKind is RefKind.Out))
-                        break;
-                    else if (context.Direction is MarshalDirection.UnmanagedToManaged && info.RefKind is RefKind.Out)
-                        break;
-                    else
-                        return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
+                    //if (context.CurrentStage is StubCodeContext.Stage.CleanupFailure
+                    //    && (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
+                    //    //|| info.RefKind is RefKind.Out))
+                    //    break;
+                    //else if (context.CurrentStage is StubCodeContext.Stage.Cleanup && info.RefKind is RefKind.Out)
+                    //    break;
+                    //else
+                    return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
                 case StubCodeContext.Stage.AssignOut:
                     Debug.Assert(MarshallerHelpers.MarshalsOut(info, context));
                     return _nativeTypeMarshaller.GenerateAssignOutStatements(info, (AssignOutContext)context);

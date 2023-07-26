@@ -12,20 +12,25 @@ namespace SharedTypes.ComInterfaces
         void Method(
             [MarshalUsing(CountElementName = nameof(size))] StatelessCollection<StatelessType> p,
             int size);
+
         void MethodIn(
             [MarshalUsing(CountElementName = nameof(size))] in StatelessCollection<StatelessType> pIn,
             in int size);
+
         void MethodRef(
             [MarshalUsing(CountElementName = nameof(size))] ref StatelessCollection<StatelessType> pRef,
             int size);
+
         void MethodOut(
             [MarshalUsing(CountElementName = nameof(size))] out StatelessCollection<StatelessType> pOut,
             out int size);
+
         [return: MarshalUsing(CountElementName = nameof(size))]
         StatelessCollection<StatelessType> Return(int size);
-        //[PreserveSig]
-        //[return: MarshalUsing(CountElementName = nameof(size))]
-        //StatelessCollection<StatelessType> ReturnPreserveSig(int size);
+
+        [PreserveSig]
+        [return: MarshalUsing(CountElementName = nameof(size))]
+        StatelessCollection<StatelessType> ReturnPreserveSig(int size);
     }
 
     [NativeMarshalling(typeof(StatelessCollectionMarshaller<,>))]
@@ -49,7 +54,7 @@ namespace SharedTypes.ComInterfaces
                 throw new System.NotImplementedException();
             }
 
-            public static System.ReadOnlySpan<nint> GetManagedValuesSource(StatelessCollection<T> managed)
+            public static System.ReadOnlySpan<T> GetManagedValuesSource(StatelessCollection<T> managed)
             {
                 throw new System.NotImplementedException();
             }
@@ -64,10 +69,11 @@ namespace SharedTypes.ComInterfaces
                 throw new System.NotImplementedException();
             }
 
-            public static System.Span<nint> GetManagedValuesDestination(StatelessCollection<T> managed)
+            public static System.Span<T> GetManagedValuesDestination(StatelessCollection<T> managed)
             {
                 throw new System.NotImplementedException();
             }
+
             public static void Free(nint unmanaged) { }
         }
     }

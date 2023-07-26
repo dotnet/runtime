@@ -23,8 +23,8 @@ namespace SharedTypes.ComInterfaces
             out int size);
         [return: MarshalUsing(CountElementName = nameof(size))]
         StatefulCollection<int> Return(int size);
-        //[PreserveSig]
-        //[return: MarshalUsing(CountElementName = nameof(size))]
-        //StatefulCollection<int> ReturnPreserveSig(int size);
+        [PreserveSig]
+        [return: MarshalUsing(CountElementName = nameof(size))]
+        StatefulCollection<int> ReturnPreserveSig(int size);
     }
 }

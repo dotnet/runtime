@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using SharedTypes.ComInterfaces;
@@ -174,6 +175,63 @@ namespace ComInterfaceGenerator.Tests
             {
                 _ = obj.ReturnValue();
             });
+        }
+
+        [Fact]
+        public void IArrayOfStatelessElements()
+        {
+            var obj = CreateWrapper<ArrayOfStatelessElements, IArrayOfStatelessElements>();
+            var originalData = GetStartingValue();
+            var data = GetStartingValue();
+            var refData = GetStartingValue().Select(a => new StatelessType() { I = a.I * 2 }).ToArray();
+            var outData = GetStartingValue().Reverse().ToArray();
+
+            obj.Method(data, data.Length);
+            AssertEqual(originalData, data);
+
+            obj.MethodIn(in data, data.Length);
+            AssertEqual(originalData, data);
+
+            obj.MethodContentsIn(data, data.Length);
+            AssertEqual(originalData, data);
+
+            obj.MethodOut(out data, data.Length);
+            AssertEqual(outData, data);
+
+            // https://github.com/dotnet/runtime/issues/87845
+            //data = GetStartingValue();
+            //obj.MethodContentsOut(data, data.Length);
+            //AssertEqual(outData, data);
+
+            data = GetStartingValue();
+            obj.MethodRef(ref data, data.Length);
+            AssertEqual(refData, data);
+
+            data = GetStartingValue();
+            obj.MethodContentsInOut(data, data.Length);
+            AssertEqual(refData, data);
+
+            static void AssertEqual(StatelessType[] param1, StatelessType[] param2)
+            {
+                Assert.Equal(param1.Length, param2.Length);
+                for (int i = 0; i < param1.Length; i++)
+                {
+                    Assert.Equal(param1[i].I, param2[i].I);
+                }
+            }
+
+            static StatelessType[] GetStartingValue()
+            {
+                return new StatelessType[]
+                {
+                    new StatelessType() {I = 5},
+                    new StatelessType() {I = 4},
+                    new StatelessType() {I = 3},
+                    new StatelessType() {I = 2},
+                    new StatelessType() {I = 1},
+                    new StatelessType() {I = 0}
+                };
+            }
         }
     }
 }

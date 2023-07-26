@@ -438,7 +438,7 @@ namespace Microsoft.Interop
             /// <summary>
             /// Do not free the unmanaged value, we don't own it.
             /// </summary>
-            NoFree,
+            NoFree
         }
 
         private static FreeStrategy GetFreeStrategy(TypePositionInfo info, StubCodeContext context)
@@ -469,7 +469,6 @@ namespace Microsoft.Interop
 
         private static ElementsMarshalling CreateElementsMarshalling(CustomTypeMarshallerData marshallerData, TypePositionInfo elementInfo, IMarshallingGenerator elementMarshaller, TypeSyntax unmanagedElementType, IElementsMarshallingCollectionSource collectionSource)
         {
-
             ElementsMarshalling elementsMarshalling;
 
             bool elementIsBlittable = elementMarshaller is BlittableMarshaller;

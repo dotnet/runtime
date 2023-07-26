@@ -511,7 +511,7 @@ namespace Microsoft.Interop
                 indexConstraintName,
                 _elementInfo,
                 _elementMarshaller,
-                StubCodeContext.Stage.Cleanup);
+                context.CurrentStage);
 
             if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
             {
@@ -784,22 +784,5 @@ namespace Microsoft.Interop
                             null,
                             EqualsValueClause(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))))))
                 : EmptyStatement();
-
-        //public override StatementSyntax GenerateElementsAssignOutStatement(TypePositionInfo info, AssignOutContext context)
-        //{
-        //    ExpressionSyntax source = CollectionSource.GetUnmanagedValuesDestination(info, context.InnerContext);
-        //    ExpressionSyntax destination;// = CollectionSource.GetUnmanagedValuesDestination(info, context);
-        //    destination = GetUnmanagedValuesDestinationFromUnmanagedValuesSource(info, context);
-
-        //    // <native_out>.CopyTo(<UnmanagedValuesDestination>);
-        //    return ExpressionStatement(
-        //        InvocationExpression(
-        //            MemberAccessExpression(
-        //                SyntaxKind.SimpleMemberAccessExpression,
-        //                source,
-        //                IdentifierName("CopyTo")))
-        //        .AddArgumentListArguments(
-        //            Argument(destination)));
-        //}
     }
 }
