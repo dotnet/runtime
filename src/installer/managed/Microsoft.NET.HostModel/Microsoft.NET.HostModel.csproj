@@ -26,10 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Mono.Cecil.Binary\Mono.Cecil.Binary.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
     <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
     <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
