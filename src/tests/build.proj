@@ -454,8 +454,6 @@
 
   <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <ItemGroup>
-      <TestExclusions Include="$([System.IO.Path]::GetDirectoryName('%(ExcludeList.Identity)'))" Condition="$(HaveExcludes)" />
-      <TestDirectories Remove="@(TestExclusions)" />
       <RunProj Include="$(MSBuildProjectFile)">
         <Properties>_CMDDIR=%(TestDirectories.Identity)</Properties>
       </RunProj>

@@ -1,5 +1,3 @@
-using System;
-
 public class EntryPointMain
 {
     public static int Main(string[] args)
