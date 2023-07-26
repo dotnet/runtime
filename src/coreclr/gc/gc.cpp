@@ -6228,7 +6228,7 @@ extern "C" uint64_t __rdtsc();
     {
         ////FIXME: TODO for LOONGARCH64:
         //ptrdiff_t  cycle;
-        __asm__ volatile ("break \n");
+        __asm__ volatile ("break 0 \n");
         return 0;
     }
 #else
