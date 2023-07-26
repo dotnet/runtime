@@ -10468,33 +10468,33 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         }
         break;
 
-    case DB_IPCE_IS_OPTS_DISABLED:
-        {
-            Module *pModule = pEvent->DisableOptData.pModule.GetRawPtr();
-            mdToken methodDef = pEvent->DisableOptData.funcMetadataToken;
-            _ASSERTE(TypeFromToken(methodDef) == mdtMethodDef);
+    // case DB_IPCE_IS_OPTS_DISABLED:
+    //     {
+    //         Module *pModule = pEvent->DisableOptData.pModule.GetRawPtr();
+    //         mdToken methodDef = pEvent->DisableOptData.funcMetadataToken;
+    //         _ASSERTE(TypeFromToken(methodDef) == mdtMethodDef);
 
-            HRESULT hr = E_INVALIDARG;
-            BOOL deoptimized = FALSE; 
-            EX_TRY
-            {
-                hr = IsMethodDeoptimized(pModule, methodDef, &deoptimized);
-            }
-            EX_CATCH_HRESULT(hr);
+    //         HRESULT hr = E_INVALIDARG;
+    //         BOOL deoptimized = FALSE; 
+    //         EX_TRY
+    //         {
+    //             hr = IsMethodDeoptimized(pModule, methodDef, &deoptimized);
+    //         }
+    //         EX_CATCH_HRESULT(hr);
             
-            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
+    //         DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
 
-            InitIPCEvent(pIPCResult,
-                         DB_IPCE_IS_OPTS_DISABLED_RESULT,
-                         g_pEEInterface->GetThread(),
-                         pEvent->vmAppDomain);
+    //         InitIPCEvent(pIPCResult,
+    //                      DB_IPCE_IS_OPTS_DISABLED_RESULT,
+    //                      g_pEEInterface->GetThread(),
+    //                      pEvent->vmAppDomain);
 
-            pIPCResult->IsOptsDisabledData.value = deoptimized;
-            pIPCResult->hr = hr;
+    //         pIPCResult->IsOptsDisabledData.value = deoptimized;
+    //         pIPCResult->hr = hr;
 
-            m_pRCThread->SendIPCReply();
-        }
-        break;
+    //         m_pRCThread->SendIPCReply();
+    //     }
+    //     break;
 
     case DB_IPCE_BREAKPOINT_ADD:
         {

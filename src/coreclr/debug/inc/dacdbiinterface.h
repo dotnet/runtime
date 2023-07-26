@@ -2605,6 +2605,23 @@ public:
     //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
     //
     virtual
+    HRESULT AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled) = 0;
+
+    // Retrieves a bool indicating whether or not a method's optimizations have been disabled
+    // defined in Debugger::IsMethodDeoptimized
+    // 
+    //
+    //
+    // Arguments:
+    //    methodTk                - The method token for the method in question
+    //    pOptimizationsDisabled  - [out] A bool indicating whether or not the optimizations on a function are disabled
+    //                              
+    //
+    // Returns:
+    //    S_OK if no error
+    //    error HRESULTs are possible
+    //
+    virtual
     HRESULT GetDefinesBitField(ULONG32 *pDefines) = 0;
 
     // Retrieves a version number indicating the shape of the data structures used in the Metadata implementation
