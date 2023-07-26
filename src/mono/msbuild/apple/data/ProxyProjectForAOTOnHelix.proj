@@ -1,36 +1,15 @@
 <Project DefaultTargets="BundleTestAppleApp" Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
-  <PropertyGroup>
-    <MonoEnableLLVM>true</MonoEnableLLVM>
-  </PropertyGroup>
   <PropertyGroup>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$(HELIX_WORKITEM_ROOT)\apple_build\</TestRootDir>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\apple_build\</TestRootDir>
 
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
-    <OriginalPublishDir Condition="'$(UseNativeAOTRuntime)' != 'true'">$(TestRootDir)..\publish\</OriginalPublishDir>
-    <OriginalPublishDir Condition="'$(UseNativeAOTRuntime)' == 'true'">$(HELIX_WORKITEM_ROOT)\publish\</OriginalPublishDir>
+    <OriginalPublishDir>$([System.IO.Path]::GetFullPath('$(TestRootDir)..\publish\'))</OriginalPublishDir>
     <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
-    <IntermediateOutputPath Condition="'$(UseNativeAOTRuntime)' == 'true'">$(OriginalPublishDir)</IntermediateOutputPath>
-    <AppendTargetFrameworkToOutputPath Condition="'$(UseNativeAOTRuntime)' == 'true'">false</AppendTargetFrameworkToOutputPath>
-
-    <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_AppleAotCompile;</_AotCompileTargetName>
-    <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile;</_AotCompileTargetName>
-    <AppleBuildDependsOn>
-      _PrepareForAppleBuildAppOnHelix;
-      _InitializeCommonProperties;
-      _BeforeAppleBuild;
-      _AppleResolveReferences;
-      $(_AotCompileTargetName)
-      _BuildNativeLibrary;
-      _AppleGenerateAppBundle;
-      _AfterAppleBuild;
-      _AfterAppleBuildOnHelix;
-    </AppleBuildDependsOn>
-    <UseArtifactsIntermediateOutput Condition="'$(UseNativeAOTRuntime)' == 'true'">true</UseArtifactsIntermediateOutput>
+    <AppleBuildDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <UseArtifactsIntermediateOutput>true</UseArtifactsIntermediateOutput>
     <NativeLib>static</NativeLib>
@@ -45,6 +24,8 @@
     <DirectPInvoke Include="__Internal" />
   </ItemGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
+
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
   <Target Name="_PrepareForAppleBuildAppOnHelix" DependsOnTargets="_PublishRuntimePack">
@@ -52,17 +33,13 @@
              Importance="High" />
 
     <PropertyGroup>
+      <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
+    
       <AppleBuildDir>$(OriginalPublishDir)</AppleBuildDir>
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
-
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
-      <Optimized Condition="'$(Configuration)' != 'Debug'">true</Optimized>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
-      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
-      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
-    </PropertyGroup>
 
     <ItemGroup>
       <!-- Figure out if we can support JustInterp mode -->
@@ -74,6 +51,11 @@
       <AppleNativeFilesToBundle Include="@(_ExtraFiles)" Exclude="$(OriginalPublishDir)\*.dll" />
       <AppleNativeFilesToBundle Include="$(OriginalPublishDir)\**\*.*" Exclude="$(OriginalPublishDir)\*.dll" />
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
+      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
+    </PropertyGroup>
   </Target>
 
   <Target Name="_PublishRuntimePack"
