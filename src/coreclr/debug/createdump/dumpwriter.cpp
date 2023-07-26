@@ -33,7 +33,7 @@ DumpWriter::OpenDump(const char* dumpFileName)
 }
 
 bool
-DumpWriter::WriteDiagInfo(int size)
+DumpWriter::WriteDiagInfo(size_t size)
 {
     // Write the diagnostics info header
     SpecialDiagInfoHeader header = {
@@ -44,7 +44,7 @@ DumpWriter::WriteDiagInfo(int size)
     if (!WriteData(&header, sizeof(header))) {
         return false;
     }
-    int alignment = size - sizeof(header);
+    size_t alignment = size - sizeof(header);
     assert(alignment < sizeof(m_tempBuffer));
     memset(m_tempBuffer, 0, alignment);
     if (!WriteData(m_tempBuffer, alignment)) {
