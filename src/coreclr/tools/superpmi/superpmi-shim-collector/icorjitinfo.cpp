@@ -1563,25 +1563,16 @@ void interceptor_ICJI::getCallInfo(
     // out params
     CORINFO_CALL_INFO* pResult)
 {
-    // Constrained resolved token can be modified, so copy it here.
-    CORINFO_RESOLVED_TOKEN constrainedResolvedTokenIn;
-    if (pConstrainedResolvedToken != nullptr)
-    {
-        constrainedResolvedTokenIn = *pConstrainedResolvedToken;
-    }
-
     RunWithErrorExceptionCodeCaptureAndContinue(
     [&]()
     {
         mc->cr->AddCall("getCallInfo");
-        original_ICorJitInfo->getCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
+        original_ICorJitInfo->getCallInfo(pResolvedToken, pConstrainedResolvedToken,
+                                                         callerHandle, flags, pResult);
     },
     [&](DWORD exceptionCode)
     {
-        mc->recGetCallInfo(
-            pResolvedToken,
-            pConstrainedResolvedToken == nullptr ? nullptr : &constrainedResolvedTokenIn,
-            pConstrainedResolvedToken, callerHandle, flags, pResult,
+        mc->recGetCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult,
                            exceptionCode);
     });
 }
