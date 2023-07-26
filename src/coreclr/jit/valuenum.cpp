@@ -11922,7 +11922,36 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
-    tree->gtVNPair = vnStore->VNPWithExc(normalPair, excSetPair);
+    // Some intrinsics should always be unique
+    bool makeUnique = false;
+
+#if defined(TARGET_XARCH)
+    switch (intrinsicId)
+    {
+        case NI_AVX512F_ConvertMaskToVector:
+        {
+            // We want to ensure that we get a TYP_MASK local to
+            // ensure the relevant optimizations can kick in
+
+            makeUnique = true;
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+#endif // TARGET_XARCH
+
+    if (makeUnique)
+    {
+        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), excSetPair);
+    }
+    else
+    {
+        tree->gtVNPair = vnStore->VNPWithExc(normalPair, excSetPair);
+    }
 
     // Currently, the only exceptions these intrinsics could throw are NREs.
     //
