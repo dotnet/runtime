@@ -136,31 +136,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 var (((methods, configOptions), aliasMap), compData) = data;
 
-                foreach (IMethodSymbol entryPoint in compData.PossibleEntryPoints)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        new DiagnosticDescriptor(
-                            "XUW1001",
-                            "No explicit entry point",
-                            "Projects in merged tests group should not contain entry points",
-                            "XUnitWrapperGenerator",
-                            DiagnosticSeverity.Error,
-                            isEnabledByDefault: true),
-                        entryPoint.Locations[0]));
-                }
-
-                if (methods.IsEmpty && (compData.OutputKind != OutputKind.DynamicallyLinkedLibrary))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        new DiagnosticDescriptor(
-                            "XUW1002",
-                            "Merged tests group projects should contain tests",
-                            "Merged test group project does not contain any tests",
-                            "XUnitWrapperGenerator",
-                            DiagnosticSeverity.Warning,
-                            isEnabledByDefault: true),
-                        null));
-                }
+                CheckNoEntryPoint(context, compData);
+                CheckTestsExist(context, methods, compData);
 
                 bool alwaysWriteEntryPoint = compData.OutputKind == OutputKind.ConsoleApplication && (compData.EntryPoint is null);
                 if (methods.IsEmpty && !alwaysWriteEntryPoint)
@@ -170,26 +147,63 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     return;
                 }
 
-                bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
-                configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
-                string assemblyName = compData.AssemblyName;
-
-                if (isMergedTestRunnerAssembly)
-                {
-                    if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
-                    {
-                        context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName));
-                    }
-                    else
-                    {
-                        context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
-                    }
-                }
-                else
-                {
-                    context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap));
-                }
+                AddRunnerSource(context, methods, configOptions, aliasMap, compData);
             });
+    }
+
+    private static void AddRunnerSource(SourceProductionContext context, ImmutableArray<ITestInfo> methods, AnalyzerConfigOptionsProvider configOptions, ImmutableDictionary<string, string> aliasMap, CompData compData)
+    {
+        bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
+        configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
+        string assemblyName = compData.AssemblyName;
+
+        if (isMergedTestRunnerAssembly)
+        {
+            if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
+            {
+                context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName));
+            }
+            else
+            {
+                context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
+            }
+        }
+        else
+        {
+            context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap));
+        }
+    }
+
+    private static void CheckTestsExist(SourceProductionContext context, ImmutableArray<ITestInfo> methods, CompData compData)
+    {
+        if (methods.IsEmpty && (compData.OutputKind != OutputKind.DynamicallyLinkedLibrary))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                new DiagnosticDescriptor(
+                    "XUW1002",
+                    "Merged tests group projects should contain tests",
+                    "Merged test group project does not contain any tests",
+                    "XUnitWrapperGenerator",
+                    DiagnosticSeverity.Warning,
+                    isEnabledByDefault: true),
+                null));
+        }
+    }
+
+    private static void CheckNoEntryPoint(SourceProductionContext context, CompData compData)
+    {
+        foreach (IMethodSymbol entryPoint in compData.PossibleEntryPoints)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                new DiagnosticDescriptor(
+                    "XUW1001",
+                    "No explicit entry point",
+                    "Projects in merged tests group should not contain entry points",
+                    "XUnitWrapperGenerator",
+                    DiagnosticSeverity.Error,
+                    isEnabledByDefault: true),
+                entryPoint.Locations[0]));
+        }
     }
 
     private static void AppendAliasMap(CodeBuilder builder, ImmutableDictionary<string, string> aliasMap)
