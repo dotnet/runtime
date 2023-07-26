@@ -37,17 +37,22 @@ namespace System.Runtime
         [Flags]
         internal enum AssignmentVariation
         {
-            Normal = 0,
-
             /// <summary>
-            /// Assume the source type is boxed so that value types and enums are compatible with Object, ValueType
-            /// and Enum (if applicable)
+            /// Conversion from an object. In the terminology of ECMA335 the relationship is called "compatible-with".
+            /// This is the relation used by castclass and isinst (III.4.3).
+            /// Value types are compatible with Object, ValueType and Enum (if applicable) and implemented interfaces.
             /// </summary>
-            BoxedSource = 1,
+            BoxedSource = 0,
 
             /// <summary>
-            /// Allow identically sized integral types and enums to be considered equivalent (currently used only for
-            /// array element types)
+            /// Type compatibility of unboxed types. Used for checking compatibility of type parameters.
+            /// Value types are compatible only if equivalent.
+            /// </summary>
+            Unboxed = 1,
+
+            /// <summary>
+            /// Allow identically sized integral types and enums to be considered equivalent.
+            /// Used when checking type compatibility of array element types.
             /// </summary>
             AllowSizeEquivalence = 2,
         }
@@ -518,7 +523,7 @@ namespace System.Runtime
                         //   class Foo : ICovariant<Bar> is ICovariant<IBar>
                         //   class Foo : ICovariant<IBar> is ICovariant<Object>
 
-                        if (!AreTypesAssignableInternal(pSourceArgType, pTargetArgType, AssignmentVariation.Normal, pVisited))
+                        if (!AreTypesAssignableInternal(pSourceArgType, pTargetArgType, AssignmentVariation.Unboxed, pVisited))
                             return false;
 
                         break;
@@ -548,7 +553,7 @@ namespace System.Runtime
                         //   class Foo : IContravariant<IBar> is IContravariant<Bar>
                         //   class Foo : IContravariant<Object> is IContravariant<IBar>
 
-                        if (!AreTypesAssignableInternal(pTargetArgType, pSourceArgType, AssignmentVariation.Normal, pVisited))
+                        if (!AreTypesAssignableInternal(pTargetArgType, pSourceArgType, AssignmentVariation.Unboxed, pVisited))
                             return false;
 
                         break;
@@ -600,7 +605,7 @@ namespace System.Runtime
         //                            equivalent (currently used only for array element types)
         internal static unsafe bool AreTypesAssignableInternalUncached(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
         {
-            bool fBoxedSource = ((variation & AssignmentVariation.BoxedSource) == AssignmentVariation.BoxedSource);
+            bool fBoxedSource = (variation == AssignmentVariation.BoxedSource);
             bool fAllowSizeEquivalence = ((variation & AssignmentVariation.AllowSizeEquivalence) == AssignmentVariation.AllowSizeEquivalence);
 
             //
