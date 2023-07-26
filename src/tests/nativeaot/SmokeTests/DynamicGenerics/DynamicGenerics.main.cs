@@ -6,8 +6,7 @@ public class EntryPointMain
     {
         CoreFXTestLibrary.Internal.TestInfo[] tests = new CoreFXTestLibrary.Internal.TestInfo[]{new CoreFXTestLibrary.Internal.TestInfo("My.TestActivatorCreateInstance", () => global::My.TestActivatorCreateInstance(), null),
 new CoreFXTestLibrary.Internal.TestInfo("My.TestDefaultCtorInLazyGenerics", () => global::My.TestDefaultCtorInLazyGenerics(), null),
-// Tracking issue: https://github.com/dotnet/runtime/issues/89436
-new CoreFXTestLibrary.Internal.TestInfo("Expressions.ExpressionsTesting.TestLdTokenResults", () => global::Expressions.ExpressionsTesting.TestLdTokenResults(), null, OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst()),
+new CoreFXTestLibrary.Internal.TestInfo("Expressions.ExpressionsTesting.TestLdTokenResults", () => global::Expressions.ExpressionsTesting.TestLdTokenResults(), null),
 new CoreFXTestLibrary.Internal.TestInfo("Expressions.ExpressionsTesting.TestLdTokenResultsWithStructTypes", () => global::Expressions.ExpressionsTesting.TestLdTokenResultsWithStructTypes(), null),
 new CoreFXTestLibrary.Internal.TestInfo("MakeGenMethod.Test.TestInstanceMethod", () => global::MakeGenMethod.Test.TestInstanceMethod(), null),
 new CoreFXTestLibrary.Internal.TestInfo("MakeGenMethod.Test.TestStaticMethod", () => global::MakeGenMethod.Test.TestStaticMethod(), null),
@@ -148,8 +147,7 @@ new CoreFXTestLibrary.Internal.TestInfo("B282745.testIntMDArrayWithPointerLikeVa
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testLongMDArrayWithPointerLikeValues", () => global::B282745.testLongMDArrayWithPointerLikeValues(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfKnownStructType", () => global::B282745.testMDArrayWithPointerLikeValuesOfKnownStructType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfKnownStructTypeLargerType", () => global::B282745.testMDArrayWithPointerLikeValuesOfKnownStructTypeLargerType(), null),
-// Tracking issue: https://github.com/dotnet/runtime/issues/89436
-new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfUnknownStructTypeWithNonGCValuesAtZeroOffset", () => global::B282745.testMDArrayWithPointerLikeValuesOfUnknownStructTypeWithNonGCValuesAtZeroOffset(), null, OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst()),
+new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfUnknownStructTypeWithNonGCValuesAtZeroOffset", () => global::B282745.testMDArrayWithPointerLikeValuesOfUnknownStructTypeWithNonGCValuesAtZeroOffset(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfUnknownStructReferenceType", () => global::B282745.testMDArrayWithPointerLikeValuesOfUnknownStructReferenceType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfUnknownStructPrimitiveType", () => global::B282745.testMDArrayWithPointerLikeValuesOfUnknownStructPrimitiveType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWith3Dimensions", () => global::B282745.testMDArrayWith3Dimensions(), null),
