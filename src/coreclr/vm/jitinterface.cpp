@@ -5117,7 +5117,6 @@ void CEEInfo::getCallInfo(
             if (pMD->GetSlot() == CoreLibBinder::GetMethod(METHOD__OBJECT__GET_HASH_CODE)->GetSlot())
             {
                 // Pretend this was a "constrained. UnderlyingType" instruction prefix
-
                 constrainedType = TypeHandle(CoreLibBinder::GetElementType(constrainedType.GetVerifierCorElementType()));
 
                 constrainedResolvedTokenCopy = *pConstrainedResolvedToken;
