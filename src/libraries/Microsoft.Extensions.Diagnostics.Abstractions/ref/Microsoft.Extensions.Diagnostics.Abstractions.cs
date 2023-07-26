@@ -27,12 +27,12 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     }
     public class InstrumentEnableRule
     {
-        public InstrumentEnableRule(string? listenerName, string? meterName, MeterScope scopes, string? instrumentName, Func<string?, System.Diagnostics.Metrics.Instrument, bool>? filter) { }
+        public InstrumentEnableRule(string? listenerName, string? meterName, MeterScope scopes, string? instrumentName, bool enable) { }
         public string? ListenerName { get; }
         public string? MeterName { get; }
         public MeterScope Scopes { get; }
         public string? InstrumentName { get; }
-        public Func<string?, System.Diagnostics.Metrics.Instrument, bool>? Filter { get; }
+        public bool Enable { get; }
     }
     [Flags]
     public enum MeterScope

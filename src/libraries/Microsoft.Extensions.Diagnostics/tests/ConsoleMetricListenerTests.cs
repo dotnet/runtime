@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
             services.AddMetrics(builder =>
             {
                 builder.AddDebugConsole();
-                builder.EnableMetrics<ConsoleMetricListener>("TestMeter");
+                builder.EnableMetrics("TestMeter");
             });
             using var sp = services.BuildServiceProvider();
             sp.GetRequiredService<IMetricsSubscriptionManager>().Start();

@@ -8,11 +8,11 @@ using System.Threading;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
-    public sealed class ConsoleMetricListener : IMetricsListener, IDisposable
+    internal sealed class ConsoleMetricListener : IMetricsListener, IDisposable
     {
+        private readonly Timer _timer;
         internal TextWriter _textWriter = Console.Out;
         private IMetricsSource? _source;
-        private Timer _timer;
 
         public ConsoleMetricListener()
         {
