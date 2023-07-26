@@ -1292,10 +1292,16 @@ namespace System.Net.Http.Functional.Tests
             {
                 try
                 {
-                    Assert.Contains(expectedContent, await client.GetStringAsync(uri));
+                    using HttpResponseMessage response = await client.GetAsync(uri);
+                    if (response.StatusCode is HttpStatusCode.GatewayTimeout or HttpStatusCode.BadGateway)
+                    {
+                        // Ignore the erroneous status code, the test depends on an external server that is out of our control.
+                        _output.WriteLine(response.ToString());
+                        return;
+                    }
+                    Assert.Contains(expectedContent, await response.Content.ReadAsStringAsync());
                 }
-                catch (HttpRequestException hre) when (hre.StatusCode is HttpStatusCode.GatewayTimeout or HttpStatusCode.BadGateway ||
-                                                      (hre.InnerException is SocketException se && (se.SocketErrorCode is SocketError.WouldBlock or SocketError.TryAgain)))
+                catch (HttpRequestException hre) when (hre.InnerException is SocketException se && (se.SocketErrorCode is SocketError.WouldBlock or SocketError.TryAgain))
                 {
                     // Ignore the exception, the test depends on an external server that is out of our control.
                     _output.WriteLine(hre.ToString());
