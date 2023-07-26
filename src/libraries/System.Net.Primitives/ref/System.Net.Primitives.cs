@@ -187,6 +187,7 @@ namespace System.Net
         ExpectationFailed = 417,
         MisdirectedRequest = 421,
         UnprocessableEntity = 422,
+        UnprocessableContent = 422,
         Locked = 423,
         FailedDependency = 424,
         UpgradeRequired = 426,

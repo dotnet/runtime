@@ -337,3 +337,15 @@ A common usage in the libraries tests is the following:
 ```
 
 This is put on test classes to indicate that none of the tests in that class (which as usual run serially with respect to each other) may run concurrently with tests in another class. This is used for tests that use a lot of disk space or memory, or dominate all the cores, such that they are likely to disrupt any tests that run concurrently.
+
+## FactAttribute and `Skip`
+
+Another way to disable the test entirely is to use the `Skip` named argument that is used on the `FactAttribute`.
+
+Example:
+```cs
+[Fact(Skip = "<reason for skipping>")]
+```
+
+If the reason for skipping is a link to an issue, it is recommended to use the `ActiveIssueAttribute` instead.
+Otherwise, `Skip` allows for a more descriptive reason.

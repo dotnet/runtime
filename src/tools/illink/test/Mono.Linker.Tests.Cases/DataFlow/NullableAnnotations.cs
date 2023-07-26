@@ -10,8 +10,6 @@ using DAMT = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
-	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 	[ExpectedNoWarnings]
 	[KeptPrivateImplementationDetails ("ThrowSwitchExpressionException")]
 	[KeptAttributeAttribute (typeof (UnconditionalSuppressMessageAttribute))]
@@ -301,7 +299,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		// https://github.com/dotnet/linker/issues/2755
-		[ExpectedWarning ("IL2075", "GetFields", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2075", "GetFields", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		static void MakeGenericTypeWithKnowAndUnknownArray (Type[] unknownTypes = null, int p = 0)
 		{
 			Type[] types = p switch {

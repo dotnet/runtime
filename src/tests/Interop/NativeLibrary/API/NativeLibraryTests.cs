@@ -184,7 +184,7 @@ public class NativeLibraryTests : IDisposable
         if (!TestLibrary.Utilities.IsNativeAot && !TestLibrary.PlatformDetection.IsMonoLLVMFULLAOT)
         {
             // Library should be found in the assembly directory
-            Assembly assemblyInSubdirectory = Assembly.LoadFile(Path.Combine(subdirectory, $"{Path.GetFileNameWithoutExtension(assembly.Location)}{suffix}.dll"));
+            Assembly assemblyInSubdirectory = Assembly.LoadFile(Path.Combine(subdirectory, $"{assembly.GetName().Name}{suffix}.dll"));
             EXPECT(LoadLibrary_WithAssembly(libName, assemblyInSubdirectory, DllImportSearchPath.AssemblyDirectory));
             EXPECT(TryLoadLibrary_WithAssembly(libName, assemblyInSubdirectory, DllImportSearchPath.AssemblyDirectory));
         }

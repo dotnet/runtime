@@ -361,7 +361,7 @@ namespace Wasm.Build.Tests
                 "index.html",
                 mainJS,
                 "dotnet.wasm",
-                "mono-config.json",
+                "_framework/blazor.boot.json",
                 "dotnet.js"
             });
 
@@ -686,8 +686,6 @@ namespace Wasm.Build.Tests
                             string ProjectFileContents,
                             string? ExtraBuildArgs);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result);
-    internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
-    internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
 
     public record BuildProjectOptions
     (

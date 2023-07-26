@@ -1,9 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -91,6 +95,41 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        public static void LoadLazyAssembly(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
+            ref JSMarshalerArgument arg_2 = ref arguments_buffer[3];
+            try
+            {
+                arg_1.ToManaged(out byte[]? dllBytes);
+                arg_2.ToManaged(out byte[]? pdbBytes);
+
+                if (dllBytes != null)
+                    JSHostImplementation.LoadLazyAssembly(dllBytes, pdbBytes);
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
+
+        public static void LoadSatelliteAssembly(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
+            try
+            {
+                arg_1.ToManaged(out byte[]? dllBytes);
+
+                if (dllBytes != null)
+                    JSHostImplementation.LoadSatelliteAssembly(dllBytes);
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
@@ -104,11 +143,8 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 GCHandle handle = (GCHandle)arg_1.slot.GCHandle;
 
-                lock (JSHostImplementation.s_gcHandleFromJSOwnedObject)
-                {
-                    JSHostImplementation.s_gcHandleFromJSOwnedObject.Remove(handle.Target!);
-                    handle.Free();
-                }
+                JSHostImplementation.ThreadJsOwnedObjects.Remove(handle.Target!);
+                handle.Free();
             }
             catch (Exception ex)
             {
@@ -125,8 +161,12 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 JSHostImplementation.TaskCallback holder = new JSHostImplementation.TaskCallback();
+#if FEATURE_WASM_THREADS
+                holder.OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
+                holder.SynchronizationContext = SynchronizationContext.Current ?? new SynchronizationContext();
+#endif
                 arg_return.slot.Type = MarshalerType.Object;
-                arg_return.slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
+                arg_return.slot.GCHandle = holder.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
             }
             catch (Exception ex)
             {
@@ -219,11 +259,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // the marshaled signature is:
         // void InstallSynchronizationContext()
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.WebWorker", "System.Runtime.InteropServices.JavaScript")]
         public static void InstallSynchronizationContext (JSMarshalerArgument* arguments_buffer) {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             try
             {
-                JSSynchronizationContext.Install();
+                JSHostImplementation.InstallWebWorkerInterop(true, true);
             }
             catch (Exception ex)
             {

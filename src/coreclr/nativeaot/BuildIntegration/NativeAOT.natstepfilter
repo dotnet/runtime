@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<StepFilter xmlns="http://schemas.microsoft.com/vstudio/debugger/natstepfilter/2010">
+    <Function>
+        <Name>RhpNewFast|RhpNewFinalizable|RhpNewFastAlign8|RhpNewFastMisalign|RhpNewFinalizableAlign8|RhpNewArray|RhpNewArrayAlign8</Name>
+        <Action>NoStepInto</Action>
+    </Function>
+</StepFilter>

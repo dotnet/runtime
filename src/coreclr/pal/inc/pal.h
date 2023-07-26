@@ -344,12 +344,6 @@ PAL_Initialize(
     char * const argv[]);
 
 PALIMPORT
-void
-PALAPI
-PAL_InitializeWithFlags(
-    DWORD flags);
-
-PALIMPORT
 int
 PALAPI
 PAL_InitializeDLL();
@@ -401,6 +395,17 @@ VOID
 PALAPI
 PAL_SetShutdownCallback(
     IN PSHUTDOWN_CALLBACK callback);
+
+/// <summary>
+/// Used by the single-file and native AOT hosts to connect the linked in version of createdump
+/// </summary>
+typedef int (*PCREATEDUMP_CALLBACK)(const int argc, const char* argv[]);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetCreateDumpCallback(
+    IN PCREATEDUMP_CALLBACK callback); 
 
 // Must be the same as the copy in excep.h and the WriteDumpFlags enum in the diagnostics repo
 enum
@@ -538,6 +543,11 @@ int
 PALAPI
 // Start the jitdump file
 PAL_PerfJitDump_Start(const char* path);
+
+PALIMPORT
+bool
+PALAPI
+PAL_PerfJitDump_IsStarted();
 
 PALIMPORT
 int
@@ -1314,47 +1324,6 @@ QueueUserAPC(
          IN PAPCFUNC pfnAPC,
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
-
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
-
-#if defined(HOST_X86) || defined(HOST_AMD64)
-// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
-// We define matching signatures for use on Unix platforms.
-//
-// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
-
-#if __has_builtin(__cpuid)
-extern "C" void __cpuid(int cpuInfo[4], int function_id);
-#else
-inline void __cpuid(int cpuInfo[4], int function_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid\n" \
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id)
-    );
-}
-#endif // __cpuid
-
-#if __has_builtin(__cpuidex)
-extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
-#else
-inline void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid\n" \
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id), "2"(subFunction_id)
-    );
-}
-#endif // __cpuidex
-#endif // HOST_X86 || HOST_AMD64
 
 #ifdef HOST_X86
 
@@ -2284,7 +2253,6 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
 
     /* +0x000 */ DWORD ContextFlags;
-    /* +0x004 */ DWORD Fcsr;
 
     //
     // Integer registers.
@@ -2328,6 +2296,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // TODO-RISCV64: support the SIMD.
     ULONGLONG F[32];
+    DWORD Fcsr;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //
@@ -3448,7 +3417,7 @@ BitScanForward64(
 // intrinsic, which returns the number of leading 0-bits in x starting at the most significant
 // bit position (the result is undefined when x = 0).
 //
-// The same is true for BitScanReverse, except that the GCC function is __builtin_clzl.
+// The same is true for BitScanReverse, except that the GCC function is __builtin_clz.
 
 EXTERN_C
 PALIMPORT
@@ -3459,12 +3428,12 @@ BitScanReverse(
     IN OUT PDWORD Index,
     IN UINT qwMask)
 {
-    // The result of __builtin_clzl is undefined when qwMask is zero,
+    // The result of __builtin_clz is undefined when qwMask is zero,
     // but it's still OK to call the intrinsic in that case (just don't use the output).
     // Unconditionally calling the intrinsic in this way allows the compiler to
     // emit branchless code for this function when possible (depending on how the
     // intrinsic is implemented for the target platform).
-    int lzcount = __builtin_clzl(qwMask);
+    int lzcount = __builtin_clz(qwMask);
     *Index = (DWORD)(31 - lzcount);
     return qwMask != 0;
 }
@@ -4040,18 +4009,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    defines */
 #ifndef PAL_STDCPP_COMPAT
 #define exit          PAL_exit
-#define wcstod        PAL_wcstod
-#define wcstoul       PAL_wcstoul
-#define wcscat        PAL_wcscat
-#define wcscpy        PAL_wcscpy
-#define wcslen        PAL_wcslen
-#define wcsncmp       PAL_wcsncmp
-#define wcschr        PAL_wcschr
-#define wcsrchr       PAL_wcsrchr
-#define wcsstr        PAL_wcsstr
-#define wcspbrk       PAL_wcspbrk
-#define wcscmp        PAL_wcscmp
-#define wcsncpy       PAL_wcsncpy
 #define realloc       PAL_realloc
 #define fopen         PAL_fopen
 #define strtok        PAL_strtok
@@ -4100,10 +4057,8 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define _open         PAL__open
 #define _pread        PAL__pread
 #define _close        PAL__close
-#define _wcstoui64    PAL__wcstoui64
 #define _flushall     PAL__flushall
 #define strnlen       PAL_strnlen
-#define wcsnlen       PAL_wcsnlen
 
 #ifdef HOST_AMD64
 #define _mm_getcsr    PAL__mm_getcsr
@@ -4212,10 +4167,10 @@ PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
 PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
-PALIMPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
+PALIMPORT DLLEXPORT ULONGLONG __cdecl PAL__wcstoui64(const WCHAR *, WCHAR **, int);
+PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
-PALIMPORT DLLEXPORT ULONGLONG _wcstoui64(const WCHAR *, WCHAR **, int);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
 
@@ -4521,19 +4476,6 @@ PALIMPORT
 void _mm_setcsr(unsigned int i);
 
 /******************* PAL functions for CPU capability detection *******/
-
-#ifdef  __cplusplus
-
-#if defined(HOST_ARM64) && defined(TARGET_ARM64)
-class CORJIT_FLAGS;
-
-PALIMPORT
-VOID
-PALAPI
-PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags);
-#endif // HOST_ARM64 && TARGET_ARM64
-
-#endif
 
 #ifdef __cplusplus
 

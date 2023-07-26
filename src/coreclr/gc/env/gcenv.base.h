@@ -121,12 +121,8 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #endif
 
 #ifdef UNICODE
-#define _tcslen wcslen
-#define _tcscpy wcscpy
 #define _tfopen _wfopen
 #else
-#define _tcslen strlen
-#define _tcscpy strcpy
 #define _tfopen fopen
 #endif
 
@@ -304,12 +300,12 @@ inline uint8_t BitScanReverse(uint32_t *bitIndex, uint32_t mask)
 #ifdef _MSC_VER
     return _BitScanReverse((unsigned long*)bitIndex, mask);
 #else // _MSC_VER
-    // The result of __builtin_clzl is undefined when mask is zero,
+    // The result of __builtin_clz is undefined when mask is zero,
     // but it's still OK to call the intrinsic in that case (just don't use the output).
     // Unconditionally calling the intrinsic in this way allows the compiler to
     // emit branchless code for this function when possible (depending on how the
     // intrinsic is implemented for the target platform).
-    int lzcount = __builtin_clzl(mask);
+    int lzcount = __builtin_clz(mask);
     *bitIndex = static_cast<uint32_t>(31 - lzcount);
     return mask != 0 ? TRUE : FALSE;
 #endif // _MSC_VER

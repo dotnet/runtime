@@ -50,6 +50,8 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	bool success = true;
 	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
 
+	ep_rt_volatile_store_uint32_t (&session->started, 1);
+
 	EP_GCX_PREEMP_ENTER
 		while (ep_session_get_streaming_enabled (session)) {
 			bool events_written = false;
@@ -203,6 +205,7 @@ ep_session_alloc (
 	instance->session_start_timestamp = ep_perf_timestamp_get ();
 	instance->paused = false;
 	instance->enable_stackwalk = ep_rt_config_value_get_enable_stackwalk ();
+	instance->started = 0;
 
 ep_on_exit:
 	ep_requires_lock_held ();
@@ -393,6 +396,9 @@ ep_session_start_streaming (EventPipeSession *session)
 		EP_ASSERT (!ep_session_get_streaming_enabled (session));
 	}
 
+	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM && session->session_type != EP_SESSION_TYPE_FILESTREAM)
+		ep_rt_volatile_store_uint32_t_without_barrier (&session->started, 1);
+
 	ep_requires_lock_held ();
 	return;
 }
@@ -579,6 +585,13 @@ ep_session_resume (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 	session->paused = false;
+}
+
+bool
+ep_session_has_started (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+	return ep_rt_volatile_load_uint32_t (&session->started) == 1 ? true : false;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

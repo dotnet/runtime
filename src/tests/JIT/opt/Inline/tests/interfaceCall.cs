@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace JitInliningTest
 {
     internal interface IDimensions
@@ -37,9 +38,10 @@ namespace JitInliningTest
         }
     }
 
-    internal class InterfaceCall
+    public class InterfaceCall
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Box myBox = new Box(30.0f, 20.0f);
             IDimensions myDimensions = (IDimensions)myBox;

@@ -528,6 +528,9 @@ class CrossGenRunner:
         args.append('-r')
         args.append('"' + platform_assemblies_paths + self.platform_directory_sep + '*.dll"' )
         args.append('-O')
+        args.append('--determinism-stress')
+        args.append('6')
+        args.append('--map')
         args.append('--out')
         args.append(ni_filename)
         args.append('--targetos ')
@@ -718,6 +721,7 @@ def add_ni_extension(filename):
 
 def crossgen_framework(args):
     ni_files_dirname, debugging_files_dirname = create_output_folders()
+    ni_files_dirname = args.result_dirname
 
     async def run_crossgen_helper(print_prefix, assembly_name):
         global g_frameworkcompile_failed
@@ -735,7 +739,6 @@ def crossgen_framework(args):
     helper = AsyncSubprocessHelper(g_Framework_Assemblies, verbose=True)
     helper.run_to_completion(run_crossgen_helper)
 
-    shutil.rmtree(ni_files_dirname, ignore_errors=True)
     if g_frameworkcompile_failed:
         sys.exit(1)
 
@@ -953,7 +956,7 @@ def compare_results(args):
 
             base_result_string = json.dumps(base_result, cls=CrossGenResultEncoder, indent=2)
             diff_result_string = json.dumps(diff_result, cls=CrossGenResultEncoder, indent=2)
-            message = 'Expected {0} got {1}'.format(base_result_string, diff_result_string)
+            message = 'Expected {0} got {1} Attached to this helix job will be the binary produced during the helix run and you can find the binary to compare to in the artifacts for the pipeline.'.format(base_result_string, diff_result_string)
             testresult = root.createElement('test')
             testresult.setAttribute('name', 'CrossgenCompile_{3}_Target_{0}_{1}_vs_{2}'.format(args.target_arch_os, base_result.compiler_arch_os, diff_result.compiler_arch_os, assembly_name))
             testresult.setAttribute('type', 'Target_{0}'.format(args.target_arch_os))

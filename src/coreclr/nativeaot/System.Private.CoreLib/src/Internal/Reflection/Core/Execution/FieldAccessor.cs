@@ -12,7 +12,6 @@ namespace Internal.Reflection.Core.Execution
     //
     // This class abstracts the underlying Redhawk (or whatever execution engine) runtime that sets and gets fields.
     //
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public abstract class FieldAccessor
     {

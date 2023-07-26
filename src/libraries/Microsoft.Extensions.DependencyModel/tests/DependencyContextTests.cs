@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using FluentAssertions;
+using System;
 using System.IO;
 using System.Linq;
+using FluentAssertions;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
@@ -274,6 +275,26 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 Subject.Fallbacks.Should().BeEquivalentTo("win8");
             result.RuntimeGraph.Should().Contain(g => g.Runtime == "win8").
                 Subject.Fallbacks.Should().BeEquivalentTo("win7-x64", "win7-x86");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetEntryAssembly() returns null")]
+        public void DefaultWorksCorrectly()
+        {
+            var context = DependencyContext.Default;
+            if (PlatformDetection.IsSingleFile)
+            {
+                // single-file apps return a null default DependencyContext
+                Assert.Null(context);
+            }
+            else
+            {
+                // only need to assert the context contains non-null properties.
+                Assert.NotNull(context);
+                Assert.NotNull(context.RuntimeGraph);
+                Assert.NotNull(context.RuntimeLibraries);
+                Assert.NotNull(context.Target);
+            }
         }
 
         private TargetInfo CreateTargetInfo()

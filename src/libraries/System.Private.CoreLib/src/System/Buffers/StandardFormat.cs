@@ -40,6 +40,9 @@ namespace System.Buffers
         /// </summary>
         public bool HasPrecision => _precision != NoPrecision;
 
+        /// <summary>Gets the precision if one was specified; otherwise, 0.</summary>
+        internal byte PrecisionOrZero => _precision != NoPrecision ? _precision : (byte)0;
+
         /// <summary>
         /// true if the StandardFormat == default(StandardFormat)
         /// </summary>

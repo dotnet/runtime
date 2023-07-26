@@ -20,14 +20,14 @@ namespace System.Text.Json
         public readonly int CurrentDepth => _count;
 
         /// <summary>
-        /// Exposes the stackframe that is currently active.
+        /// Exposes the stack frame that is currently active.
         /// </summary>
         public WriteStackFrame Current;
 
         /// <summary>
-        /// Gets the parent stackframe, if it exists.
+        /// Gets the parent stack frame, if it exists.
         /// </summary>
-        public ref WriteStackFrame Parent
+        public readonly ref WriteStackFrame Parent
         {
             get
             {

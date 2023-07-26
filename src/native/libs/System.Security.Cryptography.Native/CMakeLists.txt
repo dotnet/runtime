@@ -103,7 +103,7 @@ if (GEN_SHARED_LIB)
         #
         # on Linux, the build will succeed with undefined symbols, then the script reports them
         # and fails the build for us.
-        if (NOT APPLE AND NOT CLR_CMAKE_TARGET_ALPINE_LINUX)
+        if (NOT APPLE AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
             add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
                 COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
                 COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh

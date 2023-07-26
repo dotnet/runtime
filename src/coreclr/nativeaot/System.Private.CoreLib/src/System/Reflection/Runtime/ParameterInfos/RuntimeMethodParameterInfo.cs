@@ -36,6 +36,8 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override Type GetModifiedParameterType() => QualifiedParameterTypeHandle.GetModifiedType(_typeContext);
+
         protected readonly QSignatureTypeHandle QualifiedParameterTypeHandle;
         private readonly TypeContext _typeContext;
         private volatile Type _lazyParameterType;

@@ -12,6 +12,7 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -784,46 +785,53 @@ namespace System.Text.Json.Tests
         [OuterLoop]
         public void WriteLargeJsonToStreamWithoutFlushing()
         {
-            var largeArray = new char[150_000_000];
-            largeArray.AsSpan().Fill('a');
-
-            // Text size chosen so that after several doublings of the underlying buffer we reach ~2 GB (but don't go over)
-            JsonEncodedText text1 = JsonEncodedText.Encode(largeArray.AsSpan(0, 7_500));
-            JsonEncodedText text2 = JsonEncodedText.Encode(largeArray.AsSpan(0, 5_000));
-            JsonEncodedText text3 = JsonEncodedText.Encode(largeArray.AsSpan(0, 150_000_000));
-
-            using (var output = new MemoryStream())
-            using (var writer = new Utf8JsonWriter(output))
+            try
             {
-                writer.WriteStartArray();
-                writer.WriteStringValue(text1);
-                Assert.Equal(7_503, writer.BytesPending);
+                var largeArray = new char[150_000_000];
+                largeArray.AsSpan().Fill('a');
 
-                for (int i = 0; i < 30_000; i++)
+                // Text size chosen so that after several doublings of the underlying buffer we reach ~2 GB (but don't go over)
+                JsonEncodedText text1 = JsonEncodedText.Encode(largeArray.AsSpan(0, 7_500));
+                JsonEncodedText text2 = JsonEncodedText.Encode(largeArray.AsSpan(0, 5_000));
+                JsonEncodedText text3 = JsonEncodedText.Encode(largeArray.AsSpan(0, 150_000_000));
+
+                using (var output = new MemoryStream())
+                using (var writer = new Utf8JsonWriter(output))
                 {
-                    writer.WriteStringValue(text2);
+                    writer.WriteStartArray();
+                    writer.WriteStringValue(text1);
+                    Assert.Equal(7_503, writer.BytesPending);
+
+                    for (int i = 0; i < 30_000; i++)
+                    {
+                        writer.WriteStringValue(text2);
+                    }
+                    Assert.Equal(150_097_503, writer.BytesPending);
+
+                    for (int i = 0; i < 13; i++)
+                    {
+                        writer.WriteStringValue(text3);
+                    }
+                    Assert.Equal(2_100_097_542, writer.BytesPending);
+
+                    // Next write forces a grow beyond max array length
+
+                    Assert.Throws<OutOfMemoryException>(() => writer.WriteStringValue(text3));
+
+                    Assert.Equal(2_100_097_542, writer.BytesPending);
+
+                    var text4 = JsonEncodedText.Encode(largeArray.AsSpan(0, 1));
+                    for (int i = 0; i < 10_000_000; i++)
+                    {
+                        writer.WriteStringValue(text4);
+                    }
+
+                    Assert.Equal(2_100_097_542 + (4 * 10_000_000), writer.BytesPending);
                 }
-                Assert.Equal(150_097_503, writer.BytesPending);
-
-                for (int i = 0; i < 13; i++)
-                {
-                    writer.WriteStringValue(text3);
-                }
-                Assert.Equal(2_100_097_542, writer.BytesPending);
-
-                // Next write forces a grow beyond max array length
-
-                Assert.Throws<OutOfMemoryException>(() => writer.WriteStringValue(text3));
-
-                Assert.Equal(2_100_097_542, writer.BytesPending);
-
-                var text4 = JsonEncodedText.Encode(largeArray.AsSpan(0, 1));
-                for (int i = 0; i < 10_000_000; i++)
-                {
-                    writer.WriteStringValue(text4);
-                }
-
-                Assert.Equal(2_100_097_542 + (4 * 10_000_000), writer.BytesPending);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
@@ -3015,35 +3023,35 @@ namespace System.Text.Json.Tests
         [InlineData(false, false)]
         public void WritingTooLargeProperty(bool formatted, bool skipValidation)
         {
-            byte[] key;
-            char[] keyChars;
-
             try
             {
+                byte[] key;
+                char[] keyChars;
+
                 key = new byte[MaxUnescapedTokenSize + 1];
                 keyChars = new char[MaxUnescapedTokenSize + 1];
+
+                key.AsSpan().Fill((byte)'a');
+                keyChars.AsSpan().Fill('a');
+
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+                var output = new ArrayBufferWriter<byte>(1024);
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartArray(keyChars));
+                }
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartArray(key));
+                }
             }
             catch (OutOfMemoryException)
             {
-                return;
-            }
-
-            key.AsSpan().Fill((byte)'a');
-            keyChars.AsSpan().Fill('a');
-
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            var output = new ArrayBufferWriter<byte>(1024);
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartArray(keyChars));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartArray(key));
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
@@ -3060,35 +3068,35 @@ namespace System.Text.Json.Tests
         [InlineData(false, false)]
         public void WritingTooLargePropertyStandalone(bool formatted, bool skipValidation)
         {
-            byte[] key;
-            char[] keyChars;
-
             try
             {
+                byte[] key;
+                char[] keyChars;
+
                 key = new byte[MaxUnescapedTokenSize + 1];
                 keyChars = new char[MaxUnescapedTokenSize + 1];
+
+                key.AsSpan().Fill((byte)'a');
+                keyChars.AsSpan().Fill('a');
+
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+                var output = new ArrayBufferWriter<byte>(1024);
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(keyChars));
+                }
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(key));
+                }
             }
             catch (OutOfMemoryException)
             {
-                return;
-            }
-
-            key.AsSpan().Fill((byte)'a');
-            keyChars.AsSpan().Fill('a');
-
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            var output = new ArrayBufferWriter<byte>(1024);
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(keyChars));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(key));
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
@@ -3100,64 +3108,73 @@ namespace System.Text.Json.Tests
         [InlineData(false, false)]
         public void WritingTooLargeBase64Bytes(bool formatted, bool skipValidation)
         {
-            byte[] value;
-
             try
             {
-                value = new byte[200_000_000];
+                byte[] value = new byte[200_000_000];
+                value.AsSpan().Fill((byte)'a');
+
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+                var output = new ArrayBufferWriter<byte>(value.Length);
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteBase64StringValue(value.AsSpan(0, 125_000_001));
+                }
+                Assert.InRange(output.WrittenCount, 125_000_001, int.MaxValue);
+                output.Clear();
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(value.AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
+                }
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(Encoding.UTF8.GetString(value).ToCharArray().AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
+                }
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteBase64StringValue(value);
+                }
+                Assert.InRange(output.WrittenCount, Base64.GetMaxEncodedToUtf8Length(value.Length), int.MaxValue);
+                output.Clear();
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo", value);
+                }
+                Assert.InRange(output.WrittenCount, Base64.GetMaxEncodedToUtf8Length(value.Length), int.MaxValue);
+                output.Clear();
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo"u8, value);
+                }
+                Assert.InRange(output.WrittenCount, Base64.GetMaxEncodedToUtf8Length(value.Length), int.MaxValue);
+                output.Clear();
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo".AsSpan(), value);
+                }
+                Assert.InRange(output.WrittenCount, Base64.GetMaxEncodedToUtf8Length(value.Length), int.MaxValue);
+                output.Clear();
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value);
+                }
+                Assert.InRange(output.WrittenCount, Base64.GetMaxEncodedToUtf8Length(value.Length), int.MaxValue);
+                output.Clear();
             }
             catch (OutOfMemoryException)
             {
-                return;
-            }
-
-            value.AsSpan().Fill(255);
-
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            var output = new ArrayBufferWriter<byte>(1024);
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64StringValue(value.AsSpan(0, 125_000_001)));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(value.AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(Encoding.UTF8.GetString(value).ToCharArray().AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64StringValue(value));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String("foo", value));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String("foo"u8, value));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String("foo".AsSpan(), value));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value));
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
@@ -3172,59 +3189,57 @@ namespace System.Text.Json.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        public void WritingLargestPossibleBase64Bytes(bool formatted, bool skipValidation)
+        public void WritingHugeBase64Bytes(bool formatted, bool skipValidation)
         {
-            byte[] value;
-
             try
             {
-                value = new byte[125_000_000];
+                byte[] value = new byte[1_000_000_000];
+
+                value.AsSpan().Fill(168);
+
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+                var output = new ArrayBufferWriter<byte>(1024);
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteBase64StringValue(value);
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo", value);
+                    jsonUtf8.WriteEndObject();
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo"u8, value);
+                    jsonUtf8.WriteEndObject();
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo".AsSpan(), value);
+                    jsonUtf8.WriteEndObject();
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value);
+                    jsonUtf8.WriteEndObject();
+                }
             }
             catch (OutOfMemoryException)
             {
-                return;
-            }
-
-            value.AsSpan().Fill(168);
-
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            var output = new ArrayBufferWriter<byte>(1024);
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteBase64StringValue(value);
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String("foo", value);
-                jsonUtf8.WriteEndObject();
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String("foo"u8, value);
-                jsonUtf8.WriteEndObject();
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String("foo".AsSpan(), value);
-                jsonUtf8.WriteEndObject();
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value);
-                jsonUtf8.WriteEndObject();
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
@@ -6370,38 +6385,38 @@ namespace System.Text.Json.Tests
         [InlineData(false, false)]
         public void WriteLargeKeyOrValue(bool formatted, bool skipValidation)
         {
-            byte[] key;
-            byte[] value;
-
             try
             {
+                byte[] key;
+                byte[] value;
+
                 key = new byte[MaxUnescapedTokenSize + 1];
                 value = new byte[MaxUnescapedTokenSize + 1];
+
+                key.AsSpan().Fill((byte)'a');
+                value.AsSpan().Fill((byte)'b');
+
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+                {
+                    var output = new ArrayBufferWriter<byte>(1024);
+                    using var jsonUtf8 = new Utf8JsonWriter(output, options);
+                    jsonUtf8.WriteStartObject();
+                    Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(key, DateTimeTestHelpers.FixedDateTimeValue));
+                    Assert.Equal(0, output.WrittenCount);
+                }
+
+                {
+                    var output = new ArrayBufferWriter<byte>(1024);
+                    using var jsonUtf8 = new Utf8JsonWriter(output, options);
+                    jsonUtf8.WriteStartArray();
+                    Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(value));
+                    Assert.Equal(0, output.WrittenCount);
+                }
             }
             catch (OutOfMemoryException)
             {
-                return;
-            }
-
-            key.AsSpan().Fill((byte)'a');
-            value.AsSpan().Fill((byte)'b');
-
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-
-            {
-                var output = new ArrayBufferWriter<byte>(1024);
-                using var jsonUtf8 = new Utf8JsonWriter(output, options);
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(key, DateTimeTestHelpers.FixedDateTimeValue));
-                Assert.Equal(0, output.WrittenCount);
-            }
-
-            {
-                var output = new ArrayBufferWriter<byte>(1024);
-                using var jsonUtf8 = new Utf8JsonWriter(output, options);
-                jsonUtf8.WriteStartArray();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(value));
-                Assert.Equal(0, output.WrittenCount);
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
@@ -6418,25 +6433,25 @@ namespace System.Text.Json.Tests
         [InlineData(false, false)]
         public void WriteLargeKeyValue(bool formatted, bool skipValidation)
         {
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-
-            Span<byte> key;
-            Span<byte> value;
-
             try
             {
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+                Span<byte> key;
+                Span<byte> value;
+
                 key = new byte[MaxUnescapedTokenSize + 1];
                 value = new byte[MaxUnescapedTokenSize + 1];
+
+                WriteTooLargeHelper(options, key, value);
+                WriteTooLargeHelper(options, key.Slice(0, MaxUnescapedTokenSize), value);
+                WriteTooLargeHelper(options, key, value.Slice(0, MaxUnescapedTokenSize));
+                WriteTooLargeHelper(options, key.Slice(0, 10_000_000 / 3), value.Slice(0, 10_000_000 / 3), noThrow: true);
             }
             catch (OutOfMemoryException)
             {
-                return;
+                throw new SkipTestException("Out of memory allocating large objects");
             }
-
-            WriteTooLargeHelper(options, key, value);
-            WriteTooLargeHelper(options, key.Slice(0, MaxUnescapedTokenSize), value);
-            WriteTooLargeHelper(options, key, value.Slice(0, MaxUnescapedTokenSize));
-            WriteTooLargeHelper(options, key.Slice(0, 10_000_000 / 3), value.Slice(0, 10_000_000 / 3), noThrow: true);
         }
 
         // NOTE: WriteLargeKeyEscapedValue test is constrained to run on Windows and MacOSX because it causes
@@ -6452,23 +6467,23 @@ namespace System.Text.Json.Tests
         [InlineData(false, false)]
         public void WriteLargeKeyEscapedValue(bool formatted, bool skipValidation)
         {
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-
-            Span<byte> key;
-            Span<byte> value;
-
             try
             {
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+                Span<byte> key;
+                Span<byte> value;
+
                 // Since the byte values are 0 they will be escaped and size > MaxUnescapedTokenSize but < MaxEscapedTokenSize.
                 key = new byte[MaxUnescapedTokenSize / 2];
                 value = new byte[MaxUnescapedTokenSize / 2];
+
+                WriteTooLargeHelper(options, key, value, noThrow: true);
             }
             catch (OutOfMemoryException)
             {
-                return;
+                throw new SkipTestException("Out of memory allocating large objects");
             }
-
-            WriteTooLargeHelper(options, key, value, noThrow: true);
         }
 
         [Theory]
@@ -6846,74 +6861,74 @@ namespace System.Text.Json.Tests
         [InlineData(false, false)]
         public void WriteTooLargeArguments(bool formatted, bool skipValidation)
         {
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-
-            byte[] bytesTooLarge;
-            char[] charsTooLarge;
-            var bytes = new byte[5];
-            var chars = new char[5];
-
             try
             {
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+                byte[] bytesTooLarge;
+                char[] charsTooLarge;
+                var bytes = new byte[5];
+                var chars = new char[5];
+
                 bytesTooLarge = new byte[400_000_000];
                 charsTooLarge = new char[400_000_000];
+
+                bytesTooLarge.AsSpan().Fill((byte)'a');
+                charsTooLarge.AsSpan().Fill('a');
+                bytes.AsSpan().Fill((byte)'a');
+                chars.AsSpan().Fill('a');
+
+                var pipe = new Pipe();
+                PipeWriter output = pipe.Writer;
+                using var jsonUtf8 = new Utf8JsonWriter(output, options);
+
+                jsonUtf8.WriteStartArray();
+
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartObject(bytesTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, bytes));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytes, bytesTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, chars));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(chars, bytesTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, new DateTime(2015, 11, 9)));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, new DateTimeOffset(new DateTime(2015, 11, 9))));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, Guid.NewGuid()));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(bytesTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(bytesTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 10m));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 10.1));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 10.1f));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 12345678901));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, (ulong)12345678901));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBoolean(bytesTooLarge, true));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNull(bytesTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(bytesTooLarge));
+
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartObject(charsTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, chars));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(chars, charsTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, bytes));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytes, charsTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, new DateTime(2015, 11, 9)));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, new DateTimeOffset(new DateTime(2015, 11, 9))));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, Guid.NewGuid()));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(charsTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(charsTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 10m));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 10.1));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 10.1f));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 12345678901));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, (ulong)12345678901));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBoolean(charsTooLarge, true));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNull(charsTooLarge));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(charsTooLarge));
+
+                jsonUtf8.Flush();
+                Assert.Equal(1, jsonUtf8.BytesCommitted);
             }
             catch (OutOfMemoryException)
             {
-                return;
+                throw new SkipTestException("Out of memory allocating large objects");
             }
-
-            bytesTooLarge.AsSpan().Fill((byte)'a');
-            charsTooLarge.AsSpan().Fill('a');
-            bytes.AsSpan().Fill((byte)'a');
-            chars.AsSpan().Fill('a');
-
-            var pipe = new Pipe();
-            PipeWriter output = pipe.Writer;
-            using var jsonUtf8 = new Utf8JsonWriter(output, options);
-
-            jsonUtf8.WriteStartArray();
-
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartObject(bytesTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, bytes));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytes, bytesTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, chars));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(chars, bytesTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, new DateTime(2015, 11, 9)));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, new DateTimeOffset(new DateTime(2015, 11, 9))));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, Guid.NewGuid()));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(bytesTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(bytesTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 10m));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 10.1));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 10.1f));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 12345678901));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, (ulong)12345678901));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBoolean(bytesTooLarge, true));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNull(bytesTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(bytesTooLarge));
-
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartObject(charsTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, chars));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(chars, charsTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, bytes));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytes, charsTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, new DateTime(2015, 11, 9)));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, new DateTimeOffset(new DateTime(2015, 11, 9))));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, Guid.NewGuid()));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(charsTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(charsTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 10m));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 10.1));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 10.1f));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 12345678901));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, (ulong)12345678901));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBoolean(charsTooLarge, true));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNull(charsTooLarge));
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(charsTooLarge));
-
-            jsonUtf8.Flush();
-            Assert.Equal(1, jsonUtf8.BytesCommitted);
         }
 
         [Fact]

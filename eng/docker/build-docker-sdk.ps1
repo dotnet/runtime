@@ -36,6 +36,7 @@ if ($buildWindowsContainers)
   # 2. Runtime pack (microsoft.netcore.app.runtime.win-x64)
   # 3. targetingpacks.targets, so stress test builds can target the live-built runtime instead of the one in the pre-installed SDK
   # 4. testhost
+  # 5. msquic interop sources (needed for HttpStress)
   $binArtifacts = "$REPO_ROOT_DIR\artifacts\bin"
   $dockerContext = "$REPO_ROOT_DIR\artifacts\docker-context"
 
@@ -51,6 +52,8 @@ if ($buildWindowsContainers)
                      -Destination $dockerContext\testhost
   Copy-Item -Recurse -Path $REPO_ROOT_DIR\eng\targetingpacks.targets `
                      -Destination $dockerContext\targetingpacks.targets
+  Copy-Item -Recurse -Path $REPO_ROOT_DIR\src\libraries\System.Net.Quic\src\System\Net\Quic\Interop `
+                     -Destination $dockerContext\msquic-interop
   
   # In case of non-CI builds, testhost may already contain Microsoft.AspNetCore.App (see build-local.ps1 in HttpStress):
   $testHostAspNetCorePath="$dockerContext\testhost\net$dotNetVersion-windows-$configuration-x64/shared/Microsoft.AspNetCore.App"

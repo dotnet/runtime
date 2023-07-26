@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <minipal/cpufeatures.h>
+
 #include "dllexport.h"
 #include "jitinterface_generated.h"
 
@@ -51,9 +53,7 @@ DLL_EXPORT void JitProcessShutdownWork(ICorJitCompiler * pJit)
     return pJit->ProcessShutdownWork(nullptr);
 }
 
-DLL_EXPORT unsigned GetMaxIntrinsicSIMDVectorLength(
-    ICorJitCompiler * pJit,
-    CORJIT_FLAGS * flags)
+DLL_EXPORT int JitGetProcessorFeatures()
 {
-    return pJit->getMaxIntrinsicSIMDVectorLength(*flags);
+    return minipal_getcpufeatures();
 }

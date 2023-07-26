@@ -5,8 +5,9 @@
 // and inlining of localloc callees
 
 using System;
+using Xunit;
 
-class L
+public class L
 {
     unsafe static int Use4()
     {
@@ -22,7 +23,8 @@ class L
         return i[1] * 2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int v0 = Use4();
         int v1 = Use(10);

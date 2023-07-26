@@ -96,6 +96,9 @@ tilegx_handle_signal_frame (unw_cursor_t *cursor)
     C_ABI_SAVE_AREA_SIZE;
   sc_addr = c->sigcontext_addr + LINUX_UC_MCONTEXT_OFF;
 
+  for (i = 0; i < DWARF_NUM_PRESERVED_REGS; ++i)
+    c->dwarf.loc[i] = DWARF_NULL_LOC;
+
   /* Update the dwarf cursor.
      Set the location of the registers to the corresponding addresses of the
      uc_mcontext / sigcontext structure contents.  */

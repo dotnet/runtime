@@ -63,18 +63,32 @@ public:
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
 
-    // Call this function after the equivalent fields in Compiler have been initialized.
-    void CopyRegisterInfo();
-
-    regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
 #endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    regMaskTP rbmAllMask;
+    regMaskTP rbmMskCalleeTrash;
+
+    // Call this function after the equivalent fields in Compiler have been initialized.
+    void CopyRegisterInfo();
+
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
+    {
+        return this->rbmAllMask;
+    }
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    {
+        return this->rbmMskCalleeTrash;
+    }
+#endif // TARGET_XARCH
 
     // genSpillVar is called by compUpdateLifeVar.
     // TODO-Cleanup: We should handle the spill directly in CodeGen, rather than
@@ -127,7 +141,9 @@ private:
 #define INST_FP 0x01 // is it a FP instruction?
 public:
     static bool instIsFP(instruction ins);
-
+#if defined(TARGET_XARCH)
+    static bool instIsEmbeddedBroadcastCompatible(instruction ins);
+#endif // TARGET_XARCH
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods
 public:
@@ -764,6 +780,10 @@ public:
 
     virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs) = 0;
 #endif // LATE_DISASM
+
+#if defined(TARGET_XARCH)
+    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
+#endif
 };
 
 #endif // _CODEGEN_INTERFACE_H_

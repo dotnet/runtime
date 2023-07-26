@@ -176,7 +176,7 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - linux_x64
+          - linux_x64_llvmaot
           # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
           #- linux_arm64
           helixQueueGroup: pr
@@ -202,7 +202,7 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - linux_x64
+          - linux_x64_llvmaot
           - linux_arm64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

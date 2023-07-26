@@ -24,7 +24,8 @@ namespace System.Diagnostics
         {
             get
             {
-                return _isDebuggerAttached;
+                // Managed debugger is never attached because we don't have one
+                return false;
             }
         }
 
@@ -37,11 +38,6 @@ namespace System.Diagnostics
         {
             // nothing to do...yet
         }
-
-#pragma warning disable 649  // Suppress compiler warning about _isDebuggerAttached never being assigned to.
-        // _isDebuggerAttached: Do not remove: This field is known to the debugger and modified directly by the debugger.
-        private static bool _isDebuggerAttached;
-#pragma warning restore 649
 
         /// <summary>
         /// Constants representing the importance level of messages to be logged.

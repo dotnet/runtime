@@ -13,6 +13,10 @@ namespace System
     {
         internal const int MaxDateTimeNumberDigits = 8;
 
+        internal const char TimeDelimiter = ':';
+        internal const char TimeFractionDelimiterComma = ',';
+        internal const char TimeFractionDelimiterDot = '.';
+
         internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
             DateTimeResult result = default; // The buffer to store the parsing result.
@@ -521,7 +525,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 str.ConsumeSubString(sub);
                 // See if we have minutes
                 sub = str.GetSubString();
-                if (sub.length == 1 && sub[0] == ':')
+                if (sub.length == 1 && sub[0] == TimeDelimiter)
                 {
                     // Parsing "+8:00" or "+08:00"
                     str.ConsumeSubString(sub);
@@ -642,7 +646,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         if (str.Index < str.Length - 1)
                         {
                             char nextCh = str.Value[str.Index];
-                            if (nextCh == '.')
+                            if ((nextCh == TimeFractionDelimiterDot)
+                                || (nextCh == TimeFractionDelimiterComma))
                             {
                                 // While ParseFraction can fail, it just means that there were no digits after
                                 // the dot. In this case ParseFraction just removes the dot. This is actually
@@ -1225,7 +1230,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             else if (ch == '\0')
             {
                 // Nulls are only valid if they are the only trailing character
-                if (str.Value.Slice(str.Index + 1).IndexOfAnyExcept('\0') >= 0)
+                if (str.Value.Slice(str.Index + 1).ContainsAnyExcept('\0'))
                 {
                     return false;
                 }
@@ -2961,7 +2966,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
             str.SkipWhiteSpaces();
-            if (!str.Match(':'))
+            if (!str.Match(TimeDelimiter))
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -2973,7 +2978,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
             str.SkipWhiteSpaces();
-            if (str.Match(':'))
+            if (str.Match(TimeDelimiter))
             {
                 str.SkipWhiteSpaces();
                 if (!ParseDigits(ref str, 2, out second))
@@ -2981,7 +2986,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     result.SetBadDateTimeFailure();
                     return false;
                 }
-                if (str.Match('.'))
+                if ((str.Match(TimeFractionDelimiterDot))
+                    || (str.Match(TimeFractionDelimiterComma)))
                 {
                     if (!ParseFraction(ref str, out partSecond))
                     {
@@ -4354,7 +4360,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
                     for (int i = 0; i < quotedSpan.Length; i++)
                     {
-                        if (quotedSpan[i] == ' ' && parseInfo.fAllowInnerWhite)
+                        if (parseInfo.fAllowInnerWhite && char.IsWhiteSpace(quotedSpan[i]))
                         {
                             str.SkipWhiteSpaces();
                         }
@@ -4430,64 +4436,41 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     }
                     break;
                 default:
-                    if (ch == ' ')
+                    if (parseInfo.fAllowInnerWhite && char.IsWhiteSpace(ch))
                     {
-                        if (parseInfo.fAllowInnerWhite)
-                        {
-                            // Skip whitespaces if AllowInnerWhite.
-                            // Do nothing here.
-                        }
-                        else
-                        {
-                            if (!str.Match(ch))
-                            {
-                                // If the space does not match, and trailing space is allowed, we do
-                                // one more step to see if the next format character can lead to
-                                // successful parsing.
-                                // This is used to deal with special case that a empty string can match
-                                // a specific pattern.
-                                // The example here is af-ZA, which has a time format like "hh:mm:ss tt".  However,
-                                // its AM symbol is "" (empty string).  If fAllowTrailingWhite is used, and time is in
-                                // the AM, we will trim the whitespaces at the end, which will lead to a failure
-                                // when we are trying to match the space before "tt".
-                                if (parseInfo.fAllowTrailingWhite)
-                                {
-                                    if (format.GetNext())
-                                    {
-                                        if (ParseByFormat(ref str, ref format, ref parseInfo, dtfi, ref result))
-                                        {
-                                            return true;
-                                        }
-                                    }
-                                }
-                                result.SetBadDateTimeFailure();
-                                return false;
-                            }
-                            // Found a macth.
-                        }
+                        // Skip whitespaces if AllowInnerWhite.
+                        // Do nothing here.
                     }
-                    else
+                    else if (format.MatchSpecifiedWord(GMTName))
                     {
-                        if (format.MatchSpecifiedWord(GMTName))
+                        format.Index += (GMTName.Length - 1);
+                        // Found GMT string in format.  This means the DateTime string
+                        // is in GMT timezone.
+                        result.flags |= ParseFlags.TimeZoneUsed;
+                        result.timeZoneOffset = TimeSpan.Zero;
+                        if (!str.Match(GMTName))
                         {
-                            format.Index += (GMTName.Length - 1);
-                            // Found GMT string in format.  This means the DateTime string
-                            // is in GMT timezone.
-                            result.flags |= ParseFlags.TimeZoneUsed;
-                            result.timeZoneOffset = TimeSpan.Zero;
-                            if (!str.Match(GMTName))
-                            {
-                                result.SetBadDateTimeFailure();
-                                return false;
-                            }
-                        }
-                        else if (!str.Match(ch))
-                        {
-                            // ch is expected.
                             result.SetBadDateTimeFailure();
                             return false;
                         }
                     }
+                    else if (!str.Match(ch))
+                    {
+                        if (parseInfo.fAllowTrailingWhite && char.IsWhiteSpace(ch))
+                        {
+                            if (format.GetNext())
+                            {
+                                if (ParseByFormat(ref str, ref format, ref parseInfo, dtfi, ref result))
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+                        // ch is expected.
+                        result.SetBadDateTimeFailure();
+                        return false;
+                    }
+                    // Found a match.
                     break;
             } // switch
             return true;

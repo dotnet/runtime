@@ -61,7 +61,6 @@ namespace ILCompiler.Metadata
         private void InitializeMethodDefinition(Cts.MethodDesc entity, Method record)
         {
             record.Name = HandleString(entity.Name);
-            record.Signature = HandleMethodSignature(entity.Signature);
 
             if (entity.HasInstantiation)
             {
@@ -76,6 +75,11 @@ namespace ILCompiler.Metadata
                 Ecma.MetadataReader reader = ecmaEntity.MetadataReader;
                 Ecma.MethodDefinition methodDef = reader.GetMethodDefinition(ecmaEntity.Handle);
                 Ecma.ParameterHandleCollection paramHandles = methodDef.GetParameters();
+
+                Cts.MethodSignature sig = entity.Signature;
+                record.Signature = sig.HasEmbeddedSignatureData
+                    ? HandleMethodSignature(ecmaEntity.Module, methodDef.Signature)
+                    : HandleMethodSignature(entity.Signature);
 
                 record.Parameters.Capacity = paramHandles.Count;
                 foreach (var paramHandle in paramHandles)
@@ -170,6 +174,37 @@ namespace ILCompiler.Metadata
             return result;
         }
 
+        private MethodSignature HandleMethodSignature(Cts.Ecma.EcmaModule module, Ecma.BlobHandle sigBlobHandle)
+        {
+            Ecma.BlobReader blobReader = module.MetadataReader.GetBlobReader(sigBlobHandle);
+            return HandleMethodSignature(module, ref blobReader);
+        }
+
+        private MethodSignature HandleMethodSignature(Cts.Ecma.EcmaModule module, ref Ecma.BlobReader blobReader)
+        {
+            Ecma.SignatureHeader header = blobReader.ReadSignatureHeader();
+
+            int arity = header.IsGeneric ? blobReader.ReadCompressedInteger() : 0;
+
+            int count = blobReader.ReadCompressedInteger();
+
+            var result = new MethodSignature
+            {
+                CallingConvention = GetSignatureCallingConvention(header),
+                GenericParameterCount = arity,
+                ReturnType = HandleType(module, ref blobReader),
+                // TODO-NICE: VarArgParameters
+            };
+
+            result.Parameters.Capacity = count;
+            for (int i = 0; i < count; i++)
+            {
+                result.Parameters.Add(HandleType(module, ref blobReader));
+            }
+
+            return result;
+        }
+
         private static MethodAttributes GetMethodAttributes(Cts.MethodDesc method)
         {
             var ecmaMethod = method as Cts.Ecma.EcmaMethod;
@@ -203,6 +238,19 @@ namespace ILCompiler.Metadata
             Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionMask == (int)SignatureCallingConvention.UnmanagedCallingConventionMask);
             SignatureCallingConvention callingConvention = (SignatureCallingConvention)(signature.Flags & Cts.MethodSignatureFlags.UnmanagedCallingConventionMask);
             if ((signature.Flags & Cts.MethodSignatureFlags.Static) == 0)
+            {
+                callingConvention |= SignatureCallingConvention.HasThis;
+            }
+            return callingConvention;
+        }
+
+        private static SignatureCallingConvention GetSignatureCallingConvention(Ecma.SignatureHeader signature)
+        {
+            Debug.Assert((int)Ecma.SignatureCallingConvention.CDecl == (int)SignatureCallingConvention.Cdecl);
+            Debug.Assert((int)Ecma.SignatureCallingConvention.ThisCall == (int)SignatureCallingConvention.ThisCall);
+            Debug.Assert((int)Ecma.SignatureCallingConvention.Unmanaged == (int)SignatureCallingConvention.Unmanaged);
+            SignatureCallingConvention callingConvention = (SignatureCallingConvention)(signature.CallingConvention);
+            if (signature.IsInstance)
             {
                 callingConvention |= SignatureCallingConvention.HasThis;
             }

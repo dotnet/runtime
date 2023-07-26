@@ -620,9 +620,12 @@ void ProfileSynthesis::BlendLikelihoods()
             case BBJ_COND:
             case BBJ_SWITCH:
             {
-                // Capture the existing weights and assign new
-                // weights based on heuristics.
-                weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
+                // Capture the existing weights and assign new likelihoods based on synthesis.
+                //
+                weight_t const sum        = SumOutgoingLikelihoods(block, &likelihoods);
+                bool const     unlikely   = Compiler::fgProfileWeightsEqual(sum, 0.0, epsilon);
+                bool const     consistent = Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon);
+                bool const     zero       = Compiler::fgProfileWeightsEqual(block->bbWeight, 0.0, epsilon);
 
                 if (block->bbJumpKind == BBJ_COND)
                 {
@@ -633,10 +636,12 @@ void ProfileSynthesis::BlendLikelihoods()
                     AssignLikelihoodSwitch(block);
                 }
 
-                if (Compiler::fgProfileWeightsEqual(sum, 0.0, epsilon))
+                if (unlikely || zero)
                 {
-                    // Existing likelihood was zero. Go with the synthesized likelihoods.
-                    JITDUMP("Existing likelihoods in " FMT_BB " were zero, synthesizing new ones\n", block->bbNum);
+                    // Existing likelihood was zero, or profile weight was zero. Just use synthesis likelihoods.
+                    //
+                    JITDUMP("%s in " FMT_BB " was zero, using synthesized likelihoods\n",
+                            unlikely ? "Existing likelihood" : "Block weight", block->bbNum);
                     break;
                 }
 
@@ -645,6 +650,7 @@ void ProfileSynthesis::BlendLikelihoods()
                 if (!Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon))
                 {
                     // Existing likelihood was too low or too high. Scale.
+                    //
                     weight_t scale = 1.0 / sum;
                     JITDUMP("Scaling old likelihoods in " FMT_BB " by " FMT_WT "\n", block->bbNum, scale);
                     for (iter = likelihoods.begin(); iter != likelihoods.end(); iter++)

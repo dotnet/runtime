@@ -192,7 +192,7 @@ namespace System
             }
             else
             {
-                if (RuntimeImports.AreTypesEquivalent(sourceElementEEType, destinationElementEEType))
+                if (sourceElementEEType == destinationElementEEType)
                 {
                     if (sourceElementEEType.ContainsGCPointers)
                     {
@@ -387,7 +387,7 @@ namespace System
         //
         private static unsafe void CopyImplValueTypeArrayWithInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            Debug.Assert(RuntimeImports.AreTypesEquivalent(sourceArray.GetEETypePtr(), destinationArray.GetEETypePtr()));
+            Debug.Assert(sourceArray.GetEETypePtr() == destinationArray.GetEETypePtr());
             Debug.Assert(sourceArray.ElementEEType.IsValueType);
 
             EETypePtr sourceElementEEType = sourceArray.GetEETypePtr().ArrayElementType;
@@ -1099,7 +1099,10 @@ namespace System
         public new IEnumerator<T> GetEnumerator()
         {
             T[] @this = Unsafe.As<T[]>(this);
-            return @this.Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(@this);
+            // get length so we don't have to call the Length property again in ArrayEnumerator constructor
+            // and avoid more checking there too.
+            int length = @this.Length;
+            return length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(@this, length);
         }
 
         public int Count

@@ -331,6 +331,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Sibling(nullptr)
     , m_Code(nullptr)
     , m_Callee(nullptr)
+    , m_RuntimeContext(nullptr)
     , m_ILSize(0)
     , m_ImportedILSize(0)
     , m_ActualCallOffset(BAD_IL_OFFSET)
@@ -749,7 +750,8 @@ void InlineResult::Report()
     if (IsFailure() && (m_Call != nullptr))
     {
         // compiler should have revoked candidacy on the call by now
-        assert((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
+        // Unless it's a call has both failed and successful candidates (GDV candidates)
+        assert(((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0) || m_Call->IsGuardedDevirtualizationCandidate());
 
         if (m_Call->gtInlineObservation == InlineObservation::CALLEE_UNUSED_INITIAL)
         {
@@ -1262,6 +1264,10 @@ InlineContext* InlineStrategy::NewRoot()
     rootContext->m_Code   = m_Compiler->info.compCode;
     rootContext->m_Callee = m_Compiler->info.compMethodHnd;
 
+    // May fail to block recursion for normal methods
+    // Might need the actual context handle here
+    rootContext->m_RuntimeContext = METHOD_BEING_COMPILED_CONTEXT();
+
     return rootContext;
 }
 
@@ -1281,10 +1287,11 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
 
     if (call->IsInlineCandidate())
     {
-        InlineCandidateInfo* info   = call->gtInlineCandidateInfo;
+        InlineCandidateInfo* info   = call->GetSingleInlineCandidateInfo();
         context->m_Code             = info->methInfo.ILCode;
         context->m_ILSize           = info->methInfo.ILCodeSize;
         context->m_ActualCallOffset = info->ilOffset;
+        context->m_RuntimeContext   = info->exactContextHnd;
 
 #ifdef DEBUG
         // All inline candidates should get their own statements that have

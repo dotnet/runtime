@@ -48,6 +48,8 @@ set(metadata_common_sources
     appdomain-icalls.h
     assembly.c
     assembly-internals.h
+    bundled-resources.c
+    bundled-resources-internals.h
     cil-coff.h
     class.c
     class-getters.h
@@ -169,6 +171,8 @@ set(metadata_common_sources
     abi-details.h
     abi.c
     memory-manager.c
+    unsafe-accessor.h
+    unsafe-accessor.c
     icall-table.h
     ${icall_table_sources})
 

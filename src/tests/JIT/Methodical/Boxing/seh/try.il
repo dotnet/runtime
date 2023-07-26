@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'try_seh' { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace SinCalc_try_seh_il
 {

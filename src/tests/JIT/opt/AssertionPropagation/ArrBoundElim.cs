@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     private static int returnCode = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         RunTestThrows(Tests.MulOutsideRange);
         RunTestThrows(Tests.MulOverflow);

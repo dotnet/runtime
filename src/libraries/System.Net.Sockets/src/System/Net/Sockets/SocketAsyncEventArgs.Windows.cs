@@ -295,8 +295,6 @@ namespace System.Net.Sockets
 
             // ConnectEx uses a sockaddr buffer containing the remote address to which to connect.
             // It can also optionally take a single buffer of data to send after the connection is complete.
-            // The sockaddr is pinned with a GCHandle to avoid having to use the object array form of UnsafePack.
-            PinSocketAddressBuffer();
 
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
             {
@@ -305,8 +303,7 @@ namespace System.Net.Sockets
                 {
                     bool success = socket.ConnectEx(
                         handle,
-                        PtrSocketAddressBuffer,
-                        _socketAddress!.Size,
+                        _socketAddress!.Buffer.AsSpan(),
                         (IntPtr)(bufferPtr + _offset),
                         _count,
                         out int bytesTransferred,
@@ -743,9 +740,6 @@ namespace System.Net.Sockets
             // receive data and from which to send data respectively. Single and multiple buffers
             // are handled differently so as to optimize performance for the more common single buffer case.
             //
-            // WSARecvFrom and WSASendTo also uses a sockaddr buffer in which to store the address from which the data was received.
-            // The sockaddr is pinned with a GCHandle to avoid having to use the object array form of UnsafePack.
-            PinSocketAddressBuffer();
 
             return _bufferList == null ?
                 DoOperationSendToSingleBuffer(handle, cancellationToken) :
@@ -769,8 +763,7 @@ namespace System.Net.Sockets
                         1,
                         out int bytesTransferred,
                         _socketFlags,
-                        PtrSocketAddressBuffer,
-                        _socketAddress!.Size,
+                        _socketAddress!.Buffer.AsSpan(),
                         overlapped,
                         IntPtr.Zero);
 
@@ -797,8 +790,7 @@ namespace System.Net.Sockets
                     _bufferListInternal!.Count,
                     out int bytesTransferred,
                     _socketFlags,
-                    PtrSocketAddressBuffer,
-                    _socketAddress!.Size,
+                    _socketAddress!.Buffer.AsSpan(),
                     overlapped,
                     IntPtr.Zero);
 

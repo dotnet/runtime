@@ -34,7 +34,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// A bitwise combination of the enumeration values that determines how the file can be accessed by the <see cref="FileStream" /> object. This also determines the values returned by the <see cref="System.IO.FileStream.CanRead" /> and <see cref="System.IO.FileStream.CanWrite" /> properties of the <see cref="FileStream" /> object.
+        /// A bitwise combination of the enumeration values that determines how the file can be accessed by the <see cref="FileStream" /> object. This also determines the values returned by the <see cref="FileStream.CanRead" /> and <see cref="FileStream.CanWrite" /> properties of the <see cref="FileStream" /> object.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
         public FileAccess Access
@@ -52,7 +52,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// A bitwise combination of the enumeration values that determines how the file will be shared by processes. The default value is <see cref="System.IO.FileShare.Read" />.
+        /// A bitwise combination of the enumeration values that determines how the file will be shared by processes. The default value is <see cref="FileShare.Read" />.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
         public FileShare Share
@@ -72,7 +72,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// A bitwise combination of the enumeration values that specifies additional file options. The default value is <see cref="System.IO.FileOptions.None" />, which indicates synchronous IO.
+        /// A bitwise combination of the enumeration values that specifies additional file options. The default value is <see cref="FileOptions.None" />, which indicates synchronous IO.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
         public FileOptions Options

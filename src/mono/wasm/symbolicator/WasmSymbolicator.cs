@@ -47,7 +47,7 @@ internal sealed class WasmSymbolicator
         int i = 0;
         foreach (var line in File.ReadAllLines(symbolsMapFile))
         {
-            string[] parts = line.Split(new char[] { ':' }, 2);
+            string[] parts = line.Split(':', 2);
             if (parts.Length != 2)
             {
                 _logger.LogWarning($"Unexpected symbol map format at line {i + 1} in {symbolsMapFile}");

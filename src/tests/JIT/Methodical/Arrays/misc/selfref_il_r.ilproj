@@ -6,6 +6,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="selfref_r.il" />
     <Compile Include="selfref.il" />
   </ItemGroup>
 </Project>

@@ -56,6 +56,17 @@ namespace System.CodeDom.Compiler
         /// <inheritdoc/>
         public override Task FlushAsync() => _writer.FlushAsync();
 
+        /// <summary>
+        /// Clears all buffers for this <see cref="IndentedTextWriter"/> asynchronously and causes any buffered data to be
+        /// written to the underlying device.
+        /// </summary>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous flush operation.</returns>
+        public override Task FlushAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+            GetType() != typeof(IndentedTextWriter) ? FlushAsync() :
+            _writer.FlushAsync(cancellationToken);
+
         protected virtual void OutputTabs()
         {
             if (_tabsPending)

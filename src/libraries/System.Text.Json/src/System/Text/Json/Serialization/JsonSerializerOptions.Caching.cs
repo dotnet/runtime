@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
@@ -183,22 +182,7 @@ namespace System.Text.Json
             get
             {
                 Debug.Assert(IsReadOnly);
-                return _objectTypeInfo ??= GetObjectTypeInfo(this);
-
-                static JsonTypeInfo GetObjectTypeInfo(JsonSerializerOptions options)
-                {
-                    JsonTypeInfo? typeInfo = options.GetTypeInfoInternal(JsonTypeInfo.ObjectType, ensureNotNull: null);
-                    if (typeInfo is null)
-                    {
-                        // If the user-supplied resolver does not provide a JsonTypeInfo<object>,
-                        // use a placeholder value to drive root-level boxed value serialization.
-                        var converter = new ObjectConverterSlim();
-                        typeInfo = new JsonTypeInfo<object>(converter, options);
-                        typeInfo.EnsureConfigured();
-                    }
-
-                    return typeInfo;
-                }
+                return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
             }
         }
 
@@ -506,6 +490,7 @@ namespace System.Text.Json
                     left._encoder == right._encoder &&
                     left._defaultIgnoreCondition == right._defaultIgnoreCondition &&
                     left._numberHandling == right._numberHandling &&
+                    left._preferredObjectCreationHandling == right._preferredObjectCreationHandling &&
                     left._unknownTypeHandling == right._unknownTypeHandling &&
                     left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
@@ -559,6 +544,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._encoder);
                 AddHashCode(ref hc, options._defaultIgnoreCondition);
                 AddHashCode(ref hc, options._numberHandling);
+                AddHashCode(ref hc, options._preferredObjectCreationHandling);
                 AddHashCode(ref hc, options._unknownTypeHandling);
                 AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);

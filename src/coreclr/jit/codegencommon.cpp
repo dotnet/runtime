@@ -68,13 +68,18 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 {
 }
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH)
 void CodeGenInterface::CopyRegisterInfo()
 {
+#if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-}
 #endif // TARGET_AMD64
+
+    rbmAllMask        = compiler->rbmAllMask;
+    rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
+}
+#endif // TARGET_XARCH
 
 /*****************************************************************************/
 
@@ -85,6 +90,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     negBitmaskDbl  = nullptr;
     absBitmaskFlt  = nullptr;
     absBitmaskDbl  = nullptr;
+    zroSimd12Elm3  = nullptr;
     u8ToDblBitmask = nullptr;
 #endif // defined(TARGET_XARCH)
 
@@ -1712,7 +1718,7 @@ void CodeGen::genGenerateMachineCode()
         const char* fullName = compiler->eeGetMethodFullName(compiler->info.compMethodHnd);
 #endif
 
-        printf("; Assembly listing for method %s\n", fullName);
+        printf("; Assembly listing for method %s (%s)\n", fullName, compiler->compGetTieringName(true));
 
         printf("; Emitting ");
 
@@ -1732,55 +1738,42 @@ void CodeGen::genGenerateMachineCode()
         printf(" for ");
 
 #if defined(TARGET_X86)
-        if (compiler->info.genCPU == CPU_X86)
+        if (compiler->canUseEvexEncoding())
         {
-            printf("generic X86 CPU");
+            printf("X86 with AVX512");
         }
-        else if (compiler->info.genCPU == CPU_X86_PENTIUM_4)
+        else if (compiler->canUseVexEncoding())
         {
-            printf("Pentium 4");
+            printf("X86 with AVX");
         }
-#elif defined(TARGET_AMD64)
-        if (compiler->info.genCPU == CPU_X64)
-        {
-            if (compiler->canUseEvexEncoding())
-            {
-                printf("X64 CPU with AVX512");
-            }
-            else if (compiler->canUseVexEncoding())
-            {
-                printf("X64 CPU with AVX");
-            }
-            else
-            {
-                printf("X64 CPU with SSE2");
-            }
-        }
-#elif defined(TARGET_ARM)
-        if (compiler->info.genCPU == CPU_ARM)
-        {
-            printf("generic ARM CPU");
-        }
-#elif defined(TARGET_ARM64)
-        if (compiler->info.genCPU == CPU_ARM64)
-        {
-            printf("generic ARM64 CPU");
-        }
-#elif defined(TARGET_LOONGARCH64)
-        if (compiler->info.genCPU == CPU_LOONGARCH64)
-        {
-            printf("generic LOONGARCH64 CPU");
-        }
-#elif defined(TARGET_RISCV64)
-        if (compiler->info.genCPU == CPU_RISCV64)
-        {
-            printf("generic RISCV64 CPU");
-        }
-#endif
         else
         {
-            printf("unknown architecture");
+            printf("generic X86");
         }
+#elif defined(TARGET_AMD64)
+        if (compiler->canUseEvexEncoding())
+        {
+            printf("X64 with AVX512");
+        }
+        else if (compiler->canUseVexEncoding())
+        {
+            printf("X64 with AVX");
+        }
+        else
+        {
+            printf("generic X64");
+        }
+#elif defined(TARGET_ARM)
+        printf("generic ARM");
+#elif defined(TARGET_ARM64)
+        printf("generic ARM64");
+#elif defined(TARGET_LOONGARCH64)
+        printf("generic LOONGARCH64");
+#elif defined(TARGET_RISCV64)
+        printf("generic RISCV64");
+#else
+        printf("unknown architecture");
+#endif
 
         if (TargetOS::IsWindows)
         {
@@ -1797,13 +1790,11 @@ void CodeGen::genGenerateMachineCode()
 
         printf("\n");
 
-        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+        printf("; %s code\n", compiler->compGetTieringName(false));
+
+        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            printf("; Tier-0 compilation\n");
-        }
-        else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1))
-        {
-            printf("; Tier-1 compilation\n");
+            printf("; NativeAOT compilation\n");
         }
         else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN))
         {
@@ -1827,20 +1818,8 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("; debuggable code\n");
         }
-        else if (compiler->opts.MinOpts())
-        {
-            printf("; MinOpts code\n");
-        }
-        else
-        {
-            printf("; unknown optimization flags\n");
-        }
 
-        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-        {
-            printf("; instrumented for collecting profile data\n");
-        }
-        else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && compiler->fgHaveProfileWeights())
+        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && compiler->fgHaveProfileWeights())
         {
             printf("; optimized using %s\n", compiler->compGetPgoSourceName());
         }
@@ -1992,6 +1971,11 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
+    if (compiler->opts.disAsm && compiler->opts.disTesting)
+    {
+        printf("; BEGIN METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
+    }
+
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
                                             IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
                                             &epilogSize, codePtr, &coldCodePtr, &consPtr DEBUGARG(&instrCount));
@@ -2011,6 +1995,11 @@ void CodeGen::genEmitMachineCode()
         ((double)compiler->info.compTotalColdCodeSize * (double)PERFSCORE_CODESIZE_COST_COLD);
 #endif // DEBUG || LATE_DISASM
 
+    if (compiler->opts.disAsm && compiler->opts.disTesting)
+    {
+        printf("; END METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
+    }
+
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
     {
@@ -2026,7 +2015,8 @@ void CodeGen::genEmitMachineCode()
         }
 #endif // TRACK_LSRA_STATS
 
-        printf(" (MethodHash=%08x) for method %s\n", compiler->info.compMethodHash(), compiler->info.compFullName);
+        printf(" (MethodHash=%08x) for method %s (%s)\n", compiler->info.compMethodHash(), compiler->info.compFullName,
+               compiler->compGetTieringName(true));
 
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
@@ -3029,7 +3019,20 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd;
+            if (varDsc->lvIsStructField)
+            {
+                // The only case we currently permit is a wrapped SIMD field,
+                // where we won't have the class handle available, so get it
+                // from the parent struct -- they will agree on ABI details.
+                LclVarDsc* parentDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
+                assert(varTypeIsSIMD(varDsc) && (parentDsc->lvFieldCnt == 1));
+                typeHnd = parentDsc->GetLayout()->GetClassHandle();
+            }
+            else
+            {
+                typeHnd = varDsc->GetLayout()->GetClassHandle();
+            }
             assert(typeHnd != nullptr);
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -3126,7 +3129,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
             }
 #if FEATURE_MULTIREG_ARGS
-            else if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+            else if (varDsc->lvIsMultiRegArg)
             {
                 if (varDsc->lvIsHfaRegArg())
                 {
@@ -3335,7 +3338,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
                     // Each field will be inserted into the same destination register.
-                    assert(varTypeIsSIMD(varDsc) && !compiler->isOpaqueSIMDType(varDsc->GetLayout()));
+                    assert(varTypeIsSIMD(varDsc));
                     assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
                     assert(argNum > 0);
                     assert(regArgTab[argNum - 1].varNum == varNum);
@@ -4474,7 +4477,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 }
 #elif defined(TARGET_XARCH)
                 // XORPS is the fastest and smallest way to initialize a XMM register to zero.
-                inst_RV_RV(INS_xorps, reg, reg, TYP_DOUBLE);
+                GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, reg, reg, reg);
                 dblInitReg = reg;
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
@@ -4514,7 +4517,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 }
 #elif defined(TARGET_XARCH)
                 // XORPS is the fastest and smallest way to initialize a XMM register to zero.
-                inst_RV_RV(INS_xorps, reg, reg, TYP_DOUBLE);
+                GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, reg, reg, reg);
                 fltInitReg = reg;
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
@@ -4667,7 +4670,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 //    initReg -- scratch register to use if needed
 //    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
 //
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
 #else
 void CodeGen::genEnregisterOSRArgsAndLocals()
@@ -4808,7 +4811,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
         // Patchpoint offset is from top of Tier0 frame
         //
@@ -5448,7 +5451,7 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
     // in the tier0 frame that impact FP and SP on entry to the OSR method.
     //
@@ -5463,7 +5466,7 @@ void CodeGen::genFnProlog()
         // SP is tier0 method's SP.
         compiler->unwindAllocStack(tier0FrameSize);
     }
-#endif // defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
 #ifdef DEBUG
 
@@ -5788,7 +5791,11 @@ void CodeGen::genFnProlog()
     }
 #endif
 
+#ifndef TARGET_LOONGARCH64
+    // For LoongArch64's OSR root frames, we may need a scratch register for large
+    // offset addresses. But this does not conflict with the REG_PINVOKE_FRAME.
     noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
+#endif
 
 #if defined(TARGET_AMD64)
     // If we are a varargs call, in order to set up the arguments correctly this
@@ -5839,7 +5846,7 @@ void CodeGen::genFnProlog()
         //
         extraFrameSize = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
     }
-#endif // TARGET_ARM64
+#endif // TARGET_AMD64
 
     if (doubleAlignOrFramePointerUsed())
     {
@@ -5969,6 +5976,7 @@ void CodeGen::genFnProlog()
         genEstablishFramePointer(compiler->codeGen->genSPtoFPdelta(), reportUnwindData);
     }
 #endif // TARGET_AMD64
+    compiler->unwindEndProlog();
 
 //-------------------------------------------------------------------------
 //
@@ -6098,7 +6106,7 @@ void CodeGen::genFnProlog()
         // Otherwise we'll do some of these fetches twice.
         //
         CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
 #else
         genEnregisterOSRArgsAndLocals();
@@ -6296,7 +6304,6 @@ void CodeGen::genFnProlog()
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
     GetEmitter()->emitEndProlog();
-    compiler->unwindEndProlog();
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
@@ -6375,6 +6382,35 @@ regNumber CodeGen::getCallIndirectionCellReg(GenTreeCall* call)
 #endif
 
     return result;
+}
+
+//------------------------------------------------------------------------
+// genDefinePendingLabel - If necessary, define the pending call label after a
+// call instruction was emitted.
+//
+// Arguments:
+//    call - the call node
+//
+void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
+{
+    // for pinvoke/intrinsic/tailcalls we may have needed to get the address of
+    // a label.
+    if (!genPendingCallLabel)
+    {
+        return;
+    }
+
+    // For certain indirect calls we may introduce helper calls before that we need to skip:
+    // - CFG may introduce a call to the validator first
+    // - Generic virtual methods may compute the target dynamically through a separate helper call
+    if (call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
+        call->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    {
+        return;
+    }
+
+    genDefineInlineTempLabel(genPendingCallLabel);
+    genPendingCallLabel = nullptr;
 }
 
 /*****************************************************************************

@@ -15,7 +15,7 @@ function(generate_module_index Target ModuleIndexFile)
 
     add_custom_command(
         OUTPUT ${ModuleIndexFile}
-        COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} $<TARGET_FILE:${Target}> ${ModuleIndexFile}
+        COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} $<TARGET_FILE:${Target}> ${ModuleIndexFile} ${CMAKE_READELF}
         DEPENDS ${Target}
         COMMENT "Generating ${Target} module index file -> ${ModuleIndexFile}"
     )

@@ -4,6 +4,7 @@
 // Test for tail merging/duplication of search loops returning constants.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace N
 {
@@ -135,7 +136,8 @@ namespace N
             return (n == 9 && m == 13);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (HasPrimeUnderTwenty(22, 36) || !HasPrimeUnderTwenty(-1, 4))
             {

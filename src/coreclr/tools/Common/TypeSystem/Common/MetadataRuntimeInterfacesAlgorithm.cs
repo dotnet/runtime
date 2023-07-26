@@ -46,7 +46,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Metadata based computation of interfaces.
         /// </summary>
-        private DefType[] ComputeRuntimeInterfacesForNonInstantiatedMetadataType(MetadataType type)
+        private static DefType[] ComputeRuntimeInterfacesForNonInstantiatedMetadataType(MetadataType type)
         {
             DefType[] explicitInterfaces = type.ExplicitlyImplementedInterfaces;
             DefType[] baseTypeInterfaces = (type.BaseType != null) ? (type.BaseType.RuntimeInterfaces) : Array.Empty<DefType>();
@@ -69,7 +69,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Add an interface and its required interfaces to the interfacesArray
         /// </summary>
-        private void BuildPostOrderInterfaceList(DefType iface, ref ArrayBuilder<DefType> interfacesArray)
+        private static void BuildPostOrderInterfaceList(DefType iface, ref ArrayBuilder<DefType> interfacesArray)
         {
             if (interfacesArray.Contains(iface))
                 return;

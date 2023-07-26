@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Threading;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -227,7 +228,8 @@ namespace BenchmarksGame
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
             var outBytes = new byte[helpers.FileLength];

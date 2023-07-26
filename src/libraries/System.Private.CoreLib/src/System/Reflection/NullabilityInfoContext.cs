@@ -573,7 +573,7 @@ namespace System.Reflection
             }
         }
 
-        private bool TryPopulateNullabilityInfo(NullabilityInfo nullability, NullableAttributeStateParser parser, ref int index)
+        private static bool TryPopulateNullabilityInfo(NullabilityInfo nullability, NullableAttributeStateParser parser, ref int index)
         {
             bool isValueType = IsValueTypeOrValueTypeByRef(nullability.Type);
             if (!isValueType)

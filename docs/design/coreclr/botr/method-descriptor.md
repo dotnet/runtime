@@ -206,10 +206,10 @@ For example, it may be a bad idea to use the temporary entry point to call the m
 
 The methods to get callable entry points from MethodDesc are:
 
-- MethodDesc::GetSingleCallableAddrOfCode
-- MethodDesc::GetMultiCallableAddrOfCode
-- MethodDesc::GetSingleCallableAddrOfVirtualizedCode
-- MethodDesc::GetMultiCallableAddrOfVirtualizedCode
+- `MethodDesc::GetSingleCallableAddrOfCode`
+- `MethodDesc::GetMultiCallableAddrOfCode`
+- `MethodDesc::GetSingleCallableAddrOfVirtualizedCode`
+- `MethodDesc::GetMultiCallableAddrOfVirtualizedCode`
 
 Types of precode
 ----------------

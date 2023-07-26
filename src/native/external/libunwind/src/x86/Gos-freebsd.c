@@ -124,6 +124,9 @@ x86_handle_signal_frame (unw_cursor_t *cursor)
             return 0;
     }
 
+    for (i = 0; i < DWARF_NUM_PRESERVED_REGS; ++i)
+      c->dwarf.loc[i] = DWARF_NULL_LOC;
+
     c->dwarf.loc[EIP] = DWARF_LOC (uc_addr + FREEBSD_UC_MCONTEXT_EIP_OFF, 0);
     c->dwarf.loc[ESP] = DWARF_LOC (uc_addr + FREEBSD_UC_MCONTEXT_ESP_OFF, 0);
     c->dwarf.loc[EAX] = DWARF_LOC (uc_addr + FREEBSD_UC_MCONTEXT_EAX_OFF, 0);
@@ -138,6 +141,7 @@ x86_handle_signal_frame (unw_cursor_t *cursor)
     c->dwarf.loc[ST0] = DWARF_NULL_LOC;
   } else if (c->sigcontext_format == X86_SCF_FREEBSD_SYSCALL) {
     c->dwarf.loc[EIP] = DWARF_LOC (c->dwarf.cfa, 0);
+    c->dwarf.loc[ESP] = DWARF_VAL_LOC (c, c->dwarf.cfa + 4);
     c->dwarf.loc[EAX] = DWARF_NULL_LOC;
     c->dwarf.cfa += 4;
     c->dwarf.use_prev_instr = 1;

@@ -11,7 +11,8 @@
   "types": "dotnet.d.ts",
   "scripts": {
     "rollup": "rollup -c",
-    "lint": "eslint --no-color --max-warnings=0 \"./**/*.ts\" \"./*.js\""
+    "lint": "eslint --no-color --max-warnings=0 \"./**/*.ts\" \"./*.js\"",
+    "format": "eslint --fix \"./**/*.ts\" \"./*.js\""
   },
   "keywords": [
     "dotnet",
@@ -21,18 +22,23 @@
   "author": "Microsoft",
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-typescript": "9.0.2",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "@rollup/plugin-terser": "0.4.3",
+    "@rollup/plugin-typescript": "11.1.2",
     "@rollup/plugin-virtual": "3.0.1",
-    "@rollup/plugin-terser": "0.1.0",
-    "@typescript-eslint/eslint-plugin": "5.44.0",
-    "@typescript-eslint/parser": "5.44.0",
-    "eslint": "8.28.0",
-    "fast-glob": "3.2.12",
-    "git-commit-info": "2.0.1",
-    "rollup": "3.4.0",
-    "rollup-plugin-dts": "5.0.0",
-    "terser": "5.15.1",
-    "tslib": "2.4.1",
-    "typescript": "4.9.3"
+    "@typescript-eslint/eslint-plugin": "5.59.1",
+    "@typescript-eslint/parser": "5.59.1",
+    "eslint": "8.44.0",
+    "fast-glob": "3.3.0",
+    "git-commit-info": "2.0.2",
+    "magic-string": "0.30.1",
+    "rollup": "3.26.2",
+    "rollup-plugin-dts": "5.3.0",
+    "terser": "5.19.0",
+    "tslib": "2.6.0",
+    "typescript": "5.1.6"
+  },
+  "dependencies": {
+    "wasm-feature-detect": "1.5.1"
   }
 }

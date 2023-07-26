@@ -13,7 +13,6 @@ using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
-using Internal.TypeSystem.Ecma;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -544,10 +543,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GetRuntimeTypeHandle;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ARE_TYPES_EQUIVALENT:
-                    id = ReadyToRunHelper.AreTypesEquivalent;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOF_EXCEPTION:
                     id = ReadyToRunHelper.IsInstanceOfException;
                     break;
@@ -705,9 +700,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.CheckInstanceAny;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS:
-                case CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS_SPECIAL:
-                    // TODO: separate helper for the _SPECIAL case
                     id = ReadyToRunHelper.CheckCastClass;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS_SPECIAL:
+                    id = ReadyToRunHelper.CheckCastClassSpecial;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS:
                     id = ReadyToRunHelper.CheckInstanceClass;
@@ -1052,9 +1048,15 @@ namespace Internal.JitInterface
                 // This optimizations does not seem to be warranted at the moment.
                 helper = CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
             }
+            else if (type.HasVariance
+                // The runtime considers generic interfaces that can be implemented by arrays variant
+                || _compilation.TypeSystemContext.IsGenericArrayInterfaceType(type))
+            {
+                helper = CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
+            }
             else if (type.IsInterface)
             {
-                // If it is an interface, use the fast interface helper
+                // If it is a non-variant interface, use the fast interface helper
                 helper = CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFINTERFACE;
             }
             else if (type.IsArray)
@@ -1653,20 +1655,6 @@ namespace Internal.JitInterface
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
             }
 
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
-            {
-                if (pResult->hMethod != pResolvedToken.hMethod)
-                {
-                    pResult->verMethodFlags = getMethodAttribsInternal(targetMethod);
-                    Get_CORINFO_SIG_INFO(targetMethod, &pResult->verSig, scope: null);
-                }
-                else
-                {
-                    pResult->verMethodFlags = pResult->methodFlags;
-                    pResult->verSig = pResult->sig;
-                }
-            }
-
             pResult->_wrapperDelegateInvoke = 0;
         }
 
@@ -2061,6 +2049,11 @@ namespace Internal.JitInterface
             CORINFO_FIELD_FLAGS fieldFlags = (CORINFO_FIELD_FLAGS)0;
             uint fieldOffset = (field.IsStatic && field.HasRva ? 0xBAADF00D : (uint)field.Offset.AsInt);
 
+            if (field.IsThreadStatic && field.OwningType is MetadataType mt)
+            {
+                fieldOffset += _compilation.NodeFactory.ThreadStaticBaseOffset(mt);
+            }
+
             if (field.IsStatic)
             {
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
@@ -2240,7 +2233,7 @@ namespace Internal.JitInterface
             return index;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+        private bool getStaticFieldContent(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
             Debug.Assert(buffer != null);
@@ -2300,6 +2293,33 @@ namespace Internal.JitInterface
                     }
                 }
             }
+            return false;
+        }
+
+        private bool getObjectContent(CORINFO_OBJECT_STRUCT_* objPtr, byte* buffer, int bufferSize, int valueOffset)
+        {
+            Debug.Assert(objPtr != null);
+            Debug.Assert(buffer != null);
+            Debug.Assert(bufferSize >= 0);
+            Debug.Assert(valueOffset >= 0);
+
+            object obj = HandleToObject(objPtr);
+            if (obj is FrozenStringNode frozenStr)
+            {
+                // Only support reading the string data
+                int strDataOffset = _compilation.TypeSystemContext.Target.PointerSize + sizeof(int); // 12 on 64bit
+                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= (valueOffset - strDataOffset) + bufferSize)
+                {
+                    int offset = valueOffset - strDataOffset;
+                    fixed (char* pStr = frozenStr.Data)
+                    {
+                        new Span<byte>((byte*)pStr + offset, bufferSize).CopyTo(
+                            new Span<byte>(buffer, bufferSize));
+                        return true;
+                    }
+                }
+            }
+            // TODO: handle FrozenObjectNode
             return false;
         }
 

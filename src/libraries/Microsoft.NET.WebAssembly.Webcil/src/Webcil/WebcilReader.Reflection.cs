@@ -29,7 +29,13 @@ public sealed partial class WebcilReader
             return mi;
         });
 
-        internal static string? ReadUtf8NullTerminated(BlobReader reader) => (string?)s_readUtf8NullTerminated.Value.Invoke(reader, null);
+        internal static string? ReadUtf8NullTerminated(ref BlobReader reader)
+        {
+            object boxedReader = reader;
+            string? result = (string?)s_readUtf8NullTerminated.Value.Invoke(boxedReader, null);
+            reader = (BlobReader) boxedReader; // the call modifies the struct state, make sure to copy it back.
+            return result;
+        }
 
         private static readonly Lazy<ConstructorInfo> s_codeViewDebugDirectoryDataCtor = new Lazy<ConstructorInfo>(() =>
         {

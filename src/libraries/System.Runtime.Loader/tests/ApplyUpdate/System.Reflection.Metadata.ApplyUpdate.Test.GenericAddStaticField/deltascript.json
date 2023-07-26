@@ -1,0 +1,8 @@
+{
+    "capabilities": ["Baseline", "AddStaticFieldToExistingType", "AddInstanceFieldToExistingType", "GenericUpdateMethod", "GenericAddFieldToExistingType"],
+    "changes": [
+        {"document": "GenericAddStaticField.cs", "update": "GenericAddStaticField_v1.cs"},
+        {"document": "GenericAddStaticField.cs", "update": "GenericAddStaticField_v2.cs"},
+    ]
+}
+

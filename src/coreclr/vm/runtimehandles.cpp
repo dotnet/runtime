@@ -1102,9 +1102,8 @@ extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementat
         pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(
             thOwnerOfMD.GetMethodTable(),
             pMD,
-            /* allowNullResult */ TRUE,
-            /* verifyImplemented*/ FALSE,
-            /*allowVariantMatches */ TRUE);
+            ResolveVirtualStaticMethodFlags::AllowNullResult |
+            ResolveVirtualStaticMethodFlags::AllowVariantMatches);
     }
     else
     {
@@ -2413,7 +2412,8 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetMethodFromCanonical, MethodDesc *pM
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
 
     TypeHandle instType = refType->GetType();
-    MethodDesc* pMDescInCanonMT = instType.GetMethodTable()->GetParallelMethodDesc(pMethod);
+    MethodTable* pCanonMT = instType.GetMethodTable()->GetCanonicalMethodTable();
+    MethodDesc* pMDescInCanonMT = pCanonMT->GetParallelMethodDesc(pMethod);
 
     return pMDescInCanonMT;
 }

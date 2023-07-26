@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 
 public class BringUpTest_LongArgsAndReturn
@@ -20,7 +21,8 @@ public class BringUpTest_LongArgsAndReturn
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         long m = LongArgsAndReturn(10L, 20L);
         if (m != 20L) return Fail;

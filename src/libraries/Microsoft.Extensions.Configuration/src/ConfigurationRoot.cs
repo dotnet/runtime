@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 
@@ -11,6 +12,8 @@ namespace Microsoft.Extensions.Configuration
     /// <summary>
     /// The root node for a configuration.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ConfigurationRootDebugView))]
     public class ConfigurationRoot : IConfigurationRoot, IDisposable
     {
         private readonly IList<IConfigurationProvider> _providers;
@@ -134,6 +137,24 @@ namespace Microsoft.Extensions.Configuration
             {
                 provider.Set(key, value);
             }
+        }
+
+        private string DebuggerToString()
+        {
+            return $"Sections = {ConfigurationSectionDebugView.FromConfiguration(this, this).Count}";
+        }
+
+        private sealed class ConfigurationRootDebugView
+        {
+            private readonly ConfigurationRoot _current;
+
+            public ConfigurationRootDebugView(ConfigurationRoot current)
+            {
+                _current = current;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public ConfigurationSectionDebugView[] Items => ConfigurationSectionDebugView.FromConfiguration(_current, _current).ToArray();
         }
     }
 }

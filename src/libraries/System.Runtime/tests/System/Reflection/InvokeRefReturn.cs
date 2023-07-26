@@ -107,10 +107,9 @@ namespace System.Reflection.Tests
                 yield return new object[] { 42L };
                 yield return new object[] { 43.67f };
                 yield return new object[] { 43.67 };
-                // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
-                //yield return new object[] { new IntPtr(42) };
-                //yield return new object[] { new UIntPtr(42) };
-                //yield return new object[] { 232953453454m };
+                yield return new object[] { new IntPtr(42) };
+                yield return new object[] { new UIntPtr(42) };
+                yield return new object[] { 232953453454m };
                 yield return new object[] { BindingFlags.IgnoreCase };
                 yield return new object[] { "Hello" };
                 yield return new object[] { new object() };

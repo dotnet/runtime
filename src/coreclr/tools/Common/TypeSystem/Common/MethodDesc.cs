@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Internal.NativeFormat;
@@ -185,23 +186,53 @@ namespace Internal.TypeSystem
 
         public EmbeddedSignatureData[] GetEmbeddedSignatureData()
         {
+            return GetEmbeddedSignatureData(default);
+        }
+
+        public EmbeddedSignatureData[] GetEmbeddedSignatureData(ReadOnlySpan<EmbeddedSignatureDataKind> kinds)
+        {
             if ((_embeddedSignatureData == null) || (_embeddedSignatureData.Length == 0))
                 return null;
 
-            return (EmbeddedSignatureData[])_embeddedSignatureData.Clone();
+            if (kinds.IsEmpty)
+                return (EmbeddedSignatureData[])_embeddedSignatureData.Clone();
+
+            List<EmbeddedSignatureData> ret = new();
+            foreach (var data in _embeddedSignatureData)
+            {
+                foreach (var k in kinds)
+                {
+                    if (data.kind == k)
+                    {
+                        ret.Add(data);
+                        break;
+                    }
+                }
+            }
+            return ret.ToArray();
         }
 
         public bool Equals(MethodSignature otherSignature)
         {
-            return Equals(otherSignature, allowCovariantReturn: false);
+            return Equals(otherSignature, allowCovariantReturn: false, allowEquivalence: false);
         }
 
-        public bool EqualsWithCovariantReturnType(MethodSignature otherSignature)
+        public bool EquivalentWithCovariantReturnType(MethodSignature otherSignature)
         {
-            return Equals(otherSignature, allowCovariantReturn: true);
+            return Equals(otherSignature, allowCovariantReturn: true, allowEquivalence: true);
         }
 
-        private bool Equals(MethodSignature otherSignature, bool allowCovariantReturn)
+        public bool EquivalentTo(MethodSignature otherSignature)
+        {
+            return Equals(otherSignature, allowCovariantReturn: false, allowEquivalence: true, visited: null);
+        }
+
+        internal bool EquivalentTo(MethodSignature otherSignature, StackOverflowProtect visited)
+        {
+            return Equals(otherSignature, allowCovariantReturn: false, allowEquivalence: true, visited: visited);
+        }
+
+        private bool Equals(MethodSignature otherSignature, bool allowCovariantReturn, bool allowEquivalence, StackOverflowProtect visited = null)
         {
             if (this._flags != otherSignature._flags)
                 return false;
@@ -209,12 +240,12 @@ namespace Internal.TypeSystem
             if (this._genericParameterCount != otherSignature._genericParameterCount)
                 return false;
 
-            if (this._returnType != otherSignature._returnType)
+            if (!IsTypeEqualHelper(this._returnType, otherSignature._returnType, allowEquivalence, visited))
             {
                 if (!allowCovariantReturn)
                     return false;
 
-                if (!otherSignature._returnType.IsCompatibleWith(this._returnType))
+                if (!otherSignature._returnType.IsCompatibleWith(this._returnType, visited))
                     return false;
             }
 
@@ -223,7 +254,7 @@ namespace Internal.TypeSystem
 
             for (int i = 0; i < this._parameters.Length; i++)
             {
-                if (this._parameters[i] != otherSignature._parameters[i])
+                if (!IsTypeEqualHelper(this._parameters[i], otherSignature._parameters[i], allowEquivalence, visited))
                     return false;
             }
 
@@ -253,7 +284,7 @@ namespace Internal.TypeSystem
 
                     if (thisData.index != otherData.index ||
                         thisData.kind != otherData.kind ||
-                        thisData.type != otherData.type)
+                        !IsTypeEqualHelper(thisData.type, otherData.type, allowEquivalence, visited))
                     {
                         return false;
                     }
@@ -263,6 +294,21 @@ namespace Internal.TypeSystem
             }
 
             return false;
+
+            static bool IsTypeEqualHelper(TypeDesc type1, TypeDesc type2, bool allowEquivalence, StackOverflowProtect visited)
+            {
+                if (type1 == type2)
+                    return true;
+
+                if (allowEquivalence)
+                {
+                    if (type1.IsEquivalentTo(type2, visited))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
         }
 
         public override bool Equals(object obj)

@@ -7,6 +7,7 @@
 #include "eventpipeprofiler/eventpipewritingprofiler.h"
 #include "getappdomainstaticaddress/getappdomainstaticaddress.h"
 #include "gcallocateprofiler/gcallocateprofiler.h"
+#include "nongcheap/nongcheap.h"
 #include "gcbasicprofiler/gcbasicprofiler.h"
 #include "gcprofiler/gcprofiler.h"
 #include "handlesprofiler/handlesprofiler.h"
@@ -18,6 +19,7 @@
 #include "multiple/multiple.h"
 #include "inlining/inlining.h"
 #include "moduleload/moduleload.h"
+#include "assemblyprofiler/assemblyprofiler.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -68,6 +70,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     if (clsid == GCAllocateProfiler::GetClsid())
     {
         profiler = new GCAllocateProfiler();
+    }
+    else if (clsid == NonGcHeapProfiler::GetClsid())
+    {
+        profiler = new NonGcHeapProfiler();
     }
     else if (clsid == GCBasicProfiler::GetClsid())
     {
@@ -128,6 +134,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == ModuleLoad::GetClsid())
     {
         profiler = new ModuleLoad();
+    }
+    else if (clsid == AssemblyProfiler::GetClsid())
+    {
+        profiler = new AssemblyProfiler();
     }
     else
     {

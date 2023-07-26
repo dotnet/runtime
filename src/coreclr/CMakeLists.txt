@@ -1,16 +1,9 @@
-cmake_minimum_required(VERSION 3.6.2)
+cmake_minimum_required(VERSION 3.20)
 
 cmake_policy(SET CMP0042 NEW) # MACOSX_RPATH is enabled by default.
-
-if (CMAKE_VERSION VERSION_GREATER 3.7 OR CMAKE_VERSION VERSION_EQUAL 3.7)
-  cmake_policy(SET CMP0066 NEW) # Honor per-config flags in try_compile() source-file signature.
-endif()
-if (CMAKE_VERSION VERSION_GREATER 3.8 OR CMAKE_VERSION VERSION_EQUAL 3.8)
-  cmake_policy(SET CMP0067 NEW) # Honor language standard in try_compile() source-file signature
-endif()
-if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
-  cmake_policy(SET CMP0091 NEW) # MSVC runtime library flags are selected by an abstraction.
-endif()
+cmake_policy(SET CMP0066 NEW) # Honor per-config flags in try_compile() source-file signature.
+cmake_policy(SET CMP0067 NEW) # Honor language standard in try_compile() source-file signature
+cmake_policy(SET CMP0091 NEW) # MSVC runtime library flags are selected by an abstraction.
 
 # Set the project name
 project(CoreCLR)
@@ -97,7 +90,7 @@ endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 #     - do not depend on clr's compile definitions
 #-----------------------------------------
 if(CLR_CMAKE_HOST_UNIX)
-    if(CLR_CMAKE_TARGET_ANDROID)
+    if(CLR_CMAKE_TARGET_ANDROID AND NOT DEFINED CMAKE_ANDROID_NDK)
         find_library(LZMA NAMES lzma)
         if(LZMA STREQUAL LZMA-NOTFOUND)
            message(FATAL_ERROR "Cannot find liblzma.")
@@ -109,7 +102,7 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
     endif()
 
-    if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_I386)
+    if(CLR_CMAKE_TARGET_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_RISCV64))
       add_linker_flag(-Wl,-z,notext)
     endif()
 
@@ -198,7 +191,6 @@ include_directories("debug/inc/${ARCH_SOURCES_DIR}")
 include_directories("debug/inc/dump")
 include_directories("md/inc")
 include_directories("classlibnative/bcltype")
-include_directories("classlibnative/cryptography")
 include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")

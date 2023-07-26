@@ -168,5 +168,8 @@ namespace System
 
         internal const string RegexExtensibilityImplMessage = "This API supports obsolete mechanisms for Regex extensibility. It is not supported.";
         internal const string RegexExtensibilityDiagId = "SYSLIB0052";
+
+        internal const string AesGcmTagConstructorMessage = "AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.";
+        internal const string AesGcmTagConstructorDiagId = "SYSLIB0053";
     }
 }

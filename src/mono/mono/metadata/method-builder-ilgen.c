@@ -29,7 +29,7 @@ enum {
 #undef OPDEF
 
 static MonoMethodBuilder *
-new_base_ilgen (MonoClass *klass, MonoWrapperType type)
+new_base_ilgen (MonoClass *klass, MonoWrapperType type, gboolean dynamic)
 {
 	MonoMethodBuilder *mb;
 	MonoMethod *m;
@@ -38,7 +38,10 @@ new_base_ilgen (MonoClass *klass, MonoWrapperType type)
 
 	mb = g_new0 (MonoMethodBuilder, 1);
 
-	mb->method = m = (MonoMethod *)g_new0 (MonoMethodWrapper, 1);
+	if (dynamic)
+		mb->method = m = (MonoMethod *)g_new0 (MonoDynamicMethod, 1);
+	else
+		mb->method = m = (MonoMethod *)g_new0 (MonoMethodWrapper, 1);
 
 	m->klass = klass;
 	m->inline_info = 1;
@@ -47,6 +50,7 @@ new_base_ilgen (MonoClass *klass, MonoWrapperType type)
 	mb->code_size = 40;
 	mb->code = (unsigned char *)g_malloc (mb->code_size);
 	mb->init_locals = TRUE;
+	mb->dynamic = dynamic;
 
 	/* placeholder for the wrapper always at index 1 */
 	mono_mb_add_data (mb, NULL);
@@ -109,7 +113,7 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 	image = m_class_get_image (mb->method->klass);
 
 	if (mb->dynamic) {
-		/* Allocated in reflection_methodbuilder_to_mono_method () */
+		/* Allocated in reflection_methodbuilder_to_mono_method ()/mb_new () */
 		method = mb->method;
 	} else {
 		method = (MonoMethod *)mb_alloc0 (mb, sizeof (MonoMethodWrapper));
@@ -607,7 +611,7 @@ mono_mb_emit_exception_for_error (MonoMethodBuilder *mb, MonoError *error)
 	g_assert (mono_error_get_error_code (error) == MONO_ERROR_GENERIC && "Unsupported error code.");
 	/* Have to copy the message because it will be referenced from JITed code while the MonoError may be freed. */
 	char *msg = mono_mb_strdup (mb, mono_error_get_message (error));
-	mono_mb_emit_exception_full (mb, "System", mono_error_get_exception_name (error), msg);
+	mono_mb_emit_exception_full (mb, mono_error_get_exception_name_space (error), mono_error_get_exception_name (error), msg);
 }
 
 /**

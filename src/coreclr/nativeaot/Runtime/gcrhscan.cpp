@@ -54,6 +54,14 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
         else
 #endif
         {
+            InlinedThreadStaticRoot* pRoot = pThread->GetInlinedThreadStaticList();
+            while (pRoot != NULL)
+            {
+                STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p inline thread statics root %p. \n", pThread, pRoot);
+                GcEnumObject(&pRoot->m_threadStaticsBase, 0 /*flags*/, fn, sc);
+                pRoot = pRoot->m_next;
+            }
+
             STRESS_LOG1(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p thread statics root. \n", pThread);
             GcEnumObject(pThread->GetThreadStaticStorage(), 0 /*flags*/, fn, sc);
 

@@ -3,13 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct ArrayWrapper
 {
     public int[] Array;
 }
 
-class Runtime_61040_1
+public class Runtime_61040_1
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void JitUse<T>(T arg) { }
@@ -35,7 +36,8 @@ class Runtime_61040_1
     [MethodImpl(MethodImplOptions.NoInlining)]
     static ArrayWrapper GetArrayLong() => new() { Array = new int[10000] };
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = -1;
         try

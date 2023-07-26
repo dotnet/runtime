@@ -17,6 +17,6 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static unsafe partial Interop.BOOL GetCPInfo(uint codePage, CPINFO* lpCpInfo);
+        internal static unsafe partial BOOL GetCPInfo(uint codePage, CPINFO* lpCpInfo);
     }
 }

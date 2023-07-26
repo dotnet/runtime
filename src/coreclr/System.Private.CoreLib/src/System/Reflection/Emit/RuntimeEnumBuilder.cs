@@ -274,16 +274,9 @@ namespace System.Reflection.Emit
         }
 
         // Use this function if client decides to form the custom attribute blob themselves
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             m_typeBuilder.SetCustomAttribute(con, binaryAttribute);
-        }
-
-        // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            m_typeBuilder.SetCustomAttribute(customBuilder);
         }
 
         // Return the class that declared this Field.
@@ -293,42 +286,11 @@ namespace System.Reflection.Emit
 
         public override Type? ReflectedType => m_typeBuilder.ReflectedType;
 
-
         // Returns true if one or more instance of attributeType is defined on this member.
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             return m_typeBuilder.IsDefined(attributeType, inherit);
         }
-
-        /*****************************************************
-         *
-         * private/protected functions
-         *
-         */
-
-        public override Type MakePointerType()
-        {
-            return SymbolType.FormCompoundType("*", this, 0)!;
-        }
-
-        public override Type MakeByRefType()
-        {
-            return SymbolType.FormCompoundType("&", this, 0)!;
-        }
-
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType()
-        {
-            return SymbolType.FormCompoundType("[]", this, 0)!;
-        }
-
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType(int rank)
-        {
-            string s = GetRankString(rank);
-            return SymbolType.FormCompoundType(s, this, 0)!;
-        }
-
 
         // Constructs a EnumBuilder.
         // EnumBuilder can only be a top-level (not nested) enum type.
@@ -343,7 +305,7 @@ namespace System.Reflection.Emit
             // Client should not set any bits other than the visibility bits.
             if ((visibility & ~TypeAttributes.VisibilityMask) != 0)
                 throw new ArgumentException(SR.Argument_ShouldOnlySetVisibilityFlags, nameof(name));
-            m_typeBuilder = new RuntimeTypeBuilder(name, visibility | TypeAttributes.Sealed, typeof(System.Enum), null, module, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
+            m_typeBuilder = new RuntimeTypeBuilder(name, visibility | TypeAttributes.Sealed, typeof(Enum), null, module, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
 
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set.
             m_underlyingField = m_typeBuilder.DefineField("value__", underlyingType, FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName);

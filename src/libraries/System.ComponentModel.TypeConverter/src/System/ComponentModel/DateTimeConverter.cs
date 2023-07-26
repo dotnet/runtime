@@ -114,7 +114,7 @@ namespace System.ComponentModel
                     format = formatInfo!.ShortDatePattern + " " + formatInfo.ShortTimePattern;
                 }
 
-                return dt.ToString(format, CultureInfo.CurrentCulture);
+                return dt.ToString(format, culture);
             }
 
             if (destinationType == typeof(InstanceDescriptor) && value is DateTime)

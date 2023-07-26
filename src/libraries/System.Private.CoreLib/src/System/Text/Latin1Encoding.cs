@@ -19,7 +19,7 @@ namespace System.Text
         internal static readonly Latin1EncodingSealed s_default = new Latin1EncodingSealed();
 
         // We only use the best-fit table, of which ASCII is a superset for us.
-        public Latin1Encoding() : base(Encoding.ISO_8859_1)
+        public Latin1Encoding() : base(ISO_8859_1)
         {
         }
 
@@ -234,13 +234,8 @@ namespace System.Text
             }
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/84425: Make this public.
-        /// <summary>Encodes into a span of bytes a set of characters from the specified read-only span if the destination is large enough.</summary>
-        /// <param name="chars">The span containing the set of characters to encode.</param>
-        /// <param name="bytes">The byte span to hold the encoded bytes.</param>
-        /// <param name="bytesWritten">Upon successful completion of the operation, the number of bytes encoded into <paramref name="bytes"/>.</param>
-        /// <returns><see langword="true"/> if all of the characters were encoded into the destination; <see langword="false"/> if the destination was too small to contain all the encoded bytes.</returns>
-        internal override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+        /// <inheritdoc/>
+        public override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
         {
             fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
             fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
@@ -534,6 +529,23 @@ namespace System.Text
             }
         }
 
+        /// <inheritdoc/>
+        public override unsafe bool TryGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten)
+        {
+            if (bytes.Length <= chars.Length)
+            {
+                fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+                fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+                {
+                    charsWritten = GetCharsCommon(bytesPtr, bytes.Length, charsPtr, chars.Length);
+                    return true;
+                }
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
         public override unsafe string GetString(byte[] bytes)
         {
             if (bytes is null)
@@ -541,16 +553,13 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes);
             }
 
-            return string.Create(bytes.Length, (encoding: this, bytes), static (chars, args) =>
+            string result = string.FastAllocateString(bytes.Length);
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = result)
             {
-                Debug.Assert(chars.Length == args.bytes.Length);
-
-                fixed (byte* pBytes = args.bytes)
-                fixed (char* pChars = chars)
-                {
-                    args.encoding.GetCharsCommon(pBytes, args.bytes.Length, pChars, chars.Length);
-                }
-            });
+                GetCharsCommon(pBytes, bytes.Length, pChars, result.Length);
+            }
+            return result;
         }
 
         public override unsafe string GetString(byte[] bytes, int index, int count)
@@ -574,14 +583,13 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            return string.Create(count, (encoding: this, bytes, index), static (chars, args) =>
+            string result = string.FastAllocateString(count);
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = result)
             {
-                fixed (byte* pBytes = args.bytes)
-                fixed (char* pChars = chars)
-                {
-                    args.encoding.GetCharsCommon(pBytes + args.index, chars.Length, pChars, chars.Length);
-                }
-            });
+                GetCharsCommon(pBytes + index, count, pChars, count);
+            }
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

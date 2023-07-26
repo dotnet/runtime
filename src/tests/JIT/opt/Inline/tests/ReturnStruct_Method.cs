@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public struct MyStruct
 {
@@ -16,7 +17,8 @@ public struct MyStruct
 
 public class ReturnStruct
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int iret = 100;
         MyStruct st = MyStruct.MakeString_Inline("Hello!");

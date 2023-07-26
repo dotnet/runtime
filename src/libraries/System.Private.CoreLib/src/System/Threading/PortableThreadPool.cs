@@ -457,5 +457,27 @@ namespace System.Threading
             _memoryUsageBytes = Math.Min(gcMemoryInfo.MemoryLoadBytes, gcMemoryInfo.HighMemoryLoadThresholdBytes);
             return true; // continue receiving gen 2 GC callbacks
         }
+
+        internal static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             object? state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
+        {
+            ArgumentNullException.ThrowIfNull(waitObject);
+            ArgumentNullException.ThrowIfNull(callBack);
+
+            RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle(
+                waitObject,
+                new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
+                (int)millisecondsTimeOutInterval,
+                !executeOnlyOnce);
+
+            PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
+
+            return registeredWaitHandle;
+        }
     }
 }

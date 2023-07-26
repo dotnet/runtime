@@ -21,6 +21,7 @@ set __ConfigureOnly=0
 set __IncrementalNativeBuild=0
 set __Ninja=1
 set __OutputRid=""
+set __ExtraCmakeParams=
 
 :Arg_Loop
 if [%1] == [] goto :InitVSEnv
@@ -30,7 +31,6 @@ if /i [%1] == [Checked]     (set CMAKE_BUILD_TYPE=Checked&&shift&goto Arg_Loop)
 
 if /i [%1] == [AnyCPU]      (set __BuildArch=x64&&shift&goto Arg_Loop)
 if /i [%1] == [x86]         (set __BuildArch=x86&&shift&goto Arg_Loop)
-if /i [%1] == [arm]         (set __BuildArch=arm&&shift&goto Arg_Loop)
 if /i [%1] == [x64]         (set __BuildArch=x64&&shift&goto Arg_Loop)
 if /i [%1] == [amd64]       (set __BuildArch=x64&&shift&goto Arg_Loop)
 if /i [%1] == [arm64]       (set __BuildArch=arm64&&shift&goto Arg_Loop)
@@ -50,6 +50,7 @@ if /i [%1] == [rootDir]     (set __rootDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [msbuild] (set __Ninja=0)
 if /i [%1] == [runtimeflavor]  (set __RuntimeFlavor=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [runtimeconfiguration]  (set __RuntimeConfiguration=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&&shift&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -94,7 +95,6 @@ if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 
 if /i "%__BuildArch%" == "x64"     (set cm_BaseRid=win7)
 if /i "%__BuildArch%" == "x86"     (set cm_BaseRid=win7)
-if /i "%__BuildArch%" == "arm"     (set cm_BaseRid=win8)
 if /i "%__BuildArch%" == "arm64"   (set cm_BaseRid=win10)
 :: Form the base RID to be used if we are doing a portable build
 if /i "%__PortableBuild%" == "1"   (set cm_BaseRid=win)

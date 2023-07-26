@@ -31,9 +31,9 @@ namespace Internal.Runtime.CompilerHelpers
             return returnValue;
         }
 
-        private static Type GetRuntimeType(IntPtr pEEType)
+        private static unsafe Type GetRuntimeType(MethodTable* pMT)
         {
-            return Type.GetTypeFromEETypePtr(new EETypePtr(pEEType));
+            return Type.GetTypeFromMethodTable(pMT);
         }
     }
 }

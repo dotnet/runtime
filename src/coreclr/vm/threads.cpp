@@ -2165,7 +2165,7 @@ void ParseDefaultStackSize(LPCWSTR valueStr)
     {
         LPWSTR end;
         errno = 0;
-        unsigned long value = wcstoul(valueStr, &end, 16); // Base 16 without a prefix
+        unsigned long value = u16_strtoul(valueStr, &end, 16); // Base 16 without a prefix
 
         if ((errno == ERANGE)     // Parsed value doesn't fit in an unsigned long
             || (valueStr == end)  // No characters parsed
@@ -5533,6 +5533,7 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
             }
 
             unsigned exposedObjectGeneration = gcHeap->WhichGeneration(exposedObject);
+            _ASSERTE(exposedObjectGeneration != INT32_MAX);
             SIZE_T newDeadThreadGenerationCount = ++s_DeadThreadGenerationCounts[exposedObjectGeneration];
             if (exposedObjectGeneration > gcGenerationToTrigger && newDeadThreadGenerationCount >= generationCountThreshold)
             {
@@ -8240,8 +8241,10 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 {
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     DWORD64 ssp = GetSSP(ContextRecord);
+    __asan_handle_no_return();
     ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);
 #else
+    __asan_handle_no_return();
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
     RtlRestoreContext(ContextRecord, NULL);
 #endif
