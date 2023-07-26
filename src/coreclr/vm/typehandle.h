@@ -519,6 +519,8 @@ public:
     inline BOOL HasTypeEquivalence() const;
 
     FnPtrTypeDesc* AsFnPtrType() const;
+    
+    ConstValueTypeDesc* AsConstValue() const;
 
     TypeVarTypeDesc* AsGenericVariable() const;
 

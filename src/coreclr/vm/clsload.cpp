@@ -235,6 +235,8 @@ Module *ClassLoader::ComputeLoaderModule(TypeKey *typeKey)
                                    Instantiation());
     else if (typeKey->GetKind() == ELEMENT_TYPE_FNPTR)
         return ComputeLoaderModuleForFunctionPointer(typeKey->GetRetAndArgTypes(), typeKey->GetNumArgs() + 1);
+    else if (typeKey->GetKind() == ELEMENT_TYPE_CTARG)
+        return typeKey->GetConstValueType().GetLoaderModule();
     else
         return ComputeLoaderModuleForParamType(typeKey->GetElementType());
 }
@@ -1673,13 +1675,13 @@ TypeHandle ClassLoader::LoadConstValueTypeThrowing(CorElementType valueType,
     TypeHandle th = TypeHandle(CoreLibBinder::GetElementType(valueType));
     TypeKey key(th, value);
     TypeHandle typeHnd = TypeHandle();
-    _ASSERTE(!"NYI: Load const value TypeHandle.");
+
 #ifndef DACCESS_COMPILE
     // If we got here, we now have to allocate a new const value type.
     // By definition, forbidgc-users aren't allowed to reach this point.
     CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
-    
-    RETURN(typeHnd);
+    Module *pLoaderModule = ComputeLoaderModule(&key);
+    RETURN(pLoaderModule->GetClassLoader()->LoadTypeHandleForTypeKey(&key, typeHnd, level));
 #else
     DacNotImpl();
     RETURN(typeHnd);
@@ -3003,6 +3005,14 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FnPtrTypeDesc)) + S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 
         typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes()));
+    }
+    else if (pKey->GetKind() == ELEMENT_TYPE_CTARG)
+    {
+        Module *pLoaderModule = ComputeLoaderModule(pKey);
+        PREFIX_ASSUME(pLoaderModule != NULL);
+        BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ConstValueTypeDesc)) + S_SIZE_T(sizeof(TypeHandle))));
+        typeHnd = TypeHandle(new(mem)  ConstValueTypeDesc(pKey->GetConstValueType(), pKey->GetConstValue()));
+        _ASSERTE(!"NYI: Build MethodTable for Const Value");
     }
     else
     {

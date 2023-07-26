@@ -98,6 +98,17 @@ inline FnPtrTypeDesc* TypeHandle::AsFnPtrType() const
     return result;
 }
 
+inline ConstValueTypeDesc* TypeHandle::AsConstValue() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    
+    _ASSERTE(IsConstValue());
+
+    ConstValueTypeDesc* result = PTR_ConstValueTypeDesc(m_asTAddr - 2);
+    PREFIX_ASSUME(result != NULL);
+    return result;
+}
+
 inline TypeVarTypeDesc* TypeHandle::AsGenericVariable() const
 {
     LIMITED_METHOD_DAC_CONTRACT;

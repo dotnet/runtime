@@ -1040,7 +1040,8 @@ BOOL TypeHandle::IsConstValue() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (!IsTypeDesc() && AsMethodTable()->IsConstValue());
+    return (IsTypeDesc() &&
+            (GetSignatureCorElementType() == ELEMENT_TYPE_CTARG));
 }
 
 template<typename T>
@@ -1048,14 +1049,28 @@ T TypeHandle::GetConstValue() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return AsMethodTable()->GetConstValue<T>();
+    if (!IsTypeDesc())
+    {
+        return AsMethodTable()->GetConstValue<T>();
+    }
+    else
+    {
+        return AsConstValue()->GetConstValue<T>();
+    }
 }
 
 CorElementType TypeHandle::GetConstValueType() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-
-    return AsMethodTable()->GetConstValueType();
+    
+    if (!IsTypeDesc())
+    {
+        return AsMethodTable()->GetConstValueType();
+    }
+    else
+    {
+        return AsConstValue()->GetConstValueType().GetInternalCorElementType();
+    }
 }
 
 BOOL TypeHandle::IsRestored_NoLogging() const

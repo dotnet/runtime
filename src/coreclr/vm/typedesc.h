@@ -322,7 +322,7 @@ class ConstValueTypeDesc : public TypeDesc
 public:
 #ifndef DACCESS_COMPILE
 
-    ConstValueTypeDesc(CorElementType type) :
+    ConstValueTypeDesc(TypeHandle type, uint64_t value) :
         TypeDesc(CorElementType::ELEMENT_TYPE_CTARG), m_type(type)
     {
         CONTRACTL
@@ -332,6 +332,7 @@ public:
         }
         CONTRACTL_END;
 
+        m_value.asUint64 = value;
     }
  
 #endif // #ifndef DACCESS_COMPILE
@@ -339,16 +340,33 @@ public:
     // placement new operator
     void* operator new(size_t size, void* spot) { LIMITED_METHOD_CONTRACT;  return (spot); }
     
-    CorElementType GetConstValueType()
+    TypeHandle GetConstValueType()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
         return m_type;
     }
+
+    template<typename T>
+    T GetConstValue()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return *(T*)&m_value;
+    }
     
 private:
-    CorElementType m_type;
+    TypeHandle m_type;
+    union {
+        uint8_t asUint8;
+        uint16_t asUint16;
+        uint32_t asUint32;
+        uint64_t asUint64;
+        float asFloat;
+        double asDouble;
+    } m_value;
 };
 
 /*************************************************************************/

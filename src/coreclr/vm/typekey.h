@@ -280,6 +280,29 @@ public:
             return pKey1->u.asParamType.m_paramType == pKey2->u.asParamType.m_paramType
                 && pKey1->u.asParamType.m_rank == pKey2->u.asParamType.m_rank;
         }
+        else if (pKey1->m_kind == ELEMENT_TYPE_CTARG)
+        {
+            if (pKey1->u.asConstValue.m_valueType != pKey2->u.asConstValue.m_valueType)
+            {
+                return FALSE;
+            }
+            CorElementType valueType = TypeHandle::FromTAddr(pKey1->u.asConstValue.m_valueType).GetInternalCorElementType();
+            _ASSERTE(valueType > ELEMENT_TYPE_VOID);
+            if (valueType <= ELEMENT_TYPE_U1)
+                return pKey1->u.asConstValue.m_value.asUint8 == pKey2->u.asConstValue.m_value.asUint8;
+            if (valueType <= ELEMENT_TYPE_U2)
+                return pKey1->u.asConstValue.m_value.asUint16 == pKey2->u.asConstValue.m_value.asUint16;
+            if (valueType <= ELEMENT_TYPE_U4)
+                return pKey1->u.asConstValue.m_value.asUint32 == pKey2->u.asConstValue.m_value.asUint32;
+            if (valueType <= ELEMENT_TYPE_U8)
+                return pKey1->u.asConstValue.m_value.asUint64 == pKey2->u.asConstValue.m_value.asUint64;
+            if (valueType == ELEMENT_TYPE_R4)
+                return pKey1->u.asConstValue.m_value.asFloat == pKey2->u.asConstValue.m_value.asFloat;
+            if (valueType == ELEMENT_TYPE_R8)
+                return pKey1->u.asConstValue.m_value.asDouble == pKey2->u.asConstValue.m_value.asDouble;
+            _ASSERTE(!"INVALID CONST TYPE ARG TYPE");
+            return FALSE;
+        }
         else
         {
             _ASSERTE(pKey1->m_kind == ELEMENT_TYPE_FNPTR);

@@ -197,6 +197,15 @@ static DWORD HashParamType(CorElementType kind, TypeHandle typeParam)
     return (DWORD)dwHash;
 }
 
+static DWORD HashConstValueType(TypeHandle valueType, uint64_t value)
+{
+    WRAPPER_NO_CONTRACT;
+    INT_PTR dwHash = 5381;
+    dwHash = ((dwHash << 5) + dwHash) ^ valueType.AsTAddr();
+    dwHash = ((dwHash << 5) + dwHash) ^ value;
+    return (DWORD)dwHash;
+}
+
 // Calculate hash value from type handle
 static DWORD HashTypeHandle(TypeHandle t)
 {
@@ -224,6 +233,11 @@ static DWORD HashTypeHandle(TypeHandle t)
     {
         FnPtrTypeDesc* pTD = t.AsFnPtrType();
         retVal = HashFnPtrType(pTD->GetCallConv(), pTD->GetNumArgs(), pTD->GetRetAndArgTypesPointer());
+    }
+    else if (t.IsConstValue())
+    {
+        ConstValueTypeDesc* pTD = t.AsConstValue();
+        retVal = HashConstValueType(pTD->GetConstValueType(), pTD->GetConstValue<uint64_t>());
     }
     else if (t.IsGenericVariable())
     {
@@ -258,6 +272,10 @@ DWORD HashTypeKey(TypeKey* pKey)
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
         return HashFnPtrType(pKey->GetCallConv(), pKey->GetNumArgs(), pKey->GetRetAndArgTypes());
+    }
+    else if (pKey->GetKind() == ELEMENT_TYPE_CTARG)
+    {
+        return HashConstValueType(pKey->GetConstValueType(), pKey->GetConstValue());
     }
     else
     {
@@ -528,7 +546,7 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
         PRECONDITION(IsUnsealed());          // If we are sealed then we should not be adding to this hashtable
         PRECONDITION(CheckPointer(data));
         PRECONDITION(!data.IsGenericTypeDefinition()); // Generic type defs live in typedef table (availableClasses)
-        PRECONDITION(data.HasInstantiation() || data.HasTypeParam() || data.IsFnPtrType()); // It's an instantiated type or an array/ptr/byref type
+        PRECONDITION(data.HasInstantiation() || data.HasTypeParam() || data.IsFnPtrType() || data.IsConstValue()); // It's an instantiated type or an array/ptr/byref/const type
         PRECONDITION(m_pModule == NULL || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
     }
     CONTRACTL_END
