@@ -70,7 +70,7 @@ public class Program
 
         if (count == 0)
         {
-            // something is off, lets check the StandradError stream
+            // something is off, lets check the StandardError stream
             int errorCount = 0;
             string[] firstFiveErrors = new string[5];
             while ((line = proc.StandardError.ReadLine()) != null)
