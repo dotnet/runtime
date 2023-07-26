@@ -3147,10 +3147,14 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
         // For minopts/debug code, try and minimize the total number
         // of box temps by reusing an existing temp when possible. However,
-        // avoid sharing in some tier 0 cases to potentially, avoid boxing in Enum.HasFlag.
-        const bool shareBoxedTemps =
-            opts.OptimizationDisabled() &&
-            (opts.compDbgCode || opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) || !varTypeIsIntegral(exprToBox) || lvaHaveManyLocals() || (info.compCompHnd->isEnum(pResolvedToken->hClass, nullptr) != TypeCompareState::Must));
+        bool shareBoxedTemps = opts.OptimizationDisabled();
+
+        // Avoid sharing in some tier 0 cases to, potentially, avoid boxing in Enum.HasFlag.
+        if (shareBoxedTemps && varTypeIsIntegral(exprToBox) && !lvaHaveManyLocals() &&
+            (info.compCompHnd->isEnum(pResolvedToken->hClass, nullptr) != TypeCompareState::Must)
+        {
+            shareBoxedTemps = false;
+        }
 
         if (shareBoxedTemps)
         {
