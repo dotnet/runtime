@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildProjectName).cs" />
+    <Compile Include="CompareVectorWithZero.cs" />
   </ItemGroup>
 </Project>
