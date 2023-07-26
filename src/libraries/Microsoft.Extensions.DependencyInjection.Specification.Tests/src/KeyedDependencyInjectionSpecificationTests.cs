@@ -325,38 +325,111 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        public void ResolveKeyedServiceFromInjectedServiceProvider()
+        public void ResolveKeyedSingletonFromInjectedServiceProvider()
         {
-            var service1 = new Service();
-            var service2 = new Service();
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddKeyedSingleton<IService>("service1", service1);
-            serviceCollection.AddKeyedSingleton<IService>("service2", service2);
+            serviceCollection.AddKeyedSingleton<IService, Service>("key");
             serviceCollection.AddSingleton<ServiceProviderAccessor>();
 
             var provider = CreateServiceProvider(serviceCollection);
             var accessor = provider.GetRequiredService<ServiceProviderAccessor>();
 
             Assert.Null(accessor.ServiceProvider.GetService<IService>());
-            Assert.Same(service1, accessor.ServiceProvider.GetKeyedService<IService>("service1"));
-            Assert.Same(service2, accessor.ServiceProvider.GetKeyedService<IService>("service2"));
+
+            var service1 = accessor.ServiceProvider.GetKeyedService<IService>("key");
+            var service2 = accessor.ServiceProvider.GetKeyedService<IService>("key");
+
+            Assert.Same(service1, service2);
         }
 
         [Fact]
-        public void ResolveKeyedServiceFromScopeServiceProvider()
+        public void ResolveKeyedTransientFromInjectedServiceProvider()
         {
-            var service1 = new Service();
-            var service2 = new Service();
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddKeyedSingleton<IService>("service1", service1);
-            serviceCollection.AddKeyedSingleton<IService>("service2", service2);
+            serviceCollection.AddKeyedTransient<IService, Service>("key");
+            serviceCollection.AddSingleton<ServiceProviderAccessor>();
 
             var provider = CreateServiceProvider(serviceCollection);
-            var scope = provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            var accessor = provider.GetRequiredService<ServiceProviderAccessor>();
 
-            Assert.Null(scope.ServiceProvider.GetService<IService>());
-            Assert.Same(service1, scope.ServiceProvider.GetKeyedService<IService>("service1"));
-            Assert.Same(service2, scope.ServiceProvider.GetKeyedService<IService>("service2"));
+            Assert.Null(accessor.ServiceProvider.GetService<IService>());
+
+            var service1 = accessor.ServiceProvider.GetKeyedService<IService>("key");
+            var service2 = accessor.ServiceProvider.GetKeyedService<IService>("key");
+
+            Assert.NotSame(service1, service2);
+        }
+
+        [Fact]
+        public void ResolveKeyedSingletonFromScopeServiceProvider()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedSingleton<IService, Service>("key");
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var scopeA = provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            var scopeB = provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+
+            Assert.Null(scopeA.ServiceProvider.GetService<IService>());
+            Assert.Null(scopeB.ServiceProvider.GetService<IService>());
+
+            var serviceA1 = scopeA.ServiceProvider.GetKeyedService<IService>("key");
+            var serviceA2 = scopeA.ServiceProvider.GetKeyedService<IService>("key");
+
+            var serviceB1 = scopeB.ServiceProvider.GetKeyedService<IService>("key");
+            var serviceB2 = scopeB.ServiceProvider.GetKeyedService<IService>("key");
+
+            Assert.Same(serviceA1, serviceA2);
+            Assert.Same(serviceB1, serviceB2);
+            Assert.Same(serviceA1, serviceB1);
+        }
+
+        [Fact]
+        public void ResolveKeyedScopedFromScopeServiceProvider()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedScoped<IService, Service>("key");
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var scopeA = provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            var scopeB = provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+
+            Assert.Null(scopeA.ServiceProvider.GetService<IService>());
+            Assert.Null(scopeB.ServiceProvider.GetService<IService>());
+
+            var serviceA1 = scopeA.ServiceProvider.GetKeyedService<IService>("key");
+            var serviceA2 = scopeA.ServiceProvider.GetKeyedService<IService>("key");
+
+            var serviceB1 = scopeB.ServiceProvider.GetKeyedService<IService>("key");
+            var serviceB2 = scopeB.ServiceProvider.GetKeyedService<IService>("key");
+
+            Assert.Same(serviceA1, serviceA2);
+            Assert.Same(serviceB1, serviceB2);
+            Assert.NotSame(serviceA1, serviceB1);
+        }
+
+        [Fact]
+        public void ResolveKeyedTransientFromScopeServiceProvider()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<IService, Service>("key");
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var scopeA = provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            var scopeB = provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+
+            Assert.Null(scopeA.ServiceProvider.GetService<IService>());
+            Assert.Null(scopeB.ServiceProvider.GetService<IService>());
+
+            var serviceA1 = scopeA.ServiceProvider.GetKeyedService<IService>("key");
+            var serviceA2 = scopeA.ServiceProvider.GetKeyedService<IService>("key");
+
+            var serviceB1 = scopeB.ServiceProvider.GetKeyedService<IService>("key");
+            var serviceB2 = scopeB.ServiceProvider.GetKeyedService<IService>("key");
+
+            Assert.NotSame(serviceA1, serviceA2);
+            Assert.NotSame(serviceB1, serviceB2);
+            Assert.NotSame(serviceA1, serviceB1);
         }
 
         internal interface IService { }
