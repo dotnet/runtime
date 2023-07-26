@@ -18,7 +18,6 @@ namespace Microsoft.Extensions.Http
     internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory
     {
         private static readonly TimerCallback _cleanupCallback = (s) => ((DefaultHttpClientFactory)s!).CleanupTimer_Tick();
-        private readonly ILogger _logger;
         private readonly IServiceProvider _services;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;
@@ -61,13 +60,11 @@ namespace Microsoft.Extensions.Http
         public DefaultHttpClientFactory(
             IServiceProvider services,
             IServiceScopeFactory scopeFactory,
-            ILoggerFactory loggerFactory,
             IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor,
             IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
         {
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(scopeFactory);
-            ThrowHelper.ThrowIfNull(loggerFactory);
             ThrowHelper.ThrowIfNull(optionsMonitor);
             ThrowHelper.ThrowIfNull(filters);
 
@@ -75,8 +72,6 @@ namespace Microsoft.Extensions.Http
             _scopeFactory = scopeFactory;
             _optionsMonitor = optionsMonitor;
             _filters = filters.ToArray();
-
-            _logger = loggerFactory.CreateLogger<DefaultHttpClientFactory>();
 
             // case-sensitive because named options is.
             _activeHandlers = new ConcurrentDictionary<string, Lazy<ActiveHandlerTrackingEntry>>(StringComparer.Ordinal);
@@ -204,7 +199,7 @@ namespace Microsoft.Extensions.Http
             var expired = new ExpiredHandlerTrackingEntry(active);
             _expiredHandlers.Enqueue(expired);
 
-            Log.HandlerExpired(_logger, active.Name, active.Lifetime);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.HandlerExpired(active.Name, active.Lifetime);
 
             StartCleanupTimer();
         }
@@ -262,7 +257,7 @@ namespace Microsoft.Extensions.Http
             try
             {
                 int initialCount = _expiredHandlers.Count;
-                Log.CleanupCycleStart(_logger, initialCount);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.CleanupCycleStart(initialCount);
 
                 var stopwatch = ValueStopwatch.StartNew();
 
@@ -283,7 +278,7 @@ namespace Microsoft.Extensions.Http
                         }
                         catch (Exception ex)
                         {
-                            Log.CleanupItemFailed(_logger, entry.Name, ex);
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.CleanupItemFailed(entry.Name, ex);
                         }
                     }
                     else
@@ -294,7 +289,7 @@ namespace Microsoft.Extensions.Http
                     }
                 }
 
-                Log.CleanupCycleEnd(_logger, stopwatch.GetElapsedTime(), disposedCount, _expiredHandlers.Count);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.CleanupCycleEnd(stopwatch.GetElapsedTime(), disposedCount, _expiredHandlers.Count);
             }
             finally
             {
@@ -305,58 +300,6 @@ namespace Microsoft.Extensions.Http
             if (!_expiredHandlers.IsEmpty)
             {
                 StartCleanupTimer();
-            }
-        }
-
-        private static class Log
-        {
-            public static class EventIds
-            {
-                public static readonly EventId CleanupCycleStart = new EventId(100, "CleanupCycleStart");
-                public static readonly EventId CleanupCycleEnd = new EventId(101, "CleanupCycleEnd");
-                public static readonly EventId CleanupItemFailed = new EventId(102, "CleanupItemFailed");
-                public static readonly EventId HandlerExpired = new EventId(103, "HandlerExpired");
-            }
-
-            private static readonly Action<ILogger, int, Exception?> _cleanupCycleStart = LoggerMessage.Define<int>(
-                LogLevel.Debug,
-                EventIds.CleanupCycleStart,
-                "Starting HttpMessageHandler cleanup cycle with {InitialCount} items");
-
-            private static readonly Action<ILogger, double, int, int, Exception?> _cleanupCycleEnd = LoggerMessage.Define<double, int, int>(
-                LogLevel.Debug,
-                EventIds.CleanupCycleEnd,
-                "Ending HttpMessageHandler cleanup cycle after {ElapsedMilliseconds}ms - processed: {DisposedCount} items - remaining: {RemainingItems} items");
-
-            private static readonly Action<ILogger, string, Exception> _cleanupItemFailed = LoggerMessage.Define<string>(
-                LogLevel.Error,
-                EventIds.CleanupItemFailed,
-                "HttpMessageHandler.Dispose() threw an unhandled exception for client: '{ClientName}'");
-
-            private static readonly Action<ILogger, double, string, Exception?> _handlerExpired = LoggerMessage.Define<double, string>(
-                LogLevel.Debug,
-                EventIds.HandlerExpired,
-                "HttpMessageHandler expired after {HandlerLifetime}ms for client '{ClientName}'");
-
-
-            public static void CleanupCycleStart(ILogger logger, int initialCount)
-            {
-                _cleanupCycleStart(logger, initialCount, null);
-            }
-
-            public static void CleanupCycleEnd(ILogger logger, TimeSpan duration, int disposedCount, int finalCount)
-            {
-                _cleanupCycleEnd(logger, duration.TotalMilliseconds, disposedCount, finalCount, null);
-            }
-
-            public static void CleanupItemFailed(ILogger logger, string clientName, Exception exception)
-            {
-                _cleanupItemFailed(logger, clientName, exception);
-            }
-
-            public static void HandlerExpired(ILogger logger, string clientName, TimeSpan lifetime)
-            {
-                _handlerExpired(logger, lifetime.TotalMilliseconds, clientName, null);
             }
         }
     }
