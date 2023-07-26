@@ -119,6 +119,7 @@
       <_ApplePropertyNames Include="MainLibraryFileName" />
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
       <_ApplePropertyNames Include="UseRuntimeComponents" />
+      <_ApplePropertyNames Include="IncludesTestRunner" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
