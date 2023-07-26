@@ -40,6 +40,7 @@ iosnativeaot=false
 runtimetype=""
 iosllvmbuild=""
 iosstripsymbols=""
+hybridglobalization=false
 maui_version=""
 use_local_commit_time=false
 only_sanity=false
@@ -182,6 +183,10 @@ while (($# > 0)); do
       iosstripsymbols=$2
       shift 2
       ;;
+    --hybridglobalization)
+      hybridglobalization=true
+      shift 1
+      ;;
     --mauiversion)
       maui_version=$2
       shift 2
@@ -232,6 +237,7 @@ while (($# > 0)); do
       echo "  --iosnativeaot                 Set for ios Native AOT runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --iosstripsymbols              Set STRIP_DEBUG_SYMBOLS for iOS Mono/Maui runs"
+      echo "  --hybridglobalization          Set hybrid globalization for iOS Mono/Maui/Wasm runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
       echo "  --nodynamicpgo                 Set for No dynamic PGO runs"
@@ -356,6 +362,10 @@ fi
 
 if [[ "$physicalpromotion" == "true" ]]; then
     configurations="$configurations PhysicalPromotionType=physicalpromotion"
+fi
+
+if [[ $hybridglobalization ]]; then
+    configurations="$configurations HybridGlobalization=true"
 fi
 
 
@@ -494,6 +504,7 @@ Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iosstripsymbols" -is_multi_job_variable false
+Write-PipelineSetVariable -Name 'hybridGlobalization' -Value "$hybridglobalization" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'RuntimeType' -Value "$runtimetype" -is_multi_job_variable false
 Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
 

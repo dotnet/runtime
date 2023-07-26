@@ -116,6 +116,8 @@ jobs:
       extraSetupParameters: --architecture ${{ parameters.archType }} --iosmono --iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }}
     ${{ if in(parameters.runtimeType, 'iOSNativeAOT') }}:
       extraSetupParameters: --architecture ${{ parameters.archType }} --iosnativeaot --iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }}
+    ${{ if eq(parameters.hybridGlobalization, true) }}:
+      extraSetupParameters: --hybridglobalization
 
     variables:
     - ${{ each variable in parameters.variables }}:

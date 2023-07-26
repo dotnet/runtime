@@ -35,7 +35,7 @@ build-appbundle: clean appbuilder
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	/p:DeployAndRun=false \
-    /p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
+	/p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
 	/bl
 
 run: clean appbuilder
