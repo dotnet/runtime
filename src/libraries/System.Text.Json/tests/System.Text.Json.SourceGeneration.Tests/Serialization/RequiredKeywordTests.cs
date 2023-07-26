@@ -18,6 +18,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
         }
 
+        [JsonSerializable(typeof(InheritedPersonWithRequiredMembers))]
         [JsonSerializable(typeof(PersonWithRequiredMembers))]
         [JsonSerializable(typeof(PersonWithRequiredMembersAndSmallParametrizedCtor))]
         [JsonSerializable(typeof(PersonWithRequiredMembersAndLargeParametrizedCtor))]

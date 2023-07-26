@@ -143,6 +143,26 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("Info2", exception.Message);
         }
 
+        [Fact]
+        public async Task InheritedPersonWithRequiredMembersWorksAsExpected()
+        {
+            var options = new JsonSerializerOptions(Serializer.DefaultOptions) { IncludeFields = true };
+            options.MakeReadOnly();
+
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(InheritedPersonWithRequiredMembers));
+            Assert.Equal(3, typeInfo.Properties.Count);
+
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<InheritedPersonWithRequiredMembers>(options),
+                nameof(InheritedPersonWithRequiredMembers.FirstName),
+                nameof(InheritedPersonWithRequiredMembers.LastName));
+
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper("{}", typeInfo));
+        }
+
+        public class InheritedPersonWithRequiredMembers : PersonWithRequiredMembers
+        {
+        }
+
         public class PersonWithRequiredMembersAndSmallParametrizedCtor
         {
             public required string FirstName { get; set; }
