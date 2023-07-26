@@ -329,6 +329,8 @@ public class GenerateWasmBootJson : Task
             }
         }
 
+        ComputeResourcesHash(result);
+
         var serializer = new DataContractJsonSerializer(typeof(BootJsonData), new DataContractJsonSerializerSettings
         {
             UseSimpleDictionaryFormat = true,
@@ -347,6 +349,37 @@ public class GenerateWasmBootJson : Task
                 resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("FileHash")}");
             }
         }
+    }
+
+    private static void ComputeResourcesHash(BootJsonData bootConfig)
+    {
+        var sb = new StringBuilder();
+
+        static void AddDictionary(StringBuilder sb, Dictionary<string, string> res)
+        {
+            foreach (var asset in res)
+                sb.Append(asset.Value);
+        }
+
+        AddDictionary(sb, bootConfig.resources.assembly);
+        AddDictionary(sb, bootConfig.resources.runtime);
+
+        if (bootConfig.resources.lazyAssembly != null)
+            AddDictionary(sb, bootConfig.resources.lazyAssembly);
+
+        if (bootConfig.resources.satelliteResources != null)
+        {
+            foreach (var culture in bootConfig.resources.satelliteResources)
+                AddDictionary(sb, culture.Value);
+        }
+
+        if (bootConfig.resources.vfs != null)
+        {
+            foreach (var entry in bootConfig.resources.vfs)
+                AddDictionary(sb, entry.Value);
+        }
+
+        bootConfig.resources.hash = Utils.ComputeTextIntegrity(sb.ToString());
     }
 
     private GlobalizationMode GetGlobalizationMode()

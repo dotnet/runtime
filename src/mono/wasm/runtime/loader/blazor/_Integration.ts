@@ -5,7 +5,7 @@ import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/inter
 import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadingResource, type WebAssemblyBootResourceType } from "../../types";
 import type { BootJsonData } from "../../types/blazor";
 
-import { ENVIRONMENT_IS_WEB, loaderHelpers } from "../globals";
+import { ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert } from "../globals";
 import { loadResource } from "../resourceLoader";
 import { appendUniqueQuery } from "../assets";
 import { hasDebuggingEnabled } from "../config";
@@ -132,7 +132,6 @@ function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
     config.cacheBootResources = bootConfig.cacheBootResources;
     config.linkerEnabled = bootConfig.linkerEnabled;
     config.remoteSources = (resources as any).remoteSources;
-    config.assetsHash = bootConfig.resources.hash;
     config.assets = assets;
     config.extensions = bootConfig.extensions;
     config.resources = {
@@ -277,7 +276,9 @@ function fileName(name: string) {
     return name.substring(lastIndexOfSlash);
 }
 
-function getICUResourceName(bootConfig: BootJsonData, moduleConfig: MonoConfigInternal, culture: string | undefined): string {
+function getICUResourceName(bootConfig: MonoConfigInternal, moduleConfig: MonoConfigInternal, culture: string | undefined): string {
+    mono_assert(bootConfig.resources?.runtime, "Boot config does not contain runtime resources");
+
     if (bootConfig.globalizationMode === GlobalizationMode.Custom) {
         const icuFiles = Object
             .keys(bootConfig.resources.runtime)

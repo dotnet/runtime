@@ -86,10 +86,6 @@ export type MonoConfig = {
      */
     startupMemoryCache?: boolean,
     /**
-     * hash of assets
-     */
-    assetsHash?: string,
-    /**
      * application environment
      */
     applicationEnvironment?: string,
