@@ -19,8 +19,8 @@ namespace XUnitWrapperGenerator
         ///   whether the current target is an executable.
         /// </summary>
         /// <remarks>
-        ///   Replacement for CSharpCompilation.GetEntryPoint() which only works for executables
-        ///   Replacement for its helper that are internal.
+        ///   Replacement for CSharpCompilation.GetEntryPoint() which only works for executables.
+        ///   Replacement for its helpers that are internal.
         ///
         ///   Intended for the analyzer that is trying to find Main methods that won't be called in
         ///   merged test groups. Ignores details such as SynthesizedSimpleProgramEntryPointSymbol.
