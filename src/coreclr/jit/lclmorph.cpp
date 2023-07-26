@@ -936,18 +936,51 @@ private:
                 var_types elementType = indir->TypeGet();
                 lclNode               = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
 
-                if (elementType == TYP_FLOAT)
+                switch (elementType)
                 {
-                    GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
-                    hwiNode = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode, CORINFO_TYPE_FLOAT,
-                                                                  genTypeSize(varDsc));
-                }
-                else
-                {
-                    assert(elementType == TYP_SIMD12);
-                    assert(genTypeSize(varDsc) == 16);
-                    hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
-                                                                   CORINFO_TYPE_FLOAT, 16);
+                    case TYP_FLOAT:
+                    {
+                        GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
+                        hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
+                                                                      CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                        break;
+                    }
+                    case TYP_SIMD12:
+                    {
+                        assert(genTypeSize(varDsc) == 16);
+                        hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
+                                                                       CORINFO_TYPE_FLOAT, 16);
+                        break;
+                    }
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+                    case TYP_SIMD16:
+                    case TYP_SIMD32:
+                    {
+                        if ((elementType == TYP_SIMD16) && (varDsc->TypeGet() == TYP_SIMD64))
+                        {
+                            assert(m_compiler->IsBaselineVector512IsaSupportedDebugOnly());
+                            hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, lclNode,
+                                                                           m_compiler->gtNewIconNode(offset / 16),
+                                                                           NI_AVX512F_ExtractVector128,
+                                                                           CORINFO_TYPE_FLOAT, 64);
+                        }
+                        else if (offset == 0)
+                        {
+                            hwiNode = m_compiler->gtNewSimdGetLowerNode(elementType, lclNode, CORINFO_TYPE_FLOAT,
+                                                                        genTypeSize(varDsc));
+                        }
+                        else
+                        {
+                            assert(offset == genTypeSize(elementType));
+                            hwiNode = m_compiler->gtNewSimdGetUpperNode(elementType, lclNode, CORINFO_TYPE_FLOAT,
+                                                                        genTypeSize(varDsc));
+                        }
+
+                        break;
+                    }
+#endif
+                    default:
+                        unreached();
                 }
 
                 indir = hwiNode;
@@ -962,23 +995,56 @@ private:
                 GenTree*  simdLclNode = m_compiler->gtNewLclVarNode(lclNum);
                 GenTree*  elementNode = indir->AsIndir()->Data();
 
-                if (elementType == TYP_FLOAT)
+                switch (elementType)
                 {
-                    GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
-                    hwiNode =
-                        m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
-                                                             CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
-                }
-                else
-                {
-                    assert(elementType == TYP_SIMD12);
-                    assert(varDsc->TypeGet() == TYP_SIMD16);
+                    case TYP_FLOAT:
+                    {
+                        GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
+                        hwiNode =
+                            m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
+                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                        break;
+                    }
+                    case TYP_SIMD12:
+                    {
+                        assert(varDsc->TypeGet() == TYP_SIMD16);
 
-                    // We inverse the operands here and take elementNode as the main value and simdLclNode[3] as the
-                    // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
-                    GenTree* indexNode = m_compiler->gtNewIconNode(3, TYP_INT);
-                    hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
-                                                                   CORINFO_TYPE_FLOAT, 16);
+                        // We inverse the operands here and take elementNode as the main value and simdLclNode[3] as the
+                        // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
+                        GenTree* indexNode = m_compiler->gtNewIconNode(3, TYP_INT);
+                        hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
+                                                                       CORINFO_TYPE_FLOAT, 16);
+                        break;
+                    }
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+                    case TYP_SIMD16:
+                    case TYP_SIMD32:
+                    {
+                        if ((elementType == TYP_SIMD16) && (varDsc->TypeGet() == TYP_SIMD64))
+                        {
+                            assert(m_compiler->IsBaselineVector512IsaSupportedDebugOnly());
+                            hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD64, simdLclNode,
+                                                                           m_compiler->gtNewIconNode(offset / 16),
+                                                                           elementNode, NI_AVX512F_InsertVector128,
+                                                                           CORINFO_TYPE_FLOAT, 64);
+                        }
+                        else if (offset == 0)
+                        {
+                            hwiNode = m_compiler->gtNewSimdWithLowerNode(varDsc->TypeGet(), simdLclNode, elementNode,
+                                                                         CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                        }
+                        else
+                        {
+                            assert(offset == genTypeSize(elementType));
+                            hwiNode = m_compiler->gtNewSimdWithUpperNode(varDsc->TypeGet(), simdLclNode, elementNode,
+                                                                         CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                        }
+
+                        break;
+                    }
+#endif
+                    default:
+                        unreached();
                 }
 
                 indir->ChangeType(varDsc->TypeGet());
@@ -1112,9 +1178,10 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
             if (varTypeIsSIMD(varDsc))
             {
-                // We have two cases we want to handle:
+                // We have three cases we want to handle:
                 // 1. Vector2/3/4 and Quaternion where we have 4x float fields
                 // 2. Plane where we have 1x Vector3 and 1x float field
+                // 3. Accesses of halves/quarters of larger SIMD types
 
                 if (indir->TypeIs(TYP_FLOAT))
                 {
@@ -1125,11 +1192,17 @@ private:
                 }
                 else if (indir->TypeIs(TYP_SIMD12))
                 {
-                    if ((offset == 0) && m_compiler->IsBaselineSimdIsaSupported())
+                    if ((offset == 0) && (varDsc->TypeGet() == TYP_SIMD16) && m_compiler->IsBaselineSimdIsaSupported())
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
                 }
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+                else if (indir->TypeIs(TYP_SIMD16, TYP_SIMD32) && ((offset % genTypeSize(indir)) == 0))
+                {
+                    return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
+                }
+#endif // FEATURE_SIMD && TARGET_XARCH
             }
 #endif // FEATURE_HW_INTRINSICS
 
