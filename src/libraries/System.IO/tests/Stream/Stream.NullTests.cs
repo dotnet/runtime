@@ -34,6 +34,13 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public static async Task TestNullStream_DisposeAsync()
+        {
+            await Stream.Null.DisposeAsync();
+            await Stream.Null.DisposeAsync(); // Dispose shouldn't have any side effects
+        }
+
+        [Fact]
         public static async Task TestNullStream_CopyTo()
         {
             Stream source = Stream.Null;
@@ -135,6 +142,16 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(NullReaders))]
+        public static async Task TestNullTextReaderDisposeAsync(TextReader input)
+        {
+            // dispose should be a no-op
+            await input.DisposeAsync();
+            await input.DisposeAsync();
+            Assert.Equal("", input.ReadToEnd());
+        }
+
+        [Theory]
+        [MemberData(nameof(NullReaders))]
         public static void TestNullTextReader(TextReader input)
         {
             StreamReader sr = input as StreamReader;
@@ -174,6 +191,22 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(NullReaders))]
+        public static async Task TestNullTextReaderAsync_DisposeAsync(TextReader input)
+        {
+            var chars = new char[2];
+            Assert.Equal(0, await input.ReadAsync(chars, 0, chars.Length));
+            Assert.Equal(0, await input.ReadAsync(chars.AsMemory(), default));
+            Assert.Equal(0, await input.ReadBlockAsync(chars, 0, chars.Length));
+            Assert.Equal(0, await input.ReadBlockAsync(chars.AsMemory(), default));
+            Assert.Null(await input.ReadLineAsync());
+            Assert.Null(await input.ReadLineAsync(default));
+            Assert.Equal("", await input.ReadToEndAsync());
+            Assert.Equal("", await input.ReadToEndAsync(default));
+            await input.DisposeAsync();
+        }
+
+        [Theory]
+        [MemberData(nameof(NullReaders))]
         public static async Task TestCanceledNullTextReaderAsync(TextReader input)
         {
             using CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -193,6 +226,76 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [MemberData(nameof(NullReaders))]
+        public static async Task TestCanceledNullTextReaderAsync_DisposeAsync(TextReader input)
+        {
+            using CancellationTokenSource tokenSource = new CancellationTokenSource();
+            tokenSource.Cancel();
+            var token = tokenSource.Token;
+            var chars = new char[2];
+            OperationCanceledException ex;
+            ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await input.ReadAsync(chars.AsMemory(), token));
+            Assert.Equal(token, ex.CancellationToken);
+            ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await input.ReadBlockAsync(chars.AsMemory(), token));
+            Assert.Equal(token, ex.CancellationToken);
+            ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await input.ReadLineAsync(token));
+            Assert.Equal(token, ex.CancellationToken);
+            ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await input.ReadToEndAsync(token));
+            Assert.Equal(token, ex.CancellationToken);
+            await input.DisposeAsync();
+        }
+
+        [Theory]
+        [MemberData(nameof(NullReaders))]
+        public static void TestNullTextReader_Disposed(TextReader input)
+        {
+            StreamReader sr = input as StreamReader;
+
+            input.Dispose();
+
+            if (sr != null)
+                Assert.True(sr.EndOfStream, "EndOfStream property didn't return true");
+            Assert.Null(input.ReadLine());
+            if (sr != null)
+                Assert.True(sr.EndOfStream, "EndOfStream property didn't return true");
+
+            Assert.Equal(-1, input.Read());
+            Assert.Equal(-1, input.Peek());
+            var chars = new char[2];
+            Assert.Equal(0, input.Read(chars, 0, chars.Length));
+            Assert.Equal(0, input.Read(chars.AsSpan()));
+            Assert.Equal(0, input.ReadBlock(chars, 0, chars.Length));
+            Assert.Equal(0, input.ReadBlock(chars.AsSpan()));
+            Assert.Equal("", input.ReadToEnd());
+            input.Dispose();
+        }
+
+        [Theory]
+        [MemberData(nameof(NullReaders))]
+        public static async Task TestNullTextReader_DisposedAsync(TextReader input)
+        {
+            StreamReader sr = input as StreamReader;
+
+            await input.DisposeAsync();
+
+            if (sr != null)
+                Assert.True(sr.EndOfStream, "EndOfStream property didn't return true");
+            Assert.Null(input.ReadLine());
+            if (sr != null)
+                Assert.True(sr.EndOfStream, "EndOfStream property didn't return true");
+
+            Assert.Equal(-1, input.Read());
+            Assert.Equal(-1, input.Peek());
+            var chars = new char[2];
+            Assert.Equal(0, await input.ReadAsync(chars, 0, chars.Length));
+            Assert.Equal(0, input.Read(chars.AsSpan()));
+            Assert.Equal(0, await input.ReadBlockAsync(chars, 0, chars.Length));
+            Assert.Equal(0, input.ReadBlock(chars.AsSpan()));
+            Assert.Equal("", await input.ReadToEndAsync());
+            await input.DisposeAsync();
+        }
+
+        [Theory]
         [MemberData(nameof(NullWriters))]
         public static void TextNullTextWriter(TextWriter output)
         {
@@ -204,6 +307,20 @@ namespace System.IO.Tests
             output.WriteLine();
             output.Flush();
             output.Dispose();
+        }
+
+        [Theory]
+        [MemberData(nameof(NullWriters))]
+        public static async Task TextNullTextWriterAsync(TextWriter output)
+        {
+            await output.FlushAsync();
+            await output.DisposeAsync();
+
+            await output.WriteLineAsync(decimal.MinValue.ToString());
+            await output.WriteLineAsync(Math.PI.ToString());
+            await output.WriteLineAsync(output.NewLine);
+            await output.FlushAsync();
+            await output.DisposeAsync();
         }
 
         [Theory]

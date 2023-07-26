@@ -310,5 +310,31 @@ namespace System.IO.Tests
                 }
             }
         }
+
+        [Fact]
+        public void DisposeAsync_InvokesDisposeSynchronously()
+        {
+            bool disposeInvoked = false;
+            var tw = new InvokeActionOnDisposeTextReader() { DisposeAction = () => disposeInvoked = true };
+            Assert.False(disposeInvoked);
+            Assert.True(tw.DisposeAsync().IsCompletedSuccessfully);
+            Assert.True(disposeInvoked);
+        }
+
+        [Fact]
+        public void DisposeAsync_ExceptionReturnedInTask()
+        {
+            Exception e = new FormatException();
+            var tw = new InvokeActionOnDisposeTextReader() { DisposeAction = () => { throw e; } };
+            ValueTask vt = tw.DisposeAsync();
+            Assert.True(vt.IsFaulted);
+            Assert.Same(e, vt.AsTask().Exception.InnerException);
+        }
+
+        private sealed class InvokeActionOnDisposeTextReader : TextReader
+        {
+            public Action DisposeAction;
+            protected override void Dispose(bool disposing) => DisposeAction?.Invoke();
+        }
     }
 }

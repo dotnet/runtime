@@ -10210,6 +10210,7 @@ namespace System.IO
         public override void Close() { }
         public void DiscardBufferedData() { }
         protected override void Dispose(bool disposing) { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override int Peek() { throw null; }
         public override int Read() { throw null; }
         public override int Read(char[] buffer, int index, int count) { throw null; }
@@ -10325,13 +10326,14 @@ namespace System.IO
         public override System.Threading.Tasks.Task WriteLineAsync(string? value) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
-    public abstract partial class TextReader : System.MarshalByRefObject, System.IDisposable
+    public abstract partial class TextReader : System.MarshalByRefObject, System.IAsyncDisposable, System.IDisposable
     {
         public static readonly System.IO.TextReader Null;
         protected TextReader() { }
         public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public virtual int Peek() { throw null; }
         public virtual int Read() { throw null; }
         public virtual int Read(char[] buffer, int index, int count) { throw null; }

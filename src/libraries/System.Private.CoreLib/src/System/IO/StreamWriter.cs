@@ -214,10 +214,10 @@ namespace System.IO
 
         private void CloseStreamFromDispose(bool disposing)
         {
-            try
+            // Dispose of our resources if this StreamWriter is closable.
+            if (_closable && !_disposed)
             {
-                // Dispose of our resources if this StreamWriter is closable.
-                if (_closable && !_disposed)
+                try
                 {
                     // Attempt to close the stream even if there was an IO error from Flushing.
                     // Note that Stream.Close() can potentially throw here (may or may not be
@@ -228,12 +228,12 @@ namespace System.IO
                         _stream.Close();
                     }
                 }
-            }
-            finally
-            {
-                _disposed = true;
-                _charLen = 0;
-                base.Dispose(disposing);
+                finally
+                {
+                    _disposed = true;
+                    _charLen = 0;
+                    base.Dispose(disposing);
+                }
             }
         }
 
@@ -255,9 +255,34 @@ namespace System.IO
             }
             finally
             {
-                CloseStreamFromDispose(disposing: true);
+                await CloseStreamFromDisposeAsync(disposing: true).ConfigureAwait(false);
             }
             GC.SuppressFinalize(this);
+        }
+
+        private async ValueTask CloseStreamFromDisposeAsync(bool disposing)
+        {
+            // Dispose of our resources if this StreamWriter is closable.
+            if (_closable && !_disposed)
+            {
+                try
+                {
+                    // Attempt to close the stream even if there was an IO error from Flushing.
+                    // Note that Stream.Close() can potentially throw here (may or may not be
+                    // due to the same Flush error). In this case, we still need to ensure
+                    // cleaning up internal resources, hence the finally block.
+                    if (disposing)
+                    {
+                        await _stream.DisposeAsync().ConfigureAwait(false);
+                    }
+                }
+                finally
+                {
+                    _disposed = true;
+                    _charLen = 0;
+                    await base.DisposeAsync().ConfigureAwait(false);
+                }
+            }
         }
 
         public override void Flush()
