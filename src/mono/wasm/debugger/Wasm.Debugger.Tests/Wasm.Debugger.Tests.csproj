@@ -76,6 +76,8 @@
       <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24TEST_ARGS</RunScriptCommand>
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) %TEST_ARGS%</RunScriptCommand>
 
+      <RunScriptCommand>$(RunScriptCommand) --blame</RunScriptCommand>
+
       <!--<RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -v normal</RunScriptCommand>-->
       <RunScriptCommand>$(RunScriptCommand) -v diag</RunScriptCommand>
     </PropertyGroup>
