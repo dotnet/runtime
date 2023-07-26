@@ -246,6 +246,12 @@ namespace HostActivation.Tests
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
                 .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+
+            if (OperatingSystem.IsWindows())
+            {
+                // StandaloneApp sets FileVersion to NETCoreApp version. On Windows, this should be copied to apphost resources.
+                Assert.Equal(System.Diagnostics.FileVersionInfo.GetVersionInfo(appExe).FileVersion, sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+            }
         }
 
         [Fact]
