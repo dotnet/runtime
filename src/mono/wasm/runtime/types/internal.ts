@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceList, ResourceRequest, RuntimeAPI, WebAssemblyBootResourceType } from ".";
+import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceList, ResourceRequest, RuntimeAPI } from ".";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -143,8 +143,8 @@ export type LoaderHelpers = {
     err(message: string): void;
 
     hasDebuggingEnabled(config: MonoConfig): boolean,
-    loadResources(resources: ResourceList, url: (name: string) => string, resourceType: WebAssemblyBootResourceType): LoadingResource[],
-    loadResource(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): LoadingResource,
+    loadResources(resources: ResourceList, url: (name: string) => string, behavior: AssetBehaviours): LoadingResource[],
+    loadResource(name: string, url: string, contentHash: string, behavior: AssetBehaviours): LoadingResource,
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,

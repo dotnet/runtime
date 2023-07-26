@@ -12,7 +12,7 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
 
     await Promise.all(culturesToLoad!
         .filter(culture => Object.prototype.hasOwnProperty.call(satelliteResources, culture))
-        .map(culture => loaderHelpers.loadResources(satelliteResources[culture], fileName => loaderHelpers.locateFile(fileName), "assembly"))
+        .map(culture => loaderHelpers.loadResources(satelliteResources[culture], fileName => loaderHelpers.locateFile(fileName), "resource"))
         .reduce((previous, next) => previous.concat(next), new Array<LoadingResource>())
         .map(async resource => {
             const response = await resource.response;
