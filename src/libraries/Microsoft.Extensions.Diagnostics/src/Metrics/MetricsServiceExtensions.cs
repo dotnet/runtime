@@ -28,6 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddOptions();
 
             services.TryAddSingleton<IMeterFactory, DefaultMeterFactory>();
+            services.TryAddSingleton<IMetricsSubscriptionManager, MetricsSubscriptionManager>();
 
             return services;
         }

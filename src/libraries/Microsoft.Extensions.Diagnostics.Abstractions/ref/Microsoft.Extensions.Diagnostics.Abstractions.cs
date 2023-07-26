@@ -49,4 +49,9 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         public IList<InstrumentEnableRule> Rules { get; } = null!;
     }
+
+    public interface IMetricsSubscriptionManager
+    {
+        public void Start();
+    }
 }

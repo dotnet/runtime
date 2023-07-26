@@ -320,6 +320,7 @@ namespace Microsoft.Extensions.Hosting
             {
                 metrics.AddConfiguration(hostingContext.Configuration.GetSection("Metrics"));
             });
+            services.AddHostedService<MetricsHostedService>();
         }
 
         internal static ServiceProviderOptions CreateDefaultServiceProviderOptions(HostBuilderContext context)

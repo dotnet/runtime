@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     public static class MetricsBuilderConsoleExtensions
     {
-        public static IMetricsBuilder AddConsole(this IMetricsBuilder builder) => throw null!;
+        public static IMetricsBuilder AddDebugConsole(this IMetricsBuilder builder) => throw null!;
     }
     public static class MetricsBuilderEnableExtensions
     {
