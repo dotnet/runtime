@@ -12019,7 +12019,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                         break;
                     }
 
-                    if (!op2->IsVectorZero() || gtIsActiveCSE_Candidate(op2)) 
+                    if (!op2->IsVectorZero() || gtIsActiveCSE_Candidate(op2))
                     {
                         break;
                     }
@@ -12037,8 +12037,11 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 
                             // Transform Vector128.AndNot(op1, op2) == Vector128<byte>.Zero to Sse41.TestC(op2, op1);
                             // Transform Vector128.And(op1, op2) == Vector128<byte>.Zero to Sse41.TestZ(op1, op2);
-                            GenTree* newNode = gtNewSimdAsHWIntrinsicNode(hw->TypeGet(), op1->AsHWIntrinsic()->Op(1), op1->AsHWIntrinsic()->Op(2),
-                                                                          ni ==  NamedIntrinsic::NI_SSE2_AndNot ? NamedIntrinsic::NI_SSE41_TestC : NamedIntrinsic::NI_SSE41_TestZ, 
+                            GenTree* newNode = gtNewSimdAsHWIntrinsicNode(hw->TypeGet(), op1->AsHWIntrinsic()->Op(1),
+                                                                          op1->AsHWIntrinsic()->Op(2),
+                                                                          ni == NamedIntrinsic::NI_SSE2_AndNot
+                                                                              ? NamedIntrinsic::NI_SSE41_TestC
+                                                                              : NamedIntrinsic::NI_SSE41_TestZ,
                                                                           hw->GetSimdBaseJitType(), hw->GetSimdSize());
 
                             DEBUG_DESTROY_NODE(hw);
@@ -12059,8 +12062,11 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 
                             // Transform Vector256.AndNot(op1, op2) == Vector128<byte>.Zero to Avx.TestC(op2, op1);
                             // Transform Vector256.And(op1, op2) == Vector256<byte>.Zero to Avx.TestZ(op1, op2);
-                            GenTree* newNode = gtNewSimdAsHWIntrinsicNode(hw->TypeGet(), op1->AsHWIntrinsic()->Op(1), op1->AsHWIntrinsic()->Op(2),
-                                                                          ni == NamedIntrinsic::NI_AVX2_AndNot ? NamedIntrinsic::NI_AVX_TestC : NamedIntrinsic::NI_AVX_TestZ, 
+                            GenTree* newNode = gtNewSimdAsHWIntrinsicNode(hw->TypeGet(), op1->AsHWIntrinsic()->Op(1),
+                                                                          op1->AsHWIntrinsic()->Op(2),
+                                                                          ni == NamedIntrinsic::NI_AVX2_AndNot
+                                                                              ? NamedIntrinsic::NI_AVX_TestC
+                                                                              : NamedIntrinsic::NI_AVX_TestZ,
                                                                           hw->GetSimdBaseJitType(), hw->GetSimdSize());
 
                             DEBUG_DESTROY_NODE(hw);
