@@ -289,11 +289,17 @@ set(interp_sources
     interp/tiering.h
     interp/tiering.c
     interp/jiterpreter.c)
+set(interp_simd_sources
+    interp/interp-simd.c)
 set(interp_stub_sources
     interp-stubs.c)
 
 if(NOT DISABLE_INTERPRETER)
-set(mini_interp_sources ${interp_sources})
+  if(HOST_WASM)
+    set(mini_interp_sources ${interp_sources})
+  else()
+    set(mini_interp_sources ${interp_sources} ${interp_simd_sources})
+  endif()
 else()
 set(mini_interp_sources ${interp_stub_sources})
 endif()
@@ -567,7 +573,10 @@ if(NOT DISABLE_EXECUTABLES)
       set_target_properties(mono-sgen PROPERTIES INSTALL_RPATH "$ORIGIN")
     endif()
   endif()
-  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static mono-wasm-nosimd)
+  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static)
+  if (HOST_WASM)
+    target_link_libraries(mono-sgen PRIVATE mono-wasm-nosimd)
+  endif()
   if(HAVE_ICU_SHIM)
     target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
   endif()
