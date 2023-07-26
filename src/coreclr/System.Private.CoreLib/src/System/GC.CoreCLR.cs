@@ -904,8 +904,8 @@ namespace System
         ///
         /// As of now, this API is feature preview only and subject to changes as necessary.
         ///
-        /// <exception cref="InvalidOperationException">If the hard limit is too low. This can happen if the heap hard limit that the refresh will set, either because of new AppData settings or implied by the container memory limit changes, is lower than what is already committed.</exception>"
-        /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>"
+        /// <exception cref="InvalidOperationException">If the hard limit is too low. This can happen if the heap hard limit that the refresh will set, either because of new AppData settings or implied by the container memory limit changes, is lower than what is already committed.</exception>
+        /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>
         ///
         /// </summary>
         [RequiresPreviewFeatures("RefreshMemoryLimit is in preview.")]
