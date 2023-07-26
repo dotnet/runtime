@@ -536,24 +536,23 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	struct fpsimd_context *fpctx = (struct fpsimd_context*)&((ucontext_t*)sigctx)->uc_mcontext.__reserved;
 
 	size_t size = 0;
-    do
-    {
-        struct fpsimd_context *fpctx_temp = (struct fpsimd_context *)&(((ucontext_t*)sigctx)->uc_mcontext.__reserved[size]);
+	do {
+		struct fpsimd_context *fpctx_temp = (struct fpsimd_context*)&(((ucontext_t*)sigctx)->uc_mcontext.__reserved[size]);
 
-        if(fpctx_temp->head.magic == FPSIMD_MAGIC)
-        {
-            g_assert (fpctx_temp->head.size >= sizeof(struct fpsimd_context));
-            g_assert (size + fpctx_temp->head.size <= sizeof(((ucontext_t*)sigctx)->uc_mcontext.__reserved));
+		if (fpctx_temp->head.magic == FPSIMD_MAGIC)
+		{
+			g_assert (fpctx_temp->head.size >= sizeof (struct fpsimd_context));
+			g_assert (size + fpctx_temp->head.size <= sizeof (((ucontext_t*)sigctx)->uc_mcontext.__reserved));
 
 			fpctx = fpctx_temp;
 			break;
-        }
+		}
 
-        if (fpctx_temp->head.size == 0)
+		if (fpctx_temp->head.size == 0)
 			break;
 
-        size += fpctx_temp->head.size;
-    } while (size + sizeof(struct fpsimd_context) <= sizeof(((ucontext_t*)sigctx)->uc_mcontext.__reserved));
+		size += fpctx_temp->head.size;
+	} while (size + sizeof (struct fpsimd_context) <= sizeof (((ucontext_t*)sigctx)->uc_mcontext.__reserved));
 
 	for (int i = 0; i < 32; ++i)
 		mctx->fregs [i] = fpctx->vregs [i];
