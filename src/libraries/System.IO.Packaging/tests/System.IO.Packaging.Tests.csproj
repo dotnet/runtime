@@ -5,6 +5,9 @@
   <ItemGroup>
     <Compile Include="Tests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <Compile Include="ReflectionTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Packaging.TestData" Version="$(SystemIOPackagingTestDataVersion)" />
     <ProjectReference Include="..\src\System.IO.Packaging.csproj" />
