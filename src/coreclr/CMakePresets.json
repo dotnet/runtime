@@ -19,7 +19,6 @@
       "hidden": true,
       "inherits": "base",
       "cacheVariables": {
-        "CMAKE_SYSTEM_VERSION": "10.0",
         "CLR_CMAKE_TARGET_OS": "windows",
         "CLI_CMAKE_FALLBACK_OS": "win10"
       },
