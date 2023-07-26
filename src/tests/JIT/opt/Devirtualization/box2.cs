@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 class Program
 {
@@ -19,8 +20,6 @@ class Program
         }
     }
 
-    public static void TestEntryPoint()
-    {
-        Task.Run(TestTask);
-    }
+    [Fact]
+    public static void TestEntryPoint() => Task.Run(TestTask).Wait();
 }
