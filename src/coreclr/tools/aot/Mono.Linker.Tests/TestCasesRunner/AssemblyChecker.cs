@@ -56,7 +56,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				// Ignore NativeAOT injected members
 				"<Module>.StartupCodeMain(Int32,IntPtr)",
-				"<Module>.MainMethodWrapper()",
+				"<Module>.MainMethodWrapper(String[])",
 
 				// Ignore compiler generated code which can't be reasonably matched to the source method
 				"<PrivateImplementationDetails>",
@@ -144,6 +144,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static bool IsCompilerGeneratedMember (IMemberDefinition member)
 		{
+			if (member is MethodDefinition method && method.Name.Contains("<Main>$"))
+				return false;
+
 			if (IsCompilerGeneratedMemberName (member.Name))
 				return true;
 
