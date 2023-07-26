@@ -3,9 +3,8 @@
 
 using System;
 using System.IO;
-using System.Linq;
-using System.Text;
-using Mono.Cecil.Binary;
+using System.Reflection.PortableExecutable;
+using ILCompiler.Win32Resources;
 
 namespace Microsoft.NET.HostModel
 {
@@ -17,8 +16,8 @@ namespace Microsoft.NET.HostModel
     public class ResourceUpdater : IDisposable
     {
         private readonly FileStream stream;
-        private readonly Image image;
-        private readonly ResourceDirectoryTable resourceDirectory;
+        private readonly PEReader _reader;
+        private readonly ResourceData _resourceData;
 
         ///<summary>
         /// Determines if the ResourceUpdater is supported by the current operating system.
@@ -44,71 +43,14 @@ namespace Microsoft.NET.HostModel
             try
             {
                 stream = new FileStream(peFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-                image = ImageReader.Read(new BinaryReader(stream, Encoding.UTF8, true)).Image;
-                resourceDirectory = image.ResourceDirectoryRoot;
+                _reader = new PEReader(stream, PEStreamOptions.LeaveOpen);
+                _resourceData = new ResourceData(_reader);
             }
             catch (Exception)
             {
                 stream?.Dispose();
                 throw;
             }
-        }
-
-        private static ResourceDirectoryEntry FindOrCreateEntry(ResourceDirectoryTable table, int key)
-        {
-            foreach (ResourceDirectoryEntry tableEntry in table.Entries)
-            {
-                if (!tableEntry.IdentifiedByName && tableEntry.ID == key)
-                    return tableEntry;
-            }
-
-            var newEntry = new ResourceDirectoryEntry(key);
-            table.Entries.Add(newEntry);
-            return newEntry;
-        }
-
-        private static ResourceDirectoryTable FindOrCreateChildDirectory(ResourceDirectoryTable table, int key)
-        {
-            var entry = FindOrCreateEntry(table, key);
-            if (entry.Child is ResourceDirectoryTable directory)
-                return directory;
-            if (entry.Child != null)
-                throw new InvalidOperationException("Found entry is not Directory");
-            directory = new ResourceDirectoryTable { MajorVersion = 4, MinorVersion = 0, };
-            entry.Child = directory;
-            return directory;
-        }
-
-        private static ResourceDirectoryEntry FindOrCreateEntry(ResourceDirectoryTable table, string key)
-        {
-            foreach (ResourceDirectoryEntry tableEntry in table.Entries)
-            {
-                if (tableEntry.IdentifiedByName && tableEntry.Name.String == key)
-                    return tableEntry;
-            }
-
-            var newEntry = new ResourceDirectoryEntry(new ResourceDirectoryString(key));
-            table.Entries.Add(newEntry);
-            return newEntry;
-        }
-
-        private static ResourceDirectoryTable FindOrCreateChildDirectory(ResourceDirectoryTable table, string key)
-        {
-            var entry = FindOrCreateEntry(table, key);
-            if (entry.Child is ResourceDirectoryTable directory)
-                return directory;
-            if (entry.Child != null)
-                throw new InvalidOperationException("Found entry is not Directory");
-            directory = new ResourceDirectoryTable { MajorVersion = 4, MinorVersion = 0, };
-            entry.Child = directory;
-            return directory;
-        }
-
-        private static ResourceDirectoryTable FindOrCreateChildDirectory(ResourceDirectoryTable table, ResourceDirectoryEntry keyHolder)
-        {
-            return keyHolder.IdentifiedByName
-                ? FindOrCreateChildDirectory(table, keyHolder.Name.String)
-                : FindOrCreateChildDirectory(table, keyHolder.ID);
         }
 
         /// <summary>
@@ -120,28 +62,9 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public ResourceUpdater AddResourcesFromPEImage(string peFile)
         {
-            var module = ImageReader.Read(peFile).Image;
-
-            foreach (ResourceDirectoryEntry lpType in module.ResourceDirectoryRoot.Entries)
-            {
-                var typeDirectory = FindOrCreateChildDirectory(resourceDirectory, lpType);
-                foreach (ResourceDirectoryEntry lpName in ((ResourceDirectoryTable)lpType.Child).Entries)
-                {
-                    var nameDirectory = FindOrCreateChildDirectory(typeDirectory, lpName);
-                    foreach (ResourceDirectoryEntry wLang in ((ResourceDirectoryTable)lpName.Child).Entries)
-                    {
-                        var hResource = (ResourceDataEntry)wLang.Child;
-                        var entry = FindOrCreateEntry(nameDirectory, wLang.ID);
-                        entry.Child = new ResourceDataEntry
-                        {
-                            Codepage = hResource.Codepage,
-                            Reserved = hResource.Reserved,
-                            ResourceData = hResource.ResourceData,
-                        };
-                    }
-                }
-            }
-
+            using var module = new PEReader(File.Open(peFile, FileMode.Open));
+            var moduleResources = new ResourceData(module);
+            _resourceData.CopyResourcesFrom(moduleResources);
             return this;
         }
 
@@ -165,14 +88,7 @@ namespace Microsoft.NET.HostModel
                 throw new ArgumentException("AddResource can only be used with integer resource types");
             }
 
-            var typeDirectory = FindOrCreateChildDirectory(resourceDirectory, (int)lpType);
-            var nameDirectory = FindOrCreateChildDirectory(typeDirectory, (int)lpName);
-            var entry = FindOrCreateEntry(nameDirectory, LangID_LangNeutral_SublangNeutral);
-            entry.Child = new ResourceDataEntry
-            {
-                Codepage = 1252, // TODO?
-                ResourceData = data,
-            };
+            _resourceData.AddResource((ushort)lpType, (ushort)lpName, LangID_LangNeutral_SublangNeutral, data);
 
             return this;
         }
@@ -190,14 +106,7 @@ namespace Microsoft.NET.HostModel
                 throw new ArgumentException("AddResource can only be used with integer resource names");
             }
 
-            var typeDirectory = FindOrCreateChildDirectory(resourceDirectory, lpType);
-            var nameDirectory = FindOrCreateChildDirectory(typeDirectory, (int)lpName);
-            var entry = FindOrCreateEntry(nameDirectory, LangID_LangNeutral_SublangNeutral);
-            entry.Child = new ResourceDataEntry
-            {
-                Codepage = 1252, // TODO?
-                ResourceData = data,
-            };
+            _resourceData.AddResource(lpType, (ushort)lpName, LangID_LangNeutral_SublangNeutral, data);
 
             return this;
         }
@@ -229,9 +138,9 @@ namespace Microsoft.NET.HostModel
             const uint rawPointerOffset = 20;
 
             int resourceSectionIndex = -1;
-            for (int i = 0; i < image.Sections.Count; i++)
+            for (int i = 0; i < _reader.PEHeaders.SectionHeaders.Length; i++)
             {
-                if (image.Sections[i].Name == ".rsrc")
+                if (_reader.PEHeaders.SectionHeaders[i].Name == ".rsrc")
                 {
                     resourceSectionIndex = i;
                     break;
@@ -241,26 +150,27 @@ namespace Microsoft.NET.HostModel
             if (resourceSectionIndex == -1)
                 throw new InvalidOperationException(".rsrc section not found");
 
-            var isRsrcIsLastSection = image.Sections.Count - 1 == resourceSectionIndex;
-            var resourceSection = image.Sections[resourceSectionIndex];
+            var isRsrcIsLastSection = _reader.PEHeaders.SectionHeaders.Length - 1 == resourceSectionIndex;
+            var resourceSection = _reader.PEHeaders.SectionHeaders[resourceSectionIndex];
 
-            var rsrcSectionData = new MemoryBinaryWriter();
-            var resourceWriter = new ResourceWriter(resourceDirectory, resourceSection, rsrcSectionData);
-            resourceWriter.Write();
+            var rsrcSectionData = new MemoryStream();
 
-            uint rsrcSectionDataSize = (uint)rsrcSectionData.MemoryStream.Length;
-            uint newSectionSize = GetAligned(rsrcSectionDataSize, image.PEOptionalHeader.NTSpecificFields.FileAlignment);
-            uint newSectionVirtualSize = GetAligned(rsrcSectionDataSize, image.PEOptionalHeader.NTSpecificFields.SectionAlignment);
+            // TODO: writing to Section
+            //new ResourceWriter(resourceDirectory, resourceSection, new MemoryBinaryWriter()).Write();
 
-            int delta = (int)newSectionSize - (int)GetAligned(resourceSection.SizeOfRawData,
-                image.PEOptionalHeader.NTSpecificFields.FileAlignment);
-            int virtualDelta = (int)newSectionVirtualSize - (int)GetAligned(resourceSection.VirtualSize,
-                image.PEOptionalHeader.NTSpecificFields.SectionAlignment);
-            uint sectionBase = image.DOSHeader.Lfanew + peMagicSize + peHeaderSize + image.PEFileHeader.OptionalHeaderSize;
+            uint fileAlignment = (uint)_reader.PEHeaders.PEHeader!.FileAlignment;
+            uint sectionAlignment = (uint)_reader.PEHeaders.PEHeader!.FileAlignment;
 
-            uint trailingSectionVirtualStart = resourceSection.VirtualAddress + resourceSection.VirtualSize;
-            uint trailingSectionStart = resourceSection.PointerToRawData + resourceSection.SizeOfRawData;
-            uint trailingSectionLength = (uint)stream.Length - trailingSectionStart;
+            uint rsrcSectionDataSize = checked((uint)rsrcSectionData.Length);
+            uint newSectionSize = GetAligned(rsrcSectionDataSize, fileAlignment);
+            uint newSectionVirtualSize = GetAligned(rsrcSectionDataSize, sectionAlignment);
+
+            int delta = (int)(newSectionSize - GetAligned((uint)resourceSection.SizeOfRawData, fileAlignment));
+            int virtualDelta = (int)(newSectionVirtualSize - GetAligned((uint)resourceSection.VirtualSize, sectionAlignment));
+
+            int trailingSectionVirtualStart = resourceSection.VirtualAddress + resourceSection.VirtualSize;
+            int trailingSectionStart = resourceSection.PointerToRawData + resourceSection.SizeOfRawData;
+            int trailingSectionLength = (int)(stream.Length - trailingSectionStart);
 
             bool needsMoveTrailingSections = !isRsrcIsLastSection && delta > 0;
             long finalImageSize = trailingSectionStart + Math.Max(delta, 0) + trailingSectionLength;
@@ -269,10 +179,13 @@ namespace Microsoft.NET.HostModel
             // but it's impossible to achieve open once goal because
             // CreateFromFile with currentSectionIndex is not exists in
             // netstandard 2.0. So, I use read to byte[] instead.
-            var buffer = new byte[finalImageSize];
+            byte[] buffer = new byte[finalImageSize];
             var memoryStream = new MemoryStream(buffer);
             stream.Seek(0, SeekOrigin.Begin);
             stream.CopyTo(memoryStream);
+
+            uint peSignatureOffset = ReadU32(buffer, 0x3c);
+            uint sectionBase = peSignatureOffset + peMagicSize + peHeaderSize + (ushort)_reader.PEHeaders.CoffHeader.SizeOfOptionalHeader;
 
             if (needsMoveTrailingSections)
             {
@@ -280,7 +193,7 @@ namespace Microsoft.NET.HostModel
                     buffer, trailingSectionStart + delta,
                     trailingSectionLength);
 
-                for (int i = resourceSectionIndex + 1; i < image.Sections.Count; i++)
+                for (int i = resourceSectionIndex + 1; i < _reader.PEHeaders.SectionHeaders.Length; i++)
                 {
                     uint currentSectionBase = sectionBase + oneSectionHeaderSize * (uint)i;
 
@@ -305,43 +218,43 @@ namespace Microsoft.NET.HostModel
                 }
 
                 // fix header
-                if (image.PEOptionalHeader.StandardFields.IsPE64)
+                if (_reader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus)
                 {
-                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe64InitializedDataSizeOffset,
+                    ModifyU32(buffer, peSignatureOffset + pe64InitializedDataSizeOffset,
                         size => (uint)(size + delta));
-                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe64SizeOfImageOffset,
+                    ModifyU32(buffer, peSignatureOffset + pe64SizeOfImageOffset,
                         size => (uint)(size + virtualDelta));
 
                     if (delta > 0)
                     {
                         // fix RVA in DataDirectory
-                        for (int i = 0; i < image.PEOptionalHeader.NTSpecificFields.NumberOfDataDir; i++)
-                            PatchRVA((uint)(image.DOSHeader.Lfanew + pe64DataDirectoriesOffset + i * 8));
+                        for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
+                            PatchRVA((uint)(peSignatureOffset + pe64DataDirectoriesOffset + i * 8));
                     }
 
                     // index of ResourceTable is 2 in DataDirectories
-                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe64DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
+                    ModifyU32(buffer, peSignatureOffset + pe64DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
                 }
                 else
                 {
-                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe32InitializedDataSizeOffset,
+                    ModifyU32(buffer, peSignatureOffset + pe32InitializedDataSizeOffset,
                         size => (uint)(size + delta));
-                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe32SizeOfImageOffset,
+                    ModifyU32(buffer, peSignatureOffset + pe32SizeOfImageOffset,
                         size => (uint)(size + virtualDelta));
 
                     if (delta > 0)
                     {
                         // fix RVA in DataDirectory
-                        for (int i = 0; i < image.PEOptionalHeader.NTSpecificFields.NumberOfDataDir; i++)
-                            PatchRVA((uint)(image.DOSHeader.Lfanew + pe32DataDirectoriesOffset + i * 8));
+                        for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
+                            PatchRVA((uint)(peSignatureOffset + pe32DataDirectoriesOffset + i * 8));
                     }
 
                     // index of ResourceTable is 2 in DataDirectories
-                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe32DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
+                    ModifyU32(buffer, peSignatureOffset + pe32DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
                 }
             }
 
-            Array.Copy(rsrcSectionData.MemoryStream.GetBuffer(), 0,
+            Array.Copy(rsrcSectionData.GetBuffer(), 0,
                 buffer, resourceSection.PointerToRawData,
                 rsrcSectionDataSize);
 
@@ -357,14 +270,17 @@ namespace Microsoft.NET.HostModel
             stream.Flush();
         }
 
+        private static uint ReadU32(byte[] buffer, uint position)
+        {
+            return buffer[position + 0]
+                        | ((uint)buffer[position + 1] << 8)
+                        | ((uint)buffer[position + 2] << 16)
+                        | ((uint)buffer[position + 3] << 24);
+        }
+
         private static void ModifyU32(byte[] buffer, uint position, Func<uint, uint> modifier)
         {
-            uint data = buffer[position + 0]
-                   | ((uint)buffer[position + 1] << 8)
-                   | ((uint)buffer[position + 2] << 16)
-                   | ((uint)buffer[position + 3] << 24);
-
-            data = modifier(data);
+            uint data = modifier(ReadU32(buffer, position));
 
             buffer[position + 0] = (byte)(data & 0xFF);
             buffer[position + 1] = (byte)(data >> 8 & 0xFF);

@@ -8,7 +8,6 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
 using ILCompiler.DependencyAnalysis;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.Win32Resources
 {
@@ -21,8 +20,23 @@ namespace ILCompiler.Win32Resources
         /// <summary>
         /// Initialize a ResourceData instance from a PE file
         /// </summary>
+        /// <param name="peFile"></param>
+        public ResourceData(PEReader peFile)
+        {
+            DirectoryEntry resourceDirectory = peFile.PEHeaders.PEHeader!.ResourceTableDirectory;
+            if (resourceDirectory.Size != 0)
+            {
+                BlobReader resourceDataBlob = peFile.GetSectionData(resourceDirectory.RelativeVirtualAddress).GetReader(0, resourceDirectory.Size);
+                ReadResourceData(resourceDataBlob, peFile, null);
+            }
+        }
+
+#if !HOST_MODEL
+        /// <summary>
+        /// Initialize a ResourceData instance from a PE file
+        /// </summary>
         /// <param name="ecmaModule"></param>
-        public ResourceData(EcmaModule ecmaModule, Func<object, object, ushort, bool> resourceFilter = null)
+        public ResourceData(Internal.TypeSystem.Ecma.EcmaModule ecmaModule, Func<object, object, ushort, bool> resourceFilter = null)
         {
             System.Collections.Immutable.ImmutableArray<byte> ecmaData = ecmaModule.PEReader.GetEntireImage().GetContent();
             PEReader peFile = ecmaModule.PEReader;
@@ -34,6 +48,7 @@ namespace ILCompiler.Win32Resources
                 ReadResourceData(resourceDataBlob, peFile, resourceFilter);
             }
         }
+#endif
 
         /// <summary>
         /// Find a resource in the resource data
@@ -67,6 +82,26 @@ namespace ILCompiler.Win32Resources
             return FindResourceInternal(name, type, language);
         }
 
+        /// <summary>
+        /// Add or update resource
+        /// </summary>
+        public void AddResource(string name, string type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+
+        /// <summary>
+        /// Add or update resource
+        /// </summary>
+        public void AddResource(ushort name, string type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+
+        /// <summary>
+        /// Add or update resource
+        /// </summary>
+        public void AddResource(string name, ushort type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+
+        /// <summary>
+        /// Add or update resource
+        /// </summary>
+        public void AddResource(ushort name, ushort type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+
         public bool IsEmpty
         {
             get
@@ -78,6 +113,33 @@ namespace ILCompiler.Win32Resources
                     return false;
 
                 return true;
+            }
+        }
+
+        /// <summary>
+        /// Add all resources in the specified ResourceData struct.
+        /// </summary>
+        public void CopyResourcesFrom(ResourceData moduleResources)
+        {
+            foreach (KeyValuePair<ushort, ResType> typeIdPair in moduleResources._resTypeHeadID)
+                CopyResType(typeIdPair.Key, typeIdPair.Value);
+
+            foreach (KeyValuePair<string, ResType> typeNamePair in moduleResources._resTypeHeadName)
+                CopyResType(typeNamePair.Key, typeNamePair.Value);
+
+            void CopyResType(object type, ResType resType)
+            {
+                foreach (KeyValuePair<ushort, ResName> nameIdPair in resType.NameHeadID)
+                    CopyResName(type, nameIdPair.Key, nameIdPair.Value);
+
+                foreach (KeyValuePair<string, ResName> nameNamePair in resType.NameHeadName)
+                    CopyResName(type, nameNamePair.Key, nameNamePair.Value);
+            }
+
+            void CopyResName(object type, object name, ResName resType)
+            {
+                foreach (KeyValuePair<ushort, ResLanguage> lang in resType.Languages)
+                    AddResourceInternal(type, name, lang.Key, lang.Value.DataEntry);
             }
         }
 

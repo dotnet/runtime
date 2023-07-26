@@ -16,6 +16,7 @@
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
     <PackageId Condition="'$(PgoInstrument)' == 'true'">Microsoft.Net.HostModel.PGO</PackageId>
+    <DefineConstants>$(DefineConstants);HOST_MODEL</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +28,15 @@
   <ItemGroup>
     <ProjectReference Include="..\Mono.Cecil.Binary\Mono.Cecil.Binary.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
+    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
+    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
+    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" Link="Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
+    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
+  </ItemGroup>
+
 
 </Project>
 

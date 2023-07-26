@@ -8,7 +8,7 @@ namespace ILCompiler.Win32Resources
 {
     public unsafe partial class ResourceData
     {
-        private void AddResource(object type, object name, ushort language, byte[] data)
+        private void AddResourceInternal(object type, object name, ushort language, byte[] data)
         {
             ResType resType;
 
