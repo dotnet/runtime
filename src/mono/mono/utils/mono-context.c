@@ -554,8 +554,12 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 		size += fpctx_temp->head.size;
 	} while (size + sizeof (struct fpsimd_context) <= sizeof (((ucontext_t*)sigctx)->uc_mcontext.__reserved));
 
-	for (int i = 0; i < 32; ++i)
-		mctx->fregs [i] = fpctx->vregs [i];
+	if (fpctx->head.magic == FPSIMD_MAGIC)
+		for (int i = 0; i < 32; ++i)
+			mctx->fregs [i] = fpctx->vregs [i];
+	else
+		for (int i = 0; i < 32; ++i)
+			mctx->fregs [i] = 0;
 #endif
 	/* FIXME: apple */
 #endif
