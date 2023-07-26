@@ -3,17 +3,29 @@
 
 using System;
 using System.Collections.Generic;
+#if !HOST_MODEL
 using Internal.TypeSystem;
+#endif
 
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
     public struct ObjectDataBuilder
-#if !READYTORUN
+#if !READYTORUN && !HOST_MODEL
         : Internal.Runtime.ITargetBinaryWriter
 #endif
     {
+#if HOST_MODEL
+        public ObjectDataBuilder(bool relocsOnly)
+        {
+            _data = default(ArrayBuilder<byte>);
+            Alignment = 1;
+#if DEBUG
+            _numReservations = 0;
+#endif
+        }
+#else
         public ObjectDataBuilder(NodeFactory factory, bool relocsOnly) : this(factory.Target, relocsOnly)
         {
         }
@@ -30,16 +42,23 @@ namespace ILCompiler.DependencyAnalysis
             _checkAllSymbolDependenciesMustBeMarked = !relocsOnly;
 #endif
         }
+#endif
 
+#if !HOST_MODEL
         private TargetDetails _target;
         private ArrayBuilder<Relocation> _relocs;
+#endif
         private ArrayBuilder<byte> _data;
         public int Alignment { get; private set; }
+#if !HOST_MODEL
         private ArrayBuilder<ISymbolDefinitionNode> _definedSymbols;
+#endif
 
 #if DEBUG
         private int _numReservations;
+#if !HOST_MODEL
         private bool _checkAllSymbolDependenciesMustBeMarked;
+#endif
 #endif
 
         public int CountBytes
@@ -50,6 +69,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+#if !HOST_MODEL
         public int TargetPointerSize
         {
             get
@@ -57,6 +77,7 @@ namespace ILCompiler.DependencyAnalysis
                 return _target.PointerSize;
             }
         }
+#endif
 
         /// <summary>
         /// Raise the alignment requirement of this object to <paramref name="align"/>. This has no effect
@@ -67,6 +88,7 @@ namespace ILCompiler.DependencyAnalysis
             Alignment = Math.Max(align, Alignment);
         }
 
+#if !HOST_MODEL
         /// <summary>
         /// Raise the alignment requirement of this object to the target pointer size. This has no effect
         /// if the alignment requirement is already larger than a pointer size.
@@ -75,6 +97,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             RequireInitialAlignment(_target.PointerSize);
         }
+#endif
 
         public void EmitByte(byte emit)
         {
@@ -121,6 +144,7 @@ namespace ILCompiler.DependencyAnalysis
             EmitByte((byte)((emit >> 56) & 0xFF));
         }
 
+#if !HOST_MODEL
         public void EmitNaturalInt(int emit)
         {
             if (_target.PointerSize == 8)
@@ -177,6 +201,7 @@ namespace ILCompiler.DependencyAnalysis
                 EmitInt((int)emit);
             }
         }
+#endif
 
         public void EmitBytes(byte[] bytes)
         {
@@ -193,10 +218,12 @@ namespace ILCompiler.DependencyAnalysis
             _data.Append(bytes);
         }
 
+#if !HOST_MODEL
         public void EmitZeroPointer()
         {
             _data.ZeroExtend(_target.PointerSize);
         }
+#endif
 
         public void EmitZeros(int numBytes)
         {
@@ -270,9 +297,10 @@ namespace ILCompiler.DependencyAnalysis
             _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
         }
 
+#if !HOST_MODEL // not relocation in host model building
         public void EmitReloc(ISymbolNode symbol, RelocType relocType, int delta = 0)
         {
-#if DEBUG
+#if DEBUG && !HOST_MODEL
             if (_checkAllSymbolDependenciesMustBeMarked)
             {
                 var node = symbol as ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>;
@@ -330,7 +358,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             EmitReloc(symbol, (_target.PointerSize == 8) ? RelocType.IMAGE_REL_BASED_DIR64 : RelocType.IMAGE_REL_BASED_HIGHLOW, delta);
         }
+#endif
 
+#if HOST_MODEL
+        public byte[] ToData()
+        {
+#if DEBUG
+            Debug.Assert(_numReservations == 0);
+#endif
+
+            return _data.ToArray();
+        }
+#else
         public ObjectNode.ObjectData ToObjectData()
         {
 #if DEBUG
@@ -344,13 +383,16 @@ namespace ILCompiler.DependencyAnalysis
 
             return returnData;
         }
+#endif
 
         public enum Reservation { }
 
+#if !HOST_MODEL
         public void AddSymbol(ISymbolDefinitionNode node)
         {
             _definedSymbols.Add(node);
         }
+#endif
 
         public void PadAlignment(int align)
         {

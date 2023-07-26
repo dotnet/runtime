@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Reflection.PortableExecutable;
+using ILCompiler.DependencyAnalysis;
 using ILCompiler.Win32Resources;
 
 namespace Microsoft.NET.HostModel
@@ -153,13 +154,12 @@ namespace Microsoft.NET.HostModel
             var isRsrcIsLastSection = _reader.PEHeaders.SectionHeaders.Length - 1 == resourceSectionIndex;
             var resourceSection = _reader.PEHeaders.SectionHeaders[resourceSectionIndex];
 
-            var rsrcSectionData = new MemoryStream();
-
-            // TODO: writing to Section
-            //new ResourceWriter(resourceDirectory, resourceSection, new MemoryBinaryWriter()).Write();
+            var objectDataBuilder = new ObjectDataBuilder(false);
+            _resourceData.WriteResources(resourceSection.VirtualAddress, ref objectDataBuilder);
+            var rsrcSectionData = objectDataBuilder.ToData();
 
             uint fileAlignment = (uint)_reader.PEHeaders.PEHeader!.FileAlignment;
-            uint sectionAlignment = (uint)_reader.PEHeaders.PEHeader!.FileAlignment;
+            uint sectionAlignment = (uint)_reader.PEHeaders.PEHeader!.SectionAlignment;
 
             uint rsrcSectionDataSize = checked((uint)rsrcSectionData.Length);
             uint newSectionSize = GetAligned(rsrcSectionDataSize, fileAlignment);
@@ -254,7 +254,7 @@ namespace Microsoft.NET.HostModel
                 }
             }
 
-            Array.Copy(rsrcSectionData.GetBuffer(), 0,
+            Array.Copy(rsrcSectionData, 0,
                 buffer, resourceSection.PointerToRawData,
                 rsrcSectionDataSize);
 

@@ -143,6 +143,15 @@ namespace ILCompiler.Win32Resources
             }
         }
 
+#if HOST_MODEL
+        public void WriteResources(int sectionBase, ref ObjectDataBuilder dataBuilder)
+        {
+            WriteResources(sectionBase, ref dataBuilder, ref dataBuilder);
+        }
+
+        public void WriteResources(int sectionBase, ref ObjectDataBuilder dataBuilder, ref ObjectDataBuilder contentBuilder)
+        {
+#else
         public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder)
         {
             WriteResources(nodeAssociatedWithDataBuilder, ref dataBuilder, ref dataBuilder);
@@ -150,6 +159,7 @@ namespace ILCompiler.Win32Resources
 
         public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder, ref ObjectDataBuilder contentBuilder)
         {
+#endif
             Debug.Assert(dataBuilder.CountBytes == 0);
 
             SortedDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable = new SortedDictionary<string, List<ObjectDataBuilder.Reservation>>();
@@ -221,7 +231,11 @@ namespace ILCompiler.Win32Resources
             foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
             {
                 dataBuilder.EmitInt(language.Item2, dataBuilder.CountBytes);
+#if HOST_MODEL
+                IMAGE_RESOURCE_DATA_ENTRY.Write(ref dataBuilder, sectionBase, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
+#else
                 IMAGE_RESOURCE_DATA_ENTRY.Write(ref dataBuilder, nodeAssociatedWithDataBuilder, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
+#endif
             }
             dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
         }
