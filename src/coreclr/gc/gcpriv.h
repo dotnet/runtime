@@ -111,15 +111,14 @@
 //#define TRACE_GC
 //#define SIMPLE_DPRINTF
 
-#if defined(TRACE_GC)
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
 void flush_gc_log (bool);
-#endif
-
+#endif //TRACE_GC && SIMPLE_DPRINTF
 inline void FATAL_GC_ERROR()
 {
-#if defined(TRACE_GC)
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
     flush_gc_log (true);
-#endif
+#endif //TRACE_GC && SIMPLE_DPRINTF
     GCToOSInterface::DebugBreak();
     _ASSERTE(!"Fatal Error in GC.");
     GCToEEInterface::HandleFatalError((unsigned int)COR_E_EXECUTIONENGINE);

@@ -454,7 +454,7 @@ void gc_heap::add_to_history()
 #endif //GC_HISTORY && BACKGROUND_GC
 }
 
-#ifdef TRACE_GC
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
 BOOL   gc_log_on = TRUE;
 FILE* gc_log = NULL;
 size_t gc_log_file_size = 0;
@@ -543,7 +543,7 @@ void GCLog (const char *fmt, ... )
         va_end(args);
     }
 }
-#endif // TRACE_GC
+#endif //TRACE_GC && SIMPLE_DPRINTF
 
 #ifdef GC_CONFIG_DRIVEN
 
@@ -593,9 +593,9 @@ void GCLogConfig (const char *fmt, ... )
 
 void GCHeap::Shutdown()
 {
-#if defined(TRACE_GC) && !defined(BUILD_AS_STANDALONE)
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF) && !defined(BUILD_AS_STANDALONE)
     flush_gc_log (true);
-#endif //TRACE_GC && !BUILD_AS_STANDALONE
+#endif //TRACE_GC && SIMPLE_DPRINTF && !BUILD_AS_STANDALONE
 }
 
 #ifdef SYNCHRONIZATION_STATS
@@ -13916,7 +13916,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #endif //MULTIPLE_HEAPS
 )
 {
-#ifdef TRACE_GC
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
     if (GCConfig::GetLogEnabled())
     {
         gc_log = CreateLogFile(GCConfig::GetLogFile(), false);
@@ -13949,7 +13949,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
         max_gc_buffers = gc_log_file_size * 1024 * 1024 / gc_log_buffer_size;
     }
-#endif // TRACE_GC
+#endif //TRACE_GC && SIMPLE_DPRINTF
 
 #ifdef GC_CONFIG_DRIVEN
     if (GCConfig::GetConfigLogEnabled())
@@ -49813,9 +49813,9 @@ void gc_heap::do_post_gc()
         settings.entry_memory_load,
         current_memory_load));
 
-#if defined(SIMPLE_DPRINTF) && defined(TRACE_GC)
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
     flush_gc_log (false);
-#endif //SIMPLE_DPRINTF && TRACE_GC
+#endif //TRACE_GC && SIMPLE_DPRINTF
 
     // Now record the gc info.
     last_recorded_gc_info* last_gc_info = 0;
