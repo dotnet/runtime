@@ -324,6 +324,41 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.NotSame(first, second);
         }
 
+        [Fact]
+        public void ResolveKeyedServiceFromInjectedServiceProvider()
+        {
+            var service1 = new Service();
+            var service2 = new Service();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedSingleton<IService>("service1", service1);
+            serviceCollection.AddKeyedSingleton<IService>("service2", service2);
+            serviceCollection.AddSingleton<ServiceProviderAccessor>();
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var accessor = provider.GetRequiredService<ServiceProviderAccessor>();
+
+            Assert.Null(accessor.ServiceProvider.GetService<IService>());
+            Assert.Same(service1, accessor.ServiceProvider.GetKeyedService<IService>("service1"));
+            Assert.Same(service2, accessor.ServiceProvider.GetKeyedService<IService>("service2"));
+        }
+
+        [Fact]
+        public void ResolveKeyedServiceFromScopeServiceProvider()
+        {
+            var service1 = new Service();
+            var service2 = new Service();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedSingleton<IService>("service1", service1);
+            serviceCollection.AddKeyedSingleton<IService>("service2", service2);
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var scope = provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+
+            Assert.Null(scope.ServiceProvider.GetService<IService>());
+            Assert.Same(service1, scope.ServiceProvider.GetKeyedService<IService>("service1"));
+            Assert.Same(service2, scope.ServiceProvider.GetKeyedService<IService>("service2"));
+        }
+
         internal interface IService { }
 
         internal class Service : IService
@@ -357,6 +392,16 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             private readonly int _id;
 
             public ServiceWithIntKey([ServiceKey] int id) => _id = id;
+        }
+
+        internal class ServiceProviderAccessor
+        {
+            public ServiceProviderAccessor(IServiceProvider serviceProvider)
+            {
+                ServiceProvider = serviceProvider;
+            }
+
+            public IServiceProvider ServiceProvider { get; }
         }
     }
 }
