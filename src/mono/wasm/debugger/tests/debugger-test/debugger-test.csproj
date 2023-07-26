@@ -57,6 +57,7 @@
       <FilesToDelete Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native/System.Private.CoreLib.pdb"/>
       <!-- Remove pdb from all libraries in CI to improve CI performance and have the same scenario that we have in a Blazor/Wasm user app -->
       <FilesToDelete Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib/$(AspNetCoreAppCurrent)/*.pdb"/>
+      <FilesToDelete Condition="'$(ContinuousIntegrationBuild)' == 'true'" Exclude="$(MicrosoftNetCoreAppRuntimePackRidDir)lib/$(AspNetCoreAppCurrent)/System.Console.pdb"/>
     </ItemGroup>
     <Delete Files="@(FilesToDelete)"/>
     <PropertyGroup>

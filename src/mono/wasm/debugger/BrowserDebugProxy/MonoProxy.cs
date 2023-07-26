@@ -42,6 +42,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             RuntimeId = runtimeId;
             _options = options;
             _defaultPauseOnExceptions = PauseOnExceptionsKind.Unset;
+            JustMyCode = options?.JustMyCode ?? false;
         }
 
         internal virtual Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
