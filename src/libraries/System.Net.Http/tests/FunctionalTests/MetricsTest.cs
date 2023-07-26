@@ -263,7 +263,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
-                using HttpRequestMessage request = new(new HttpMethod(method), uri) { Version = UseVersion };
+                using HttpRequestMessage request = new(HttpMethod.Parse(method), uri) { Version = UseVersion };
 
                 using HttpResponseMessage response = await SendAsync(client, request);
 
@@ -584,7 +584,7 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         public async Task RequestDuration_EnrichmentHandler_ContentLengthError_Recorded()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>

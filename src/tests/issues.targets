@@ -2121,7 +2121,7 @@
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'monointerpreter' ">
+    <ItemGroup Condition="('$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'monointerpreter') or '$(TargetsAppleMobile)' == 'true'">
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
             <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
         </ExcludeList>
@@ -2305,7 +2305,7 @@
         <!-- End interpreter issues -->
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmaot' or '$(TargetOS)' == 'ios')">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmaot' or '$(TargetsAppleMobile)' == 'true')">
         <ExcludeList Include = "$(XunitTestBinBase)JIT/Methodical/ELEMENT_TYPE_IU/u_conv_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -2433,7 +2433,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(TargetOS)' == 'ios')">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(TargetsAppleMobile)' == 'true')">
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case1/**">
             <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
@@ -2777,7 +2777,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator')">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(TargetsAppleMobile)' == 'true')">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.1-M1-Beta1/b143840/b143840/*">
             <Issue>https://github.com/dotnet/runtime/issues/48914</Issue>
         </ExcludeList>
@@ -3099,7 +3099,7 @@
     </ItemGroup>
 
 
-    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsAppleMobile)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/**">
             <Issue>https://github.com/dotnet/runtime/issues/75756</Issue>
         </ExcludeList>
@@ -3457,6 +3457,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/StartupHooks/**">
             <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
@@ -3717,7 +3720,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios'" >
+    <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'" >
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
             <Issue>missing assembly</Issue>
         </ExcludeList>
@@ -3943,20 +3946,41 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'iossimulator'" >
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/buffersize/**">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/GenericContext/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/v2.0-beta1/149926/149926/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'android' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios')">
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'tvos'">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/RegressionTests/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/empty/*">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/RyuJIT/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/**">
+            <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
 

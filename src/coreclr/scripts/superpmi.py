@@ -539,10 +539,6 @@ class AsyncSubprocessHelper:
         self.verbose = verbose
         self.subproc_count_queue = None
 
-        if 'win32' in sys.platform:
-            # Windows specific event-loop policy & cmd
-            asyncio.set_event_loop(asyncio.ProactorEventLoop())
-
     async def __get_item__(self, item, index, size, async_callback, *extra_args):
         """ Wrapper to the async callback which will schedule based on the queue
         """
@@ -600,7 +596,18 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
-        loop = asyncio.get_event_loop()
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            if 'win32' in sys.platform:
+                # Windows specific event-loop policy & cmd
+                loop = asyncio.ProactorEventLoop()
+            else:
+                loop = asyncio.new_event_loop()
+
+            asyncio.set_event_loop(loop)
+            
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.clear()
         os.environ.update(reset_env)

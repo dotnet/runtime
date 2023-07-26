@@ -697,6 +697,40 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateCompilationWithDerivedJsonConverterAttributeAnnotations()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(ClassWithConverterDeclaration))]
+                    [JsonSerializable(typeof(ClassWithPropertyConverterDeclaration))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [MyJsonConverter]
+                    public class ClassWithConverterDeclaration
+                    {
+                    }
+
+                    public partial class ClassWithPropertyConverterDeclaration : JsonSerializerContext
+                    {
+                        [MyJsonConverter]
+                        public int Value { get; set; }
+                    }
+
+                    public class MyJsonConverterAttribute : JsonConverterAttribute
+                    {
+                        public override JsonConverter? CreateConverter(Type typeToConvert) => null;
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
         public static Compilation CreateContextWithUnboundGenericTypeDeclarations()
         {
             string source = """

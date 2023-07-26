@@ -68,13 +68,18 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 {
 }
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH)
 void CodeGenInterface::CopyRegisterInfo()
 {
+#if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-}
 #endif // TARGET_AMD64
+
+    rbmAllMask        = compiler->rbmAllMask;
+    rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
+}
+#endif // TARGET_XARCH
 
 /*****************************************************************************/
 
@@ -1966,7 +1971,7 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
-    if (compiler->opts.disAsm)
+    if (compiler->opts.disAsm && compiler->opts.disTesting)
     {
         printf("; BEGIN METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
@@ -1990,7 +1995,7 @@ void CodeGen::genEmitMachineCode()
         ((double)compiler->info.compTotalColdCodeSize * (double)PERFSCORE_CODESIZE_COST_COLD);
 #endif // DEBUG || LATE_DISASM
 
-    if (compiler->opts.disAsm)
+    if (compiler->opts.disAsm && compiler->opts.disTesting)
     {
         printf("; END METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }

@@ -1325,47 +1325,6 @@ QueueUserAPC(
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
 
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
-
-#if defined(HOST_X86) || defined(HOST_AMD64)
-// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
-// We define matching signatures for use on Unix platforms.
-//
-// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
-
-#if __has_builtin(__cpuid)
-extern "C" void __cpuid(int cpuInfo[4], int function_id);
-#else
-inline void __cpuid(int cpuInfo[4], int function_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid\n" \
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id)
-    );
-}
-#endif // __cpuid
-
-#if __has_builtin(__cpuidex)
-extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
-#else
-inline void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid\n" \
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id), "2"(subFunction_id)
-    );
-}
-#endif // __cpuidex
-#endif // HOST_X86 || HOST_AMD64
-
 #ifdef HOST_X86
 
 //
@@ -3458,7 +3417,7 @@ BitScanForward64(
 // intrinsic, which returns the number of leading 0-bits in x starting at the most significant
 // bit position (the result is undefined when x = 0).
 //
-// The same is true for BitScanReverse, except that the GCC function is __builtin_clzl.
+// The same is true for BitScanReverse, except that the GCC function is __builtin_clz.
 
 EXTERN_C
 PALIMPORT
@@ -3469,12 +3428,12 @@ BitScanReverse(
     IN OUT PDWORD Index,
     IN UINT qwMask)
 {
-    // The result of __builtin_clzl is undefined when qwMask is zero,
+    // The result of __builtin_clz is undefined when qwMask is zero,
     // but it's still OK to call the intrinsic in that case (just don't use the output).
     // Unconditionally calling the intrinsic in this way allows the compiler to
     // emit branchless code for this function when possible (depending on how the
     // intrinsic is implemented for the target platform).
-    int lzcount = __builtin_clzl(qwMask);
+    int lzcount = __builtin_clz(qwMask);
     *Index = (DWORD)(31 - lzcount);
     return qwMask != 0;
 }
@@ -4517,19 +4476,6 @@ PALIMPORT
 void _mm_setcsr(unsigned int i);
 
 /******************* PAL functions for CPU capability detection *******/
-
-#ifdef  __cplusplus
-
-#if defined(HOST_ARM64) && defined(TARGET_ARM64)
-class CORJIT_FLAGS;
-
-PALIMPORT
-VOID
-PALAPI
-PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags);
-#endif // HOST_ARM64 && TARGET_ARM64
-
-#endif
 
 #ifdef __cplusplus
 

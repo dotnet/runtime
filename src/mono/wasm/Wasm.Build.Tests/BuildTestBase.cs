@@ -10,14 +10,12 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using Microsoft.Playwright;
 
 #nullable enable
 
@@ -104,10 +102,6 @@ namespace Wasm.Build.Tests
             _providerOfBaseType = providerBase;
         }
 
-        // Meant for special case where we *want* to set it to null,
-        // and thus avoid the ArgumentNullException
-        // protected void ResetProjectDir() => _providerOfBaseType.ProjectDir = null;
-
         public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config = null, string? extraArgs = null)
         {
             if (extraArgs == null)
@@ -132,6 +126,45 @@ namespace Wasm.Build.Tests
                     new object?[] { new BuildArgs("placeholder", config, aot, "placeholder", extraArgs) }.AsEnumerable()
                 };
             }
+        }
+
+        public (CommandResult res, string logPath) BuildProjectWithoutAssert(
+            string id,
+            string config,
+            BuildProjectOptions buildProjectOptions,
+            params string[] extraArgs)
+        {
+            string buildType = buildProjectOptions.Publish ? "publish" : "build";
+            string logFileSuffix = buildProjectOptions.Label == null ? string.Empty : buildProjectOptions.Label.Replace(' ', '_') + "-";
+            string logFilePath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-{logFileSuffix}{buildType}.binlog");
+
+            _testOutput.WriteLine($"{Environment.NewLine}** -------- {buildType} -------- **{Environment.NewLine}");
+            _testOutput.WriteLine($"Binlog path: {logFilePath}");
+
+            List<string> commandLineArgs = new()
+            {
+                buildType,
+                $"-bl:{logFilePath}",
+                $"-p:Configuration={config}",
+                "-nr:false",
+                !UseWebcil ? "-p:WasmEnableWebcil=false" : string.Empty,
+            };
+            commandLineArgs.AddRange(extraArgs);
+
+            if (buildProjectOptions.Publish && buildProjectOptions.BuildOnlyAfterPublish)
+                commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
+
+            CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir!)
+                                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables)
+                                    .ExecuteWithCapturedOutput(commandLineArgs.ToArray());
+            if (buildProjectOptions.ExpectSuccess)
+                res.EnsureSuccessful();
+            else if (res.ExitCode == 0)
+                throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {res.ExitCode}");
+
+            return (res, logFilePath);
         }
 
         protected string RunAndTestWasmApp(BuildArgs buildArgs,
@@ -338,11 +371,6 @@ namespace Wasm.Build.Tests
                 extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>\n";
             }
 
-            if (!UseWebcil)
-            {
-                extraProperties += "<WasmEnableWebcil>false</WasmEnableWebcil>\n";
-            }
-
             extraItems += "<WasmExtraFilesToDeploy Include='index.html' />";
 
             string projectContents = projectTemplate
@@ -360,10 +388,6 @@ namespace Wasm.Build.Tests
 
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
-
-        public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor)
-            => new BlazorWasmProjectProvider(_testOutput, _projectDir)
-                    .FindBlazorBinFrameworkDir(config, forPublish, framework);
 
         protected string GetBinDir(string config, string targetFramework = DefaultTargetFramework, string? baseDir = null)
         {
@@ -550,12 +574,6 @@ namespace Wasm.Build.Tests
                 _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
         }
 
-        private static string GetEnvironmentVariableOrDefault(string envVarName, string defaultValue)
-        {
-            string? value = Environment.GetEnvironmentVariable(envVarName);
-            return string.IsNullOrEmpty(value) ? defaultValue : value;
-        }
-
         internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish = true)
         {
             string objDir = GetObjDir(buildArgs.Config);
@@ -578,7 +596,7 @@ namespace Wasm.Build.Tests
                 }
             }";
 
-        private IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
+        private static IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
         {
             RunHost.V8 => new V8HostRunner(),
             RunHost.NodeJS => new NodeJSHostRunner(),
@@ -592,28 +610,6 @@ namespace Wasm.Build.Tests
                             string ProjectFileContents,
                             string? ExtraBuildArgs);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result, string BuildOutput);
-    public record FileStat(bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
-    public record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
-
-    public record BlazorBuildOptions
-    (
-        string Id,
-        string Config,
-        NativeFilesType ExpectedFileType,
-        string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
-        bool WarnAsError = true,
-        bool ExpectRelinkDirWhenPublishing = false,
-        bool ExpectFingerprintOnDotnetJs = false,
-        RuntimeVariant RuntimeType = RuntimeVariant.SingleThreaded
-    );
-
-    public enum GlobalizationMode
-    {
-        Invariant,       // no icu
-        FullIcu,         // full icu data: icudt.dat is loaded
-        PredefinedIcu,   // user set WasmIcuDataFileName value and we are loading that file
-        Hybrid           // reduced icu, missing data is provided by platform-native functions (web api for wasm)
-    };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }
