@@ -5,7 +5,6 @@
     <RootNamespace>Microsoft.Extensions.Hosting</RootNamespace>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
-    <CLSCompliant>false</CLSCompliant>
     <PackageDescription>Hosting and startup abstractions for applications.</PackageDescription>
   </PropertyGroup>
 

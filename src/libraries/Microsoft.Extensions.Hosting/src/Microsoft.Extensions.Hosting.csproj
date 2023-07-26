@@ -5,7 +5,6 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>Hosting and startup infrastructures for applications.</PackageDescription>
     <IsPackable>true</IsPackable>
-    <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
 
   <ItemGroup>

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
-    <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
 
   <ItemGroup>
