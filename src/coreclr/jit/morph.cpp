@@ -12005,6 +12005,79 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                 }
                 break;
             }
+
+            case NI_Vector128_op_Equality:
+            case NI_Vector256_op_Equality:
+            {
+                if (!gtIsActiveCSE_Candidate(hw))
+                {
+                    GenTree* op1 = hw->Op(1);
+                    GenTree* op2 = hw->Op(2);
+
+                    if (!op1->OperIs(GT_HWINTRINSIC) || gtIsActiveCSE_Candidate(op1))
+                    {
+                        break;
+                    }
+
+                    if (!op2->IsVectorZero() || gtIsActiveCSE_Candidate(op2)) 
+                    {
+                        break;
+                    }
+
+                    NamedIntrinsic ni = op1->AsHWIntrinsic()->GetHWIntrinsicId();
+                    switch (ni)
+                    {
+                        case NamedIntrinsic::NI_SSE2_AndNot:
+                        case NamedIntrinsic::NI_SSE2_And:
+                        {
+                            if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                            {
+                                break;
+                            }
+
+                            // Transform Vector128.AndNot(op1, op2) == Vector128<byte>.Zero to Sse41.TestC(op2, op1);
+                            // Transform Vector128.And(op1, op2) == Vector128<byte>.Zero to Sse41.TestZ(op1, op2);
+                            GenTree* newNode = gtNewSimdAsHWIntrinsicNode(hw->TypeGet(), op1->AsHWIntrinsic()->Op(1), op1->AsHWIntrinsic()->Op(2),
+                                                                          ni ==  NamedIntrinsic::NI_SSE2_AndNot ? NamedIntrinsic::NI_SSE41_TestC : NamedIntrinsic::NI_SSE41_TestZ, 
+                                                                          hw->GetSimdBaseJitType(), hw->GetSimdSize());
+
+                            DEBUG_DESTROY_NODE(hw);
+                            DEBUG_DESTROY_NODE(op1);
+                            DEBUG_DESTROY_NODE(op2);
+                            INDEBUG(newNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+                            return newNode;
+                        }
+
+                        case NamedIntrinsic::NI_AVX2_AndNot:
+                        case NamedIntrinsic::NI_AVX2_And:
+                        {
+                            if (!compOpportunisticallyDependsOn(InstructionSet_AVX))
+                            {
+                                break;
+                            }
+
+                            // Transform Vector256.AndNot(op1, op2) == Vector128<byte>.Zero to Avx.TestC(op2, op1);
+                            // Transform Vector256.And(op1, op2) == Vector256<byte>.Zero to Avx.TestZ(op1, op2);
+                            GenTree* newNode = gtNewSimdAsHWIntrinsicNode(hw->TypeGet(), op1->AsHWIntrinsic()->Op(1), op1->AsHWIntrinsic()->Op(2),
+                                                                          ni == NamedIntrinsic::NI_AVX2_AndNot ? NamedIntrinsic::NI_AVX_TestC : NamedIntrinsic::NI_AVX_TestZ, 
+                                                                          hw->GetSimdBaseJitType(), hw->GetSimdSize());
+
+                            DEBUG_DESTROY_NODE(hw);
+                            DEBUG_DESTROY_NODE(op1);
+                            DEBUG_DESTROY_NODE(op2);
+                            INDEBUG(newNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+                            return newNode;
+                        }
+
+                        default:
+                            break;
+                    }
+                }
+
+                break;
+            }
 #endif
 
             default:
