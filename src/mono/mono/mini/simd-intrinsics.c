@@ -2592,21 +2592,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		return NULL;
 	}
 
-	if (!COMPILE_LLVM (cfg)) {
 #ifndef TARGET_ARM64
+	if (!COMPILE_LLVM (cfg))
 		return NULL;
-#else
-		// when a method gets enabled should be removed from here
-		switch (id) {
-		case SN_ctor:
-		case SN_get_Item:
-		case SN_set_Item:
-			return NULL;
-		default:
-			break;
-		}
 #endif
-	}
 
 	if (cfg->verbose_level > 1) {
 		char *name = mono_method_full_name (cmethod, TRUE);
@@ -2628,10 +2617,13 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 
 			int opcode = type_to_expand_op (etype->type);
 			ins = emit_simd_ins (cfg, klass, opcode, args [1]->dreg, -1);
+			ins->dreg = dreg;
+			ins->inst_c1 = MONO_TYPE_R4;
 
 			for (int i = 1; i < fsig->param_count; ++i) {
 				ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, ins->dreg, args [i + 1]->dreg);
 				ins->inst_c0 = i;
+				ins->inst_c1 = MONO_TYPE_R4;
 			}
 			ins->dreg = dreg;
 
@@ -2678,9 +2670,16 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 		MonoTypeEnum ty = etype->type;
-		int opcode = type_to_xextract_op (ty);
 		int src1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-		ins = emit_simd_ins (cfg, klass, opcode, src1, args [1]->dreg);
+
+		if (COMPILE_LLVM (cfg)) {
+			int opcode = type_to_xextract_op (ty);
+			ins = emit_simd_ins (cfg, klass, opcode, src1, args [1]->dreg);
+		} else {
+			int opcode = type_to_extract_op (ty);
+			ins = emit_simd_ins (cfg, klass, opcode, src1, -1);
+			ins->inst_c0 = args[1]->inst_c0;
+		}
 		ins->inst_c1 = ty;
 		return ins;
 	}
@@ -2732,12 +2731,22 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		g_assert (fsig->hasthis && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_I4 && fsig->params [1]->type == MONO_TYPE_R4);
 
 		gboolean indirect = FALSE;
+		int elems = 4, index = args [1]->inst_c0;
 		int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
 
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
-		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		ins = emit_simd_ins (cfg, klass, OP_XINSERT_R4, dreg, args [2]->dreg);
-		ins->sreg3 = args [1]->dreg;
+		// Bounds check only if the index is out of range
+		if (index < 0 || index >= elems) {
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
+			MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+		}
+
+		if (COMPILE_LLVM (cfg)) {
+			ins = emit_simd_ins (cfg, klass, OP_XINSERT_R4, dreg, args [2]->dreg);
+			ins->sreg3 = args [1]->dreg;
+		} else {
+			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, dreg, args [2]->dreg);
+			ins->inst_c0 = index;
+		}
 		ins->inst_c1 = MONO_TYPE_R4;
 		ins->dreg = dreg;
 		if (indirect) {
