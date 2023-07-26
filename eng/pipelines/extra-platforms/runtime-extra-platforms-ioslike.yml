@@ -105,7 +105,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_NativeAOT
-      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:ContinuousIntegrationBuild=true
+      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
       timeoutInMinutes: 180
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml

@@ -16,7 +16,7 @@
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
     
-    <_AOTBuildCommand>$(_AOTBuildCommand) /p:XHARNESS_EXECUTION_DIR=&quot;$XHARNESS_EXECUTION_DIR&quot; /p:RunAOTCompilation=$(RunAOTCompilation) /p:UseNativeAOTRuntime=$(UseNativeAOTRuntime) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:MonoForceInterpreter=$(MonoForceInterpreter) /p:MonoEnableLLVM=true /p:DevTeamProvisioning=$(DevTeamProvisioning) /p:UsePortableRuntimePack=true /p:Configuration=$(Configuration)</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) /p:XHARNESS_EXECUTION_DIR=&quot;$XHARNESS_EXECUTION_DIR&quot; /p:RunAOTCompilation=$(RunAOTCompilation) /p:UseNativeAOTRuntime=$(UseNativeAOTRuntime) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:MonoForceInterpreter=$(MonoForceInterpreter) /p:DevTeamProvisioning=$(DevTeamProvisioning) /p:UsePortableRuntimePack=true /p:Configuration=$(Configuration)</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) </_AOTBuildCommand>
 
     <_ResetSimulatorSwitch Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator'">--reset-simulator</_ResetSimulatorSwitch>
@@ -119,7 +119,6 @@
       <_ApplePropertyNames Include="MainLibraryFileName" />
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
       <_ApplePropertyNames Include="UseRuntimeComponents" />
-      <_ApplePropertyNames Include="IsRuntimeTests" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
@@ -154,7 +153,7 @@
 
     <PropertyGroup>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
     
       <AppleBuildDir>$(PublishDir)</AppleBuildDir>
       <AppleBundleDir>$(BundleDir)</AppleBundleDir>

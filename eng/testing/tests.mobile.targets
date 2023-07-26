@@ -11,12 +11,12 @@
     <PublishTestAsSelfContainedDependsOn Condition="'$(PublishTestAsSelfContainedDependsOn)' == ''">Publish</PublishTestAsSelfContainedDependsOn>
     <PublishTestAsSelfContainedAfterTargets Condition="'$(PublishTestAsSelfContainedAfterTargets)' == ''">Build</PublishTestAsSelfContainedAfterTargets>
 
-
     <SkipWorkloadsTestingTargetsImport Condition="'$(SkipWorkloadsTestingTargetsImport)' == ''">true</SkipWorkloadsTestingTargetsImport>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <RunAOTCompilation Condition="'$(UseNativeAOTRuntime)' != 'true' and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos')">true</RunAOTCompilation>
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
+    <RunAOTCompilation Condition="'$(RuntimeFlavor)' == 'Mono' ">true</RunAOTCompilation>
+    <UseNativeAOTRuntime Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</UseNativeAOTRuntime>
   </PropertyGroup>
 
   <PropertyGroup>
