@@ -35,6 +35,20 @@
             }
         },
         {
+            "name": "Release",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "Checked",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Checked"
+            }
+        },
+        {
             "name": "x64",
             "hidden": true,
             "architecture": {
@@ -77,6 +91,24 @@
             ]
         },
         {
+            "name": "windows.x64.Release",
+            "displayName": "windows.x64.Release",
+            "inherits": [
+                "windows-base",
+                "Release",
+                "x64"
+            ]
+        },
+        {
+            "name": "windows.x64.Checked",
+            "displayName": "windows.x64.Checked",
+            "inherits": [
+                "windows-base",
+                "Checked",
+                "x64"
+            ]
+        },
+        {
             "name": "windows.x86.Debug",
             "displayName": "windows.x86.Debug",
             "inherits": [
@@ -86,11 +118,47 @@
             ]
         },
         {
+            "name": "windows.x86.Release",
+            "displayName": "windows.x86.Release",
+            "inherits": [
+                "windows-base",
+                "Release",
+                "x86"
+            ]
+        },
+        {
+            "name": "windows.x86.Checked",
+            "displayName": "windows.x86.Checked",
+            "inherits": [
+                "windows-base",
+                "Checked",
+                "x86"
+            ]
+        },
+        {
             "name": "windows.arm64.Debug",
             "displayName": "windows.arm64.Debug",
             "inherits": [
                 "windows-base",
                 "Debug",
+                "ARM64"
+            ]
+        },
+        {
+            "name": "windows.arm64.Release",
+            "displayName": "windows.arm64.Release",
+            "inherits": [
+                "windows-base",
+                "Release",
+                "ARM64"
+            ]
+        },
+        {
+            "name": "windows.arm64.Checked",
+            "displayName": "windows.arm64.Checked",
+            "inherits": [
+                "windows-base",
+                "Checked",
                 "ARM64"
             ]
         }
