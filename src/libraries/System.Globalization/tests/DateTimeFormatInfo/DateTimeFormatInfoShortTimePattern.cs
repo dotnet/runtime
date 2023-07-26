@@ -16,6 +16,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> ShortTimePattern_Get_TestData()
         {
+            // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "h:mm tt" };
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "h:mm tt" };
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "H:mm" }; // HH:mm

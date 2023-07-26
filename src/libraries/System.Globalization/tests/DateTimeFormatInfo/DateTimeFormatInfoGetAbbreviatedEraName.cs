@@ -18,6 +18,7 @@ namespace System.Globalization.Tests
 
             if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
+                // see the comments on the right to check the non-Hybrid result, if it differs
                 yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, 1, "هـ" };
                 yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, 1, "ዓ/ም" };
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, 1, "сл.Хр." };

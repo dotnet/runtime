@@ -30,6 +30,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> MonthNames_Get_TestData()
         {
+            // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, new string[] { "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة", "" } };
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] { "ጃንዩወሪ", "ፌብሩወሪ", "ማርች", "ኤፕሪል", "ሜይ", "ጁን", "ጁላይ", "ኦገስት", "ሴፕቴምበር", "ኦክቶበር", "ኖቬምበር", "ዲሴምበር", "" } };
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, new string[] { "януари", "февруари", "март", "април", "май", "юни", "юли", "август", "септември", "октомври", "ноември", "декември", "" } };

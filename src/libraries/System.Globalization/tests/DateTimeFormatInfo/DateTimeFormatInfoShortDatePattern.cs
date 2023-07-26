@@ -10,6 +10,7 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> ShortDatePattern_Get_TestData()
         {
+            // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "d\u200f/M\u200f/yyyy" }; // "d\u200f/M\u200f/yyyy g"
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "dd/MM/yyyy" };
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "d.MM.yyyy г." }; // "d.MM.yyyy 'г'."

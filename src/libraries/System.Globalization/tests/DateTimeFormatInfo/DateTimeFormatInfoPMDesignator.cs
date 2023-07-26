@@ -11,11 +11,12 @@ namespace System.Globalization.Tests
         [Fact]
         public void PMDesignator_GetInvariantInfo_ReturnsExpected()
         {
-            Assert.Equal("PM", DateTimeFormatInfo.InvariantInfo.PMDesignator); // why only invaraint??
+            Assert.Equal("PM", DateTimeFormatInfo.InvariantInfo.PMDesignator);
         }
 
         public static IEnumerable<object[]> PMDesignator_Get_TestData()
         {
+            // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "م" };
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "ከሰዓት" };
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "сл.об." };

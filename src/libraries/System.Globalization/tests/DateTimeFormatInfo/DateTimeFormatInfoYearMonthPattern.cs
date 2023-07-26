@@ -14,6 +14,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "MMMM yyyy" };
             if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
+                // see the comments on the right to check the non-Hybrid result, if it differs
                 yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "MMMM yyyy" }; // "MMMM yyyy g"
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "MMMM yyyy \u0433." }; // ICU: "MMMM yyyy '\u0433'."
                 yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, "MMMM de yyyy" }; // ICU:  "MMMM 'de' yyyy"

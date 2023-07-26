@@ -18,6 +18,7 @@ namespace System.Globalization.Tests
             }
             else
             {
+                // see the comments on the right to check the non-Hybrid result, if it differs
                 yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, DayOfWeek.Monday };

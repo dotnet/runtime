@@ -16,7 +16,8 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> AMDesignator_Get_TestData()
         {
-                        yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "ص" };
+            // see the comments on the right to check the non-Hybrid result, if it differs
+            yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "ص" };
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "ጥዋት" };
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "пр.об." };
             yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, "AM" };

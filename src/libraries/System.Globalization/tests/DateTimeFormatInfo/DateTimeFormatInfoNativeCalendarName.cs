@@ -10,6 +10,7 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> NativeCalendarName_Get_TestData()
         {
+            // see the comments on the right to check the non-Hybrid result, in this collection it always differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "islamic-umalqura" }; // التقويم الإسلامي (أم القرى)
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "gregory" }; // የግሪጎሪያን የቀን አቆጣጠር
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "gregory" }; // григориански календар

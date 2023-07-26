@@ -30,6 +30,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> AbbreviatedDayNames_Get_TestData()
         {
+            // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, new string[] { "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت" } };
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] { "እሑድ", "ሰኞ", "ማክሰ", "ረቡዕ", "ሐሙስ", "ዓርብ", "ቅዳሜ" } };
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, new string[] { "нд", "пн", "вт", "ср", "чт", "пт", "сб" } };

@@ -27,6 +27,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> LongDatePattern_Get_TestData()
         {
+            // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "dddd، d MMMM yyyy" }; // dddd، d MMMM yyyy g
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "yyyy MMMM d, dddd" };
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "dddd, d MMMM yyyy г." }; // "dddd, d MMMM yyyy 'г'." 
@@ -203,7 +204,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("ta-MY").DateTimeFormat, "dddd, d MMMM, yyyy" };
             yield return new object[] { new CultureInfo("ta-SG").DateTimeFormat, "dddd, d MMMM, yyyy" };
             yield return new object[] { new CultureInfo("te-IN").DateTimeFormat, "d, MMMM yyyy, dddd" };
-            yield return new object[] { new CultureInfo("th-TH").DateTimeFormat, "ddddที่ d MMMM g yyyy" };// <= ddddที่ d MMMM 1542
+            yield return new object[] { new CultureInfo("th-TH").DateTimeFormat, "ddddที่ d MMMM g yyyy" };
             yield return new object[] { new CultureInfo("tr-CY").DateTimeFormat, "d MMMM yyyy dddd" };
             yield return new object[] { new CultureInfo("tr-TR").DateTimeFormat, "d MMMM yyyy dddd" };
             yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, "dddd, d MMMM yyyy р." }; // "dddd, d MMMM yyyy 'р'."
