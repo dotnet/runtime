@@ -14,7 +14,7 @@ public class ResourceUpdaterTests
 {
     RepoDirectoriesProvider RepoDirectories = new RepoDirectoriesProvider();
 
-    [Fact]
+    [WindowsOnlyFact]
     void ResourceUpdaterAddResource()
     {
         using var memoryStream = new MemoryStream(File.ReadAllBytes(Path.Combine(RepoDirectories.HostArtifacts, "comhost.dll")));
