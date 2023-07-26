@@ -9,9 +9,9 @@
       "name": "base",
       "hidden": true,
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/../../artifacts/obj/${presetName}",
+      "binaryDir": "${sourceDir}/../../artifacts/obj/coreclr/${presetName}",
       "cacheVariables": {
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/../../artifacts/bin/${presetName}"
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/../../artifacts/bin/coreclr/${presetName}"
       }
     },
     {
