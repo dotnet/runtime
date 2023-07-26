@@ -89,7 +89,7 @@ internal class ChromeProvider : WasmHostProvider
 
         var options = new ProxyOptions();
         options.JustMyCode = true;
-		_debuggerProxy = new DebuggerProxy(loggerFactory, loggerId: Id, options: options);
+        _debuggerProxy = new DebuggerProxy(loggerFactory, loggerId: Id, options: options);
         TestHarnessProxy.RegisterNewProxy(Id, _debuggerProxy);
         var browserUri = new Uri(con_str);
         WebSocket? ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
