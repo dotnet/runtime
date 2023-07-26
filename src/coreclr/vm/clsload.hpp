@@ -699,6 +699,12 @@ public:
                                             LoadTypesFlag fLoadTypes = LoadTypes,
                                             ClassLoadLevel level = CLASS_LOADED);
 
+    static TypeHandle LoadConstValueTypeThrowing(CorElementType valueType,
+                                                 ULONG value,
+                                                 CorElementType typ = ELEMENT_TYPE_CTARG,
+                                                 LoadTypesFlag fLoadTypes = LoadTypes,
+                                                 ClassLoadLevel level = CLASS_LOADED);
+
     // External class loader entry point
     // Load types by name - doesn't support nested types.
     // See overload using NameHandle.

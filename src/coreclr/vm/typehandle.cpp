@@ -1043,6 +1043,21 @@ BOOL TypeHandle::IsConstValue() const
     return (!IsTypeDesc() && AsMethodTable()->IsConstValue());
 }
 
+template<typename T>
+T TypeHandle::GetConstValue() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return AsMethodTable()->GetConstValue<T>();
+}
+
+CorElementType TypeHandle::GetConstValueType() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return AsMethodTable()->GetConstValueType();
+}
+
 BOOL TypeHandle::IsRestored_NoLogging() const
 {
     LIMITED_METHOD_CONTRACT;

@@ -1339,54 +1339,17 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         
         case ELEMENT_TYPE_CTARG:
         {
+#ifndef DACCESS_COMPILE
             CorElementType elemType;
             uint32_t cb;
             PCCOR_SIGNATURE elem;
             IfFailThrowBF(psig.GetConstTypeArg(&elemType, &cb, &elem), BFA_BAD_SIGNATURE, pOrigModule);
-
-            // TODO: we need to make a MethodTable here.
-            // and changes to MethodTableBuilder are required as well.
-            _ASSERTE(!"NYI");
-
-            TypeHandle th = TypeHandle();
-            th.AsMethodTable()->SetIsConstValue();
-
-            switch (elemType)
-            {
-            case ELEMENT_TYPE_BOOLEAN :
-            case ELEMENT_TYPE_CHAR    :
-            case ELEMENT_TYPE_I1      :
-            case ELEMENT_TYPE_U1      :
-                th.AsMethodTable()->SetConstValue<uint8_t>(elemType, *(uint8_t*)elem);
-                break;
-            case ELEMENT_TYPE_I2      :
-            case ELEMENT_TYPE_U2      :
-                th.AsMethodTable()->SetConstValue<uint16_t>(elemType, *(uint16_t*)elem);
-                break;
-            case ELEMENT_TYPE_I4      :
-            case ELEMENT_TYPE_U4      :
-            IN_TARGET_32BIT(case ELEMENT_TYPE_I       :)
-            IN_TARGET_32BIT(case ELEMENT_TYPE_U       :)
-                th.AsMethodTable()->SetConstValue<uint32_t>(elemType, *(uint32_t*)elem);
-                break;
-            case ELEMENT_TYPE_I8      :
-            case ELEMENT_TYPE_U8      :
-            IN_TARGET_64BIT(case ELEMENT_TYPE_I       :)
-            IN_TARGET_64BIT(case ELEMENT_TYPE_U       :)
-                th.AsMethodTable()->SetConstValue<uint64_t>(elemType, *(uint64_t*)elem);
-                break;
-            case ELEMENT_TYPE_R4      :
-                th.AsMethodTable()->SetConstValue<float>(elemType, *(float*)elem);
-                break;
-            case ELEMENT_TYPE_R8      :
-                th.AsMethodTable()->SetConstValue<double>(elemType, *(double*)elem);
-                break;
-            default:
-                _ASSERTE(!"UNKNOWN CONST TYPE ARG TYPE");
-                break;
-            }
-
-            thRet = th;
+            ULONG value = *(ULONG*)elem;
+            thRet = ClassLoader::LoadConstValueTypeThrowing(elemType, value);
+#else
+            DacNotImpl();
+            thRet = TypeHandle();
+#endif
             break;
         }
 

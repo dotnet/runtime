@@ -1368,7 +1368,7 @@ AGAIN:
                 ptr += CorSigUncompressToken(ptr, &tk);
                 break;
         case ELEMENT_TYPE_CTARG        :
-                ptr += CorSigUncompressConstTypeArgData((PCCOR_SIGNATURE&) ptr); // const type parameter
+                ptr += CorSigUncompressConstTypeArgData((PCCOR_SIGNATURE&) ptr); // const type argument
                 break;
         case ELEMENT_TYPE_CMOD_REQD    :
         case ELEMENT_TYPE_CMOD_OPT     :

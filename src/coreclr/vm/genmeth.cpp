@@ -1422,9 +1422,11 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport* pIM
             TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
             if (pTypeVarTypeDesc == NULL)
             {
+                mdToken tkType;
+                IfFailThrow(pIMDII->GetGenericParamProps(tkTyPar, NULL, NULL, NULL, &tkType, NULL));
                 // Do NOT use pamTracker for this memory as we need it stay allocated even if the load fails.
                 void* mem = (void*)pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
-                pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, tok, i, tkTyPar);
+                pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, tok, tkType, i, tkTyPar);
 
                 pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
             }

@@ -261,6 +261,7 @@ private:
     BOOL IsAbstract() { LIMITED_METHOD_CONTRACT; return IsTdAbstract(bmtType->dwAttr); }
     BOOL HasLayout() { LIMITED_METHOD_CONTRACT; return bmtProp->fHasLayout; }
     BOOL IsDelegate() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsDelegate; }
+    BOOL IsConstValue() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsConstValue; }
     Module *GetModule() { LIMITED_METHOD_CONTRACT; return bmtType->pModule; }
     Assembly *GetAssembly() { WRAPPER_NO_CONTRACT; return GetModule()->GetAssembly(); }
     ClassLoader *GetClassLoader() { WRAPPER_NO_CONTRACT; return GetModule()->GetClassLoader(); }
@@ -280,6 +281,7 @@ private:
     // we create that object.</NICE>
     void SetIsValueClass() { LIMITED_METHOD_CONTRACT; bmtProp->fIsValueClass = TRUE; }
     void SetEnum() { LIMITED_METHOD_CONTRACT; bmtProp->fIsEnum = TRUE; }
+    void SetIsConstValue() { LIMITED_METHOD_CONTRACT; bmtProp->fIsConstValue = TRUE; }
     void SetHasLayout() { LIMITED_METHOD_CONTRACT; bmtProp->fHasLayout = TRUE; }
     void SetIsDelegate() { LIMITED_METHOD_CONTRACT; bmtProp->fIsDelegate = TRUE; }
 #ifdef _DEBUG
@@ -320,6 +322,7 @@ private:
         BOOL fIsComClassInterface;
         BOOL fHasLayout;
         BOOL fIsDelegate;
+        BOOL fIsConstValue;
 
         LPUTF8 szDebugClassName;
 

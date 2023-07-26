@@ -22,6 +22,7 @@ class TypeHandle;
 class Instantiation;
 class FnPtrTypeDesc;
 class ParamTypeDesc;
+class ConstValueTypeDesc;
 class TypeVarTypeDesc;
 class MethodTable;
 class EEClass;
@@ -39,6 +40,7 @@ struct CORINFO_CLASS_STRUCT_;
 typedef DPTR(class TypeVarTypeDesc) PTR_TypeVarTypeDesc;
 typedef SPTR(class FnPtrTypeDesc) PTR_FnPtrTypeDesc;
 typedef DPTR(class ParamTypeDesc) PTR_ParamTypeDesc;
+typedef DPTR(class ConstValueTypeDesc) PTR_ConstValueTypeDesc;
 typedef DPTR(class TypeDesc) PTR_TypeDesc;
 typedef DPTR(class TypeHandle) PTR_TypeHandle;
 
@@ -202,8 +204,6 @@ public:
     BOOL IsEnum() const;
 
     BOOL IsFnPtrType() const;
-
-    BOOL IsConstValue() const;
 
     inline PTR_MethodTable AsMethodTable() const;
 
@@ -482,6 +482,11 @@ public:
     // CVAR, MCVAR
     BOOL IsConstGenericVariable() const;
 
+    // CTARG
+    BOOL IsConstValue() const;
+    template<typename T> T GetConstValue() const;
+    CorElementType GetConstValueType() const;
+
     // BYREF
     BOOL IsByRef() const;
 
@@ -561,14 +566,15 @@ private:
 
     union
     {
-        TADDR               m_asTAddr;      // we look at the low order bits
+        TADDR                  m_asTAddr;      // we look at the low order bits
 #ifndef DACCESS_COMPILE
-        void *              m_asPtr;
-        PTR_MethodTable     m_asMT;
-        PTR_TypeDesc        m_asTypeDesc;
-        PTR_ParamTypeDesc   m_asParamTypeDesc;
-        PTR_TypeVarTypeDesc m_asTypeVarTypeDesc;
-        PTR_FnPtrTypeDesc   m_asFnPtrTypeDesc;
+        void *                 m_asPtr;
+        PTR_MethodTable        m_asMT;
+        PTR_TypeDesc           m_asTypeDesc;
+        PTR_ParamTypeDesc      m_asParamTypeDesc;
+        PTR_TypeVarTypeDesc    m_asTypeVarTypeDesc;
+        PTR_FnPtrTypeDesc      m_asFnPtrTypeDesc;
+        PTR_ConstValueTypeDesc m_asConstValueTypeDesc;
 #endif
     };
 };

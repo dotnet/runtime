@@ -773,9 +773,9 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
 
         _ASSERTE(TypeFromToken(mdOwner) == mdtTypeDef || TypeFromToken(mdOwner) == mdtMethodDef);
 
-        if (RidFromToken(mdType))
+        if (ty.IsConstGenericVariable())
         {
-            _ASSERTE(TypeFromToken(mdType) == mdtTypeSpec);
+            _ASSERTE(TypeFromToken(mdType) == mdtTypeSpec && RidFromToken(mdType));
             tnb.Append(W("const "));
             ULONG cb;
             PCCOR_SIGNATURE sig;
@@ -887,6 +887,11 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         {        
             tnb.AddNameNoEscaping(W(""));            
         }
+    }
+    // or a const value
+    else if (ty.IsConstValue())
+    {
+
     }
 
     // ...otherwise it's just a plain type def or an instantiated type

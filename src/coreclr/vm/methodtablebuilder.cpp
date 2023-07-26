@@ -72,6 +72,7 @@ MethodTableBuilder::CreateClass( Module *pModule,
                                 BOOL fHasLayout,
                                 BOOL fDelegate,
                                 BOOL fIsEnum,
+                                BOOL fIsConstValue,
                                 const MethodTableBuilder::bmtGenericsInfo *bmtGenericsInfo,
                                 LoaderAllocator * pAllocator,
                                 AllocMemTracker *pamTracker)
@@ -113,6 +114,10 @@ MethodTableBuilder::CreateClass( Module *pModule,
     else if (fDelegate)
     {
         pEEClass = new (pAllocator->GetLowFrequencyHeap(), pamTracker) DelegateEEClass();
+    }
+    else if (fIsConstValue)
+    {
+        pEEClass = new (pAllocator->GetLowFrequencyHeap(), pamTracker) ConstValueClass();
     }
     else
     {
@@ -12104,7 +12109,8 @@ MethodTableBuilder::GatherGenericsInfo(
             {
                 pInternalImport->EnumNext(&hEnumGenericPars, &tkTyPar);
                 DWORD flags;
-                if (FAILED(pInternalImport->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
+                mdToken tkTyParType;
+                if (FAILED(pInternalImport->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, &tkTyParType, NULL)))
                 {
                     pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
                 }
@@ -12119,7 +12125,7 @@ MethodTableBuilder::GatherGenericsInfo(
                     {
                         // Do NOT use the alloc tracker for this memory as we need it stay allocated even if the load fails.
                         void* mem = (void*)pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
-                        pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, cl, i, tkTyPar);
+                        pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, cl, tkTyParType, i, tkTyPar);
 
                         pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
                     }
@@ -12370,6 +12376,8 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     // This is a delegate class if it derives from MulticastDelegate (we do not allow single cast delegates)
     BOOL fIsDelegate = pParentMethodTable && pParentMethodTable == g_pMulticastDelegateClass;
 
+    BOOL fIsConstValue = false;
+
     // Create a EEClass entry for it, filling out a few fields, such as the parent class token
     // (and the generic type should we be creating an instantiation)
     EEClass * pClass = MethodTableBuilder::CreateClass(
@@ -12378,6 +12386,7 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         fHasLayout,
         fIsDelegate,
         fIsEnum,
+        fIsConstValue,
         &genericsInfo,
         pAllocator,
         pamTracker);

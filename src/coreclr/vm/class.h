@@ -2030,15 +2030,16 @@ typedef DPTR(ConstValueClass) PTR_ConstValueClass;
 
 class ConstValueClass : public EEClass
 {
-    struct const_value_t {
-        unsigned char m_byte[8];
-    };
 private:
     DAC_ALIGNAS(EEClass)  // Align the first member to the alignment of the base class
-    const_value_t      m_value;
+    ULONG              m_value;
     CorElementType     m_type;
 
 public:
+#ifndef DACCESS_COMPILE
+    ConstValueClass() : EEClass(sizeof(ConstValueClass)) { LIMITED_METHOD_CONTRACT; }
+#endif // !DACCESS_COMPILE
+
     CorElementType GetValueType() {
         LIMITED_METHOD_CONTRACT;
         return m_type;
@@ -2047,7 +2048,7 @@ public:
     template<typename T>
     void SetValue(CorElementType type, T value) {
         LIMITED_METHOD_CONTRACT;
-        m_value = *(const_value_t*)(void*)&value;
+        m_value = *(ULONG*)(void*)&value;
         m_type = type;
     }
     

@@ -1650,6 +1650,42 @@ TypeHandle ClassLoader::LoadFnptrTypeThrowing(BYTE callConv,
     RETURN(LoadConstructedTypeThrowing(&key, fLoadTypes, level));
 }
 
+TypeHandle ClassLoader::LoadConstValueTypeThrowing(CorElementType valueType,
+                                                   ULONG value,
+                                                   CorElementType typ /* ELEMENT_TYPE_CTARG */,
+                                                   LoadTypesFlag fLoadTypes /* LoadTypes */,
+                                                   ClassLoadLevel level /* CLASS_LOADED */)
+{
+    CONTRACT(TypeHandle)
+    {
+        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
+        if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
+        PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
+        PRECONDITION(valueType <= ELEMENT_TYPE_R8 && valueType != ELEMENT_TYPE_VOID);
+        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == LoadTypes) ? NULL_NOT_OK : NULL_OK)));
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACT_END
+    
+    TypeHandle th = TypeHandle(CoreLibBinder::GetElementType(valueType));
+    TypeKey key(th, value);
+    TypeHandle typeHnd = TypeHandle();
+    _ASSERTE(!"NYI: Load const value TypeHandle.");
+#ifndef DACCESS_COMPILE
+    // If we got here, we now have to allocate a new const value type.
+    // By definition, forbidgc-users aren't allowed to reach this point.
+    CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
+    
+    RETURN(typeHnd);
+#else
+    DacNotImpl();
+    RETURN(typeHnd);
+#endif
+}
+
 // Find an instantiation of a generic type if it has already been created.
 // If typeDef is not a generic type or is already instantiated then throw an exception.
 // If its arity does not match ntypars then throw an exception.

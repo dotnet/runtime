@@ -106,6 +106,9 @@ public:
     // CVAR, MCVAR
     BOOL IsConstGenericVariable();
 
+    // CTARG
+    BOOL IsConstValue();
+
     // ELEMENT_TYPE_FNPTR
     BOOL IsFnPtr();
 
@@ -312,6 +315,42 @@ protected:
     RUNTIMETYPEHANDLE m_hExposedClassObject;
 };
 
+typedef DPTR(class ConstValueTypeDesc) PTR_ConstValueTypeDesc;
+
+class ConstValueTypeDesc : public TypeDesc
+{
+public:
+#ifndef DACCESS_COMPILE
+
+    ConstValueTypeDesc(CorElementType type) :
+        TypeDesc(CorElementType::ELEMENT_TYPE_CTARG), m_type(type)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+    }
+ 
+#endif // #ifndef DACCESS_COMPILE
+    
+    // placement new operator
+    void* operator new(size_t size, void* spot) { LIMITED_METHOD_CONTRACT;  return (spot); }
+    
+    CorElementType GetConstValueType()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return m_type;
+    }
+    
+private:
+    CorElementType m_type;
+};
+
 /*************************************************************************/
 // These are for verification of generic code and reflection over generic code.
 // Each TypeVarTypeDesc represents a class or method type variable, as specified by a GenericParam entry.
@@ -324,8 +363,8 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    TypeVarTypeDesc(PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token) :
-        TypeDesc(GetTypeVarTokenType(pModule, typeOrMethodDef, token))
+    TypeVarTypeDesc(PTR_Module pModule, mdToken typeOrMethodDef, mdToken type, unsigned int index, mdGenericParam token) :
+        TypeDesc(GetTypeVarTokenType(pModule, typeOrMethodDef, type, token))
     {
         CONTRACTL
         {
@@ -340,6 +379,7 @@ public:
 
         m_pModule = pModule;
         m_typeOrMethodDef = typeOrMethodDef;
+        m_type = type;
         m_token = token;
         m_index = index;
         m_hExposedClassObject = 0;
@@ -347,12 +387,12 @@ public:
         m_numConstraints = (DWORD)-1;
     }
 
-    CorElementType GetTypeVarTokenType(PTR_Module pModule, mdToken typeOrMethodDef, mdGenericParam token)
+    CorElementType GetTypeVarTokenType(PTR_Module pModule, mdToken typeOrMethodDef, mdToken type, mdGenericParam token)
     {
-        mdToken tkType;
-        pModule->GetMDImport()->GetGenericParamProps(token, NULL, NULL, NULL, &tkType, NULL);
+        LIMITED_METHOD_CONTRACT;
+
         BOOL isTypeDef = TypeFromToken(typeOrMethodDef) == mdtTypeDef;
-        if (RidFromToken(tkType))
+        if (RidFromToken(type))
         {
             return isTypeDef ? ELEMENT_TYPE_CVAR : ELEMENT_TYPE_MCVAR;
         }
@@ -380,6 +420,13 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         return m_index;
+    }
+
+    mdToken GetType()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        return m_type;
     }
 
     mdGenericParam GetToken()
@@ -474,6 +521,9 @@ protected:
 
     // Declaring type or method
     mdToken m_typeOrMethodDef;
+
+    // the type of const type parameter if it is
+    mdToken m_type;
 
     // Constraints, determined on first call to GetConstraints
     Volatile<DWORD> m_numConstraints;    // -1 until number has been determined

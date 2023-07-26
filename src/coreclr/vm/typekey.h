@@ -57,6 +57,19 @@ class TypeKey
             DWORD m_numArgs;
             TypeHandle* m_pRetAndArgTypes;
         } asFnPtr;
+
+        struct
+        {
+            TADDR m_valueType;
+            union {
+                uint8_t asUint8;
+                uint16_t asUint16;
+                uint32_t asUint32;
+                uint64_t asUint64;
+                float asFloat;
+                double asDouble;
+            } m_value;
+        } asConstValue;
     } u;
 
 public:
@@ -99,6 +112,17 @@ public:
         u.asFnPtr.m_numArgs = numArgs;
         u.asFnPtr.m_pRetAndArgTypes = retAndArgTypes;
     }
+    
+    // Constructor for const value type
+    TypeKey(TypeHandle valueType, uint64_t value)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        PRECONDITION(CheckPointer(valueType));
+        m_kind = ELEMENT_TYPE_CTARG;
+        u.asConstValue.m_value.asUint64 = value;
+        u.asConstValue.m_valueType = valueType.AsTAddr();
+    }
 
     CorElementType GetKind() const
     {
@@ -122,6 +146,22 @@ public:
         SUPPORTS_DAC;
         PRECONDITION(CorTypeInfo::IsModifier_NoThrow(m_kind) || m_kind == ELEMENT_TYPE_VALUETYPE);
         return TypeHandle::FromTAddr(u.asParamType.m_paramType);
+    }
+
+    TypeHandle GetConstValueType() const
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        PRECONDITION(m_kind == ELEMENT_TYPE_CTARG);
+        return TypeHandle::FromTAddr(u.asConstValue.m_valueType);
+    }
+
+    uint64_t GetConstValue() const
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        PRECONDITION(m_kind == ELEMENT_TYPE_CTARG);
+        return u.asConstValue.m_value.asUint64;
     }
 
     BOOL IsConstructed() const
