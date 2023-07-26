@@ -476,10 +476,10 @@ public:
     // ARRAY or SZARRAY
     BOOL IsArray() const;
 
-    // VAR or MVAR
+    // VAR or MVAR or CVAR or MCVAR
     BOOL IsGenericVariable() const;
     
-    // CVAR, MCVAR
+    // CVAR or MCVAR
     BOOL IsConstGenericVariable() const;
 
     // CTARG

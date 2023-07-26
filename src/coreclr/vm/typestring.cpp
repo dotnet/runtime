@@ -781,50 +781,8 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             PCCOR_SIGNATURE sig;
             IfFailThrow(ty.GetModule()->GetMDImport()->GetTypeSpecFromToken(mdType, &sig, &cb));
             _ASSERTE(cb == 1);
-            LPCWSTR cnsTypeName;
-            switch (*sig)
-            {
-                case ELEMENT_TYPE_BOOLEAN:
-                    cnsTypeName = W("bool");
-                    break;
-                case ELEMENT_TYPE_CHAR:
-                    cnsTypeName = W("char");
-                    break;
-                case ELEMENT_TYPE_I1:
-                    cnsTypeName = W("sbyte");
-                    break;
-                case ELEMENT_TYPE_U1:
-                    cnsTypeName = W("byte");
-                    break;
-                case ELEMENT_TYPE_I2:
-                    cnsTypeName = W("short");
-                    break;
-                case ELEMENT_TYPE_U2:
-                    cnsTypeName = W("ushort");
-                    break;
-                case ELEMENT_TYPE_I4:
-                    cnsTypeName = W("int");
-                    break;
-                case ELEMENT_TYPE_U4:
-                    cnsTypeName = W("uint");
-                    break;
-                case ELEMENT_TYPE_I8:
-                    cnsTypeName = W("long");
-                    break;
-                case ELEMENT_TYPE_U8:
-                    cnsTypeName = W("ulong");
-                    break;
-                case ELEMENT_TYPE_R4:
-                    cnsTypeName = W("float");
-                    break;
-                case ELEMENT_TYPE_R8:
-                    cnsTypeName = W("double");
-                    break;
-                default:
-                    cnsTypeName = W("/* UNKNOWN TYPE */");
-                    break;
-            }
-            tnb.Append(cnsTypeName);
+            PTR_MethodTable mtType = CoreLibBinder::GetElementType((CorElementType)*sig);
+            AppendTypeDef(tnb, mtType->GetModule()->GetMDImport(), mtType->GetCl(), format);
             tnb.Append(W(" "));
         }
 
@@ -892,7 +850,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
     else if (ty.IsConstValue())
     {
         tnb.Append(W("const "));
-        AppendType(tnb, ty.AsConstValue()->GetConstValueType(), Instantiation(), format);
+        AppendType(tnb, ty.AsConstValue()->GetConstValueType(), Instantiation(), format & ~FormatAssembly);
         tnb.Append(W("("));
         AppendConstValue(tnb, ty.AsConstValue()->GetConstValueType().GetInternalCorElementType(), ty.AsConstValue()->GetConstValue<uint64_t>());
         tnb.Append(W(")"));
@@ -1234,7 +1192,7 @@ void TypeString::AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD fo
     {
         tnb.Append(W("const "));
         TypeHandle valueType = pTypeKey->GetConstValueType();
-        AppendType(tnb, valueType, Instantiation(), format);
+        AppendType(tnb, valueType, Instantiation(), format & ~FormatAssembly);
         tnb.Append(W("("));
         AppendConstValue(tnb, valueType.GetInternalCorElementType(), pTypeKey->GetConstValue());
         tnb.Append(W(")"));
