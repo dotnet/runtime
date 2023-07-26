@@ -1222,7 +1222,12 @@ struct BasicBlock : private LIR::Range
     };
 
     template <typename TFunc>
+    BasicBlockVisit VisitEHSecondPassSuccs(Compiler* comp, TFunc func);
+
+    template <typename TFunc>
     BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+
+    bool HasPotentialEHSuccs(Compiler* comp);
 
     // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
     // normally used via BasicBlock::Succs(), e.g.:

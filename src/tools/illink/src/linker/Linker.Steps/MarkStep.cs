@@ -86,7 +86,7 @@ namespace Mono.Linker.Steps
 		readonly HashSet<TypeDefinition> _entireTypesMarked;
 		DynamicallyAccessedMembersTypeHierarchy? _dynamicallyAccessedMembersTypeHierarchy;
 		MarkScopeStack? _scopeStack;
-		MarkScopeStack ScopeStack {
+		protected MarkScopeStack ScopeStack {
 			get {
 				Debug.Assert (_scopeStack != null);
 				return _scopeStack;

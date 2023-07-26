@@ -194,7 +194,7 @@ namespace System.Text.RegularExpressions
             TryFindRawFixedSets(root, results, ref distance, thorough);
 #if DEBUG
             results.ForEach(r => Debug.Assert(
-                !r.Negated && r.Chars is null && r.AsciiSet is null && r.Range is null,
+                !r.Negated && r.Chars is null && r.Range is null,
                 $"{nameof(TryFindRawFixedSets)} should have only populated {nameof(r.Set)} and {nameof(r.Distance)}"));
 #endif
 
@@ -225,31 +225,25 @@ namespace System.Text.RegularExpressions
 
             // For every entry, try to get the chars that make up the set, if there are few enough.
             // For any for which we couldn't get the small chars list, see if we can get other useful info.
-            Span<char> scratch = stackalloc char[5]; // max efficiently optimized by IndexOfAny today
+            Span<char> scratch = stackalloc char[128]; // limit based on what's currently efficiently handled by SearchValues
             for (int i = 0; i < results.Count; i++)
             {
                 RegexFindOptimizations.FixedDistanceSet result = results[i];
                 result.Negated = RegexCharClass.IsNegated(result.Set);
 
                 int count = RegexCharClass.GetSetChars(result.Set, scratch);
-
                 if (count > 0)
                 {
                     result.Chars = scratch.Slice(0, count).ToArray();
                 }
 
-                if (thorough)
+                // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
+                if (thorough &&
+                    (result.Chars is null || result.Chars.Length > 2) &&
+                    RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
                 {
-                    // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
-                    if ((result.Chars is null || count > 2) && RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
-                    {
-                        result.Chars = null;
-                        result.Range = (lowInclusive, highInclusive);
-                    }
-                    else if (result.Chars is null && !result.Negated && RegexCharClass.TryGetAsciiSetChars(result.Set, out char[]? asciiChars))
-                    {
-                        result.AsciiSet = asciiChars;
-                    }
+                    result.Chars = null;
+                    result.Range = (lowInclusive, highInclusive);
                 }
 
                 results[i] = result;
@@ -472,8 +466,8 @@ namespace System.Text.RegularExpressions
             // for the fastest and that have the best chance of matching as few false positives as possible.
             results.Sort(static (s1, s2) =>
             {
-                char[]? s1Chars = s1.Chars ?? s1.AsciiSet;
-                char[]? s2Chars = s2.Chars ?? s2.AsciiSet;
+                char[]? s1Chars = s1.Chars;
+                char[]? s2Chars = s2.Chars;
                 int s1CharsLength = s1Chars?.Length ?? 0;
                 int s2CharsLength = s2Chars?.Length ?? 0;
                 bool s1Negated = s1.Negated;

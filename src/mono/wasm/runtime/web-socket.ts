@@ -32,8 +32,8 @@ function verifyEnvironment() {
     }
     if (typeof globalThis.WebSocket !== "function") {
         const message = ENVIRONMENT_IS_NODE
-            ? "Please install `ws` npm package to enable networking support."
-            : "This browser doesn't support WebSocket API. Please use a modern browser.";
+            ? "Please install `ws` npm package to enable networking support. See also https://aka.ms/dotnet-wasm-features"
+            : "This browser doesn't support WebSocket API. Please use a modern browser. See also https://aka.ms/dotnet-wasm-features";
         throw new Error(message);
     }
 }
@@ -179,17 +179,17 @@ export function ws_wasm_abort(ws: WebSocketExtension): void {
     ws[wasm_ws_is_aborted] = true;
     const open_promise_control = ws[wasm_ws_pending_open_promise];
     if (open_promise_control) {
-        open_promise_control.reject("OperationCanceledException");
+        open_promise_control.reject(new Error("OperationCanceledException"));
     }
     for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
-        close_promise_control.reject("OperationCanceledException");
+        close_promise_control.reject(new Error("OperationCanceledException"));
     }
     for (const send_promise_control of ws[wasm_ws_pending_send_promises]) {
-        send_promise_control.reject("OperationCanceledException");
+        send_promise_control.reject(new Error("OperationCanceledException"));
     }
 
     ws[wasm_ws_pending_receive_promise_queue].drain(receive_promise_control => {
-        receive_promise_control.reject("OperationCanceledException");
+        receive_promise_control.reject(new Error("OperationCanceledException"));
     });
 
     // this is different from Managed implementation

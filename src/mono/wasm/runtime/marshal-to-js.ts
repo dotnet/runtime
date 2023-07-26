@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+import BuildConfiguration from "consts:configuration";
+
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
 import { Module, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
@@ -10,7 +13,7 @@ import {
     get_arg_b8, get_arg_date, get_arg_length, set_js_handle, get_arg, set_arg_type,
     get_signature_arg2_type, get_signature_arg1_type, cs_to_js_marshalers,
     get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
-    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize
+    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize, proxy_debug_symbol
 } from "./marshal";
 import { monoStringToString } from "./strings";
 import { JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
@@ -189,9 +192,17 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, re
     if (result === null || result === undefined) {
         // this will create new Function for the C# delegate
         result = (arg1_js: any, arg2_js: any, arg3_js: any): any => {
+            mono_assert(!MonoWasmThreads || !result.isDisposed, "Delegate is disposed and should not be invoked anymore.");
             // arg numbers are shifted by one, the real first is a gc handle of the callback
             return runtimeHelpers.javaScriptExports.call_delegate(gc_handle, arg1_js, arg2_js, arg3_js, res_converter, arg1_converter, arg2_converter, arg3_converter);
         };
+        result.dispose = () => {
+            result.isDisposed = true;
+        };
+        result.isDisposed = false;
+        if (BuildConfiguration === "Debug") {
+            (result as any)[proxy_debug_symbol] = `C# Delegate with GCHandle ${gc_handle}`;
+        }
         setup_managed_proxy(result, gc_handle);
     }
 
@@ -224,6 +235,9 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, 
     }
     const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
     mono_assert(!!promise, () => `ERR28: promise not found for js_handle: ${js_handle} `);
+    if (BuildConfiguration === "Debug") {
+        (promise as any)[proxy_debug_symbol] = `JS Promise with JSHandle ${js_handle}`;
+    }
     loaderHelpers.assertIsControllablePromise<any>(promise);
     const promise_control = loaderHelpers.getPromiseController(promise);
 
@@ -261,6 +275,9 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
     if (js_handle === JSHandleNull) {
         const { promise, promise_control } = createPromiseController();
         const js_handle = mono_wasm_get_js_handle(promise)!;
+        if (BuildConfiguration === "Debug" && Object.isExtensible(promise)) {
+            (promise as any)[proxy_debug_symbol] = `JS Promise with JSHandle ${js_handle}`;
+        }
         set_js_handle(res, js_handle);
 
         if (exc_type !== MarshalerType.None) {
@@ -328,6 +345,9 @@ export function marshal_exception_to_js(arg: JSMarshalerArgument): Error | null 
         const message = marshal_string_to_js(arg);
         result = new ManagedError(message!);
 
+        if (BuildConfiguration === "Debug") {
+            (result as any)[proxy_debug_symbol] = `C# Exception with GCHandle ${gc_handle}`;
+        }
         setup_managed_proxy(result, gc_handle);
     }
 
@@ -372,6 +392,9 @@ function _marshal_cs_object_to_js(arg: JSMarshalerArgument): any {
         // If the JS object for this gc_handle was already collected (or was never created)
         if (!result) {
             result = new ManagedObject();
+            if (BuildConfiguration === "Debug") {
+                (result as any)[proxy_debug_symbol] = `C# Object with GCHandle ${gc_handle}`;
+            }
             setup_managed_proxy(result, gc_handle);
         }
 
@@ -481,6 +504,9 @@ function _marshal_array_segment_to_js(arg: JSMarshalerArgument, element_type?: M
         throw new Error(`NotImplementedException ${MarshalerType[element_type]} `);
     }
     const gc_handle = get_arg_gc_handle(arg);
+    if (BuildConfiguration === "Debug") {
+        (result as any)[proxy_debug_symbol] = `C# ArraySegment with GCHandle ${gc_handle}`;
+    }
     setup_managed_proxy(result, gc_handle);
 
     return result;
