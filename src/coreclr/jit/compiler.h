@@ -7181,12 +7181,13 @@ public:
 
     bool isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gdvTarget);
 
-    void addGuardedDevirtualizationCandidate(GenTreeCall*          call,
-                                             CORINFO_METHOD_HANDLE methodHandle,
-                                             CORINFO_CLASS_HANDLE  classHandle,
-                                             unsigned              methodAttr,
-                                             unsigned              classAttr,
-                                             unsigned              likelihood);
+    void addGuardedDevirtualizationCandidate(GenTreeCall*           call,
+                                             CORINFO_METHOD_HANDLE  methodHandle,
+                                             CORINFO_CLASS_HANDLE   classHandle,
+                                             CORINFO_CONTEXT_HANDLE contextHandle,
+                                             unsigned               methodAttr,
+                                             unsigned               classAttr,
+                                             unsigned               likelihood);
 
     int getGDVMaxTypeChecks()
     {
