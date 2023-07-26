@@ -9,9 +9,9 @@ namespace Microsoft.Extensions.Hosting.Internal
 {
     internal class MetricsHostedService : IHostedService
     {
-        private readonly IMetricSubscriptionManager _manager;
+        private readonly IMetricsSubscriptionManager _manager;
 
-        public MetricsHostedService(IMetricSubscriptionManager manager)
+        public MetricsHostedService(IMetricsSubscriptionManager manager)
         {
             _manager = manager;
         }
