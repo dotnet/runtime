@@ -771,7 +771,7 @@ namespace ILCompiler
             {
                 if (!field.IsStatic)
                 {
-                    firstField ??= field;
+                    firstField = field;
                     break;
                 }
             }

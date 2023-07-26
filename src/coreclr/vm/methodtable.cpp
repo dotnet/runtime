@@ -2195,6 +2195,15 @@ namespace
     // Does this type have fields that are implicitly defined through repetition and not explicitly defined in metadata?
     bool HasImpliedRepeatedFields(MethodTable* pMT, MethodTable* pFirstFieldValueType = nullptr)
     {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+            PRECONDITION(CheckPointer(pMT));
+        }
+        CONTRACTL_END;
+
         // InlineArray types and fixed buffer types have implied repeated fields.
         // Checking if a type is an InlineArray type is cheap, so we'll do that first.
         if (pMT->GetClass()->IsInlineArray())
