@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -27,18 +25,16 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void DefaultTemplate_WithoutWorkload(string config)
+    public async Task DefaultTemplate_WithoutWorkload(string config)
     {
         string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
-        // Build
-        BlazorBuildInternal(id, config, publish: false);
-        _provider.AssertBlazorBootJson(config, isPublish: false);
+        BlazorBuild(new BlazorBuildOptions(id, config));
+        await BlazorRunForBuildWithDotnetRun(config);
 
-        // Publish
-        BlazorBuildInternal(id, config, publish: true);
-        _provider.AssertBlazorBootJson(config, isPublish: true);
+        BlazorPublish(new BlazorBuildOptions(id, config));
+        await BlazorRunForPublishWithWebServer(config);
     }
 
     [Theory]
@@ -280,5 +276,4 @@ public class BuildPublishTests : BlazorWasmTestBase
         string oldContent = File.ReadAllText(counterRazorPath);
         File.WriteAllText(counterRazorPath, oldContent + additionalCode);
     }
-
 }
