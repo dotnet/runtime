@@ -706,7 +706,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnableNoGCRegionCallback")]
         private static unsafe partial EnableNoGCRegionCallbackStatus _EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, long totalSize);
 
-        public static long GetGenerationBudget(int generation)
+        internal static long GetGenerationBudget(int generation)
         {
             return _GetGenerationBudget(generation);
         }
