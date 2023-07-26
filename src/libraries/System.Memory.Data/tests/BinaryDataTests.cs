@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -362,7 +361,7 @@ namespace System.Tests
             data = BinaryData.FromObjectAsJson<TestModel>(null);
             Assert.Null(data.ToObjectFromJson<TestModel>());
 
-            data = BinaryData.FromObjectAsJson<TestModel>(null, TestModelJsonContext.Default.TestModel as JsonTypeInfo<TestModel>);
+            data = BinaryData.FromObjectAsJson<TestModel>(null, TestModelJsonContext.Default.TestModel);
             Assert.Null(data.ToObjectFromJson<TestModel>(TestModelJsonContext.Default.TestModel));
         }
 
@@ -374,7 +373,6 @@ namespace System.Tests
 
             ex = await Assert.ThrowsAsync<ArgumentNullException>(() => BinaryData.FromStreamAsync(null));
             Assert.Contains("stream", ex.Message);
-
         }
 
         [Fact]
@@ -410,6 +408,12 @@ namespace System.Tests
 
             BinaryData data = new BinaryData(buffer.ToArray());
             var model = data.ToObjectFromJson<TestModel>();
+            Assert.Equal(payload.A, model.A);
+            Assert.Equal(payload.B, model.B);
+            Assert.Equal(payload.C, model.C);
+
+            var typeInfo = (JsonTypeInfo<TestModel>)JsonSerializerOptions.Default.GetTypeInfo(typeof(TestModel));
+            model = data.ToObjectFromJson<TestModel>(typeInfo);
             Assert.Equal(payload.A, model.A);
             Assert.Equal(payload.B, model.B);
             Assert.Equal(payload.C, model.C);
@@ -701,7 +705,7 @@ namespace System.Tests
             Assert.False(data.IsEmpty);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void IsBinaryDataMemberPropertySerialized()
         {
             var data = new BinaryData("A test value");
@@ -714,7 +718,7 @@ namespace System.Tests
             Assert.Equal(jsonTestModel, serializedTestModel);           
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void IsBinaryDataMemberPropertyDeserialized()
         {
             var data = new BinaryData("A test value");
@@ -722,6 +726,31 @@ namespace System.Tests
             var jsonTestModel = $"{{\"A\":\"{dataBase64}\"}}";
 
             TestModelWithBinaryDataProperty deserializedModel = JsonSerializer.Deserialize<TestModelWithBinaryDataProperty>(jsonTestModel);
+
+            Assert.Equal(data.ToString(), deserializedModel.A.ToString());
+        }
+
+        [Fact]
+        public void IsBinaryDataMemberPropertySerialized_SourceGen()
+        {
+            var data = new BinaryData("A test value");
+            var dataBase64 = Convert.ToBase64String(data.ToArray());
+            var jsonTestModel = $"{{\"A\":\"{dataBase64}\"}}";
+            TestModelWithBinaryDataProperty testModel = new TestModelWithBinaryDataProperty { A = data };
+
+            var serializedTestModel = JsonSerializer.Serialize(testModel, TestModelWithBinaryDataPropertyContext.Default.TestModelWithBinaryDataProperty);
+
+            Assert.Equal(jsonTestModel, serializedTestModel);
+        }
+
+        [Fact]
+        public void IsBinaryDataMemberPropertyDeserialized_SourceGen()
+        {
+            var data = new BinaryData("A test value");
+            var dataBase64 = Convert.ToBase64String(data.ToArray());
+            var jsonTestModel = $"{{\"A\":\"{dataBase64}\"}}";
+
+            TestModelWithBinaryDataProperty deserializedModel = JsonSerializer.Deserialize<TestModelWithBinaryDataProperty>(jsonTestModel, TestModelWithBinaryDataPropertyContext.Default.TestModelWithBinaryDataProperty);
 
             Assert.Equal(data.ToString(), deserializedModel.A.ToString());
         }
@@ -778,5 +807,9 @@ namespace System.Tests
         {
             public BinaryData A { get; set; }
         }
+
+        [JsonSerializable(typeof(TestModelWithBinaryDataProperty))]
+        internal partial class TestModelWithBinaryDataPropertyContext : JsonSerializerContext
+        { }
     }
 }
