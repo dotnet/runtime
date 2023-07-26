@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
@@ -14,7 +13,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         private readonly MeterListener _meterListener;
         private readonly IMetricsListener _metricsListener;
         private readonly HashSet<Instrument> _instruments = new();
-        private readonly HashSet<Instrument> _listening = new();
+        private readonly HashSet<Instrument> _enabled = new();
         private IList<InstrumentEnableRule> _rules = Array.Empty<InstrumentEnableRule>();
         private bool _disposed;
 
@@ -55,7 +54,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 }
 
                 _instruments.Add(instrument);
-                RefreshConnection(instrument);
+                RefreshInstrument(instrument);
             }
         }
 
@@ -70,7 +69,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
                 if (_instruments.Remove(instrument))
                 {
-                    if (_listening.Remove(instrument))
+                    if (_enabled.Remove(instrument))
                     {
                         _meterListener.DisableMeasurementEvents(instrument);
                     }
@@ -95,43 +94,66 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
                 foreach (var instrument in _instruments)
                 {
-                    RefreshConnection(instrument);
+                    RefreshInstrument(instrument);
                 }
             }
         }
 
         // Called under _instrument lock
-        private void RefreshConnection(Instrument instrument)
+        private void RefreshInstrument(Instrument instrument)
         {
-            var alreadyListening = _listening.Contains(instrument);
-            var listen = false;
+            var alreadyEnabled = _enabled.Contains(instrument);
+            var enable = false;
+            var rule = GetMostSpecificRule(instrument);
+            if (rule != null)
+            {
+                enable = rule.Enable;
+            }
+
+            if (!enable && alreadyEnabled)
+            {
+                _enabled.Remove(instrument);
+                _meterListener.DisableMeasurementEvents(instrument);
+            }
+            else if (enable && !alreadyEnabled)
+            {
+                _meterListener.EnableMeasurementEvents(instrument);
+                _enabled.Add(instrument);
+            }
+        }
+
+        private InstrumentEnableRule? GetMostSpecificRule(Instrument instrument)
+        {
+            InstrumentEnableRule? best = null;
             foreach (var rule in _rules)
             {
-                // TODO: Most specific match
-                if (RuleMatches(rule, instrument))
+                if (RuleMatches(rule, instrument) && IsMoreSpecific(rule, best))
                 {
-                    listen = true;
-                    break;
+                    best = rule;
                 }
             }
 
-            // Remove any that are no longer needed
-            if (!listen && alreadyListening)
-            {
-                _listening.Remove(instrument);
-                _meterListener.DisableMeasurementEvents(instrument);
-            }
-            else if (listen && !alreadyListening)
-            {
-                _meterListener.EnableMeasurementEvents(instrument);
-                _listening.Add(instrument);
-            }
+            return best;
         }
 
         private bool RuleMatches(InstrumentEnableRule rule, Instrument instrument)
         {
-            if (!string.IsNullOrEmpty(rule.InstrumentName) &&
-                !string.Equals(rule.InstrumentName, instrument.Name, StringComparison.OrdinalIgnoreCase))
+            // Exact match or empty
+            if (!string.IsNullOrEmpty(rule.ListenerName)
+                && !string.Equals(rule.ListenerName, _metricsListener.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            // Exact match or empty
+            if (!string.IsNullOrEmpty(rule.InstrumentName)
+                && !string.Equals(rule.InstrumentName, instrument.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!(rule.Scopes.HasFlag(MeterScope.Global) && instrument.Meter.Scope == null)
+                && !(rule.Scopes.HasFlag(MeterScope.Local) && instrument.Meter.Scope != null)) // TODO: What should we be comparing Scope to, the DefaultMeterFactory / IMeterFactory?
             {
                 return false;
             }
@@ -145,31 +167,66 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 }
             }
 
-            if (!(rule.Scopes.HasFlag(MeterScope.Global) && instrument.Meter.Scope == null)
-                && !(rule.Scopes.HasFlag(MeterScope.Local) && instrument.Meter.Scope != null)) // TODO: What should we be comparing Scope to, the DefaultMeterFactory / IMeterFactory?
-            {
-                return false;
-            }
+            return true;
+        }
 
-            /* TODO: Remove filters
-            if (rule.Filter != null)
-            {
-                return rule.Filter(listener.Name, instrument);
-            }
-            */
-
-            if (string.IsNullOrEmpty(rule.ListenerName))
+        // Everything must already match the Instrument and listener, or be blank.
+        // Which rule has more non-blank fields? Or longer Meter name?
+        //
+        private static bool IsMoreSpecific(InstrumentEnableRule rule, InstrumentEnableRule? best)
+        {
+            if (best == null)
             {
                 return true;
             }
 
-            return string.Equals(rule.ListenerName, _metricsListener.Name, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(rule.ListenerName, _metricsListener.GetType().FullName, StringComparison.OrdinalIgnoreCase);
+            // Meter name
+            if (!string.IsNullOrEmpty(rule.MeterName))
+            {
+                if (string.IsNullOrEmpty(best.MeterName))
+                {
+                    return true;
+                }
+
+                // Longer is more specific.
+                if (rule.MeterName.Length != best.MeterName.Length)
+                {
+                    return rule.MeterName.Length > best.MeterName.Length;
+                }
+            }
+            else if (!string.IsNullOrEmpty(best.MeterName))
+            {
+                return false;
+            }
+
+            // Instrument name
+            if (!string.IsNullOrEmpty(rule.InstrumentName) && string.IsNullOrEmpty(best.InstrumentName))
+            {
+                return true;
+            }
+            else if (string.IsNullOrEmpty(rule.InstrumentName) && !string.IsNullOrEmpty(best.InstrumentName))
+            {
+                return false;
+            }
+
+            // Listener name
+            if (!string.IsNullOrEmpty(rule.ListenerName) && string.IsNullOrEmpty(best.ListenerName))
+            {
+                return true;
+            }
+            else if (string.IsNullOrEmpty(rule.ListenerName) && !string.IsNullOrEmpty(best.ListenerName))
+            {
+                return false;
+            }
+
+            // Scopes TODO:??
+
+            return false;
         }
 
         public void RecordObservableInstruments()
         {
-            foreach (var instrument in _listening)
+            foreach (var instrument in _enabled)
             {
                 if (instrument.IsObservable)
                 {
