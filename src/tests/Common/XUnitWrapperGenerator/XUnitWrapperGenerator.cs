@@ -200,7 +200,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     "No explicit entry point",
                     "Projects in merged tests group should not contain entry points",
                     "XUnitWrapperGenerator",
-                    DiagnosticSeverity.Error,
+                    DiagnosticSeverity.Warning,
                     isEnabledByDefault: true),
                 entryPoint.Locations[0]));
         }
