@@ -258,7 +258,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> AbbreviatedMonthNames_SetInvalidLength_TestData()
         {
             yield return new object[] { new string[] { "Jan" } };
-            yield return new object[] { new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "", "Additional" } };
+            yield return new object[] { new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "", "Additional" } };
         }
 
         [Theory]
