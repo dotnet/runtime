@@ -2190,6 +2190,38 @@ BOOL MethodTable::IsClassPreInited()
 
 //========================================================================================
 
+namespace
+{
+    // Does this type have fields that are implicitly defined through repetition and not explicitly defined in metadata?
+    bool HasImpliedRepeatedFields(MethodTable* pMT, MethodTable* pFirstFieldValueType = nullptr)
+    {
+        // InlineArray types and fixed buffer types have implied repeated fields.
+        // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+        if (pMT->GetClass()->IsInlineArray())
+        {
+            return true;
+        }
+
+        DWORD numIntroducedFields = pMT->GetNumIntroducedInstanceFields();
+        FieldDesc *pFieldStart = pMT->GetApproxFieldDescListRaw();
+        CorElementType firstFieldElementType = pFieldStart->GetFieldType();
+
+        // A fixed buffer type is always a value type that has exactly one value type field at offset 0
+        // and who's size is an exact multiple of the size of the field.
+        // It is possible that we catch a false positive with this check, but that chance is extremely slim
+        // and the user can always change their structure to something more descriptive of what they want
+        // instead of adding additional padding at the end of a one-field structure.
+        // We do this check here to save looking up the FixedBufferAttribute when loading the field
+        // from metadata.
+        return numIntroducedFields == 1
+                        && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
+                            || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
+                        && (pFieldStart->GetOffset() == 0)
+                        && pMT->HasLayout()
+                        && (pMT->GetNumInstanceFieldBytes() % pFieldStart->GetSize(pFirstFieldValueType) == 0);
+    }
+}
+
 #if defined(UNIX_AMD64_ABI_ITF)
 
 #if defined(_DEBUG) && defined(LOGGING)
@@ -2340,28 +2372,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     FieldDesc *pFieldStart = GetApproxFieldDescListRaw();
 
-    // InlineArray types and fixed buffer types have implied repeated fields.
-    // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-    bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
-
-    if (!hasImpliedRepeatedFields)
-    {
-        CorElementType firstFieldElementType = pFieldStart->GetFieldType();
-
-        // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-        // and who's size is an exact multiple of the size of the field.
-        // It is possible that we catch a false positive with this check, but that chance is extremely slim
-        // and the user can always change their structure to something more descriptive of what they want
-        // instead of adding additional padding at the end of a one-field structure.
-        // We do this check here to save looking up the FixedBufferAttribute when loading the field
-        // from metadata.
-        hasImpliedRepeatedFields = numIntroducedFields == 1
-                        && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
-                            || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
-                        && (pFieldStart->GetOffset() == 0)
-                        && HasLayout()
-                        && (GetNumInstanceFieldBytes() % pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0)) == 0);
-    }
+    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this, ByValueClassCacheLookup(pByValueClassCache, 0));
 
     if (hasImpliedRepeatedFields)
     {
@@ -2549,29 +2560,8 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     {
         return false;
     }
-    
-    // InlineArray types and fixed buffer types have implied repeated fields.
-    // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-    bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
 
-    if (!hasImpliedRepeatedFields)
-    {
-        CorElementType firstFieldElementType = pNativeFieldDescs->GetFieldDesc()->GetFieldType();
-
-        // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-        // and who's size is an exact multiple of the size of the field.
-        // It is possible that we catch a false positive with this check, but that chance is extremely slim
-        // and the user can always change their structure to something more descriptive of what they want
-        // instead of adding additional padding at the end of a one-field structure.
-        // We do this check here to save looking up the FixedBufferAttribute when loading the field
-        // from metadata.
-        hasImpliedRepeatedFields = numIntroducedFields == 1
-                        && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
-                            || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
-                        && (pNativeFieldDescs->GetExternalOffset() == 0)
-                        && IsValueType()
-                        && (pNativeLayoutInfo->GetSize() % pNativeFieldDescs->NativeSize() == 0);
-    }
+    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
 
     if (hasImpliedRepeatedFields)
     {
@@ -3016,16 +3006,7 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-                bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
-
-                if (!hasImpliedRepeatedFields)
-                {
-                    hasImpliedRepeatedFields = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
-                }
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
 
                 if (hasImpliedRepeatedFields)
                 {
@@ -3273,16 +3254,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-                bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
-
-                if (!hasImpliedRepeatedFields)
-                {
-                    hasImpliedRepeatedFields = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
-                }
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
 
                 if (hasImpliedRepeatedFields)
                 {
@@ -3650,16 +3622,7 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-                bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
-
-                if (!hasImpliedRepeatedFields)
-                {
-                    hasImpliedRepeatedFields = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
-                }
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
 
                 if (hasImpliedRepeatedFields)
                 {
@@ -3907,16 +3870,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-                bool hasImpliedRepeatedFields = GetClass()->IsInlineArray();
-
-                if (!hasImpliedRepeatedFields)
-                {
-                    hasImpliedRepeatedFields = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
-                }
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
 
                 if (hasImpliedRepeatedFields)
                 {
@@ -6477,7 +6431,7 @@ namespace
                 {
                     resolveVirtualStaticMethodFlags |= ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc;
                 }
-                
+
                 candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
                     interfaceMT,
                     interfaceMD,
@@ -9320,7 +9274,7 @@ MethodTable::TryResolveConstraintMethodApprox(
         _ASSERTE(thInterfaceType.IsInterface());
         BOOL uniqueResolution;
 
-        ResolveVirtualStaticMethodFlags flags = ResolveVirtualStaticMethodFlags::AllowVariantMatches 
+        ResolveVirtualStaticMethodFlags flags = ResolveVirtualStaticMethodFlags::AllowVariantMatches
                                               | ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc;
         if (pfForceUseRuntimeLookup != NULL)
         {

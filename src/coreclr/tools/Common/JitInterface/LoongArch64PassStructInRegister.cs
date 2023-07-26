@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Diagnostics;
+using ILCompiler;
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
@@ -40,23 +41,7 @@ namespace Internal.JitInterface
             TypeDesc firstFieldElementType = firstField.FieldType;
             int firstFieldSize = firstFieldElementType.GetElementSize().AsInt;
 
-            // InlineArray types and fixed buffer types have implied repeated fields.
-            bool hasImpliedRepeatedFields = mdType.IsInlineArray;
-            if (!hasImpliedRepeatedFields)
-            {
-                // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-                // and who's size is an exact multiple of the size of the field.
-                // It is possible that we catch a false positive with this check, but that chance is extremely slim
-                // and the user can always change their structure to something more descriptive of what they want
-                // instead of adding additional padding at the end of a one-field structure.
-                // We do this check here to save looking up the FixedBufferAttribute when loading the field
-                // from metadata.
-                hasImpliedRepeatedFields = numIntroducedFields == 1
-                                && firstFieldElementType.IsValueType
-                                && firstField.Offset.AsInt == 0
-                                && mdType.HasLayout()
-                                && ((typeDesc.GetElementSize().AsInt % firstFieldSize) == 0);
-            }
+            bool hasImpliedRepeatedFields = mdType.HasImpliedRepeatedFields();
 
             if (hasImpliedRepeatedFields)
             {

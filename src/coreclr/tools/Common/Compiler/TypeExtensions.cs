@@ -753,5 +753,41 @@ namespace ILCompiler
             Debug.Assert(interfaceType.IsInterface);
             return interfaceType.HasCustomAttribute("System.Runtime.InteropServices", "DynamicInterfaceCastableImplementationAttribute");
         }
+
+        public static bool HasImpliedRepeatedFields(this MetadataType mdType)
+        {
+            if (mdType.IsInlineArray)
+            {
+                return true;
+            }
+
+            // If the type is not an [InlineArray] type, do a best-effort detection of whether the type is a fixed buffer type
+            // as emitted by the C# compiler.
+            FieldDesc firstField = null;
+            int numIntroducedFields = 0;
+            foreach (FieldDesc field in mdType.GetFields())
+            {
+                if (!field.IsStatic)
+                {
+                    firstField ??= field;
+                    break;
+                }
+            }
+
+            TypeDesc firstFieldElementType = firstField.FieldType;
+
+            // A fixed buffer type is always a value type that has exactly one value type field at offset 0
+            // and who's size is an exact multiple of the size of the field.
+            // It is possible that we catch a false positive with this check, but that chance is extremely slim
+            // and the user can always change their structure to something more descriptive of what they want
+            // instead of adding additional padding at the end of a one-field structure.
+            // We do this check here to save looking up the FixedBufferAttribute when loading the field
+            // from metadata.
+            return numIntroducedFields == 1
+                            && firstFieldElementType.IsValueType
+                            && firstField.Offset.AsInt == 0
+                            && mdType.HasLayout()
+                            && ((mdType.GetElementSize().AsInt % firstFieldElementType.GetElementSize().AsInt) == 0);
+        }
     }
 }
