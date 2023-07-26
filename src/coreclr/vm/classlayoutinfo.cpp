@@ -967,6 +967,27 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
         CONSISTENCY_CHECK(hr == S_OK);
     }
+    else if (pMT->GetClass()->IsInlineArray())
+    {
+        // If the type is an inline array, we need to calculate the size based on the number of elements.
+        const void* pVal;                  // The custom value.
+        ULONG       cbVal;                 // Size of the custom value.
+        HRESULT hr = pMT->GetCustomAttribute(
+            WellKnownAttribute::InlineArrayAttribute,
+            &pVal, &cbVal);
+
+        if (hr != S_FALSE)
+        {
+            if (cbVal >= (sizeof(INT32) + 2))
+            {
+                INT32 repeat = GET_UNALIGNED_VAL32((byte*)pVal + 2);
+                if (repeat > 0)
+                {
+                    classSizeInMetadata = repeat * pInfoArray[0].m_nfd.NativeSize();
+                }
+            }
+        }
+    }
 
     BYTE parentAlignmentRequirement = 0;
     if (fParentHasLayout)

@@ -411,10 +411,10 @@ public struct ManyInts
 
 
 [StructLayout(LayoutKind.Sequential)]
+[InlineArray(2)]
 public struct MultipleBool
 {
-    public bool b1;
-    public bool b2;
+    public bool b;
 }
 
 [StructLayout(LayoutKind.Explicit)]

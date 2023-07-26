@@ -2613,6 +2613,7 @@ public class Managed
         HFA hfa = GetHFA(12.34f, 52.12f, 64.124f, 675.452351322f);
         if (hfa.f1 != 12.34f || hfa.f2 != 52.12f || hfa.f3 != 64.124f || hfa.f4 != 675.452351322f)
         {
+            failures++;
             Console.WriteLine("4-float structure returned from native to managed failed.");
         }
 
@@ -2624,14 +2625,23 @@ public class Managed
             if (multiple != 2 * i)
             {
                 Console.WriteLine("Structure of 20 ints returned from native to managed failed.");
+                failures++;
             }
             i++;
         }
 
         MultipleBool bools = GetBools(true, true);
-        if (!bools.b1 || !bools.b2)
+        if (!bools[0] || !bools[1])
         {
             Console.WriteLine("Structure of two bools marshalled to BOOLs returned from native to managed failed");
+            failures++;
+        }
+
+        bools = GetBools(true, false);
+        if (!bools[0] || bools[1])
+        {
+            Console.WriteLine("Structure of two bools marshalled to BOOLs returned from native to managed failed");
+            failures++;
         }
     }
 
