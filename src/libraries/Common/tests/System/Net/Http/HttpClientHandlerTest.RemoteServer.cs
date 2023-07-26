@@ -1294,8 +1294,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.Contains(expectedContent, await client.GetStringAsync(uri));
                 }
-                catch (HttpRequestException hre) when (hre.StatusCode == HttpStatusCode.GatewayTimeout || hre.StatusCode == HttpStatusCode.BadGateway ||
-                                                      (hre.InnerException is SocketException se && (se.SocketErrorCode == SocketError.WouldBlock || se.SocketErrorCode == SocketError.TryAgain)))
+                catch (HttpRequestException hre) when (hre.StatusCode is HttpStatusCode.GatewayTimeout or HttpStatusCode.BadGateway ||
+                                                      (hre.InnerException is SocketException se && (se.SocketErrorCode is SocketError.WouldBlock or SocketError.TryAgain)))
                 {
                     // Ignore the exception, the test depends on an external server that is out of our control.
                     _output.WriteLine(hre.ToString());
