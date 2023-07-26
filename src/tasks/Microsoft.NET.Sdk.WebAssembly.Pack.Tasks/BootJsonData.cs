@@ -59,7 +59,19 @@ public class BootJsonData
     /// <summary>
     /// Gets or sets the <see cref="ICUDataMode"/> that determines how icu files are loaded.
     /// </summary>
-    public ICUDataMode icuDataMode { get; set; }
+    /// <remarks>
+    /// Deprecated since .NET 8. Use <see cref="globalizationMode"/> instead.
+    /// </remarks>
+    public GlobalizationMode icuDataMode { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="GlobalizationMode"/> that determines how icu files are loaded.
+    /// </summary>
+    public string globalizationMode
+    {
+        get => icuDataMode.ToString().ToLowerInvariant();
+        set { }
+    }
 
     /// <summary>
     /// Gets or sets a value that determines if the caching startup memory is enabled.
@@ -171,9 +183,10 @@ public class TypedLibraryStartupModules
     public ResourceHashesByNameDictionary onRuntimeReady { get; set; }
 }
 
-public enum ICUDataMode : int
+public enum GlobalizationMode : int
 {
     // Note that the numeric values are serialized and used in JS code, so don't change them without also updating the JS code
+    // Note that names are serialized as string and used in JS code
 
     /// <summary>
     /// Load optimized icu data file based on the user's locale

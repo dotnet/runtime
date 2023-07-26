@@ -242,7 +242,7 @@ export const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
      */
-    Sharded = "sharded", // 
+    Sharded = "sharded",
     /**
      * Load all ICU data.
      */

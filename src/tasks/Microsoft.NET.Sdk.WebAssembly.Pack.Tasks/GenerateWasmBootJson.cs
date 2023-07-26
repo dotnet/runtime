@@ -96,7 +96,7 @@ public class GenerateWasmBootJson : Task
             linkerEnabled = LinkerEnabled,
             resources = new ResourcesData(),
             config = new List<string>(),
-            icuDataMode = GetIcuDataMode(),
+            icuDataMode = GetGlobalizationMode(),
             startupMemoryCache = ParseOptionalBool(StartupMemoryCache),
         };
 
@@ -349,18 +349,18 @@ public class GenerateWasmBootJson : Task
         }
     }
 
-    private ICUDataMode GetIcuDataMode()
+    private GlobalizationMode GetGlobalizationMode()
     {
         if (string.Equals(InvariantGlobalization, "true", StringComparison.OrdinalIgnoreCase))
-            return ICUDataMode.Invariant;
+            return GlobalizationMode.Invariant;
         else if (IsHybridGlobalization)
-            return ICUDataMode.Hybrid;
+            return GlobalizationMode.Hybrid;
         else if (LoadAllICUData)
-            return ICUDataMode.All;
+            return GlobalizationMode.All;
         else if (LoadCustomIcuData)
-            return ICUDataMode.Custom;
+            return GlobalizationMode.Custom;
 
-        return ICUDataMode.Sharded;
+        return GlobalizationMode.Sharded;
     }
 
     private static bool? ParseOptionalBool(string value)

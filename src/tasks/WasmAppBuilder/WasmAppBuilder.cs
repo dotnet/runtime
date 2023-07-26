@@ -58,26 +58,26 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         return true;
     }
 
-    private ICUDataMode GetICUDataMode()
+    private GlobalizationMode GetGlobalizationMode()
     {
         // Invariant has always precedence
         if (InvariantGlobalization)
-            return ICUDataMode.Invariant;
+            return GlobalizationMode.Invariant;
 
         // If user provided a path to a custom ICU data file, use it
         if (!string.IsNullOrEmpty(WasmIcuDataFileName))
-            return ICUDataMode.Custom;
+            return GlobalizationMode.Custom;
 
         // Hybrid mode
         if (HybridGlobalization)
-            return ICUDataMode.Hybrid;
+            return GlobalizationMode.Hybrid;
 
         // If user requested to include full ICU data, use it
         if (WasmIncludeFullIcuData)
-            return ICUDataMode.All;
+            return GlobalizationMode.All;
 
         // Otherwise, use sharded mode
-        return ICUDataMode.Sharded;
+        return GlobalizationMode.Sharded;
     }
 
     protected override bool ExecuteInternal()
@@ -97,7 +97,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             config = new(),
             entryAssembly = MainAssemblyName,
-            icuDataMode = GetICUDataMode()
+            icuDataMode = GetGlobalizationMode()
         };
 
         // Create app

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { GlobalizationMode } from ".";
+
 // Keep in sync with Microsoft.NET.Sdk.WebAssembly.BootJsonData from the WasmSDK
 export interface BootJsonData {
     readonly entryAssembly: string;
@@ -12,6 +14,7 @@ export interface BootJsonData {
     readonly cacheBootResources: boolean;
     readonly config: string[];
     readonly icuDataMode: ICUDataMode;
+    readonly globalizationMode: GlobalizationMode;
     readonly startupMemoryCache: boolean | undefined;
     readonly runtimeOptions: string[] | undefined;
     readonly environmentVariables?: { [name: string]: string };

@@ -7,7 +7,6 @@ import type { BootJsonData } from "../../types/blazor";
 
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "../globals";
 import { loadResource } from "../resourceLoader";
-import { ICUDataMode } from "../../types/blazor";
 import { appendUniqueQuery } from "../assets";
 import { hasDebuggingEnabled } from "../config";
 
@@ -199,7 +198,7 @@ function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
         const behavior = behaviorByName(name) as any;
         let loadRemote = false;
         if (behavior === "icu") {
-            if (bootConfig.icuDataMode === ICUDataMode.Invariant) {
+            if (bootConfig.globalizationMode === GlobalizationMode.Invariant) {
                 continue;
             }
             if (name !== icuDataResourceName) {
@@ -279,7 +278,7 @@ function fileName(name: string) {
 }
 
 function getICUResourceName(bootConfig: BootJsonData, moduleConfig: MonoConfigInternal, culture: string | undefined): string {
-    if (bootConfig.icuDataMode === ICUDataMode.Custom) {
+    if (bootConfig.globalizationMode === GlobalizationMode.Custom) {
         const icuFiles = Object
             .keys(bootConfig.resources.runtime)
             .filter(n => n.startsWith("icudt") && n.endsWith(".dat"));
@@ -290,13 +289,13 @@ function getICUResourceName(bootConfig: BootJsonData, moduleConfig: MonoConfigIn
         }
     }
 
-    if (bootConfig.icuDataMode === ICUDataMode.Hybrid) {
+    if (bootConfig.globalizationMode === GlobalizationMode.Hybrid) {
         moduleConfig.globalizationMode = GlobalizationMode.Hybrid;
         const reducedICUResourceName = "icudt_hybrid.dat";
         return reducedICUResourceName;
     }
 
-    if (!culture || bootConfig.icuDataMode === ICUDataMode.All) {
+    if (!culture || bootConfig.globalizationMode === GlobalizationMode.All) {
         moduleConfig.globalizationMode = GlobalizationMode.All;
         const combinedICUResourceName = "icudt.dat";
         return combinedICUResourceName;
