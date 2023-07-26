@@ -172,13 +172,6 @@ function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
         config.runtimeOptions = [...(config.runtimeOptions || []), ...(bootConfig.runtimeOptions || [])];
     }
 
-    // any runtime owned assets, with proper behavior already set
-    for (const name in resources.runtimeAssets) {
-        const asset = resources.runtimeAssets[name] as AssetEntry;
-        asset.name = name;
-        asset.resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(name), asset.behavior);
-        assets.push(asset);
-    }
     for (const name in resources.assembly) {
         const asset: AssetEntry = {
             name,
@@ -215,8 +208,6 @@ function mapBootConfigToMonoConfig(bootConfig: BootJsonData) {
             loadRemote = true;
             hasIcuData = true;
         } else if (behavior === "js-module-dotnet") {
-            continue;
-        } else if (behavior === "dotnetwasm") {
             continue;
         }
 
