@@ -313,6 +313,8 @@ namespace Microsoft.NET.Build.Tasks
                 result.AppendLine($"--targetarch:{Crossgen2Tool.GetMetadata(MetadataKeys.TargetArch)}");
             }
 
+            result.AppendLine("-O");
+
             // 5.0 Crossgen2 doesn't support PDB generation.
             if (!Crossgen2IsVersion5 && _emitSymbols)
             {
