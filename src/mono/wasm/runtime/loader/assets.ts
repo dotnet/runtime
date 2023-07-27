@@ -78,7 +78,11 @@ function getFirstKey(resources: ResourceList | undefined): string | null {
 function getFirstAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: AssetBehaviours) {
     const name = getFirstKey(resources);
     mono_assert(name, `Can't find ${behavior} in resources`);
-    return ensureAssetResolvedUrl({ name, hash: resources![name], behavior });
+    return ensureAssetResolvedUrl({
+        name,
+        hash: resources![name],
+        behavior
+    });
 }
 
 function ensureAssetResolvedUrl(asset: AssetEntry): AssetEntry {
@@ -308,6 +312,8 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
         }
     }
 
+    const newAssets = [...containedInSnapshotAssets, ...alwaysLoadedAssets];
+
     if (loaderHelpers.config.assets) {
         for (const a of loaderHelpers.config.assets) {
             const asset: AssetEntryInternal = a;
@@ -324,6 +330,13 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
             }
         }
     }
+
+    if (!loaderHelpers.config.assets) {
+        loaderHelpers.config.assets = [];
+    }
+
+    loaderHelpers.config.assets = [...loaderHelpers.config.assets, ...newAssets];
+
 }
 
 export function delay(ms: number): Promise<void> {
