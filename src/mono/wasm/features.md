@@ -4,13 +4,15 @@ dotnet for wasm can be compiled with various MSBuild flags which enable the use 
 
 For set of browser WASM features see [https://webassembly.org/roadmap/](https://webassembly.org/roadmap/)
 
-For full set of MSBuild properties see also top of [WasmApp.targets](./build/WasmApp.targets) file
+For full set of MSBuild properties which could be used in client application see also top of [WasmApp.targets](./build/WasmApp.targets) file
 
 ## Multi-threading
 
 Is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`.
 
 It requires HTTP headers similar to `Cross-Origin-Embedder-Policy:require-corp` and `Cross-Origin-Opener-Policy:same-origin`.
+
+HTTP headers are sent by your HTTP server or proxy, which need to be properly configured.
 
 See also [SharedArrayBuffer security requirements](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements)
 
@@ -48,52 +50,6 @@ NodeJS needs to install `node-fetch` and `node-abort-controller` npm packages.
 Is required if the application uses [WebSocketClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.websockets.clientwebsocket)
 
 NodeJS needs to install `ws` npm package.
-
-## Content security policy
-
-dotnet runtime for wasm is CSP compliant starting from .Net 8, except legacy JS interop methods.
-
-In order to enable it, please set HTTP headers similar to `Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'`
-
-See also [CSP on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
-
-See also [wasm-unsafe-eval](https://github.com/WebAssembly/content-security-policy/blob/main/proposals/CSP.md#the-wasm-unsafe-eval-source-directive)
-
-## ICU
-
-_TODO_
-
-## Timezones
-
-Browsers don't offer API for working with time zone database and so we have to bring the time zone data as part of the application.
-
-If your application doesn't need to work with TZ, you can reduce download size by `<InvariantTimezone>true</InvariantTimezone>`.
-This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
-
-# Shell environments - NodeJS & V8
-We pass most of the unit tests with NodeJS v 14 but it's not fully supported target platform. We would like to hear about community use-cases.
-
-We also use the d8 command-line shell, version 11 or higher, to run some of the tests. This shell lacks most browser APIs and features.
-
-# Mobile phones
-
-Recent mobile phones distribute their browser as an application that can be upgraded separately from the operating system.
-
-Note that all browsers on iOS and iPadOS are required to use the Safari browser engine, so their level of support for WASM features depends on the version of Safari installed on the device.
-
-Mobile browsers typically have strict limits on the amount of memory they can use, and many users are on slow internet connections. A WebAssembly application that works well on desktop PCs may take minutes to download or run out of memory before it is able to start.
-
-## Resources consumed on the target device
-
-dotnet is complex and large application, it consists of
-- dotnet runtime, including garbage collector, IL interpreter and browser specific JIT
-- dotnet base class library
-- emulation layer which is bringing missing features of the OS, which the browser doesn't provide. Like timezone database or ICU.
-- integration with the browser JavaScript APIs, for example HTTP and WebSocket client
-- application code
-
-All of the mentioned code and data need to be downloaded and loaded into the browser memory during the dotnet startup sequence.
-Browser itself will run JIT compilation of the WASM and JS code, which consumes memory and CPU cycles too.
 
 ## WASM linear memory
 
@@ -144,7 +100,94 @@ Native rebuild will cause the .NET runtime to be re-built alongside your applica
 You can enable native rebuild by `<WasmBuildNative>true</WasmBuildNative>`.
 This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
-## wasm-tools workload
+## Downloaded assets
+
+## Caching, Integrity
+
+Your browser could be caching various files and assets downloaded by the dotnet runtime so that the next application start will be much faster.
+When you deploy a new version of the application, you need to make sure that the caches in the browser and also in any HTTP proxies will not interfere.
+In order to make sure that the application resources are consistent with each other, dotnet runtime will use `integrity` hash for all downloaded resources.
+The list of assets which the application needs, together with some configuration flags are built into `blazor.boot.json` file.
+
+See also [Cache-Control on headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control)
+See also [fetch integrity](https://developer.mozilla.org/en-US/docs/Web/API/Request/integrity)
+
+## MIME types
+
+Are `Content-Type` HTTP headers which tell the browser about the type of downloaded asset. They are necessary for correct and fast processing by the browser, but also by various caches and proxies. 
+
+HTTP headers are sent by your HTTP server or proxy, which need to be properly configured.
+
+| file extension  | Content-Type |
+|---|---|
+|.wasm|application/wasm|
+|.json|application/json|
+|.js|text/javascript|
+
+See also [Content-Type on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type)
+
+## Content security policy
+
+dotnet runtime for wasm is CSP compliant starting from .Net 8, except legacy JS interop methods.
+
+In order to enable it, please set HTTP headers similar to `Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'`
+
+HTTP headers are sent by your HTTP server or proxy, which need to be properly configured.
+
+See also [CSP on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
+
+See also [wasm-unsafe-eval](https://github.com/WebAssembly/content-security-policy/blob/main/proposals/CSP.md#the-wasm-unsafe-eval-source-directive)
+
+## ICU
+
+Browsers don't offer full set APIs for working with localization and so we have to bring the data and the logic as part of the application.
+If your application doesn't need to work with locatization, you can reduce download size by `<InvariantCulture>true</InvariantCulture>`.
+
+If your application needs to work with locatization but you don't require processing speed for processing of large texts, you can reduce download size by `<HybridGlobalization>true</HybridGlobalization>`. 
+It will use browser APIs instead part of ICU database. This feature is still in development.
+
+If your application needs to work with specific subset of locales, you can create your own ICU database. 
+_TODO_ HOW_TO ?
+
+## Timezones
+
+Browsers don't offer API for working with time zone database and so we have to bring the time zone data as part of the application.
+
+If your application doesn't need to work with TZ, you can reduce download size by `<InvariantTimezone>true</InvariantTimezone>`.
+This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
+
+# Resources consumed on the target device
+
+dotnet is complex and large application, it consists of
+- dotnet runtime, including garbage collector, IL interpreter and browser specific JIT
+- dotnet base class library
+- emulation layer which is bringing missing features of the OS, which the browser doesn't provide. Like timezone database or ICU.
+- integration with the browser JavaScript APIs, for example HTTP and WebSocket client
+- application code
+
+All of the mentioned code and data need to be downloaded and loaded into the browser memory during the dotnet startup sequence.
+Browser itself will run JIT compilation of the WASM and JS code, which consumes memory and CPU cycles too.
+
+## Mobile phones
+
+Recent mobile phones distribute their browser as an application that can be upgraded separately from the operating system.
+
+Note that all browsers on iOS and iPadOS are required to use the Safari browser engine, so their level of support for WASM features depends on the version of Safari installed on the device.
+
+Mobile browsers typically have strict limits on the amount of memory they can use, and many users are on slow internet connections. A WebAssembly application that works well on desktop PCs may take minutes to download or run out of memory before it is able to start.
+
+## Shell environments - NodeJS & V8
+We pass most of the unit tests with NodeJS v 14 but it's not fully supported target platform. We would like to hear about community use-cases.
+
+We also use the d8 command-line shell, version 11 or higher, to run some of the tests. This shell lacks most browser APIs and features.
+
+## Trade-offs compared to native JavaScript applications
+
+There is trade-off between download size, application performance and complexity of application maintanance.
+If your business logic is very complex, changes often or you already have existing C# codebase and skillset, running the same code dotnet on wasm is probably the right choice.
+If your application is simple and you have JavaScript skills on your team, it may be better if you re/write your logic in Web native technologies like HTML/JavaScript or typescript/webpack stack.
+
+# wasm-tools workload
 
 The wasm-tools workload contains all of the tools and libraries necessary to perform native rebuild or AOT compilation and other optimizations of your application.
 
