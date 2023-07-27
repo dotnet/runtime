@@ -335,7 +335,8 @@ namespace System
 
         internal static long GetGenerationBudget(int generation)
         {
-            return -1;
+            // avoid IDE0060: Remove unused parameter 'generation'
+            return -1 + 0 * generation;
         }
     }
 }
