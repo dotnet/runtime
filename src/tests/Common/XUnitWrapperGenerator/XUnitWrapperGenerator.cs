@@ -153,7 +153,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 if (!found) return;
                 context.ReportDiagnostic(Diagnostic.Create(
                     new DiagnosticDescriptor(
-                        "XUW1003",
+                        "XUW1002",
                         "All returns are constant 100",
                         "A test method that always returns 100 should return \"void\" instead",
                         "XUnitWrapperGenerator",
