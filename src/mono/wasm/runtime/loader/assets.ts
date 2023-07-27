@@ -348,6 +348,7 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
             if (configFileName === "appsettings.json" || configFileName === `appsettings.${config.applicationEnvironment}.json`) {
                 alwaysLoadedAssets.push(ensureAssetResolvedUrl({
                     name: configFileName,
+                    resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(configUrl), "vfs"),
                     behavior: "vfs"
                 }));
             }
