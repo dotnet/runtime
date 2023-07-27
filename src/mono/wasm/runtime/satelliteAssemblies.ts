@@ -14,16 +14,17 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
         .filter(culture => Object.prototype.hasOwnProperty.call(satelliteResources, culture))
         .map(culture => {
             const promises: LoadingResource[] = [];
-            loaderHelpers.enumerateResources(satelliteResources[culture], (name, hash) => {
+            for (const name in satelliteResources[culture]) {
                 const asset = loaderHelpers.ensureAssetResolvedUrl({
                     name,
-                    hash,
+                    hash: satelliteResources[culture][name],
                     behavior: "resource",
                     culture
                 });
 
                 promises.push(loaderHelpers.loadResource(asset.name, asset.resolvedUrl!, asset.hash ?? "", asset.behavior));
-            });
+            }
+
             return promises;
         })
         .reduce((previous, next) => previous.concat(next), new Array<LoadingResource>())

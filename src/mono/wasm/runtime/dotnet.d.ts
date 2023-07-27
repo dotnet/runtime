@@ -171,34 +171,32 @@ type MonoConfig = {
     };
 };
 type ResourceExtensions = {
-    [extensionName: string]: ResourceListOrArray;
+    [extensionName: string]: ResourceList;
 };
 interface ResourceGroups {
     readonly hash?: string;
-    readonly assembly?: ResourceListOrArray;
-    readonly lazyAssembly?: ResourceListOrArray;
-    readonly pdb?: ResourceListOrArray;
-    readonly jsModuleWorker?: ResourceListOrString;
-    readonly jsModuleNative: ResourceListOrString;
-    readonly jsModuleRuntime: ResourceListOrString;
-    readonly jsSymbols?: ResourceListOrArray;
-    readonly wasmNative: ResourceListOrString;
-    readonly icu?: ResourceListOrArray;
+    readonly assembly?: ResourceList;
+    readonly lazyAssembly?: ResourceList;
+    readonly pdb?: ResourceList;
+    readonly jsModuleWorker?: ResourceList;
+    readonly jsModuleNative: ResourceList;
+    readonly jsModuleRuntime: ResourceList;
+    readonly jsSymbols?: ResourceList;
+    readonly wasmNative: ResourceList;
+    readonly icu?: ResourceList;
     readonly satelliteResources?: {
-        [cultureName: string]: ResourceListOrArray;
+        [cultureName: string]: ResourceList;
     };
-    readonly modulesAfterConfigLoaded?: ResourceListOrArray;
-    readonly modulesAfterRuntimeReady?: ResourceListOrArray;
+    readonly modulesAfterConfigLoaded?: ResourceList;
+    readonly modulesAfterRuntimeReady?: ResourceList;
     readonly extensions?: ResourceExtensions;
     readonly vfs?: {
-        [virtualPath: string]: ResourceListOrArray;
+        [virtualPath: string]: ResourceList;
     };
 }
 type ResourceList = {
     [name: string]: string;
 };
-type ResourceListOrString = ResourceList | string;
-type ResourceListOrArray = ResourceList | string[];
 /**
  * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
  * from a custom source, such as an external CDN.

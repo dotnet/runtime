@@ -107,33 +107,31 @@ export type MonoConfig = {
     extensions?: { [name: string]: any };
 };
 
-export type ResourceExtensions = { [extensionName: string]: ResourceListOrArray };
+export type ResourceExtensions = { [extensionName: string]: ResourceList };
 
 export interface ResourceGroups {
     readonly hash?: string;
-    readonly assembly?: ResourceListOrArray; // nullable only temporarily
-    readonly lazyAssembly?: ResourceListOrArray; // nullable only temporarily
-    readonly pdb?: ResourceListOrArray;
+    readonly assembly?: ResourceList; // nullable only temporarily
+    readonly lazyAssembly?: ResourceList; // nullable only temporarily
+    readonly pdb?: ResourceList;
 
-    readonly jsModuleWorker?: ResourceListOrString;
-    readonly jsModuleNative: ResourceListOrString;
-    readonly jsModuleRuntime: ResourceListOrString;
-    readonly jsSymbols?: ResourceListOrArray;
-    readonly wasmNative: ResourceListOrString;
-    readonly icu?: ResourceListOrArray;
+    readonly jsModuleWorker?: ResourceList;
+    readonly jsModuleNative: ResourceList;
+    readonly jsModuleRuntime: ResourceList;
+    readonly jsSymbols?: ResourceList;
+    readonly wasmNative: ResourceList;
+    readonly icu?: ResourceList;
 
-    readonly satelliteResources?: { [cultureName: string]: ResourceListOrArray };
+    readonly satelliteResources?: { [cultureName: string]: ResourceList };
 
-    readonly modulesAfterConfigLoaded?: ResourceListOrArray,
-    readonly modulesAfterRuntimeReady?: ResourceListOrArray
+    readonly modulesAfterConfigLoaded?: ResourceList,
+    readonly modulesAfterRuntimeReady?: ResourceList
 
     readonly extensions?: ResourceExtensions
-    readonly vfs?: { [virtualPath: string]: ResourceListOrArray };
+    readonly vfs?: { [virtualPath: string]: ResourceList };
 }
 
 export type ResourceList = { [name: string]: string };
-export type ResourceListOrString = ResourceList | string;
-export type ResourceListOrArray = ResourceList | string[];
 
 /**
  * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched

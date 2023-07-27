@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
-import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, ResourceListOrArray, ResourceListOrString, ResourceRequest, SingleAssetBehaviors as SingleAssetBehaviors } from "../types";
+import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, ResourceRequest, SingleAssetBehaviors as SingleAssetBehaviors } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
@@ -74,7 +74,7 @@ function getFirstKey(resources: ResourceList | undefined): string | null {
     return null;
 }
 
-function getFirstAssetWithResolvedUrl(resources: ResourceListOrString | undefined, behavior: SingleAssetBehaviors): AssetEntry {
+function getFirstAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntry {
     const isString = typeof (resources) === "string";
     const name = isString ? resources : getFirstKey(resources);
     mono_assert(name, `Can't find ${behavior} in resources`);
@@ -85,27 +85,14 @@ function getFirstAssetWithResolvedUrl(resources: ResourceListOrString | undefine
     });
 }
 
-export function getAssetByNameWithResolvedUrl(resources: ResourceListOrArray | undefined, behavior: AssetBehaviors, requestedName: string): AssetEntry | undefined {
-    if (!resources) {
-        return undefined;
-    }
-
-    let foundName = undefined;
-    let foundHash = undefined;
-    enumerateResources(resources, (name, hash) => {
-        if (name == requestedName) {
-            foundName = name;
-            foundHash = hash;
-        }
-    });
-
-    if (!foundName) {
+export function getAssetByNameWithResolvedUrl(resources: ResourceList | undefined, behavior: AssetBehaviors, name: string): AssetEntry | undefined {
+    if (!resources || !resources[name]) {
         return undefined;
     }
 
     return ensureAssetResolvedUrl({
-        name: foundName,
-        hash: foundHash,
+        name: name,
+        hash: resources[name],
         behavior
     });
 }
@@ -116,20 +103,6 @@ export function ensureAssetResolvedUrl(asset: AssetEntry): AssetEntry {
     }
 
     return asset;
-}
-
-export function enumerateResources(resources: ResourceListOrArray, itemHandler: (name: string, hash: string | undefined) => void): void {
-    if (resources.length) {
-        const stringArray = resources as string[];
-        for (let i = 0; i < stringArray.length; i++) {
-            itemHandler(stringArray[i], undefined);
-        }
-    } else {
-        const objectWithHashes = resources as ResourceList;
-        for (const name in objectWithHashes) {
-            itemHandler(name, objectWithHashes[name]);
-        }
-    }
 }
 
 export function resolve_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
@@ -266,73 +239,73 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
     const resources = loaderHelpers.config.resources;
     if (resources) {
         if (resources.assembly) {
-            enumerateResources(resources.assembly, (name, hash) => {
+            for (const name in resources.assembly) {
                 containedInSnapshotAssets.push(ensureAssetResolvedUrl({
                     name,
-                    hash,
+                    hash: resources.assembly[name],
                     behavior: "assembly"
                 }));
-            });
+            }
         }
 
         if (config.debugLevel != 0 && resources.pdb) {
-            enumerateResources(resources.pdb, (name, hash) => {
+            for (const name in resources.pdb) {
                 containedInSnapshotAssets.push(ensureAssetResolvedUrl({
                     name,
-                    hash,
+                    hash: resources.pdb[name],
                     behavior: "pdb"
                 }));
-            });
+            }
         }
 
         if (config.loadAllSatelliteResources && resources.satelliteResources) {
             for (const culture in resources.satelliteResources) {
-                enumerateResources(resources.satelliteResources[culture], (name, hash) => {
+                for (const name in resources.satelliteResources[culture]) {
                     containedInSnapshotAssets.push(ensureAssetResolvedUrl({
                         name,
-                        hash,
+                        hash: resources.satelliteResources[culture][name],
                         behavior: "resource",
                         culture
                     }));
-                });
+                }
             }
         }
 
         if (resources.vfs) {
             for (const virtualPath in resources.vfs) {
-                enumerateResources(resources.vfs[virtualPath], (name, hash) => {
+                for (const name in resources.vfs[virtualPath]) {
                     alwaysLoadedAssets.push(ensureAssetResolvedUrl({
                         name,
-                        hash,
+                        hash: resources.vfs[virtualPath][name],
                         behavior: "vfs",
                         virtualPath
                     }));
-                });
+                }
             }
         }
 
         const icuDataResourceName = getIcuResourceName(config);
         if (icuDataResourceName && resources.icu) {
-            enumerateResources(resources.icu, (name, hash) => {
+            for (const name in resources.icu) {
                 if (name === icuDataResourceName) {
                     containedInSnapshotAssets.push(ensureAssetResolvedUrl({
                         name,
-                        hash,
+                        hash: resources.icu[name],
                         behavior: "icu",
                         loadRemote: true
                     }));
                 }
-            });
+            }
         }
 
         if (resources.jsSymbols) {
-            enumerateResources(resources.jsSymbols, (name, hash) => {
+            for (const name in resources.jsSymbols) {
                 alwaysLoadedAssets.push(ensureAssetResolvedUrl({
                     name,
-                    hash,
+                    hash: resources.jsSymbols[name],
                     behavior: "symbols"
                 }));
-            });
+            }
         }
     }
 
