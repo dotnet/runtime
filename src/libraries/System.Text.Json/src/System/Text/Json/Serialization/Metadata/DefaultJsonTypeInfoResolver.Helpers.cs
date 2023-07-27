@@ -91,7 +91,7 @@ namespace System.Text.Json.Serialization.Metadata
                     break;
                 }
 
-                // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
+                // Compiler adds RequiredMemberAttribute to type if any of the members are marked with 'required' keyword.
                 bool shouldCheckMembersForRequiredMemberAttribute =
                     !constructorHasSetsRequiredMembersAttribute && currentType.HasRequiredMemberAttribute();
 
