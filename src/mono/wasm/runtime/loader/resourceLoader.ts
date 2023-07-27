@@ -5,7 +5,8 @@ import type { AssetBehaviors, MonoConfig, WebAssemblyBootResourceType } from "..
 import { loaderHelpers } from "./globals";
 const networkFetchCacheMode = "no-cache";
 
-const cacheSkipResourceTypes: AssetBehaviors[] = ["vfs"]; // Previously on configuration
+const cacheSkipAssetBehaviors: AssetBehaviors[] = ["vfs"]; // Previously only configuration
+const credentialsIncludeAssetBehaviors: AssetBehaviors[] = ["vfs"]; // Previously only configuration
 const usedCacheKeys: { [key: string]: boolean } = {};
 const networkLoads: { [name: string]: LoadLogEntry } = {};
 const cacheLoads: { [name: string]: LoadLogEntry } = {};
@@ -21,7 +22,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
 };
 
 export function loadResource(name: string, url: string, contentHash: string, behavior: AssetBehaviors): LoadingResource {
-    const response = cacheIfUsed && !cacheSkipResourceTypes.includes(behavior)
+    const response = cacheIfUsed && !cacheSkipAssetBehaviors.includes(behavior)
         ? loadResourceWithCaching(cacheIfUsed, name, url, contentHash, behavior)
         : loadResourceWithoutCaching(name, url, contentHash, behavior);
 
@@ -141,7 +142,7 @@ function loadResourceWithoutCaching(name: string, url: string, contentHash: stri
         cache: networkFetchCacheMode
     };
 
-    if (behavior === "vfs") {
+    if (credentialsIncludeAssetBehaviors.includes(behavior)) {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";
     } else {
