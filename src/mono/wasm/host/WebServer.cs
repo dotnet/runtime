@@ -67,11 +67,11 @@ public class WebServer
 }
 
 // FIXME: can be simplified to string[]
-public record ServerURLs(string Http, string? Https);
+public record ServerURLs(string Http, string? Https, string? DebugPath = null);
 
 public static class ServerURLsProvider
 {
-    public static void ResolveServerUrlsOnApplicationStarted(IApplicationBuilder app, ILogger logger, IHostApplicationLifetime applicationLifetime, TaskCompletionSource<ServerURLs> realUrlsAvailableTcs)
+    public static void ResolveServerUrlsOnApplicationStarted(IApplicationBuilder app, ILogger logger, IHostApplicationLifetime applicationLifetime, TaskCompletionSource<ServerURLs> realUrlsAvailableTcs, string? debugPath = null)
     {
         applicationLifetime.ApplicationStarted.Register(() =>
         {
@@ -91,7 +91,7 @@ public static class ServerURLsProvider
                 if (ipAddress == null)
                     tcs.SetException(new InvalidOperationException("Failed to determine web server's IP address or port"));
                 else
-                    tcs.SetResult(new ServerURLs(ipAddress, ipAddressSecure));
+                    tcs.SetResult(new ServerURLs(ipAddress, ipAddressSecure, debugPath));
             }
             catch (Exception ex)
             {

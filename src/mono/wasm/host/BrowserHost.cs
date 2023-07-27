@@ -47,7 +47,7 @@ internal sealed class BrowserHost
 
     private async Task RunAsync(ILoggerFactory loggerFactory, CancellationToken token)
     {
-        if (_args.CommonConfig.Debugging)
+        if (_args.CommonConfig.Debugging && !_args.CommonConfig.UseStaticWebAssets)
         {
             ProxyOptions options = _args.CommonConfig.ToProxyOptions();
             _ = Task.Run(() => DebugProxyHost.RunDebugProxyAsync(options, Array.Empty<string>(), loggerFactory, token), token)
@@ -86,6 +86,14 @@ internal sealed class BrowserHost
         Console.WriteLine();
         foreach (string url in fullUrls)
             Console.WriteLine($"App url: {url}");
+
+        if (serverURLs.DebugPath != null)
+        {
+            Console.WriteLine($"Debug at url: {BuildUrl(serverURLs.Http, serverURLs.DebugPath, string.Empty)}");
+
+            if (serverURLs.Https != null)
+                Console.WriteLine($"Debugger at url: {BuildUrl(serverURLs.Https, serverURLs.DebugPath, string.Empty)}");
+        }
 
         await host.WaitForShutdownAsync(token);
     }
@@ -245,18 +253,18 @@ internal sealed class BrowserHost
                     httpUrl,
                     BuildUrl(serverURLs.Https!, filename, query)
                 });
+    }
 
-        static string BuildUrl(string baseUrl, string? htmlFileName, string query)
+    private static string BuildUrl(string baseUrl, string? htmlFileName, string query)
+    {
+        var uriBuilder = new UriBuilder(baseUrl)
         {
-            var uriBuilder = new UriBuilder(baseUrl)
-            {
-                Query = query
-            };
+            Query = query
+        };
 
-            if (htmlFileName != null)
-                uriBuilder.Path = htmlFileName;
+        if (htmlFileName != null)
+            uriBuilder.Path = htmlFileName;
 
-            return uriBuilder.ToString();
-        }
+        return uriBuilder.ToString();
     }
 }
