@@ -289,10 +289,10 @@ void command_line::print_muxer_info(const pal::string_t &dotnet_root, const pal:
         _X("  Version:      ") _STRINGIFY(HOST_FXR_PKG_VER) _X("\n")
         _X("  Architecture: %s\n")
         _X("  Commit:       %s\n")
-        _X("  RID:          ") _STRINGIFY(HOST_RID_PLATFORM) _X("-%s"),
+        _X("  RID:          %s"),
         arch,
         commit.substr(0, 10).c_str(),
-        arch);
+        get_host_runtime_id());
 
     trace::println(_X("\n")
         _X(".NET SDKs installed:"));
