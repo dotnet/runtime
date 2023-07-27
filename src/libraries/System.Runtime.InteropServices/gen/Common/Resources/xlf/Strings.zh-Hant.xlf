@@ -147,6 +147,16 @@
         <target state="translated">以 'EnableComHosting' 裝載的 .NET COM 不支援具有 'GeneratedComInterfaceAttribute' 的介面</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
+        <source>The 'int' or 'enum' return value in the managed definition will be converted to an '[out]' paramter in the COM definition and the generated code will marshal the HResult. Use '[PreserveSig]' on the method to marshal the HResult as an 'int' or 'enum', or change the signature to return void to let the generated method marshal the HResult.</source>
+        <target state="new">The 'int' or 'enum' return value in the managed definition will be converted to an '[out]' paramter in the COM definition and the generated code will marshal the HResult. Use '[PreserveSig]' on the method to marshal the HResult as an 'int' or 'enum', or change the signature to return void to let the generated method marshal the HResult.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
+        <source>The 'int' or 'enum' return value in the managed definition will be converted to an '[out]' paramter in the COM definition.</source>
+        <target state="new">The 'int' or 'enum' return value in the managed definition will be converted to an '[out]' paramter in the COM definition.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
         <target state="translated">来源產生的 COM 將會略過任何不支援的設定。</target>

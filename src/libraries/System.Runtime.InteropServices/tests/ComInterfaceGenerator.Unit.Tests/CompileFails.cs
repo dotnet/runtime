@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -973,6 +972,91 @@ namespace ComInterfaceGenerator.Unit.Tests
             var test = new UnsafeBlocksNotAllowedTest(false);
             test.TestState.Sources.Add(source);
             test.ExpectedDiagnostics.Add(expectedDiagnostic);
+            await test.RunAsync();
+        }
+        public static IEnumerable<object[]> IntAndEnumReturnTypeSnippets()
+        {
+            var diagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ComMethodReturningIntWillBeOutVariable).WithLocation(0);
+            var enumDecl = $$"""
+                internal enum HR
+                {
+                    Val1, Val2
+                }
+                """;
+            var enumReturn = Template("HR", enumDecl, "");
+            var intReturn = Template("int", "", "");
+            var floatReturn = Template("float", "", "");
+            yield return new object[] {
+                ID(),
+                enumReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                intReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                floatReturn,
+                new DiagnosticResult[] {  }
+            };
+
+            var enumReturnPreserveSig = Template("HR", enumDecl, "[PreserveSig]");
+            var intReturnPreserveSig = Template("int", "", "[PreserveSig]");
+            yield return new object[] {
+                ID(),
+                enumReturnPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+            yield return new object[] {
+                ID(),
+                intReturnPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+            var intReturnMarshalAs = Template("int", "", "[return: MarshalAs(UnmanagedType.I4)]");
+            yield return new object[] {
+                ID(),
+                intReturnMarshalAs,
+                new DiagnosticResult[] {  }
+            };
+
+            string Template(string type, string typedef, string attribute)
+            {
+                return $$"""
+                    using System.Runtime.InteropServices;
+                    using System.Runtime.InteropServices.Marshalling;
+                    [GeneratedComInterface]
+                    [Guid("0DB41042-0255-4CDD-B73A-9C5D5F31303D")]
+                    partial interface I
+                    {
+                        {{attribute}}
+                        {{type}} {|#0:Method|}();
+                    }
+                    {{typedef}}
+                    """;
+            }
+        }
+        [Theory]
+        [MemberData(nameof(IntAndEnumReturnTypeSnippets))]
+        async Task ValidateIntReturnTypeShowsInfo(string id, string source, DiagnosticResult[] diagnostics)
+        {
+            _ = id;
+
+            var test = new VerifyComInterfaceGenerator.Test(referenceAncillaryInterop: false)
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        ("Source.cs", source)
+                    },
+                },
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+            };
+            test.ExpectedDiagnostics.AddRange(diagnostics);
+            //test.CompilerDiagnostics = CompilerDiagnostics.All;
+            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.GeneratedComInterfaceInfo);
             await test.RunAsync();
         }
     }
