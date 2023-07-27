@@ -384,7 +384,7 @@ namespace Microsoft.Interop
 
             if (_shape.HasFlag(MarshallerShape.ToUnmanaged)
                 && !(_shape.HasFlag(MarshallerShape.CallerAllocatedBuffer)
-                        && MarshallerHelpers.CanUseCallerAllocatedBuffer(info, context)))
+                    && MarshallerHelpers.CanUseCallerAllocatedBuffer(info, context)))
             {
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
                 string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
@@ -584,7 +584,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!(_cleanupElementsAndSpace || context.CurrentStage is StubCodeContext.Stage.CleanupFailure))
+            if (!(_cleanupElementsAndSpace || MarshallerHelpers.MarshalsOut(info, context)))
             {
                 yield break;
             }
@@ -605,9 +605,12 @@ namespace Microsoft.Interop
                 yield return elementCleanup;
             }
 
-            foreach (var statement in _spaceMarshallingStrategy.GenerateCleanupStatements(info, context))
+            if (!_cleanupElementsAndSpace)
             {
-                yield return statement;
+                foreach (var statement in _spaceMarshallingStrategy.GenerateCleanupStatements(info, context))
+                {
+                    yield return statement;
+                }
             }
         }
 
@@ -658,12 +661,11 @@ namespace Microsoft.Interop
             if (MarshallerHelpers.MarshalsOut(info, context)
                 && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
-                yield return LocalDeclarationStatement(VariableDeclaration(
-                    GenericName(
+                yield return MarshallerHelpers.Declare(
+                    ScopedType(GenericName(
                         Identifier(TypeNames.System_Span),
-                        TypeArgumentList(
-                            SingletonSeparatedList(_elementsMarshalling.UnmanagedElementType))),
-                    SingletonSeparatedList(VariableDeclarator(context.GetAdditionalIdentifier(info, "out")))));
+                        TypeArgumentList(SingletonSeparatedList(_elementsMarshalling.UnmanagedElementType)))),
+                    context.GetAdditionalIdentifier(info, "out"), true);
             }
         }
 
@@ -684,6 +686,10 @@ namespace Microsoft.Interop
                 // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
                 // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
                 yield return _elementsMarshalling.GenerateClearManagedValuesDestination(info, context);
+                foreach (var statement in _spaceMarshallingStrategy.GenerateUnmarshalStatements(info, context))
+                {
+                    yield return statement;
+                }
                 yield break;
             }
 

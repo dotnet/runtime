@@ -16,8 +16,7 @@ namespace SharedTypes.ComInterfaces
         int GetOut([MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue)] out int[] array);
         void SetContents([MarshalUsing(CountElementName = nameof(size))] int[] array, int size);
         void FillAscending([Out][MarshalUsing(CountElementName = nameof(size))] int[] array, int size);
-        // https://github.com/dotnet/runtime/issues/89265
-        //void Double([In, Out][MarshalUsing(CountElementName = nameof(size))] int[] array, int size);
+        void Double([In, Out][MarshalUsing(CountElementName = nameof(size))] int[] array, int size);
         void PassIn([MarshalUsing(CountElementName = nameof(size))] in int[] array, int size);
         void SwapArray([MarshalUsing(CountElementName = nameof(size))] ref int[] array, int size);
     }

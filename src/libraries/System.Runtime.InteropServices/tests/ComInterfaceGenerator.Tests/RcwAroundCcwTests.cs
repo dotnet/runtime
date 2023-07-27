@@ -78,8 +78,7 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(data, value);
             obj.SwapArray(ref data, data.Length);
             obj.PassIn(in data, data.Length);
-            // https://github.com/dotnet/runtime/issues/89265
-            //obj.Double(data, data.Length);
+            obj.Double(data, data.Length);
         }
 
         [Fact]
@@ -162,11 +161,10 @@ namespace ComInterfaceGenerator.Tests
             {
                 obj.OutParam(out strings);
             });
-            // https://github.com/dotnet/runtime/issues/87845
-            //Assert.Throws<ArgumentException>(() =>
-            //{
-            //    obj.ByValueOutParam(strings);
-            //});
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.ByValueOutParam(strings);
+            });
             Assert.Throws<ArgumentException>(() =>
             {
                 obj.ByValueInOutParam(strings);
@@ -198,10 +196,9 @@ namespace ComInterfaceGenerator.Tests
             obj.MethodOut(out data, data.Length);
             AssertEqual(outData, data);
 
-            // https://github.com/dotnet/runtime/issues/87845
-            //data = GetStartingValue();
-            //obj.MethodContentsOut(data, data.Length);
-            //AssertEqual(outData, data);
+            data = GetStartingValue();
+            obj.MethodContentsOut(data, data.Length);
+            AssertEqual(outData, data);
 
             data = GetStartingValue();
             obj.MethodRef(ref data, data.Length);

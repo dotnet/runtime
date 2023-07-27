@@ -13,7 +13,7 @@ namespace SharedTypes.ComInterfaces
     {
         void Method([MarshalUsing(CountElementName = nameof(size))] StatelessType param, int size);
         void MethodIn([MarshalUsing(CountElementName = nameof(size))] in StatelessType param, int size);
-        void MethodOut([MarshalUsing(CountElementName = nameof(size))] out StatelessType param, int size);
+        void MethodOut([MarshalUsing(CountElementName = nameof(size))] out StatelessType paramyBoi, int size);
         void MethodRef([MarshalUsing(CountElementName = nameof(size))] ref StatelessType param, int size);
         StatelessType Return();
         [PreserveSig]

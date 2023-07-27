@@ -376,8 +376,8 @@ namespace Microsoft.Interop
                     context,
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(info, context)),
-                            IdentifierName("Length")),
-                         _elementInfo, _elementMarshaller, StubCodeContext.Stage.Marshal));
+                        IdentifierName("Length")),
+                     _elementInfo, _elementMarshaller, StubCodeContext.Stage.Marshal));
             return Block(statements);
         }
 
@@ -524,6 +524,13 @@ namespace Microsoft.Interop
                 }
                 return EmptyStatement();
             }
+            ExpressionSyntax spanInit = context.Direction == MarshalDirection.ManagedToUnmanaged
+                                ? CollectionSource.GetUnmanagedValuesDestination(info, context)
+                                : CollectionSource.GetUnmanagedValuesSource(info, context);
+            if (context.CurrentStage is StubCodeContext.Stage.CleanupFailure && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                spanInit = IdentifierName(context.GetIdentifiers(info).native);
+            }
 
             return Block(
                 LocalDeclarationStatement(VariableDeclaration(
@@ -533,10 +540,7 @@ namespace Microsoft.Interop
                 SingletonSeparatedList(
                     VariableDeclarator(
                         Identifier(nativeSpanIdentifier))
-                    .WithInitializer(EqualsValueClause(
-                            context.Direction == MarshalDirection.ManagedToUnmanaged
-                                ? CollectionSource.GetUnmanagedValuesDestination(info, context)
-                                : CollectionSource.GetUnmanagedValuesSource(info, context)))))),
+                    .WithInitializer(EqualsValueClause(spanInit))))),
                 contentsCleanupStatements);
         }
 
@@ -563,20 +567,7 @@ namespace Microsoft.Interop
                     StackAllocArrayCreationExpression(
                         ArrayType(_unmanagedElementType,
                             SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
-                                IdentifierName(MarshallerHelpers.GetNumElementsIdentifier(info, context)))))))))
-                    //MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    //    CollectionSource.GetManagedValuesSource(info, context),
-                    //    IdentifierName("Length")))))))))
-                    .WithLeadingTrivia(Trivia(
-                        PragmaWarningDirectiveTrivia(
-                            Token(SyntaxKind.DisableKeyword),
-                            SingletonSeparatedList<ExpressionSyntax>(IdentifierName("CS9081")),
-                            isActive: true)))
-                    .WithTrailingTrivia(Trivia(
-                        PragmaWarningDirectiveTrivia(
-                            Token(SyntaxKind.RestoreKeyword),
-                            SingletonSeparatedList<ExpressionSyntax>(IdentifierName("CS9081")),
-                            isActive: true)));
+                                IdentifierName(MarshallerHelpers.GetNumElementsIdentifier(info, context)))))))));
                 var nativeSpanDeclaration = LocalDeclarationStatement(VariableDeclaration(
                     GenericName(
                         Identifier(TypeNames.System_Span),
@@ -608,8 +599,7 @@ namespace Microsoft.Interop
                         _elementInfo,
                         new FreeAlwaysOwnedOriginalValueGenerator(_elementMarshaller),
                         StubCodeContext.Stage.Marshal,
-                        StubCodeContext.Stage.PinnedMarshal,
-                        StubCodeContext.Stage.Cleanup));
+                        StubCodeContext.Stage.PinnedMarshal));
             }
             // Span<TUnmanagedElement> <nativeSpan> = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in <GetUnmanagedValuesSource>.GetPinnableReference(), <numElements>));
             LocalDeclarationStatementSyntax unmanagedValuesSource = LocalDeclarationStatement(VariableDeclaration(
@@ -619,36 +609,6 @@ namespace Microsoft.Interop
                         SingletonSeparatedList(_unmanagedElementType))
                 ),
                 SingletonSeparatedList(VariableDeclarator(nativeSpanIdentifier).WithInitializer(EqualsValueClause(GetUnmanagedValuesDestinationFromUnmanagedValuesSource(info, context))))));
-            //InvocationExpression(
-            //    MemberAccessExpression(
-            //        SyntaxKind.SimpleMemberAccessExpression,
-            //        ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
-            //        IdentifierName("CreateSpan")))
-            //.WithArgumentList(
-            //    ArgumentList(
-            //        SeparatedList(
-            //            new[]
-            //            {
-            //                Argument(
-            //                    InvocationExpression(
-            //                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-            //                            ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
-            //                            IdentifierName("AsRef")),
-            //                        ArgumentList(SingletonSeparatedList(
-            //                            Argument(
-            //                                InvocationExpression(
-            //                                    MemberAccessExpression(
-            //                                        SyntaxKind.SimpleMemberAccessExpression,
-            //                                        CollectionSource.GetUnmanagedValuesSource(info, context),
-            //                                        IdentifierName("GetPinnableReference")),
-            //                                        ArgumentList()))
-            //                            .WithRefKindKeyword(
-            //                                Token(SyntaxKind.InKeyword))))))
-            //                .WithRefKindKeyword(
-            //                    Token(SyntaxKind.RefKeyword)),
-            //                Argument(
-            //                    IdentifierName(numElementsIdentifier))
-            //            }))))))));
 
             // Span<TElement> <managedSpan> = <GetManagedValuesDestination>
             LocalDeclarationStatementSyntax managedValuesDestination = LocalDeclarationStatement(VariableDeclaration(

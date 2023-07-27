@@ -278,7 +278,7 @@ namespace Microsoft.Interop
 
                 FreeStrategy freeStrategy = GetFreeStrategy(info, context);
 
-                if (freeStrategy != FreeStrategy.NoFree && marshallerData.Shape.HasFlag(MarshallerShape.Free))
+                if ((freeStrategy != FreeStrategy.NoFree) && marshallerData.Shape.HasFlag(MarshallerShape.Free))
                 {
                     marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
                 }
@@ -391,7 +391,7 @@ namespace Microsoft.Interop
                     marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeSyntax, bufferElementTypeSyntax, isLinearCollectionMarshalling: true);
                 }
 
-                if (freeStrategy != FreeStrategy.NoFree && marshallerData.Shape.HasFlag(MarshallerShape.Free))
+                if ((freeStrategy != FreeStrategy.NoFree) && marshallerData.Shape.HasFlag(MarshallerShape.Free))
                 {
                     marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
                 }
@@ -438,7 +438,11 @@ namespace Microsoft.Interop
             /// <summary>
             /// Do not free the unmanaged value, we don't own it.
             /// </summary>
-            NoFree
+            NoFree,
+            /// <summary>
+            /// Free the unmanaged value if the unmanaged to managed stub throws before returning.
+            /// </summary>
+            FreeNativeOnFailure
         }
 
         private static FreeStrategy GetFreeStrategy(TypePositionInfo info, StubCodeContext context)
@@ -461,6 +465,13 @@ namespace Microsoft.Interop
             if (info.RefKind == RefKind.Ref)
             {
                 return FreeStrategy.FreeOriginal;
+            }
+
+            // If we marshal a value out to a native callee, we should free the marshalled value if we throw before returning
+            // ByValueContents Out we should not free the native identifier itself since we don't allocate a new one, only new elements
+            if (MarshallerHelpers.MarshalsOut(info, context) && !info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                return FreeStrategy.FreeNativeOnFailure;
             }
 
             // In an unmanaged-to-managed stub, we don't take ownership of the value when it isn't passed by 'ref'.

@@ -89,7 +89,6 @@ namespace Microsoft.Interop
                     case StubCodeContext.Stage.CleanupFailure:
                         if (!MarshallerHelpers.MarshalsOut(marshaller.TypeInfo, context))
                             continue;
-                        //localContext = new MarshalOutContext(context with { CurrentStage = StubCodeContext.Stage.Cleanup });
                         break;
                 }
                 statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, localContext));
@@ -171,7 +170,10 @@ namespace Microsoft.Interop
         {
             if (!marshallers.HasManagedExceptionMarshaller)
             {
-                return ImmutableArray<CatchClauseSyntax>.Empty;
+                ImmutableArray.Create(CatchClause(
+                    CatchDeclaration(ParseTypeName(TypeNames.System_Exception)),
+                filter: null,
+                Block(List(GenerateStatementsForStubContext(marshallers, new MarshalOutContext(context with { CurrentStage = StubCodeContext.Stage.CleanupFailure }))))));
             }
             ImmutableArray<StatementSyntax>.Builder catchClauseBuilder = ImmutableArray.CreateBuilder<StatementSyntax>();
 

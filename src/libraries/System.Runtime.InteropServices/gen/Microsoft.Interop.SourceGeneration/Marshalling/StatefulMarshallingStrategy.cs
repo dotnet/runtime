@@ -385,7 +385,7 @@ namespace Microsoft.Interop
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_cleanupElements && !(context is MarshalOutContext))
+            if (!(_cleanupElements || MarshallerHelpers.MarshalsOut(info, context)))
             {
                 yield break;
             }
@@ -460,12 +460,11 @@ namespace Microsoft.Interop
             if (MarshallerHelpers.MarshalsOut(info, context)
                 && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
-                yield return LocalDeclarationStatement(VariableDeclaration(
-                    GenericName(
+                yield return MarshallerHelpers.Declare(
+                    ScopedType(GenericName(
                         Identifier(TypeNames.System_Span),
-                        TypeArgumentList(
-                            SingletonSeparatedList(_elementsMarshalling.UnmanagedElementType))),
-                    SingletonSeparatedList(VariableDeclarator(context.GetAdditionalIdentifier(info, "out")))));
+                        TypeArgumentList(SingletonSeparatedList(_elementsMarshalling.UnmanagedElementType)))),
+                    context.GetAdditionalIdentifier(info, "out"), true);
             }
         }
 

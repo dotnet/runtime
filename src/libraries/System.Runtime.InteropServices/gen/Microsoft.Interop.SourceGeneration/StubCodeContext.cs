@@ -78,6 +78,10 @@ namespace Microsoft.Interop
             /// Separating this from <see cref="Marshal"/> ensures parameters remain unmodified when the method returns a failing return value.
             /// </summary>
             AssignOut,
+
+            /// <summary>
+            /// In scenarios where the managed callee throws before returning, this stage cleans up any resources that the method allocated but cannot transfer to the caller.
+            /// </summary>
             CleanupFailure
         }
 

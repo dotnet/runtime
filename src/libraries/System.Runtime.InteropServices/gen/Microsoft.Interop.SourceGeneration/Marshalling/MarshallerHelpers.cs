@@ -402,7 +402,7 @@ namespace Microsoft.Interop
         /// and copied to the parameter value in the AssignOut stage.
         /// </summary>
         public static bool MarshalsOut(TypePositionInfo info, StubCodeContext context)
-            => context.Direction is MarshalDirection.UnmanagedToManaged // UnamanagedToManaged is the only direction with a native callee
+            => context.Direction is MarshalDirection.UnmanagedToManaged // UnmanagedToManaged is the only direction with a native callee
                 && context.AdditionalTemporaryStateLivesAcrossStages // if AdditionTempStateLivesAcrossStages is false, it is an element of an array
                 && ((info.IsByRef && info.RefKind is RefKind.Out or RefKind.Ref) // out and ref need to be marshalled back to the callee
                     || info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out) // [Out] needs it's contents marshalled back to native

@@ -278,7 +278,6 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("Make issue: ByValueContents out do not get freed")]
         public unsafe void ValidateArrayElementsByValueOutFreed_Stateful()
         {
             const int startingValue = 13;

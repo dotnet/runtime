@@ -256,15 +256,12 @@ namespace Microsoft.Interop
             return Argument(IdentifierName(managedIdentifier));
         }
 
-        public static ExpressionSyntax GenerateNativeByRefInitialization(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
+        /// <summary>
+        /// Generates <code>*__p_native_param</code>
+        /// </summary>
+        public static ExpressionSyntax GenerateParameterValueDereference(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
         {
-            string paramIdentifier = context.GetAdditionalIdentifier(info, ParameterIdentifierSuffix);
-            return RefExpression(PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression, IdentifierName(paramIdentifier)));
-        }
-
-        public static ExpressionSyntax GenerateNativeDereferencedInitialization(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
-        {
-            string paramIdentifier = context.GetAdditionalIdentifier(info, ParameterIdentifierSuffix);
+            string paramIdentifier = generator.AsParameter(info, context).Identifier.Text;
             return PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression, IdentifierName(paramIdentifier));
         }
 
