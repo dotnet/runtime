@@ -87,10 +87,8 @@ namespace System
         /// <seealso cref="MediaTypeNames"/>
         [RequiresDynamicCode(JsonSerializerRequiresDynamicCode)]
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
-        public BinaryData(object? jsonSerializable, JsonSerializerOptions? options = default,
-            Type? type = default) : this(
-            JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type ?? jsonSerializable?.GetType() ?? typeof(object),
-                options),
+        public BinaryData(object? jsonSerializable, JsonSerializerOptions? options = default, Type? type = default) : this(
+            JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type ?? jsonSerializable?.GetType() ?? typeof(object), options),
             MediaTypeApplicationJson)
         {
         }
@@ -107,8 +105,7 @@ namespace System
         /// be used to determine the type.</param>
         /// <seealso cref="MediaTypeNames"/>
         public BinaryData(object? jsonSerializable, JsonSerializerContext context, Type? type = default) : this(
-            JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type ?? jsonSerializable?.GetType() ?? typeof(object),
-                context),
+            JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type ?? jsonSerializable?.GetType() ?? typeof(object), context),
             MediaTypeApplicationJson)
         {
         }
