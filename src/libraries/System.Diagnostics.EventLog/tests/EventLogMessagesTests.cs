@@ -4,7 +4,7 @@
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -50,40 +50,41 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        public static bool HasAssemblyFilesIsElevatedAndSupportsEventLogs => PlatformDetection.HasAssemblyFiles && Helpers.IsElevatedAndSupportsEventLogs;
-
-        [ConditionalFact(nameof(HasAssemblyFilesIsElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.HasAssemblyFilesIsElevatedAndSupportsEventLogs))]
         public void CanReadAndWriteMessages()
         {
-            string messageDllPath = Path.Combine(Path.GetDirectoryName(typeof(EventLog).Assembly.Location), "System.Diagnostics.EventLog.Messages.dll");
-            EventSourceCreationData log = new EventSourceCreationData($"TestEventMessageSource {Guid.NewGuid()}", "Application")
+            RemoteExecutor.Invoke(() =>
             {
-                MessageResourceFile = messageDllPath
-            };
-            try
-            {
-                if (EventLog.SourceExists(log.Source))
+                string messageDllPath = Path.Combine(Path.GetDirectoryName(typeof(EventLog).Assembly.Location), "System.Diagnostics.EventLog.Messages.dll");
+                EventSourceCreationData log = new EventSourceCreationData($"TestEventMessageSource {Guid.NewGuid()}", "Application")
+                {
+                    MessageResourceFile = messageDllPath
+                };
+                try
+                {
+                    if (EventLog.SourceExists(log.Source))
+                    {
+                        EventLog.DeleteEventSource(log.Source);
+                    }
+
+                    EventLog.CreateEventSource(log);
+                    string message = $"Hello {Guid.NewGuid()}";
+                    Helpers.Retry(() => EventLog.WriteEntry(log.Source, message));
+
+                    using (EventLogReader reader = new EventLogReader(new EventLogQuery("Application", PathType.LogName, $"*[System/Provider/@Name=\"{log.Source}\"]")))
+                    {
+                        EventRecord evt = reader.ReadEvent();
+
+                        string logMessage = evt.FormatDescription();
+
+                        Assert.Equal(message, logMessage);
+                    }
+                }
+                finally
                 {
                     EventLog.DeleteEventSource(log.Source);
                 }
-
-                EventLog.CreateEventSource(log);
-                string message = $"Hello {Guid.NewGuid()}";
-                Helpers.Retry(() => EventLog.WriteEntry(log.Source, message));
-
-                using (EventLogReader reader = new EventLogReader(new EventLogQuery("Application", PathType.LogName, $"*[System/Provider/@Name=\"{log.Source}\"]")))
-                {
-                    EventRecord evt = reader.ReadEvent();
-
-                    string logMessage = evt.FormatDescription();
-
-                    Assert.Equal(message, logMessage);
-                }
-            }
-            finally
-            {
-                EventLog.DeleteEventSource(log.Source);
-            }
+            }).Dispose();
         }
     }
 }
