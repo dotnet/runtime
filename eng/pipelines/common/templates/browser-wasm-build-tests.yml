@@ -104,6 +104,7 @@ jobs:
         # build WBT
         buildArgs: >-
           /p:Configuration=$(_BuildConfig)
+          /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/wbt.binlog
           $(wbtProjectArg) $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
           /p:TestUsingWorkloads=true
           /p:InstallWorkloadForTesting=true
