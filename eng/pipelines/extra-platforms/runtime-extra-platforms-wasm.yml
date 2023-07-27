@@ -224,7 +224,6 @@ jobs:
         - browser_wasm
         - browser_wasm_win
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      downloadMultithreadedRuntime: true
 
   - template: /eng/pipelines/common/templates/wasm-build-tests.yml
     parameters:

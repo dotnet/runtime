@@ -16,7 +16,7 @@ namespace System
     /// <summary>
     /// A lightweight abstraction for a payload of bytes that supports converting between string, stream, JSON, and bytes.
     /// </summary>
-    [JsonConverter(typeof(BinaryDataConverter))]
+    [JsonConverter(typeof(BinaryDataJsonConverter))]
     public class BinaryData
     {
         private const string JsonSerializerRequiresDynamicCode = "JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation.";
@@ -291,15 +291,7 @@ namespace System
         [RequiresDynamicCode(JsonSerializerRequiresDynamicCode)]
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public T? ToObjectFromJson<T>(JsonSerializerOptions? options = default)
-        {
-            ReadOnlySpan<byte> span = _bytes.Span;
-
-            // Check for the UTF-8 byte order mark (BOM) EF BB BF
-            if (span.Length > 2 && span[0] == 0xEF && span[1] == 0xBB && span[2] == 0xBF)
-                span = span.Slice(3);
-
-            return JsonSerializer.Deserialize<T>(span, options);
-        }
+            => JsonSerializer.Deserialize<T>(GetBytesWithTrimmedBom(), options);
 
         /// <summary>
         /// Converts the <see cref="BinaryData"/> to the specified type using
@@ -310,7 +302,18 @@ namespace System
         /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> to use when serializing to JSON.</param>
         /// <returns>The data converted to the specified type.</returns>
         public T? ToObjectFromJson<T>(JsonTypeInfo<T> jsonTypeInfo)
-            => JsonSerializer.Deserialize<T>(_bytes.Span, jsonTypeInfo);
+            => JsonSerializer.Deserialize(GetBytesWithTrimmedBom(), jsonTypeInfo);
+
+        private ReadOnlySpan<byte> GetBytesWithTrimmedBom()
+        {
+            ReadOnlySpan<byte> span = _bytes.Span;
+
+            // Check for the UTF-8 byte order mark (BOM) EF BB BF
+            if (span.Length > 2 && span[0] == 0xEF && span[1] == 0xBB && span[2] == 0xBF)
+                span = span.Slice(3);
+
+            return span;
+        }
 
         /// <summary>
         /// Defines an implicit conversion from a <see cref="BinaryData" /> to a <see cref="ReadOnlyMemory{Byte}"/>.

@@ -501,7 +501,6 @@ extends:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          downloadMultithreadedRuntime: true
 
       # Wasm Debugger tests
       - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
