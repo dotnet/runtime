@@ -3033,6 +3033,21 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     // Replace helper with a more specialized helper that returns RuntimeType
                     if (typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE)
                     {
+                        // Fold typeof(T) to a frozen RuntimeType object handle if possible
+                        CORINFO_CLASS_HANDLE cls = gtGetHelperArgClassHandle(
+                            op1->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode());
+                        if (cls != NO_CLASS_HANDLE)
+                        {
+                            CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(cls);
+                            if (ptr != NULL)
+                            {
+                                setMethodHasFrozenObjects();
+                                retNode = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                                retNode->gtType = TYP_REF;
+                                INDEBUG(retNode->AsIntCon()->gtTargetHandle = (size_t)ptr);
+                                break;
+                            }
+                        }
                         typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE;
                     }
                     else
