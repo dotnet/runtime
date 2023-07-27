@@ -30,6 +30,6 @@ export function mono_wasm_cancel_promise(task_holder_gc_handle: GCHandle): void 
     mono_assert(!!promise, () => `Expected Promise for GCHandle ${task_holder_gc_handle}`);
     loaderHelpers.assertIsControllablePromise(promise);
     const promise_control = loaderHelpers.getPromiseController(promise);
-    promise_control.reject("OperationCanceledException");
+    promise_control.reject(new Error("OperationCanceledException"));
 }
 

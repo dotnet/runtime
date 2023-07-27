@@ -11,7 +11,9 @@ System.Net.Http.Json.JsonContent</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.AsyncEnumerable.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.cs" />
+    <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.AsyncEnumerable.cs" />
     <Compile Include="System\Net\Http\Json\JsonHelpers.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Delete.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.cs" />

@@ -235,6 +235,10 @@ namespace System.Net.Http
                 JSObject fetchResponse = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, abortController, null).ConfigureAwait(true);
                 return new WasmFetchResponse(fetchResponse, abortRegistration.Value);
             }
+            catch (JSException jse)
+            {
+                throw new HttpRequestException(jse.Message, jse);
+            }
             catch (Exception)
             {
                 // this would also trigger abort

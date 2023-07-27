@@ -13,7 +13,8 @@
     <!-- SYSLIB1039: Suppress Polymorphic types not supported warning -->
     <!-- SYSLIB1220: Suppress invalid JsonConverterAttribute argument warnings -->
     <!-- SYSLIB1222: Suppress inacessible JsonConstructorAttribute annotations -->
-    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1034;SYSLIB1037;SYSLIB1038;SYSLIB1039;SYSLIB1220;SYSLIB1222</NoWarn>
+    <!-- SYSLIB1223: Suppress derived JsonConverterAttribute warnings -->
+    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1034;SYSLIB1037;SYSLIB1038;SYSLIB1039;SYSLIB1220;SYSLIB1222;SYSLIB1223</NoWarn>
     <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
   </PropertyGroup>
 

@@ -35,32 +35,15 @@ public class MiscTests : BlazorWasmTestBase
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         // build with -p:DeployOnBuild=true, and that will trigger a publish
-        (CommandResult res, _) = BlazorBuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
+        (CommandResult res, _) = BlazorBuild(new BlazorBuildOptions(
+                                        Id: id,
+                                        Config: config,
+                                        ExpectedFileType: nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT,
+                                        ExpectRelinkDirWhenPublishing: false,
+                                        IsPublish: false),
+                                    "-p:DeployBuild=true");
 
-        var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
-
-        _provider.AssertBlazorBundle(new BlazorBuildOptions
-            (
-                Id: id,
-                Config: config,
-                ExpectedFileType: expectedFileType
-            ), isPublish: true);
-
-        if (expectedFileType == NativeFilesType.AOT)
-        {
-            // check for this too, so we know the format is correct for the negative
-            // test for jsinterop.webassembly.dll
-            Assert.Contains("Microsoft.JSInterop.dll -> Microsoft.JSInterop.dll.bc", res.Output);
-
-            // make sure this assembly gets skipped
-            Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Output);
-        }
-
-        // Check that we linked only for publish
-        string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm", "for-build");
-        Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets creating when relinking during Build");
-
-        // double check!
+        // double check relinking!
         int index = res.Output.IndexOf("pinvoke.c -> pinvoke.o");
         Assert.NotEqual(-1, index);
 
