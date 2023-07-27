@@ -13,6 +13,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         private readonly Dictionary<string, List<FactoryMeter>> _cachedMeters = new();
         private bool _disposed;
 
+        public DefaultMeterFactory() { }
+
         public Meter Create(MeterOptions options)
         {
             if (options is null)
@@ -82,20 +84,20 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 _cachedMeters.Clear();
             }
         }
+    }
 
-        internal sealed class FactoryMeter : Meter
+    internal sealed class FactoryMeter : Meter
+    {
+        public FactoryMeter(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope)
+            : base(name, version, tags, scope)
         {
-            public FactoryMeter(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope)
-                : base(name, version, tags, scope)
-            {
-            }
+        }
 
-            public void Release() => base.Dispose(true); // call the protected Dispose(bool)
+        public void Release() => base.Dispose(true); // call the protected Dispose(bool)
 
-            protected override void Dispose(bool disposing)
-            {
-                // no-op, disallow users from disposing of the meters created from the factory.
-            }
+        protected override void Dispose(bool disposing)
+        {
+            // no-op, disallow users from disposing of the meters created from the factory.
         }
     }
 }
