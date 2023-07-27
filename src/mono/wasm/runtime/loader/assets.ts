@@ -75,12 +75,11 @@ function getFirstKey(resources: ResourceList | undefined): string | null {
 }
 
 function getFirstAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntry {
-    const isString = typeof (resources) === "string";
-    const name = isString ? resources : getFirstKey(resources);
+    const name = getFirstKey(resources);
     mono_assert(name, `Can't find ${behavior} in resources`);
     return ensureAssetResolvedUrl({
         name,
-        hash: isString ? undefined : resources![name],
+        hash: resources![name],
         behavior
     });
 }
