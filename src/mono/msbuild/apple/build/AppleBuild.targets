@@ -17,10 +17,9 @@
   <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" 
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
-  <!-- Fix temporary regression, will be fixed on the main in a separate PR: https://github.com/dotnet/runtime/issues/80911 -->
-  <Import Condition="'$(UseNativeAOTRuntime)' == 'true'"
+  <Import Condition="Exists('$(ILCompilerTargetsPath)')"
           Project="$(ILCompilerTargetsPath)" />
-  <Import Condition="'$(UseNativeAOTRuntime)' == 'true'"
+  <Import Condition="Exists('$(ILLinkTargetsPath)')"
           Project="$(ILLinkTargetsPath)" />
 
   <Target Name="_CleanPublish" 
@@ -272,16 +271,15 @@
 
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
-    <!-- Move to separate target -->
+    <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+      <NativeDependencies Condition="$(NativeDependencies) == ''">%(ManagedBinary.IlcOutputFile)</NativeDependencies>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
     </ItemGroup>
-
-    <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
-      <NativeDependencies Condition="$(NativeDependencies) == ''">%(ManagedBinary.IlcOutputFile)</NativeDependencies>
-    </PropertyGroup>
 
     <AppleAppBuilderTask
       UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
