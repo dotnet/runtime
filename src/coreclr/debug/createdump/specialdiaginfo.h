@@ -27,6 +27,6 @@ const uint64_t SpecialDiagInfoAddress = 0x7fff1000;
 struct SpecialDiagInfoHeader
 {
     char Signature[16];
-    int Version;
+    int32_t Version;
     uint64_t ExceptionRecordAddress;
 };
