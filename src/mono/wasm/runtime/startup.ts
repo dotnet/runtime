@@ -344,7 +344,12 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
 
     init_c_exports();
     runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
-    runtimeHelpers.mono_wasm_abort = cwraps.mono_wasm_abort;
+    runtimeHelpers.abort = (reason: any) => {
+        if (!loaderHelpers.is_exited()) {
+            cwraps.mono_wasm_abort();
+        }
+        throw reason;
+    };
     cwraps_internal(INTERNAL);
     if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         cwraps_mono_api(MONO);

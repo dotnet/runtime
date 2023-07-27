@@ -197,8 +197,10 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, re
             return runtimeHelpers.javaScriptExports.call_delegate(gc_handle, arg1_js, arg2_js, arg3_js, res_converter, arg1_converter, arg2_converter, arg3_converter);
         };
         result.dispose = () => {
-            teardown_managed_proxy(result, gc_handle);
-            result.isDisposed = true;
+            if (!result.isDisposed) {
+                teardown_managed_proxy(result, gc_handle);
+                result.isDisposed = true;
+            }
         };
         result.isDisposed = false;
         if (BuildConfiguration === "Debug") {

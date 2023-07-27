@@ -9,9 +9,10 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, mon
 import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
-import { mono_log_warn } from "./logging";
+import { mono_log_info, mono_log_warn } from "./logging";
 import { viewOrCopy, utf8ToStringRelaxed, stringToUTF8 } from "./strings";
 import { IDisposable } from "./marshal";
+import { cs_owned_js_handle_symbol } from "./gc-handles";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -22,6 +23,7 @@ const wasm_ws_pending_open_promise = Symbol.for("wasm ws_pending_open_promise");
 const wasm_ws_pending_close_promises = Symbol.for("wasm ws_pending_close_promises");
 const wasm_ws_pending_send_promises = Symbol.for("wasm ws_pending_send_promises");
 const wasm_ws_is_aborted = Symbol.for("wasm ws_is_aborted");
+const wasm_ws_on_closed = Symbol.for("wasm ws_on_closed");
 const wasm_ws_receive_status_ptr = Symbol.for("wasm ws_receive_status_ptr");
 let mono_wasm_web_socket_close_warning = false;
 const ws_send_buffer_blocking_threshold = 65536;
@@ -42,6 +44,7 @@ function verifyEnvironment() {
 export function ws_wasm_create(uri: string, sub_protocols: string[] | null, receive_status_ptr: VoidPtr, onClosed: (code: number, reason: string) => void): WebSocketExtension {
     verifyEnvironment();
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
+    mono_assert(typeof onClosed === "function", () => `ERR12: Invalid onClosed ${typeof onClosed}`);
 
     const ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
     const { promise_control: open_promise_control } = createPromiseController<WebSocketExtension>();
@@ -52,6 +55,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     ws[wasm_ws_pending_send_promises] = [];
     ws[wasm_ws_pending_close_promises] = [];
     ws[wasm_ws_receive_status_ptr] = receive_status_ptr;
+    ws[wasm_ws_on_closed] = onClosed as any;
     ws.binaryType = "arraybuffer";
     const local_on_open = () => {
         if (ws[wasm_ws_is_aborted]) return;
@@ -64,9 +68,11 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         prevent_timer_throttling();
     };
     const local_on_close = (ev: CloseEvent) => {
+        mono_log_info(`WebSocket ${(ws as any)[cs_owned_js_handle_symbol]} closed: ${ev.code} ${ev.reason}`);// TODO remove me
         ws.removeEventListener("message", local_on_message);
         if (ws[wasm_ws_is_aborted]) return;
-        if (onClosed) onClosed(ev.code, ev.reason);
+
+        onClosed(ev.code, ev.reason);
 
         // this reject would not do anything if there was already "open" before it.
         open_promise_control.reject(new Error(ev.reason));
@@ -85,12 +91,10 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         });
 
         // cleanup the delegate proxy
-        if (onClosed) {
-            mono_log_warn("WebSocket on close disposing");
-            (onClosed as any as IDisposable).dispose();
-        }
+        ws[wasm_ws_on_closed].dispose();
     };
     const local_on_error = (ev: any) => {
+        mono_log_info(`WebSocket ${(ws as any)[cs_owned_js_handle_symbol]} error: ${ev.message} ${ev + ""}`);// TODO remove me
         open_promise_control.reject(new Error(ev.message || "WebSocket error"));
     };
     ws.addEventListener("message", local_on_message);
@@ -103,6 +107,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
 
 export function ws_wasm_open(ws: WebSocketExtension): Promise<WebSocketExtension> | null {
     mono_assert(!!ws, "ERR17: expected ws instance");
+    mono_log_info(`WebSocket ${(ws as any)[cs_owned_js_handle_symbol]} open`);// TODO remove me
     const open_promise_control = ws[wasm_ws_pending_open_promise];
     return open_promise_control.promise;
 }
@@ -181,6 +186,7 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
 }
 
 export function ws_wasm_abort(ws: WebSocketExtension): void {
+    mono_log_info(`WebSocket ${(ws as any)[cs_owned_js_handle_symbol]} abort`);// TODO remove me
     mono_assert(!!ws, "ERR18: expected ws instance");
 
     ws[wasm_ws_is_aborted] = true;
@@ -198,6 +204,9 @@ export function ws_wasm_abort(ws: WebSocketExtension): void {
     ws[wasm_ws_pending_receive_promise_queue].drain(receive_promise_control => {
         receive_promise_control.reject(new Error("OperationCanceledException"));
     });
+
+    // cleanup the delegate proxy
+    ws[wasm_ws_on_closed].dispose();
 
     // this is different from Managed implementation
     ws.close(1000, "Connection was aborted.");
@@ -379,6 +388,7 @@ type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_send_promises]: PromiseController<void>[]
     [wasm_ws_pending_close_promises]: PromiseController<void>[]
     [wasm_ws_is_aborted]: boolean
+    [wasm_ws_on_closed]: IDisposable
     [wasm_ws_receive_status_ptr]: VoidPtr
     [wasm_ws_pending_send_buffer_offset]: number
     [wasm_ws_pending_send_buffer_type]: number
