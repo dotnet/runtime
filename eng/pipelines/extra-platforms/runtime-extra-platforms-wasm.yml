@@ -204,7 +204,7 @@ jobs:
         - browser_wasm_win
       nameSuffix: MultiThreaded
       extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      condition: $[ ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true) ]
+      condition: ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true)
       publishArtifactsForWorkload: true
 
   - template: /eng/pipelines/common/templates/wasm-build-only.yml
@@ -214,7 +214,7 @@ jobs:
         - browser_wasm_win
       nameSuffix: SingleThreaded
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      condition: $[ ne(variables['wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline'], true) ]
+      condition: ne(variables['wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline'], true)
       publishArtifactsForWorkload: true
 
   # Browser Wasm.Build.Tests
