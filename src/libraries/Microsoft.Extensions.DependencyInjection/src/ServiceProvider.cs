@@ -97,9 +97,22 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The service that was produced.</returns>
         public object? GetService(Type serviceType) => GetService(ServiceIdentifier.FromServiceType(serviceType), Root);
 
+        /// <summary>
+        /// Gets the service object of the specified type with the specified key.
+        /// </summary>
+        /// <param name="serviceType">The type of the service to get.</param>
+        /// <param name="serviceKey">The key of the service to get.</param>
+        /// <returns>The keyed service.</returns>
         public object? GetKeyedService(Type serviceType, object? serviceKey)
             => GetService(new ServiceIdentifier(serviceKey, serviceType), Root);
 
+        /// <summary>
+        /// Gets the service object of the specified type. Will throw if the service not found.
+        /// </summary>
+        /// <param name="serviceType">The type of the service to get.</param>
+        /// <param name="serviceKey">The key of the service to get.</param>
+        /// <returns>The keyed service.</returns>
+        /// <exception cref="InvalidOperationException"></exception>
         public object GetRequiredKeyedService(Type serviceType, object? serviceKey)
         {
             object? service = GetKeyedService(serviceType, serviceKey);
