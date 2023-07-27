@@ -94,7 +94,7 @@ jobs:
               downloadPath: '$(Build.SourcesDirectory)/artifacts'
 
           - task: CopyFiles@2
-            displayName: Copy multithreading runtime pack
+            displayName: Copy Wasm.Build.Tests archive
             inputs:
               SourceFolder: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_SingleThreaded_BuildOnly'
               Contents: helix/**
