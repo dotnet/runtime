@@ -37,12 +37,12 @@ steps:
     condition: and(succeeded(), ${{ parameters.publishWBT }})
     inputs:
       SourceFolder: '$(Build.SourcesDirectory)/artifacts'
-      Contents: helix/buildwasmapps/browser.AnyCPU.${{ parameters.buildConfig }}/**
+      Contents: helix/buildwasmapps/**
       TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts'
       CleanTargetFolder: true
 
   - task: PublishBuildArtifacts@1
-    displayName: Publish intermediate artifacts
+    displayName: Publish Wasm.Build.Tests archive
     condition: and(succeeded(), ${{ parameters.publishWBT }})
     inputs:
       pathToPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'
