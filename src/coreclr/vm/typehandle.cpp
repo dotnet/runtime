@@ -1539,7 +1539,12 @@ TypeKey TypeHandle::GetTypeKey() const
     {
         TypeDesc *pTD = AsTypeDesc();
         CorElementType etype = pTD->GetInternalCorElementType();
-        if (CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE)
+        if (etype == ELEMENT_TYPE_CTARG)
+        {
+            TypeKey tk(AsConstValue()->GetConstValueType(), AsConstValue()->GetConstValue());
+            return tk;
+        }
+        else if (CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE)
         {
             TypeKey tk(etype, pTD->GetTypeParam());
             return tk;

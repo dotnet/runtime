@@ -758,7 +758,7 @@ private:
 
     // Linear mapping from GenericParam token to TypeVarTypeDesc*
     LookupMap<PTR_TypeVarTypeDesc>  m_GenericParamToDescMap;
-
+    
     // Linear mapping from TypeDef token to the MethodTable * for its canonical generic instantiation
     // If the type is not generic, the entry is guaranteed to be NULL.  This means we are paying extra
     // space in order to use the LookupMap infrastructure, but what it buys us is IBC support and

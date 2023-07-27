@@ -1333,12 +1333,12 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         case ELEMENT_TYPE_CTARG:
         {
 #ifndef DACCESS_COMPILE
-            CorElementType elemType;
+            CorElementType valueType;
             uint32_t cb;
             PCCOR_SIGNATURE elem;
-            IfFailThrowBF(psig.GetConstTypeArg(&elemType, &cb, &elem), BFA_BAD_SIGNATURE, pOrigModule);
-            ULONG value = *(ULONG*)elem;
-            thRet = ClassLoader::LoadConstValueTypeThrowing(elemType, value);
+            IfFailThrowBF(psig.GetConstTypeArg(&valueType, &cb, &elem), BFA_BAD_SIGNATURE, pOrigModule);
+            uint64_t value = *(uint64_t*)elem;
+            thRet = ClassLoader::LoadConstValueTypeThrowing(valueType, value);
 #else
             DacNotImpl();
             thRet = TypeHandle();

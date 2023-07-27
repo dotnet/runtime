@@ -1653,7 +1653,7 @@ TypeHandle ClassLoader::LoadFnptrTypeThrowing(BYTE callConv,
 }
 
 TypeHandle ClassLoader::LoadConstValueTypeThrowing(CorElementType valueType,
-                                                   ULONG value,
+                                                   uint64_t value,
                                                    CorElementType typ /* ELEMENT_TYPE_CTARG */,
                                                    LoadTypesFlag fLoadTypes /* LoadTypes */,
                                                    ClassLoadLevel level /* CLASS_LOADED */)
