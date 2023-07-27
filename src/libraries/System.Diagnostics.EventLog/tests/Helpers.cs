@@ -14,9 +14,9 @@ namespace System.Diagnostics.Tests
 {
     internal class Helpers
     {
-        public static bool HasAssemblyFilesIsElevatedAndSupportsEventLogs => PlatformDetection.HasAssemblyFiles && IsElevatedAndSupportsEventLogs;
-        public static bool NotElevatedAndSupportsEventLogs { get => !RemoteExecutor.IsSupported && SupportsEventLogs; }
-        public static bool IsElevatedAndSupportsEventLogs { get => RemoteExecutor.IsSupported && SupportsEventLogs; }
+        public static bool HasAssemblyFilesIsElevatedAndSupportsEventLogs => PlatformDetection.HasAssemblyFiles && RemoteExecutor.IsSupported && SupportsEventLogs;
+        public static bool NotElevatedAndSupportsEventLogs { get => !AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
+        public static bool IsElevatedAndSupportsEventLogs { get => AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
         public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoNorServerCore && PlatformDetection.IsNotWindowsIoTCore; }
 
         // Retry that eats exceptions: for "best effort cleanup"
