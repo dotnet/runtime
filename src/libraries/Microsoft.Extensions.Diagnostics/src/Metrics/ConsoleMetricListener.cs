@@ -21,16 +21,32 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
         public string Name => ConsoleMetrics.ListenerName;
 
-        public object? InstrumentPublished(Instrument instrument) => null;
+        public object? InstrumentPublished(Instrument instrument)
+        {
+            WriteLine($"{instrument.Meter.Name}-{instrument.Name} Started; Description: {instrument.Description}.");
+            return this;
+        }
 
-        public void MeasurementsCompleted(Instrument instrument, object? userState) { }
+        public void MeasurementsCompleted(Instrument instrument, object? userState)
+        {
+            // Debug.Assert(userState == this); TODO: State isn't flowing through
+            WriteLine($"{instrument.Meter.Name}-{instrument.Name} Stopped.");
+        }
 
         public void SetSource(IMetricsSource source) => _source = source;
         public MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct => MeasurementHandler;
 
         private void MeasurementHandler<T>(Instrument instrument, T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags, object? state) where T : struct
         {
-            _textWriter.WriteLine($"{instrument.Meter.Name}-{instrument.Name} {measurement} {instrument.Unit}");
+            WriteLine($"{instrument.Meter.Name}-{instrument.Name} {measurement} {instrument.Unit}");
+        }
+
+        private void WriteLine(string output)
+        {
+            lock (_textWriter)
+            {
+                _textWriter.WriteLine(output);
+            }
         }
 
         private void OnTimer(object? _)

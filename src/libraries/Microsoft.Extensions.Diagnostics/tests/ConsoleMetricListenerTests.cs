@@ -31,10 +31,13 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
 
             var factory = sp.GetRequiredService<IMeterFactory>();
             var meter = factory.Create("TestMeter", "version", new TagList() { { "key1", "value1" }, { "key2", "value2" } });
-            var counter = meter.CreateCounter<int>("counter", "blip");
+            var counter = meter.CreateCounter<int>("counter", "blip", "I count blips");
             counter.Add(1);
+            sp.Dispose();
 
-            Assert.Equal("TestMeter-counter 1 blip" + Environment.NewLine, output.ToString());
+            Assert.Equal("TestMeter-counter Started; Description: I count blips." + Environment.NewLine
+                + "TestMeter-counter 1 blip" + Environment.NewLine
+                + "TestMeter-counter Stopped." + Environment.NewLine, output.ToString());
         }
     }
 }

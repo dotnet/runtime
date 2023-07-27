@@ -53,6 +53,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     return;
                 }
 
+                // TODO: should this state flow somewhere?
+                var __ = _metricsListener.InstrumentPublished(instrument);
                 _instruments.Add(instrument);
                 RefreshInstrument(instrument);
             }
@@ -73,6 +75,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     {
                         _meterListener.DisableMeasurementEvents(instrument);
                     }
+                    _metricsListener.MeasurementsCompleted(instrument, state);
                 }
                 else
                 {
