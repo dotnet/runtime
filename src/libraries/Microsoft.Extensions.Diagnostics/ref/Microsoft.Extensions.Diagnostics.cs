@@ -40,15 +40,15 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         internal TextWriter _textWriter;
         public string Name { get; }
-        public System.Diagnostics.Metrics.MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct => throw new NotImplementedException();
-        public object? InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument) => throw new NotImplementedException();
-        public void MeasurementsCompleted(System.Diagnostics.Metrics.Instrument instrument, object? userState) => throw new NotImplementedException();
-        public void SetSource(IMetricsSource source) => throw new NotImplementedException();
-        public void Dispose() => throw new NotImplementedException();
+        public System.Diagnostics.Metrics.MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct => throw null!;
+        public object? InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument) => throw null!;
+        public void MeasurementsCompleted(System.Diagnostics.Metrics.Instrument instrument, object? userState) => throw null!;
+        public void SetSource(IMetricsSource source) => throw null!;
+        public void Dispose() => throw null!;
     }
     internal sealed class ListenerSubscription
     {
-        internal static bool RuleMatches(InstrumentEnableRule rule, System.Diagnostics.Metrics.Instrument instrument, string listenerName) => throw new NotImplementedException();
-        internal static bool IsMoreSpecific(InstrumentEnableRule rule, InstrumentEnableRule? best) => throw new NotImplementedException();
+        internal static bool RuleMatches(InstrumentEnableRule rule, System.Diagnostics.Metrics.Instrument instrument, string listenerName) => throw null!;
+        internal static bool IsMoreSpecific(InstrumentEnableRule rule, InstrumentEnableRule? best) => throw null!;
     }
 }
