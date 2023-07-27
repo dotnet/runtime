@@ -137,22 +137,22 @@ namespace Microsoft.NET.HostModel
         public void Update()
         {
             // 20 of data and 4 of magic
-            const uint peMagicSize = 4;
-            const uint peHeaderSize = 20;
-            const uint oneSectionHeaderSize = 40;
+            const int peMagicSize = 4;
+            const int peHeaderSize = 20;
+            const int oneSectionHeaderSize = 40;
             // offset relative to Lfanew, which is pointer to first byte in header
-            const uint optionalHeaderBase = peMagicSize + peHeaderSize;
-            const uint pe64InitializedDataSizeOffset = optionalHeaderBase + 8;
-            const uint pe64SizeOfImageOffset = optionalHeaderBase + 56;
-            const uint pe64DataDirectoriesOffset = optionalHeaderBase + 112;
-            const uint pe32InitializedDataSizeOffset = optionalHeaderBase + 12;
-            const uint pe32SizeOfImageOffset = optionalHeaderBase + 56;
-            const uint pe32DataDirectoriesOffset = optionalHeaderBase + 96;
+            const int optionalHeaderBase = peMagicSize + peHeaderSize;
+            const int pe64InitializedDataSizeOffset = optionalHeaderBase + 8;
+            const int pe64SizeOfImageOffset = optionalHeaderBase + 56;
+            const int pe64DataDirectoriesOffset = optionalHeaderBase + 112;
+            const int pe32InitializedDataSizeOffset = optionalHeaderBase + 12;
+            const int pe32SizeOfImageOffset = optionalHeaderBase + 56;
+            const int pe32DataDirectoriesOffset = optionalHeaderBase + 96;
             // offset relative to each section header
-            const uint virtualSizeOffset = 8;
-            const uint virtualAddressOffset = 12;
-            const uint rawSizeOffset = 16;
-            const uint rawPointerOffset = 20;
+            const int virtualSizeOffset = 8;
+            const int virtualAddressOffset = 12;
+            const int rawSizeOffset = 16;
+            const int rawPointerOffset = 20;
 
             int resourceSectionIndex = -1;
             for (int i = 0; i < _reader.PEHeaders.SectionHeaders.Length; i++)
@@ -174,15 +174,15 @@ namespace Microsoft.NET.HostModel
             _resourceData.WriteResources(resourceSection.VirtualAddress, ref objectDataBuilder);
             var rsrcSectionData = objectDataBuilder.ToData();
 
-            uint fileAlignment = (uint)_reader.PEHeaders.PEHeader!.FileAlignment;
-            uint sectionAlignment = (uint)_reader.PEHeaders.PEHeader!.SectionAlignment;
+            int fileAlignment = _reader.PEHeaders.PEHeader!.FileAlignment;
+            int sectionAlignment = _reader.PEHeaders.PEHeader!.SectionAlignment;
 
-            uint rsrcSectionDataSize = checked((uint)rsrcSectionData.Length);
-            uint newSectionSize = GetAligned(rsrcSectionDataSize, fileAlignment);
-            uint newSectionVirtualSize = GetAligned(rsrcSectionDataSize, sectionAlignment);
+            int rsrcSectionDataSize = rsrcSectionData.Length;
+            int newSectionSize = GetAligned(rsrcSectionDataSize, fileAlignment);
+            int newSectionVirtualSize = GetAligned(rsrcSectionDataSize, sectionAlignment);
 
-            int delta = (int)(newSectionSize - GetAligned((uint)resourceSection.SizeOfRawData, fileAlignment));
-            int virtualDelta = (int)(newSectionVirtualSize - GetAligned((uint)resourceSection.VirtualSize, sectionAlignment));
+            int delta = newSectionSize - GetAligned(resourceSection.SizeOfRawData, fileAlignment);
+            int virtualDelta = newSectionVirtualSize - GetAligned(resourceSection.VirtualSize, sectionAlignment);
 
             int trailingSectionVirtualStart = resourceSection.VirtualAddress + resourceSection.VirtualSize;
             int trailingSectionStart = resourceSection.PointerToRawData + resourceSection.SizeOfRawData;
@@ -200,8 +200,8 @@ namespace Microsoft.NET.HostModel
             stream.Seek(0, SeekOrigin.Begin);
             stream.CopyTo(memoryStream);
 
-            uint peSignatureOffset = ReadU32(buffer, 0x3c);
-            uint sectionBase = peSignatureOffset + peMagicSize + peHeaderSize + (ushort)_reader.PEHeaders.CoffHeader.SizeOfOptionalHeader;
+            int peSignatureOffset = ReadI32(buffer, 0x3c);
+            int sectionBase = peSignatureOffset + peMagicSize + peHeaderSize + (ushort)_reader.PEHeaders.CoffHeader.SizeOfOptionalHeader;
 
             if (needsMoveTrailingSections)
             {
@@ -211,62 +211,60 @@ namespace Microsoft.NET.HostModel
 
                 for (int i = resourceSectionIndex + 1; i < _reader.PEHeaders.SectionHeaders.Length; i++)
                 {
-                    uint currentSectionBase = sectionBase + oneSectionHeaderSize * (uint)i;
+                    int currentSectionBase = sectionBase + oneSectionHeaderSize * i;
 
-                    ModifyU32(buffer, currentSectionBase + virtualAddressOffset,
-                        pointer => (uint)(pointer + virtualDelta));
-                    ModifyU32(buffer, currentSectionBase + rawPointerOffset,
-                        pointer => (uint)(pointer + delta));
+                    ModifyI32(buffer, currentSectionBase + virtualAddressOffset,
+                        pointer => pointer + virtualDelta);
+                    ModifyI32(buffer, currentSectionBase + rawPointerOffset,
+                        pointer => pointer + delta);
                 }
             }
 
             if (rsrcSectionDataSize != resourceSection.VirtualSize)
             {
                 // update size of .rsrc section
-                uint resourceSectionBase = sectionBase + oneSectionHeaderSize * (uint)resourceSectionIndex;
-                ModifyU32(buffer, resourceSectionBase + virtualSizeOffset, _ => rsrcSectionDataSize);
-                ModifyU32(buffer, resourceSectionBase + rawSizeOffset, _ => newSectionSize);
+                int resourceSectionBase = sectionBase + oneSectionHeaderSize * resourceSectionIndex;
+                ModifyI32(buffer, resourceSectionBase + virtualSizeOffset, _ => rsrcSectionDataSize);
+                ModifyI32(buffer, resourceSectionBase + rawSizeOffset, _ => newSectionSize);
 
-                void PatchRVA(uint offset)
+                void PatchRVA(int offset)
                 {
-                    ModifyU32(buffer, offset,
-                        pointer => pointer >= trailingSectionVirtualStart ? (uint)(pointer + virtualDelta) : pointer);
+                    ModifyI32(buffer, offset,
+                        pointer => pointer >= trailingSectionVirtualStart ? pointer + virtualDelta : pointer);
                 }
 
                 // fix header
                 if (_reader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus)
                 {
-                    ModifyU32(buffer, peSignatureOffset + pe64InitializedDataSizeOffset,
-                        size => (uint)(size + delta));
-                    ModifyU32(buffer, peSignatureOffset + pe64SizeOfImageOffset,
-                        size => (uint)(size + virtualDelta));
+                    ModifyI32(buffer, peSignatureOffset + pe64InitializedDataSizeOffset,
+                        size => size + delta);
+                    ModifyI32(buffer, peSignatureOffset + pe64SizeOfImageOffset,
+                        size => size + virtualDelta);
 
                     if (delta > 0)
                     {
                         // fix RVA in DataDirectory
                         for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
-                            PatchRVA((uint)(peSignatureOffset + pe64DataDirectoriesOffset + i * 8));
+                            PatchRVA(peSignatureOffset + pe64DataDirectoriesOffset + i * 8);
                     }
 
                     // index of ResourceTable is 2 in DataDirectories
-                    ModifyU32(buffer, peSignatureOffset + pe64DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
+                    ModifyI32(buffer, peSignatureOffset + pe64DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
                 }
                 else
                 {
-                    ModifyU32(buffer, peSignatureOffset + pe32InitializedDataSizeOffset,
-                        size => (uint)(size + delta));
-                    ModifyU32(buffer, peSignatureOffset + pe32SizeOfImageOffset,
-                        size => (uint)(size + virtualDelta));
+                    ModifyI32(buffer, peSignatureOffset + pe32InitializedDataSizeOffset, size => size + delta);
+                    ModifyI32(buffer, peSignatureOffset + pe32SizeOfImageOffset, size => size + virtualDelta);
 
                     if (delta > 0)
                     {
                         // fix RVA in DataDirectory
                         for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
-                            PatchRVA((uint)(peSignatureOffset + pe32DataDirectoriesOffset + i * 8));
+                            PatchRVA(peSignatureOffset + pe32DataDirectoriesOffset + i * 8);
                     }
 
                     // index of ResourceTable is 2 in DataDirectories
-                    ModifyU32(buffer, peSignatureOffset + pe32DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
+                    ModifyI32(buffer, peSignatureOffset + pe32DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
                 }
             }
 
@@ -276,7 +274,7 @@ namespace Microsoft.NET.HostModel
 
             // clear rest
             //Array.Fill is standard 2.1
-            for (uint i = rsrcSectionDataSize; i < newSectionSize; i++)
+            for (int i = rsrcSectionDataSize; i < newSectionSize; i++)
                 buffer[resourceSection.PointerToRawData + i] = 0;
 
             // write back the buffer data
@@ -286,17 +284,17 @@ namespace Microsoft.NET.HostModel
             stream.Flush();
         }
 
-        private static uint ReadU32(byte[] buffer, uint position)
+        private static int ReadI32(byte[] buffer, int position)
         {
             return buffer[position + 0]
-                        | ((uint)buffer[position + 1] << 8)
-                        | ((uint)buffer[position + 2] << 16)
-                        | ((uint)buffer[position + 3] << 24);
+                        | (buffer[position + 1] << 8)
+                        | (buffer[position + 2] << 16)
+                        | (buffer[position + 3] << 24);
         }
 
-        private static void ModifyU32(byte[] buffer, uint position, Func<uint, uint> modifier)
+        private static void ModifyI32(byte[] buffer, int position, Func<int, int> modifier)
         {
-            uint data = modifier(ReadU32(buffer, position));
+            int data = modifier(ReadI32(buffer, position));
 
             buffer[position + 0] = (byte)(data & 0xFF);
             buffer[position + 1] = (byte)(data >> 8 & 0xFF);
@@ -304,7 +302,7 @@ namespace Microsoft.NET.HostModel
             buffer[position + 3] = (byte)(data >> 24 & 0xFF);
         }
 
-        public static uint GetAligned(uint integer, uint alignWith) => (integer + alignWith - 1) & ~(alignWith - 1);
+        public static int GetAligned(int integer, int alignWith) => (integer + alignWith - 1) & ~(alignWith - 1);
 
         public void Dispose()
         {
