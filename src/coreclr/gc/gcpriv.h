@@ -913,8 +913,8 @@ public:
     void unlink_item_no_undo_added (unsigned int bn, uint8_t* item, uint8_t* previous_item);
 #if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
     void count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* fl_items_for_oh_count);
-    void rethread_items (size_t* num_total_fl_items, 
-                         size_t* num_total_fl_items_rethread, 
+    void rethread_items (size_t* num_total_fl_items,
+                         size_t* num_total_fl_items_rethread,
                          gc_heap* current_heap,
                          min_fl_list_info* min_fl_list,
                          size_t* free_list_space_per_heap,
