@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -199,8 +198,9 @@ namespace System.Text.Json.Serialization.Tests
 
             InheritedPersonWithRequiredMembersSetsRequiredMembers actualValue =
                 await Serializer.DeserializeWrapper<InheritedPersonWithRequiredMembersSetsRequiredMembers>(jsonValue, options);
-            actualValue.Should()
-                .BeEquivalentTo(expectedValue);
+            Assert.Equal(expectedValue.FirstName, actualValue.FirstName);
+            Assert.Equal(expectedValue.LastName, actualValue.LastName);
+            Assert.Equal(expectedValue.MiddleName, actualValue.MiddleName);
         }
 
         public class InheritedPersonWithRequiredMembers : PersonWithRequiredMembers
