@@ -196,15 +196,15 @@ jobs:
         - normal
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
-  # For Wasm.Build.Tests - runtime pack builds
+  # Builds only
   - template: /eng/pipelines/common/templates/wasm-build-only.yml
     parameters:
       platforms:
         - browser_wasm
         - browser_wasm_win
-      alwaysRun: ${{ variables.isRollingBuild }}
       nameSuffix: MultiThreaded
       extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      condition: ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true)
       publishArtifactsForWorkload: true
 
   - template: /eng/pipelines/common/templates/wasm-build-only.yml
@@ -212,9 +212,9 @@ jobs:
       platforms:
         - browser_wasm
         - browser_wasm_win
-      alwaysRun: ${{ variables.isRollingBuild }}
       nameSuffix: SingleThreaded
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      condition: ne(variables['wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline'], true)
       publishArtifactsForWorkload: true
 
   # Browser Wasm.Build.Tests
@@ -223,7 +223,6 @@ jobs:
       platforms:
         - browser_wasm
         - browser_wasm_win
-      alwaysRun: ${{ variables.isRollingBuild }}
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       downloadMultithreadedRuntime: true
 

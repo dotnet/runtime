@@ -7,7 +7,6 @@ parameters:
   platforms: []
   shouldContinueOnError: false
   extraBuildArgs: ''
-  downloadMultithreadedRuntime: false
 
 jobs:
 
@@ -69,22 +68,21 @@ jobs:
               CleanTargetFolder: false
 
           # Download for multi-threaded
-          - ${{ if eq(parameters.downloadMultithreadedRuntime, true) }}:
-            - task: DownloadBuildArtifacts@0
-              displayName: Download built nugets for multi-threaded runtime
-              inputs:
-                buildType: current
-                artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
-                downloadType: single
-                downloadPath: '$(Build.SourcesDirectory)/artifacts'
+          - task: DownloadBuildArtifacts@0
+            displayName: Download built nugets for multi-threaded runtime
+            inputs:
+              buildType: current
+              artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
+              downloadType: single
+              downloadPath: '$(Build.SourcesDirectory)/artifacts'
 
-            - task: CopyFiles@2
-              displayName: Copy multithreading runtime pack
-              inputs:
-                SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
-                Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.*
-                TargetFolder: '$(Build.SourcesDirectory)/artifacts'
-                CleanTargetFolder: false
+          - task: CopyFiles@2
+            displayName: Copy multithreading runtime pack
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
+              Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.*
+              TargetFolder: '$(Build.SourcesDirectory)/artifacts'
+              CleanTargetFolder: false
 
         # build WBT
         buildArgs: >-
@@ -98,7 +96,7 @@ jobs:
         condition: >-
           or(
             eq(variables['alwaysRunVar'], true),
-            eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+            eq(variables['isDefaultPipeline'], variables['shouldRunWasmBuildTestsOnDefaultPipeline']))
 
         # extra steps, run tests
         extraStepsTemplate: /eng/pipelines/libraries/helix.yml

@@ -60,5 +60,10 @@ variables:
       eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
       eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
     ]
+# needed for WBT
+- name: wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline
+  value: $(shouldRunWasmBuildTestsOnDefaultPipeline)
+- name: wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline
+  value: $(shouldRunWasmBuildTestsOnDefaultPipeline)
 
 - template: /eng/pipelines/common/perf-variables.yml

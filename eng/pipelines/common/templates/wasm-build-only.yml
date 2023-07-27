@@ -1,6 +1,5 @@
-# The conditions here are wbt specific right now
 parameters:
-  alwaysRun: false
+  condition: false
   extraBuildArgs: ''
   isExtraPlatformsBuild: false
   nameSuffix: ''
@@ -10,7 +9,7 @@ parameters:
 jobs:
 
 #
-# Build for Browser/wasm and test it
+# Build for Browser/wasm
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -20,15 +19,6 @@ jobs:
     platforms: ${{ parameters.platforms }}
     variables:
       # map dependencies variables to local variables
-      - name: alwaysRunVar
-        value: ${{ parameters.alwaysRun }}
-      - name: shouldRunOnDefaultPipelines
-        value: $[
-          or(
-            eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
-          ]
       - name: workloadSubsetArg
         ${{ if eq(parameters.publishArtifactsForWorkload, true) }}:
           value: '+mono.wasmworkload'
@@ -40,16 +30,8 @@ jobs:
       testGroup: innerloop
       nameSuffix: ${{ parameters.nameSuffix }}_BuildOnly
       buildArgs: -s mono+libs+packs$(workloadSubsetArg) -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }}
-      timeoutInMinutes: 240
-      # if !alwaysRun, then:
-      #   if this is runtime-wasm (isWasmOnlyBuild):
-      #     - then run only if it would not have run on default pipelines (based
-      #       on path changes)
-      #     - else run based on path changes
-      condition: >-
-        or(
-          eq(variables['alwaysRunVar'], true),
-          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      timeoutInMinutes: 120
+      condition: ${{ parameters.condition }}
       extraStepsTemplate: /eng/pipelines/common/wasm-post-build-steps.yml
       extraStepsParameters:
         publishArtifactsForWorkload: ${{ parameters.publishArtifactsForWorkload }}

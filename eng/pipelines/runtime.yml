@@ -478,7 +478,7 @@ extends:
           platforms:
             - browser_wasm
             - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
+          condition: ${{ or(eq(variables.isRollingBuild, true), eq(variables.wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline, true)) }}
           nameSuffix: MultiThreaded
           extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           publishArtifactsForWorkload: true
@@ -488,7 +488,7 @@ extends:
           platforms:
             - browser_wasm
             - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
+          condition: ${{ or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true)) }}
           nameSuffix: SingleThreaded
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           publishArtifactsForWorkload: true
@@ -547,7 +547,7 @@ extends:
           scenarios:
             - normal
 
-      - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+      - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
         parameters:
           platforms:
             - wasi_wasm
