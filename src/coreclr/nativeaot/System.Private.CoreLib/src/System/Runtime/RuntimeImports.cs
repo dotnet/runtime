@@ -228,11 +228,11 @@ namespace System.Runtime
 
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static partial long RhGetGenerationBudget(int generation);
+        internal static unsafe partial int RhEnableNoGCRegionCallback(void* callback, long totalSize);
 
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial int RhEnableNoGCRegionCallback(void* callback, long totalSize);
+        internal static partial long RhGetGenerationBudget(int generation);
 
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]

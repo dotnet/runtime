@@ -184,12 +184,12 @@ public:
 
     static void CheckCollectionCount();
     static void RemoveMemoryPressure(UINT64 bytesAllocated);
-    static uint64_t GetGenerationBudget(int generation);
     static void AddMemoryPressure(UINT64 bytesAllocated);
 
     static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
     static int  RefreshMemoryLimit();
     static enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
+    static uint64_t GetGenerationBudget(int generation);
 
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
