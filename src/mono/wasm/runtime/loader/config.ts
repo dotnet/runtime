@@ -129,7 +129,7 @@ export function hasDebuggingEnabled(config: MonoConfigInternal): boolean {
     return (hasReferencedPdbs || config.debugLevel != 0) && (loaderHelpers.isChromium || loaderHelpers.isFirefox);
 }
 
-async function loadBootConfig(module: DotnetModuleInternal) {
+async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
 
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
@@ -149,6 +149,7 @@ async function loadBootConfig(module: DotnetModuleInternal) {
     const loadedConfig: MonoConfig = await loadConfigResponse.json();
 
     readBootConfigResponseHeaders(loadConfigResponse);
+    deep_merge_config(loaderHelpers.config, loadedConfig);
     mapResourcesToAssets(loadedConfig);
 
     function defaultLoadBootConfig(url: string): Promise<Response> {

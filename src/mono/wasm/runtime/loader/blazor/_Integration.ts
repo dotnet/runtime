@@ -5,7 +5,6 @@ import { GlobalizationMode, type AssetEntry, MonoConfig } from "../../types";
 
 import { ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert } from "../globals";
 import { appendUniqueQuery } from "../assets";
-import { deep_merge_config } from "../config";
 
 export function mapResourcesToAssets(loadedConfig: MonoConfig) {
     mono_assert(loadedConfig.resources, "Loaded config does not contain resources");
@@ -13,8 +12,6 @@ export function mapResourcesToAssets(loadedConfig: MonoConfig) {
     const config = loaderHelpers.config;
     const resources = loadedConfig.resources;
     const nativeResources = resources.native!;
-
-    deep_merge_config(config, loadedConfig);
 
     if (!config.assets) {
         config.assets = [];
