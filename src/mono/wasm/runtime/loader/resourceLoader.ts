@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviors, MonoConfig, ResourceList, WebAssemblyBootResourceType } from "../types";
+import type { AssetBehaviors, MonoConfig, WebAssemblyBootResourceType } from "../types";
 import { loaderHelpers } from "./globals";
 const networkFetchCacheMode = "no-cache";
 
@@ -19,11 +19,6 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "vfs": "configuration",
     "dotnetwasm": "dotnetwasm",
 };
-
-export function loadResources(resources: ResourceList, url: (name: string) => string, behavior: AssetBehaviors): LoadingResource[] {
-    return Object.keys(resources)
-        .map(name => loadResource(name, url(name), resources[name], behavior));
-}
 
 export function loadResource(name: string, url: string, contentHash: string, behavior: AssetBehaviors): LoadingResource {
     const response = cacheIfUsed && !cacheSkipResourceTypes.includes(behavior)

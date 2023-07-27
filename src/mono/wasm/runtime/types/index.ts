@@ -107,33 +107,35 @@ export type MonoConfig = {
     extensions?: { [name: string]: any };
 };
 
-export type ResourceExtensions = { [extensionName: string]: ResourceList };
+export type ResourceExtensions = { [extensionName: string]: ResourceListOrArray };
 
 export interface ResourceGroups {
     readonly hash?: string;
-    readonly assembly?: ResourceList; // nullable only temporarily
-    readonly lazyAssembly?: ResourceList; // nullable only temporarily
-    readonly pdb?: ResourceList;
+    readonly assembly?: ResourceListOrArray; // nullable only temporarily
+    readonly lazyAssembly?: ResourceListOrArray; // nullable only temporarily
+    readonly pdb?: ResourceListOrArray;
     readonly native?: NativeResources; // nullable only temporarily
-    readonly satelliteResources?: { [cultureName: string]: ResourceList };
+    readonly satelliteResources?: { [cultureName: string]: ResourceListOrArray };
     readonly libraryStartupModules?: {
-        readonly onRuntimeConfigLoaded?: ResourceList,
-        readonly onRuntimeReady?: ResourceList
+        readonly onRuntimeConfigLoaded?: ResourceListOrArray,
+        readonly onRuntimeReady?: ResourceListOrArray
     },
     readonly extensions?: ResourceExtensions
-    readonly vfs?: { [virtualPath: string]: ResourceList };
+    readonly vfs?: { [virtualPath: string]: ResourceListOrArray };
 }
 
 export interface NativeResources {
-    readonly jsModuleWorker: ResourceList;
-    readonly jsModuleNative: ResourceList;
-    readonly jsModuleRuntime: ResourceList;
-    readonly wasmNative: ResourceList;
-    readonly symbols: ResourceList;
-    readonly icu: ResourceList;
+    readonly jsModuleWorker?: ResourceListOrString;
+    readonly jsModuleNative: ResourceListOrString;
+    readonly jsModuleRuntime: ResourceListOrString;
+    readonly wasmNative: ResourceListOrString;
+    readonly symbols?: ResourceListOrArray;
+    readonly icu?: ResourceListOrArray;
 }
 
 export type ResourceList = { [name: string]: string };
+export type ResourceListOrString = ResourceList | string;
+export type ResourceListOrArray = ResourceList | string[];
 
 /**
  * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched

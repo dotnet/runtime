@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
-import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, ResourceRequest, SingleAssetBehaviors as SingleAssetBehaviors } from "../types";
+import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, ResourceListOrArray, ResourceListOrString, ResourceRequest, SingleAssetBehaviors as SingleAssetBehaviors } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
@@ -74,22 +74,65 @@ function getFirstKey(resources: ResourceList | undefined): string | null {
     return null;
 }
 
-function getFirstAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: AssetBehaviors) {
-    const name = getFirstKey(resources);
+function getFirstAssetWithResolvedUrl(resources: ResourceListOrString | undefined, behavior: SingleAssetBehaviors): AssetEntry {
+    const isString = typeof (resources) === "string";
+    const name = isString ? resources : getFirstKey(resources);
     mono_assert(name, `Can't find ${behavior} in resources`);
     return ensureAssetResolvedUrl({
         name,
-        hash: resources![name],
+        hash: isString ? undefined : resources![name],
         behavior
     });
 }
 
-function ensureAssetResolvedUrl(asset: AssetEntry): AssetEntry {
+export function getAssetByNameWithResolvedUrl(resources: ResourceListOrArray | undefined, behavior: AssetBehaviors, requestedName: string): AssetEntry | undefined {
+    if (!resources) {
+        return undefined;
+    }
+
+    let foundName = undefined;
+    let foundHash = undefined;
+    enumerateResources(resources, (name, hash) => {
+        if (name == requestedName) {
+            foundName = name;
+            foundHash = hash;
+        }
+    });
+
+    if (!foundName) {
+        return undefined;
+    }
+
+    return ensureAssetResolvedUrl({
+        name: foundName,
+        hash: foundHash,
+        behavior
+    });
+}
+
+export function ensureAssetResolvedUrl(asset: AssetEntry): AssetEntry {
     if (!asset.resolvedUrl) {
         asset.resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(asset.name), asset.behavior);
     }
 
     return asset;
+}
+
+export function enumerateResources(resources: ResourceListOrArray, itemHandler: (name: string, hash: string | undefined) => void): void {
+    const stringArray = resources as string[];
+    if (stringArray) {
+        for (let i = 0; i < stringArray.length; i++) {
+            itemHandler(stringArray[i], undefined);
+        }
+        // for (const index in resources) {
+        //     itemHandler(stringArray[index], undefined);
+        // }
+    } else {
+        const objectWithHashes = resources as ResourceList;
+        for (const name in objectWithHashes) {
+            itemHandler(name, objectWithHashes[name]);
+        }
+    }
 }
 
 export function resolve_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
@@ -225,47 +268,49 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
     const config = loaderHelpers.config;
     const resources = loaderHelpers.config.resources;
     if (resources) {
-        for (const name in resources.assembly) {
-            containedInSnapshotAssets.push(ensureAssetResolvedUrl({
-                name,
-                hash: resources.assembly[name],
-                behavior: "assembly"
-            }));
+        if (resources.assembly) {
+            enumerateResources(resources.assembly, (name, hash) => {
+                containedInSnapshotAssets.push(ensureAssetResolvedUrl({
+                    name,
+                    hash,
+                    behavior: "assembly"
+                }));
+            });
         }
 
         if (config.debugLevel != 0 && resources.pdb) {
-            for (const name in resources.pdb) {
+            enumerateResources(resources.pdb, (name, hash) => {
                 containedInSnapshotAssets.push(ensureAssetResolvedUrl({
                     name,
-                    hash: resources.pdb[name],
+                    hash,
                     behavior: "pdb"
                 }));
-            }
+            });
         }
 
         if (config.loadAllSatelliteResources && resources.satelliteResources) {
             for (const culture in resources.satelliteResources) {
-                for (const name in resources.satelliteResources[culture]) {
+                enumerateResources(resources.satelliteResources[culture], (name, hash) => {
                     containedInSnapshotAssets.push(ensureAssetResolvedUrl({
                         name,
-                        hash: resources.satelliteResources[culture][name],
+                        hash,
                         behavior: "resource",
                         culture
                     }));
-                }
+                });
             }
         }
 
         if (resources.vfs) {
             for (const virtualPath in resources.vfs) {
-                for (const name in resources.vfs[virtualPath]) {
+                enumerateResources(resources.vfs[virtualPath], (name, hash) => {
                     alwaysLoadedAssets.push(ensureAssetResolvedUrl({
                         name,
-                        hash: resources.vfs[virtualPath][name],
+                        hash,
                         behavior: "vfs",
                         virtualPath
                     }));
-                }
+                });
             }
         }
 
@@ -273,22 +318,26 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
 
         const icuDataResourceName = getIcuResourceName(config);
         if (icuDataResourceName && nativeResources?.icu) {
-            containedInSnapshotAssets.push(ensureAssetResolvedUrl({
-                name: icuDataResourceName,
-                hash: nativeResources.icu[icuDataResourceName],
-                behavior: "icu",
-                loadRemote: true
-            }));
+            enumerateResources(nativeResources.icu, (name, hash) => {
+                if (name === icuDataResourceName) {
+                    containedInSnapshotAssets.push(ensureAssetResolvedUrl({
+                        name,
+                        hash,
+                        behavior: "icu",
+                        loadRemote: true
+                    }));
+                }
+            });
         }
 
         if (nativeResources?.symbols) {
-            for (const name in nativeResources.symbols) {
+            enumerateResources(nativeResources.symbols, (name, hash) => {
                 alwaysLoadedAssets.push(ensureAssetResolvedUrl({
                     name,
-                    hash: nativeResources.symbols[name],
+                    hash,
                     behavior: "symbols"
                 }));
-            }
+            });
         }
     }
 

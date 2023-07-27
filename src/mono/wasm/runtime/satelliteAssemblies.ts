@@ -12,7 +12,20 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
 
     await Promise.all(culturesToLoad!
         .filter(culture => Object.prototype.hasOwnProperty.call(satelliteResources, culture))
-        .map(culture => loaderHelpers.loadResources(satelliteResources[culture], fileName => loaderHelpers.locateFile(fileName), "resource"))
+        .map(culture => {
+            const promises: LoadingResource[] = [];
+            loaderHelpers.enumerateResources(satelliteResources[culture], (name, hash) => {
+                const asset = loaderHelpers.ensureAssetResolvedUrl({
+                    name,
+                    hash,
+                    behavior: "resource",
+                    culture
+                });
+
+                promises.push(loaderHelpers.loadResource(asset.name, asset.resolvedUrl!, asset.hash ?? "", asset.behavior));
+            });
+            return promises;
+        })
         .reduce((previous, next) => previous.concat(next), new Array<LoadingResource>())
         .map(async resource => {
             const response = await resource.response;

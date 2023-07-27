@@ -7,10 +7,10 @@ import type { AssetEntryInternal, GlobalObjects, LoaderHelpers, RuntimeHelpers }
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
-import { mono_download_assets, resolve_asset_path } from "./assets";
+import { ensureAssetResolvedUrl, enumerateResources, getAssetByNameWithResolvedUrl, mono_download_assets, resolve_asset_path } from "./assets";
 import { mono_log_error, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
-import { loadResource, loadResources } from "./resourceLoader";
+import { loadResource } from "./resourceLoader";
 import { hasDebuggingEnabled } from "./config";
 
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
@@ -95,8 +95,10 @@ export function setLoaderGlobals(
         setup_proxy_console,
 
         hasDebuggingEnabled,
+        enumerateResources,
+        ensureAssetResolvedUrl,
+        getAssetByNameWithResolvedUrl,
         loadResource,
-        loadResources,
         invokeLibraryInitializers,
 
         // from wasm-feature-detect npm package

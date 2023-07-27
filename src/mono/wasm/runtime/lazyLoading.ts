@@ -10,8 +10,9 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
         throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
     }
 
-    const assemblyMarkedAsLazy = Object.prototype.hasOwnProperty.call(lazyAssemblies, assemblyNameToLoad);
-    if (!assemblyMarkedAsLazy) {
+    const assemblyAsset = loaderHelpers.getAssetByNameWithResolvedUrl(lazyAssemblies, "assembly", assemblyNameToLoad);
+    // const assemblyMarkedAsLazy = Object.prototype.hasOwnProperty.call(lazyAssemblies, assemblyNameToLoad);
+    if (!assemblyAsset) {
         throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
     }
 
@@ -23,16 +24,20 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
     const pdbNameToLoad = changeExtension(assemblyNameToLoad, ".pdb");
     const shouldLoadPdb = loaderHelpers.hasDebuggingEnabled(loaderHelpers.config) && resources.pdb && Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
 
-    const dllBytesPromise = loaderHelpers.loadResource(dllNameToLoad, loaderHelpers.locateFile(dllNameToLoad), lazyAssemblies[dllNameToLoad], "assembly").response.then(response => response.arrayBuffer());
+    const dllBytesPromise = loaderHelpers.loadResource(dllNameToLoad, assemblyAsset.resolvedUrl!, assemblyAsset.hash ?? "", assemblyAsset.behavior).response.then(response => response.arrayBuffer());
 
     let dll = null;
     let pdb = null;
     if (shouldLoadPdb) {
-        const pdbBytesPromise = await loaderHelpers.loadResource(pdbNameToLoad, loaderHelpers.locateFile(pdbNameToLoad), lazyAssemblies[pdbNameToLoad], "pdb").response.then(response => response.arrayBuffer());
+        const pdbAsset = loaderHelpers.getAssetByNameWithResolvedUrl(lazyAssemblies, "pdb", assemblyNameToLoad);
+        const pdbBytesPromise = pdbAsset
+            ? await loaderHelpers.loadResource(pdbNameToLoad, pdbAsset.resolvedUrl!, pdbAsset.hash ?? "", pdbAsset.behavior).response.then(response => response.arrayBuffer())
+            : Promise.resolve(null);
+
         const [dllBytes, pdbBytes] = await Promise.all([dllBytesPromise, pdbBytesPromise]);
 
         dll = new Uint8Array(dllBytes);
-        pdb = new Uint8Array(pdbBytes);
+        pdb = pdbBytes ? new Uint8Array(pdbBytes) : null;
     } else {
         const dllBytes = await dllBytesPromise;
         dll = new Uint8Array(dllBytes);
