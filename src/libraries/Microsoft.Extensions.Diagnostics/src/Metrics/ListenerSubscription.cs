@@ -248,7 +248,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 return false;
             }
 
-            // Scopes TODO:??
+            // Scopes TODO: Local is more specific than global (or local & global).
 
             return false;
         }
