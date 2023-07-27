@@ -70,7 +70,10 @@ public class ConvertDllsToWebCil : Task
                 var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: filePath, outputPath: tmpWebcil, logger: Log);
                 webcilWriter.ConvertToWebcil();
 
-                string candicatePath = Path.Combine(OutputPath, candidate.GetMetadata("Culture"));
+                string candicatePath = candidate.GetMetadata("AssetTraitName") == "Culture"
+                    ? Path.Combine(OutputPath, candidate.GetMetadata("AssetTraitValue"))
+                    : OutputPath;
+
                 if (!Directory.Exists(candicatePath))
                     Directory.CreateDirectory(candicatePath);
 
