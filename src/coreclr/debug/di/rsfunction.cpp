@@ -675,7 +675,7 @@ HRESULT CordbFunction::AreOptimizationsDisabled(BOOL *pOptimizationsDisabled)
     }
     EX_TRY
     {
-        hr = GetProcess()->GetDAC()->AreOptimizationsDisabled(GetModule()->m_vmModule, m_MDToken, pOptimizationsDisabled);
+        hr = GetProcess()->GetDAC()->AreOptimizationsDisabled(GetModule(), GetMetadataToken(), pOptimizationsDisabled);
     }
     EX_CATCH_HRESULT(hr);
     return hr;

@@ -7410,6 +7410,7 @@ HRESULT DacDbiInterfaceImpl::GetReJitInfo(VMPTR_MethodDesc vmMethod, CORDB_ADDRE
 HRESULT DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled)
 {
     DD_ENTER_MAY_THROW;
+#ifdef FEATURE_REJIT
     PTR_Module pModule = vmModule.GetDacPtr();
     if (pModule == NULL || pOptimizationsDisabled == NULL || TypeFromToken(methodTk) != mdtMethodDef)
     {
@@ -7421,6 +7422,9 @@ HRESULT DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdM
         ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
         *pOptimizationsDisabled = activeILVersion.IsDeoptimized();
     }
+#else
+    pOptimizationsDisabled->SetDacTargetPtr(0);
+#endif
     
     return S_OK;
 }
