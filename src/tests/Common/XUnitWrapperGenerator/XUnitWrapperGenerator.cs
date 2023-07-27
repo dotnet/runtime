@@ -164,6 +164,57 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             });
 
         context.RegisterImplementationSourceOutput(
+            methodsInSource,
+            static (context, method) =>
+            {
+                bool found = false;
+                foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
+                {
+                    switch (attr.AttributeClass?.ToDisplayString())
+                    {
+                        case "Xunit.ConditionalFactAttribute":
+                        case "Xunit.FactAttribute":
+                        case "Xunit.ConditionalTheoryAttribute":
+                        case "Xunit.TheoryAttribute":
+                            found = true;
+                            break;
+                    }
+                }
+                if (!found) return;
+
+                if (method.DeclaredAccessibility != Accessibility.Public)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        new DiagnosticDescriptor(
+                            "XUW1004",
+                            "Test methods must be public",
+                            "Test methods must be public. Add or change the visibility modifier of the test method to public.",
+                            "XUnitWrapperGenerator",
+                            DiagnosticSeverity.Error,
+                            isEnabledByDefault: true),
+                        method.Locations[0]));
+                }
+
+                INamedTypeSymbol containingType = method.ContainingType;
+                while (containingType != null)
+                {
+                    if (containingType.DeclaredAccessibility != Accessibility.Public)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            new DiagnosticDescriptor(
+                                "XUW1005",
+                                "Test classes must be public",
+                                "Test classes must be public. Add or change the visibility modifier of the test class to public.",
+                                "XUnitWrapperGenerator",
+                                DiagnosticSeverity.Error,
+                                isEnabledByDefault: true),
+                            method.Locations[0]));
+                    }
+                    containingType = containingType.ContainingType;
+                }
+            });
+
+        context.RegisterImplementationSourceOutput(
             allTests
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Where(data =>
