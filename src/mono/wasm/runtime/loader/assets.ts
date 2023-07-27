@@ -119,14 +119,11 @@ export function ensureAssetResolvedUrl(asset: AssetEntry): AssetEntry {
 }
 
 export function enumerateResources(resources: ResourceListOrArray, itemHandler: (name: string, hash: string | undefined) => void): void {
-    const stringArray = resources as string[];
-    if (stringArray) {
+    if (resources.length) {
+        const stringArray = resources as string[];
         for (let i = 0; i < stringArray.length; i++) {
             itemHandler(stringArray[i], undefined);
         }
-        // for (const index in resources) {
-        //     itemHandler(stringArray[index], undefined);
-        // }
     } else {
         const objectWithHashes = resources as ResourceList;
         for (const name in objectWithHashes) {
