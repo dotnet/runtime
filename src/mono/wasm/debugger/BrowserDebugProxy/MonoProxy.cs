@@ -1278,7 +1278,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
 
             if (context.CallStack.Count <= 1 && kind == StepKind.Out)
-                return false;
+            {
+                Frame scope = context.CallStack.FirstOrDefault<Frame>();
+                if (scope is null || !(await context.SdbAgent.IsAsyncMethod(scope.Method.DebugId, token)))
+                    return false;
+            }
             var ret = await TryStepOnManagedCodeAndStepOutIfNotPossible(msgId, context, kind, token);
             if (ret)
                 SendResponse(msgId, Result.Ok(new JObject()), token);

@@ -874,7 +874,7 @@ namespace DebuggerTests
                 await CheckProps(t_props, new
                     {
                         Status = TGetter("Status")
-                    }, "t_props", num_fields: 58);
+                    }, "t_props", num_fields: 33);
             });
 
 
@@ -938,6 +938,7 @@ namespace DebuggerTests
         [Fact]
         public async Task InspectLocalsUsingClassFromLibraryUsingDebugTypeFull()
         {
+            await SetJustMyCode(false);
             var expression = $"{{ invoke_static_method('[debugger-test] DebugTypeFull:CallToEvaluateLocal'); }}";
 
             await EvaluateAndCheck(
@@ -1002,6 +1003,7 @@ namespace DebuggerTests
             1160)]
         public async Task InspectPropertiesOfObjectFromExternalLibrary(string className, int line)
         {
+            await SetJustMyCode(false);
             var expression = $"{{ invoke_static_method('[debugger-test] {className}:Run'); }}";
 
             await EvaluateAndCheck(
