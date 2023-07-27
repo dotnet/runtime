@@ -7417,7 +7417,6 @@ HRESULT DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdM
         return E_INVALIDARG;
     }
     {
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
         CodeVersionManager * pCodeVersionManager = pModule->GetCodeVersionManager();
         ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
         *pOptimizationsDisabled = activeILVersion.IsDeoptimized();
