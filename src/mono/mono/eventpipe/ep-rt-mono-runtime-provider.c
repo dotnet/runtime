@@ -4336,6 +4336,7 @@ ep_on_error:
 }
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntime (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
