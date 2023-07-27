@@ -295,5 +295,5 @@ mono_unity_vtable_get_static_field_data
 mono_value_box
 mono_verifier_set_mode
 unity_mono_method_is_generic
-unity_mono_method_is_inflated
+unity_mono_method_is_inflated_specific
 unity_mono_reflection_method_get_method

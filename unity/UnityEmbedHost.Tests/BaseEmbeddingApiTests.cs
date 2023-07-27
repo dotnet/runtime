@@ -783,6 +783,48 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(isGeneric, Is.EqualTo(expectedResult));
     }
 
+    [TestCase(typeof(RockLover), nameof(RockLover.GenericMethod), null,  true)]
+    [TestCase(typeof(Cat),       nameof(Cat.Meow),                null, false)]
+    [TestCase(typeof(Cat),       nameof(Cat.VirtualMethodOnCat),  null, false)]
+    [TestCase(typeof(Cat),       nameof(Cat.AbstractOnAnimal),    null, false)]
+    public void UnityMethodIsInflatedReturnsProperValue(Type objType, string methodName, Type[]? parameters, bool expectedResult)
+    {
+        var baseMethodInfo = objType.FindInstanceMethodByName(methodName, parameters);
+
+        bool isInflated = ClrHost.unity_mono_method_is_inflated_specific(baseMethodInfo.MethodHandle, objType);
+        Assert.That(isInflated, Is.EqualTo(false));
+
+        try
+        {
+            // Attempt to inflate the method with bool type args
+            Type[] inflateType = baseMethodInfo.GetGenericArguments();
+            for (int i = 0; i < inflateType.Length; ++i)
+            {
+                inflateType[i] = typeof(bool);
+            }
+
+            var inflatedMethod = baseMethodInfo.MakeGenericMethod(inflateType);
+            isInflated = ClrHost.unity_mono_method_is_inflated_specific(inflatedMethod.MethodHandle, objType);
+        }
+        catch (Exception)
+        {
+            // can't inflate
+            isInflated = false;
+        }
+
+        Assert.That(isInflated, Is.EqualTo(expectedResult));
+    }
+
+    [TestCase(typeof(GenericCat<,>), nameof(IGenericAnimal<int , int>.InterfaceMethodOnIGenericAnimal), null, true)]
+    public void UnityMethodIsInflatedReturnsProperValueForNonGenericMethod(Type objType, string methodName, Type[]? parameters, bool expectedResult)
+    {
+        var instance   = objType.MakeGenericType(new Type[] { typeof(int), typeof(int) });
+        var baseMethodInfo = instance.FindInstanceMethodByName(methodName, parameters);
+
+        bool isInflated = ClrHost.unity_mono_method_is_inflated_specific(baseMethodInfo.MethodHandle, instance);
+        Assert.That(isInflated, Is.EqualTo(expectedResult));
+    }
+
     [Test]
     [Timeout(50000)]
     public void GcGetHeapSizeReturnsProperValue()
