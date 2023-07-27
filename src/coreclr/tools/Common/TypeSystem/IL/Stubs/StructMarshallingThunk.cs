@@ -37,6 +37,7 @@ namespace Internal.IL.Stubs
         internal readonly StructMarshallingThunkType ThunkType;
         private  InteropStateManager _interopStateManager;
         private TypeDesc _owningType;
+        private readonly DefType TypeForFieldIteration;
 
         public StructMarshallingThunk(TypeDesc owningType, MetadataType managedType, StructMarshallingThunkType thunkType, InteropStateManager interopStateManager)
         {
@@ -45,6 +46,7 @@ namespace Internal.IL.Stubs
             _interopStateManager = interopStateManager;
             NativeType = _interopStateManager.GetStructMarshallingNativeType(managedType);
             ThunkType = thunkType;
+            TypeForFieldIteration = ManagedType.IsInlineArray ? new TypeWithRepeatedFields(ManagedType) : ManagedType;
         }
 
         public override TypeSystemContext Context
@@ -140,7 +142,7 @@ namespace Internal.IL.Stubs
             Debug.Assert(_interopStateManager != null);
 
             int numInstanceFields = 0;
-            foreach (var field in ManagedType.GetInstanceFieldsWithImpliedRepeatedFields())
+            foreach (var field in TypeForFieldIteration.GetFields())
             {
                 if (field.IsStatic)
                     continue;
@@ -161,8 +163,13 @@ namespace Internal.IL.Stubs
 
             int index = 0;
 
-            foreach (FieldDesc field in ManagedType.GetInstanceFieldsWithImpliedRepeatedFields())
+            foreach (FieldDesc field in TypeForFieldIteration.GetFields())
             {
+                if (field.IsStatic)
+                {
+                    continue;
+                }
+
                 marshallers[index] = Marshaller.CreateMarshaller(field.FieldType,
                                                                     null,   /* parameterIndex */
                                                                     null,   /* customModifierData */
@@ -191,8 +198,13 @@ namespace Internal.IL.Stubs
             IEnumerator<FieldDesc> nativeEnumerator = NativeType.GetFields().GetEnumerator();
 
             int index = 0;
-            foreach (var managedField in ManagedType.GetInstanceFieldsWithInlineArrayRepeatedFields())
+            foreach (var managedField in TypeForFieldIteration.GetFields())
             {
+                if (managedField.IsStatic)
+                {
+                    continue;
+                }
+
                 bool notEmpty = nativeEnumerator.MoveNext();
                 Debug.Assert(notEmpty);
 
@@ -253,8 +265,13 @@ namespace Internal.IL.Stubs
             ILCodeStream codeStream = pInvokeILCodeStreams.MarshallingCodeStream;
             IEnumerator<FieldDesc> nativeEnumerator = NativeType.GetFields().GetEnumerator();
             int index = 0;
-            foreach (var managedField in ManagedType.GetInstanceFieldsWithImpliedRepeatedFields())
+            foreach (var managedField in TypeForFieldIteration.GetFields())
             {
+                if (managedField.IsStatic)
+                {
+                    continue;
+                }
+
                 bool notEmpty = nativeEnumerator.MoveNext();
                 Debug.Assert(notEmpty);
 

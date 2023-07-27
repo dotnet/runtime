@@ -765,6 +765,18 @@ namespace ILCompiler
 
             // If the type is not an [InlineArray] type, do a best-effort detection of whether the type is a fixed buffer type
             // as emitted by the C# compiler.
+
+            if (!mdType.IsSequentialLayout)
+            {
+                return false;
+            }
+
+            if (mdType.GetClassLayout().Size == 0)
+            {
+                // Unsafe fixed buffers have a specified size in the class layout information.
+                return false;
+            }
+
             FieldDesc firstField = null;
             int numIntroducedFields = 0;
             foreach (FieldDesc field in mdType.GetFields())
@@ -783,7 +795,7 @@ namespace ILCompiler
             TypeDesc firstFieldElementType = firstField.FieldType;
 
             // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-            // and who's size is an exact multiple of the size of the field.
+            // and whose size is an exact multiple of the size of the field.
             // It is possible that we catch a false positive with this check, but that chance is extremely slim
             // and the user can always change their structure to something more descriptive of what they want
             // instead of adding additional padding at the end of a one-field structure.
@@ -794,41 +806,6 @@ namespace ILCompiler
                             && firstField.Offset.AsInt == 0
                             && mdType.HasLayout()
                             && ((mdType.GetElementSize().AsInt % firstFieldElementType.GetElementSize().AsInt) == 0);
-        }
-
-        public static IEnumerable<FieldDesc> GetInstanceFieldsWithInlineArrayRepeatedFields(this TypeDesc typeDesc)
-        {
-            return typeDesc.GetInstanceFieldsWithImpliedRepeatedFields(typeDesc is MetadataType { IsInlineArray: true });
-        }
-
-        public static IEnumerable<FieldDesc> GetInstanceFieldsWithImpliedRepeatedFields(this TypeDesc typeDesc)
-        {
-            bool hasImpliedRepeatedFields = typeDesc is MetadataType mdType && mdType.HasImpliedRepeatedFields();
-            return typeDesc.GetInstanceFieldsWithImpliedRepeatedFields(hasImpliedRepeatedFields);
-        }
-
-        private static IEnumerable<FieldDesc> GetInstanceFieldsWithImpliedRepeatedFields(this TypeDesc typeDesc, bool hasImpliedRepeatedFields)
-        {
-            foreach (FieldDesc field in typeDesc.GetFields())
-            {
-                if (field.IsStatic)
-                    continue;
-
-                if (hasImpliedRepeatedFields)
-                {
-                    int numRepetitions = typeDesc.GetElementSize().AsInt / field.FieldType.GetElementSize().AsInt;
-                    yield return field;
-                    for (int i = 1; i < numRepetitions; i++)
-                    {
-                        yield return new ImpliedRepeatedFieldDesc(field, i);
-                    }
-                    break;
-                }
-                else
-                {
-                    yield return field;
-                }
-            }
         }
     }
 }

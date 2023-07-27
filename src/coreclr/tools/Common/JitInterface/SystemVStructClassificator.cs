@@ -231,6 +231,7 @@ namespace Internal.JitInterface
             TypeDesc firstFieldElementType = firstField.FieldType;
             int firstFieldSize = firstFieldElementType.GetElementSize().AsInt;
             bool hasImpliedRepeatedFields = mdType.HasImpliedRepeatedFields();
+            TypeDesc typeDescForFieldSearch = hasImpliedRepeatedFields ? new TypeWithRepeatedFields(mdType) : typeDesc;
 
             if (hasImpliedRepeatedFields)
             {
@@ -238,8 +239,13 @@ namespace Internal.JitInterface
             }
 
             int fieldIndex = 0;
-            foreach (FieldDesc field in typeDesc.GetInstanceFieldsWithImpliedRepeatedFields())
+            foreach (FieldDesc field in typeDescForFieldSearch.GetFields())
             {
+                if (field.IsStatic)
+                {
+                    continue;
+                }
+
                 Debug.Assert(fieldIndex < numIntroducedFields);
 
                 int fieldOffset = field.Offset.AsInt;

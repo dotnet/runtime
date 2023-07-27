@@ -9,13 +9,14 @@ namespace ILCompiler
     {
         private readonly FieldDesc _underlyingFieldDesc;
 
-        public ImpliedRepeatedFieldDesc(FieldDesc underlyingFieldDesc, int fieldIndex)
+        public ImpliedRepeatedFieldDesc(DefType owningType, FieldDesc underlyingFieldDesc, int fieldIndex)
         {
+            OwningType = owningType;
             _underlyingFieldDesc = underlyingFieldDesc;
             FieldIndex = fieldIndex;
         }
 
-        public override DefType OwningType => _underlyingFieldDesc.OwningType;
+        public override DefType OwningType { get; }
 
         public override TypeDesc FieldType => _underlyingFieldDesc.FieldType;
 
@@ -38,13 +39,12 @@ namespace ILCompiler
         protected override int ClassCode => 31666958;
 
         public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => _underlyingFieldDesc.GetEmbeddedSignatureData();
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => _underlyingFieldDesc.HasCustomAttribute(attributeNamespace, attributeName);
+
         protected override int CompareToImpl(FieldDesc other, TypeSystemComparer comparer)
         {
-            if (other is not ImpliedRepeatedFieldDesc impliedRepeatedFieldDesc)
-            {
-                return -1;
-            }
+            var impliedRepeatedFieldDesc = (ImpliedRepeatedFieldDesc)other;
 
             int result = comparer.Compare(_underlyingFieldDesc, impliedRepeatedFieldDesc._underlyingFieldDesc);
 
@@ -56,15 +56,8 @@ namespace ILCompiler
             return FieldIndex.CompareTo(impliedRepeatedFieldDesc.FieldIndex);
         }
 
-        public override LayoutInt Offset
-        {
-            get
-            {
-                LayoutInt elementSize = FieldType.GetElementSize();
-                return elementSize.IsIndeterminate ? LayoutInt.Indeterminate : new LayoutInt(elementSize.AsInt * FieldIndex);
-            }
-        }
-
         public override MarshalAsDescriptor GetMarshalAsDescriptor() => _underlyingFieldDesc.GetMarshalAsDescriptor();
+
+        public override string Name => $"{_underlyingFieldDesc.Name}[{FieldIndex}]";
     }
 }
