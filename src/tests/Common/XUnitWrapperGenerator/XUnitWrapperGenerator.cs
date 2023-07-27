@@ -136,8 +136,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 var (((methods, configOptions), aliasMap), compData) = data;
 
-                CheckNoEntryPoint(context, compData);
-                CheckTestsExist(context, methods, compData);
+                bool inMergedTestDirectory = configOptions.GlobalOptions.InMergedTestDirectory();
+                if (inMergedTestDirectory)
+                {
+                    CheckNoEntryPoint(context, compData);
+                    CheckTestsExist(context, methods, compData);
+                }
 
                 bool alwaysWriteEntryPoint = compData.OutputKind == OutputKind.ConsoleApplication && (compData.EntryPoint is null);
                 if (methods.IsEmpty && !alwaysWriteEntryPoint)
