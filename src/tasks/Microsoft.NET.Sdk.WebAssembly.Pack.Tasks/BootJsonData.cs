@@ -63,7 +63,15 @@ public class BootJsonData
     /// <summary>
     /// Config files for the application
     /// </summary>
+    /// <remarks>
+    /// Deprecated in .NET 8, use <see cref="appsettings"/>
+    /// </remarks>
     public List<string> config { get; set; }
+
+    /// <summary>
+    /// Config files for the application
+    /// </summary>
+    public List<string> appsettings { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="ICUDataMode"/> that determines how icu files are loaded.

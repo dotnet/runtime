@@ -97,7 +97,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         var bootConfig = new BootJsonData()
         {
-            config = new(),
+            appsettings = new(),
             entryAssembly = MainAssemblyName,
             icuDataMode = GetGlobalizationMode()
         };

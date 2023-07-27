@@ -98,10 +98,14 @@ public class GenerateWasmBootJson : Task
             debugLevel = ParseOptionalInt(DebugLevel) ?? (DebugBuild ? 1 : 0),
             linkerEnabled = LinkerEnabled,
             resources = new ResourcesData(),
-            config = new List<string>(),
             icuDataMode = GetGlobalizationMode(),
             startupMemoryCache = ParseOptionalBool(StartupMemoryCache),
         };
+
+        if (IsTargeting80OrLater())
+            result.config = new List<string>();
+        else
+            result.appsettings = new List<string>();
 
         if (!string.IsNullOrEmpty(RuntimeOptions))
         {
@@ -315,9 +319,14 @@ public class GenerateWasmBootJson : Task
             {
                 string configUrl = Path.GetFileName(configFile.ItemSpec);
                 if (IsTargeting80OrLater())
+                {
                     configUrl = "../" + configUrl; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
-
-                result.config.Add(configUrl);
+                    result.appsettings.Add(configUrl);
+                }
+                else
+                {
+                    result.config.Add(configUrl);
+                }
             }
         }
 

@@ -162,7 +162,7 @@ type MonoConfig = {
     /**
      * appsettings files to load to VFS
      */
-    config?: string[];
+    appsettings?: string[];
     /**
      * config extensions declared in MSBuild items @(WasmBootConfigExtension)
      */

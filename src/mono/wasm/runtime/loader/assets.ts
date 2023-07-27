@@ -308,9 +308,9 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
         }
     }
 
-    if (config.config) {
-        for (let i = 0; i < config.config.length; i++) {
-            const configUrl = config.config[i];
+    if (config.appsettings) {
+        for (let i = 0; i < config.appsettings.length; i++) {
+            const configUrl = config.appsettings[i];
             const configFileName = fileName(configUrl);
             if (configFileName === "appsettings.json" || configFileName === `appsettings.${config.applicationEnvironment}.json`) {
                 alwaysLoadedAssets.push(ensureAssetResolvedUrl({
