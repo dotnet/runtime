@@ -24,6 +24,7 @@
   <PropertyGroup>
     <_TargetFrameworkForNETCoreTasks>net8.0</_TargetFrameworkForNETCoreTasks>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' == ''">

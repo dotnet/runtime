@@ -94,7 +94,9 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_InAttribute = "System.Runtime.InteropServices.InAttribute";
 
-        public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
+        public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute_WithGlobal = "global::System.Runtime.CompilerServices.SkipLocalsInitAttribute";
+
+        public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
 
         public const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
 
@@ -104,7 +106,7 @@ namespace Microsoft.Interop
 
         public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
 
-        public const string System_CodeDom_Compiler_GeneratedCodeAttribute = "System.CodeDom.Compiler.GeneratedCodeAttribute";
+        public const string System_CodeDom_Compiler_GeneratedCodeAttribute_WithGlobal = "global::System.CodeDom.Compiler.GeneratedCodeAttribute";
 
         public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
 
@@ -152,5 +154,13 @@ namespace Microsoft.Interop
         public const string System_Runtime_InteropServices_Marshalling_ComInterfaceMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller`1";
 
         public const string System_Runtime_InteropServices_Marshalling_ComObject = "System.Runtime.InteropServices.Marshalling.ComObject";
+
+        public const string System_Runtime_InteropServices_BestFitMappingAttribute = "System.Runtime.InteropServices.BestFitMappingAttribute";
+
+        public const string System_Runtime_InteropServices_CLong = "System.Runtime.InteropServices.CLong";
+
+        public const string System_Runtime_InteropServices_CULong = "System.Runtime.InteropServices.CULong";
+
+        public const string System_Runtime_InteropServices_NFloat = "System.Runtime.InteropServices.NFloat";
     }
 }

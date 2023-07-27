@@ -18,7 +18,7 @@ namespace Microsoft.Interop.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class RuntimeComApiUsageWithSourceGeneratedComAnalyzer : DiagnosticAnalyzer
     {
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(RuntimeComApisDoNotSupportSourceGeneratedCom);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(RuntimeComApisDoNotSupportSourceGeneratedCom, CastsBetweenRuntimeComAndSourceGeneratedComNotSupported);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -129,6 +129,73 @@ namespace Microsoft.Interop.Analyzers
                         }
                     }
                 }, OperationKind.Invocation);
+
+                bool enableGeneratedComInterfaceComImportInterop = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue("build_property.EnableGeneratedComInterfaceComImportInterop", out string enableSourceGeneratedBuiltInInteropOption)
+                    && bool.TryParse(enableSourceGeneratedBuiltInInteropOption, out bool enableSourceGeneratedBuiltInInterop)
+                    && enableSourceGeneratedBuiltInInterop;
+
+                var getObjectForIUnknown = marshalType.GetMembers("GetObjectForIUnknown")[0];
+
+                context.RegisterOperationAction(context =>
+                {
+                    var operation = (IConversionOperation)context.Operation;
+
+                    if (operation.Type is INamedTypeSymbol { IsComImport: true } && !enableGeneratedComInterfaceComImportInterop)
+                    {
+                        IOperation operand = operation.Operand;
+                        if (operand is IConversionOperation { Type.SpecialType: SpecialType.System_Object } objConversion)
+                        {
+                            operand = objConversion.Operand;
+                        }
+                        if (operand.Type is null)
+                        {
+                            // Some operations like the "null" literal expression don't have a type.
+                            // These expressions definitely aren't a source-generated COM type, so we can skip them.
+                            return;
+                        }
+                        foreach (var recognizer in sourceGeneratedComRecognizers)
+                        {
+                            if (recognizer(operand.Type))
+                            {
+                                context.ReportDiagnostic(
+                                    Diagnostic.Create(
+                                        CastsBetweenRuntimeComAndSourceGeneratedComNotSupported,
+                                        operation.Syntax.GetLocation()));
+                                break;
+                            }
+                        }
+                    }
+
+                    foreach (var recognizer in sourceGeneratedComRecognizers)
+                    {
+                        if (recognizer(operation.Type))
+                        {
+                            IOperation operand = operation.Operand;
+                            if (operand is IConversionOperation { Type.SpecialType: SpecialType.System_Object } objConversion)
+                            {
+                                operand = objConversion.Operand;
+                            }
+                            if (operand.Type is INamedTypeSymbol { IsComImport: true } && !enableGeneratedComInterfaceComImportInterop)
+                            {
+                                context.ReportDiagnostic(
+                                    Diagnostic.Create(
+                                        CastsBetweenRuntimeComAndSourceGeneratedComNotSupported,
+                                            operation.Syntax.GetLocation()));
+                                break;
+                            }
+                            else if (operand is IInvocationOperation invocation && invocation.TargetMethod.Equals(getObjectForIUnknown, SymbolEqualityComparer.Default))
+                            {
+                                // The returned value from Marshal.GetObjectForIUnknown will always be a built-in COM object, which can't be cast to a source-generated COM type,
+                                // even with the interop feature enabled.
+                                context.ReportDiagnostic(
+                                    Diagnostic.Create(
+                                        CastsBetweenRuntimeComAndSourceGeneratedComNotSupported,
+                                            operation.Syntax.GetLocation()));
+                                break;
+                            }
+                        }
+                    }
+                }, OperationKind.Conversion);
 
                 static Func<IInvocationOperation, (ITypeSymbol Type, Location location)?> CreateArgumentTypeLookup(int ordinal) => invocation => invocation.GetArgumentByOrdinal(ordinal).Value switch
                 {

@@ -411,8 +411,6 @@ PALEXPORT int32_t SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* b
 
 PALEXPORT int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void);
 
-PALEXPORT char* SystemNative_GetPeerUserName(intptr_t socket);
-
 PALEXPORT void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize);
 
 PALEXPORT int32_t SystemNative_GetMaximumAddressSize(void);

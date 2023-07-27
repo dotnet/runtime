@@ -13,6 +13,7 @@ parameters:
         eng/testing/tests.browser.targets
         eng/testing/tests.was*.targets
         eng/testing/was*provisioning.targets
+        eng/testing/workloads-testing.targets
         src/libraries/sendtohelix-wasm.targets
         src/libraries/sendtohelix-wasi.targets
         src/mono/mono/**/*wasm*
@@ -55,6 +56,7 @@ parameters:
         PATENTS.TXT
         THIRD-PARTY-NOTICES.TXT
         src/workloads/*
+        src/mono/wasm/sln/*
     ]
 
 jobs:

@@ -85,6 +85,10 @@ app-builder:
 build-tasks:
 	$(DOTNET) build $(TOP)/src/tasks/WasmBuildTasks $(MSBUILD_ARGS)
 
+build-packages:
+	rm $(TOP)/artifacts/packages/$(CONFIG)/Shipping/*.nupkg
+	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.packages -os browser -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
 clean:
 	$(RM) -rf $(BUILDS_OBJ_DIR)
 

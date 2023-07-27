@@ -526,8 +526,6 @@ namespace System.Threading.Tasks
         [Event(24, Keywords = Keywords.Debug)]
         public void DebugFacilityMessage1(string Facility, string Message, string Value1) { WriteEvent(24, Facility, Message, Value1); }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "Guid parameter is safe with WriteEvent")]
         [Event(25, Keywords = Keywords.DebugActivityId)]
         public void SetActivityId(Guid NewId)
         {

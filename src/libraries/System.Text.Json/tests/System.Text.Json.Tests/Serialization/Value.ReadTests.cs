@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -453,8 +454,15 @@ namespace System.Text.Json.Serialization.Tests
         [OuterLoop]
         public static void VeryLongInputString(int length)
         {
-            // Verify that deserializer does not do any multiplication or addition on the string length
-            DeserializeLongJsonString(length);
+            try
+            {
+                // Verify that deserializer does not do any multiplication or addition on the string length
+                DeserializeLongJsonString(length);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Out of memory allocating large objects");
+            }
         }
 
         private static void DeserializeLongJsonString(int stringLength)

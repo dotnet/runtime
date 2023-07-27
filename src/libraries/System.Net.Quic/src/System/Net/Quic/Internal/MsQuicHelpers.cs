@@ -42,13 +42,13 @@ internal static class MsQuicHelpers
         return new Internals.SocketAddress(addressFamilyOverride ?? SocketAddressPal.GetAddressFamily(addressBytes), addressBytes).GetIPEndPoint();
     }
 
-    internal static unsafe QuicAddr ToQuicAddr(this IPEndPoint iPEndPoint)
+    internal static unsafe QuicAddr ToQuicAddr(this IPEndPoint ipEndPoint)
     {
         // TODO: is the layout same for SocketAddress.Buffer and QuicAddr on all platforms?
         QuicAddr result = default;
         Span<byte> rawAddress = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref result, 1));
 
-        Internals.SocketAddress address = IPEndPointExtensions.Serialize(iPEndPoint);
+        Internals.SocketAddress address = IPEndPointExtensions.Serialize(ipEndPoint);
         Debug.Assert(address.Size <= rawAddress.Length);
 
         address.Buffer.AsSpan(0, address.Size).CopyTo(rawAddress);
@@ -69,7 +69,7 @@ internal static class MsQuicHelpers
 
         if (StatusFailed(status))
         {
-            throw ThrowHelper.GetExceptionForMsQuicStatus(status, $"GetParam({handle}, {parameter}) failed");
+            ThrowHelper.ThrowMsQuicException(status, $"GetParam({handle}, {parameter}) failed");
         }
 
         return value;
@@ -86,7 +86,7 @@ internal static class MsQuicHelpers
 
         if (StatusFailed(status))
         {
-            throw ThrowHelper.GetExceptionForMsQuicStatus(status, $"SetParam({handle}, {parameter}) failed");
+            ThrowHelper.ThrowMsQuicException(status, $"SetParam({handle}, {parameter}) failed");
         }
     }
 }

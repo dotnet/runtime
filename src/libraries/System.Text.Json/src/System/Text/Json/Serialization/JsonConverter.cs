@@ -21,6 +21,15 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
+        /// Gets the type being converted by the current converter instance.
+        /// </summary>
+        /// <remarks>
+        /// For instances of type <see cref="JsonConverter{T}"/> returns typeof(T),
+        /// and for instances of type <see cref="JsonConverterFactory"/> returns <see langword="null" />.
+        /// </remarks>
+        public abstract Type? Type { get; }
+
+        /// <summary>
         /// Determines whether the type can be converted.
         /// </summary>
         /// <param name="typeToConvert">The type is checked as to whether it can be converted.</param>
@@ -167,9 +176,6 @@ namespace System.Text.Json.Serialization
             // If surpassed flush threshold then return false which will flush stream.
             return (state.FlushThreshold > 0 && writer.BytesPending > state.FlushThreshold);
         }
-
-        // This is used internally to quickly determine the type being converted for JsonConverter<T>.
-        internal abstract Type TypeToConvert { get; }
 
         internal abstract object? ReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
         internal abstract bool OnTryReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out object? value);

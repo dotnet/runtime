@@ -74,6 +74,8 @@ namespace ILCompiler
             if (_singleFileCompilation && !_outNearInput)
                 throw new CommandLineException(SR.MissingOutNearInput);
 
+            var logger = new Logger(Console.Out, Get(_command.IsVerbose));
+
             // Crossgen2 is partial AOT and its pre-compiled methods can be
             // thrown away at runtime if they mismatch in required ISAs or
             // computed layouts of structs. Thus we want to ensure that usage
@@ -84,7 +86,7 @@ namespace ILCompiler
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
-                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication);
+                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
@@ -127,7 +129,9 @@ namespace ILCompiler
             //
             // Initialize type system context
             //
-            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib, instructionSetSupport);
+            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib,
+                instructionSetSupport,
+                oldTypeSystemContext: null);
 
             string compositeRootPath = Get(_command.CompositeRootPath);
 
@@ -269,13 +273,15 @@ namespace ILCompiler
                     {
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
-                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext.InstructionSetSupport, _typeSystemContext);
+                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib,
+                            _typeSystemContext.InstructionSetSupport,
+                            _typeSystemContext);
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
                         typeSystemContext.ReferenceFilePaths = referenceFilePaths;
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
                     }
 
-                    RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, singleCompilationVersionBubbleModulesHash, typeSystemContext);
+                    RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, singleCompilationVersionBubbleModulesHash, typeSystemContext, logger);
                 }
 
                 // In case of inputbubble ni.dll are created as ni.dll.tmp in order to not interfere with crossgen2, move them all to ni.dll
@@ -293,13 +299,13 @@ namespace ILCompiler
             }
             else
             {
-                RunSingleCompilation(inputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, versionBubbleModulesHash, typeSystemContext);
+                RunSingleCompilation(inputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, versionBubbleModulesHash, typeSystemContext, logger);
             }
 
             return 0;
         }
 
-        private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, ReadyToRunCompilerContext typeSystemContext)
+        private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, ReadyToRunCompilerContext typeSystemContext, Logger logger)
         {
             //
             // Initialize output filename
@@ -379,8 +385,6 @@ namespace ILCompiler
 
                     // Single method mode?
                     MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
-
-                    var logger = new Logger(Console.Out, Get(_command.IsVerbose));
 
                     List<string> mibcFiles = new List<string>();
                     foreach (var file in Get(_command.MibcFilePaths))
@@ -588,6 +592,7 @@ namespace ILCompiler
 
                     NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
                     nodeFactoryFlags.OptimizeAsyncMethods = Get(_command.AsyncMethodOptimization);
+                    nodeFactoryFlags.TypeValidation = Get(_command.TypeValidation);
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
 
@@ -616,6 +621,13 @@ namespace ILCompiler
                         .UseDependencyTracking(trackingLevel)
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
+
+                    if (Get(_command.EnableGenericCycleDetection))
+                    {
+                        builder.UseGenericCycleDetection(
+                            depthCutoff: Get(_command.GenericCycleDepthCutoff),
+                            breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
+                    }
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
@@ -896,15 +908,15 @@ namespace ILCompiler
             return true;
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CommandLineBuilder(new Crossgen2RootCommand(args))
-                .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("--version", "-v")
-                .UseHelp(context => context.HelpBuilder.CustomizeLayout(Crossgen2RootCommand.GetExtendedHelp))
-                .UseParseErrorReporting()
-                .Build()
-                .Invoke(args);
+            new CliConfiguration(new Crossgen2RootCommand(args)
+                .UseVersion()
+                .UseExtendedHelp(Crossgen2RootCommand.GetExtendedHelp))
+            {
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableParseErrorReporting = true
+            }.Invoke(args);
     }
 }

@@ -295,6 +295,7 @@ namespace System.Threading.RateLimiting
             }
         }
 
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             if (!disposing)
@@ -320,6 +321,7 @@ namespace System.Threading.RateLimiting
             }
         }
 
+        /// <inheritdoc/>
         protected override ValueTask DisposeAsyncCore()
         {
             Dispose(true);

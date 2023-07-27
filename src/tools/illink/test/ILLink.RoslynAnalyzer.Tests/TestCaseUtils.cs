@@ -74,6 +74,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			var (comp, model, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (
 					tree,
+					consoleApplication: false,
 					msbuildProperties,
 					additionalSources: testDependenciesSource,
 					additionalFiles: additionalFiles);

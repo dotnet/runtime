@@ -393,7 +393,11 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_I4:
 		return OP_LOADI4_MEMBASE;
 	case MONO_TYPE_U4:
+#ifdef TARGET_RISCV64
+		return OP_LOADI4_MEMBASE;
+#else
 		return OP_LOADU4_MEMBASE;
+#endif
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
@@ -4301,7 +4305,7 @@ mini_handle_call_res_devirt (MonoMethod *cmethod)
 
 		// EqualityComparer<T>.Default returns specific types depending on T
 		// FIXME: Special case more types: byte, string, nullable, enum ?
-		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_U1 && param_type->type != MONO_TYPE_STRING) {
+		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_STRING) {
 			MonoClass *gcomparer_inst;
 
 			memset (&ctx, 0, sizeof (ctx));

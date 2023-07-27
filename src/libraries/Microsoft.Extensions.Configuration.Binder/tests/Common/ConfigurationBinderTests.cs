@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -19,7 +20,17 @@ namespace Microsoft.Extensions
 #endif
     .Configuration.Binder.Tests
 {
-    public partial class ConfigurationBinderTests
+    public abstract class ConfigurationBinderTestsBase
+    {
+        public ConfigurationBinderTestsBase()
+        {
+#if LAUNCH_DEBUGGER
+if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launch(); }
+#endif
+        }
+    }
+
+    public sealed partial class ConfigurationBinderTests : ConfigurationBinderTestsBase
     {
         [Fact]
         public void BindWithNestedTypesWithReadOnlyProperties()
@@ -207,7 +218,7 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
-        public void GetScalar()
+        public void Get_Scalar()
         {
             var dic = new Dictionary<string, string>
             {
@@ -229,7 +240,7 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
-        public void GetScalarNullable()
+        public void Get_ScalarNullable()
         {
             var dic = new Dictionary<string, string>
             {
@@ -248,6 +259,50 @@ namespace Microsoft.Extensions
             Assert.True((bool)config.GetValue(typeof(bool?), "Boolean"));
             Assert.Equal(-2, (int)config.GetValue(typeof(int?), "Integer"));
             Assert.Equal(11, (int)config.GetValue(typeof(int?), "Nested:Integer"));
+        }
+
+        [Fact]
+        public void GetValue_Scalar()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            Assert.True(config.GetSection("Boolean").Get<bool>());
+            Assert.Equal(-2, config.GetSection("Integer").Get<int>());
+            Assert.Equal(11, config.GetSection("Nested:Integer").Get<int>());
+
+            Assert.True((bool)config.GetSection("Boolean").Get(typeof(bool)));
+            Assert.Equal(-2, (int)config.GetSection("Integer").Get(typeof(int)));
+            Assert.Equal(11, (int)config.GetSection("Nested:Integer").Get(typeof(int)));
+        }
+
+        [Fact]
+        public void GetValue_ScalarNullable()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            Assert.True(config.GetSection("Boolean").Get<bool?>());
+            Assert.Equal(-2, config.GetSection("Integer").Get<int?>());
+            Assert.Equal(11, config.GetSection("Nested:Integer").Get<int?>());
+
+            Assert.True(config.GetSection("Boolean").Get(typeof(bool?)) is true);
+            Assert.Equal(-2, (int)config.GetSection("Integer").Get(typeof(int?)));
+            Assert.Equal(11, (int)config.GetSection("Nested:Integer").Get(typeof(int?)));
         }
 
         [Fact]
@@ -1348,18 +1403,35 @@ namespace Microsoft.Extensions
         [Fact]
         public void CanBindRecordStructOptions()
         {
-            var dic = new Dictionary<string, string>
-            {
-                {"Length", "42"},
-                {"Color", "Green"},
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
+            IConfiguration config = GetConfiguration("Length", "Color");
+            Validate(config.Get<RecordStructTypeOptions>());
+            Validate(config.Get<RecordStructTypeOptions?>().Value);
 
-            var options = config.Get<RecordStructTypeOptions>();
-            Assert.Equal(42, options.Length);
-            Assert.Equal("Green", options.Color);
+            config = GetConfiguration("Options.Length", "Options.Color");
+            // GetValue works for only primitives.
+            //Reflection impl handles them by honoring `TypeConverter` only.
+            // Source-gen supports based on an allow-list.
+            Assert.Equal(default(RecordStructTypeOptions), config.GetValue<RecordStructTypeOptions>("Options"));
+            Assert.False(config.GetValue<RecordStructTypeOptions?>("Options").HasValue);
+
+            static void Validate(RecordStructTypeOptions options)
+            {
+                Assert.Equal(42, options.Length);
+                Assert.Equal("Green", options.Color);
+            }
+
+            static IConfiguration GetConfiguration(string key1, string key2)
+            {
+                var dic = new Dictionary<string, string>
+                {
+                    { key1, "42" },
+                    { key2, "Green" },
+                };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                return configurationBuilder.Build();
+            }
         }
 
         [Fact]
@@ -1869,6 +1941,120 @@ namespace Microsoft.Extensions
             configuration.Bind(obj);
             Assert.Equal(0, obj.Int32);
             Assert.False(obj.Boolean);
+        }
+
+        [Fact]
+        public void AllowsCaseInsensitiveMatch()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "vaLue": "MyString",
+                }
+                """);
+
+            GenericOptions<string> obj = new();
+            configuration.Bind(obj);
+            Assert.Equal("MyString", obj.Value);
+
+            GenericOptionsRecord<string> obj1 = configuration.Get<GenericOptionsRecord<string>>();
+            Assert.Equal("MyString", obj1.Value);
+
+            GenericOptionsWithParamCtor<string> obj2 = configuration.Get<GenericOptionsWithParamCtor<string>>();
+            Assert.Equal("MyString", obj2.Value);
+        }
+
+        [Fact]
+        public void ObjWith_TypeConverter()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "Location":
+                    {
+                        "Latitude": 3,
+                        "Longitude": 4,
+                    }
+                }
+                """);
+
+            // TypeConverter impl is not honored (https://github.com/dotnet/runtime/issues/83599).
+
+            GeolocationWrapper obj = configuration.Get<GeolocationWrapper>();
+            ValidateGeolocation(obj.Location);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString(""" { "Geolocation": "3, 4", } """);
+            obj = configuration.Get<GeolocationWrapper>();
+            Assert.Equal(Geolocation.Zero, obj.Location);
+        }
+
+        [Fact]
+        public void ComplexObj_As_Dictionary_Element()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "First":
+                    {
+                        "Latitude": 3,
+                        "Longitude": 4,
+                    }
+                }
+                """);
+
+            Geolocation obj = configuration.Get<IDictionary<string, Geolocation>>()["First"];
+            ValidateGeolocation(obj);
+            obj = configuration.Get<IReadOnlyDictionary<string, Geolocation>>()["First"];
+            ValidateGeolocation(obj);
+
+            GeolocationClass obj1 = configuration.Get<IDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj1);
+            obj1 = configuration.Get<IReadOnlyDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj1);
+
+            GeolocationRecord obj2 = configuration.Get<IDictionary<string, GeolocationRecord>>()["First"];
+            ValidateGeolocation(obj2);
+            obj1 = configuration.Get<IReadOnlyDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj2);
+        }
+
+        [Fact]
+        public void ComplexObj_As_Enumerable_Element()
+        {
+            var  configuration = TestHelpers.GetConfigurationFromJsonString("""{ "Enumerable": [{ "Latitude": 3, "Longitude": 4 }] }""")
+                .GetSection("Enumerable");
+
+            Geolocation obj = configuration.Get<IList<Geolocation>>()[0];
+            ValidateGeolocation(obj);
+
+            obj = configuration.Get<Geolocation[]>()[0];
+            ValidateGeolocation(obj);
+
+            obj = configuration.Get<IReadOnlyList<Geolocation>>()[0];
+            ValidateGeolocation(obj);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void TraceSwitchTest()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"TraceSwitch:Level", "Info"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            TraceSwitch ts = new(displayName: "TraceSwitch", description: "This switch is set via config.");
+            ConfigurationBinder.Bind(config, "TraceSwitch", ts);
+            Assert.Equal(TraceLevel.Info, ts.Level);
+#if NETCOREAPP
+            // Value property is not publicly exposed in .NET Framework.
+            Assert.Equal("Info", ts.Value);
+#endif // NETCOREAPP
+        }
+
+        private void ValidateGeolocation(IGeolocation location)
+        {
+            Assert.Equal(3, location.Latitude);
+            Assert.Equal(4, location.Longitude);
         }
     }
 }

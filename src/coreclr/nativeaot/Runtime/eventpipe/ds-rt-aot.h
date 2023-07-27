@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Implementation of ds-rt.h targeting NativeAOT runtime.
-#ifndef __DIAGNOSTICS_RT_AOT_H__
-#define __DIAGNOSTICS_RT_AOT_H__
+#ifndef DIAGNOSTICS_RT_AOT_H
+#define DIAGNOSTICS_RT_AOT_H
 
 #include <eventpipe/ds-rt-config.h>
 
@@ -181,13 +181,8 @@ ds_rt_generate_core_dump (
 {
     STATIC_CONTRACT_NOTHROW;
 
-    ds_ipc_result_t result = DS_IPC_E_FAIL;
-    uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Generate an exception dump
-    // PalDebugBreak();
-
-    return 0;
+    // Eventpipe driven core_dump is not currently supported in NativeAOT
+    return DS_IPC_E_NOTSUPPORTED;
 }
 
 /*
@@ -266,9 +261,8 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-     // return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
-     // PalDebugBreak();
-    return 0xffff;
+    extern uint32_t ds_rt_aot_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value);
+    return ds_rt_aot_set_environment_variable(name, value);
 }
 
 static
@@ -283,6 +277,13 @@ uint32_t
 ds_rt_disable_perfmap (void)
 {
     return DS_IPC_E_NOTSUPPORTED;
+}
+
+static
+uint32_t
+ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
+{
+	return DS_IPC_E_NOTSUPPORTED;
 }
 
 /*
@@ -307,4 +308,4 @@ ds_rt_server_log_pause_message (void)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* __DIAGNOSTICS_RT_AOT_H__ */
+#endif /* DIAGNOSTICS_RT_AOT_H */

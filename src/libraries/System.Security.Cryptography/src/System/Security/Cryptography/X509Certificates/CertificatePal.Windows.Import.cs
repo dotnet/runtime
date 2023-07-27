@@ -85,6 +85,7 @@ namespace System.Security.Cryptography.X509Certificates
                         }
 
                         pCertContext?.Dispose();
+                        X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile: loadFromFile, password.PasswordProvided);
                         pCertContext = FilterPFXStore(rawData, password, pfxCertStoreFlags);
 
                         // If PersistKeySet is set we don't delete the key, so that it persists.

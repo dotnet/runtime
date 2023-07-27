@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -40,6 +41,13 @@ namespace System.Text.Json
             return false;
         }
 #endif
+
+        internal static bool RequiresSpecialNumberHandlingOnWrite(JsonNumberHandling? handling)
+        {
+            return handling != null
+                ? (handling.Value & (JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals)) != 0
+                : false;
+        }
 
         /// <summary>
         /// Provides an in-place, stable sorting implementation for List.

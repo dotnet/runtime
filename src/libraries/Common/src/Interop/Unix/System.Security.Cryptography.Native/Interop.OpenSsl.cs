@@ -288,7 +288,7 @@ internal static partial class Interop
             SafeSslContextHandle? newCtxHandle = null;
             SslProtocols protocols = CalculateEffectiveProtocols(sslAuthenticationOptions);
             bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
-            bool cacheSslContext = !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
+            bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
 
             if (cacheSslContext)
             {

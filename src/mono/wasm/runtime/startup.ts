@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
+import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { disableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers } from "./globals";
+import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH } from "./globals";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -24,15 +24,15 @@ import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
+import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_id } from "./logging";
+import { getBrowserThreadID } from "./pthreads/shared";
 
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { BINDING, MONO } from "./net6-legacy/globals";
-import { mono_log_debug, mono_log_warn } from "./logging";
-import { install_synchronization_context } from "./pthreads/shared";
 import { localHeapViewU8 } from "./memory";
-
+import { assertNoProxies } from "./gc-handles";
 
 // default size if MonoConfig.pthreadPoolSize is undefined
 const MONO_PTHREAD_POOL_SIZE = 4;
@@ -90,7 +90,6 @@ export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
         // - here we resolve the promise returned by createDotnetRuntime export
         // - any code after createDotnetRuntime is executed now
         runtimeHelpers.dotnetReady.promise_control.resolve(exportedRuntimeAPI);
-        runtimeHelpers.runtimeReady = true;
     }).catch(err => {
         runtimeHelpers.dotnetReady.promise_control.reject(err);
     });
@@ -98,8 +97,12 @@ export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
     // execution order == [*] ==
     if (!module.onAbort) {
         module.onAbort = (error) => {
-            loaderHelpers.abort_startup(error, false);
             loaderHelpers.mono_exit(1, error);
+        };
+    }
+    if (!module.onExit) {
+        module.onExit = (code) => {
+            loaderHelpers.mono_exit(code, null);
         };
     }
 }
@@ -152,8 +155,8 @@ function preInit(userPreInit: (() => void)[]) {
         // all user Module.preInit callbacks
         userPreInit.forEach(fn => fn());
     } catch (err) {
-        _print_error("user preInint() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("user preInint() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
     // this will start immediately but return on first await.
@@ -162,7 +165,6 @@ function preInit(userPreInit: (() => void)[]) {
     (async () => {
         try {
             // - init the rest of the polyfills
-            // - download Module.config from configSrc
             await mono_wasm_pre_init_essential_async();
 
             // - start download assets like DLLs
@@ -170,7 +172,7 @@ function preInit(userPreInit: (() => void)[]) {
 
             endMeasure(mark, MeasuredBlock.preInit);
         } catch (err) {
-            loaderHelpers.abort_startup(err, true);
+            loaderHelpers.mono_exit(1, err);
             throw err;
         }
         // signal next stage
@@ -190,22 +192,15 @@ async function preInitWorkerAsync() {
         runtimeHelpers.afterPreInit.promise_control.resolve();
         endMeasure(mark, MeasuredBlock.preInitWorker);
     } catch (err) {
-        _print_error("user preInitWorker() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("user preInitWorker() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
 }
 
 export function preRunWorker() {
-    const mark = startMeasure();
-    try {
-        bindings_init();
-        endMeasure(mark, MeasuredBlock.preRunWorker);
-    } catch (err) {
-        loaderHelpers.abort_startup(err, true);
-        throw err;
-    }
     // signal next stage
+    runtimeHelpers.runtimeReady = true;
     runtimeHelpers.afterPreRun.promise_control.resolve();
 }
 
@@ -221,8 +216,8 @@ async function preRunAsync(userPreRun: (() => void)[]) {
         userPreRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.preRun);
     } catch (err) {
-        _print_error("user callback preRun() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("user callback preRun() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
     // signal next stage
@@ -241,10 +236,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         await wait_for_all_assets();
 
-        // Diagnostics early are not supported with memory snapshot. See below how we enable them later.
+        // Threads early are not supported with memory snapshot. See below how we enable them later.
         // Please disable startupMemoryCache in order to be able to diagnose or pause runtime startup.
         if (MonoWasmThreads && !runtimeHelpers.config.startupMemoryCache) {
-            await mono_wasm_init_diagnostics();
+            await mono_wasm_init_threads();
         }
 
         // load runtime and apply environment settings (if necessary)
@@ -256,22 +251,25 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
                 : new Error("Snapshot taken, exiting because exitAfterSnapshot was set.");
             reason.silent = true;
 
-            loaderHelpers.abort_startup(reason, false);
+            loaderHelpers.mono_exit(0, reason);
             return;
         }
 
-        if (MonoWasmThreads) {
-            if (runtimeHelpers.config.startupMemoryCache) {
-                // we could enable diagnostics after the snapshot is taken
-                await mono_wasm_init_diagnostics();
-            }
-            await instantiateWasmPThreadWorkerPool();
+        if (MonoWasmThreads && runtimeHelpers.config.startupMemoryCache) {
+            await mono_wasm_init_threads();
         }
 
         bindings_init();
+        runtimeHelpers.runtimeReady = true;
+
+        if (MonoWasmThreads) {
+            runtimeHelpers.javaScriptExports.install_synchronization_context();
+            runtimeHelpers.jsSynchronizationContextInstalled = true;
+        }
+
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
-        if (runtimeHelpers.config.startupOptions && INTERNAL.resourceLoader) {
+        if (INTERNAL.resourceLoader) {
             if (INTERNAL.resourceLoader.bootConfig.debugBuild && INTERNAL.resourceLoader.bootConfig.cacheBootResources) {
                 INTERNAL.resourceLoader.logToConsole();
             }
@@ -283,15 +281,15 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             userOnRuntimeInitialized();
         }
         catch (err: any) {
-            _print_error("user callback onRuntimeInitialized() failed", err);
+            mono_log_error("user callback onRuntimeInitialized() failed", err);
             throw err;
         }
         // finish
         await mono_wasm_after_user_runtime_initialized();
         endMeasure(mark, MeasuredBlock.onRuntimeInitialized);
     } catch (err) {
-        _print_error("onRuntimeInitializedAsync() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("onRuntimeInitializedAsync() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
     // signal next stage
@@ -313,14 +311,30 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         userpostRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.postRun);
     } catch (err) {
-        _print_error("user callback posRun() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("user callback posRun() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
     // signal next stage
     runtimeHelpers.afterPostRun.promise_control.resolve();
 }
 
+export function postRunWorker() {
+    assertNoProxies();
+    // signal next stage
+    runtimeHelpers.runtimeReady = false;
+    runtimeHelpers.afterPreRun = createPromiseController<void>();
+}
+
+async function mono_wasm_init_threads() {
+    if (!MonoWasmThreads) {
+        return;
+    }
+    const tid = getBrowserThreadID();
+    mono_set_thread_id(`0x${tid.toString(16)}-main`);
+    await instantiateWasmPThreadWorkerPool();
+    await mono_wasm_init_diagnostics();
+}
 
 function mono_wasm_pre_init_essential(isWorker: boolean): void {
     if (!isWorker)
@@ -329,8 +343,10 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     mono_log_debug("mono_wasm_pre_init_essential");
 
     init_c_exports();
+    runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
+    runtimeHelpers.mono_wasm_abort = cwraps.mono_wasm_abort;
     cwraps_internal(INTERNAL);
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         cwraps_mono_api(MONO);
         cwraps_binding_api(BINDING);
     }
@@ -346,6 +362,13 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
 async function mono_wasm_pre_init_essential_async(): Promise<void> {
     mono_log_debug("mono_wasm_pre_init_essential_async");
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
+
+    if (linkerWasmEnableSIMD) {
+        mono_assert(await loaderHelpers.simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    }
+    if (linkerWasmEnableEH) {
+        mono_assert(await loaderHelpers.exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    }
 
     await init_polyfills_async();
 
@@ -393,25 +416,13 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
                 await Module.onDotnetReady();
             }
             catch (err: any) {
-                _print_error("onDotnetReady () failed", err);
+                mono_log_error("onDotnetReady () failed", err);
                 throw err;
             }
         }
     } catch (err: any) {
-        _print_error("Error in mono_wasm_after_user_runtime_initialized", err);
+        mono_log_error("mono_wasm_after_user_runtime_initialized () failed", err);
         throw err;
-    }
-}
-
-
-function _print_error(message: string, err: any): void {
-    if (typeof err === "object" && err.silent) {
-        return;
-    }
-    Module.err(`${message}: ${JSON.stringify(err)}`);
-    if (typeof err === "object" && err.stack) {
-        Module.err("Stacktrace: \n");
-        Module.err(err.stack);
     }
 }
 
@@ -501,8 +512,8 @@ async function instantiate_wasm_module(
         }
         runtimeHelpers.afterInstantiateWasm.promise_control.resolve();
     } catch (err) {
-        _print_error("instantiate_wasm_module() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("instantiate_wasm_module() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
     Module.removeRunDependency("instantiate_wasm_module");
@@ -569,8 +580,9 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
     } catch (err: any) {
-        _print_error("mono_wasm_load_runtime () failed", err);
-        loaderHelpers.abort_startup(err, false);
+        mono_log_error("mono_wasm_load_runtime () failed", err);
+        loaderHelpers.mono_exit(1, err);
+        throw err;
     }
 }
 
@@ -584,18 +596,15 @@ export function bindings_init(): void {
         const mark = startMeasure();
         strings_init();
         init_managed_exports();
-        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
+        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
             init_legacy_exports();
-        }
-        if (MonoWasmThreads && !ENVIRONMENT_IS_PTHREAD) {
-            install_synchronization_context();
         }
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
         runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
         endMeasure(mark, MeasuredBlock.bindingsInit);
     } catch (err) {
-        _print_error("Error in bindings_init", err);
+        mono_log_error("Error in bindings_init", err);
         throw err;
     }
 }

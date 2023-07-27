@@ -2,17 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { BootJsonData } from "../../types/blazor";
-import type { WebAssemblyBootResourceType } from "../../types";
+import type { LoadBootResourceCallback } from "../../types";
 import { loaderHelpers } from "../globals";
-
-export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 
 export class BootConfigResult {
     private constructor(public bootConfig: BootJsonData, public applicationEnvironment: string) {
     }
 
     static fromFetchResponse(bootConfigResponse: Response, bootConfig: BootJsonData, environment: string | undefined): BootConfigResult {
-        const applicationEnvironment = environment || (loaderHelpers.getApplicationEnvironment && loaderHelpers.getApplicationEnvironment(bootConfigResponse)) || "Production";
+        const applicationEnvironment = environment
+            || (loaderHelpers.getApplicationEnvironment && loaderHelpers.getApplicationEnvironment(bootConfigResponse))
+            || bootConfigResponse.headers.get("Blazor-Environment")
+            || bootConfigResponse.headers.get("DotNet-Environment")
+            || "Production";
+
         bootConfig.modifiableAssemblies = bootConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
         bootConfig.aspnetCoreBrowserTools = bootConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
 

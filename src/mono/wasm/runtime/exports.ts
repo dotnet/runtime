@@ -4,10 +4,10 @@
 import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
 import BuildConfiguration from "consts:configuration";
-import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
+import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 import type { RuntimeAPI } from "./types";
 
-import { Module, disableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
+import { Module, linkerDisableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects, is_nullish } from "./types/internal";
 import { configureEmscriptenStartup, configureWorkerStartup } from "./startup";
 
@@ -23,18 +23,19 @@ import { initializeLegacyExports } from "./net6-legacy/globals";
 import { mono_log_warn, mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { instantiate_asset, instantiate_symbols_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
+import { forceDisposeProxies } from "./gc-handles";
 
 function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     const module = Module;
     const globals = globalObjects;
     const globalThisAny = globalThis as any;
 
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         initializeLegacyExports(globals);
     }
 
     // here we merge methods from the local objects into exported objects
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         Object.assign(globals.mono, export_mono_api());
         Object.assign(globals.binding, export_binding_api());
         Object.assign(globals.internal, export_internal_api());
@@ -45,6 +46,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         instantiate_symbols_asset,
         instantiate_asset,
         jiterpreter_dump_stats,
+        forceDisposeProxies,
     });
 
     const API = export_api();
@@ -58,7 +60,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         },
         ...API,
     });
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         Object.assign(exportedRuntimeAPI, {
             MONO: globals.mono,
             BINDING: globals.binding,
@@ -72,7 +74,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     if (!module.disableDotnet6Compatibility) {
         Object.assign(module, exportedRuntimeAPI);
 
-        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
             // backward compatibility
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore

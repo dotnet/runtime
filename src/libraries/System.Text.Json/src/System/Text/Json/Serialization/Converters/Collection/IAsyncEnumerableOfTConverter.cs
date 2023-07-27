@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (!typeToConvert.IsAssignableFrom(typeof(IAsyncEnumerable<TElement>)))
             {
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
 
             return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value!);
@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (!state.SupportAsync)
             {
-                ThrowHelper.ThrowNotSupportedException_TypeRequiresAsyncSerialization(TypeToConvert);
+                ThrowHelper.ThrowNotSupportedException_TypeRequiresAsyncSerialization(Type);
             }
 
             return base.OnTryWrite(writer, value, options, ref state);

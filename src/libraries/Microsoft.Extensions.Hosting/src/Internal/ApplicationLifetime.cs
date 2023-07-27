@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 
@@ -10,6 +11,9 @@ namespace Microsoft.Extensions.Hosting.Internal
     /// <summary>
     /// Allows consumers to perform cleanup during a graceful shutdown.
     /// </summary>
+    [DebuggerDisplay("ApplicationStarted = {ApplicationStarted.IsCancellationRequested}, " +
+        "ApplicationStopping = {ApplicationStopping.IsCancellationRequested}, " +
+        "ApplicationStopped = {ApplicationStopped.IsCancellationRequested}")]
 #pragma warning disable CS0618 // Type or member is obsolete
     public class ApplicationLifetime : IApplicationLifetime, IHostApplicationLifetime
 #pragma warning restore CS0618 // Type or member is obsolete

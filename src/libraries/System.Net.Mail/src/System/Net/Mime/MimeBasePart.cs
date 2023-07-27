@@ -111,7 +111,7 @@ namespace System.Net.Mime
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            return Ascii.IsValid(value) && (permitCROrLF || value.AsSpan().IndexOfAny('\r', '\n') < 0);
+            return Ascii.IsValid(value) && (permitCROrLF || !value.AsSpan().ContainsAny('\r', '\n'));
         }
 
         internal string? ContentID

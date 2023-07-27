@@ -89,6 +89,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>CoreCLR doesn't support type equivalence on Unix</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
+            <Issue>CoreCLR doesn't support type equivalence on Unix</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
@@ -262,6 +268,9 @@
 
     <!-- Windows x86 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetArchitecture)' == 'x86' and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84911</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/LargeMemory/Allocation/largeexceptiontest/*">
             <Issue>https://github.com/dotnet/runtime/issues/5200 Test is useful to have because it can be run manually when making changes to the GC that can have effects in OOM scenarios, but not appropriate to run on our current test infrastructure.</Issue>
         </ExcludeList>
@@ -688,6 +697,12 @@
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/RegressionTests/GetInterfaceMapWithStaticVirtualsAndConstraints/**">
+            <Issue>https://github.com/dotnet/runtime/issues/89157</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88690</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs</Issue>
         </ExcludeList>
@@ -696,6 +711,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/DiamondShape/svm_diamondshape_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/72589</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfig/*">
             <Issue>Test expects being run with corerun</Issue>
@@ -727,6 +745,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/WeakReference/Finalize2/*">
             <Issue>Expectations about finalization order</Issue>
         </ExcludeList>
@@ -750,9 +774,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Attributes/LCID/LCIDTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: LCID marshalling</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128TestFieldLayout/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74549</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsParam/AsLPArray/AsLPArrayTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/81674</Issue>
@@ -848,6 +869,9 @@
             <Issue>https://github.com/dotnet/runtimelab/issues/166</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Tailcalls</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_87393/Runtime_87393/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Tailcalls</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/throwbox/fault_throwbox/*">
@@ -1072,6 +1096,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo2/**">
             <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo3/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/providervalidation/**">
             <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
         </ExcludeList>
@@ -1230,6 +1257,12 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Reabstraction/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88775</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88689</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_85240/test85240/**">
             <Issue>https://github.com/dotnet/runtime/issues/71095</Issue>
         </ExcludeList>
@@ -1599,6 +1632,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_87393/**">
+            <Issue>FSharp Test</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/mutual_recursion/**">
             <Issue>FSharp Test</Issue>
         </ExcludeList>
@@ -1703,9 +1739,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Reordered/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_545500/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/**">
             <Issue>needs triage</Issue>
@@ -1916,6 +1949,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/*">
             <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
+            <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
             <Issue>Requires COM support, disabled on all Mono platforms.</Issue>
         </ExcludeList>
@@ -2000,6 +2039,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/OSR/pinnedlocal/**">
             <Issue>https://github.com/dotnet/runtime/issues/70820</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleruntimeeventvalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88499</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on Windows -->
@@ -2079,7 +2121,7 @@
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'monointerpreter' ">
+    <ItemGroup Condition="('$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'monointerpreter') or '$(TargetsAppleMobile)' == 'true'">
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
             <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
         </ExcludeList>
@@ -2263,7 +2305,7 @@
         <!-- End interpreter issues -->
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmaot' or '$(TargetOS)' == 'ios')">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmaot' or '$(TargetsAppleMobile)' == 'true')">
         <ExcludeList Include = "$(XunitTestBinBase)JIT/Methodical/ELEMENT_TYPE_IU/u_conv_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -2391,7 +2433,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(TargetOS)' == 'ios')">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(TargetsAppleMobile)' == 'true')">
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case1/**">
             <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
@@ -2735,7 +2777,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator')">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(TargetsAppleMobile)' == 'true')">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.1-M1-Beta1/b143840/b143840/*">
             <Issue>https://github.com/dotnet/runtime/issues/48914</Issue>
         </ExcludeList>
@@ -2899,16 +2941,16 @@
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
-            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
-            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/**">
+            <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/nopiatestil/**">
+            <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
             <Issue>Doesn't compile with LLVM AOT.</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/IL/Unbox002/**">
@@ -3057,7 +3099,7 @@
     </ItemGroup>
 
 
-    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsAppleMobile)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/**">
             <Issue>https://github.com/dotnet/runtime/issues/75756</Issue>
         </ExcludeList>
@@ -3415,6 +3457,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/StartupHooks/**">
             <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
@@ -3440,6 +3485,9 @@
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo2/**">
+            <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo3/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/**">
@@ -3470,6 +3518,9 @@
             <Issue>WASM doesn't support diagnostics tracing</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleprovidervalidation/**">
+            <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleruntimeeventvalidation/**">
             <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
         </ExcludeList>
     </ItemGroup>
@@ -3669,7 +3720,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios'" >
+    <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'" >
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
             <Issue>missing assembly</Issue>
         </ExcludeList>
@@ -3895,20 +3946,41 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'iossimulator'" >
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/buffersize/**">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/GenericContext/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/v2.0-beta1/149926/149926/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'android' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios')">
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'tvos'">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/RegressionTests/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/empty/*">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/RyuJIT/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/**">
+            <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
 

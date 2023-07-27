@@ -7,13 +7,12 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -656,6 +655,45 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Proxy_Test : HttpClientHandler_Proxy_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Proxy_Https_Succeeds(bool secureUri)
+        {
+            var releaseServer = new TaskCompletionSource();
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                bool validationCalled = false;
+                using SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+
+                handler.Proxy = new UseSpecifiedUriWebProxy(uri, new NetworkCredential("abc", "password"));
+                handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, error) =>
+                {
+                    validationCalled = true;
+                    return true;
+                };
+
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    HttpResponseMessage response = await client.GetAsync(secureUri ? "https://foo.bar/" : "http://foo.bar/");
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.True(validationCalled);
+
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                await connection.ReadRequestHeaderAndSendResponseAsync();
+                if (secureUri)
+                {
+                    // client will send CONNECT and if that succeeds it will negotiate TLS
+
+                    var sslConnection = await LoopbackServer.Connection.CreateAsync(null, connection.Stream, new LoopbackServer.Options { UseSsl = true });
+                    await sslConnection.ReadRequestHeaderAndSendResponseAsync();
+                }
+            }),
+            new LoopbackServer.Options { UseSsl = true });
+        }
     }
 
     public abstract class SocketsHttpHandler_TrailingHeaders_Test : HttpClientHandlerTestBase
@@ -4251,6 +4289,51 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version11;
+
+#if DEBUG
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task Https_MultipleRequests_TlsResumed(bool useSocketHandler)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpMessageHandler handler = useSocketHandler ? CreateSocketsHttpHandler(allowAllCertificates: true) : CreateHttpClientHandler();
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    HttpRequestMessage request = new  HttpRequestMessage(HttpMethod.Get,uri);
+                    request.Headers.Add("Host", "foo.bar");
+                    request.Headers.Add("Connection", "close");
+
+                    HttpResponseMessage response = await client.SendAsync(request);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                    request = new  HttpRequestMessage(HttpMethod.Get,uri);
+                    request.Headers.Add("Host", "foo.bar");
+                    response = await client.SendAsync(request);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            },
+            async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync();
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    SslStream ssl = (SslStream)connection.Stream;
+                    object connectionInfo = typeof(SslStream).GetField(
+                                     "_connectionInfo",
+                                     BindingFlags.Instance | BindingFlags.NonPublic).GetValue(ssl);
+
+                    bool resumed = (bool)connectionInfo.GetType().GetProperty("TlsResumed").GetValue(connectionInfo);
+                    Assert.True(resumed);
+
+                    await connection.ReadRequestHeaderAndSendResponseAsync();
+                });
+            },
+            new LoopbackServer.Options { UseSsl = true, SslProtocols = SslProtocols.Tls12 });
+        }
+#endif
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
@@ -4264,6 +4347,136 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3 : SocketsHttpHandler_SecurityTest
     {
         public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public abstract class SocketsHttpHandler_HttpRequestErrorTest : HttpClientHandlerTestBase
+    {
+        protected SocketsHttpHandler_HttpRequestErrorTest(ITestOutputHelper output) : base(output)
+        {
+        }
+
+        [Fact]
+        public async Task NameResolutionError()
+        {
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage message = new(HttpMethod.Get, new Uri("https://BadHost"))
+            {
+                Version = UseVersion,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
+
+            // TODO: Some platforms fail to detect NameResolutionError reliably, we should investigate this.
+            // Also, System.Net.Quic does not report DNS resolution errors yet.
+            Assert.True(ex.HttpRequestError is HttpRequestError.NameResolutionError or HttpRequestError.ConnectionError);
+        }
+
+        [Fact]
+        public async Task ConnectionError()
+        {
+            if (UseVersion.Major == 3)
+            {
+                return;
+            }
+            using Socket notListening = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            notListening.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            int port = ((IPEndPoint)notListening.LocalEndPoint).Port;
+            Uri uri = new($"http://localhost:{port}");
+
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage message = new(HttpMethod.Get, uri)
+            {
+                Version = UseVersion,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
+            Assert.Equal(HttpRequestError.ConnectionError, ex.HttpRequestError);
+        }
+
+        [Fact]
+        public async Task SecureConnectionError()
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                using HttpClient client = CreateHttpClient(handler);
+                GetUnderlyingSocketsHttpHandler(handler).SslOptions = new SslClientAuthenticationOptions()
+                {
+                    RemoteCertificateValidationCallback = delegate { return false; },
+                };
+                using HttpRequestMessage message = new(HttpMethod.Get, uri)
+                {
+                    Version = UseVersion,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
+                Assert.Equal(HttpRequestError.SecureConnectionError, ex.HttpRequestError);
+            }, async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionAsync(_ => Task.CompletedTask);
+                }
+                catch
+                {
+                }
+            },
+            options: new GenericLoopbackOptions() { UseSsl = true });
+        }
+
+        
+    }
+
+    public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http11 : SocketsHttpHandler_HttpRequestErrorTest
+    {
+        public SocketsHttpHandler_HttpRequestErrorTest_Http11(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version11;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http20 : SocketsHttpHandler_HttpRequestErrorTest
+    {
+        public SocketsHttpHandler_HttpRequestErrorTest_Http20(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+
+        [Fact]
+        public async Task VersionNegitioationError()
+        {
+            await Http11LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage message = new(HttpMethod.Get, uri)
+                {
+                    Version = UseVersion,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
+                Assert.Equal(HttpRequestError.VersionNegotiationError, ex.HttpRequestError);
+            }, async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionAsync(_ => Task.CompletedTask);
+                }
+                catch
+                {
+                }
+            },
+            options: new GenericLoopbackOptions() { UseSsl = true });
+        }
+    }
+
+    [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http30 : SocketsHttpHandler_HttpRequestErrorTest
+    {
+        public SocketsHttpHandler_HttpRequestErrorTest_Http30(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 

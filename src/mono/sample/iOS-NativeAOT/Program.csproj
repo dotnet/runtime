@@ -9,7 +9,6 @@
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <AppName>HelloiOS</AppName>
     <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
-    <PublishDir Condition="'$(PublishDir)' == ''">$(OutputPath)/publish</PublishDir>
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
     <!-- Escape NativeAOT bundling targets -->
@@ -47,8 +46,7 @@
   <Target Name="ConfigureIlcPathsForiOSCrossCompilation" Condition="'$(PublishAotUsingRuntimePack)' != 'true'"
     BeforeTargets="SetupProperties">
       <PropertyGroup>
-        <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcPath>
-        <IlcToolsPath>$(IlcPath)</IlcToolsPath>
+        <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
         <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
         <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
         <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
@@ -60,7 +58,7 @@
     DependsOnTargets="IlcCompile;CopyFilesToPublishDirectory">
 
     <PropertyGroup>
-      <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
+      <AppDir>$(MSBuildThisFileDirectory)$(OutputPath)\Bundle</AppDir>
       <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
       <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
       <DevTeamProvisioning Condition="'$(TargetOS)' == 'maccatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
@@ -69,10 +67,11 @@
 
     <ItemGroup>
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
-      <_LinkerFlagsToDrop Include="@(LinkerArg)" Condition="$([System.String]::new('%(Identity)').Contains('swift'))" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraLinkerArguments Include="@(LinkerArg)" />
       <_NativeDependencies Include="%(ManagedBinary.IlcOutputFile)" />
+      <_ExcludeFromAppDir Include=".dll" />
+      <_ExcludeFromAppDir Include=".json" />
     </ItemGroup>
 
     <RemoveDir Directories="$(AppDir)" />
@@ -92,7 +91,8 @@
         InvariantGlobalization="$(InvariantGlobalization)"
         EnableAppSandbox="$(EnableAppSandbox)"
         StripSymbolTable="$(StripDebugSymbols)"
-        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)" 
+        AppDir="$(MSBuildThisFileDirectory)$(OutputPath)"
+        ExcludeFromAppDir="@(_ExcludeFromAppDir)"
         ExtraLinkerArguments="@(ExtraLinkerArguments)" >
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />

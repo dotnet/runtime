@@ -1061,7 +1061,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 return null;
             }
-            if (avt.AsSpan().IndexOfAny('{', '}') < 0)
+            if (!avt.AsSpan().ContainsAny('{', '}'))
             {
                 return _f.String(avt);
             }
@@ -1071,7 +1071,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode CompileTextAvt(string avt)
         {
             Debug.Assert(avt != null);
-            if (avt.AsSpan().IndexOfAny('{', '}') < 0)
+            if (!avt.AsSpan().ContainsAny('{', '}'))
             {
                 return _f.TextCtor(_f.String(avt));
             }

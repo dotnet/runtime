@@ -370,6 +370,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [OuterLoop("Uses external servers")]
         public async Task ConnectAsync_InvalidName_ThrowsSocketException()
         {
             string name = $"{Guid.NewGuid().ToString("N")}.microsoft.com.";
@@ -382,7 +383,7 @@ namespace System.Net.Quic.Tests
             };
 
             SocketException ex = await Assert.ThrowsAsync<SocketException>(() => QuicConnection.ConnectAsync(options).AsTask());
-            Assert.Equal(SocketError.HostNotFound, ((SocketException)ex).SocketErrorCode );
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
         }
 
         [Fact]

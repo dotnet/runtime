@@ -25,5 +25,6 @@ steps:
       includeRootFolder: true
       displayName: Browser Wasm Artifacts
       artifactName: BrowserWasm
-      archiveType: zip
-      archiveExtension: .zip
+      archiveType: tar
+      tarCompression: gz
+      archiveExtension: '.tar.gz'

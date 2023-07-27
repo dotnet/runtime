@@ -6,13 +6,13 @@ namespace System.Text.Json.SourceGeneration
     public enum ClassType
     {
         /// <summary>
-        /// Types that are not supported yet by source gen including types with constructor parameters.
+        /// Types that are not supported at all and will be warned on/skipped by the source generator.
         /// </summary>
         TypeUnsupportedBySourceGen = 0,
         Object = 1,
         BuiltInSupportType = 2,
         /// <summary>
-        /// Known types such as System.Type and System.IntPtr that throw NotSupportedException.
+        /// Known types such as System.Type and System.IntPtr that throw NotSupportedException at runtime.
         /// </summary>
         UnsupportedType = 3,
         TypeWithDesignTimeProvidedCustomConverter = 4,

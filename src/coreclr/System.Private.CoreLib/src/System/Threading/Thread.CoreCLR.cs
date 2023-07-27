@@ -275,17 +275,17 @@ namespace System.Threading
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
-             if (state != ApartmentState.Unknown)
-             {
+            if (state != ApartmentState.Unknown)
+            {
                 if (throwOnError)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
                 }
 
                 return false;
-             }
+            }
 
-             return true;
+            return true;
         }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 

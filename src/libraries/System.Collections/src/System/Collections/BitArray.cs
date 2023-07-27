@@ -924,7 +924,7 @@ namespace System.Collections
             }
 
             const int AllSetBits = -1; // 0xFF_FF_FF_FF
-            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(AllSetBits) >= 0)
+            if (m_array.AsSpan(0, intCount).ContainsAnyExcept(AllSetBits))
             {
                 return false;
             }
@@ -954,7 +954,7 @@ namespace System.Collections
                 intCount--;
             }
 
-            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(0) >= 0)
+            if (m_array.AsSpan(0, intCount).ContainsAnyExcept(0))
             {
                 return true;
             }

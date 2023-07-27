@@ -62,8 +62,14 @@ _save_thread_notes(uint32_t n_namesz, uint32_t n_descsz, uint32_t n_type, char *
   struct UCD_info *ui = (struct UCD_info *)arg;
   if (n_type == NT_PRSTATUS)
   {
-    memcpy(&ui->threads[ui->n_threads], desc, sizeof(struct PRSTATUS_STRUCT));
+    memcpy(&ui->threads[ui->n_threads].prstatus, desc, sizeof(UCD_proc_status_t));
     ++ui->n_threads;
+  }
+  if (n_type == NT_FPREGSET)
+  {
+#ifdef HAVE_ELF_FPREGSET_T
+    memcpy(&ui->threads[ui->n_threads-1].fpregset, desc, sizeof(elf_fpregset_t));
+#endif
   }
   return UNW_ESUCCESS;
 }
@@ -89,33 +95,33 @@ _UCD_get_threadinfo(struct UCD_info *ui, coredump_phdr_t *phdrs, unsigned phdr_s
   int ret = -UNW_ENOINFO;
 
   for (unsigned i = 0; i < phdr_size; ++i)
-  {
-    Debug(8, "phdr[%03d]: type:%d", i, phdrs[i].p_type);
-    if (phdrs[i].p_type == PT_NOTE)
     {
-      size_t thread_count = 0;
-      uint8_t *segment;
-      size_t segment_size;
-      ret = _UCD_elf_read_segment(ui, &phdrs[i], &segment, &segment_size);
-      if (ret == UNW_ESUCCESS)
-      {
-      	_UCD_elf_visit_notes(segment, segment_size, _count_thread_notes, &thread_count);
-	Debug(2, "found %zu threads\n", thread_count);
+      Debug(8, "phdr[%03d]: type:%d", i, phdrs[i].p_type);
+      if (phdrs[i].p_type == PT_NOTE)
+        {
+          size_t thread_count = 0;
+          uint8_t *segment;
+          size_t segment_size;
+          ret = _UCD_elf_read_segment(ui, &phdrs[i], &segment, &segment_size);
+          if (ret == UNW_ESUCCESS)
+            {
+              _UCD_elf_visit_notes(segment, segment_size, _count_thread_notes, &thread_count);
+              Debug(2, "found %zu threads\n", thread_count);
 
-      	size_t new_size = sizeof(struct PRSTATUS_STRUCT) * (ui->n_threads + thread_count);
-      	ui->threads = realloc(ui->threads, new_size);
-      	if (ui->threads == NULL)
-	{
-	  Debug(0, "error allocating %zu bytes of memory \n", new_size);
-      	  free(segment);
-	  return -UNW_EUNSPEC;
-	}
-      	_UCD_elf_visit_notes(segment, segment_size, _save_thread_notes, ui);
+              size_t new_size = sizeof(struct UCD_thread_info) * (ui->n_threads + thread_count);
+              ui->threads = realloc(ui->threads, new_size);
+              if (ui->threads == NULL)
+                {
+                  Debug(0, "error allocating %zu bytes of memory \n", new_size);
+                  free(segment);
+                  return -UNW_EUNSPEC;
+                }
+              _UCD_elf_visit_notes(segment, segment_size, _save_thread_notes, ui);
 
-      	free(segment);
-      }
+              free(segment);
+            }
+        }
     }
-  }
 
   return ret;
 }

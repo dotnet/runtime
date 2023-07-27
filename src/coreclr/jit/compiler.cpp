@@ -106,25 +106,25 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 #endif // which host OS
 
 const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) sz,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) al,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) st,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) jitType,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) jitType,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -2266,7 +2266,7 @@ void Compiler::compSetProcessor()
 // the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
     // Get the preferred vector bitwidth, rounding down to the nearest multiple of 128-bits
-    uint32_t preferredVectorBitWidth   = (JitConfig.PreferredVectorBitWidth() / 128) * 128;
+    uint32_t preferredVectorBitWidth   = (ReinterpretHexAsDecimal(JitConfig.PreferredVectorBitWidth()) / 128) * 128;
     uint32_t preferredVectorByteLength = preferredVectorBitWidth / 8;
 
     if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
@@ -2305,6 +2305,9 @@ void Compiler::compSetProcessor()
             // default preferred vector width to 256-bits in some scenarios. Power
             // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
             // allow using such instructions where hardware support is available.
+            //
+            // Do not condition this based on stress mode as it makes the support
+            // reported inconsistent across methods and breaks expectations/functionality
 
             preferredVectorByteLength = 256 / 8;
         }
@@ -2843,6 +2846,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disDiffable  = false;
     opts.dspDiffable  = false;
     opts.disAlignment = false;
+    opts.disCodeBytes = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -3034,9 +3038,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (opts.disAsm)
 #endif
     {
+        if (JitConfig.JitDisasmTesting())
+        {
+            opts.disTesting = true;
+        }
         if (JitConfig.JitDisasmWithAlignmentBoundaries())
         {
             opts.disAlignment = true;
+        }
+        if (JitConfig.JitDisasmWithCodeBytes())
+        {
+            opts.disCodeBytes = true;
         }
         if (JitConfig.JitDisasmDiffable())
         {
@@ -3367,9 +3379,32 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
     }
+#endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    rbmAllMask         = RBM_ALLMASK_INIT;
+    rbmMskCalleeTrash  = RBM_MSK_CALLEE_TRASH_INIT;
+    cntCalleeTrashMask = CNT_CALLEE_TRASH_MASK_INIT;
+
+    if (canUseEvexEncoding())
+    {
+        rbmAllMask |= RBM_ALLMASK_EVEX;
+        rbmMskCalleeTrash |= RBM_MSK_CALLEE_TRASH_EVEX;
+        cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK_EVEX;
+    }
+
+    // Make sure we copy the register info and initialize the
+    // trash regs after the underlying fields are initialized
+
+    const regMaskTP vtCalleeTrashRegs[TYP_COUNT]{
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
+#include "typelist.h"
+#undef DEF_TP
+    };
+    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
 
     codeGen->CopyRegisterInfo();
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 }
 
 #ifdef DEBUG
@@ -4724,6 +4759,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    // Expose candidates for implicit byref last-use copy elision.
+    DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, &Compiler::fgMarkImplicitByRefCopyOmissionCandidates);
+
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
 
@@ -4866,6 +4904,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doBranchOpt               = true;
         bool doCse                     = true;
         bool doAssertionProp           = true;
+        bool doVNBasedIntrinExpansion  = true;
         bool doRangeAnalysis           = true;
         bool doVNBasedDeadStoreRemoval = true;
         int  iterations                = 1;
@@ -4879,6 +4918,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
         doCse                     = doValueNum;
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
+        doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 
@@ -4962,6 +5002,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
             }
 
+            if (doVNBasedIntrinExpansion)
+            {
+                // Expand some intrinsics based on VN data
+                //
+                DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, &Compiler::fgVNBasedIntrinsicExpansion);
+            }
+
             if (doRangeAnalysis)
             {
                 // Bounds check elimination via range analysis
@@ -5015,11 +5062,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Partially inline static initializations
     DoPhase(this, PHASE_EXPAND_STATIC_INIT, &Compiler::fgExpandStaticInit);
 
-    if (TargetOS::IsWindows)
-    {
-        // Currently this is only applicable for Windows
-        DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
-    }
+    // Expand thread local access
+    DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -5397,6 +5441,9 @@ void Compiler::SplitTreesRandomly()
     CLRRandom rng;
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
+    // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
+    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+
     for (BasicBlock* block : Blocks())
     {
         for (Statement* stmt : block->NonPhiStatements())
@@ -5440,6 +5487,12 @@ void Compiler::SplitTreesRandomly()
 
                 splitTree--;
             }
+
+            if (lvaCount > maxLvaCount)
+            {
+                JITDUMP("Created too many locals (at %u) -- stopping\n", lvaCount);
+                return;
+            }
         }
     }
 #endif
@@ -5450,6 +5503,9 @@ void Compiler::SplitTreesRandomly()
 //
 void Compiler::SplitTreesRemoveCommas()
 {
+    // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
+    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+
     for (BasicBlock* block : Blocks())
     {
         Statement* stmt = block->FirstNonPhiDef();
@@ -5495,6 +5551,12 @@ void Compiler::SplitTreesRemoveCommas()
 
                 fgMorphStmtBlockOps(block, stmt);
                 gtUpdateStmtSideEffects(stmt);
+
+                if (lvaCount > maxLvaCount)
+                {
+                    JITDUMP("Created too many locals (at %u) -- stopping\n", lvaCount);
+                    return;
+                }
 
                 // Morphing block ops can introduce commas (and the original
                 // statement can also have more commas left). Proceed from the
@@ -9639,9 +9701,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_ITERATOR]");
                 }
-                if (tree->gtFlags & GTF_VAR_CLONED)
+                if (tree->gtFlags & GTF_VAR_MOREUSES)
                 {
-                    chars += printf("[VAR_CLONED]");
+                    chars += printf("[VAR_MOREUSES]");
                 }
                 if (!comp->lvaGetDesc(tree->AsLclVarCommon())->lvPromoted)
                 {
@@ -10342,6 +10404,8 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
                    "interface implementations";
         case CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE:
             return "Decl method cannot be represented in R2R image";
+        case CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE:
+            return "Support for type equivalence in devirtualization is not yet implemented in crossgen2";
         default:
             return "undefined";
     }

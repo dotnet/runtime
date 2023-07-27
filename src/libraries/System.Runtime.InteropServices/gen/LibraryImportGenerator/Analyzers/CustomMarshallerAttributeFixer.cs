@@ -6,19 +6,13 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.Differencing;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Editing;
-using Microsoft.CodeAnalysis.Simplification;
-using Microsoft.CodeAnalysis.Text;
 using static Microsoft.Interop.Analyzers.CustomMarshallerAttributeAnalyzer;
 
 namespace Microsoft.Interop.Analyzers
@@ -184,7 +178,7 @@ namespace Microsoft.Interop.Analyzers
         // Get the managed type from the CustomMarshallerAttribute located at the provided location in source on the provided type.
         // As we only get fixable diagnostics for types that have valid non-null managed types in the CustomMarshallerAttribute applications,
         // we do not need to worry about the returned symbol being null.
-        private static ITypeSymbol GetManagedTypeInAttributeSyntax(CodeAnalysis.Location locationInAttribute, INamedTypeSymbol attributedTypeSymbol)
+        private static ITypeSymbol GetManagedTypeInAttributeSyntax(Location locationInAttribute, INamedTypeSymbol attributedTypeSymbol)
             => (ITypeSymbol)attributedTypeSymbol.GetAttributes().First(attr =>
                     attr.ApplicationSyntaxReference.SyntaxTree == locationInAttribute.SourceTree
                     && attr.ApplicationSyntaxReference.Span.Contains(locationInAttribute.SourceSpan)).ConstructorArguments[0].Value!;

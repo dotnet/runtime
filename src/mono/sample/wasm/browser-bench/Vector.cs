@@ -32,6 +32,8 @@ namespace Sample
                 new MinDouble(),
                 new MaxDouble(),
                 new Normalize(),
+                new EqualsInt32(),
+                new EqualsFloat(),
             };
         }
 
@@ -342,6 +344,42 @@ namespace Sample
             public override void RunStep() {
                 Vector128<float> vector = Vector128.Create(x, y, z, w);
                 result = vector / (float)Math.Sqrt(Vector128.Dot(vector, vector));
+            }
+        }
+
+        class EqualsInt32 : VectorMeasurement
+        {
+            Vector128<Int32> vector1, vector2;
+            bool result;
+
+            public override string Name => "Equals Int32";
+
+            public EqualsInt32()
+            {
+                vector1 = Vector128.Create(1, 2, 3, 4);
+                vector2 = Vector128.Create(4, 3, 2, 1);
+            }
+
+            public override void RunStep() {
+                result = vector1.Equals(vector2);
+            }
+        }
+
+        class EqualsFloat : VectorMeasurement
+        {
+            Vector128<float> vector1, vector2;
+            bool result;
+
+            public override string Name => "Equals Float";
+
+            public EqualsFloat()
+            {
+                vector1 = Vector128.Create(1f, 2f, 3f, 4f);
+                vector2 = Vector128.Create(4f, 3f, 2f, 1f);
+            }
+
+            public override void RunStep() {
+                result = vector1.Equals(vector2);
             }
         }
     }
