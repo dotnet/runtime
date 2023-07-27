@@ -98,7 +98,7 @@ export function getAssetByNameWithResolvedUrl(resources: ResourceList | undefine
 
 export function ensureAssetResolvedUrl(asset: AssetEntry): AssetEntry {
     if (!asset.resolvedUrl) {
-        asset.resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(asset.name), asset.behavior);
+        asset.resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(asset.behavior === "resource" ? `${asset.culture}/${asset.name}` : asset.name), asset.behavior);
     }
 
     return asset;
