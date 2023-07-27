@@ -8,6 +8,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
+    /// <summary>
+    /// Options class for <see cref="MemoryCache"/>.
+    /// </summary>
     public class MemoryCacheOptions : IOptions<MemoryCacheOptions>
     {
         private long _sizeLimit = NotSet;
@@ -15,6 +18,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private const int NotSet = -1;
 
+        /// <summary>
+        /// Gets or sets the clock used by the cache for expiration.
+        /// </summary>
         public ISystemClock? Clock { get; set; }
 
         /// <summary>

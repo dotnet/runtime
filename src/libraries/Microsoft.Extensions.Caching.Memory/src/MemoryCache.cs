@@ -587,11 +587,13 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
             Dispose(true);
         }
 
+        /// <inheritdoc />
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
