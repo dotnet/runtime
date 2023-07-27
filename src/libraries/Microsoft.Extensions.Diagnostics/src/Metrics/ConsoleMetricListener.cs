@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             _timer = new Timer(OnTimer, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
         }
 
-        public string Name => "Console";
+        public string Name => ConsoleMetrics.ListenerName;
 
         public object? InstrumentPublished(Instrument instrument) => null;
 

@@ -14,6 +14,10 @@ namespace Microsoft.Extensions.DependencyInjection
 }
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
+    public static class ConsoleMetrics
+    {
+        public static string ListenerName => throw null!;
+    }
     public static class MetricsBuilderConsoleExtensions
     {
         public static IMetricsBuilder AddDebugConsole(this IMetricsBuilder builder) => throw null!;
