@@ -40,46 +40,6 @@ export function mapResourcesToAssets(loadedConfig: MonoConfig) {
         }
     }
 
-    for (const name in nativeResources.jsModuleWorker) {
-        const behavior = "js-module-threads";
-        assets.push({
-            name,
-            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
-            hash: nativeResources.jsModuleWorker[name],
-            behavior
-        });
-    }
-
-    for (const name in nativeResources.jsModuleNative) {
-        const behavior = "js-module-native";
-        assets.push({
-            name,
-            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
-            hash: nativeResources.jsModuleNative[name],
-            behavior
-        });
-    }
-
-    for (const name in nativeResources.jsModuleRuntime) {
-        const behavior = "js-module-runtime";
-        assets.push({
-            name,
-            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
-            hash: nativeResources.jsModuleRuntime[name],
-            behavior
-        });
-    }
-
-    for (const name in nativeResources.wasmNative) {
-        const behavior = "dotnetwasm";
-        assets.push({
-            name,
-            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
-            hash: nativeResources.wasmNative[name],
-            behavior
-        });
-    }
-
     for (const name in nativeResources.symbols) {
         const behavior = "symbols";
         assets.push({

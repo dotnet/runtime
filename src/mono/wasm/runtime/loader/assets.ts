@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
-import type { AssetBehaviours, AssetEntry, LoadingResource, ResourceRequest } from "../types";
+import type { AssetBehaviours, AssetEntry, LoadingResource, ResourceList, ResourceRequest } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
@@ -64,7 +64,42 @@ export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
     return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
 }
 
+function getFirstKey(resources: ResourceList | undefined): string | null {
+    if (resources != null) {
+        for (const name in resources) {
+            return name;
+        }
+    }
+
+    return null;
+}
+
+function createAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: AssetBehaviours) {
+    const name = getFirstKey(resources);
+    mono_assert(name, `Can't find ${behavior} in resources`);
+    return {
+        name,
+        resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
+        hash: resources![name],
+        behavior
+    };
+}
+
 export function resolve_asset_path(behavior: AssetBehaviours): AssetEntryInternal {
+    const nativeResources = loaderHelpers.config.resources?.native;
+    if (nativeResources) {
+        switch (behavior) {
+            case "dotnetwasm":
+                return createAssetWithResolvedUrl(nativeResources.wasmNative, behavior);
+            case "js-module-threads":
+                return createAssetWithResolvedUrl(nativeResources.jsModuleWorker, behavior);
+            case "js-module-native":
+                return createAssetWithResolvedUrl(nativeResources.jsModuleNative, behavior);
+            case "js-module-runtime":
+                return createAssetWithResolvedUrl(nativeResources.jsModuleRuntime, behavior);
+        }
+    }
+
     const asset: AssetEntryInternal | undefined = loaderHelpers.config.assets?.find(a => a.behavior == behavior);
     mono_assert(asset, () => `Can't find asset for ${behavior}`);
     if (!asset.resolvedUrl) {
