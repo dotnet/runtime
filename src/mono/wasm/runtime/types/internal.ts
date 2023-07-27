@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceList, RuntimeAPI } from ".";
+import type { AssetBehaviors, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceList, RuntimeAPI } from ".";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -134,7 +134,7 @@ export type LoaderHelpers = {
     getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
     assertIsControllablePromise: <T>(promise: Promise<T>) => asserts promise is ControllablePromise<T>,
     mono_download_assets: () => Promise<void>,
-    resolve_asset_path: (behavior: AssetBehaviours) => AssetEntryInternal,
+    resolve_asset_path: (behavior: AssetBehaviors) => AssetEntryInternal,
     setup_proxy_console: (id: string, console: Console, origin: string) => void
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     locateFile: (path: string, prefix?: string) => string,
@@ -142,8 +142,8 @@ export type LoaderHelpers = {
     err(message: string): void;
 
     hasDebuggingEnabled(config: MonoConfig): boolean,
-    loadResources(resources: ResourceList, url: (name: string) => string, behavior: AssetBehaviours): LoadingResource[],
-    loadResource(name: string, url: string, contentHash: string, behavior: AssetBehaviours): LoadingResource,
+    loadResources(resources: ResourceList, url: (name: string) => string, behavior: AssetBehaviors): LoadingResource[],
+    loadResource(name: string, url: string, contentHash: string, behavior: AssetBehaviors): LoadingResource,
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
 
     loadBootResource?: LoadBootResourceCallback;

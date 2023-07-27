@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
-import type { AssetBehaviours, AssetEntry, LoadingResource, ResourceList, ResourceRequest } from "../types";
+import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, ResourceRequest, SingleAssetBehaviors as SingleAssetBehaviors } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
@@ -21,7 +21,6 @@ const jsModulesAssetTypes: {
     "js-module-threads": true,
     "js-module-runtime": true,
     "js-module-native": true,
-    "js-module-dotnet": true,
 };
 
 // don't `fetch` javaScript and wasm files
@@ -75,7 +74,7 @@ function getFirstKey(resources: ResourceList | undefined): string | null {
     return null;
 }
 
-function getFirstAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: AssetBehaviours) {
+function getFirstAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: AssetBehaviors) {
     const name = getFirstKey(resources);
     mono_assert(name, `Can't find ${behavior} in resources`);
     return ensureAssetResolvedUrl({
@@ -93,28 +92,22 @@ function ensureAssetResolvedUrl(asset: AssetEntry): AssetEntry {
     return asset;
 }
 
-export function resolve_asset_path(behavior: AssetBehaviours): AssetEntryInternal {
+export function resolve_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
     const nativeResources = loaderHelpers.config.resources?.native;
-    if (nativeResources) {
-        switch (behavior) {
-            case "dotnetwasm":
-                return getFirstAssetWithResolvedUrl(nativeResources.wasmNative, behavior);
-            case "js-module-threads":
-                return getFirstAssetWithResolvedUrl(nativeResources.jsModuleWorker, behavior);
-            case "js-module-native":
-                return getFirstAssetWithResolvedUrl(nativeResources.jsModuleNative, behavior);
-            case "js-module-runtime":
-                return getFirstAssetWithResolvedUrl(nativeResources.jsModuleRuntime, behavior);
-        }
-    }
+    mono_assert(nativeResources, () => "Can't find native resources in config");
 
-    const asset: AssetEntryInternal | undefined = loaderHelpers.config.assets?.find(a => a.behavior == behavior);
-    mono_assert(asset, () => `Can't find asset for ${behavior}`);
-    if (!asset.resolvedUrl) {
-        asset.resolvedUrl = resolve_path(asset, "");
+    switch (behavior) {
+        case "dotnetwasm":
+            return getFirstAssetWithResolvedUrl(nativeResources.wasmNative, behavior);
+        case "js-module-threads":
+            return getFirstAssetWithResolvedUrl(nativeResources.jsModuleWorker, behavior);
+        case "js-module-native":
+            return getFirstAssetWithResolvedUrl(nativeResources.jsModuleNative, behavior);
+        case "js-module-runtime":
+            return getFirstAssetWithResolvedUrl(nativeResources.jsModuleRuntime, behavior);
     }
-    return asset;
 }
+
 export async function mono_download_assets(): Promise<void> {
     mono_log_debug("mono_download_assets");
     loaderHelpers.maxParallelDownloads = loaderHelpers.config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
@@ -519,7 +512,7 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
     return attemptUrl;
 }
 
-export function appendUniqueQuery(attemptUrl: string, behavior: AssetBehaviours): string {
+export function appendUniqueQuery(attemptUrl: string, behavior: AssetBehaviors): string {
     // apply unique query to js modules to make the module state independent of the other runtime instances
     if (loaderHelpers.modulesUniqueQuery && jsModulesAssetTypes[behavior]) {
         attemptUrl = attemptUrl + loaderHelpers.modulesUniqueQuery;

@@ -214,7 +214,7 @@ type ResourceList = {
 type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 interface ResourceRequest {
     name: string;
-    behavior: AssetBehaviours;
+    behavior: AssetBehaviors;
     resolvedUrl?: string;
     hash?: string;
 }
@@ -251,7 +251,24 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-type AssetBehaviours = 
+type SingleAssetBehaviors = 
+/**
+ * The binary of the dotnet runtime.
+ */
+"dotnetwasm"
+/**
+ * The javascript module for threads.
+ */
+ | "js-module-threads"
+/**
+ * The javascript module for threads.
+ */
+ | "js-module-runtime"
+/**
+ * The javascript module for threads.
+ */
+ | "js-module-native";
+type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.
  */
@@ -276,26 +293,6 @@ type AssetBehaviours =
  * Load asset into the virtual filesystem (for fopen, File.Open, etc).
  */
  | "vfs"
-/**
- * The binary of the dotnet runtime.
- */
- | "dotnetwasm"
-/**
- * The javascript module for threads.
- */
- | "js-module-threads"
-/**
- * The javascript module for threads.
- */
- | "js-module-runtime"
-/**
- * The javascript module for threads.
- */
- | "js-module-dotnet"
-/**
- * The javascript module for threads.
- */
- | "js-module-native"
 /**
  * The javascript module that came from nuget package .
  */

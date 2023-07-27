@@ -148,7 +148,7 @@ export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name:
 
 export interface ResourceRequest {
     name: string, // the name of the asset, including extension.
-    behavior: AssetBehaviours, // determines how the asset will be handled once loaded
+    behavior: AssetBehaviors, // determines how the asset will be handled once loaded
     resolvedUrl?: string; // this should be absolute url to the asset
     hash?: string;
 }
@@ -189,7 +189,25 @@ export interface AssetEntry extends ResourceRequest {
     pendingDownload?: LoadingResource
 }
 
-export type AssetBehaviours =
+export type SingleAssetBehaviors =
+    /**
+     * The binary of the dotnet runtime.
+     */
+    | "dotnetwasm"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-threads"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-runtime"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-native";
+
+export type AssetBehaviors = SingleAssetBehaviors |
     /**
      * Load asset as a managed resource assembly.
      */
@@ -215,33 +233,13 @@ export type AssetBehaviours =
      */
     | "vfs"
     /**
-     * The binary of the dotnet runtime.
-     */
-    | "dotnetwasm"
-    /**
-     * The javascript module for threads.
-     */
-    | "js-module-threads"
-    /**
-     * The javascript module for threads.
-     */
-    | "js-module-runtime"
-    /**
-     * The javascript module for threads.
-     */
-    | "js-module-dotnet"
-    /**
-     * The javascript module for threads.
-     */
-    | "js-module-native"
-    /**
      * The javascript module that came from nuget package .
      */
     | "js-module-library-initializer"
     /**
      * The javascript module for threads.
      */
-    | "symbols" // 
+    | "symbols"
 
 export const enum GlobalizationMode {
     /**
