@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using ILCompiler.Win32Resources;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -14,10 +16,16 @@ public class ResourceUpdaterTests
 {
     RepoDirectoriesProvider RepoDirectories = new RepoDirectoriesProvider();
 
-    [WindowsOnlyFact]
+    [Fact]
     void ResourceUpdaterAddResource()
     {
-        using var memoryStream = new MemoryStream(File.ReadAllBytes(Path.Combine(RepoDirectories.HostArtifacts, "comhost.dll")));
+        var peBuilder = new ManagedPEBuilder(
+            PEHeaderBuilder.CreateExecutableHeader(),
+            new MetadataRootBuilder(new MetadataBuilder()),
+            ilStream: new BlobBuilder());
+        var peImageBuilder = new BlobBuilder();
+        peBuilder.Serialize(peImageBuilder);
+        using var memoryStream = new MemoryStream(peImageBuilder.ToArray());
 
         using (var updater = new ResourceUpdater(memoryStream, true))
         {
