@@ -74,17 +74,16 @@ namespace MonoTargetsTasks
 
         private void ResolveInconclusiveTypes(HashSet<string> incompatible, string assyPath, MinimalMarshalingTypeCompatibilityProvider mmtcp)
         {
-            string assyName = MetadataReader.GetAssemblyName(assyPath).Name!;
-            HashSet<string> inconclusiveTypes = mmtcp.GetInconclusiveTypesForAssembly(assyName);
-            if(inconclusiveTypes.Count == 0)
-                return;
-
             using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using PEReader peReader = new PEReader(file);
             if (!peReader.HasMetadata)
                 return; // Just return. There are no metadata in the DLL to help us with remaining types.
 
             MetadataReader mdtReader = peReader.GetMetadataReader();
+            string assyName = mdtReader.GetString(mdtReader.GetAssemblyDefinition().Name);
+            HashSet<string> inconclusiveTypes = mmtcp.GetInconclusiveTypesForAssembly(assyName);
+            if(inconclusiveTypes.Count == 0)
+                return;
 
             SignatureDecoder<Compatibility, object> decoder = new(mmtcp, mdtReader, null!);
 
