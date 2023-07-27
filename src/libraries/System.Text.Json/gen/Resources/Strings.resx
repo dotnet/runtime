@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="DuplicateTypeNameMessageFormat" xml:space="preserve">
-    <value>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</value>
+    <value>There are multiple types named '{0}'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</value>
   </data>
   <data name="DuplicateTypeNameTitle" xml:space="preserve">
     <value>Duplicate type name.</value>
@@ -200,5 +200,11 @@
   </data>
   <data name="JsonConstructorInaccessibleMessageFormat" xml:space="preserve">
     <value>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</value>
+  </data>
+  <data name="JsonSerializableAttributeOnNonContextTypeTitle" xml:space="preserve">
+    <value>Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</value>
+  </data>
+  <data name="JsonSerializableAttributeOnNonContextTypeMessageFormat" xml:space="preserve">
+    <value>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</value>
   </data>
 </root>
