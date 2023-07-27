@@ -25,7 +25,9 @@ public class ResourceUpdaterTests
             ilStream: new BlobBuilder());
         var peImageBuilder = new BlobBuilder();
         peBuilder.Serialize(peImageBuilder);
-        using var memoryStream = new MemoryStream(peImageBuilder.ToArray());
+        using var memoryStream = new MemoryStream();
+        memoryStream.Write(peImageBuilder.ToArray());
+        memoryStream.Seek(0, SeekOrigin.Begin);
 
         using (var updater = new ResourceUpdater(memoryStream, true))
         {
