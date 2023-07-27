@@ -105,7 +105,7 @@ jobs:
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
           value: CoreCLR
 
-      ${{ if eq(parameters.archType, 'wasm') }}:
+      - ${{ if eq(parameters.archType, 'wasm') }}:
         - name: wasmDarcDependenciesChanged
           value: $[ or(
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport'], true),
