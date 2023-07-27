@@ -1574,6 +1574,11 @@ struct CORINFO_RESOLVED_TOKEN
     uint32_t                cbTypeSpec;
     PCCOR_SIGNATURE         pMethodSpec;
     uint32_t                cbMethodSpec;
+
+    // [Out] Only meaningful if the resolved token is a const value argument.
+    bool                    isConstValue;
+    CorElementType          constValueType;
+    uint64_t                constValue;
 };
 
 struct CORINFO_CALL_INFO

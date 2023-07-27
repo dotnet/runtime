@@ -1110,25 +1110,40 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     // tokenType specific verification and transformations
     //
     CorElementType et = th.GetInternalCorElementType();
-    switch (tokenType)
+    if (et == CorElementType::ELEMENT_TYPE_CTARG)
     {
-        case CORINFO_TOKENKIND_Ldtoken:
-            // Allow everything.
-            break;
+        // This is a const type parameter, we need to load the type and value from TypeDesc.
+        pResolvedToken->isConstValue = th.AsTypeDesc()->IsConstValue();
+        _ASSERTE(pResolvedToken->isConstValue);
+        pResolvedToken->constValueType = th.AsTypeDesc()->GetConstValueType().GetInternalCorElementType();
+        pResolvedToken->constValue = th.AsTypeDesc()->GetConstValue();
+    }
+    else
+    {
+        pResolvedToken->isConstValue = false;
+        pResolvedToken->constValueType = ELEMENT_TYPE_END;
+        pResolvedToken->constValue = 0;
+
+        switch (tokenType)
+        {
+            case CORINFO_TOKENKIND_Ldtoken:
+                // Allow everything.
+                break;
             
-        case CORINFO_TOKENKIND_Newarr:
-            // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
-            if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
-                COMPlusThrow(kInvalidProgramException);
+            case CORINFO_TOKENKIND_Newarr:
+                // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
+                if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
+                    COMPlusThrow(kInvalidProgramException);
 
-            th = ClassLoader::LoadArrayTypeThrowing(th);
-            break;
+                th = ClassLoader::LoadArrayTypeThrowing(th);
+                break;
 
-        default:
-            // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
-            if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
-                COMPlusThrow(kInvalidProgramException);
-            break;
+            default:
+                // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
+                if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
+                    COMPlusThrow(kInvalidProgramException);
+                break;
+        }
     }
 
     // The JIT interface should always return fully loaded types
