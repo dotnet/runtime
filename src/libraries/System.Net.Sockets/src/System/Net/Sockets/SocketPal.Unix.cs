@@ -60,7 +60,7 @@ namespace System.Net.Sockets
 
             IntPtr fd;
             SocketError errorCode;
-            Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
+            Interop.Error error = Interop.Sys.Socket((int)addressFamily, (int)socketType, (int)protocolType, &fd);
             if (error == Interop.Error.SUCCESS)
             {
                 Debug.Assert(fd != (IntPtr)(-1), "fd should not be -1");
@@ -579,7 +579,7 @@ namespace System.Net.Sockets
                         if (socketAddressLen == 0)
                         {
                             // We can fail to get peer address on TCP
-                            socketAddressLen =  socketAddress.Length;
+                            socketAddressLen = socketAddress.Length;
                             SocketAddressPal.Clear(socketAddress);
                         }
 
@@ -846,7 +846,7 @@ namespace System.Net.Sockets
                     if (socketAddress.Length > 0 && socketAddressLen == 0)
                     {
                         // We can fail to get peer address on TCP
-                        socketAddressLen =  socketAddress.Length;
+                        socketAddressLen = socketAddress.Length;
                         SocketAddressPal.Clear(socketAddress);
                     }
                     return true;

@@ -11,16 +11,30 @@ namespace System.Net
 {
     internal static class SocketAddressPal
     {
-        public static readonly int IPv6AddressSize;
         public static readonly int IPv4AddressSize;
+        public static readonly int IPv6AddressSize;
         public static readonly int UdsAddressSize;
         public static readonly int MaxAddressSize;
 
-        static SocketAddressPal()
+#pragma warning disable CA1810
+        static unsafe SocketAddressPal()
         {
-            Interop.Error err = Interop.Sys.GetSocketAddressSizes(ref IPv4AddressSize, ref IPv6AddressSize, ref UdsAddressSize, ref MaxAddressSize);
+            int ipv4 = 0;
+            int ipv6 = 0;
+            int uds = 0;
+            int max = 0;
+            Interop.Error err = Interop.Sys.GetSocketAddressSizes(&ipv4, &ipv6, &uds, &max);
             Debug.Assert(err == Interop.Error.SUCCESS, $"Unexpected err: {err}");
+            Debug.Assert(ipv4 > 0);
+            Debug.Assert(ipv6 > 0);
+            Debug.Assert(uds > 0);
+            Debug.Assert(max >= ipv4 && max >= ipv6 && max >= uds);
+            IPv4AddressSize = ipv4;
+            IPv6AddressSize =ipv6;
+            UdsAddressSize = uds;
+            MaxAddressSize =max;
         }
+#pragma warning restore CA1810
 
         private static void ThrowOnFailure(Interop.Error err)
         {

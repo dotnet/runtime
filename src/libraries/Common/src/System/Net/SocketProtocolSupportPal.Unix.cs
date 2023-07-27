@@ -8,6 +8,7 @@ namespace System.Net
 {
     internal static partial class SocketProtocolSupportPal
     {
+        private const int DgramSocketType = 2;
         private static unsafe bool IsSupported(AddressFamily af)
         {
             // Check for AF_UNIX on iOS/tvOS. The OS claims to support this, but returns EPERM on bind.
@@ -20,11 +21,7 @@ namespace System.Net
             IntPtr socket = invalid;
             try
             {
-#if SYSTEM_NET_SOCKETS_DLL
-                Interop.Error result = Interop.Sys.Socket(af, SocketType.Dgram, 0, &socket);
-#else
-                Interop.Error result = Interop.Sys.Socket((int)af, (int)Internals.SocketType.Dgram, 0, &socket);
-#endif
+                Interop.Error result = Interop.Sys.Socket((int)af, DgramSocketType, 0, &socket);
                 // we get EAFNOSUPPORT when family is not supported by Kernel, EPROTONOSUPPORT may come from policy enforcement like FreeBSD jail()
                 return result != Interop.Error.EAFNOSUPPORT && result != Interop.Error.EPROTONOSUPPORT;
             }

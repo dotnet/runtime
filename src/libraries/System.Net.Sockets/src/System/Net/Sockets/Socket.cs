@@ -1382,7 +1382,7 @@ namespace System.Net.Sockets
         /// </summary>
         /// <param name="buffer">A span of bytes that contains the data to be sent.</param>
         /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
-        /// <param name="socketAddress">The <see cref="EndPoint"/> that represents the destination for the data.</param>
+        /// <param name="socketAddress">The <see cref="SocketAddress"/> that represents the destination for the data.</param>
         /// <returns>The number of bytes sent.</returns>
         /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>

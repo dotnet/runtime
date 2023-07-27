@@ -9,15 +9,21 @@ namespace System.Net.Sockets
     {
         public static IPAddress GetIPAddress(ReadOnlySpan<byte> socketAddressBuffer)
         {
-            if (SocketAddressPal.GetAddressFamily(socketAddressBuffer) == AddressFamily.InterNetworkV6)
+            AddressFamily  family = SocketAddressPal.GetAddressFamily(socketAddressBuffer);
+
+            if (family == AddressFamily.InterNetworkV6)
             {
                 Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
                 uint scope;
                 SocketAddressPal.GetIPv6Address(socketAddressBuffer, address, out scope);
                 return new IPAddress(address, (long)scope);
             }
+            else if (family == AddressFamily.InterNetwork)
+            {
+                return new IPAddress((long)SocketAddressPal.GetIPv4Address(socketAddressBuffer) & 0x0FFFFFFFF);
+            }
 
-            return new IPAddress((long)SocketAddressPal.GetIPv4Address(socketAddressBuffer) & 0x0FFFFFFFF);
+            throw new SocketException((int)SocketError.AddressFamilyNotSupported);
         }
 
         public static void SetIPAddress(Span<byte> socketAddressBuffer, IPAddress address)
@@ -33,7 +39,8 @@ namespace System.Net.Sockets
             else
             {
                 Span<byte> addressBuffer = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
-                address.TryWriteBytes(addressBuffer, out _);
+                address.TryWriteBytes(addressBuffer, out int written);
+                Debug.Assert(written == IPAddressParserStatics.IPv6AddressBytes);
                 SocketAddressPal.SetIPv6Address(socketAddressBuffer, addressBuffer, (uint)address.ScopeId);
             }
         }
@@ -43,7 +50,7 @@ namespace System.Net.Sockets
            return new IPEndPoint(GetIPAddress(socketAddressBuffer), SocketAddressPal.GetPort(socketAddressBuffer));
         }
 
-        // https://github.com/dotnet/runtime/issues/78993
+        // suggestion from https://github.com/dotnet/runtime/issues/78993
         public static void Serialize(this IPEndPoint endPoint, Span<byte> destination)
         {
             SocketAddressPal.SetAddressFamily(destination, endPoint.AddressFamily);

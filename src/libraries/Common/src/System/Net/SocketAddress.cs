@@ -65,7 +65,7 @@ namespace System.Net.Internals
         {
             get
             {
-                if (offset < 0 || offset >= Size)
+                if ((uint)offset >= (uint)Size)
                 {
                     throw new IndexOutOfRangeException();
                 }
@@ -73,7 +73,7 @@ namespace System.Net.Internals
             }
             set
             {
-                if (offset < 0 || offset >= Size)
+                if ((uint)offset >= (uint)Size)
                 {
                     throw new IndexOutOfRangeException();
                 }
@@ -152,7 +152,7 @@ namespace System.Net.Internals
 
         /// <summary>This represents underlying memory that can be passed to native OS calls.</summary>
         /// <remarks>
-        /// This memory can be invalidated if <see cref="Size"/> is changed or if the SocketAddress is used in another receive call.
+        /// Content of the memory can be invalidated if <see cref="Size"/> is changed or if the SocketAddress is used in another receive call.
         /// </remarks>
         public Memory<byte> Buffer
         {
@@ -223,7 +223,7 @@ namespace System.Net.Internals
         public override int GetHashCode()
         {
             HashCode hash = default;
-            hash.AddBytes(Buffer.Span);
+            hash.AddBytes(new ReadOnlySpan<byte>(InternalBuffer, 0, InternalSize));
             return hash.ToHashCode();
         }
 
