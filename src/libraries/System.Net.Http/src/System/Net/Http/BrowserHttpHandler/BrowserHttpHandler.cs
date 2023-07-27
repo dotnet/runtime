@@ -239,6 +239,7 @@ namespace System.Net.Http
             {
                 // this would also trigger abort
                 abortRegistration?.Dispose();
+                abortController?.Dispose();
                 throw;
             }
         }

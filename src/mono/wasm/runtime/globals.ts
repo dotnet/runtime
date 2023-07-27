@@ -88,9 +88,10 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
         ? messageFactory()
         : messageFactory);
     const abort = runtimeHelpers.mono_wasm_abort;
+    const error = new Error(message);
     if (abort) {
-        mono_log_error(message);
+        mono_log_error(message, error);
         abort();
     }
-    throw new Error(message);
+    throw error;
 }

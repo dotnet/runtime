@@ -11,6 +11,7 @@ import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
 import { mono_log_warn } from "./logging";
 import { viewOrCopy, utf8ToStringRelaxed, stringToUTF8 } from "./strings";
+import { IDisposable } from "./marshal";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -68,7 +69,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         if (onClosed) onClosed(ev.code, ev.reason);
 
         // this reject would not do anything if there was already "open" before it.
-        open_promise_control.reject(ev.reason);
+        open_promise_control.reject(new Error(ev.reason));
 
         for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
             close_promise_control.resolve();
@@ -82,9 +83,15 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
             setI32(<any>receive_status_ptr + 8, 1);// end_of_message: true
             receive_promise_control.resolve();
         });
+
+        // cleanup the delegate proxy
+        if (onClosed) {
+            mono_log_warn("WebSocket on close disposing");
+            (onClosed as any as IDisposable).dispose();
+        }
     };
     const local_on_error = (ev: any) => {
-        open_promise_control.reject(ev.message || "WebSocket error");
+        open_promise_control.reject(new Error(ev.message || "WebSocket error"));
     };
     ws.addEventListener("message", local_on_message);
     ws.addEventListener("open", local_on_open, { once: true });
@@ -224,7 +231,7 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view
             if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
                 // only reject if the data were not sent
                 // bufferedAmount does not reset to zero once the connection closes
-                promise_control.reject(`InvalidState: ${readyState} The WebSocket is not connected.`);
+                promise_control.reject(new Error(`InvalidState: ${readyState} The WebSocket is not connected.`));
             }
             else if (!promise_control.isDone) {
                 globalThis.setTimeout(polling_check, nextDelay);
