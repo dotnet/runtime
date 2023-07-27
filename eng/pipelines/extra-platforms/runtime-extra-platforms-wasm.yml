@@ -202,22 +202,22 @@ jobs:
       platforms:
         - browser_wasm
         - browser_wasm_win
-      nameSuffix: MultiThreaded
-      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      condition: ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true)
+      nameSuffix: SingleThreaded
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      condition: ne(variables['wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline'], true)
       publishArtifactsForWorkload: true
-      publishWBT: false
+      publishWBT: true
 
   - template: /eng/pipelines/common/templates/wasm-build-only.yml
     parameters:
       platforms:
         - browser_wasm
         - browser_wasm_win
-      nameSuffix: SingleThreaded
-      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      condition: ne(variables['wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline'], true)
+      nameSuffix: MultiThreaded
+      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      condition: ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true)
       publishArtifactsForWorkload: true
-      publishWBT: true
+      publishWBT: false
 
   # Browser Wasm.Build.Tests
   - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
