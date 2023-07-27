@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Http
         }
 
         [Event(CleanupCycleStartEventId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        public void CleanupCycleStart(string message) =>
+        private void CleanupCycleStart(string message) =>
             WriteEvent(CleanupCycleStartEventId, message);
 
         [NonEvent]
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Http
         }
 
         [Event(CleanupCycleEndEventId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        public void CleanupCycleEnd(string message) =>
+        private void CleanupCycleEnd(string message) =>
             WriteEvent(CleanupCycleEndEventId, message);
 
         [NonEvent]
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Http
         }
 
         [Event(CleanupItemFailedEventId, Keywords = Keywords.Debug, Level = EventLevel.Error)]
-        public void CleanupItemFailed(string clientName, string exception, string message) =>
+        private void CleanupItemFailed(string clientName, string exception, string message) =>
             WriteEvent(CleanupItemFailedEventId, clientName, exception, message);
 
         [NonEvent]
@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Http
         }
 
         [Event(HandlerExpiredEventId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        public void HandlerExpired(string clientName, string message) =>
+        private void HandlerExpired(string clientName, string message) =>
             WriteEvent(HandlerExpiredEventId, clientName, message);
     }
 }
