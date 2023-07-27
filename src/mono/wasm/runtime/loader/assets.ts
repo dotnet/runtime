@@ -354,19 +354,14 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
 function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
     mono_assert(sourcePrefix !== null && sourcePrefix !== undefined, () => `sourcePrefix must be provided for ${asset.name}`);
     let attemptUrl;
-    const assemblyRootFolder = loaderHelpers.config.assemblyRootFolder;
     if (!asset.resolvedUrl) {
         if (sourcePrefix === "") {
             if (asset.behavior === "assembly" || asset.behavior === "pdb") {
-                attemptUrl = assemblyRootFolder
-                    ? (assemblyRootFolder + "/" + asset.name)
-                    : asset.name;
+                attemptUrl = asset.name;
             }
             else if (asset.behavior === "resource") {
                 const path = asset.culture && asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
-                attemptUrl = assemblyRootFolder
-                    ? (assemblyRootFolder + "/" + path)
-                    : path;
+                attemptUrl = path;
             }
             else {
                 attemptUrl = asset.name;

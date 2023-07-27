@@ -29,10 +29,6 @@ export interface DotnetHostBuilder {
 // when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
 export type MonoConfig = {
     /**
-     * The subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
-     */
-    assemblyRootFolder?: string,
-    /**
      * Additional search locations for assets.
      */
     remoteSources?: string[], // Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".

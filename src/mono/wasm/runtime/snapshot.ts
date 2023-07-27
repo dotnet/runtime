@@ -160,7 +160,6 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.logExitCode;
     delete inputs.pthreadPoolSize;
     delete inputs.asyncFlushOnExit;
-    delete inputs.assemblyRootFolder;
     delete inputs.remoteSources;
     delete inputs.ignorePdbLoadErrors;
     delete inputs.maxParallelDownloads;

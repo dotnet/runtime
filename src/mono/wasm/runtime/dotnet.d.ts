@@ -96,10 +96,6 @@ interface DotnetHostBuilder {
 }
 type MonoConfig = {
     /**
-     * The subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
-     */
-    assemblyRootFolder?: string;
-    /**
      * Additional search locations for assets.
      */
     remoteSources?: string[];
