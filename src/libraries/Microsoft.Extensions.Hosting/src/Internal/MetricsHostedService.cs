@@ -7,7 +7,7 @@ using Microsoft.Extensions.Diagnostics.Metrics;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    internal class MetricsHostedService : IHostedService
+    internal sealed class MetricsHostedService : IHostedService
     {
         private readonly IMetricsSubscriptionManager _manager;
 
