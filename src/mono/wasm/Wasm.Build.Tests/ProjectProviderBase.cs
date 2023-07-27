@@ -390,7 +390,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
 
         BootJsonData bootJson = ParseBootData(bootJsonPath);
-        var bootJsonEntries = bootJson.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.", StringComparison.Ordinal)).ToArray();
+        var bootJsonEntries = bootJson.resources.native.jsModuleNative.Keys
+            .Union(bootJson.resources.native.jsModuleRuntime.Keys)
+            .Union(bootJson.resources.native.jsModuleWorker.Keys)
+            .Union(bootJson.resources.native.wasmNative.Keys)
+            .ToArray();
 
         var expectedEntries = new SortedDictionary<string, Action<string>>();
         IReadOnlySet<string> expected = GetDotNetFilesExpectedSet(options);
