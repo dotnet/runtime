@@ -147,6 +147,16 @@ namespace System.Memory.Tests.Span
         [InlineData(StringComparison.OrdinalIgnoreCase, 4, "AAAA\u017FBSBsBBCCCC", "\u017F")]
         [InlineData(StringComparison.OrdinalIgnoreCase, 6, "AAAASB\u017FBsBBCCCC", "\u017F")]
         [InlineData(StringComparison.OrdinalIgnoreCase, 6, "AAAAsB\u017FBSBBCCCC", "\u017F")]
+        // A few misc non-ASCII examples
+        [InlineData(StringComparison.OrdinalIgnoreCase, 2, "\0\u1226\u2C5F\0\n\0\u1226\u1242", "hh\u0012\uFE00\u26FF\0\u6C00\u2C00\0b, \u2C5F\0")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, -1, "barkbarK", "foo, bar\u212A")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, 4, "bar\u212AbarK", "foo, bark")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, 0, "bar\u03A3barK", "foo, bar\u03C3")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, 1, "bar\u03A3barK", "foo, ar\u03C3")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, 1, " foo\u0131", "foo\u0131")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, 1, " foo\u0131", "bar, foo\u0131")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, -1, "fooifooIfoo\u0130", "bar, foo\u0131")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, -1, "fooifooIfoo\u0131", "bar, foo\u0130")]
         public static void IndexOfAny(StringComparison comparisonType, int expected, string text, string? values)
         {
             Span<char> textSpan = text.ToArray(); // Test non-readonly Span<char> overloads
@@ -155,13 +165,53 @@ namespace System.Memory.Tests.Span
 
             SearchValues<string> stringValues = SearchValues.Create(valuesArray, comparisonType);
 
+            Assert.Equal(expected, IndexOfAnyReferenceImpl(text, valuesArray, comparisonType));
+
             Assert.Equal(expected, text.AsSpan().IndexOfAny(stringValues));
             Assert.Equal(expected, textSpan.IndexOfAny(stringValues));
 
-            Assert.Equal(expected, IndexOfAnyReferenceImpl(text, valuesArray, comparisonType));
-
             Assert.Equal(expected >= 0, text.AsSpan().ContainsAny(stringValues));
             Assert.Equal(expected >= 0, textSpan.ContainsAny(stringValues));
+        }
+
+        [Fact]
+        public static void IndexOfAny_InvalidUtf16()
+        {
+            // Not using [InlineData] to prevent Xunit from modifying the invalid strings.
+            // These strings have a high surrogate without the full pair.
+            IndexOfAny(StringComparison.Ordinal, 1, " foo\uD800bar", "foo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.Ordinal, -1, " foo\uD801bar", "foo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.Ordinal, 2, " foo\uD800bar", "oo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.Ordinal, -1, " foo\uD801bar", "oo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " foo\uD800bar", "foo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, -1, " foo\uD801bar", "foo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, 2, " foo\uD800bar", "oo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, -1, " foo\uD801bar", "oo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " fOo\uD800bar", "Foo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, -1, " fOo\uD801bar", "Foo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, 2, " foo\uD800bAr", "Oo\uD800bar, bar\uD800foo");
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, -1, " foO\uD801bar", "oo\uD800baR, bar\uD800foo");
+
+            // Low surrogate without the high surrogate.
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, "\uD801\uDCD8\uD8FB\uDCD8", "foo, \uDCD8");
+        }
+
+        [Fact]
+        public static void IndexOfAny_CanProduceDifferentResultsUnderNls()
+        {
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " \U00016E40", "\U00016E60");
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " \U00016E40abc", "\U00016E60, abc");
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " abc\U00016E40", "abc\U00016E60");
+
+            if (CanTestNls)
+            {
+                RunUsingNLS(static () =>
+                {
+                    IndexOfAny(StringComparison.OrdinalIgnoreCase, -1, " \U00016E40", "\U00016E60");
+                    IndexOfAny(StringComparison.OrdinalIgnoreCase, 3, " \U00016E40abc", "\U00016E60, abc");
+                    IndexOfAny(StringComparison.OrdinalIgnoreCase, -1, " abc\U00016E40", "abc\U00016E60");
+                });
+            }
         }
 
         [Fact]
