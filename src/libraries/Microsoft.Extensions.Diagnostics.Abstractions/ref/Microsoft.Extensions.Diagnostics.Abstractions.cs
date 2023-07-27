@@ -42,6 +42,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     }
     public static class MetricsBuilderExtensions
     {
+        public static IMetricsBuilder AddListener<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] T>
+            (this IMetricsBuilder builder) where T : class, IMetricsListener { throw null!; }
         public static IMetricsBuilder AddListener(this IMetricsBuilder builder, IMetricsListener listener) { throw null!; }
         public static IMetricsBuilder ClearListeners(this IMetricsBuilder builder) { throw null!; }
     }

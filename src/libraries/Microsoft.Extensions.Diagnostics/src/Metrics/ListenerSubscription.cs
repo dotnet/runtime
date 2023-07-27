@@ -250,17 +250,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             return false;
         }
 
-        public void RecordObservableInstruments()
-        {
-            foreach (var instrument in _enabled)
-            {
-                if (instrument.IsObservable)
-                {
-                    // TODO: We can't downcast because we don't know what the T is.
-                    // var = instrument as ObservableInstrument;
-                }
-            }
-        }
+        public void RecordObservableInstruments() => _meterListener.RecordObservableInstruments();
 
         public void Dispose()
         {
