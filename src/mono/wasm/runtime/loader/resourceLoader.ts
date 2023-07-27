@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviors, MonoConfig, WebAssemblyBootResourceType } from "../types";
+import { mono_assert } from "./globals";
+import type { AssetBehaviors, MonoConfig, ResourceRequest, WebAssemblyBootResourceType } from "../types";
 import { loaderHelpers } from "./globals";
 const networkFetchCacheMode = "no-cache";
 
@@ -21,17 +22,19 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "dotnetwasm": "dotnetwasm",
 };
 
-export function loadResource(name: string, url: string, contentHash: string, behavior: AssetBehaviors): LoadingResource {
-    const response = cacheIfUsed && !cacheSkipAssetBehaviors.includes(behavior)
-        ? loadResourceWithCaching(cacheIfUsed, name, url, contentHash, behavior)
-        : loadResourceWithoutCaching(name, url, contentHash, behavior);
+export function loadResource(request: ResourceRequest): LoadingResource {
+    mono_assert(request.resolvedUrl, "Request's resolvedUrl must be set");
 
-    const absoluteUrl = loaderHelpers.locateFile(url);
+    const response = cacheIfUsed && !cacheSkipAssetBehaviors.includes(request.behavior)
+        ? loadResourceWithCaching(cacheIfUsed, request)
+        : loadResourceWithoutCaching(request);
 
-    if (behavior == "assembly") {
+    const absoluteUrl = loaderHelpers.locateFile(request.resolvedUrl);
+
+    if (request.behavior == "assembly") {
         loaderHelpers.loadedAssemblies.push(absoluteUrl);
     }
-    return { name, url: absoluteUrl, response };
+    return { name: request.name, url: absoluteUrl, response };
 }
 
 export function logToConsole(): void {
@@ -87,15 +90,15 @@ export async function purgeUnusedCacheEntriesAsync(): Promise<void> {
     }
 }
 
-async function loadResourceWithCaching(cache: Cache, name: string, url: string, contentHash: string, behavior: AssetBehaviors) {
+async function loadResourceWithCaching(cache: Cache, request: ResourceRequest) {
     // Since we are going to cache the response, we require there to be a content hash for integrity
     // checking. We don't want to cache bad responses. There should always be a hash, because the build
     // process generates this data.
-    if (!contentHash || contentHash.length === 0) {
+    if (!request.hash || request.hash.length === 0) {
         throw new Error("Content hash is required");
     }
 
-    const cacheKey = loaderHelpers.locateFile(`${url}.${contentHash}`);
+    const cacheKey = loaderHelpers.locateFile(`${request.resolvedUrl}.${request.hash}`);
     usedCacheKeys[cacheKey] = true;
 
     let cachedResponse: Response | undefined;
@@ -109,22 +112,23 @@ async function loadResourceWithCaching(cache: Cache, name: string, url: string, 
     if (cachedResponse) {
         // It's in the cache.
         const responseBytes = parseInt(cachedResponse.headers.get("content-length") || "0");
-        cacheLoads[name] = { responseBytes };
+        cacheLoads[request.name] = { responseBytes };
         return cachedResponse;
     } else {
         // It's not in the cache. Fetch from network.
-        const networkResponse = await loadResourceWithoutCaching(name, url, contentHash, behavior);
-        addToCacheAsync(cache, name, cacheKey, networkResponse); // Don't await - add to cache in background
+        const networkResponse = await loadResourceWithoutCaching(request);
+        addToCacheAsync(cache, request.name, cacheKey, networkResponse); // Don't await - add to cache in background
         return networkResponse;
     }
 }
 
-function loadResourceWithoutCaching(name: string, url: string, contentHash: string, behavior: AssetBehaviors): Promise<Response> {
+function loadResourceWithoutCaching(request: ResourceRequest): Promise<Response> {
     // Allow developers to override how the resource is loaded
+    let url = request.resolvedUrl!;
     if (loaderHelpers.loadBootResource) {
-        const resourceType = monoToBlazorAssetTypeMap[behavior];
+        const resourceType = monoToBlazorAssetTypeMap[request.behavior];
         if (resourceType) {
-            const customLoadResult = loaderHelpers.loadBootResource(resourceType!, name, url, contentHash);
+            const customLoadResult = loaderHelpers.loadBootResource(resourceType!, request.name, url, request.hash ?? "");
             if (customLoadResult instanceof Promise) {
                 // They are supplying an entire custom response, so just use that
                 return customLoadResult;
@@ -142,12 +146,12 @@ function loadResourceWithoutCaching(name: string, url: string, contentHash: stri
         cache: networkFetchCacheMode
     };
 
-    if (credentialsIncludeAssetBehaviors.includes(behavior)) {
+    if (credentialsIncludeAssetBehaviors.includes(request.behavior)) {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";
     } else {
         // Any other resource than configuration should provide integrity check
-        fetchOptions.integrity = cacheIfUsed ? contentHash : undefined;
+        fetchOptions.integrity = cacheIfUsed ? (request.hash ?? "") : undefined;
     }
 
     return loaderHelpers.fetch_like(url, fetchOptions);

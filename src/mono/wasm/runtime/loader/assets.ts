@@ -544,7 +544,7 @@ const totalResources = new Set<string>();
 
 function download_resource(request: ResourceRequest): LoadingResource {
     try {
-        const response = loadResource(request.name, request.resolvedUrl!, request.hash!, request.behavior);
+        const response = loadResource(request);
 
         totalResources.add(request.name!);
         response.response.then(() => {

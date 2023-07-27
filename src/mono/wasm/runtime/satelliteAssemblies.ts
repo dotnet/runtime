@@ -22,7 +22,7 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
                     culture
                 });
 
-                promises.push(loaderHelpers.loadResource(asset.name, asset.resolvedUrl!, asset.hash ?? "", asset.behavior));
+                promises.push(loaderHelpers.loadResource(asset));
             }
 
             return promises;
