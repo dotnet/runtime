@@ -27,6 +27,7 @@ class TypeKey
     // ELEMENT_TYPE_PTR and ELEMENT_TYPE_BYREF for pointer types
     // ELEMENT_TYPE_FNPTR for function pointer types
     // ELEMENT_TYPE_VALUETYPE for native value types (used in IL stubs)
+    // ELEMENT_TYPE_CTARG for const value types (used in const generic instantiations)
     CorElementType m_kind;
 
     union

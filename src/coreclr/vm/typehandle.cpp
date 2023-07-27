@@ -1039,7 +1039,7 @@ BOOL TypeHandle::IsFnPtrType() const
 BOOL TypeHandle::IsConstValue() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-
+    
     return (IsTypeDesc() &&
             (GetSignatureCorElementType() == ELEMENT_TYPE_CTARG));
 }
@@ -1047,7 +1047,7 @@ BOOL TypeHandle::IsConstValue() const
 uint64_t TypeHandle::GetConstValue() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-
+    
     _ASSERTE(IsTypeDesc());
     return AsConstValue()->GetConstValue();
 }
