@@ -9,10 +9,9 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, mon
 import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
-import { mono_log_info, mono_log_warn } from "./logging";
+import { mono_log_warn } from "./logging";
 import { viewOrCopy, utf8ToStringRelaxed, stringToUTF8 } from "./strings";
 import { IDisposable } from "./marshal";
-import { cs_owned_js_handle_symbol } from "./gc-handles";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -68,7 +67,6 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         prevent_timer_throttling();
     };
     const local_on_close = (ev: CloseEvent) => {
-        mono_log_info(`WebSocket ${(ws as any)[cs_owned_js_handle_symbol]} closed: ${ev.code} ${ev.reason}`);// TODO remove me
         ws.removeEventListener("message", local_on_message);
         if (ws[wasm_ws_is_aborted]) return;
 
@@ -94,8 +92,10 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         ws[wasm_ws_on_closed].dispose();
     };
     const local_on_error = (ev: any) => {
-        mono_log_info(`WebSocket ${(ws as any)[cs_owned_js_handle_symbol]} error: ${ev.message} ${ev + ""}`);// TODO remove me
-        open_promise_control.reject(new Error(ev.message || "WebSocket error"));
+        if (ws[wasm_ws_is_aborted]) return;
+        ws.removeEventListener("message", local_on_message);
+
+        reject_promises(ws, new Error(ev.message || "WebSocket error"));
     };
     ws.addEventListener("message", local_on_message);
     ws.addEventListener("open", local_on_open, { once: true });
@@ -107,7 +107,6 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
 
 export function ws_wasm_open(ws: WebSocketExtension): Promise<WebSocketExtension> | null {
     mono_assert(!!ws, "ERR17: expected ws instance");
-    mono_log_info(`WebSocket ${(ws as any)[cs_owned_js_handle_symbol]} open`);// TODO remove me
     const open_promise_control = ws[wasm_ws_pending_open_promise];
     return open_promise_control.promise;
 }
@@ -186,30 +185,33 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
 }
 
 export function ws_wasm_abort(ws: WebSocketExtension): void {
-    mono_log_info(`WebSocket ${(ws as any)[cs_owned_js_handle_symbol]} abort`);// TODO remove me
     mono_assert(!!ws, "ERR18: expected ws instance");
 
     ws[wasm_ws_is_aborted] = true;
-    const open_promise_control = ws[wasm_ws_pending_open_promise];
-    if (open_promise_control) {
-        open_promise_control.reject(new Error("OperationCanceledException"));
-    }
-    for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
-        close_promise_control.reject(new Error("OperationCanceledException"));
-    }
-    for (const send_promise_control of ws[wasm_ws_pending_send_promises]) {
-        send_promise_control.reject(new Error("OperationCanceledException"));
-    }
-
-    ws[wasm_ws_pending_receive_promise_queue].drain(receive_promise_control => {
-        receive_promise_control.reject(new Error("OperationCanceledException"));
-    });
+    reject_promises(ws, new Error("OperationCanceledException"));
 
     // cleanup the delegate proxy
-    ws[wasm_ws_on_closed].dispose();
+    ws[wasm_ws_on_closed]?.dispose();
 
     // this is different from Managed implementation
     ws.close(1000, "Connection was aborted.");
+}
+
+function reject_promises(ws: WebSocketExtension, error: Error) {
+    const open_promise_control = ws[wasm_ws_pending_open_promise];
+    if (open_promise_control) {
+        open_promise_control.reject(error);
+    }
+    for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
+        close_promise_control.reject(error);
+    }
+    for (const send_promise_control of ws[wasm_ws_pending_send_promises]) {
+        send_promise_control.reject(error);
+    }
+
+    ws[wasm_ws_pending_receive_promise_queue].drain(receive_promise_control => {
+        receive_promise_control.reject(error);
+    });
 }
 
 // send and return promise
