@@ -31,6 +31,28 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new SocketAddress(AddressFamily.InterNetwork, 1)); //Size < MinSize (32)
         }
 
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        [InlineData(AddressFamily.Unix)]
+        public static void Ctor_AddressFamilySize_Correct(AddressFamily addressFamily)
+        {
+            SocketAddress sa = new SocketAddress(addressFamily);
+            Assert.Equal(SocketAddress.GetMaximumAddressSize(addressFamily), sa.Size);
+            Assert.Equal(SocketAddress.GetMaximumAddressSize(addressFamily), sa.Buffer.Length);
+            Assert.True(sa.Size <= SocketAddress.GetMaximumAddressSize(AddressFamily.Unknown));
+        }
+
+        [Fact]
+        public static void AddressFamily_Size_Correct()
+        {
+            SocketAddress sa = new SocketAddress(AddressFamily.InterNetwork);
+            Assert.Throws<ArgumentOutOfRangeException>(() => sa.Size = sa.Size + 1);
+
+            sa.Size = 4;
+            Assert.Equal(4, sa.Buffer.Length);
+        }
+
         [Fact]
         public static void Equals_Compare_Success()
         {

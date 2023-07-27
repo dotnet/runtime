@@ -159,7 +159,6 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         public void ReceiveSent_SocketAddress_Success(bool ipv4)
         {
-            //const int Offset = 10;
             const int DatagramSize = 256;
             const int DatagramsToSend = 16;
 
@@ -198,6 +197,20 @@ namespace System.Net.Sockets.Tests
                 Assert.True(new Span<byte>(receiveBuffer, 0, readBytes).SequenceEqual(sendBuffer));
 
             }
+        }
+
+        [Fact]
+        public void ReceiveSent_SmallSocketAddress_Throws()
+        {
+            using Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            server.BindToAnonymousPort(IPAddress.Loopback);
+
+            byte[] receiveBuffer = new byte[1];
+
+            SocketAddress serverSA = server.LocalEndPoint.Serialize();
+
+            SocketAddress sa = new SocketAddress(AddressFamily.InterNetwork, 2);
+           Assert.Throws<ArgumentOutOfRangeException>(() => server.ReceiveFrom(receiveBuffer, SocketFlags.None, sa));
         }
 
         [Theory]

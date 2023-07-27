@@ -1895,6 +1895,11 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
+            if (receivedSocketAddress.Size < SocketAddress.GetMaximumAddressSize(AddressFamily))
+            {
+                throw new ArgumentOutOfRangeException(nameof(receivedSocketAddress), SR.net_sockets_address_small);
+            }
+
             ValidateBlockingMode();
 
             int bytesTransferred;
