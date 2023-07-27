@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -107,8 +106,6 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
-            ProjectProviderBase.AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
-
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
@@ -127,8 +124,6 @@ namespace Wasm.Build.Tests
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
-
-            ProjectProviderBase.AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
         }
 
         [Theory]
@@ -157,8 +152,6 @@ namespace Wasm.Build.Tests
                         IsBrowserProject: false
                         ));
 
-            ProjectProviderBase.AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
-
             CommandResult res = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!)
                                         .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
@@ -184,8 +177,6 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false,
                             IsBrowserProject: false));
-
-            ProjectProviderBase.AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
@@ -228,8 +219,6 @@ namespace Wasm.Build.Tests
                             TargetFramework: expectedTFM,
                             IsBrowserProject: false
                             ));
-
-            ProjectProviderBase.AssertDotNetJsSymbols(Path.Combine(GetBinDir(config, expectedTFM), "AppBundle"), fromRuntimePack: !relinking, targetFramework: expectedTFM);
 
             CommandResult res = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!)
@@ -402,16 +391,6 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false,
                             IsBrowserProject: false));
-
-            if (!aot)
-            {
-                // These are disabled for AOT explicitly
-                ProjectProviderBase.AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
-            }
-            else
-            {
-                TestUtils.AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.native.js.symbols" });
-            }
 
             string runArgs = $"run --no-silent --no-build -c {config}";
             runArgs += " x y z";

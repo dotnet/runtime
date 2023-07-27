@@ -203,11 +203,6 @@ namespace System.Net.Http.Functional.Tests
 
             var options = new GenericLoopbackOptions { Address = address };
 
-            if (PlatformDetection.IsAndroid && options.UseSsl && address == IPAddress.IPv6Loopback)
-            {
-                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
-            }
-
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 _output.WriteLine(url.ToString());
@@ -284,11 +279,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 // Host header is not supported on HTTP/2 and later.
                 return;
-            }
-
-            if (PlatformDetection.IsAndroid && useSsl && address == IPAddress.IPv6Loopback)
-            {
-                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
             }
 
             var options = new LoopbackServer.Options { Address = address, UseSsl = useSsl };

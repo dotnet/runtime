@@ -4,7 +4,7 @@
     <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == ''">true</AppleGenerateAppBundle>
     <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
     <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AppleGenerateAppBundle>
-
+    <_ProcessRuntimeComponentsForLibraryMode Condition="'$(_IsLibraryMode)' == 'true'">_ProcessRuntimeComponentsForLibraryMode</_ProcessRuntimeComponentsForLibraryMode>
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
@@ -13,6 +13,8 @@
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
              TaskName="ILStrip"
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" 
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <Target Name="_CleanPublish" 
@@ -55,30 +57,6 @@
     <ItemGroup>
       <_CommonLinkerArgs Condition="'$(_IsLibraryMode)' == 'true' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator'" Include="-framework GSS" />
     </ItemGroup>
-
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
-      <!-- add all non stub libs first -->
-      <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
-      <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
-      <!-- if runtimecomponents is a list, add to items and only pull in -static.a -->
-
-      <_UsedComponents 
-        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
-        Include="$(RuntimeComponents)" />
-
-      <_RuntimeLibraries 
-        Include="$(AppleBuildDir)\*-stub-static.a" />
-      <_RuntimeLibraries 
-        Include="$(AppleBuildDir)\*.a"
-        Exclude="$(AppleBuildDir)\*-static.a" />
-
-      <_RuntimeLibraries Remove="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
-      <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_BeforeAppleBuild">
@@ -107,6 +85,50 @@
         <_InternalForceInterpret>%(AppleAssembliesToBundle._InternalForceInterpret)</_InternalForceInterpret>
         <_IsNative>%(AppleAssembliesToBundle._IsNative)</_IsNative>
       </_AssembliesToBundleInternal>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_ScanAssembliesDecideLightweightMarshaler" DependsOnTargets="_AppleResolveReferences">
+    <PropertyGroup Condition="'$(RuntimeComponents)'=='*'">
+      <ForceAllComponents>true</ForceAllComponents>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(ForceAllComponents)'!='true'">
+      <RuntimeComponentList Include="$(RuntimeComponents)" />
+      <AssembliesToScan Include="@(_AssembliesToBundleInternal)" />
+    </ItemGroup>
+
+    <MarshalingPInvokeScanner Assemblies ="@(AssembliesToScan)" Condition="'$(ForceAllComponents)'!='true'">
+      <Output TaskParameter="IncompatibleAssemblies" ItemName="MonoLightweightMarshallerIncompatibleAssemblies" />
+    </MarshalingPInvokeScanner>
+
+    <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' > 0">
+      <RuntimeComponentList Include="marshal-ilgen" KeepDuplicates="false"/>
+    </ItemGroup>
+    <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' == 0">
+      <RuntimeComponentList Remove="marshal-ilgen" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(ForceAllComponents)'!='true'">
+      <RuntimeComponents>@(RuntimeComponentList)</RuntimeComponents>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_ProcessRuntimeComponentsForLibraryMode" DependsOnTargets="_ScanAssembliesDecideLightweightMarshaler" BeforeTargets="_BuildNativeLibrary">
+    <ItemGroup>
+      <!-- add all non stub libs first -->
+      <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
+      <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
+      <!-- if runtimecomponents is a list, add to items and only pull in -static.a -->
+
+      <_UsedComponents 
+        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
+        Include="$(RuntimeComponents)" />
+
+      <_RuntimeLibraries Include="$(AppleBuildDir)\*.a" Exclude="$(AppleBuildDir)\libmono-component-*.a" />
+      <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-*-stub-static.a" />
+      <_RuntimeLibraries Remove="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
+      <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
     </ItemGroup>
   </Target>
 

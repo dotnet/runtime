@@ -1566,24 +1566,26 @@ namespace System
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = TNegator.NegateIfNeeded(Vector512.Equals(values, Vector512.LoadUnsafe(ref currentSearchSpace)));
-                    if (equals == Vector512<TValue>.Zero)
+                    equals = Vector512.LoadUnsafe(ref currentSearchSpace);
+
+                    if (TNegator.NegateIfNeeded(!Vector512.EqualsAny(values, equals)))
                     {
                         currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector512<TValue>.Count);
                         continue;
                     }
 
-                    return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
+                    return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, TNegator.NegateIfNeeded(Vector512.Equals(values, equals)));
                 }
                 while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
                 {
-                    equals = TNegator.NegateIfNeeded(Vector512.Equals(values, Vector512.LoadUnsafe(ref oneVectorAwayFromEnd)));
-                    if (equals != Vector512<TValue>.Zero)
+                    equals = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
+
+                    if (TNegator.NegateIfNeeded(Vector512.EqualsAny(values, equals)))
                     {
-                        return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
+                        return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, TNegator.NegateIfNeeded(Vector512.Equals(values, equals)));
                     }
                 }
             }
