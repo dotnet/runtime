@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
@@ -350,11 +349,6 @@ namespace ComInterfaceGenerator.Unit.Tests
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;
-            var test = new VerifyComInterfaceGenerator.Test(false)
-            {
-                TestCode = source,
-                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
-            };
 
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
         }
