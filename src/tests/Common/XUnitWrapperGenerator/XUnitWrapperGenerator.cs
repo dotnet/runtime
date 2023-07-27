@@ -140,7 +140,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 if (inMergedTestDirectory)
                 {
                     CheckNoEntryPoint(context, compData);
-                    CheckTestsExist(context, methods, compData);
                 }
 
                 bool alwaysWriteEntryPoint = compData.OutputKind == OutputKind.ConsoleApplication && (compData.EntryPoint is null);
@@ -175,22 +174,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         else
         {
             context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap));
-        }
-    }
-
-    private static void CheckTestsExist(SourceProductionContext context, ImmutableArray<ITestInfo> methods, CompData compData)
-    {
-        if (methods.IsEmpty && (compData.OutputKind != OutputKind.DynamicallyLinkedLibrary))
-        {
-            context.ReportDiagnostic(Diagnostic.Create(
-                new DiagnosticDescriptor(
-                    "XUW1002",
-                    "Merged tests group projects should contain tests",
-                    "Merged test group project does not contain any tests",
-                    "XUnitWrapperGenerator",
-                    DiagnosticSeverity.Warning,
-                    isEnabledByDefault: true),
-                null));
         }
     }
 
