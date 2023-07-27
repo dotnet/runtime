@@ -241,7 +241,7 @@ OPDEF(CEE_UNUSED63,                   "unused",           Pop0,               Pu
 OPDEF(CEE_UNUSED64,                   "unused",           Pop0,               Push0,       InlineNone,         IPrimitive,  1,  0xFF,    0xCC,    NEXT)
 OPDEF(CEE_UNUSED65,                   "unused",           Pop0,               Push0,       InlineNone,         IPrimitive,  1,  0xFF,    0xCD,    NEXT)
 OPDEF(CEE_UNUSED66,                   "unused",           Pop0,               Push0,       InlineNone,         IPrimitive,  1,  0xFF,    0xCE,    NEXT)
-OPDEF(CEE_LDCTARG,                    "ldctarg",          Pop0,               PushI,       InlineTok,          IPrimitive,  1,  0xFF,    0xCF,    NEXT)
+OPDEF(CEE_UNUSED67,                   "unused",           Pop0,               Push0,       InlineNone,         IPrimitive,  1,  0xFF,    0xCF,    NEXT)
 OPDEF(CEE_LDTOKEN,                    "ldtoken",          Pop0,               PushI,       InlineTok,          IPrimitive,  1,  0xFF,    0xD0,    NEXT)
 OPDEF(CEE_CONV_U2,                    "conv.u2",          Pop1,               PushI,       InlineNone,         IPrimitive,  1,  0xFF,    0xD1,    NEXT)
 OPDEF(CEE_CONV_U1,                    "conv.u1",          Pop1,               PushI,       InlineNone,         IPrimitive,  1,  0xFF,    0xD2,    NEXT)

@@ -1115,7 +1115,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         case CORINFO_TOKENKIND_Ldtoken:
             // Allow everything.
             break;
-
+            
         case CORINFO_TOKENKIND_Newarr:
             // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
             if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
