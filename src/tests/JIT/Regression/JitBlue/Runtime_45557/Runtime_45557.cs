@@ -85,8 +85,6 @@ namespace Runtime_45557
         {
             ObjectBinderSnapshot o = ObjectBinder.GetSnapshot();
             Console.WriteLine($"Test output: {o.SomeValue}");
-
-            // success if we got here without crashing
         }
     }
 }

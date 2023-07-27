@@ -76,7 +76,6 @@ public class Program
          * This example will AV...
          * */
         x64_JIT_Bug(new MyDerived());
-        // Well, we made it here... should be good.
     }
 }
 
