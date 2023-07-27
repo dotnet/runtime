@@ -974,6 +974,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             test.ExpectedDiagnostics.Add(expectedDiagnostic);
             await test.RunAsync();
         }
+
         public static IEnumerable<object[]> IntAndEnumReturnTypeSnippets()
         {
             var diagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ComMethodReturningIntWillBeOutVariable).WithLocation(0);
