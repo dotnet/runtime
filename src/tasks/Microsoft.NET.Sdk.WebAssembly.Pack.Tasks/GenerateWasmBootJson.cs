@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Xml.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using ResourceHashesByNameDictionary = System.Collections.Generic.Dictionary<string, string>;
@@ -87,6 +88,8 @@ public class GenerateWasmBootJson : Task
     // Internal for tests
     public void WriteBootJson(Stream output, string entryAssemblyName)
     {
+        var helper = new BootJsonBuilderHelper(Log);
+
         var result = new BootJsonData
         {
             entryAssembly = entryAssemblyName,
@@ -198,23 +201,7 @@ public class GenerateWasmBootJson : Task
 
                     if (IsTargeting80OrLater())
                     {
-                        resourceData.native ??= new();
-                        if (resourceName.StartsWith("dotnet.native.worker") && resourceName.EndsWith(".js"))
-                            resourceList = resourceData.native.jsModuleWorker ??= new();
-                        else if (resourceName.StartsWith("dotnet.native") && resourceName.EndsWith(".js"))
-                            resourceList = resourceData.native.jsModuleNative ??= new();
-                        else if (resourceName.StartsWith("dotnet.runtime") && resourceName.EndsWith(".js"))
-                            resourceList = resourceData.native.jsModuleRuntime ??= new();
-                        else if (resourceName.StartsWith("dotnet.native") && resourceName.EndsWith(".wasm"))
-                            resourceList = resourceData.native.wasmNative ??= new();
-                        else if (resourceName.StartsWith("dotnet") && resourceName.EndsWith(".js"))
-                            continue;
-                        else if (resourceName.StartsWith("dotnet.native") && resourceName.EndsWith(".symbols"))
-                            resourceList = resourceData.native.symbols ??= new();
-                        else if (resourceName.StartsWith("icudt"))
-                            resourceList = resourceData.native.icu ??= new();
-                        else
-                            Log.LogError($"The resource '{resourceName}' is not recognized as any native asset");
+                        resourceList = helper.GetNativeResourceTargetInBootConfig(result, resourceName);
                     }
                     else
                     {
@@ -353,7 +340,7 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-        ComputeResourcesHash(result);
+        helper.ComputeResourcesHash(result);
 
         var serializer = new DataContractJsonSerializer(typeof(BootJsonData), new DataContractJsonSerializerSettings
         {
@@ -373,45 +360,6 @@ public class GenerateWasmBootJson : Task
                 resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("FileHash")}");
             }
         }
-    }
-
-    private static void ComputeResourcesHash(BootJsonData bootConfig)
-    {
-        var sb = new StringBuilder();
-
-        static void AddDictionary(StringBuilder sb, ResourceHashesByNameDictionary res)
-        {
-            if (res == null)
-                return;
-
-            foreach (var asset in res)
-                sb.Append(asset.Value);
-        }
-
-        AddDictionary(sb, bootConfig.resources.assembly);
-
-        AddDictionary(sb, bootConfig.resources.native?.jsModuleWorker);
-        AddDictionary(sb, bootConfig.resources.native?.jsModuleNative);
-        AddDictionary(sb, bootConfig.resources.native?.jsModuleRuntime);
-        AddDictionary(sb, bootConfig.resources.native?.wasmNative);
-        AddDictionary(sb, bootConfig.resources.native?.symbols);
-        AddDictionary(sb, bootConfig.resources.native?.icu);
-        AddDictionary(sb, bootConfig.resources.runtime);
-        AddDictionary(sb, bootConfig.resources.lazyAssembly);
-
-        if (bootConfig.resources.satelliteResources != null)
-        {
-            foreach (var culture in bootConfig.resources.satelliteResources)
-                AddDictionary(sb, culture.Value);
-        }
-
-        if (bootConfig.resources.vfs != null)
-        {
-            foreach (var entry in bootConfig.resources.vfs)
-                AddDictionary(sb, entry.Value);
-        }
-
-        bootConfig.resources.hash = Utils.ComputeTextIntegrity(sb.ToString());
     }
 
     private GlobalizationMode GetGlobalizationMode()

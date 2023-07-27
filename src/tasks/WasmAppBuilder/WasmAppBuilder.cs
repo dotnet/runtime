@@ -82,6 +82,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
     protected override bool ExecuteInternal()
     {
+        var helper = new BootJsonBuilderHelper(Log);
+
         if (!ValidateArguments())
             return false;
 
@@ -158,24 +160,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
             var itemHash = Utils.ComputeIntegrity(item.ItemSpec);
 
-            bootConfig.resources.native ??= new();
-            Dictionary<string, string>? resourceList = null;
-
-            if (name.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".js", StringComparison.OrdinalIgnoreCase))
-                resourceList = bootConfig.resources.native.jsModuleWorker ??= new();
-            else if (name.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".js", StringComparison.OrdinalIgnoreCase))
-                resourceList = bootConfig.resources.native.jsModuleNative ??= new();
-            else if (name.StartsWith("dotnet.runtime", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".js", StringComparison.OrdinalIgnoreCase))
-                resourceList = bootConfig.resources.native.jsModuleRuntime ??= new();
-            else if (name.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".wasm", StringComparison.OrdinalIgnoreCase))
-                resourceList = bootConfig.resources.native.wasmNative ??= new();
-            else if (name.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".js", StringComparison.OrdinalIgnoreCase))
-                continue;
-            else if (name.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".symbols", StringComparison.OrdinalIgnoreCase))
-                resourceList = bootConfig.resources.native.symbols ??= new();
-            else if (name.StartsWith("icudt", StringComparison.OrdinalIgnoreCase))
-                resourceList = bootConfig.resources.native.icu ??= new();
-
+            Dictionary<string, string>? resourceList = helper.GetNativeResourceTargetInBootConfig(bootConfig, name);
             if (resourceList != null)
                 resourceList[name] = itemHash;
         }
@@ -379,44 +364,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         string tmpMonoConfigPath = Path.GetTempFileName();
         using (var sw = File.CreateText(tmpMonoConfigPath))
         {
-            var sb = new StringBuilder();
-
-            static void AddDictionary(StringBuilder sb, Dictionary<string, string> res)
-            {
-                if (res == null)
-                    return;
-
-                foreach (var asset in res)
-                    sb.Append(asset.Value);
-            }
-
-            AddDictionary(sb, bootConfig.resources.assembly);
-
-            AddDictionary(sb, bootConfig.resources.native.jsModuleWorker);
-            AddDictionary(sb, bootConfig.resources.native.jsModuleNative);
-            AddDictionary(sb, bootConfig.resources.native.jsModuleRuntime);
-            AddDictionary(sb, bootConfig.resources.native.wasmNative);
-            AddDictionary(sb, bootConfig.resources.native.symbols);
-            AddDictionary(sb, bootConfig.resources.native.icu);
-            AddDictionary(sb, bootConfig.resources.runtime);
-            AddDictionary(sb, bootConfig.resources.lazyAssembly);
-
-            if (bootConfig.resources.lazyAssembly != null)
-                AddDictionary(sb, bootConfig.resources.lazyAssembly);
-
-            if (bootConfig.resources.satelliteResources != null)
-            {
-                foreach (var culture in bootConfig.resources.satelliteResources)
-                    AddDictionary(sb, culture.Value);
-            }
-
-            if (bootConfig.resources.vfs != null)
-            {
-                foreach (var entry in bootConfig.resources.vfs)
-                    AddDictionary(sb, entry.Value);
-            }
-
-            bootConfig.resources.hash = Utils.ComputeTextIntegrity(sb.ToString());
+            helper.ComputeResourcesHash(bootConfig);
 
             var json = JsonSerializer.Serialize(bootConfig, new JsonSerializerOptions { WriteIndented = true });
             sw.Write(json);
