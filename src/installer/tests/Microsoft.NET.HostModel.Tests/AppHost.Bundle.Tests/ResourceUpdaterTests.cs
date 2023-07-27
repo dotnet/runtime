@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -13,7 +14,7 @@ namespace AppHost.Bundle.Tests;
 
 public class ResourceUpdaterTests
 {
-    private MemoryStream CreateTestPEFile(bool withResources)
+    private MemoryStream CreateTestPEFileWithoutRsrc()
     {
         var peBuilder = new ManagedPEBuilder(
             PEHeaderBuilder.CreateExecutableHeader(),
@@ -25,13 +26,16 @@ public class ResourceUpdaterTests
         memoryStream.Write(peImageBuilder.ToArray());
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        if (withResources)
-        {
-            using var updater = new ResourceUpdater(memoryStream, true);
+        memoryStream.Seek(0, SeekOrigin.Begin);
 
-            updater.AddResource("Test Resource"u8.ToArray(), "testType", 0);
-            updater.Update();
-        }
+        return memoryStream;
+    }
+
+    private MemoryStream GetCurrentAssemblyMemoryStream()
+    {
+        var memoryStream = new MemoryStream();
+        memoryStream.Write(File.ReadAllBytes(Assembly.GetExecutingAssembly().Location));
+        memoryStream.Seek(0, SeekOrigin.Begin);
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
@@ -39,9 +43,9 @@ public class ResourceUpdaterTests
     }
 
     [Fact]
-    void ResourceUpdaterAddResource()
+    void ResourceUpdaterAddResourceToPEWithoutRsrc()
     {
-        using var memoryStream = CreateTestPEFile(false);
+        using var memoryStream = CreateTestPEFileWithoutRsrc();
 
         using (var updater = new ResourceUpdater(memoryStream, true))
         {
@@ -62,7 +66,7 @@ public class ResourceUpdaterTests
     [Fact]
     void ResourceUpdaterAddResourceToExistingRsrc()
     {
-        using var memoryStream = CreateTestPEFile(true);
+        using var memoryStream = GetCurrentAssemblyMemoryStream();
 
         using (var updater = new ResourceUpdater(memoryStream, true))
         {
