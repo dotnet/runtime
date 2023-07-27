@@ -661,12 +661,14 @@ static unsafe partial class CoreCLRHost
         return t.IsInterface;
     }
 
-    [NativeFunction(nameof(unity_mono_method_is_generic))]
+    [NativeFunction(nameof(unity_mono_method_is_generic_specific))]
     [return: NativeCallbackType("gboolean")]
-    public static bool unity_mono_method_is_generic(
-        [NativeCallbackType("MonoMethod*")] IntPtr method)
+    public static bool unity_mono_method_is_generic_specific(
+        [NativeCallbackType("MonoMethod*")] IntPtr method,
+        [NativeCallbackType("MonoClass*")] IntPtr klass)
     {
-        MethodBase metBase = MethodBase.GetMethodFromHandle(method.MethodHandleFromHandleIntPtr());
+        var classHandle = RuntimeTypeHandle.FromIntPtr(klass);
+        MethodBase metBase = MethodBase.GetMethodFromHandle(method.MethodHandleFromHandleIntPtr(), classHandle);
 
         return metBase.IsGenericMethodDefinition;
     }

@@ -132,7 +132,7 @@ DO_API(MonoObject*, mono_type_get_object, (MonoDomain * domain, MonoType * type)
 DO_API(gboolean, mono_class_is_generic, (MonoClass * klass))
 DO_API(gboolean, mono_class_is_inflated, (MonoClass * klass))
 
-DO_API(gboolean, unity_mono_method_is_generic, (MonoMethod * method))
+DO_API(gboolean, unity_mono_method_is_generic_specific, (MonoMethod * method, MonoClass * klass))
 DO_API(gboolean, unity_mono_method_is_inflated_specific, (MonoMethod * method, MonoClass * klass))
 
 DO_API(MonoThread *, mono_thread_attach, (MonoDomain * domain))

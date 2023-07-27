@@ -779,7 +779,17 @@ public abstract class BaseEmbeddingApiTests
     {
         var baseMethodInfo = objType.FindInstanceMethodByName(methodName, parameters);
 
-        bool isGeneric = ClrHost.unity_mono_method_is_generic(baseMethodInfo.MethodHandle);
+        bool isGeneric = ClrHost.unity_mono_method_is_generic_specific(baseMethodInfo.MethodHandle, objType);
+        Assert.That(isGeneric, Is.EqualTo(expectedResult));
+    }
+
+    [TestCase(typeof(GenericCat<,>), nameof(IGenericAnimal<int , int>.InterfaceMethodOnIGenericAnimal), null, false)]
+    public void UnityMethodIsGenericInGenericClassReturnsProperValue(Type objType, string methodName, Type[]? parameters, bool expectedResult)
+    {
+        var instance   = objType.MakeGenericType(new Type[] { typeof(int), typeof(int) });
+        var baseMethodInfo = instance.FindInstanceMethodByName(methodName, parameters);
+
+        bool isGeneric = ClrHost.unity_mono_method_is_generic_specific(baseMethodInfo.MethodHandle, objType);
         Assert.That(isGeneric, Is.EqualTo(expectedResult));
     }
 
