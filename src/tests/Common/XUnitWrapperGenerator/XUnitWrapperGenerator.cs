@@ -130,7 +130,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 var (method, _) = data;
 
-                // Only check test methods
                 bool found = false;
                 foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
                 {
@@ -171,9 +170,17 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     method.Locations[0]));
 
         context.RegisterImplementationSourceOutput(
-            methodsInSource,
-            static (context, method) =>
+            methodsInSource
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Where(data =>
             {
+                var (_, configOptions) = data;
+                return configOptions.GlobalOptions.InMergedTestDirectory();
+            }),
+            static (context, data) =>
+            {
+                var (method, _) = data;
+
                 bool found = false;
                 foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
                 {
