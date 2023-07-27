@@ -159,73 +159,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 }
 
                 if (!found) return;
-                context.ReportDiagnostic(Diagnostic.Create(
-                    new DiagnosticDescriptor(
-                        "XUW1002",
-                        "All returns are constant 100",
-                        "A test method that always returns 100 should return \"void\" instead",
-                        "XUnitWrapperGenerator",
-                        DiagnosticSeverity.Warning,
-                        isEnabledByDefault: true),
-                    method.Locations[0]));
-
-        context.RegisterImplementationSourceOutput(
-            methodsInSource
-            .Combine(context.AnalyzerConfigOptionsProvider)
-            .Where(data =>
-            {
-                var (_, configOptions) = data;
-                return configOptions.GlobalOptions.InMergedTestDirectory();
-            }),
-            static (context, data) =>
-            {
-                var (method, _) = data;
-
-                bool found = false;
-                foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
-                {
-                    switch (attr.AttributeClass?.ToDisplayString())
-                    {
-                        case "Xunit.ConditionalFactAttribute":
-                        case "Xunit.FactAttribute":
-                        case "Xunit.ConditionalTheoryAttribute":
-                        case "Xunit.TheoryAttribute":
-                            found = true;
-                            break;
-                    }
-                }
-                if (!found) return;
-
-                if (method.DeclaredAccessibility != Accessibility.Public)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        new DiagnosticDescriptor(
-                            "XUW1003",
-                            "Test methods must be public",
-                            "Test methods must be public. Add or change the visibility modifier of the test method to public.",
-                            "XUnitWrapperGenerator",
-                            DiagnosticSeverity.Error,
-                            isEnabledByDefault: true),
-                        method.Locations[0]));
-                }
-
-                INamedTypeSymbol containingType = method.ContainingType;
-                while (containingType != null)
-                {
-                    if (containingType.DeclaredAccessibility != Accessibility.Public)
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(
-                            new DiagnosticDescriptor(
-                                "XUW1004",
-                                "Test classes must be public",
-                                "Test classes must be public. Add or change the visibility modifier of the test class to public.",
-                                "XUnitWrapperGenerator",
-                                DiagnosticSeverity.Error,
-                                isEnabledByDefault: true),
-                            method.Locations[0]));
-                    }
-                    containingType = containingType.ContainingType;
-                }
+                context.ReportDiagnostic(Diagnostic.Create(Descriptors.XUWG1002, method.Locations[0]));
             });
 
         context.RegisterImplementationSourceOutput(
