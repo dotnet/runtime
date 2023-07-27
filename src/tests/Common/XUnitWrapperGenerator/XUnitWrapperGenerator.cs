@@ -119,6 +119,51 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         var allTests = testsInSource.Collect().Combine(testsInReferencedAssemblies.Collect()).Combine(outOfProcessTests.Collect()).SelectMany((tests, ct) => tests.Left.Left.AddRange(tests.Left.Right).AddRange(tests.Right));
 
         context.RegisterImplementationSourceOutput(
+            methodsInSource,
+            static (context, method) =>
+            {
+                bool found = false;
+                foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
+                {
+                    switch (attr.AttributeClass?.ToDisplayString())
+                    {
+                        case "Xunit.ConditionalFactAttribute":
+                        case "Xunit.FactAttribute":
+                        case "Xunit.ConditionalTheoryAttribute":
+                        case "Xunit.TheoryAttribute":
+                            found = true;
+                            break;
+                    }
+                }
+                if (!found) return;
+                if (method.DeclaringSyntaxReferences.IsEmpty) return;
+
+                found = false;
+                foreach (SyntaxReference node in method.DeclaringSyntaxReferences.Where(n => n != null))
+                {
+                    foreach (ReturnStatementSyntax rs in node.GetSyntax(context.CancellationToken).DescendantNodes().OfType<ReturnStatementSyntax>())
+                    {
+                        if (rs.Expression == null) continue;
+                        found = true;
+                        if (rs.Expression is LiteralExpressionSyntax les && les.Token.Value is int i && i == 100) continue;
+                        return;
+                    }
+                }
+
+                if (!found) return;
+                context.ReportDiagnostic(Diagnostic.Create(
+                    new DiagnosticDescriptor(
+                        "XUW1003",
+                        "All returns are constant 100",
+                        "A test method that always returns 100 should return \"void\" instead",
+                        "XUnitWrapperGenerator",
+                        DiagnosticSeverity.Warning,
+                        isEnabledByDefault: true),
+                    method.Locations[0]));
+
+            });
+
+        context.RegisterImplementationSourceOutput(
             allTests
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Where(data =>
@@ -845,6 +890,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 case "Xunit.InlineDataAttribute":
                     {
                         var args = attr.ConstructorArguments[0].Values;
+                        if (args == null)
+                        {
+                            // This can happen with something like InlineData(default(MyStruct)).
+                            // csc will already report an error, but we should not crash.
+                            continue;
+                        }
                         if (method.Parameters.Length != args.Length)
                         {
                             // Emit diagnostic
