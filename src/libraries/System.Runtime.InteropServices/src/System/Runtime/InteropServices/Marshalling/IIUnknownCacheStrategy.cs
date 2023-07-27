@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public readonly struct TableInfo
         {
             /// <summary>
-            /// The pointer to the <c>this</c> pointer to the unmanaged interface.
+            /// The <c>this</c> pointer of the unmanaged interface.
             /// </summary>
             public void* ThisPtr { get; init; }
             /// <summary>

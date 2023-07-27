@@ -20,6 +20,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// The default strategy to discover interface details about COM interfaces.
         /// </summary>
         /// <remarks>
+        /// This strategy can discover interfaces and classes that use source-generated COM interop that use the <see cref="GeneratedComInterfaceAttribute"/> and <see cref="GeneratedComClassAttribute"/> attributes.
         /// This strategy looks for an <see cref="IUnknownDerivedAttribute{T, TImpl}"/> or <see cref="ComExposedClassAttribute{T}"/> attribute on the type of the provided object to discover COM type information.
         /// </remarks>
         public static IIUnknownInterfaceDetailsStrategy DefaultIUnknownInterfaceDetailsStrategy { get; } = Marshalling.DefaultIUnknownInterfaceDetailsStrategy.Instance;
