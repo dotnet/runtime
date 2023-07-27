@@ -25,12 +25,17 @@ jobs:
           value: '+mono.wasmworkload'
         ${{ else }}:
           value: ''
+      - name: extraBuildArgs
+        ${{ if eq(publishWBT, true) }}:
+          value: /p:TestWasmBuildTests=true /p:ArchiveTests=true
+        ${{ else }}:
+          value: ''
 
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: ${{ parameters.nameSuffix }}_BuildOnly
-      buildArgs: -s mono+libs+packs$(workloadSubsetArg) -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }} /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:ArchiveTests=true
+      buildArgs: -s mono+libs+packs+libs.tests$(workloadSubsetArg) -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }} /p:TestAssemblies=false $(extraBuildArgs)
       timeoutInMinutes: 120
       condition: ${{ parameters.condition }}
       extraStepsTemplate: /eng/pipelines/common/wasm-post-build-steps.yml
