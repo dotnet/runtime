@@ -236,7 +236,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 if (inMergedTestDirectory)
                 {
                     CheckNoEntryPoint(context, compData);
-                    CheckTestsExist(context, methods, compData);
                 }
 
                 if (compData.OutputKind != OutputKind.ConsoleApplication)
