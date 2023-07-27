@@ -3,7 +3,7 @@
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
-    public class InstrumentEnableRule(string? listenerName, string? meterName, MeterScope scopes, string? instrumentName, bool enable)
+    public class InstrumentEnableRule(string? meterName, string? instrumentName, string? listenerName, MeterScope scopes, bool enable)
     {
         public string? ListenerName { get; } = listenerName;
         public string? MeterName { get; } = meterName;

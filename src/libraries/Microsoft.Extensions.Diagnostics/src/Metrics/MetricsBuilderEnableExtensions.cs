@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             MeterScope scopes = MeterScope.Local | MeterScope.Global, bool? enable = true)
         {
             ThrowHelper.ThrowIfNull(options);
-            options.Rules.Add(new InstrumentEnableRule(listenerName, meterName, scopes, instrumentName, enable ?? true));
+            options.Rules.Add(new InstrumentEnableRule(meterName, instrumentName, listenerName, scopes, enable ?? true));
             return options;
         }
     }

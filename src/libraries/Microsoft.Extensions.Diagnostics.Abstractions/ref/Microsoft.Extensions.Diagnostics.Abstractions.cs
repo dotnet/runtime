@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     }
     public class InstrumentEnableRule
     {
-        public InstrumentEnableRule(string? listenerName, string? meterName, MeterScope scopes, string? instrumentName, bool enable) { }
+        public InstrumentEnableRule(string? meterName, string? instrumentName, string? listenerName, MeterScope scopes, bool enable) { }
         public string? ListenerName { get; }
         public string? MeterName { get; }
         public MeterScope Scopes { get; }

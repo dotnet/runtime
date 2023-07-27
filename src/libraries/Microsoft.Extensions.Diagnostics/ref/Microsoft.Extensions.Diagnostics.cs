@@ -42,4 +42,9 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public void SetSource(IMetricsSource source) => throw new NotImplementedException();
         public void Dispose() => throw new NotImplementedException();
     }
+    internal sealed class ListenerSubscription
+    {
+        internal static bool RuleMatches(InstrumentEnableRule rule, System.Diagnostics.Metrics.Instrument instrument, string listenerName) => throw new NotImplementedException();
+        internal static bool IsMoreSpecific(InstrumentEnableRule rule, InstrumentEnableRule? best) => throw new NotImplementedException();
+    }
 }

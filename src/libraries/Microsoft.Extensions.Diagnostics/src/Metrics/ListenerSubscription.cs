@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             InstrumentEnableRule? best = null;
             foreach (var rule in _rules)
             {
-                if (RuleMatches(rule, instrument) && IsMoreSpecific(rule, best))
+                if (RuleMatches(rule, instrument, _metricsListener.Name) && IsMoreSpecific(rule, best))
                 {
                     best = rule;
                 }
@@ -136,11 +136,12 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             return best;
         }
 
-        private bool RuleMatches(InstrumentEnableRule rule, Instrument instrument)
+        // internal for testing
+        internal static bool RuleMatches(InstrumentEnableRule rule, Instrument instrument, string listenerName)
         {
             // Exact match or empty
             if (!string.IsNullOrEmpty(rule.ListenerName)
-                && !string.Equals(rule.ListenerName, _metricsListener.Name, StringComparison.OrdinalIgnoreCase))
+                && !string.Equals(rule.ListenerName, listenerName, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -158,22 +159,46 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 return false;
             }
 
-            if (!string.IsNullOrEmpty(rule.MeterName))
+            // Empty
+            var ruleMeterName = rule.MeterName.AsSpan();
+            // Rule "System.Net.*" matches meter "System.Net" and "System.Net.Http"
+            if (ruleMeterName.EndsWith(".*".AsSpan(), StringComparison.Ordinal))
             {
-                // TODO: StartsWith. E.g. "System.Net.Http" or "System.Net.Http.*" should match "System.Net.Http.SocketsHttpHandler" and "System.Net.Http.HttpClient".
-                if (!string.Equals(rule.MeterName, instrument.Meter.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
+                ruleMeterName = ruleMeterName.Slice(0, ruleMeterName.Length - 2);
             }
 
-            return true;
+            // Rule "" or "*" matches everything
+            if (ruleMeterName.IsEmpty || ruleMeterName.Equals("*".AsSpan(), StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            // Rule "System.Net.Http" doesn't match meter "System.Net"
+            if (ruleMeterName.Length > instrument.Meter.Name.Length)
+            {
+                return false;
+            }
+
+            // Exact match +/- ".*"
+            if (ruleMeterName.Equals(instrument.Meter.Name.AsSpan(), StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // Rule "System.Data" doesn't match meter "System.Net"
+            if (!instrument.Meter.Name.AsSpan().StartsWith(ruleMeterName, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            // Only allow StartsWith on segment boundaries
+            return instrument.Meter.Name[ruleMeterName.Length] == '.';
         }
 
         // Everything must already match the Instrument and listener, or be blank.
         // Which rule has more non-blank fields? Or longer Meter name?
-        //
-        private static bool IsMoreSpecific(InstrumentEnableRule rule, InstrumentEnableRule? best)
+        // internal for testing
+        internal static bool IsMoreSpecific(InstrumentEnableRule rule, InstrumentEnableRule? best)
         {
             if (best == null)
             {
