@@ -171,6 +171,9 @@ public:
     Instantiation GetClassOrArrayInstantiation();    // only meaningful for ParamTypeDesc; see above
     TypeHandle GetRootTypeParam();                   // only allowed for ParamTypeDesc, helper method used to avoid recursion
 
+    TypeHandle GetConstValueType();                  // only meaningful for ConstValueTypeDesc
+    uint64_t GetConstValue();                        // only meaningful for ConstValueTypeDesc
+
     // Note that if the TypeDesc, e.g. a function pointer type, involves parts that may
     // come from either a SharedDomain or an AppDomain then special rules apply to GetDomain.
     // It returns the SharedDomain if all the
@@ -319,6 +322,7 @@ typedef DPTR(class ConstValueTypeDesc) PTR_ConstValueTypeDesc;
 
 class ConstValueTypeDesc : public TypeDesc
 {
+    friend class TypeDesc;
 public:
 #ifndef DACCESS_COMPILE
 
@@ -356,7 +360,7 @@ public:
         return m_value.asUint64;
     }
     
-private:
+protected:
     TypeHandle m_type;
     union {
         uint8_t asUint8;

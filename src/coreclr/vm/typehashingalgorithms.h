@@ -76,6 +76,13 @@ inline static int ComputeByrefTypeHashCode(int parameterTypeHashcode)
     return (parameterTypeHashcode + _rotl(parameterTypeHashcode, 7)) ^ 0x4C85;
 }
 
+inline static int ComputeConstValueTypeHashCode(int constValueTypeHashcode, uint64_t constValue)
+{
+    LIMITED_METHOD_CONTRACT;
+    
+    return (constValueTypeHashcode + _rotl(constValueTypeHashcode, 11)) ^ (int)(constValue & 0xFFFFFFFF) ^ (int)((constValue & 0xFFFFFFFF00000000) >> 32);
+}
+
 inline static int ComputeNestedTypeHashCode(int enclosingTypeHashcode, int nestedTypeNameHash)
 {
     LIMITED_METHOD_CONTRACT;

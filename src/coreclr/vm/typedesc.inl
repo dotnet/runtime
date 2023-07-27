@@ -49,6 +49,25 @@ inline TypeHandle ParamTypeDesc::GetTypeParam() {
     return(this->m_Arg);
 }
 
+inline TypeHandle TypeDesc::GetConstValueType() {
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (IsConstGenericVariable())
+        return TypeHandle();
+
+    _ASSERTE(IsConstValue());
+    ConstValueTypeDesc* asConstValue = dac_cast<PTR_ConstValueTypeDesc>(this);
+    return(asConstValue->m_type);
+}
+
+inline uint64_t TypeDesc::GetConstValue() {
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    _ASSERTE(IsConstValue());
+    ConstValueTypeDesc* asConstValue = dac_cast<PTR_ConstValueTypeDesc>(this);
+    return(asConstValue->m_value.asUint64);
+}
+
 inline Instantiation TypeDesc::GetClassOrArrayInstantiation() {
     LIMITED_METHOD_DAC_CONTRACT;
 

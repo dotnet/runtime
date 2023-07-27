@@ -153,6 +153,11 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
     {
         return ComputeByrefTypeHashCode(GetVersionResilientTypeHashCode(type.AsTypeDesc()->GetTypeParam()));
     }
+    else
+    if (type.IsConstValue())
+    {
+        return ComputeConstValueTypeHashCode(GetVersionResilientTypeHashCode(type.AsTypeDesc()->GetConstValueType()), type.AsTypeDesc()->GetConstValue());
+    }
 
     assert(false);
     return 0;
