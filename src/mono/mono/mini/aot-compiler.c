@@ -9409,6 +9409,30 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 	}
 }
 
+static gboolean
+mono_interp_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig)
+{
+	if (sig->param_count > 10)
+		return FALSE;
+	if (sig->pinvoke)
+		return FALSE;
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		return FALSE;
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		return FALSE;
+	if (!mono_llvm_only && method->is_inflated)
+		return FALSE;
+	if (method->string_ctor)
+		return FALSE;
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
+		/* Used to mark methods containing StackCrawlMark locals */
+		return FALSE;
+
+	return TRUE;
+}
+
 /*
  * compile_method:
  *
@@ -9832,7 +9856,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
 	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only) {
+		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only && mono_interp_jit_call_can_be_supported (method, mono_method_signature_internal (method))) {
 			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
 		}
 	}

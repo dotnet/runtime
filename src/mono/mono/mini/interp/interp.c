@@ -4055,7 +4055,39 @@ main_loop:
 			}
 			ip += 5;
 
-			goto call;
+			InterpMethodCodeType code_type = cmethod->code_type;
+
+			g_assert (code_type == IMETHOD_CODE_UNKNOWN ||
+			          code_type == IMETHOD_CODE_INTERP ||
+			          code_type == IMETHOD_CODE_COMPILED);
+
+			if (G_UNLIKELY (code_type == IMETHOD_CODE_UNKNOWN)) {
+				// FIXME push/pop LMF
+				MonoMethodSignature *sig = mono_method_signature_internal (cmethod->method);
+				if (mono_interp_jit_call_supported (cmethod->method, sig))
+					code_type = IMETHOD_CODE_COMPILED;
+				else
+					code_type = IMETHOD_CODE_INTERP;
+				cmethod->code_type = code_type;
+			}
+
+			if (code_type == IMETHOD_CODE_INTERP) {
+
+				goto call;
+
+			} else if (code_type == IMETHOD_CODE_COMPILED) {
+				frame->state.ip = ip;
+				error_init_reuse (error);
+				do_jit_call (context, (stackval*)(locals + return_offset), (stackval*)(locals + call_args_offset), frame, cmethod, error);
+				if (!is_ok (error)) {
+					MonoException *call_ex = interp_error_convert_to_exception (frame, error, ip);
+					THROW_EX (call_ex, ip);
+				}
+
+				CHECK_RESUME_STATE (context);
+			}
+
+			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			gboolean need_unbox;
