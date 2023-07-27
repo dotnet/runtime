@@ -22,11 +22,7 @@ namespace System
     {
         private const string JsonSerializerRequiresDynamicCode = "JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation.";
         private const string JsonSerializerRequiresUnreferencedCode = "JSON serialization and deserialization might require types that cannot be statically analyzed.";
-#if NETCOREAPP2_1_OR_GREATER
-        private const string MediaTypeApplicationJson = MediaTypeNames.Application.Json;
-#else
         private const string MediaTypeApplicationJson = "application/json";
-#endif
 
         /// <summary>
         /// The backing store for the <see cref="BinaryData"/> instance.
@@ -91,10 +87,13 @@ namespace System
         /// <seealso cref="MediaTypeNames"/>
         [RequiresDynamicCode(JsonSerializerRequiresDynamicCode)]
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
-        public BinaryData(object? jsonSerializable, JsonSerializerOptions? options = default, Type? type = default) : this(
-            JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type ?? jsonSerializable?.GetType() ?? typeof(object), options),
+        public BinaryData(object? jsonSerializable, JsonSerializerOptions? options = default,
+            Type? type = default) : this(
+            JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type ?? jsonSerializable?.GetType() ?? typeof(object),
+                options),
             MediaTypeApplicationJson)
-        { }
+        {
+        }
 
         /// <summary>
         /// Creates a <see cref="BinaryData"/> instance by serializing the provided object to JSON
@@ -108,9 +107,11 @@ namespace System
         /// be used to determine the type.</param>
         /// <seealso cref="MediaTypeNames"/>
         public BinaryData(object? jsonSerializable, JsonSerializerContext context, Type? type = default) : this(
-            JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type ?? jsonSerializable?.GetType() ?? typeof(object), context),
+            JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type ?? jsonSerializable?.GetType() ?? typeof(object),
+                context),
             MediaTypeApplicationJson)
-        { }
+        {
+        }
 
         /// <summary>
         /// Creates a <see cref="BinaryData"/> instance by wrapping the
@@ -250,7 +251,14 @@ namespace System
         /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
         public static Task<BinaryData> FromStreamAsync(Stream stream, CancellationToken cancellationToken = default)
-            => FromStreamAsync(stream, async: true, cancellationToken: cancellationToken);
+        {
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            return FromStreamAsync(stream, async: true, cancellationToken: cancellationToken);
+        }
 
         /// <summary>
         /// Creates a <see cref="BinaryData"/> instance from the specified stream
@@ -262,17 +270,20 @@ namespace System
         /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
         /// <seealso cref="MediaTypeNames"/>
-        public static Task<BinaryData> FromStreamAsync(Stream stream, string? mediaType, CancellationToken cancellationToken = default)
-            => FromStreamAsync(stream, async: true, mediaType, cancellationToken);
-
-        private static async Task<BinaryData> FromStreamAsync(Stream stream, bool async,
-            string? mediaType = default, CancellationToken cancellationToken = default)
+        public static Task<BinaryData> FromStreamAsync(Stream stream, string? mediaType,
+            CancellationToken cancellationToken = default)
         {
             if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
 
+            return FromStreamAsync(stream, async: true, mediaType, cancellationToken);
+        }
+
+        private static async Task<BinaryData> FromStreamAsync(Stream stream, bool async,
+            string? mediaType = default, CancellationToken cancellationToken = default)
+        {
             const int CopyToBufferSize = 81920;  // the default used by Stream.CopyToAsync
             int bufferSize = CopyToBufferSize;
             MemoryStream memoryStream;
@@ -302,9 +313,7 @@ namespace System
                 }
                 else
                 {
-#pragma warning disable CA1849 // Call async methods when in an async method
                     stream.CopyTo(memoryStream, bufferSize);
-#pragma warning restore CA1849 // Call async methods when in an async method
                 }
                 return new BinaryData(memoryStream.GetBuffer().AsMemory(0, (int)memoryStream.Position), mediaType);
             }
@@ -439,7 +448,13 @@ namespace System
         /// </summary>
         /// <param name="data">The value to be converted.</param>
         public static implicit operator ReadOnlySpan<byte>(BinaryData? data)
-            => data is null ? default : data._bytes.Span;
+        {
+            if (data == null)
+            {
+                return default;
+            }
+            return data._bytes.Span;
+        }
 
         /// <summary>
         /// Determines whether the specified object is equal to the current object.
