@@ -1,4 +1,7 @@
 <Project>
+
+  <Import Project="$(ToolsILLinkDir)build/Microsoft.NET.ILLink.Tasks.props" />
+
   <PropertyGroup>
     <SkipConfigureTrimming>true</SkipConfigureTrimming>
     <PublishTrimmed>true</PublishTrimmed>

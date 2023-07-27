@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
 
   <PropertyGroup>
     <!-- Needed for PublishTrimmed -->
     <ToolsILLinkDir>{ToolsILLinkDir}</ToolsILLinkDir>
   </PropertyGroup>
 
-  <Import Project="$(ToolsILLinkDir)build/Microsoft.NET.ILLink.Tasks.props" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <TargetFramework>{TargetFramework}</TargetFramework>
@@ -82,4 +82,7 @@
   </Target>
 
   <Import Project="{NativeSanitizersTargets}" />
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
 </Project>
