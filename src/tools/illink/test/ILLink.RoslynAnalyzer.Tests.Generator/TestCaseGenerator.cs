@@ -95,7 +95,8 @@ namespace {TestNamespace}{suiteNamespacePart}
 		{
 			return $@"
 	}}
-}}";
+}}
+";
 		}
 	}
 
