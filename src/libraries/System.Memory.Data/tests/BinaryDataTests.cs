@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Mime;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -20,39 +21,236 @@ namespace System.Tests
         public void CanCreateBinaryDataFromBytes()
         {
             byte[] payload = "some data"u8.ToArray();
-            BinaryData data = BinaryData.FromBytes(payload);
-            Assert.Equal(payload, data.ToArray());
 
-            MemoryMarshal.TryGetArray<byte>(payload, out ArraySegment<byte> array);
-            Assert.Same(payload, array.Array);
+            {
+                BinaryData data = new BinaryData(payload);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Null(data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = new BinaryData(payload, null);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Null(data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = new BinaryData(payload, MediaTypeNames.Application.Soap);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Same(MediaTypeNames.Application.Soap, data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = new BinaryData(payload, string.Empty);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Same(string.Empty, data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
 
-            // using implicit conversion
-            ReadOnlyMemory<byte> bytes = data;
-            Assert.Equal(payload, bytes.ToArray());
+            {
+                BinaryData data = new BinaryData(new ReadOnlyMemory<byte>(payload));
+                Assert.Equal(payload, data.ToArray());
+                Assert.Null(data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = new BinaryData(new ReadOnlyMemory<byte>(payload), null);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Null(data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = new BinaryData(new ReadOnlyMemory<byte>(payload), MediaTypeNames.Application.Soap);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Same(MediaTypeNames.Application.Soap, data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = new BinaryData(new ReadOnlyMemory<byte>(payload), string.Empty);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Same(string.Empty, data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
 
-            // using implicit conversion
-            ReadOnlySpan<byte> span = data;
-            Assert.Equal(payload, span.ToArray());
+            {
+                BinaryData data = BinaryData.FromBytes(payload);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Null(data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = BinaryData.FromBytes(payload, null);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Null(data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = BinaryData.FromBytes(payload, MediaTypeNames.Application.Soap);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Same(MediaTypeNames.Application.Soap, data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = BinaryData.FromBytes(payload, string.Empty);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Same(string.Empty, data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
 
-            // using implicit conversion from null
-            BinaryData nullData = null;
-            ReadOnlyMemory<byte> emptyBytes = nullData;
-            Assert.True(emptyBytes.IsEmpty);
+            {
+                BinaryData data = BinaryData.FromBytes(new ReadOnlyMemory<byte>(payload));
+                Assert.Equal(payload, data.ToArray());
+                Assert.Null(data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = BinaryData.FromBytes(new ReadOnlyMemory<byte>(payload), null);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Null(data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = BinaryData.FromBytes(new ReadOnlyMemory<byte>(payload), MediaTypeNames.Application.Soap);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Same(MediaTypeNames.Application.Soap, data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
+            {
+                BinaryData data = BinaryData.FromBytes(new ReadOnlyMemory<byte>(payload), string.Empty);
+                Assert.Equal(payload, data.ToArray());
+                Assert.Same(string.Empty, data.MediaType);
+                MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+            }
 
-            // using implicit conversion from null
-            ReadOnlySpan<byte> emptySpan = nullData;
-            Assert.True(emptySpan.IsEmpty);
+            {
+                // using implicit conversion
+                BinaryData data = new BinaryData(payload);
+
+                ReadOnlyMemory<byte> bytes = data;
+                Assert.Equal(payload, bytes.ToArray());
+                MemoryMarshal.TryGetArray(bytes, out ArraySegment<byte> array);
+                Assert.Same(payload, array.Array);
+
+                ReadOnlySpan<byte> span = new BinaryData(payload);
+                Assert.Equal(payload, span.ToArray());
+            }
+
+            {
+                // using implicit conversion from null
+                BinaryData nullData = null;
+
+                ReadOnlyMemory<byte> emptyBytes = nullData;
+                Assert.True(emptyBytes.IsEmpty);
+
+                ReadOnlySpan<byte> emptySpan = nullData;
+                Assert.True(emptySpan.IsEmpty);
+            }
         }
 
         [Fact]
         public void CanCreateBinaryDataFromString()
         {
             string payload = "some data";
-            BinaryData data = new BinaryData(payload);
-            Assert.Equal(payload, data.ToString());
 
-            data = BinaryData.FromString(payload);
-            Assert.Equal(payload, data.ToString());
+            {
+                BinaryData data = new BinaryData(payload);
+                Assert.Equal(payload, data.ToString());
+                Assert.Null(data.MediaType);
+            }
+            {
+                BinaryData data = new BinaryData(payload, null);
+                Assert.Equal(payload, data.ToString());
+                Assert.Null(data.MediaType);
+            }
+            {
+                BinaryData data = new BinaryData(payload, MediaTypeNames.Application.Soap);
+                Assert.Equal(payload, data.ToString());
+                Assert.Same(MediaTypeNames.Application.Soap, data.MediaType);
+            }
+            {
+                BinaryData data = new BinaryData(payload, string.Empty);
+                Assert.Equal(payload, data.ToString());
+                Assert.Same(string.Empty, data.MediaType);
+            }
+
+            {
+                BinaryData data = BinaryData.FromString(payload);
+                Assert.Equal(payload, data.ToString());
+                Assert.Null(data.MediaType);
+            }
+            {
+                BinaryData data = BinaryData.FromString(payload, null);
+                Assert.Equal(payload, data.ToString());
+                Assert.Null(data.MediaType);
+            }
+            {
+                BinaryData data = BinaryData.FromString(payload, MediaTypeNames.Application.Soap);
+                Assert.Equal(payload, data.ToString());
+                Assert.Same(MediaTypeNames.Application.Soap, data.MediaType);
+            }
+            {
+                BinaryData data = BinaryData.FromString(payload, string.Empty);
+                Assert.Equal(payload, data.ToString());
+                Assert.Same(string.Empty, data.MediaType);
+            }
+        }
+
+        [Fact]
+        public void WithMediaTypeTest()
+        {
+            byte[] payload = "some data"u8.ToArray();
+
+            foreach (var mediaType in new string[] { MediaTypeNames.Application.Soap, string.Empty, null })
+            {
+                BinaryData data = new BinaryData(payload, mediaType);
+
+                {
+                    BinaryData withMedia = data.WithMediaType(MediaTypeNames.Application.Soap);
+                    Assert.Same(mediaType, data.MediaType); // shouldn't changed
+                    Assert.NotNull(withMedia);
+                    Assert.NotSame(data, withMedia); // should be new instance
+                    Assert.Same(MediaTypeNames.Application.Soap, withMedia.MediaType);
+
+                    MemoryMarshal.TryGetArray(withMedia.ToMemory(), out ArraySegment<byte> array);
+                    Assert.Same(payload, array.Array);
+                }
+                {
+                    BinaryData withMedia = data.WithMediaType(string.Empty);
+                    Assert.Same(mediaType, data.MediaType); // shouldn't changed
+                    Assert.NotNull(withMedia);
+                    Assert.NotSame(data, withMedia); // should be new instance
+                    Assert.Same(string.Empty, withMedia.MediaType);
+
+                    MemoryMarshal.TryGetArray(withMedia.ToMemory(), out ArraySegment<byte> array);
+                    Assert.Same(payload, array.Array);
+                }
+                {
+                    BinaryData withMedia = data.WithMediaType(null);
+                    Assert.Same(mediaType, data.MediaType); // shouldn't changed
+                    Assert.NotNull(withMedia);
+                    Assert.NotSame(data, withMedia); // should be new instance
+                    Assert.Null(withMedia.MediaType);
+
+                    MemoryMarshal.TryGetArray(withMedia.ToMemory(), out ArraySegment<byte> array);
+                    Assert.Same(payload, array.Array);
+                }
+            }
         }
 
         [Fact]
@@ -101,9 +299,9 @@ namespace System.Tests
             byte[] buffer = "some data"u8.ToArray();
             BinaryData data = BinaryData.FromBytes(buffer);
             Stream stream = data.ToStream();
-            buffer[0] = (byte)'z';
+            buffer[0] = (byte)'c';
             StreamReader sr = new StreamReader(stream);
-            Assert.Equal("zome data", await sr.ReadToEndAsync());
+            Assert.Equal("come data", await sr.ReadToEndAsync());
         }
 
         [Fact]
@@ -122,25 +320,71 @@ namespace System.Tests
         {
             byte[] buffer = "some data"u8.ToArray();
             using MemoryStream stream = new MemoryStream(buffer, 0, buffer.Length, true, true);
-            BinaryData data = BinaryData.FromStream(stream);
-            Assert.Equal(buffer, data.ToArray());
-
             byte[] output = new byte[buffer.Length];
-            var outputStream = data.ToStream();
-            outputStream.Read(output, 0, (int) outputStream.Length);
-            Assert.Equal(buffer, output);
 
-            stream.Position = 0;
-            data = await BinaryData.FromStreamAsync(stream);
-            Assert.Equal(buffer, data.ToArray());
+            {
+                stream.Position = 0;
+                BinaryData data = BinaryData.FromStream(stream);
+                Assert.Equal(buffer, data.ToArray());
+                Assert.Null(data.MediaType);
 
-            outputStream = data.ToStream();
-            outputStream.Read(output, 0, (int)outputStream.Length);
-            Assert.Equal(buffer, output);
+                var outputStream = data.ToStream();
+                outputStream.Read(output, 0, (int)outputStream.Length);
+                Assert.Equal(buffer, output);
 
-            //changing the backing buffer should not affect the BD instance
-            buffer[3] = (byte)'z';
-            Assert.NotEqual(buffer, data.ToMemory().ToArray());
+                //changing the backing buffer should not affect the BD instance
+                buffer[3]++;
+                Assert.NotEqual(buffer, data.ToMemory().ToArray());
+                buffer[3]--;
+            }
+
+            {
+                stream.Position = 0;
+                BinaryData data = BinaryData.FromStream(stream, MediaTypeNames.Application.Soap);
+                Assert.Equal(buffer, data.ToArray());
+                Assert.Equal(MediaTypeNames.Application.Soap, data.MediaType);
+
+                var outputStream = data.ToStream();
+                outputStream.Read(output, 0, (int)outputStream.Length);
+                Assert.Equal(buffer, output);
+
+                //changing the backing buffer should not affect the BD instance
+                buffer[3]++;
+                Assert.NotEqual(buffer, data.ToMemory().ToArray());
+                buffer[3]--;
+            }
+
+            {
+                stream.Position = 0;
+                BinaryData data = await BinaryData.FromStreamAsync(stream);
+                Assert.Equal(buffer, data.ToArray());
+                Assert.Null(data.MediaType);
+
+                var outputStream = data.ToStream();
+                outputStream.Read(output, 0, (int)outputStream.Length);
+                Assert.Equal(buffer, output);
+
+                //changing the backing buffer should not affect the BD instance
+                buffer[3]++;
+                Assert.NotEqual(buffer, data.ToMemory().ToArray());
+                buffer[3]--;
+            }
+
+            {
+                stream.Position = 0;
+                BinaryData data = await BinaryData.FromStreamAsync(stream, MediaTypeNames.Application.Soap);
+                Assert.Equal(buffer, data.ToArray());
+                Assert.Equal(MediaTypeNames.Application.Soap, data.MediaType);
+
+                var outputStream = data.ToStream();
+                outputStream.Read(output, 0, (int)outputStream.Length);
+                Assert.Equal(buffer, output);
+
+                //changing the backing buffer should not affect the BD instance
+                buffer[3]++;
+                Assert.NotEqual(buffer, data.ToMemory().ToArray());
+                buffer[3]--;
+            }
         }
 
         [Fact]
@@ -338,6 +582,7 @@ namespace System.Tests
                 Assert.Equal(payload.B, model.B);
                 Assert.Equal(payload.C, model.C);
                 Assert.Equal(payload.D, model.D);
+                Assert.Equal("application/json", data.MediaType);
             }
         }
 
@@ -348,21 +593,27 @@ namespace System.Tests
             Assert.Null(data.ToObjectFromJson<object>());
             data = BinaryData.FromObjectAsJson<object>(null);
             Assert.Null(data.ToObjectFromJson<object>());
+            Assert.Equal("application/json", data.MediaType);
 
             data = new BinaryData(jsonSerializable: null, type: typeof(TestModel));
             Assert.Null(data.ToObjectFromJson<TestModel>());
+            Assert.Equal("application/json", data.MediaType);
 
             data = new BinaryData(jsonSerializable: null);
             Assert.Null(data.ToObjectFromJson<TestModel>());
+            Assert.Equal("application/json", data.MediaType);
 
             data = new BinaryData(jsonSerializable: null, type: null);
             Assert.Null(data.ToObjectFromJson<TestModel>());
+            Assert.Equal("application/json", data.MediaType);
 
             data = BinaryData.FromObjectAsJson<TestModel>(null);
             Assert.Null(data.ToObjectFromJson<TestModel>());
+            Assert.Equal("application/json", data.MediaType);
 
             data = BinaryData.FromObjectAsJson<TestModel>(null, TestModelJsonContext.Default.TestModel);
             Assert.Null(data.ToObjectFromJson<TestModel>(TestModelJsonContext.Default.TestModel));
+            Assert.Equal("application/json", data.MediaType);
         }
 
         [Fact]
@@ -452,7 +703,7 @@ namespace System.Tests
             {
                 a
             };
-            // hashcodes of a and b should not match since instances are different.
+            // hash codes of a and b should not match since instances are different.
             Assert.DoesNotContain(b, set);
 
             BinaryData c = BinaryData.FromBytes("some data"u8.ToArray());
@@ -604,6 +855,7 @@ namespace System.Tests
         public void EmptyIsEmpty()
         {
             Assert.Equal(Array.Empty<byte>(), BinaryData.Empty.ToArray());
+            Assert.Null(BinaryData.Empty.MediaType);
         }
 
         [Fact]
@@ -797,9 +1049,8 @@ namespace System.Tests
             public override long Position => _offset;
         }
 
-        private class NonSeekableStream : MemoryStream
+        private class NonSeekableStream(byte[] buffer) : MemoryStream(buffer)
         {
-            public NonSeekableStream(byte[] buffer) : base(buffer) { }
             public override bool CanSeek => false;
         }
 
