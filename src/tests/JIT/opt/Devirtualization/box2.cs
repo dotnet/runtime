@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-class Program
+public class Program
 {
     static async Task TestTask()
     {
