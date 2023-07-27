@@ -5,6 +5,7 @@ parameters:
   nameSuffix: ''
   platforms: []
   publishArtifactsForWorkload: false
+  publishWBT: false
 
 jobs:
 
@@ -35,3 +36,4 @@ jobs:
       extraStepsTemplate: /eng/pipelines/common/wasm-post-build-steps.yml
       extraStepsParameters:
         publishArtifactsForWorkload: ${{ parameters.publishArtifactsForWorkload }}
+        publishWBT: ${{ parameters.publishWBT }}
