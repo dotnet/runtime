@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { loaderHelpers, runtimeHelpers } from "./globals";
-import { LoadingResource } from "./types";
+import { AssetEntry } from "./types";
 
 export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise<void> {
     const satelliteResources = loaderHelpers.config.resources!.satelliteResources;
@@ -13,23 +13,23 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
     await Promise.all(culturesToLoad!
         .filter(culture => Object.prototype.hasOwnProperty.call(satelliteResources, culture))
         .map(culture => {
-            const promises: LoadingResource[] = [];
+            const promises: Promise<Response>[] = [];
             for (const name in satelliteResources[culture]) {
-                const asset = loaderHelpers.ensureAssetResolvedUrl({
+                const asset: AssetEntry = {
                     name,
                     hash: satelliteResources[culture][name],
                     behavior: "resource",
                     culture
-                });
+                };
 
-                promises.push(loaderHelpers.loadResource(asset));
+                promises.push(loaderHelpers.retrieve_asset_download(asset));
             }
 
             return promises;
         })
-        .reduce((previous, next) => previous.concat(next), new Array<LoadingResource>())
-        .map(async resource => {
-            const response = await resource.response;
+        .reduce((previous, next) => previous.concat(next), new Array<Promise<Response>>())
+        .map(async responsePromise => {
+            const response = await responsePromise;
             const bytes = await response.arrayBuffer();
             runtimeHelpers.javaScriptExports.load_satellite_assembly(new Uint8Array(bytes));
         }));

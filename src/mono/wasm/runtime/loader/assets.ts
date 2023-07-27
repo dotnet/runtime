@@ -64,59 +64,32 @@ export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
     return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
 }
 
-function getFirstKey(resources: ResourceList | undefined): string | null {
-    if (resources != null) {
-        for (const name in resources) {
-            return name;
-        }
-    }
+function getSingleAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntry {
+    const keys = Object.keys(resources || {});
+    mono_assert(keys.length == 1, `Expect to have one ${behavior} asset in resources`);
 
-    return null;
-}
-
-function getFirstAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntry {
-    const name = getFirstKey(resources);
-    mono_assert(name, `Can't find ${behavior} in resources`);
-    return ensureAssetResolvedUrl({
+    const name = keys[0];
+    return {
         name,
         hash: resources![name],
-        behavior
-    });
-}
-
-export function getAssetByNameWithResolvedUrl(resources: ResourceList | undefined, behavior: AssetBehaviors, name: string): AssetEntry | undefined {
-    if (!resources || !resources[name]) {
-        return undefined;
-    }
-
-    return ensureAssetResolvedUrl({
-        name: name,
-        hash: resources[name],
-        behavior
-    });
-}
-
-export function ensureAssetResolvedUrl(asset: AssetEntry): AssetEntry {
-    if (!asset.resolvedUrl) {
-        asset.resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(asset.behavior === "resource" ? `${asset.culture}/${asset.name}` : asset.name), asset.behavior);
-    }
-
-    return asset;
+        behavior,
+        resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior)
+    };
 }
 
 export function resolve_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
     const resources = loaderHelpers.config.resources;
-    mono_assert(resources, () => "Can't find native resources in config");
+    mono_assert(resources, "Can't find resources in config");
 
     switch (behavior) {
         case "dotnetwasm":
-            return getFirstAssetWithResolvedUrl(resources.wasmNative, behavior);
+            return getSingleAssetWithResolvedUrl(resources.wasmNative, behavior);
         case "js-module-threads":
-            return getFirstAssetWithResolvedUrl(resources.jsModuleWorker, behavior);
+            return getSingleAssetWithResolvedUrl(resources.jsModuleWorker, behavior);
         case "js-module-native":
-            return getFirstAssetWithResolvedUrl(resources.jsModuleNative, behavior);
+            return getSingleAssetWithResolvedUrl(resources.jsModuleNative, behavior);
         case "js-module-runtime":
-            return getFirstAssetWithResolvedUrl(resources.jsModuleRuntime, behavior);
+            return getSingleAssetWithResolvedUrl(resources.jsModuleRuntime, behavior);
     }
 }
 
@@ -239,33 +212,33 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
     if (resources) {
         if (resources.assembly) {
             for (const name in resources.assembly) {
-                containedInSnapshotAssets.push(ensureAssetResolvedUrl({
+                containedInSnapshotAssets.push({
                     name,
                     hash: resources.assembly[name],
                     behavior: "assembly"
-                }));
+                });
             }
         }
 
         if (config.debugLevel != 0 && resources.pdb) {
             for (const name in resources.pdb) {
-                containedInSnapshotAssets.push(ensureAssetResolvedUrl({
+                containedInSnapshotAssets.push({
                     name,
                     hash: resources.pdb[name],
                     behavior: "pdb"
-                }));
+                });
             }
         }
 
         if (config.loadAllSatelliteResources && resources.satelliteResources) {
             for (const culture in resources.satelliteResources) {
                 for (const name in resources.satelliteResources[culture]) {
-                    containedInSnapshotAssets.push(ensureAssetResolvedUrl({
+                    containedInSnapshotAssets.push({
                         name,
                         hash: resources.satelliteResources[culture][name],
                         behavior: "resource",
                         culture
-                    }));
+                    });
                 }
             }
         }
@@ -273,12 +246,12 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
         if (resources.vfs) {
             for (const virtualPath in resources.vfs) {
                 for (const name in resources.vfs[virtualPath]) {
-                    alwaysLoadedAssets.push(ensureAssetResolvedUrl({
+                    alwaysLoadedAssets.push({
                         name,
                         hash: resources.vfs[virtualPath][name],
                         behavior: "vfs",
                         virtualPath
-                    }));
+                    });
                 }
             }
         }
@@ -287,23 +260,23 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
         if (icuDataResourceName && resources.icu) {
             for (const name in resources.icu) {
                 if (name === icuDataResourceName) {
-                    containedInSnapshotAssets.push(ensureAssetResolvedUrl({
+                    containedInSnapshotAssets.push({
                         name,
                         hash: resources.icu[name],
                         behavior: "icu",
                         loadRemote: true
-                    }));
+                    });
                 }
             }
         }
 
         if (resources.jsSymbols) {
             for (const name in resources.jsSymbols) {
-                alwaysLoadedAssets.push(ensureAssetResolvedUrl({
+                alwaysLoadedAssets.push({
                     name,
                     hash: resources.jsSymbols[name],
                     behavior: "symbols"
-                }));
+                });
             }
         }
     }
@@ -313,11 +286,11 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
             const configUrl = config.appsettings[i];
             const configFileName = fileName(configUrl);
             if (configFileName === "appsettings.json" || configFileName === `appsettings.${config.applicationEnvironment}.json`) {
-                alwaysLoadedAssets.push(ensureAssetResolvedUrl({
+                alwaysLoadedAssets.push({
                     name: configFileName,
                     resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(configUrl), "vfs"),
                     behavior: "vfs"
-                }));
+                });
             }
         }
     }
@@ -351,6 +324,12 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
 
 export function delay(ms: number): Promise<void> {
     return new Promise(resolve => globalThis.setTimeout(resolve, ms));
+}
+
+export async function retrieve_asset_download(asset: AssetEntry): Promise<Response> {
+    const pendingAsset = await start_asset_download(asset);
+    const assetResponse = await pendingAsset.pendingDownload!.response;
+    return assetResponse;
 }
 
 // FIXME: Connection reset is probably the only good one for which we should retry
