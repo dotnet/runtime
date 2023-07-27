@@ -142,7 +142,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     CheckNoEntryPoint(context, compData);
                 }
 
-                bool alwaysWriteEntryPoint = compData.OutputKind == OutputKind.ConsoleApplication && (compData.EntryPoint is null);
+                if (compData.OutputKind != OutputKind.ConsoleApplication)
+                {
+                    return;
+                }
+
+                bool alwaysWriteEntryPoint = (compData.EntryPoint is null);
                 if (methods.IsEmpty && !alwaysWriteEntryPoint)
                 {
                     // If we have no test methods, assume that this project is not migrated to the new system yet
@@ -181,15 +186,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     {
         foreach (IMethodSymbol entryPoint in compData.PossibleEntryPoints)
         {
-            context.ReportDiagnostic(Diagnostic.Create(
-                new DiagnosticDescriptor(
-                    "XUW1001",
-                    "No explicit entry point",
-                    "Projects in merged tests group should not contain entry points",
-                    "XUnitWrapperGenerator",
-                    DiagnosticSeverity.Warning,
-                    isEnabledByDefault: true),
-                entryPoint.Locations[0]));
+            context.ReportDiagnostic(Diagnostic.Create(Descriptors.XUWG1001, entryPoint.Locations[0]));
         }
     }
 
