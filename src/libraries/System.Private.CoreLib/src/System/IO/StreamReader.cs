@@ -297,17 +297,16 @@ namespace System.IO
             {
                 if (!_disposed)
                 {
-                    ThrowIfDisposed();
                     CheckAsyncTaskInProgress();
                 }
             }
             finally
             {
-                await CloseStreamFromDisposeAsync(disposing: true).ConfigureAwait(false);
+                await CloseStreamFromDisposeAsync().ConfigureAwait(false);
             }
             GC.SuppressFinalize(this);
         }
-        private async ValueTask CloseStreamFromDisposeAsync(bool disposing)
+        private async ValueTask CloseStreamFromDisposeAsync()
         {
             // Dispose of our resources if this StreamWriter is closable.
             if (_closable && !_disposed)
@@ -315,17 +314,15 @@ namespace System.IO
                 try
                 {
                     // Attempt to close the stream even if there was an IO error from Flushing.
-                    // Note that Stream.Close() can potentially throw here (may or may not be
+                    // Note that Stream.DisposeAsync() can potentially throw here (may or may not be
                     // due to the same Flush error). In this case, we still need to ensure
                     // cleaning up internal resources, hence the finally block.
-                    if (disposing)
-                    {
-                        await _stream.DisposeAsync().ConfigureAwait(false);
-                    }
+                    await _stream.DisposeAsync().ConfigureAwait(false);
                 }
                 finally
                 {
                     _disposed = true;
+                    _charPos = 0;
                     _charLen = 0;
                     await base.DisposeAsync().ConfigureAwait(false);
                 }
