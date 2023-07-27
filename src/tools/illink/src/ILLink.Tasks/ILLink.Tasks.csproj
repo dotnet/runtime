@@ -20,8 +20,6 @@
          NU5129: Targets don't match the package id. This is intentional. -->
     <NoWarn>$(NoWarn);NU5128;NU5129</NoWarn>
     <IncludeBuildOutput>false</IncludeBuildOutput>
-    <!-- Place build output into a layout that matches the package layout. -->
-    <OutputPath>$(OutputPath)/tools</OutputPath>
     <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddBuildOutputToToolsPackage</TargetsForTfmSpecificContentInPackage>
     <!-- Disable analyzer to prevent a circular dependency due to PackageReference to the LKG Microsoft.NET.ILLink.Tasks. -->
@@ -32,9 +30,9 @@
     <!-- Note: 'build/Microsoft.NET.ILLink.targets' should not match the package name, because we don't want the targets
          to be imported by nuget. The SDK will import them in the right order. -->
     <Content Include="**\*.props;**\*.targets" Pack="true" PackagePath="%(RecursiveDir)%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest" TargetPath="../../%(RecursiveDir)%(Filename)%(Extension)" />
+             CopyToOutputDirectory="PreserveNewest" TargetPath="../%(RecursiveDir)%(Filename)%(Extension)" />
     <Content Include="..\ILLink.RoslynAnalyzer\build\**\*.props" Pack="true" PackagePath="build/%(RecursiveDir)%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest" TargetPath="../../build/%(RecursiveDir)%(Filename)%(Extension)" />
+             CopyToOutputDirectory="PreserveNewest" TargetPath="../build/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
