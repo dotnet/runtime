@@ -3001,7 +3001,7 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMT);
 
                 if (hasImpliedRepeatedFields)
                 {
@@ -3617,7 +3617,7 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMT);
 
                 if (hasImpliedRepeatedFields)
                 {
