@@ -31,5 +31,6 @@ public class Program
             }
         }
         Console.WriteLine("PASSED");
+        //Didn't hit the bug so return success
     }
 }

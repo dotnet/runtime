@@ -61,6 +61,7 @@ namespace GcHole1
             result = sequence.SingleOrDefault(App.CheckString);
             Console.WriteLine("RESULT: `{0}'", result);
 
+            //assume if run to completion, the test passes
         }
     }
 }
