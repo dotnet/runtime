@@ -15,8 +15,13 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Helper code for the various activator services.
     /// </summary>
-    public static class ActivatorUtilities
+    public static partial class ActivatorUtilities
     {
+#if NET8_0_OR_GREATER
+        // Maximum number of fixed arguments for ConstructorInvoker.Invoke(arg1, etc).
+        private const int FixedArgumentThreshold = 4;
+#endif
+
         private static readonly MethodInfo GetServiceInfo =
             GetMethodInfo<Func<IServiceProvider, Type, Type, bool, object?>>((sp, t, r, c) => GetService(sp, t, r, c));
 
@@ -139,15 +144,17 @@ namespace Microsoft.Extensions.DependencyInjection
                 // efficiently, the size savings of not using System.Linq.Expressions is more important than CPU perf.
                 return CreateFactoryReflection(instanceType, argumentTypes);
             }
+            else
 #endif
+            {
+                CreateFactoryInternal(instanceType, argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
-            CreateFactoryInternal(instanceType, argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
+                var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
+                    factoryExpressionBody, provider, argumentArray);
 
-            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
-                factoryExpressionBody, provider, argumentArray);
-
-            Func<IServiceProvider, object?[]?, object>? result = factoryLambda.Compile();
-            return result.Invoke;
+                Func<IServiceProvider, object?[]?, object>? result = factoryLambda.Compile();
+                return result.Invoke;
+            }
         }
 
         /// <summary>
@@ -173,15 +180,17 @@ namespace Microsoft.Extensions.DependencyInjection
                 var factory = CreateFactoryReflection(typeof(T), argumentTypes);
                 return (serviceProvider, arguments) => (T)factory(serviceProvider, arguments);
             }
+            else
 #endif
+            {
+                CreateFactoryInternal(typeof(T), argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
-            CreateFactoryInternal(typeof(T), argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
+                var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, T>>(
+                    factoryExpressionBody, provider, argumentArray);
 
-            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, T>>(
-                factoryExpressionBody, provider, argumentArray);
-
-            Func<IServiceProvider, object?[]?, T>? result = factoryLambda.Compile();
-            return result.Invoke;
+                Func<IServiceProvider, object?[]?, T>? result = factoryLambda.Compile();
+                return result.Invoke;
+            }
         }
 
         private static void CreateFactoryInternal([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType, Type[] argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody)
@@ -235,14 +244,20 @@ namespace Microsoft.Extensions.DependencyInjection
             return mc.Method;
         }
 
-        private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool isDefaultParameterRequired)
+        private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool hasDefaultValue)
         {
             object? service = sp.GetService(type);
-            if (service == null && !isDefaultParameterRequired)
+            if (service is null && !hasDefaultValue)
             {
-                throw new InvalidOperationException(SR.Format(SR.UnableToResolveService, type, requiredBy));
+                ThrowHelper_UnableToResolveService(type, requiredBy);
             }
             return service;
+        }
+
+        [DoesNotReturn]
+        private static void ThrowHelper_UnableToResolveService(Type type, Type requiredBy)
+        {
+            throw new InvalidOperationException(SR.Format(SR.UnableToResolveService, type, requiredBy));
         }
 
         private static BlockExpression BuildFactoryExpression(
@@ -295,47 +310,106 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
 
+#if NET8_0_OR_GREATER
+            ConstructorInvoker invoker = ConstructorInvoker.Create(constructor);
+#endif
+
             ParameterInfo[] constructorParameters = constructor.GetParameters();
             if (constructorParameters.Length == 0)
             {
                 return (IServiceProvider serviceProvider, object?[]? arguments) =>
+#if NET8_0_OR_GREATER
+                    invoker.Invoke()!;
+#else
                     constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: null, culture: null);
+#endif
             }
 
-            FactoryParameterContext[] parameters = new FactoryParameterContext[constructorParameters.Length];
-            for (int i = 0; i < constructorParameters.Length; i++)
-            {
-                ParameterInfo constructorParameter = constructorParameters[i];
-                bool hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out object? defaultValue);
-
-                parameters[i] = new FactoryParameterContext(constructorParameter.ParameterType, hasDefaultValue, defaultValue, parameterMap[i] ?? -1);
-            }
             Type declaringType = constructor.DeclaringType!;
 
-            return (IServiceProvider serviceProvider, object?[]? arguments) =>
+#if NET8_0_OR_GREATER
+            bool useFixedValues = constructorParameters.Length <= FixedArgumentThreshold;
+            bool hasAnyDefaultValues = false;
+            int matchedArgCount = 0;
+            int matchedArgCountWithMap = 0;
+            for (int i = 0; i < constructorParameters.Length; i++)
             {
-                if (serviceProvider is null)
+                hasAnyDefaultValues |= constructorParameters[i].HasDefaultValue;
+
+                if (parameterMap[i] is not null)
                 {
-                    throw new ArgumentNullException(nameof(serviceProvider));
+                    matchedArgCount++;
+                    if (parameterMap[i] == i)
+                    {
+                        matchedArgCountWithMap++;
+                    }
+                }
+            }
+
+            // Don't optimize cases with default values or arg mapping.
+            if (hasAnyDefaultValues || matchedArgCount != matchedArgCountWithMap)
+            {
+                return InvokeCanonical();
+            }
+
+            if (matchedArgCount == 0)
+            {
+                // All injected; use a fast path.
+                Type[] types = GetParameterTypes();
+                return useFixedValues ?
+                    (serviceProvider, arguments) => ReflectionFactory_ServiceOnly_Fixed(invoker, types, declaringType, serviceProvider) :
+                    (serviceProvider, arguments) => ReflectionFactory_ServiceOnly_Span(invoker, types, declaringType, serviceProvider);
+            }
+
+            if (matchedArgCount == constructorParameters.Length)
+            {
+                // All direct with no mappings; use a fast path.
+                return (serviceProvider, arguments) => ReflectionFactory_Direct(invoker, serviceProvider, arguments);
+            }
+
+            return InvokeCanonical();
+
+            ObjectFactory InvokeCanonical()
+            {
+                FactoryParameterContext[] parameters = GetFactoryParameterContext();
+                return useFixedValues ?
+                    (serviceProvider, arguments) => ReflectionFactory_Canonical_Fixed(invoker, parameters, declaringType, serviceProvider, arguments) :
+                    (serviceProvider, arguments) => ReflectionFactory_Canonical_Span(invoker, parameters, declaringType, serviceProvider, arguments);
+            }
+
+            Type[] GetParameterTypes()
+            {
+                Type[] types = new Type[constructorParameters.Length];
+                for (int i = 0; i < constructorParameters.Length; i++)
+                {
+                    types[i] = constructorParameters[i].ParameterType;
+                }
+                return types;
+            }
+#else
+            return InvokeCanonical();
+
+            ObjectFactory InvokeCanonical()
+            {
+                FactoryParameterContext[] parameters = GetFactoryParameterContext();
+                return (serviceProvider, arguments) => ReflectionFactory_Canonical(constructor, parameters, declaringType, serviceProvider, arguments);
+            }
+#endif
+
+            FactoryParameterContext[] GetFactoryParameterContext()
+            {
+                FactoryParameterContext[] parameters = new FactoryParameterContext[constructorParameters.Length];
+                for (int i = 0; i < constructorParameters.Length; i++)
+                {
+                    ParameterInfo constructorParameter = constructorParameters[i];
+                    bool hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out object? defaultValue);
+                    parameters[i] = new FactoryParameterContext(constructorParameter.ParameterType, hasDefaultValue, defaultValue, parameterMap[i] ?? -1);
                 }
 
-                object?[] constructorArguments = new object?[parameters.Length];
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    ref FactoryParameterContext parameter = ref parameters[i];
-                    constructorArguments[i] = ((parameter.ArgumentIndex != -1)
-                        // Throws an NullReferenceException if arguments is null. Consistent with expression-based factory.
-                        ? arguments![parameter.ArgumentIndex]
-                        : GetService(
-                            serviceProvider,
-                            parameter.ParameterType,
-                            declaringType,
-                            parameter.HasDefaultValue)) ?? parameter.DefaultValue;
-                }
-
-                return constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, constructorArguments, culture: null);
-            };
+                return parameters;
+            }
         }
+#endif
 
         private readonly struct FactoryParameterContext
         {
@@ -352,7 +426,6 @@ namespace Microsoft.Extensions.DependencyInjection
             public object? DefaultValue { get; }
             public int ArgumentIndex { get; }
         }
-#endif
 
         private static void FindApplicableConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
@@ -361,10 +434,10 @@ namespace Microsoft.Extensions.DependencyInjection
             out int?[] matchingParameterMap)
         {
             ConstructorInfo? constructorInfo = null;
-            int?[]? parameterMap = null;
+            int?[]? parameterMap;
 
-            if (!TryFindPreferredConstructor(instanceType, argumentTypes, ref constructorInfo, ref parameterMap) &&
-                !TryFindMatchingConstructor(instanceType, argumentTypes, ref constructorInfo, ref parameterMap))
+            if (!TryFindPreferredConstructor(instanceType, argumentTypes, ref constructorInfo, out parameterMap) &&
+                !TryFindMatchingConstructor(instanceType, argumentTypes, ref constructorInfo, out parameterMap))
             {
                 throw new InvalidOperationException(SR.Format(SR.CtorNotLocated, instanceType));
             }
@@ -378,8 +451,10 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes,
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
-            [NotNullWhen(true)] ref int?[]? parameterMap)
+            [NotNullWhen(true)] out int?[]? parameterMap)
         {
+            parameterMap = null;
+
             foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
             {
                 if (TryCreateParameterMap(constructor.GetParameters(), argumentTypes, out int?[] tempParameterMap))
@@ -408,9 +483,10 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes,
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
-            [NotNullWhen(true)] ref int?[]? parameterMap)
+            [NotNullWhen(true)] out int?[]? parameterMap)
         {
             bool seenPreferred = false;
+            parameterMap = null;
             foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
             {
                 if (constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false))
