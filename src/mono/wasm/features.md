@@ -89,6 +89,16 @@ You can trim size of the managed code in the assemblies by `<PublishTrimmed>true
 
 Some applications will break if trimming is used without further configuration due to the trimmer not knowing which code is used, for example via reflection.
 
+Typical problem is JSON de/serialization, which does reflection. The solution is to use [Roslyn code generators](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation).
+
+```
+[JsonSerializable(typeof(List<Item>))]
+partial class ItemListSerializerContext : JsonSerializerContext { }
+
+var json = JsonSerializer.Serialize(items, ItemListSerializerContext.Default.ListItem);
+
+```
+
 WARNING: Make sure that you tested trimmed/published release version of your application.
 
 See also [trimming guidance](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained)
@@ -114,25 +124,29 @@ You can also `dotnet publish -c Release` which will publish your app to [AppBund
 
 # Downloaded assets
 
-## folder structure
+## project folder structure
 
 Described as relative to simple application project.
 
-- `./wwwroot` is optional project folder, into which you can place files which should be also deployed to the web server
-- `./bin/Release/net8.0/browser-wasm/AppBundle` is a folder into which our build process will produce files which should be hosted by the HTTP server
-- `./bin/Release/net8.0/browser-wasm/AppBundle/index.html` - the page which is hosting the application
-- `./bin/Release/net8.0/browser-wasm/AppBundle/main.js` - typically the main JavaScript entry point, it will `import { dotnet } from './_framework/dotnet.js'` and `await dotnet.run();`
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework` - contains all the assets of the runtime
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/dotnet.native.js` - is posix emulation layer by [emscripten](https://github.com/emscripten-core/emscripten) project
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/dotnet.runtime.js` - is integration of the dotnet with the browser
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/blazor.boot.json` - contains list of all other assets and their integrity hash and also various configuration flags.
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/dotnet.js.map` - is source map file, for easier debugging of the runtime code. It's not included in published apps.
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/dotnet.native.wasm` - is the compiled binaries of the dotnet (Mono) runtime.
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/System.Private.CoreLib.wasm`
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/*.wasm` - are .NET assemblies wrapped as .wasm files in WebCIL forma for better compatibility with antivirus solutions.
+- `./wwwroot` is optional project folder, into which you can place files which should be also deployed to the web server.
+- `./bin/Release/net8.0/browser-wasm/AppBundle` is a folder into which our build process will produce files which should be hosted by the HTTP server.
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework` - contains all the assets of the runtime.
+- `./bin/Release/net8.0/browser-wasm/AppBundle/index.html` - the page which is hosting the application.
+- `./bin/Release/net8.0/browser-wasm/AppBundle/main.js` - typically the main JavaScript entry point, it will `import { dotnet } from './_framework/dotnet.js'` and `await dotnet.run();`.
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework` - contains all the assets and modules of the dotnet application.
 
 You can flatten the `_framework` folder away by `<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>` in the project file.
+
+## _framework folder structure
+- `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
+- `dotnet.native.js` - is posix emulation layer by [emscripten](https://github.com/emscripten-core/emscripten) project
+- `dotnet.runtime.js` - is integration of the dotnet with the browser
+- `blazor.boot.json` - contains list of all other assets and their integrity hash and also various configuration flags.
+- `dotnet.native.wasm` - is the compiled binaries of the dotnet (Mono) runtime.
+- `System.Private.CoreLib.wasm`
+- `*.wasm` - are .NET assemblies wrapped as .wasm files in WebCIL forma for better compatibility with antivirus solutions.
+- `dotnet.js.map` - is source map file, for easier debugging of the runtime code. It's not included in published apps.
+- `dotnet.native.js.symbols` - are debug symbols which help to put C runtime method names back to the .wasm stack traces. You could enable it by `<WasmEmitSymbolMap>true</WasmEmitSymbolMap>`.
 
 ## Caching, Integrity
 
