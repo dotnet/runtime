@@ -340,6 +340,9 @@ namespace System.Buffers
 
             hr = destination[0];
             lr = destination[1];
+
+            Debug.Assert(char.IsHighSurrogate(hr));
+            Debug.Assert(char.IsLowSurrogate(lr));
         }
 
         public interface IFastScan { }

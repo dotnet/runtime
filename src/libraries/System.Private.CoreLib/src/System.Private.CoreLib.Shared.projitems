@@ -451,6 +451,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyNonBucketizedN2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyNonBucketizedN3.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\MultiStringIgnoreCaseSearchValuesFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\SingleStringSearchValuesThreeChars.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\SingleStringSearchValuesFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValues.cs" />

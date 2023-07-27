@@ -140,6 +140,13 @@ namespace System.Buffers
 
             if (nonAsciiAffectedByCaseConversion)
             {
+                if (ContainsIncompleteSurrogatePairs(values))
+                {
+                    // Aho-Corasick can't deal with the matching semantics of standalone surrogate code units.
+                    // We will use a slow but correct O(n * m) fallback implementation.
+                    return new MultiStringIgnoreCaseSearchValuesFallback(uniqueValues);
+                }
+
                 return PickAhoCorasickImplementation<CaseInsensitiveUnicode>(ahoCorasick, uniqueValues);
             }
 
@@ -369,6 +376,39 @@ namespace System.Buffers
                     }
                 }
             }
+        }
+
+        private static bool ContainsIncompleteSurrogatePairs(ReadOnlySpan<string> values)
+        {
+            foreach (string value in values)
+            {
+                int i = value.AsSpan().IndexOfAnyInRange(CharUnicodeInfo.HIGH_SURROGATE_START, CharUnicodeInfo.LOW_SURROGATE_END);
+                if (i < 0)
+                {
+                    continue;
+                }
+
+                for (; (uint)i < (uint)value.Length; i++)
+                {
+                    if (char.IsHighSurrogate(value[i]))
+                    {
+                        if ((uint)(i + 1) >= (uint)value.Length || !char.IsLowSurrogate(value[i + 1]))
+                        {
+                            // High surrogate not followed by a low surrogate.
+                            return true;
+                        }
+
+                        i++;
+                    }
+                    else if (char.IsLowSurrogate(value[i]))
+                    {
+                        // Low surrogate not preceded by a high surrogate.
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }
