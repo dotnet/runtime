@@ -76,8 +76,9 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(!typeInfo.IsReadOnly);
             Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
 
-            bool constructorHasSetsRequiredMembersAttribute
-                = typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false;
+            // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
+            bool constructorHasSetsRequiredMembersAttribute =
+                typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false;
 
             JsonTypeInfo.PropertyHierarchyResolutionState state = new();
 
@@ -90,8 +91,9 @@ namespace System.Text.Json.Serialization.Metadata
                     break;
                 }
 
-                bool shouldCheckMembersForRequiredMemberAttribute
-                    = !constructorHasSetsRequiredMembersAttribute && currentType.HasRequiredMemberAttribute();
+                // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
+                bool shouldCheckMembersForRequiredMemberAttribute =
+                    !constructorHasSetsRequiredMembersAttribute && currentType.HasRequiredMemberAttribute();
 
                 AddMembersDeclaredBySuperType(
                     typeInfo,
