@@ -20,6 +20,7 @@ namespace System.Security.Cryptography
         // Key properties
         //
 
+        private int _cachedKeySize;
 
         /// <summary>
         ///     Algorithm group this key can be used with
@@ -170,6 +171,14 @@ namespace System.Security.Cryptography
         {
             get
             {
+                // Key size lookup is a common operation, and we don't want to incur the
+                // LRPC overhead to query lsass for the information. Since the key size
+                // cannot be changed on an existing key, we'll cache it.
+                if (_cachedKeySize != 0)
+                {
+                    return _cachedKeySize;
+                }
+
                 int keySize = 0;
 
                 // Attempt to use PublicKeyLength first as it returns the correct value for ECC keys
@@ -215,6 +224,7 @@ namespace System.Security.Cryptography
                     }
                 }
 
+                _cachedKeySize = keySize;
                 return keySize;
             }
         }
