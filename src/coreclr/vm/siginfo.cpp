@@ -187,7 +187,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
     if (pTypeContext != NULL)
     {
         uint32_t varNum;
-        if (typ == ELEMENT_TYPE_VAR)
+        if (typ == ELEMENT_TYPE_VAR || typ == ELEMENT_TYPE_CVAR)
         {
             IfFailThrowBF(GetData(&varNum), BFA_BAD_COMPLUS_SIG, pSigModule);
             THROW_BAD_FORMAT_MAYBE(varNum < pTypeContext->m_classInst.GetNumArgs(), BFA_BAD_COMPLUS_SIG, pSigModule);
@@ -196,7 +196,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
             pSigBuilder->AppendPointer(pTypeContext->m_classInst[varNum].AsPtr());
             return;
         }
-        if (typ == ELEMENT_TYPE_MVAR)
+        if (typ == ELEMENT_TYPE_MVAR || typ == ELEMENT_TYPE_MCVAR)
         {
             IfFailThrowBF(GetData(&varNum), BFA_BAD_COMPLUS_SIG, pSigModule);
             THROW_BAD_FORMAT_MAYBE(varNum < pTypeContext->m_methodInst.GetNumArgs(), BFA_BAD_COMPLUS_SIG, pSigModule);
@@ -218,6 +218,8 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
                 break;
             case ELEMENT_TYPE_VAR:
             case ELEMENT_TYPE_MVAR:
+            case ELEMENT_TYPE_CVAR:
+            case ELEMENT_TYPE_MCVAR:
                 {
                     uint32_t varNum;
                     // Skip variable number
@@ -1468,7 +1470,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                         for (uint32_t iInstantiation = 0; iInstantiation < instantiationCount; iInstantiation++)
                                         {
                                             IfFailThrowBF(tempsig.GetElemType(&elemType), BFA_BAD_SIGNATURE, pOrigModule);
-                                            if (elemType != ELEMENT_TYPE_VAR)
+                                            if (elemType != ELEMENT_TYPE_VAR && elemType != ELEMENT_TYPE_CVAR)
                                             {
                                                 exactSelfRecursionDetected = false;
                                                 break;
@@ -1973,7 +1975,7 @@ TypeHandle SigPointer::GetGenericInstType(ModuleBase *        pModule,
     return genericType;
 }
 
-// SigPointer should be just after E_T_VAR or E_T_MVAR
+// SigPointer should be just after E_T_(C)VAR or E_T_M(C)VAR
 TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - may be used later for better error reporting
                                                CorElementType et,
                                                ClassLoader::LoadTypesFlag fLoadTypes/*=LoadTypes*/,
@@ -2002,7 +2004,7 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
     RETURN(res);
 }
 
-// SigPointer should be just after E_T_VAR or E_T_MVAR
+// SigPointer should be just after E_T_(C)VAR or E_T_M(C)VAR
 TypeHandle SigPointer::GetTypeVariable(CorElementType et,
                                        const SigTypeContext *pTypeContext)
 {
@@ -2031,10 +2033,10 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
 
     if (!pTypeContext
         ||
-        (et == ELEMENT_TYPE_VAR &&
+        ((et == ELEMENT_TYPE_VAR || et == ELEMENT_TYPE_CVAR) &&
          (index >= pTypeContext->m_classInst.GetNumArgs()))
         ||
-        (et == ELEMENT_TYPE_MVAR &&
+        ((et == ELEMENT_TYPE_MVAR || et == ELEMENT_TYPE_MCVAR ) &&
          (index >= pTypeContext->m_methodInst.GetNumArgs())))
     {
         LOG((LF_ALWAYS, LL_INFO1000, "GENERICS: Error: GetTypeVariable on out-of-range type variable\n"));
@@ -2042,7 +2044,7 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
         TypeHandle thNull;
         RETURN(thNull);
     }
-    if (et == ELEMENT_TYPE_VAR)
+    if (et == ELEMENT_TYPE_VAR || et == ELEMENT_TYPE_CVAR)
     {
         RETURN(pTypeContext->m_classInst[index]);
     }
@@ -2248,12 +2250,13 @@ BOOL SigPointer::IsClassHelper(Module* pModule, LPCUTF8 szClassName, const SigTy
     }
 
     BAD_FORMAT_NOTHROW_ASSERT((typ == ELEMENT_TYPE_VAR)      || (typ == ELEMENT_TYPE_MVAR)      ||
+                              (typ == ELEMENT_TYPE_CVAR)     || (typ == ELEMENT_TYPE_MCVAR)     ||
                               (typ == ELEMENT_TYPE_CLASS)    || (typ == ELEMENT_TYPE_VALUETYPE) ||
                               (typ == ELEMENT_TYPE_OBJECT)   || (typ == ELEMENT_TYPE_STRING)    ||
                               (typ == ELEMENT_TYPE_INTERNAL) || (typ == ELEMENT_TYPE_GENERICINST));
 
 
-    if (typ == ELEMENT_TYPE_VAR || typ == ELEMENT_TYPE_MVAR)
+    if (typ == ELEMENT_TYPE_VAR || typ == ELEMENT_TYPE_MVAR || typ == ELEMENT_TYPE_CVAR || typ == ELEMENT_TYPE_MCVAR)
     {
         TypeHandle ty;
 
@@ -2474,6 +2477,8 @@ SigPointer::PeekElemTypeClosed(
     if ((type == ELEMENT_TYPE_GENERICINST) ||
         (type == ELEMENT_TYPE_VAR) ||
         (type == ELEMENT_TYPE_MVAR) ||
+        (type == ELEMENT_TYPE_CVAR) ||
+        (type == ELEMENT_TYPE_MCVAR) ||
         (type == ELEMENT_TYPE_INTERNAL))
     {
         SigPointer sp(*this);
@@ -2516,6 +2521,8 @@ SigPointer::PeekElemTypeClosed(
             }
             case ELEMENT_TYPE_VAR :
             case ELEMENT_TYPE_MVAR :
+            case ELEMENT_TYPE_CVAR :
+            case ELEMENT_TYPE_MCVAR :
             {
                 TypeHandle th = sp.GetTypeVariable(type, pTypeContext);
                 if (th.IsNull())
@@ -2581,6 +2588,8 @@ mdTypeRef SigPointer::PeekValueTypeTokenClosed(Module *pModule, const SigTypeCon
         }
     case ELEMENT_TYPE_VAR :
     case ELEMENT_TYPE_MVAR :
+    case ELEMENT_TYPE_CVAR :
+    case ELEMENT_TYPE_MCVAR :
         {
             SigPointer sp(*this);
 
@@ -2637,7 +2646,7 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
     if (!thValueType.IsNull())
         return thValueType.GetSize();
 
-    if (etype == ELEMENT_TYPE_VAR || etype == ELEMENT_TYPE_MVAR)
+    if (etype == ELEMENT_TYPE_VAR || etype == ELEMENT_TYPE_MVAR || etype == ELEMENT_TYPE_CVAR || etype == ELEMENT_TYPE_MCVAR)
     {
         LOG((LF_ALWAYS, LL_INFO1000, "GENERICS: Warning: SizeOf on VAR without instantiation\n"));
         return(sizeof(LPVOID));
@@ -3703,7 +3712,7 @@ MetaSig::CompareElementType(
         return FALSE;
     }
 
-    if ((*pSig2 == ELEMENT_TYPE_VAR) && (pSubst2 != NULL) && !pSubst2->GetInst().IsNull())
+    if ((*pSig2 == ELEMENT_TYPE_VAR || *pSig2 == ELEMENT_TYPE_CVAR) && (pSubst2 != NULL) && !pSubst2->GetInst().IsNull())
     {
         SigPointer inst = pSubst2->GetInst();
         pSig2++;
@@ -3730,7 +3739,7 @@ MetaSig::CompareElementType(
             state);
     }
 
-    if ((*pSig1 == ELEMENT_TYPE_VAR) && (pSubst1 != NULL) && !pSubst1->GetInst().IsNull())
+    if ((*pSig1 == ELEMENT_TYPE_VAR || *pSig1 == ELEMENT_TYPE_CVAR) && (pSubst1 != NULL) && !pSubst1->GetInst().IsNull())
     {
         SigPointer inst = pSubst1->GetInst();
         pSig1++;
@@ -3893,6 +3902,8 @@ MetaSig::CompareElementType(
 
         case ELEMENT_TYPE_VAR:
         case ELEMENT_TYPE_MVAR:
+        case ELEMENT_TYPE_CVAR:
+        case ELEMENT_TYPE_MCVAR:
         {
             DWORD varNum1;
             IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &varNum1));
@@ -4619,7 +4630,7 @@ MetaSig::CompareElementTypeToToken(
         return FALSE;
     }
 
-    if ((*pSig1 == ELEMENT_TYPE_VAR) && (pSubst1 != NULL) && !pSubst1->GetInst().IsNull())
+    if ((*pSig1 == ELEMENT_TYPE_VAR || *pSig1 == ELEMENT_TYPE_CVAR) && (pSubst1 != NULL) && !pSubst1->GetInst().IsNull())
     {
         SigPointer inst = pSubst1->GetInst();
         pSig1++;
@@ -4692,6 +4703,8 @@ MetaSig::CompareElementTypeToToken(
 
         case ELEMENT_TYPE_VAR:
         case ELEMENT_TYPE_MVAR:
+        case ELEMENT_TYPE_CVAR:
+        case ELEMENT_TYPE_MCVAR:
         {
            return FALSE;
         }
