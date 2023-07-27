@@ -1242,6 +1242,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         }
 
         case ELEMENT_TYPE_VAR_ZAPSIG:
+        case ELEMENT_TYPE_CVAR_ZAPSIG:
         {
 #ifndef DACCESS_COMPILE
             RID rid;

@@ -1544,6 +1544,9 @@ enum CorInfoTokenKind
 
     // token comes from devirtualizing a method
     CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
+
+    // token comes from CEE_LDCTARG
+    CORINFO_TOKENKIND_Ldctarg   = 0x1000 | CORINFO_TOKENKIND_Class | CORINFO_TOKENKIND_Method,
 };
 
 struct CORINFO_RESOLVED_TOKEN

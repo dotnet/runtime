@@ -901,7 +901,6 @@ public:
     void EmitInstrVar(Instr* instr, int var);
     void EmitInstrVarByName(Instr* instr, _In_ __nullterminated char* label);
     void EmitInstrTypeVar(Instr* instr, CorElementType type, int var);
-    void EmitInstrTypeVarByName(Instr* instr, CorElementType type, _In_ __nullterminated char* label);
     void EmitInstrI(Instr* instr, int val);
     void EmitInstrI8(Instr* instr, __int64* val);
     void EmitInstrR(Instr* instr, double* val);

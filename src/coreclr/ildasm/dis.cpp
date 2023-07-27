@@ -1449,7 +1449,6 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
             }
 
             case InlineVar:
-            case ShortInlineTypeVar:
             {
                if(g_fShowBytes)
                 {
@@ -1484,13 +1483,6 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                             else szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s A_%d",pszInstrName, v);
                         }
                         break;
-                    case CEE_LDCTARG_S:
-                        {
-                            CorElementType elemType = (CorElementType)(v & 0xFF);
-                            int idx = v >> 8;
-                            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s%d", pszInstrName, elemType == CorElementType::ELEMENT_TYPE_CVAR ? "!" : "!!", idx);
-                        }
-                        break;
                     case CEE_LDLOCA:
                     case CEE_LDLOC:
                     case CEE_STLOC:
@@ -1514,31 +1506,17 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
             case InlineI:
             case InlineRVA:
-            case InlineTypeVar:
             {
                 DWORD v = pCode[PC] + (pCode[PC+1] << 8) + (pCode[PC+2] << 16) + (pCode[PC+3] << 24);
-                switch(instr)
+                if(g_fShowBytes)
                 {
-                    case CEE_LDCTARG:
-                    {
-                        CorElementType elemType = (CorElementType)(v & 0xFFFF);
-                        int idx = v >> 16;
-                        szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s%d", pszInstrName, elemType == CorElementType::ELEMENT_TYPE_CVAR ? "!" : "!!", idx);
-                        break;
-                    }
-                    default:
-                    {
-                        if(g_fShowBytes)
-                        {
-                            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ",
-                                             pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
-                            Len += 9;
-                            PadTheString;
-                        }
-                        szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s 0x%x", pszInstrName, v);
-                        break;
-                    }
+                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ",
+                                     pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
+                    Len += 9;
+                    PadTheString;
                 }
+                szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s 0x%x", pszInstrName, v);
+                break;
                 PC += 4;
                 break;
             }

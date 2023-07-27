@@ -1379,10 +1379,12 @@ instr_r_head            : instr_r '('                        { $$ = $1; bParsing
 instr                   : instr_none                         { PASM->EmitOpcode($1); }
                         | instr_var int32                    { PASM->EmitInstrVar($1, $2); }
                         | instr_var id                       { PASM->EmitInstrVarByName($1, $2); }
-                        | instr_tvar '!' int32               { PASM->EmitInstrTypeVar($1, ELEMENT_TYPE_CVAR, $3); }
-                        | instr_tvar '!' id                  { PASM->EmitInstrTypeVarByName($1, ELEMENT_TYPE_CVAR, $3); }
-                        | instr_tvar '!' '!' int32           { PASM->EmitInstrTypeVar($1, ELEMENT_TYPE_MCVAR, $4); }
-                        | instr_tvar '!' '!' id              { PASM->EmitInstrTypeVarByName($1, ELEMENT_TYPE_MCVAR, $4); }
+                        | instr_tvar ownerType /* ownerType ::= memberRef | typeSpec */
+                                                             { PASM->EmitInstrI($1,$2);
+                                                               PASM->m_tkCurrentCVOwner = $2;
+                                                               PASM->m_pCustomDescrList = NULL;
+                                                               iOpcodeLen = 0;
+                                                             }
                         | instr_i int32                      { PASM->EmitInstrI($1, $2); }
                         | instr_i8 int64                     { PASM->EmitInstrI8($1, $2); }
                         | instr_r float64                    { PASM->EmitInstrR($1, $2); delete ($2);}

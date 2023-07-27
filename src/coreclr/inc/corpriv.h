@@ -217,8 +217,10 @@ typedef enum CorElementTypeZapSig
     // ZapSig encoding for ELEMENT_TYPE_VAR and ELEMENT_TYPE_MVAR. It is always followed
     // by the RID of a GenericParam token, encoded as a compressed integer.
     ELEMENT_TYPE_VAR_ZAPSIG = 0x3b,
-
-    // UNUSED = 0x3c,
+    
+    // ZapSig encoding for ELEMENT_TYPE_CVAR and ELEMENT_TYPE_MCVAR. It is always followed
+    // by the RID of a GenericParam token, encoded as a compressed integer.
+    ELEMENT_TYPE_CVAR_ZAPSIG = 0x3c,
 
     // ZapSig encoding for native value types in IL stubs. IL stub signatures may contain
     // ELEMENT_TYPE_INTERNAL followed by ParamTypeDesc with ELEMENT_TYPE_VALUETYPE element

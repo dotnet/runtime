@@ -46,6 +46,7 @@ HRESULT SigParser::SkipExactlyOne()
                 IfFailRet(GetConstArgData(NULL, NULL));
                 break;
             case ELEMENT_TYPE_VAR_ZAPSIG:
+            case ELEMENT_TYPE_CVAR_ZAPSIG:
                 IfFailRet(GetData(NULL));      // Skip RID
                 break;
             case ELEMENT_TYPE_OBJECT:

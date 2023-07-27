@@ -654,6 +654,7 @@ class SigParser
                 switch (bElementType)
                 {
                 case ELEMENT_TYPE_VAR_ZAPSIG:
+                case ELEMENT_TYPE_CVAR_ZAPSIG:
                 case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
                 case ELEMENT_TYPE_CANON_ZAPSIG:
                 case ELEMENT_TYPE_MODULE_ZAPSIG:

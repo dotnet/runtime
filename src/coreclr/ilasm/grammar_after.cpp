@@ -36,8 +36,6 @@ static Keywords keywords[] = {
 #undef InlineTok
 #undef InlineSwitch
 #undef InlineVarTok
-#undef InlineTypeVar
-#undef ShortInlineTypeVar
 
 
 #define InlineNone              INSTR_NONE
@@ -57,8 +55,6 @@ static Keywords keywords[] = {
 #define InlineSig               INSTR_SIG
 #define InlineTok               INSTR_TOK
 #define InlineSwitch            INSTR_SWITCH
-#define InlineTypeVar           INSTR_TVAR
-#define ShortInlineTypeVar      INSTR_TVAR
 
 #define InlineVarTok            0
 #define NEW_INLINE_NAMES

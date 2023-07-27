@@ -31,18 +31,16 @@ typedef enum opcode_format_t
 	InlineTok		= 12,  // a meta-data token of unknown type (U4)
 	InlineSwitch	= 13,  // count (U4), pcrel1 (U4) .... pcrelN (U4)
 	InlinePhi		= 14,  // count (U1), var1 (U2) ... varN (U2)
-    InlineTypeVar   = 15,
 	// WATCH OUT we are close to the limit here, if you add
 	// more enumerations you need to change ShortIline definition below
 
 	// The extended enumeration also encodes the size in the IL stream
-	ShortInline 	= 32,						// if this bit is set, the format is the 'short' format
+	ShortInline 	= 16,						// if this bit is set, the format is the 'short' format
 	PrimaryMask   	= (ShortInline-1),			// mask these off to get primary enumeration above
 	ShortInlineVar 	= (ShortInline + InlineVar),
 	ShortInlineI	= (ShortInline + InlineI),
 	ShortInlineR	= (ShortInline + InlineR),
 	ShortInlineBrTarget = (ShortInline + InlineBrTarget),
-    ShortInlineTypeVar = (ShortInline + InlineTypeVar),
 	InlineOpcode	= (ShortInline + InlineNone),    // This is only used internally.  It means the 'opcode' is two byte instead of 1
 } OPCODE_FORMAT;
 

@@ -1491,8 +1491,6 @@ unsigned Assembler::ShortOf(unsigned opcode)
         case CEE_LDARGA:    retcode=CEE_LDARGA_S;   break;
         case CEE_STARG:     retcode=CEE_STARG_S;    break;
 
-        case CEE_LDCTARG:    retcode=CEE_LDCTARG_S;   break;
-
         case CEE_LDLOC:     retcode=CEE_LDLOC_S;    break;
         case CEE_LDLOCA:    retcode=CEE_LDLOCA_S;   break;
         case CEE_STLOC:     retcode=CEE_STLOC_S;    break;
@@ -1639,30 +1637,6 @@ void Assembler::EmitInstrTypeVar(Instr* instr, CorElementType type, int var)
         sh = (short)var;
         EmitBytes((BYTE *)&sh,2);
     }
-}
-
-/**************************************************************************/
-void Assembler::EmitInstrTypeVarByName(Instr* instr, CorElementType type, _In_ __nullterminated char* label)
-{
-    int idx = -1;
-    switch(instr->opcode)
-    {
-        case CEE_LDCTARG:
-        case CEE_LDCTARG_S:
-            if(m_pCurMethod)
-            {
-                _ASSERTE(type == CorElementType::ELEMENT_TYPE_CVAR || type == CorElementType::ELEMENT_TYPE_MCVAR);
-                idx = type == CorElementType::ELEMENT_TYPE_MCVAR ? m_pCurMethod->FindTyPar(label) : m_pCurClass->FindTyPar(label);
-                if(idx >= 0 && m_pCurMethod->m_TyPars[idx].Type() != 0) EmitInstrTypeVar(instr, type, idx);
-                else    report->error("Undeclared const type parameter %s\n",label);
-            }
-            else
-                report->error("Instructions can be used only when in a method scope\n");
-            break;
-        default:
-            report->error("Named argument illegal for this instruction\n");
-    }
-    instr->opcode = -1; // in case we got here with error
 }
 
 /**************************************************************************/
