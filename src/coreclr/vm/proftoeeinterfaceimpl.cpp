@@ -10938,21 +10938,11 @@ LExit:
 HCIMPLEND
 
 HCIMPL2_RAW(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
-GCX_COOP_THREAD_EXISTS(GET_THREAD());
+GCX_COOP();
 HCIMPL_PROLOG(ProfileLeave)
 {
     FCALL_CONTRACT;
 
-    if (GetThreadNULLOk() == NULL)
-    {
-        Thread *pThread = SetupThreadNoThrow();
-        if (pThread == NULL)
-        {
-            return;
-        }
-    }
-
-    GCX_COOP();
     FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
 
 #ifdef PROFILING_SUPPORTED
