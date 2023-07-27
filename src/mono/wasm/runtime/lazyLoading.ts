@@ -11,7 +11,6 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
     }
 
     const assemblyAsset = loaderHelpers.getAssetByNameWithResolvedUrl(lazyAssemblies, "assembly", assemblyNameToLoad);
-    // const assemblyMarkedAsLazy = Object.prototype.hasOwnProperty.call(lazyAssemblies, assemblyNameToLoad);
     if (!assemblyAsset) {
         throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
     }
