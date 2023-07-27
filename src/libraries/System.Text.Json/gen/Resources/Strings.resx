@@ -183,6 +183,12 @@
   <data name="JsonConverterAttributeInvalidTypeMessageFormat" xml:space="preserve">
     <value>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</value>
   </data>
+  <data name="DerivedJsonConverterAttributesNotSupportedTitle" xml:space="preserve">
+    <value>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</value>
+  </data>
+  <data name="DerivedJsonConverterAttributesNotSupportedMessageFormat" xml:space="preserve">
+    <value>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</value>
+  </data>
   <data name="JsonUnsupportedLanguageVersionTitle" xml:space="preserve">
     <value>C# language version not supported by the source generator.</value>
   </data>

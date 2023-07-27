@@ -27,6 +27,8 @@ parameters:
   enableMicrobuild: ''
   gatherAssetManifests: false
   shouldContinueOnError: false
+  compileOnHelix: false
+  interpreter: false
 
 steps:
   - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
@@ -72,49 +74,64 @@ steps:
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
 
-  #  Send tests to Helix
-  - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
-    parameters:
-      displayName: Send tests to Helix
-      buildConfig: $(buildConfigUpper)
-      archType: ${{ parameters.archType }}
-      osGroup: ${{ parameters.osGroup }}
-      osSubgroup: ${{ parameters.osSubgroup}}
-      coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      runtimeFlavor: ${{ parameters.runtimeFlavor }}
-      runtimeVariant: ${{ parameters.runtimeVariant }}
-
-      ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        creator: $(Build.DefinitionName)
-
-        helixBuild: $(Build.BuildNumber)
-        helixSource: $(_HelixSource)
-
-        ${{ if ne(parameters.readyToRun, true) }}:
-          helixType: 'test/functional/cli/'
-
+  # Checks the value of the compileOnHelix parameter
+  # and if set invokes libraries pipeline for AOT on Helix
+  - ${{ if eq(parameters.compileOnHelix, 'true') }}:
+    - template: /eng/pipelines/libraries/helix.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        archType: ${{ parameters.archType }}
+        targetRid: ${{ parameters.targetRid }}
+        buildConfig: ${{ parameters.buildConfig }}
+        interpreter: ${{ parameters.interpreter }}
+        testRunNamePrefixSuffix: ${{ parameters.testRunNamePrefixSuffix }}
+        extraHelixArguments: ${{ parameters.extraHelixArguments }}
         helixQueues: ${{ parameters.helixQueues }}
+        creator: ${{ parameters.creator }}
+  - ${{ else }}:
+    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+      parameters:
+        displayName: Send tests to Helix
+        buildConfig: $(buildConfigUpper)
+        archType: ${{ parameters.archType }}
+        osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup}}
+        coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
+        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        runtimeVariant: ${{ parameters.runtimeVariant }}
 
-        # This tests whether an array is empty
-        ${{ if eq(join('', parameters.helixQueues), '') }}:
-          condition: false
+        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          creator: $(Build.DefinitionName)
 
-        publishTestResults: true
+          helixBuild: $(Build.BuildNumber)
+          helixSource: $(_HelixSource)
 
-        timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
-        timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+          ${{ if ne(parameters.readyToRun, true) }}:
+            helixType: 'test/functional/cli/'
 
-        runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
-        compositeBuildMode: ${{ parameters.compositeBuildMode }}
-        runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
-        nativeAotTest: ${{ parameters.nativeAotTest }}
+          helixQueues: ${{ parameters.helixQueues }}
 
-        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-          # Access token variable for internal project from the
-          # DotNet-HelixApi-Access variable group
-          helixAccessToken: $(HelixApiAccessToken)
+          # This tests whether an array is empty
+          ${{ if eq(join('', parameters.helixQueues), '') }}:
+            condition: false
 
-        helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+          publishTestResults: true
 
-        scenarios: ${{ parameters.scenarios }}
+          timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
+          timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+
+          runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
+          compositeBuildMode: ${{ parameters.compositeBuildMode }}
+          runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+          nativeAotTest: ${{ parameters.nativeAotTest }}
+
+          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+            # Access token variable for internal project from the
+            # DotNet-HelixApi-Access variable group
+            helixAccessToken: $(HelixApiAccessToken)
+
+          helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+
+          scenarios: ${{ parameters.scenarios }}

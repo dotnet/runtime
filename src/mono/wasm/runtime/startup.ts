@@ -32,6 +32,7 @@ import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { BINDING, MONO } from "./net6-legacy/globals";
 import { localHeapViewU8 } from "./memory";
+import { assertNoProxies } from "./gc-handles";
 
 // default size if MonoConfig.pthreadPoolSize is undefined
 const MONO_PTHREAD_POOL_SIZE = 4;
@@ -320,6 +321,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
 }
 
 export function postRunWorker() {
+    assertNoProxies();
     // signal next stage
     runtimeHelpers.runtimeReady = false;
     runtimeHelpers.afterPreRun = createPromiseController<void>();

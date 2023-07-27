@@ -225,7 +225,7 @@ namespace ILCompiler
             out List<MetadataMapping<MetadataType>> typeMappings,
             out List<MetadataMapping<MethodDesc>> methodMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
-            out List<MetadataMapping<MethodDesc>> stackTraceMapping)
+            out List<StackTraceMapping> stackTraceMapping)
         {
             ComputeMetadata(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory),
                 factory, out metadataBlob, out typeMappings, out methodMappings, out fieldMappings, out stackTraceMapping);

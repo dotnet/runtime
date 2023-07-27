@@ -10,6 +10,7 @@ import { alloc_stack_frame, get_arg, get_arg_gc_handle, set_arg_type, set_gc_han
 import { invoke_method_and_handle_exception } from "./invoke-cs";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js } from "./marshal-to-js";
+import { do_not_force_dispose } from "./gc-handles";
 
 export function init_managed_exports(): void {
     const exports_fqn_asm = "System.Runtime.InteropServices.JavaScript";
@@ -61,6 +62,7 @@ export function init_managed_exports(): void {
             if (promise === null || promise === undefined) {
                 promise = Promise.resolve(0);
             }
+            (promise as any)[do_not_force_dispose] = true; // prevent disposing the task in forceDisposeProxies()
             return await promise;
         } finally {
             Module.runtimeKeepalivePop();// after await promise !
