@@ -100,7 +100,39 @@ Native rebuild will cause the .NET runtime to be re-built alongside your applica
 You can enable native rebuild by `<WasmBuildNative>true</WasmBuildNative>`.
 This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
-## Downloaded assets
+# JavaScript API
+
+We maintain description of JavaScript embedding API in [dotnet.d.ts](https://github.com/dotnet/runtime/blob/main/src/mono/wasm/runtime/dotnet.d.ts).
+
+## browser application template
+
+You can create simple application template by running `dotnet new wasmbrowser`.
+
+Then you could `dotnet run` and open the URL which it printed to test the app in your browser. For example `http://localhost:5292/index.html`
+
+You can also `dotnet publish -c Release` which will publish your app to [AppBundle](#folder-structure) folder.
+
+# Downloaded assets
+
+## folder structure
+
+Described as relative to simple application project.
+
+- `./wwwroot` is optional project folder, into which you can place files which should be also deployed to the web server
+- `./bin/Release/net8.0/browser-wasm/AppBundle` is a folder into which our build process will produce files which should be hosted by the HTTP server
+- `./bin/Release/net8.0/browser-wasm/AppBundle/index.html` - the page which is hosting the application
+- `./bin/Release/net8.0/browser-wasm/AppBundle/main.js` - typically the main JavaScript entry point, it will `import { dotnet } from './_framework/dotnet.js'` and `await dotnet.run();`
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework` - contains all the assets of the runtime
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/dotnet.native.js` - is posix emulation layer by [emscripten](https://github.com/emscripten-core/emscripten) project
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/dotnet.runtime.js` - is integration of the dotnet with the browser
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/blazor.boot.json` - contains list of all other assets and their integrity hash and also various configuration flags.
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/dotnet.js.map` - is source map file, for easier debugging of the runtime code. It's not included in published apps.
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/dotnet.native.wasm` - is the compiled binaries of the dotnet (Mono) runtime.
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/System.Private.CoreLib.wasm`
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework/*.wasm` - are .NET assemblies wrapped as .wasm files in WebCIL forma for better compatibility with antivirus solutions.
+
+You can flatten the `_framework` folder away by `<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>` in the project file.
 
 ## Caching, Integrity
 
@@ -114,7 +146,7 @@ See also [fetch integrity](https://developer.mozilla.org/en-US/docs/Web/API/Requ
 
 ## MIME types
 
-Are `Content-Type` HTTP headers which tell the browser about the type of downloaded asset. They are necessary for correct and fast processing by the browser, but also by various caches and proxies. 
+Are `Content-Type` HTTP headers which tell the browser about the type of downloaded asset. They are necessary for correct and fast processing by the browser, but also by various caches and proxies.
 
 HTTP headers are sent by your HTTP server or proxy, which need to be properly configured.
 
@@ -125,6 +157,12 @@ HTTP headers are sent by your HTTP server or proxy, which need to be properly co
 |.js|text/javascript|
 
 See also [Content-Type on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type)
+
+## Compression
+
+Modern browsers are able to unpack files compressed for the transport. We recommend brotli compression for best results.
+
+See also [Content-Encoding on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding)
 
 ## Content security policy
 
@@ -141,13 +179,14 @@ See also [wasm-unsafe-eval](https://github.com/WebAssembly/content-security-poli
 ## ICU
 
 Browsers don't offer full set APIs for working with localization and so we have to bring the data and the logic as part of the application.
+
 If your application doesn't need to work with locatization, you can reduce download size by `<InvariantCulture>true</InvariantCulture>`.
 
-If your application needs to work with locatization but you don't require processing speed for processing of large texts, you can reduce download size by `<HybridGlobalization>true</HybridGlobalization>`. 
+If your application needs to work with locatization but you don't require processing speed for processing of large texts, you can reduce download size by `<HybridGlobalization>true</HybridGlobalization>`.
 It will use browser APIs instead part of ICU database. This feature is still in development.
 
-If your application needs to work with specific subset of locales, you can create your own ICU database. 
-_TODO_ HOW_TO ?
+If your application needs to work with specific subset of locales, you can create your own ICU database.
+_TODO_ HOW_TO custom ?
 
 ## Timezones
 
@@ -155,6 +194,16 @@ Browsers don't offer API for working with time zone database and so we have to b
 
 If your application doesn't need to work with TZ, you can reduce download size by `<InvariantTimezone>true</InvariantTimezone>`.
 This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
+
+## Bundling JavaScript and other assets
+
+In the web ecosystem it's usual that developers use assets bundlers like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) to bundle many files into one large .js file.
+
+You can bundle the `dotnet.js` ES6 module with the rest of your JavaScript application.
+
+The other assets and JS modules of the dotnet are loaded via dynamic `import` or via `fetch` APIs. They are not ready to be bundled in Net8.
+We consider that the dotnet application is usually large as is and giving the browser chance to start compiling it in parallel with other downloads is better.
+We would like to [hear from the community](https://github.com/dotnet/runtime/issues/86162) more about the use-cases when it would be benefitial.
 
 # Resources consumed on the target device
 
@@ -194,3 +243,5 @@ The wasm-tools workload contains all of the tools and libraries necessary to per
 Although it's optional for Blazor, we strongly recommend using it!
 
 You can install it by running `dotnet workload install wasm-tools` on your command line.
+
+You can also install `dotnet workload install wasm-experimental`.
