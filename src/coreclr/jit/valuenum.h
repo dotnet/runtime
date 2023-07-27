@@ -1144,6 +1144,10 @@ public:
     template <typename T>
     T CoercedConstantValue(ValueNum vn)
     {
+        if (vn == VNForNull())
+        {
+            return 0;
+        }
         return ConstantValueInternal<T>(vn DEBUGARG(true));
     }
 
