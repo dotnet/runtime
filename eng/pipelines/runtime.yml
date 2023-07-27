@@ -478,10 +478,6 @@ extends:
           platforms:
             - browser_wasm
             - browser_wasm_win
-          # complains about the $ .. condition ends up in the templates as and(succeeded(), $[ ..])
-          #condition: $[ or(eq(variables.isRollingBuild, true), eq(variables.wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline, true)) ]
-          # complains of $ .. 
-          #condition: or(eq($(isRollingBuild), true), eq($(wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline), true))
           condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
           nameSuffix: MultiThreaded
           extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)

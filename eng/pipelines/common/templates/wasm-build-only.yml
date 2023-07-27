@@ -29,7 +29,7 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: ${{ parameters.nameSuffix }}_BuildOnly
-      buildArgs: -s mono+libs+packs$(workloadSubsetArg) -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs+packs$(workloadSubsetArg) -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }} /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:ArchiveTests=true
       timeoutInMinutes: 120
       condition: ${{ parameters.condition }}
       extraStepsTemplate: /eng/pipelines/common/wasm-post-build-steps.yml
