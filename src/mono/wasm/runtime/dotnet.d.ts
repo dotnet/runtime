@@ -178,26 +178,21 @@ interface ResourceGroups {
     readonly assembly?: ResourceListOrArray;
     readonly lazyAssembly?: ResourceListOrArray;
     readonly pdb?: ResourceListOrArray;
-    readonly native?: NativeResources;
+    readonly jsModuleWorker?: ResourceListOrString;
+    readonly jsModuleNative: ResourceListOrString;
+    readonly jsModuleRuntime: ResourceListOrString;
+    readonly jsSymbols?: ResourceListOrArray;
+    readonly wasmNative: ResourceListOrString;
+    readonly icu?: ResourceListOrArray;
     readonly satelliteResources?: {
         [cultureName: string]: ResourceListOrArray;
     };
-    readonly libraryStartupModules?: {
-        readonly onRuntimeConfigLoaded?: ResourceListOrArray;
-        readonly onRuntimeReady?: ResourceListOrArray;
-    };
+    readonly modulesAfterConfigLoaded?: ResourceListOrArray;
+    readonly modulesAfterRuntimeReady?: ResourceListOrArray;
     readonly extensions?: ResourceExtensions;
     readonly vfs?: {
         [virtualPath: string]: ResourceListOrArray;
     };
-}
-interface NativeResources {
-    readonly jsModuleWorker?: ResourceListOrString;
-    readonly jsModuleNative: ResourceListOrString;
-    readonly jsModuleRuntime: ResourceListOrString;
-    readonly wasmNative: ResourceListOrString;
-    readonly symbols?: ResourceListOrArray;
-    readonly icu?: ResourceListOrArray;
 }
 type ResourceList = {
     [name: string]: string;

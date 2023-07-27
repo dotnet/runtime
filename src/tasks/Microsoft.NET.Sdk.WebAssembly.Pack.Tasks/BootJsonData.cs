@@ -124,14 +124,28 @@ public class ResourcesData
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
     /// </summary>
     /// <remarks>
-    /// Deprecated in .NET 8, use <see cref="native"/>.
+    /// Deprecated in .NET 8, use <see cref="jsModuleWorker"/>, <see cref="jsModuleNative"/>, <see cref="jsModuleRuntime"/>, <see cref="wasmNative"/>, <see cref="jsSymbols"/>, <see cref="icu"/>.
     /// </remarks>
+    [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary runtime { get; set; }
 
-    /// <summary>
-    /// Native runtime assets (dotnet.wasm, dotnet.js, etc).
-    /// </summary>
-    public NativeResources native { get; set; }
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleRuntime { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary wasmNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsSymbols { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary icu { get; set; }
 
     /// <summary>
     /// "assembly" (.dll) resources
@@ -163,12 +177,11 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary libraryInitializers { get; set; }
 
-    /// <summary>
-    /// JavaScript module initializers that runtime will be in charge of loading.
-    /// Used in .NET >= 8
-    /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public TypedLibraryStartupModules libraryStartupModules { get; set; }
+    public ResourceHashesByNameDictionary modulesAfterConfigLoaded { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary modulesAfterRuntimeReady { get; set; }
 
     /// <summary>
     /// Extensions created by users customizing the initialization process. The format of the file(s)
@@ -188,38 +201,6 @@ public class ResourcesData
 
     [DataMember(EmitDefaultValue = false)]
     public List<string> remoteSources { get; set; }
-}
-
-[DataContract]
-public class NativeResources
-{
-    [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
-
-    [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary jsModuleNative { get; set; }
-
-    [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary jsModuleRuntime { get; set; }
-
-    [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary wasmNative { get; set; }
-
-    [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary symbols { get; set; }
-
-    [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary icu { get; set; }
-}
-
-[DataContract]
-public class TypedLibraryStartupModules
-{
-    [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary onRuntimeConfigLoaded { get; set; }
-
-    [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary onRuntimeReady { get; set; }
 }
 
 public enum GlobalizationMode : int

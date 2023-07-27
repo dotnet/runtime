@@ -46,10 +46,10 @@ export function init_globalization() {
 }
 
 export function getIcuResourceName(config: MonoConfig): string | null {
-    if (config.resources?.native?.icu && config.globalizationMode != GlobalizationMode.Invariant) {
+    if (config.resources?.icu && config.globalizationMode != GlobalizationMode.Invariant) {
         const culture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
 
-        const icuFiles = Object.keys(config.resources.native.icu);
+        const icuFiles = Object.keys(config.resources.icu);
 
         let icuFile = null;
         if (config.globalizationMode === GlobalizationMode.Custom) {

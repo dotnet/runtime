@@ -133,18 +133,18 @@ export function enumerateResources(resources: ResourceListOrArray, itemHandler: 
 }
 
 export function resolve_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
-    const nativeResources = loaderHelpers.config.resources?.native;
-    mono_assert(nativeResources, () => "Can't find native resources in config");
+    const resources = loaderHelpers.config.resources;
+    mono_assert(resources, () => "Can't find native resources in config");
 
     switch (behavior) {
         case "dotnetwasm":
-            return getFirstAssetWithResolvedUrl(nativeResources.wasmNative, behavior);
+            return getFirstAssetWithResolvedUrl(resources.wasmNative, behavior);
         case "js-module-threads":
-            return getFirstAssetWithResolvedUrl(nativeResources.jsModuleWorker, behavior);
+            return getFirstAssetWithResolvedUrl(resources.jsModuleWorker, behavior);
         case "js-module-native":
-            return getFirstAssetWithResolvedUrl(nativeResources.jsModuleNative, behavior);
+            return getFirstAssetWithResolvedUrl(resources.jsModuleNative, behavior);
         case "js-module-runtime":
-            return getFirstAssetWithResolvedUrl(nativeResources.jsModuleRuntime, behavior);
+            return getFirstAssetWithResolvedUrl(resources.jsModuleRuntime, behavior);
     }
 }
 
@@ -311,11 +311,9 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
             }
         }
 
-        const nativeResources = resources.native;
-
         const icuDataResourceName = getIcuResourceName(config);
-        if (icuDataResourceName && nativeResources?.icu) {
-            enumerateResources(nativeResources.icu, (name, hash) => {
+        if (icuDataResourceName && resources.icu) {
+            enumerateResources(resources.icu, (name, hash) => {
                 if (name === icuDataResourceName) {
                     containedInSnapshotAssets.push(ensureAssetResolvedUrl({
                         name,
@@ -327,8 +325,8 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
             });
         }
 
-        if (nativeResources?.symbols) {
-            enumerateResources(nativeResources.symbols, (name, hash) => {
+        if (resources.jsSymbols) {
+            enumerateResources(resources.jsSymbols, (name, hash) => {
                 alwaysLoadedAssets.push(ensureAssetResolvedUrl({
                     name,
                     hash,

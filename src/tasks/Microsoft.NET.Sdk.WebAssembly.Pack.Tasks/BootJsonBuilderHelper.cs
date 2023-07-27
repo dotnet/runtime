@@ -26,12 +26,12 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
             AddDictionary(sb, bootConfig.resources.assembly);
 
-            AddDictionary(sb, bootConfig.resources.native?.jsModuleWorker);
-            AddDictionary(sb, bootConfig.resources.native?.jsModuleNative);
-            AddDictionary(sb, bootConfig.resources.native?.jsModuleRuntime);
-            AddDictionary(sb, bootConfig.resources.native?.wasmNative);
-            AddDictionary(sb, bootConfig.resources.native?.symbols);
-            AddDictionary(sb, bootConfig.resources.native?.icu);
+            AddDictionary(sb, bootConfig.resources.jsModuleWorker);
+            AddDictionary(sb, bootConfig.resources.jsModuleNative);
+            AddDictionary(sb, bootConfig.resources.jsModuleRuntime);
+            AddDictionary(sb, bootConfig.resources.wasmNative);
+            AddDictionary(sb, bootConfig.resources.jsSymbols);
+            AddDictionary(sb, bootConfig.resources.icu);
             AddDictionary(sb, bootConfig.resources.runtime);
             AddDictionary(sb, bootConfig.resources.lazyAssembly);
 
@@ -52,23 +52,21 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
         public Dictionary<string, string>? GetNativeResourceTargetInBootConfig(BootJsonData bootConfig, string resourceName)
         {
-            bootConfig.resources.native ??= new();
-
             string resourceExtension = Path.GetExtension(resourceName);
             if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.native.jsModuleWorker ??= new();
+                return bootConfig.resources.jsModuleWorker ??= new();
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.native.jsModuleNative ??= new();
+                return bootConfig.resources.jsModuleNative ??= new();
             else if (resourceName.StartsWith("dotnet.runtime", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.native.jsModuleRuntime ??= new();
+                return bootConfig.resources.jsModuleRuntime ??= new();
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.native.wasmNative ??= new();
+                return bootConfig.resources.wasmNative ??= new();
             else if (resourceName.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return null;
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".symbols", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.native.symbols ??= new();
+                return bootConfig.resources.jsSymbols ??= new();
             else if (resourceName.StartsWith("icudt", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.native.icu ??= new();
+                return bootConfig.resources.icu ??= new();
             else
                 Log.LogError($"The resource '{resourceName}' is not recognized as any native asset");
 

@@ -59,9 +59,9 @@ public class GenerateWasmBootJson : Task
     [Required]
     public string TargetFrameworkVersion { get; set; }
 
-    public ITaskItem[] LibraryInitializerOnRuntimeConfigLoaded { get; set; }
+    public ITaskItem[] ModuleAfterConfigLoaded { get; set; }
 
-    public ITaskItem[] LibraryInitializerOnRuntimeReady { get; set; }
+    public ITaskItem[] ModuleAfterRuntimeReady { get; set; }
 
     [Required]
     public string OutputPath { get; set; }
@@ -130,8 +130,8 @@ public class GenerateWasmBootJson : Task
             result.runtimeOptions = runtimeOptions.ToArray();
         }
 
-        string[] libraryInitializerOnRuntimeConfigLoadedFullPaths = LibraryInitializerOnRuntimeConfigLoaded?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
-        string[] libraryInitializerOnRuntimeReadyFullPath = LibraryInitializerOnRuntimeReady?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
+        string[] moduleAfterConfigLoadedFullPaths = ModuleAfterConfigLoaded?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
+        string[] moduleAfterRuntimeReadyFullPaths = ModuleAfterRuntimeReady?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
 
         // Build a two-level dictionary of the form:
         // - assembly:
@@ -226,27 +226,25 @@ public class GenerateWasmBootJson : Task
 
                     if (IsTargeting80OrLater())
                     {
-                        var libraryStartupModules = resourceData.libraryStartupModules ??= new TypedLibraryStartupModules();
-
-                        if (libraryInitializerOnRuntimeConfigLoadedFullPaths.Contains(resource.ItemSpec))
+                        if (moduleAfterConfigLoadedFullPaths.Contains(resource.ItemSpec))
                         {
-                            resourceList = libraryStartupModules.onRuntimeConfigLoaded ??= new();
+                            resourceList = resourceData.modulesAfterConfigLoaded ??= new();
                         }
-                        else if (libraryInitializerOnRuntimeReadyFullPath.Contains(resource.ItemSpec))
+                        else if (moduleAfterRuntimeReadyFullPaths.Contains(resource.ItemSpec))
                         {
-                            resourceList = libraryStartupModules.onRuntimeReady ??= new();
+                            resourceList = resourceData.modulesAfterRuntimeReady ??= new();
                         }
                         else if (File.Exists(resource.ItemSpec))
                         {
                             string fileContent = File.ReadAllText(resource.ItemSpec);
                             if (fileContent.Contains("onRuntimeConfigLoaded") || fileContent.Contains("beforeStart") || fileContent.Contains("afterStarted"))
-                                resourceList = libraryStartupModules.onRuntimeConfigLoaded ??= new();
+                                resourceList = resourceData.modulesAfterConfigLoaded ??= new();
                             else
-                                resourceList = libraryStartupModules.onRuntimeReady ??= new();
+                                resourceList = resourceData.modulesAfterRuntimeReady ??= new();
                         }
                         else
                         {
-                            resourceList = libraryStartupModules.onRuntimeConfigLoaded ??= new();
+                            resourceList = resourceData.modulesAfterConfigLoaded ??= new();
                         }
 
                         string newTargetPath = "../" + targetPath; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
@@ -345,7 +343,6 @@ public class GenerateWasmBootJson : Task
         var serializer = new DataContractJsonSerializer(typeof(BootJsonData), new DataContractJsonSerializerSettings
         {
             UseSimpleDictionaryFormat = true,
-            KnownTypes = new[] { typeof(TypedLibraryStartupModules) },
             EmitTypeInformation = EmitTypeInformation.Never
         });
 

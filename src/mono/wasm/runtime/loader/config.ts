@@ -97,7 +97,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
 
         normalizeConfig();
 
-        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config], "onRuntimeConfigLoaded");
+        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config], "modulesAfterConfigLoaded");
 
         if (module.onConfigLoaded) {
             try {
