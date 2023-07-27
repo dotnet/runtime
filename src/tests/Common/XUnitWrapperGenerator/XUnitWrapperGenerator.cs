@@ -193,7 +193,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
                         new DiagnosticDescriptor(
-                            "XUW1004",
+                            "XUW1003",
                             "Test methods must be public",
                             "Test methods must be public. Add or change the visibility modifier of the test method to public.",
                             "XUnitWrapperGenerator",
@@ -209,7 +209,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     {
                         context.ReportDiagnostic(Diagnostic.Create(
                             new DiagnosticDescriptor(
-                                "XUW1005",
+                                "XUW1004",
                                 "Test classes must be public",
                                 "Test classes must be public. Add or change the visibility modifier of the test class to public.",
                                 "XUnitWrapperGenerator",
