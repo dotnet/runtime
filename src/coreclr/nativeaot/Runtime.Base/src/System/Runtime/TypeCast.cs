@@ -773,9 +773,9 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void StelemRef_Helper(ref object? element, MethodTable* elementType, object obj)
+        private static unsafe void StelemRef_Helper(ref object element, MethodTable* elementType, object obj)
         {
-            CastResult result = CastCache.TryGet(s_table!, (nuint)obj.GetMethodTable() + (int)AssignmentVariation.BoxedSource, (nuint)elementType);
+            CastResult result = s_castCache.TryGet((nuint)obj.GetMethodTable() + (int)AssignmentVariation.BoxedSource, (nuint)elementType);
             if (result == CastResult.CanCast)
             {
                 InternalCalls.RhpAssignRef(ref element, obj);
@@ -785,12 +785,10 @@ namespace System.Runtime
             StelemRef_Helper_NoCacheLookup(ref element, elementType, obj);
         }
 
-        private static unsafe void StelemRef_Helper_NoCacheLookup(ref object? element, MethodTable* elementType, object obj)
+        private static unsafe void StelemRef_Helper_NoCacheLookup(ref object element, MethodTable* elementType, object obj)
         {
-            Debug.Assert(obj != null);
-
-            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj != null)
+            object? castedObj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
+            if (castedObj != null)
             {
                 InternalCalls.RhpAssignRef(ref element, obj);
                 return;
