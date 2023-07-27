@@ -17,9 +17,9 @@
   <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" 
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
-  <Import Condition="Exists('$(ILCompilerTargetsPath)')"
+  <Import Condition="Exists('$(ILCompilerTargetsPath)') and '$(UseNativeAOTRuntime)' == 'true'"
           Project="$(ILCompilerTargetsPath)" />
-  <Import Condition="Exists('$(ILLinkTargetsPath)')"
+  <Import Condition="Exists('$(ILLinkTargetsPath)') and '$(UseNativeAOTRuntime)' == 'true'"
           Project="$(ILLinkTargetsPath)" />
 
   <Target Name="_CleanPublish" 
