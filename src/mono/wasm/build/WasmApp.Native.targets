@@ -24,6 +24,7 @@
       _SetWasmBuildNativeDefaults
     </_BeforeWasmBuildAppDependsOn>
 
+    <_EmccDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">-msimd128</_EmccDefaultFlags>
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
   </PropertyGroup>
@@ -114,6 +115,12 @@
 
       <!-- removing legacy interop needs relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableLegacyJsInterop)' == 'false'" >true</WasmBuildNative>
+
+      <!-- disabling SIMD needs relink -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableSIMD)' == 'false'" >true</WasmBuildNative>
+
+      <!-- disabling EH needs relink -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableExceptionHandling)' == 'false'" >true</WasmBuildNative>
 
       <!-- InvariantTimezone and InvariantGlobalization need rebuild -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantTimezone)' == 'true'">true</WasmBuildNative>
@@ -213,7 +220,6 @@
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
-      <_EmccCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true' and '$(_WasmShouldAOT)' == 'true'" />
 
       <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
       <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
@@ -349,7 +355,7 @@
     </ItemGroup>
     <EmccCompile
           SourceFiles="@(_WasmSourceFileToCompile)"
-          Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"'
+          Arguments='"@$(_EmccDefaultFlagsRsp)" $(_EmccDefaultFlags) "@$(_EmccCompileRsp)"'
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
@@ -371,7 +377,7 @@
     <Message Text="Compiling assembly bitcode files with $(EmccLinkOptimizationFlag) ..." Importance="High" Condition="@(_BitCodeFile->Count()) > 0" />
     <EmccCompile
           SourceFiles="@(_BitCodeFile)"
-          Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; &quot;@$(_EmccCompileBitcodeRsp)&quot;"
+          Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; $(_EmccDefaultFlags) &quot;@$(_EmccCompileBitcodeRsp)&quot;"
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
@@ -487,7 +493,7 @@
     <Message Text="Linking for initial memory %24(EmccInitialHeapSize)=$(EmccInitialHeapSize) bytes. Set this msbuild property to change the value." Importance="High" />
     <Message Text="Linking with emcc with $(EmccLinkOptimizationFlag). This may take a while ..." Importance="High" />
     <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
-    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccDefaultLinkFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMSBuild="true">
+    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" $(_EmccDefaultFlags) "@$(_EmccDefaultLinkFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="_EmccLinkStepConsoleOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_EmccLinkStepExitCode" />
     </Exec>
