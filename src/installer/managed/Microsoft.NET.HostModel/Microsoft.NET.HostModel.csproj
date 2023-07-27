@@ -26,14 +26,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
-    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
-    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
-    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" Link="Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
-    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" Link="Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
 
-    <Compile Include="..\..\..\coreclr\tools\Common\System\Collections\Generic\ArrayBuilder.cs" Link="Common\ArrayBuilder.cs" />
-    <Compile Include="..\..\..\coreclr\tools\Common\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" Link="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\System\Collections\Generic\ArrayBuilder.cs" Link="Common\ArrayBuilder.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" Link="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
   </ItemGroup>
 
 
