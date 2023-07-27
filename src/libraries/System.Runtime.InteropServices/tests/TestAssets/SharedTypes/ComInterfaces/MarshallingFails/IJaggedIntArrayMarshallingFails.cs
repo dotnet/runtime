@@ -27,6 +27,11 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
             [MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue)]
             out int[] widths);
 
+        [return: MarshalUsing(ConstantElementCount = 10),
+            MarshalUsing(ElementIndirectionDepth = 1, ConstantElementCount = 10),
+            MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 2)]
+        int[][] GetConstSize();
+
         void Set(
             [MarshalUsing(CountElementName = nameof(length)),
             MarshalUsing(ElementIndirectionDepth = 1, CountElementName = nameof(widths)),
@@ -54,6 +59,18 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
             widths = _widths;
             return array.Length;
         }
+
+        [return: MarshalUsing(ConstantElementCount = 10), MarshalUsing(ElementIndirectionDepth = 1, ConstantElementCount = 10), MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 2)]
+        public int[][] GetConstSize()
+        {
+            int[][] values = new int[10][];
+            for (int i = 0; i < 10; i++)
+            {
+                values[i] = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            }
+            return values;
+        }
+
         public void Set(int[][] array, int[] widths, int length)
         {
             _data = array;
