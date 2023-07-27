@@ -36,7 +36,9 @@ You can disable it by `<WasmEnableExceptionHandling>false</WasmEnableExceptionHa
 See also WebAssembly proposal [Exceptions.md](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
 
 ## BigInt
+
 Is required if the application uses Int64 marshaling in JS interop.
+
 See also WebAssembly proposal [JS-BigInt](https://github.com/WebAssembly/JS-BigInt-integration)
 
 ## fetch browser API
@@ -114,30 +116,29 @@ This requires that you have [wasm-tools workload](#wasm-tools-workload) installe
 
 We maintain description of JavaScript embedding API in [dotnet.d.ts](https://github.com/dotnet/runtime/blob/main/src/mono/wasm/runtime/dotnet.d.ts).
 
-## browser application template
+## Browser application template
 
 You can create simple application template by running `dotnet new wasmbrowser`.
 
 Then you could `dotnet run` and open the URL which it printed to test the app in your browser. For example `http://localhost:5292/index.html`
 
-You can also `dotnet publish -c Release` which will publish your app to [AppBundle](#folder-structure) folder.
+You can also `dotnet publish -c Release` which will publish your app to [AppBundle](#Project-folder-structure) folder.
 
 # Downloaded assets
 
-## project folder structure
+## Project folder structure
 
 Described as relative to simple application project.
 
 - `./wwwroot` is optional project folder, into which you can place files which should be also deployed to the web server.
-- `./bin/Release/net8.0/browser-wasm/AppBundle` is a folder into which our build process will produce files which should be hosted by the HTTP server.
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework` - contains all the assets of the runtime.
+- `./bin/Release/net8.0/browser-wasm/AppBundle` folder which should be hosted by the HTTP server.
 - `./bin/Release/net8.0/browser-wasm/AppBundle/index.html` - the page which is hosting the application.
 - `./bin/Release/net8.0/browser-wasm/AppBundle/main.js` - typically the main JavaScript entry point, it will `import { dotnet } from './_framework/dotnet.js'` and `await dotnet.run();`.
-- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework` - contains all the assets and modules of the dotnet application.
+- `./bin/Release/net8.0/browser-wasm/AppBundle/_framework` - contains all the assets of the runtime and the managed application.
 
 You can flatten the `_framework` folder away by `<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>` in the project file.
 
-## _framework folder structure
+## `_framework` folder structure
 - `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
 - `dotnet.native.js` - is posix emulation layer by [emscripten](https://github.com/emscripten-core/emscripten) project
 - `dotnet.runtime.js` - is integration of the dotnet with the browser
@@ -151,11 +152,17 @@ You can flatten the `_framework` folder away by `<WasmRuntimeAssetsLocation>./</
 ## Caching, Integrity
 
 Your browser could be caching various files and assets downloaded by the dotnet runtime so that the next application start will be much faster.
+
 When you deploy a new version of the application, you need to make sure that the caches in the browser and also in any HTTP proxies will not interfere.
+
+WARNING: Your server can't force the browser to ask for the file on the same URL again, if the browser thinks that the file is fresh enough.
+
+_TODO_ discuss cache busting strategies.
+
 In order to make sure that the application resources are consistent with each other, dotnet runtime will use `integrity` hash for all downloaded resources.
-The list of assets which the application needs, together with some configuration flags are built into `blazor.boot.json` file.
 
 See also [Cache-Control on headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control)
+
 See also [fetch integrity](https://developer.mozilla.org/en-US/docs/Web/API/Request/integrity)
 
 ## MIME types
@@ -200,6 +207,7 @@ If your application needs to work with locatization but you don't require proces
 It will use browser APIs instead part of ICU database. This feature is still in development.
 
 If your application needs to work with specific subset of locales, you can create your own ICU database.
+
 _TODO_ HOW_TO custom ?
 
 ## Timezones
@@ -207,6 +215,7 @@ _TODO_ HOW_TO custom ?
 Browsers don't offer API for working with time zone database and so we have to bring the time zone data as part of the application.
 
 If your application doesn't need to work with TZ, you can reduce download size by `<InvariantTimezone>true</InvariantTimezone>`.
+
 This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
 ## Bundling JavaScript and other assets
@@ -217,6 +226,7 @@ You can bundle the `dotnet.js` ES6 module with the rest of your JavaScript appli
 
 The other assets and JS modules of the dotnet are loaded via dynamic `import` or via `fetch` APIs. They are not ready to be bundled in Net8.
 We consider that the dotnet application is usually large as is and giving the browser chance to start compiling it in parallel with other downloads is better.
+
 We would like to [hear from the community](https://github.com/dotnet/runtime/issues/86162) more about the use-cases when it would be benefitial.
 
 # Resources consumed on the target device
