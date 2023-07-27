@@ -155,6 +155,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return Path.Combine (referenceDir, "System.Runtime.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.Extensions.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.InteropServices.dll");
+				yield return Path.Combine (referenceDir, "System.Threading.dll");
 			} else {
 				yield return "mscorlib.dll";
 			}

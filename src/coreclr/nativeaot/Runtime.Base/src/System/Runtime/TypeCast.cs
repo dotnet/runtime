@@ -21,8 +21,19 @@ namespace System.Runtime
     //
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [EagerStaticClassConstruction]
     internal static class TypeCast
     {
+#if DEBUG
+        private const int InitialCacheSize = 8;    // MUST BE A POWER OF TWO
+        private const int MaximumCacheSize = 512;  // make this lower than release to make it easier to reach this in tests.
+#else
+        private const int InitialCacheSize = 128;  // MUST BE A POWER OF TWO
+        private const int MaximumCacheSize = 4096; // 4096 * sizeof(CastCacheEntry) is 98304 bytes on 64bit. We will rarely need this much though.
+#endif // DEBUG
+
+        private static CastCache s_castCache = new CastCache(InitialCacheSize, MaximumCacheSize);
+
         [Flags]
         internal enum AssignmentVariation
         {
@@ -1159,7 +1170,7 @@ namespace System.Runtime
                 return true;
 
             nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
-            CastResult result = CastCache.TryGet(sourceAndVariation, (nuint)(pTargetType));
+            CastResult result = s_castCache.TryGet(sourceAndVariation, (nuint)(pTargetType));
             if (result != CastResult.MaybeCast)
             {
                 return result == CastResult.CanCast;
@@ -1187,7 +1198,7 @@ namespace System.Runtime
             // Update the cache
             //
             nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
-            CastCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
+            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
 
             return result;
         }

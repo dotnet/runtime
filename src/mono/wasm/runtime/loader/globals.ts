@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { exceptions, simd } from "wasm-feature-detect";
+
 import type { AssetEntryInternal, GlobalObjects, LoaderHelpers, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
@@ -93,6 +95,10 @@ export function setLoaderGlobals(
 
         hasDebuggingEnabled,
         invokeLibraryInitializers,
+
+        // from wasm-feature-detect npm package
+        exceptions,
+        simd,
 
     } as Partial<LoaderHelpers>);
 }

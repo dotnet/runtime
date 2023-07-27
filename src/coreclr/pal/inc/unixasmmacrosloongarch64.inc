@@ -137,12 +137,11 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EMIT_BREAKPOINT
-        break
+        break 0
 .endm
 
 .macro EPILOG_BRANCH Target
         b \Target
-        //break
 .endm
 
 .macro EPILOG_BRANCH_REG reg
