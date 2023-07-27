@@ -32,13 +32,28 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // we use this to maintain identity of GCHandle for a managed object
-        public static Dictionary<object, IntPtr> s_gcHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        private static Dictionary<object, IntPtr>? s_jsOwnedObjects;
+
+        public static Dictionary<object, IntPtr> ThreadJsOwnedObjects
+        {
+            get
+            {
+                s_jsOwnedObjects ??= new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
+                return s_jsOwnedObjects;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReleaseCSOwnedObject(nint jsHandle)
         {
             if (jsHandle != IntPtr.Zero)
             {
+#if FEATURE_WASM_THREADS
+                JSSynchronizationContext.AssertWebWorkerContext();
+#endif
                 ThreadCsOwnedObjects.Remove((int)jsHandle);
                 Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
             }
@@ -64,19 +79,19 @@ namespace System.Runtime.InteropServices.JavaScript
         public static IntPtr GetJSOwnedObjectGCHandle(object obj, GCHandleType handleType = GCHandleType.Normal)
         {
             if (obj == null)
-                return IntPtr.Zero;
-
-            IntPtr result;
-            lock (s_gcHandleFromJSOwnedObject)
             {
-                IntPtr gcHandle;
-                if (s_gcHandleFromJSOwnedObject.TryGetValue(obj, out gcHandle))
-                    return gcHandle;
-
-                result = (IntPtr)GCHandle.Alloc(obj, handleType);
-                s_gcHandleFromJSOwnedObject[obj] = result;
-                return result;
+                return IntPtr.Zero;
             }
+
+            IntPtr gcHandle;
+            if (ThreadJsOwnedObjects.TryGetValue(obj, out gcHandle))
+            {
+                return gcHandle;
+            }
+
+            IntPtr result = (IntPtr)GCHandle.Alloc(obj, handleType);
+            ThreadJsOwnedObjects[obj] = result;
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -188,6 +203,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static JSObject CreateCSOwnedProxy(nint jsHandle)
         {
+#if FEATURE_WASM_THREADS
+            JSSynchronizationContext.AssertWebWorkerContext();
+#endif
             JSObject? res;
 
             if (!ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
@@ -244,14 +262,55 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void UninstallWebWorkerInterop()
         {
-            var ctx = SynchronizationContext.Current as JSSynchronizationContext;
+            var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
             var uninstallJSSynchronizationContext = ctx != null;
             if (uninstallJSSynchronizationContext)
             {
-                SynchronizationContext.SetSynchronizationContext(ctx!.previousSynchronizationContext);
-                JSSynchronizationContext.CurrentJSSynchronizationContext = null;
-                ctx.isDisposed = true;
+                try
+                {
+                    foreach (var jsObjectWeak in ThreadCsOwnedObjects.Values)
+                    {
+                        if (jsObjectWeak.TryGetTarget(out var jso))
+                        {
+                            jso.Dispose();
+                        }
+                    }
+                    foreach (var gch in ThreadJsOwnedObjects.Values)
+                    {
+                        GCHandle gcHandle = (GCHandle)gch;
+
+                        // if this is pending promise we reject it
+                        if (gcHandle.Target is TaskCallback holder)
+                        {
+                            unsafe
+                            {
+                                holder.Callback!.Invoke(null);
+                            }
+                        }
+                        gcHandle.Free();
+                    }
+                    SynchronizationContext.SetSynchronizationContext(ctx!.previousSynchronizationContext);
+                    JSSynchronizationContext.CurrentJSSynchronizationContext = null;
+                    ctx.isDisposed = true;
+                }
+                catch(Exception ex)
+                {
+                    Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
+                }
             }
+            else
+            {
+                if (ThreadCsOwnedObjects.Count > 0)
+                {
+                    Environment.FailFast($"There should be no JSObjects proxies on this thread, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}");
+                }
+                if (ThreadJsOwnedObjects.Count > 0)
+                {
+                    Environment.FailFast($"There should be no JS proxies of managed objects on this thread, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}");
+                }
+            }
+            ThreadCsOwnedObjects.Clear();
+            ThreadJsOwnedObjects.Clear();
             Interop.Runtime.UninstallWebWorkerInterop(uninstallJSSynchronizationContext);
         }
 

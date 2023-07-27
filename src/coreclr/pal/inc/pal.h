@@ -2175,6 +2175,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // TODO-LoongArch64: support the SIMD.
     ULONGLONG F[32];
+    DWORD64 Fcc;
     DWORD Fcsr;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
