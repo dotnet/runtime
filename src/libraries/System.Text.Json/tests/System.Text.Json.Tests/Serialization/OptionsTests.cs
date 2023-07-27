@@ -508,9 +508,6 @@ namespace System.Text.Json.Serialization.Tests
 
                 Assert.NotNull(options.TypeInfoResolver);
                 Assert.True(options.TypeInfoResolver is not DefaultJsonTypeInfoResolver);
-                IList<IJsonTypeInfoResolver> resolverList = Assert.IsAssignableFrom<IList<IJsonTypeInfoResolver>>(options.TypeInfoResolver);
-
-                Assert.Empty(resolverList);
                 Assert.Empty(options.TypeInfoResolverChain);
 
                 Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
@@ -518,11 +515,19 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.False(options.TryGetTypeInfo(typeof(string), out JsonTypeInfo? typeInfo));
                 Assert.Null(typeInfo);
 
-                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize("string"));
-                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize("string", options));
+                InvalidOperationException ex;
 
-                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<string>("\"string\""));
-                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<string>("\"string\"", options));
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize("string"));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize("string", options));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<string>("\"string\""));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<string>("\"string\"", options));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
 
             }, options).Dispose();
         }
@@ -552,8 +557,14 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
                 Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
 
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize("string", options));
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<string>("\"string\"", options));
+                InvalidOperationException ex;
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize("string", options));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<string>("\"string\"", options));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
                 Assert.False(options.TryGetTypeInfo(typeof(string), out JsonTypeInfo? typeInfo));
                 Assert.Null(typeInfo);
 
