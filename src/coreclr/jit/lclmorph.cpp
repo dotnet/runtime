@@ -952,19 +952,14 @@ private:
                                                                        CORINFO_TYPE_FLOAT, 16);
                         break;
                     }
+                    case TYP_SIMD8:
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
                     case TYP_SIMD16:
                     case TYP_SIMD32:
+#endif
                     {
-                        if ((elementType == TYP_SIMD16) && (varDsc->TypeGet() == TYP_SIMD64))
-                        {
-                            assert(m_compiler->IsBaselineVector512IsaSupportedDebugOnly());
-                            hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, lclNode,
-                                                                           m_compiler->gtNewIconNode(offset / 16),
-                                                                           NI_AVX512F_ExtractVector128,
-                                                                           CORINFO_TYPE_FLOAT, 64);
-                        }
-                        else if (offset == 0)
+                        assert(genTypeSize(elementType) * 2 == genTypeSize(varDsc));
+                        if (offset == 0)
                         {
                             hwiNode = m_compiler->gtNewSimdGetLowerNode(elementType, lclNode, CORINFO_TYPE_FLOAT,
                                                                         genTypeSize(varDsc));
@@ -978,7 +973,6 @@ private:
 
                         break;
                     }
-#endif
                     default:
                         unreached();
                 }
@@ -1016,19 +1010,14 @@ private:
                                                                        CORINFO_TYPE_FLOAT, 16);
                         break;
                     }
+                    case TYP_SIMD8:
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
                     case TYP_SIMD16:
                     case TYP_SIMD32:
+#endif
                     {
-                        if ((elementType == TYP_SIMD16) && (varDsc->TypeGet() == TYP_SIMD64))
-                        {
-                            assert(m_compiler->IsBaselineVector512IsaSupportedDebugOnly());
-                            hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD64, simdLclNode,
-                                                                           m_compiler->gtNewIconNode(offset / 16),
-                                                                           elementNode, NI_AVX512F_InsertVector128,
-                                                                           CORINFO_TYPE_FLOAT, 64);
-                        }
-                        else if (offset == 0)
+                        assert(genTypeSize(elementType) * 2 == genTypeSize(varDsc));
+                        if (offset == 0)
                         {
                             hwiNode = m_compiler->gtNewSimdWithLowerNode(varDsc->TypeGet(), simdLclNode, elementNode,
                                                                          CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
@@ -1042,7 +1031,6 @@ private:
 
                         break;
                     }
-#endif
                     default:
                         unreached();
                 }
@@ -1181,7 +1169,7 @@ private:
                 // We have three cases we want to handle:
                 // 1. Vector2/3/4 and Quaternion where we have 4x float fields
                 // 2. Plane where we have 1x Vector3 and 1x float field
-                // 3. Accesses of halves/quarters of larger SIMD types
+                // 3. Accesses of halves of larger SIMD types
 
                 if (indir->TypeIs(TYP_FLOAT))
                 {
@@ -1197,8 +1185,18 @@ private:
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
                 }
+#ifdef TARGET_ARM64
+                else if (indir->TypeIs(TYP_SIMD8))
+                {
+                    if ((varDsc->TypeGet() == TYP_SIMD16) && ((offset % 8) == 0))
+                    {
+                        return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
+                    }
+                }
+#endif
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-                else if (indir->TypeIs(TYP_SIMD16, TYP_SIMD32) && ((offset % genTypeSize(indir)) == 0))
+                else if (indir->TypeIs(TYP_SIMD16, TYP_SIMD32) && (genTypeSize(indir) * 2 == genTypeSize(varDsc)) &&
+                         ((offset % genTypeSize(indir)) == 0))
                 {
                     return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                 }
