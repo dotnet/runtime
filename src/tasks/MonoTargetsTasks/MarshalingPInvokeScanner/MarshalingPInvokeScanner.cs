@@ -106,6 +106,10 @@ namespace MonoTargetsTasks
         {
             using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using PEReader peReader = new PEReader(file);
+            if (!peReader.HasMetadata)
+            {
+                return false;
+            }
             MetadataReader mdtReader = peReader.GetMetadataReader();
 
             foreach(CustomAttributeHandle attrHandle in mdtReader.CustomAttributes)

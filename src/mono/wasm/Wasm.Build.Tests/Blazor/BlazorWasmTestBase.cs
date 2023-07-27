@@ -16,11 +16,12 @@ namespace Wasm.Build.Tests;
 
 public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 {
-    protected BlazorWasmProjectProvider _provider;
+    protected readonly BlazorWasmProjectProvider _provider;
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
                 : base(output, buildContext, new BlazorWasmProjectProvider(output))
     {
         _provider = GetProvider<BlazorWasmProjectProvider>();
+        _provider.BundleDirName = "wwwroot";
     }
 
     public void InitBlazorWasmProjectDir(string id, string targetFramework = DefaultTargetFrameworkForBlazor)
@@ -48,10 +49,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
                 .ExecuteWithCapturedOutput("new blazorwasm")
                 .EnsureSuccessful();
 
-        string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
-        if (!UseWebcil)
-            AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>false</WasmEnableWebcil>");
-        return projectFile;
+        return Path.Combine(_projectDir!, $"{id}.csproj");
     }
 
     protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
@@ -59,61 +57,66 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        var res = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
-        _provider.AssertBlazorBundle(options, isPublish: false);
+        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
 
-        return res;
+        AssertBundle(res.Output, options with { IsPublish = false });
+
+        return (res, logPath);
     }
 
     protected (CommandResult, string) BlazorPublish(BlazorBuildOptions options, params string[] extraArgs)
     {
-        var res = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
-        _provider.AssertBlazorBundle(options, isPublish: true);
+        if (options.WarnAsError)
+            extraArgs = extraArgs.Append("/warnaserror").ToArray();
+
+        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
+        AssertBundle(res.Output, options with { IsPublish = true });
 
         if (options.ExpectedFileType == NativeFilesType.AOT)
         {
             // check for this too, so we know the format is correct for the negative
             // test for jsinterop.webassembly.dll
-            Assert.Contains("Microsoft.JSInterop.dll -> Microsoft.JSInterop.dll.bc", res.Item1.Output);
+            Assert.Contains("Microsoft.JSInterop.dll -> Microsoft.JSInterop.dll.bc", res.Output);
 
             // make sure this assembly gets skipped
-            Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Item1.Output);
+            Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Output);
         }
 
-        string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework, "wasm", "for-build");
+        string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework!, "wasm", "for-build");
         // Check that we linked only for publish
         if (options.ExpectRelinkDirWhenPublishing)
             Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");
         else
             Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets created when relinking during Build");
 
-        return res;
+        return (res, logPath);
     }
 
-    protected (CommandResult, string) BlazorBuildInternal(string id, string config, bool publish = false, bool setWasmDevel = true, params string[] extraArgs)
+    protected (CommandResult res, string logPath) BlazorBuildInternal(
+        string id,
+        string config,
+        bool publish = false,
+        bool setWasmDevel = true,
+        params string[] extraArgs)
+        => BuildProjectWithoutAssert(
+                    id,
+                    config,
+                    new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish),
+                    extraArgs.Concat(new[]
+                    {
+                        "-p:BlazorEnableCompression=false",
+                        setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
+                    }).ToArray());
+
+    public void AssertBundle(string buildOutput, BlazorBuildOptions blazorBuildOptions)
     {
-        string label = publish ? "publish" : "build";
-        _testOutput.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
-
-        string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-{label}.binlog");
-        string[] combinedArgs = new[]
+        if (IsUsingWorkloads)
         {
-            label, // same as the command name
-            $"-bl:{logPath}",
-            $"-p:Configuration={config}",
-            !UseWebcil ? "-p:WasmEnableWebcil=false" : string.Empty,
-            "-p:BlazorEnableCompression=false",
-            "-nr:false",
-            setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
-        }.Concat(extraArgs).ToArray();
+            // In no-workload case, the path would be from a restored nuget
+            ProjectProviderBase.AssertRuntimePackPath(buildOutput, blazorBuildOptions.TargetFramework ?? DefaultTargetFramework);
+        }
 
-        CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!)
-                                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                    .ExecuteWithCapturedOutput(combinedArgs)
-                                    .EnsureSuccessful();
-
-        return (res, logPath);
+        _provider.AssertBundle(blazorBuildOptions);
     }
 
     protected string CreateProjectWithNativeReference(string id)
@@ -177,4 +180,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         }
     }
 
+    public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor)
+        => _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework);
 }

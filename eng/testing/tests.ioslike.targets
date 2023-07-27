@@ -62,21 +62,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <!-- 
-        Checks if the directory name "AppleAssembliesToBundle" is equal to the "AssemblyName",
-        if they match, consider it as the root directory and copy the files there,
-        otherwise, copy the files to a subdirectory.
-      -->
-      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' and ($([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)')))) == '$(AssemblyName)' or '$(IsRuntimeTests)' != 'true')"
-              Include="@(AppleAssembliesToBundle)"                    TargetDir="publish" />
-      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' and $([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)')))) != '$(AssemblyName)' and  '$(IsRuntimeTests)' == 'true'"
-                   Include="@(AppleAssembliesToBundle)"               TargetDir="publish\$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)'))))" />
-
-      <BundleFiles Include="@(AppleNativeFilesToBundle)"              TargetDir="publish" />
-
-      <BundleFiles Include="$(MonoProjectRoot)\msbuild\apple\data\*"  TargetDir="publish" />
+      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true'"
+                   Include="@(AppleAssembliesToBundle)"         TargetDir="publish\%(AppleAssembliesToBundle.RecursiveDir)" />
+      <BundleFiles Include="@(AppleNativeFilesToBundle)"        TargetDir="publish\%(AppleNativeFilesToBundle.RecursiveDir)" />
+      <BundleFiles Include="$(RuntimeConfigFilePath)"           TargetDir="publish" />
+      <BundleFiles Include="$(MonoProjectRoot)\msbuild\apple\data\*" TargetDir="publish" />
       <ExtraFiles Condition="'%(AppleAssembliesToBundle._IsNative)' == 'true'"
-                  Include="@(AppleAssembliesToBundle)"                TargetDir="extraFiles" />
+                   Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">

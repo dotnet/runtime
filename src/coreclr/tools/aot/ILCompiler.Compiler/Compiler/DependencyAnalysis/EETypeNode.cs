@@ -790,7 +790,13 @@ namespace ILCompiler.DependencyAnalysis
                 int pointerSize = _type.Context.Target.PointerSize;
                 int objectSize;
 
-                if (_type.IsDefType)
+                if (_type.IsInterface)
+                {
+                    // Interfaces don't live on the GC heap. Don't bother computing a number.
+                    // Zero compresses better than any useless number we would come up with.
+                    return 0;
+                }
+                else if (_type.IsDefType)
                 {
                     LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
 

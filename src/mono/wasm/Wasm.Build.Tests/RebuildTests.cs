@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -27,7 +28,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(NonNativeDebugRebuildData))]
-        public void NoOpRebuild(BuildArgs buildArgs, RunHost host, string id)
+        public async Task NoOpRebuild(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"rebuild_{buildArgs.Config}_{buildArgs.AOT}";
 
@@ -47,6 +48,9 @@ namespace Wasm.Build.Tests
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+
+            // artificial delay to have new enough timestamps
+            await Task.Delay(5000);
 
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
 

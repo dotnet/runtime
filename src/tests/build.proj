@@ -274,6 +274,7 @@
 
   <Target Name="BuildMonoiOSApp">
     <PropertyGroup>
+      <IntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)'))</IntermediateOutputPath>
       <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
       <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
       <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
