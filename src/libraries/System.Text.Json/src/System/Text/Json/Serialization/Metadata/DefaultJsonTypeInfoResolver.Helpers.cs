@@ -76,7 +76,8 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(!typeInfo.IsReadOnly);
             Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
 
-            bool shouldCheckMembersForRequiredMemberAttribute = ShouldCheckMembersForRequiredMemberAttribute(typeInfo);
+            bool constructorHasSetsRequiredMembersAttribute
+                = typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false;
 
             JsonTypeInfo.PropertyHierarchyResolutionState state = new();
 
@@ -88,6 +89,9 @@ namespace System.Text.Json.Serialization.Metadata
                     // Don't process any members for typeof(object)
                     break;
                 }
+
+                bool shouldCheckMembersForRequiredMemberAttribute
+                    = !constructorHasSetsRequiredMembersAttribute && currentType.HasRequiredMemberAttribute();
 
                 AddMembersDeclaredBySuperType(
                     typeInfo,
@@ -403,24 +407,6 @@ namespace System.Text.Json.Serialization.Metadata
                     Debug.Fail($"Invalid MemberInfo type: {memberInfo.MemberType}");
                     break;
             }
-        }
-
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        private static bool ShouldCheckMembersForRequiredMemberAttribute(JsonTypeInfo typeInfo)
-        {
-            // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
-            if (!(typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false))
-            {
-                foreach (Type currentType in typeInfo.Type.GetSortedTypeHierarchy())
-                {
-                    // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
-                    if (currentType.HasRequiredMemberAttribute())
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
         }
     }
 }
