@@ -145,11 +145,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     }
                 }
                 if (!found) return;
-<<<<<<< HEAD
-
-                // Find methods where all returns are the literal 100 (and there is at least one return)
-=======
->>>>>>> e63edc4297b (Add check for and remove unnecessary return 100s)
                 if (method.DeclaringSyntaxReferences.IsEmpty) return;
 
                 found = false;
@@ -165,20 +160,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 }
 
                 if (!found) return;
-<<<<<<< HEAD
                 context.ReportDiagnostic(Diagnostic.Create(Descriptors.XUWG1002, method.Locations[0]));
-=======
-                context.ReportDiagnostic(Diagnostic.Create(
-                    new DiagnosticDescriptor(
-                        "XUW1003",
-                        "All returns are constant 100",
-                        "A test method that always returns 100 should return \"void\" instead",
-                        "XUnitWrapperGenerator",
-                        DiagnosticSeverity.Warning,
-                        isEnabledByDefault: true),
-                    method.Locations[0]));
-
->>>>>>> e63edc4297b (Add check for and remove unnecessary return 100s)
             });
 
         context.RegisterImplementationSourceOutput(
@@ -203,6 +185,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 if (inMergedTestDirectory)
                 {
                     CheckNoEntryPoint(context, compData);
+                    CheckTestsExist(context, methods, compData);
                 }
 
                 if (compData.OutputKind != OutputKind.ConsoleApplication)
