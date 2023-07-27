@@ -5897,10 +5897,10 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
     bool hasPgoData = true;
 
-    CORINFO_CLASS_HANDLE  likelyClasses[MAX_GDV_TYPE_CHECKS]  = {};
-    CORINFO_METHOD_HANDLE likelyMethodes[MAX_GDV_TYPE_CHECKS] = {};
-    unsigned              likelihoods[MAX_GDV_TYPE_CHECKS]    = {};
-    int                   candidatesCount                     = 0;
+    CORINFO_CLASS_HANDLE  likelyClasses[MAX_GDV_TYPE_CHECKS] = {};
+    CORINFO_METHOD_HANDLE likelyMethods[MAX_GDV_TYPE_CHECKS] = {};
+    unsigned              likelihoods[MAX_GDV_TYPE_CHECKS]   = {};
+    int                   candidatesCount                    = 0;
 
     // We currently only get likely class guesses when there is PGO data
     // with class profiles.
@@ -5911,7 +5911,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     }
     else
     {
-        pickGDV(call, ilOffset, isInterface, likelyClasses, likelyMethodes, &candidatesCount, likelihoods);
+        pickGDV(call, ilOffset, isInterface, likelyClasses, likelyMethods, &candidatesCount, likelihoods);
         assert((unsigned)candidatesCount <= MAX_GDV_TYPE_CHECKS);
         assert((unsigned)candidatesCount <= (unsigned)getGDVMaxTypeChecks());
         if (candidatesCount == 0)
@@ -6015,7 +6015,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
         CORINFO_CLASS_HANDLE  likelyClass  = likelyClasses[candidateId];
-        CORINFO_METHOD_HANDLE likelyMethod = likelyMethodes[candidateId];
+        CORINFO_METHOD_HANDLE likelyMethod = likelyMethods[candidateId];
         unsigned              likelihood   = likelihoods[candidateId];
 
         CORINFO_CONTEXT_HANDLE likelyContext = NULL;
@@ -6057,6 +6057,10 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
             likelyContext = dvInfo.exactContext;
             likelyMethod  = dvInfo.devirtualizedMethod;
+        }
+        else
+        {
+            likelyContext = MAKE_METHODCONTEXT(likelyMethod);
         }
 
         uint32_t likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
@@ -6291,14 +6295,8 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         {
             InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV");
 
-            CORINFO_CONTEXT_HANDLE moreExactContext = call->GetGDVCandidateInfo(candidateId)->exactContextHnd;
-            if (moreExactContext == NULL)
-            {
-                moreExactContext = exactContextHnd;
-            }
-
             // Do the actual evaluation
-            impMarkInlineCandidateHelper(call, candidateId, moreExactContext, exactContextNeedsRuntimeLookup, callInfo,
+            impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
                                          ilOffset, &inlineResult);
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
@@ -6464,15 +6462,17 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (call->IsGuardedDevirtualizationCandidate())
     {
-        if (call->GetGDVCandidateInfo(candidateIndex)->guardedMethodUnboxedEntryHandle != nullptr)
+        InlineCandidateInfo* gdvCandidate = call->GetGDVCandidateInfo(candidateIndex);
+        if (gdvCandidate->guardedMethodUnboxedEntryHandle != nullptr)
         {
-            fncHandle = call->GetGDVCandidateInfo(candidateIndex)->guardedMethodUnboxedEntryHandle;
+            fncHandle = gdvCandidate->guardedMethodUnboxedEntryHandle;
         }
         else
         {
-            fncHandle = call->GetGDVCandidateInfo(candidateIndex)->guardedMethodHandle;
+            fncHandle = gdvCandidate->guardedMethodHandle;
         }
-        methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
+        exactContextHnd = gdvCandidate->exactContextHnd;
+        methAttr        = info.compCompHnd->getMethodAttribs(fncHandle);
     }
     else
     {
@@ -7784,18 +7784,14 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             JITDUMP("\nCheckCanInline: fetching method info for inline candidate %s -- context %p\n",
                     compiler->eeGetMethodName(ftn), pParam->exactContextHnd);
 
-            if (pParam->exactContextHnd == nullptr)
-            {
-                JITDUMP("NULL context\n");
-            }
-            else if (pParam->exactContextHnd == METHOD_BEING_COMPILED_CONTEXT())
+            if (pParam->exactContextHnd == METHOD_BEING_COMPILED_CONTEXT())
             {
                 JITDUMP("Current method context\n");
             }
             else if ((((size_t)pParam->exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD))
             {
                 JITDUMP("Method context: %s\n",
-                        compiler->eeGetMethodName((CORINFO_METHOD_HANDLE)pParam->exactContextHnd));
+                        compiler->eeGetMethodFullName((CORINFO_METHOD_HANDLE)pParam->exactContextHnd));
             }
             else
             {
@@ -7803,13 +7799,10 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                                                    (size_t)pParam->exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK)));
             }
 
-            const bool isGdv = pParam->call->IsGuardedDevirtualizationCandidate();
-
             // Fetch method info. This may fail, if the method doesn't have IL.
-            // NOTE: For GDV we're expected to use a different context (per candidate)
             //
             CORINFO_METHOD_INFO methInfo;
-            if (!compCompHnd->getMethodInfo(ftn, &methInfo, isGdv ? nullptr : pParam->exactContextHnd))
+            if (!compCompHnd->getMethodInfo(ftn, &methInfo, pParam->exactContextHnd))
             {
                 inlineResult->NoteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
                 return;
