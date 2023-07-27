@@ -175,6 +175,30 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void TestPeekReadOneByteAtATime()
+        {
+            byte[] testData = new byte[] { 72, 69, 76, 76, 79 };
+
+            using var stream = new ReadOneAtATimeStream(testData);
+            using var sr = new StreamReader(stream);
+
+            for (int i = 0; i < testData.Length; i++)
+            {
+                Assert.Equal(i, stream.Position);
+
+                int tmp = sr.Peek();
+                Assert.Equal(testData[i], tmp);
+
+                tmp = sr.Read(); 
+                Assert.Equal(testData[i], tmp);
+            }
+
+            Assert.Equal(stream.Position, stream.Length);
+            Assert.Equal(-1, sr.Peek());
+            Assert.Equal(-1, sr.Read());
+        }
+
+        [Fact]
         public void ArgumentNullOnNullArray()
         {
             var baseInfo = GetCharArrayStream();

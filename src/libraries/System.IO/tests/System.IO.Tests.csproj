@@ -53,6 +53,7 @@
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs" Link="Common\System\IO\DelegateStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="Common\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ReadOneAtATimeStream.cs" Link="Common\System\IO\ReadOneAtATimeStream.cs" />
     <Compile Include="TestDataProvider\TestDataProvider.cs" />
     <Compile Include="TextReader\CharArrayTextReader.cs" />
     <Compile Include="TextReader\TextReaderTests.cs" />
