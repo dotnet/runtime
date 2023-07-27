@@ -8,6 +8,7 @@ import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
 import { mono_exit } from "./exit";
 import { loadResource } from "./resourceLoader";
+import { getIcuResourceName } from "./icu";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -74,15 +75,18 @@ function getFirstKey(resources: ResourceList | undefined): string | null {
     return null;
 }
 
-function createAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: AssetBehaviours) {
+function getFirstAssetWithResolvedUrl(resources: ResourceList | undefined, behavior: AssetBehaviours) {
     const name = getFirstKey(resources);
     mono_assert(name, `Can't find ${behavior} in resources`);
-    return {
-        name,
-        resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior),
-        hash: resources![name],
-        behavior
-    };
+    return ensureAssetResolvedUrl({ name, hash: resources![name], behavior });
+}
+
+function ensureAssetResolvedUrl(asset: AssetEntry): AssetEntry {
+    if (!asset.resolvedUrl) {
+        asset.resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(asset.name), asset.behavior);
+    }
+
+    return asset;
 }
 
 export function resolve_asset_path(behavior: AssetBehaviours): AssetEntryInternal {
@@ -90,13 +94,13 @@ export function resolve_asset_path(behavior: AssetBehaviours): AssetEntryInterna
     if (nativeResources) {
         switch (behavior) {
             case "dotnetwasm":
-                return createAssetWithResolvedUrl(nativeResources.wasmNative, behavior);
+                return getFirstAssetWithResolvedUrl(nativeResources.wasmNative, behavior);
             case "js-module-threads":
-                return createAssetWithResolvedUrl(nativeResources.jsModuleWorker, behavior);
+                return getFirstAssetWithResolvedUrl(nativeResources.jsModuleWorker, behavior);
             case "js-module-native":
-                return createAssetWithResolvedUrl(nativeResources.jsModuleNative, behavior);
+                return getFirstAssetWithResolvedUrl(nativeResources.jsModuleNative, behavior);
             case "js-module-runtime":
-                return createAssetWithResolvedUrl(nativeResources.jsModuleRuntime, behavior);
+                return getFirstAssetWithResolvedUrl(nativeResources.jsModuleRuntime, behavior);
         }
     }
 
@@ -116,20 +120,7 @@ export async function mono_download_assets(): Promise<void> {
         const containedInSnapshotAssets: AssetEntryInternal[] = [];
         const promises_of_assets: Promise<AssetEntryInternal>[] = [];
 
-        for (const a of loaderHelpers.config.assets!) {
-            const asset: AssetEntryInternal = a;
-            mono_assert(typeof asset === "object", "asset must be object");
-            mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
-            mono_assert(typeof asset.name === "string", "asset name must be string");
-            mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
-            mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
-            mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (containedInSnapshotByAssetTypes[asset.behavior]) {
-                containedInSnapshotAssets.push(asset);
-            } else {
-                alwaysLoadedAssets.push(asset);
-            }
-        }
+        prepareAssets(containedInSnapshotAssets, alwaysLoadedAssets);
 
         const countAndStartDownload = (asset: AssetEntryInternal) => {
             if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
@@ -230,6 +221,108 @@ export async function mono_download_assets(): Promise<void> {
     } catch (e: any) {
         loaderHelpers.err("Error in mono_download_assets: " + e);
         throw e;
+    }
+}
+
+function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLoadedAssets: AssetEntryInternal[]) {
+    const config = loaderHelpers.config;
+    const resources = loaderHelpers.config.resources;
+    if (resources) {
+        for (const name in resources.assembly) {
+            containedInSnapshotAssets.push(ensureAssetResolvedUrl({
+                name,
+                hash: resources.assembly[name],
+                behavior: "assembly"
+            }));
+        }
+
+        if (config.debugLevel != 0 && resources.pdb) {
+            for (const name in resources.pdb) {
+                containedInSnapshotAssets.push(ensureAssetResolvedUrl({
+                    name,
+                    hash: resources.pdb[name],
+                    behavior: "pdb"
+                }));
+            }
+        }
+
+        if (config.loadAllSatelliteResources && resources.satelliteResources) {
+            for (const culture in resources.satelliteResources) {
+                for (const name in resources.satelliteResources[culture]) {
+                    containedInSnapshotAssets.push(ensureAssetResolvedUrl({
+                        name,
+                        hash: resources.satelliteResources[culture][name],
+                        behavior: "resource",
+                        culture
+                    }));
+                }
+            }
+        }
+
+        if (resources.vfs) {
+            for (const virtualPath in resources.vfs) {
+                for (const name in resources.vfs[virtualPath]) {
+                    alwaysLoadedAssets.push(ensureAssetResolvedUrl({
+                        name,
+                        hash: resources.vfs[virtualPath][name],
+                        behavior: "vfs",
+                        virtualPath
+                    }));
+                }
+            }
+        }
+
+        const nativeResources = resources.native;
+
+        const icuDataResourceName = getIcuResourceName(config);
+        if (icuDataResourceName && nativeResources?.icu) {
+            containedInSnapshotAssets.push(ensureAssetResolvedUrl({
+                name: icuDataResourceName,
+                hash: nativeResources.icu[icuDataResourceName],
+                behavior: "icu",
+                loadRemote: true
+            }));
+        }
+
+        if (nativeResources?.symbols) {
+            for (const name in nativeResources.symbols) {
+                alwaysLoadedAssets.push(ensureAssetResolvedUrl({
+                    name,
+                    hash: nativeResources.symbols[name],
+                    behavior: "symbols"
+                }));
+            }
+        }
+    }
+
+    if (config.config) {
+        for (let i = 0; i < config.config.length; i++) {
+            const configUrl = config.config[i];
+            const configFileName = fileName(configUrl);
+            if (configFileName === "appsettings.json" || configFileName === `appsettings.${config.applicationEnvironment}.json`) {
+                alwaysLoadedAssets.push(ensureAssetResolvedUrl({
+                    name: configFileName,
+                    behavior: "vfs"
+                }));
+            }
+        }
+    }
+
+    if (loaderHelpers.config.assets) {
+        for (const a of loaderHelpers.config.assets) {
+            const asset: AssetEntryInternal = a;
+            mono_assert(typeof asset === "object", "asset must be object");
+            mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
+            mono_assert(typeof asset.name === "string", "asset name must be string");
+            mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
+            if (containedInSnapshotByAssetTypes[asset.behavior]) {
+                containedInSnapshotAssets.push(asset);
+            } else {
+                alwaysLoadedAssets.push(asset);
+            }
+        }
     }
 }
 
@@ -456,4 +549,12 @@ export function cleanupAsset(asset: AssetEntryInternal) {
     asset.pendingDownloadInternal = null as any; // GC
     asset.pendingDownload = null as any; // GC
     asset.buffer = null as any; // GC
+}
+
+function fileName(name: string) {
+    let lastIndexOfSlash = name.lastIndexOf("/");
+    if (lastIndexOfSlash >= 0) {
+        lastIndexOfSlash++;
+    }
+    return name.substring(lastIndexOfSlash);
 }

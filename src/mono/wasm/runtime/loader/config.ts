@@ -5,7 +5,6 @@ import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
-import { mapResourcesToAssets } from "./blazor/_Integration";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
@@ -146,11 +145,8 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
         loadConfigResponse = await loaderResponse;
     }
 
-    const loadedConfig: MonoConfig = await loadConfigResponse.json();
-
-    readBootConfigResponseHeaders(loadConfigResponse);
+    const loadedConfig: MonoConfig = await readBootConfigResponse(loadConfigResponse);
     deep_merge_config(loaderHelpers.config, loadedConfig);
-    mapResourcesToAssets(loadedConfig);
 
     function defaultLoadBootConfig(url: string): Promise<Response> {
         return loaderHelpers.fetch_like(url, {
@@ -161,25 +157,28 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     }
 }
 
-function readBootConfigResponseHeaders(loadConfigResponse: Response) {
+async function readBootConfigResponse(loadConfigResponse: Response): Promise<MonoConfig> {
     const config = loaderHelpers.config;
+    const loadedConfig: MonoConfig = await loadConfigResponse.json();
 
     if (!config.applicationEnvironment) {
-        config.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || "Production";
+        loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || "Production";
     }
 
-    if (!config.environmentVariables)
-        config.environmentVariables = {};
+    if (!loadedConfig.environmentVariables)
+        loadedConfig.environmentVariables = {};
 
     const modifiableAssemblies = loadConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
     if (modifiableAssemblies) {
         // Configure the app to enable hot reload in Development.
-        config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = modifiableAssemblies;
+        loadedConfig.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = modifiableAssemblies;
     }
 
     const aspnetCoreBrowserTools = loadConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
     if (aspnetCoreBrowserTools) {
         // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
-        config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = aspnetCoreBrowserTools;
+        loadedConfig.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = aspnetCoreBrowserTools;
     }
+
+    return loadedConfig;
 }
