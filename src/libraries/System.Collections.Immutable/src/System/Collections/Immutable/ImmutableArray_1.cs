@@ -92,8 +92,16 @@ namespace System.Collections.Immutable
             }
         }
 
+        /// <summary>
+        /// Create a <see cref="ReadOnlySpan{T} "/> over the array.
+        /// </summary>
+        /// <returns>A span over the elements of the array.</returns>
         public ReadOnlySpan<T> AsSpan() => new ReadOnlySpan<T>(array);
 
+        /// <summary>
+        /// Create a <see cref="ReadOnlyMemory{T} "/> over the array.
+        /// </summary>
+        /// <returns>A memory object over the elements of the array.</returns>
         public ReadOnlyMemory<T> AsMemory() => new ReadOnlyMemory<T>(array);
 
         /// <summary>
