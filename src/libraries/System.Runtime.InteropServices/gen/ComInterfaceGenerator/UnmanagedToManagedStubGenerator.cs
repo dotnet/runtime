@@ -70,6 +70,7 @@ namespace Microsoft.Interop
             setupStatements.AddRange(statements.Setup);
 
             List<StatementSyntax> tryStatements = new();
+            tryStatements.AddRange(statements.GuaranteedUnmarshal);
             tryStatements.AddRange(statements.Unmarshal);
 
             tryStatements.Add(statements.InvokeStatement);
