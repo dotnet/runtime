@@ -776,6 +776,10 @@ namespace ILCompiler
                 }
             }
 
+            if (firstField is null)
+            {
+                return false;
+            }
             TypeDesc firstFieldElementType = firstField.FieldType;
 
             // A fixed buffer type is always a value type that has exactly one value type field at offset 0
