@@ -3001,7 +3001,7 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMT);
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
                 if (hasImpliedRepeatedFields)
                 {
@@ -3249,7 +3249,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
                 if (hasImpliedRepeatedFields)
                 {
@@ -3617,7 +3617,7 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMT);
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
                 if (hasImpliedRepeatedFields)
                 {
@@ -3865,7 +3865,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
                 if (hasImpliedRepeatedFields)
                 {
