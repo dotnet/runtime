@@ -72,8 +72,8 @@ namespace Mono.Linker.Tests.TestCases
 			// file and it cannot follow our standardized naming directory & namespace naming scheme since the namespace must be UnityEngine.
 			// Also look for compiler-generated Program type for top-level statements.
 			foreach (var type in caseAssemblyDefinition.MainModule.Types) {
-				if (type.Name == "Program") &&
-					type.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (CompilerGeneratedAttribute))
+				if (type.Name == "Program" &&
+					type.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (CompilerGeneratedAttribute)))
 					return type;
 
 				//  Let's assume we should never have to search for a test case that has no namespace.  If we don't find the type from GetType, then o well, that's not a test case.
