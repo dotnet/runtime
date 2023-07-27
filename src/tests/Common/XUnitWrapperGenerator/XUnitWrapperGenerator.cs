@@ -160,8 +160,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 }
 
                 if (!found) return;
-                context.ReportDiagnostic(Diagnostic.Create(Descriptors.XUWG1002, method.Locations[0]));
-            });
+                context.ReportDiagnostic(Diagnostic.Create(
+                    new DiagnosticDescriptor(
+                        "XUW1002",
+                        "All returns are constant 100",
+                        "A test method that always returns 100 should return \"void\" instead",
+                        "XUnitWrapperGenerator",
+                        DiagnosticSeverity.Warning,
+                        isEnabledByDefault: true),
+                    method.Locations[0]));
 
         context.RegisterImplementationSourceOutput(
             methodsInSource,
