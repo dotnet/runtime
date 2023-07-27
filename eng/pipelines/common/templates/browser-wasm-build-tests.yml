@@ -84,13 +84,29 @@ jobs:
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
+          # Download WBT
+          - task: DownloadBuildArtifacts@0
+            displayName: Download Wasm.Build.Tests
+            inputs:
+              buildType: current
+              artifactName: WasmBuildTests_$(_hostedOs)_SingleThreaded_BuildOnly
+              downloadType: single
+              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+
+          - task: CopyFiles@2
+            displayName: Copy multithreading runtime pack
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_SingleThreaded_BuildOnly'
+              Contents: helix/**
+              TargetFolder: '$(Build.SourcesDirectory)/artifacts'
+              CleanTargetFolder: false
+
         # build WBT
         buildArgs: >-
           /p:Configuration=$(_BuildConfig)
           $(wbtProjectArg) $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
           /p:TestUsingWorkloads=true
           /p:InstallWorkloadForTesting=true
-          /p:ArchiveTests=true
           /p:PreparePackagesForWorkloadInstall=false
         timeoutInMinutes: 120
         condition: >-
