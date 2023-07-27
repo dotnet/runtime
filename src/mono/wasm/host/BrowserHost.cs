@@ -100,13 +100,15 @@ internal sealed class BrowserHost
         }
 
         // If we are using new browser template, use dev server
-        if (TryCreateDevServerOptions(args, urls, onConsoleConnected, out var devServerOptions))
+        if (args.CommonConfig.UseStaticWebAssets)
+        {
+            DevServerOptions devServerOptions = CreateDevServerOptions(args, urls, onConsoleConnected);
             return await DevServer.DevServer.StartAsync(devServerOptions, _logger, token);
+        }
 
         // Otherwise for old template, use web server
         WebServerOptions webServerOptions = CreateWebServerOptions(urls, args.CommonConfig.AppPath, onConsoleConnected);
-        (ServerURLs serverURLs, IWebHost host) = await WebServer.StartAsync(webServerOptions, _logger, token);
-        return (serverURLs, host);
+        return await WebServer.StartAsync(webServerOptions, _logger, token);
     }
 
     private static WebServerOptions CreateWebServerOptions(string[] urls, string appPath, Func<WebSocket, Task>? onConsoleConnected) => new
@@ -118,12 +120,12 @@ internal sealed class BrowserHost
         Urls: urls
     );
 
-    private static bool TryCreateDevServerOptions(BrowserArguments args, string[] urls, Func<WebSocket, Task>? onConsoleConnected, [NotNullWhen(true)] out DevServerOptions? devServerOptions)
+    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls, Func<WebSocket, Task>? onConsoleConnected)
     {
         const string staticWebAssetsV1Extension = ".StaticWebAssets.xml";
         const string staticWebAssetsV2Extension = ".staticwebassets.runtime.json";
 
-        devServerOptions = null;
+        DevServerOptions? devServerOptions = null;
 
         string appPath = args.CommonConfig.AppPath;
         if (args.CommonConfig.HostProperties.MainAssembly != null)
@@ -142,6 +144,9 @@ internal sealed class BrowserHost
                 if (File.Exists(staticWebAssetsPath))
                     devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
             }
+
+            if (devServerOptions == null)
+                devServerOptions = CreateDevServerOptions(urls, mainAssemblyPath, onConsoleConnected);
         }
         else
         {
@@ -152,9 +157,12 @@ internal sealed class BrowserHost
 
             if (staticWebAssetsPath != null)
                 devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+
+            if (devServerOptions == null)
+                throw new CommandLineException("Please, provide mainAssembly in hostProperties of runtimeconfig");
         }
 
-        return devServerOptions != null;
+        return devServerOptions;
     }
 
     private static DevServerOptions CreateDevServerOptions(string[] urls, string staticWebAssetsPath, Func<WebSocket, Task>? onConsoleConnected) => new

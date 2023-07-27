@@ -22,6 +22,7 @@ internal sealed class CommonConfiguration
     public WasmHostProperties HostProperties { get; init; }
     public IEnumerable<string> HostArguments { get; init; }
     public bool Silent { get; private set; } = true;
+    public bool UseStaticWebAssets { get; private set; } = true;
     public string? RuntimeConfigPath { get; private set; }
 
     private string? hostArg;
@@ -37,7 +38,8 @@ internal sealed class CommonConfiguration
             { "host|h=", "Host config name", v => hostArg = v },
             { "runtime-config|r=", "runtimeconfig.json path for the app", v => RuntimeConfigPath = v },
             { "extra-host-arg=", "Extra argument to be passed to the host", hostArgsList.Add },
-            { "no-silent", "Verbose output from WasmAppHost", _ => Silent = false }
+            { "no-silent", "Verbose output from WasmAppHost", _ => Silent = false },
+            { "use-staticwebassets", "Use static web assets, needed for projects targeting WebAssembly SDK", _ => UseStaticWebAssets = true }
         };
 
         RemainingArgs = options.Parse(args);
