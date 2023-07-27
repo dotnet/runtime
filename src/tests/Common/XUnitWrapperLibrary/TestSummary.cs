@@ -123,6 +123,7 @@ public class TestSummary
     public void ReportStartingTest(string name, TextWriter outTw)
     {
         outTw.WriteLine("{0:HH:mm:ss.fff} Running test: {1}", System.DateTime.Now, name);
+        outTw.Flush();
     }
 
     public void ReportPassedTest(string name,
