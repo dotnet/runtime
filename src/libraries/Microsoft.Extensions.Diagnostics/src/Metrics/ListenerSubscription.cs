@@ -159,7 +159,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 return false;
             }
 
-            // Empty
+            // Meter
+
             var ruleMeterName = rule.MeterName.AsSpan();
             // Rule "System.Net.*" matches meter "System.Net" and "System.Net.Http"
             if (ruleMeterName.EndsWith(".*".AsSpan(), StringComparison.Ordinal))
