@@ -27,7 +27,7 @@ jobs:
           value: ''
       - name: extraBuildArgs
         ${{ if eq(parameters.publishWBT, true) }}:
-          value: /p:TestWasmBuildTests=true /p:ArchiveTests=true
+          value: /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
         ${{ else }}:
           value: ''
 
