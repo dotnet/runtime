@@ -61,6 +61,12 @@ process_protocol_helper_get_process_info_2 (
 
 static
 bool
+process_protocol_helper_get_process_info_3 (
+	DiagnosticsIpcMessage *message,
+	DiagnosticsIpcStream *stream);
+
+static
+bool
 process_protocol_helper_get_process_env (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
@@ -353,6 +359,166 @@ ds_process_info_2_payload_fini (DiagnosticsProcessInfo2Payload *payload)
 
 
 /*
+ * DiagnosticsProcessInfo3Payload.
+ */
+
+static
+uint16_t
+process_info_3_payload_get_size (DiagnosticsProcessInfo3Payload *payload)
+{
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
+	// for definition of serialization format
+
+	// uint32_t Version		-> 4 bytes
+	// uint64_t ProcessId;  -> 8 bytes
+	// GUID RuntimeCookie;  -> 16 bytes
+	// LPCWSTR CommandLine; -> 4 bytes + strlen * sizeof(WCHAR)
+	// LPCWSTR OS;          -> 4 bytes + strlen * sizeof(WCHAR)
+	// LPCWSTR Arch;        -> 4 bytes + strlen * sizeof(WCHAR)
+	// LPCWSTR managed_entrypoint_assembly_name;	-> 4 bytes + strlen * sizeof(WCHAR)
+	// LPCWSTR clr_product_version; 				-> 4 bytes + strlen * sizeof(WCHAR)
+	// LPCWSTR portable_rid;						-> 4 bytes + strlen * sizeof(WCHAR)
+
+	EP_ASSERT (payload != NULL);
+
+	size_t size = 0;
+	size += sizeof(payload->version);
+	size += sizeof(payload->process_id);
+	size += sizeof(payload->runtime_cookie);
+
+	size += sizeof(uint32_t);
+	size += (payload->command_line != NULL) ?
+		(ep_rt_utf16_string_len (payload->command_line) + 1) * sizeof(ep_char16_t) : 0;
+
+	size += sizeof(uint32_t);
+	size += (payload->os != NULL) ?
+		(ep_rt_utf16_string_len (payload->os) + 1) * sizeof(ep_char16_t) : 0;
+
+	size += sizeof(uint32_t);
+	size += (payload->arch != NULL) ?
+		(ep_rt_utf16_string_len (payload->arch) + 1) * sizeof(ep_char16_t) : 0;
+
+	size += sizeof(uint32_t);
+	size += (payload->managed_entrypoint_assembly_name != NULL) ?
+		(ep_rt_utf16_string_len (payload->managed_entrypoint_assembly_name) + 1) * sizeof(ep_char16_t) : 0;
+
+	size += sizeof(uint32_t);
+	size += (payload->clr_product_version != NULL) ?
+		(ep_rt_utf16_string_len (payload->clr_product_version) + 1) * sizeof(ep_char16_t) : 0;
+
+	size += sizeof(uint32_t);
+	size += (payload->portable_rid != NULL) ?
+		(ep_rt_utf16_string_len (payload->portable_rid) + 1) * sizeof(ep_char16_t) : 0;
+
+	EP_ASSERT (size <= UINT16_MAX);
+	return (uint16_t)size;
+}
+
+static
+bool
+process_info_3_payload_flatten (
+	void *payload,
+	uint8_t **buffer,
+	uint16_t *size)
+{
+	DiagnosticsProcessInfo3Payload *process_info = (DiagnosticsProcessInfo3Payload*)payload;
+
+	EP_ASSERT (payload != NULL);
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (*buffer != NULL);
+	EP_ASSERT (size != NULL);
+	EP_ASSERT (process_info_3_payload_get_size (process_info) == *size);
+
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
+	// for definition of serialization format
+
+	bool success = true;
+
+	// uint32_t Version;
+	memcpy (*buffer, &process_info->version, sizeof(process_info->version));
+	*buffer += sizeof (process_info->version);
+	*size -= sizeof (process_info->version);
+
+	// uint64_t ProcessId;
+	memcpy (*buffer, &process_info->process_id, sizeof (process_info->process_id));
+	*buffer += sizeof (process_info->process_id);
+	*size -= sizeof (process_info->process_id);
+
+	// GUID RuntimeCookie;
+	memcpy(*buffer, &process_info->runtime_cookie, sizeof (process_info->runtime_cookie));
+	*buffer += sizeof (process_info->runtime_cookie);
+	*size -= sizeof (process_info->runtime_cookie);
+
+	// LPCWSTR CommandLine;
+	success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, process_info->command_line);
+
+	// LPCWSTR OS;
+	if (success)
+		success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, process_info->os);
+
+	// LPCWSTR Arch;
+	if (success)
+		success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, process_info->arch);
+
+	// LPCWSTR managed_entrypoint_assembly_name;
+	if (success)
+		success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, process_info->managed_entrypoint_assembly_name);
+
+	// LPCWSTR clr_product_version;
+	if (success)
+		success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, process_info->clr_product_version);
+
+	// LPCWSTR portable_rid;
+	if (success)
+		success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, process_info->portable_rid);
+
+	// Assert we've used the whole buffer we were given
+	EP_ASSERT(*size == 0);
+
+	return success;
+}
+
+DiagnosticsProcessInfo3Payload *
+ds_process_info_3_payload_init (
+	DiagnosticsProcessInfo3Payload *payload,
+	const ep_char16_t *command_line,
+	const ep_char16_t *os,
+	const ep_char16_t *arch,
+	uint32_t process_id,
+	const uint8_t *runtime_cookie,
+	const ep_char16_t *managed_entrypoint_assembly_name,
+	const ep_char16_t *clr_product_version,
+	const ep_char16_t *portable_rid)
+{
+	ep_return_null_if_nok (payload != NULL);
+
+	// Starting with ProcessInfo3, instead of creating new ProcessInfo# structures,
+	// add new fields and do not remove or change existing field; whenever a new field
+	// is added, the version must be incremented to allow the client to understand
+	// which fields to expect for the given version.
+	payload->version = 1;
+	payload->command_line = command_line;
+	payload->os = os;
+	payload->arch = arch;
+	payload->process_id = process_id;
+	payload->managed_entrypoint_assembly_name = managed_entrypoint_assembly_name;
+	payload->clr_product_version = clr_product_version;
+	payload->portable_rid = portable_rid;
+
+	if (runtime_cookie)
+		memcpy (&payload->runtime_cookie, runtime_cookie, EP_GUID_SIZE);
+
+	return payload;
+}
+
+void
+ds_process_info_3_payload_fini (DiagnosticsProcessInfo3Payload *payload)
+{
+	;
+}
+
+
+/*
  * DiagnosticsEnvironmentInfoPayload.
  */
 
@@ -607,6 +773,84 @@ ep_on_exit:
 	ep_rt_utf16_string_free (command_line);
 	ep_rt_utf16_string_free (managed_entrypoint_assembly_name);
 	ep_rt_utf16_string_free (clr_product_version);
+	ds_ipc_stream_free (stream);
+	return result;
+
+ep_on_error:
+	EP_ASSERT (!result);
+	ds_ipc_message_send_error (stream, DS_IPC_E_FAIL);
+	DS_LOG_WARNING_0 ("Failed to send DiagnosticsIPC response");
+	ep_exit_error_handler ();
+}
+
+static
+bool
+process_protocol_helper_get_process_info_3 (
+	DiagnosticsIpcMessage *message,
+	DiagnosticsIpcStream *stream)
+{
+	EP_ASSERT (message != NULL);
+	EP_ASSERT (stream != NULL);
+
+	bool result = false;
+	ep_char16_t *command_line = NULL;
+	ep_char16_t *os_info = NULL;
+	ep_char16_t *arch_info = NULL;
+	ep_char16_t *managed_entrypoint_assembly_name = NULL;
+	ep_char16_t *clr_product_version = NULL;
+	ep_char16_t *portable_rid = NULL;
+	DiagnosticsProcessInfo3Payload payload;
+	DiagnosticsProcessInfo3Payload *process_info_3_payload = NULL;
+
+	command_line = ep_rt_utf8_to_utf16le_string (ep_rt_diagnostics_command_line_get (), -1);
+	ep_raise_error_if_nok (command_line != NULL);
+
+	os_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info (), -1);
+	ep_raise_error_if_nok (os_info != NULL);
+
+	arch_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info (), -1);
+	ep_raise_error_if_nok (arch_info != NULL);
+
+	managed_entrypoint_assembly_name = ep_rt_utf8_to_utf16le_string (ep_rt_entrypoint_assembly_name_get_utf8 (), -1);
+	ep_raise_error_if_nok (managed_entrypoint_assembly_name != NULL);
+
+	clr_product_version = ep_rt_utf8_to_utf16le_string (ep_rt_runtime_version_get_utf8 (), -1);
+	ep_raise_error_if_nok (clr_product_version != NULL);
+
+	portable_rid = ep_rt_utf8_to_utf16le_string (ds_rt_get_portable_rid (), -1);
+	ep_raise_error_if_nok (portable_rid != NULL);
+
+	process_info_3_payload = ds_process_info_3_payload_init (
+		&payload,
+		command_line,
+		os_info,
+		arch_info,
+		ep_rt_current_process_get_id (),
+		ds_ipc_advertise_cookie_v1_get (),
+		managed_entrypoint_assembly_name,
+		clr_product_version,
+		portable_rid);
+	ep_raise_error_if_nok (process_info_3_payload != NULL);
+
+	ep_raise_error_if_nok (ds_ipc_message_initialize_buffer (
+		message,
+		ds_ipc_header_get_generic_success (),
+		(void *)process_info_3_payload,
+		process_info_3_payload_get_size (process_info_3_payload),
+		process_info_3_payload_flatten));
+
+	ep_raise_error_if_nok (ds_ipc_message_send (message, stream));
+
+	result = true;
+
+ep_on_exit:
+	ds_process_info_3_payload_fini (process_info_3_payload);
+	ep_rt_utf16_string_free (arch_info);
+	ep_rt_utf16_string_free (os_info);
+	ep_rt_utf16_string_free (command_line);
+	ep_rt_utf16_string_free (managed_entrypoint_assembly_name);
+	ep_rt_utf16_string_free (clr_product_version);
+	ep_rt_utf16_string_free (portable_rid);
 	ds_ipc_stream_free (stream);
 	return result;
 
@@ -1005,6 +1249,9 @@ ds_process_protocol_helper_handle_ipc_message (
 		break;
 	case DS_PROCESS_COMMANDID_APPLY_STARTUP_HOOK:
 		result = process_protocol_helper_apply_startup_hook (message, stream);
+		break;
+	case DS_PROCESS_COMMANDID_GET_PROCESS_INFO_3:
+		result = process_protocol_helper_get_process_info_3 (message, stream);
 		break;
 	default:
 		result = process_protocol_helper_unknown_command (message, stream);

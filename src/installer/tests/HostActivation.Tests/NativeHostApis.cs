@@ -54,7 +54,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         private class SdkResolutionFixture
         {
-            private readonly string _builtDotnet;
             private readonly TestProjectFixture _fixture;
 
             public DotNetCli Dotnet { get; }
@@ -87,8 +86,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public SdkResolutionFixture(SharedTestState state)
             {
-                _builtDotnet = Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish");
-                Dotnet = new DotNetCli(_builtDotnet);
+                Dotnet = new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet);
 
                 _fixture = state.HostApiInvokerAppFixture.Copy();
 
@@ -100,16 +98,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 foreach (string sdk in ProgramFilesGlobalSdks)
                 {
-                    Directory.CreateDirectory(Path.Combine(ProgramFilesGlobalSdkDir, sdk));
+                    AddSdkDirectory(ProgramFilesGlobalSdkDir, sdk);
                 }
                 foreach (string sdk in SelfRegisteredGlobalSdks)
                 {
-                    Directory.CreateDirectory(Path.Combine(SelfRegisteredGlobalSdkDir, sdk));
+                    AddSdkDirectory(SelfRegisteredGlobalSdkDir, sdk);
                 }
                 foreach (string sdk in LocalSdks)
                 {
-                    Directory.CreateDirectory(Path.Combine(LocalSdkDir, sdk));
+                    AddSdkDirectory(LocalSdkDir, sdk);
                 }
+
+                // Empty SDK directory - this should not be recognized as a valid SDK directory
+                Directory.CreateDirectory(Path.Combine(LocalSdkDir, "9.9.9"));
 
                 foreach ((string fwName, string[] fwVersions) in ProgramFilesGlobalFrameworks)
                 {
@@ -120,6 +121,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 {
                     foreach (string fwVersion in fwVersions)
                         Directory.CreateDirectory(Path.Combine(LocalFrameworksDir, fwName, fwVersion));
+                }
+
+                static void AddSdkDirectory(string sdkDir, string version)
+                {
+                    string versionDir = Path.Combine(sdkDir, version);
+                    Directory.CreateDirectory(versionDir);
+                    File.WriteAllText(Path.Combine(versionDir, "dotnet.dll"), string.Empty);
                 }
             }
         }

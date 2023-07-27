@@ -11,6 +11,14 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
+    internal static class CallSiteTestsExtensions
+    {
+        internal static ServiceCallSite GetCallSite(this CallSiteFactory callSiteFactory, Type type, CallSiteChain callSiteChain)
+        {
+            return callSiteFactory.GetCallSite(ServiceIdentifier.FromServiceType(type), callSiteChain);
+        }
+    }
+
     public class CallSiteTests
     {
         public static IEnumerable<object[]> TestServiceDescriptors(ServiceLifetime lifetime)
@@ -136,7 +144,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            
+
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
@@ -185,7 +193,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            
+
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 

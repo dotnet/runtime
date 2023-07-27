@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Threading;
+using System.Diagnostics;
 
 namespace System
 {
@@ -21,24 +23,7 @@ namespace System
             "Pacific/Pitcairn"    // Prefer "Pitcairn Islands Time" over "Pitcairn Time"
         };
 
-        // Main function that is called during construction to populate the three display names
-        private static void TryPopulateTimeZoneDisplayNamesFromGlobalizationData(string timeZoneId, TimeSpan baseUtcOffset, ref string? standardDisplayName, ref string? daylightDisplayName, ref string? displayName)
-        {
-            if (GlobalizationMode.Invariant)
-            {
-                return;
-            }
-
-            // Determine the culture to use
-            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
-            if (uiCulture.Name.Length == 0)
-                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
-
-            // Attempt to populate the fields backing the StandardName, DaylightName, and DisplayName from globalization data.
-            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture.Name, ref standardDisplayName);
-            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture.Name, ref daylightDisplayName);
-            GetFullValueForDisplayNameField(timeZoneId, baseUtcOffset, uiCulture, ref displayName);
-        }
+        private static CultureInfo? _uiCulture;
 
         // Helper function to get the standard display name for the UTC static time zone instance
         private static string GetUtcStandardDisplayName()
@@ -66,6 +51,35 @@ namespace System
             return $"(UTC) {standardDisplayName}";
         }
 #pragma warning restore IDE0060
+
+        private static CultureInfo UICulture
+        {
+            get
+            {
+                if (_uiCulture == null)
+                {
+                    Debug.Assert(!GlobalizationMode.Invariant);
+                    // Determine the culture to use
+                    CultureInfo uiCulture = CultureInfo.CurrentUICulture;
+                    if (uiCulture.Name.Length == 0)
+                        uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
+
+                    Interlocked.CompareExchange(ref _uiCulture, uiCulture, null);
+                }
+
+                return _uiCulture;
+            }
+        }
+
+        private static void GetStandardDisplayName(string timeZoneId, ref string? displayName)
+        {
+            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.Standard, UICulture.Name, ref displayName);
+        }
+
+        private static void GetDaylightDisplayName(string timeZoneId, ref string? displayName)
+        {
+            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, UICulture.Name, ref displayName);
+        }
 
         // Helper function that retrieves various forms of time zone display names from ICU
         private static unsafe void GetDisplayName(string timeZoneId, Interop.Globalization.TimeZoneDisplayNameType nameType, string uiCulture, ref string? displayName)
@@ -115,7 +129,7 @@ namespace System
         }
 
         // Helper function that builds the value backing the DisplayName field from globalization data.
-        private static void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, CultureInfo uiCulture, ref string? displayName)
+        private static void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, ref string? displayName)
         {
             // There are a few diffent ways we might show the display name depending on the data.
             // The algorithm used below should avoid duplicating the same words while still achieving the
@@ -123,6 +137,7 @@ namespace System
 
             // Try to get the generic name for this time zone.
             string? genericName = null;
+            CultureInfo uiCulture = UICulture;
             GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture.Name, ref genericName);
             if (genericName == null)
             {

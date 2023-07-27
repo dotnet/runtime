@@ -901,7 +901,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 else
                 {
-                    var ioe = Assert.IsType<IOException>(ex);
+                    var ioe = Assert.IsType<HttpIOException>(ex);
                     var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
                     var qex = Assert.IsType<QuicException>(hre.InnerException);
                     Assert.Equal(QuicError.OperationAborted, qex.QuicError);

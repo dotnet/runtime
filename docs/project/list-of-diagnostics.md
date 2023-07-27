@@ -248,17 +248,17 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1211`__ | Options validation generator: Unsupported circular references in model types. |
 |  __`SYSLIB1212`__ | Options validation generator: Member potentially missing transitive validation. |
 |  __`SYSLIB1213`__ | Options validation generator: Member potentially missing enumerable validation. |
-|  __`SYSLIB1214`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
-|  __`SYSLIB1215`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
-|  __`SYSLIB1216`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
-|  __`SYSLIB1217`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
-|  __`SYSLIB1218`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
-|  __`SYSLIB1219`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1214`__ | Options validation generator: Can't validate constants, static fields or properties. |
+|  __`SYSLIB1215`__ | Options validation generator: Validation attribute on the member is inaccessible from the validator type. |
+|  __`SYSLIB1216`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1217`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1218`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1219`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 |  __`SYSLIB1220`__ | JsonSourceGenerator encountered a [JsonConverterAttribute] with an invalid type argument. |
 |  __`SYSLIB1221`__ | JsonSourceGenerator does not support this C# language version. |
-|  __`SYSLIB1222`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1223`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1224`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1222`__ | Constructor annotated with JsonConstructorAttribute is inaccessible. |
+|  __`SYSLIB1223`__ | Attributes deriving from JsonConverterAttribute are not supported by the source generator. |
+|  __`SYSLIB1224`__ | Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext. |
 |  __`SYSLIB1225`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
 |  __`SYSLIB1226`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
 |  __`SYSLIB1227`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |

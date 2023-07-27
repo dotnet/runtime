@@ -68,13 +68,18 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 {
 }
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH)
 void CodeGenInterface::CopyRegisterInfo()
 {
+#if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-}
 #endif // TARGET_AMD64
+
+    rbmAllMask        = compiler->rbmAllMask;
+    rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
+}
+#endif // TARGET_XARCH
 
 /*****************************************************************************/
 
@@ -1966,6 +1971,11 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
+    if (compiler->opts.disAsm && compiler->opts.disTesting)
+    {
+        printf("; BEGIN METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
+    }
+
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
                                             IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
                                             &epilogSize, codePtr, &coldCodePtr, &consPtr DEBUGARG(&instrCount));
@@ -1984,6 +1994,11 @@ void CodeGen::genEmitMachineCode()
     compiler->info.compPerfScore +=
         ((double)compiler->info.compTotalColdCodeSize * (double)PERFSCORE_CODESIZE_COST_COLD);
 #endif // DEBUG || LATE_DISASM
+
+    if (compiler->opts.disAsm && compiler->opts.disTesting)
+    {
+        printf("; END METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
+    }
 
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
@@ -2302,9 +2317,9 @@ void CodeGen::genReportEH()
 
         CORINFO_EH_CLAUSE_FLAGS flags = ToCORINFO_EH_CLAUSE_FLAGS(HBtab->ebdHandlerType);
 
-        if (isNativeAOT && (XTnum > 0))
+        if (XTnum > 0)
         {
-            // For NativeAOT, CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
+            // CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
             // try block as the previous one. The runtime cannot reliably infer this information from
             // native code offsets because of different try blocks can have same offsets. Alternative
             // solution to this problem would be inserting extra nops to ensure that different try

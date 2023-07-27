@@ -27,6 +27,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public bool HasProperty(string propertyName)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             return JavaScriptImports.HasProperty(this, propertyName);
         }
 

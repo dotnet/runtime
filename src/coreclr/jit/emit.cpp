@@ -590,13 +590,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) sze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) asze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -747,6 +747,10 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 #if defined(TARGET_AMD64)
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
 #endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    rbmMskCalleeTrash = emitComp->rbmMskCalleeTrash;
+#endif // TARGET_XARCH
 }
 
 void emitter::emitEndCG()
@@ -8050,7 +8054,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
     if (attr == EA_4BYTE)
     {
-        f        = forceCastToFloat(constValue);
+        f        = FloatingPointUtils::convertToSingle(constValue);
         cnsAddr  = &f;
         dataType = TYP_FLOAT;
     }
@@ -10205,9 +10209,9 @@ void emitter::emitRecordCallSite(ULONG                 instrOffset,  /* IN */
 
     if (callSig == nullptr)
     {
-        assert(methodHandle != nullptr);
-
-        if (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF)
+        // For certain calls whose target is non-containable (e.g. tls access targets), `methodHandle`
+        // will be nullptr, because the target is present in a register.
+        if ((methodHandle != nullptr) && (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF))
         {
             emitComp->eeGetMethodSig(methodHandle, &sigInfo);
             callSig = &sigInfo;

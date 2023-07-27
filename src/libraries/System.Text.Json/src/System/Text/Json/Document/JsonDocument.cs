@@ -200,7 +200,7 @@ namespace System.Text.Json
 
         internal ReadOnlyMemory<byte> GetRootRawValue()
         {
-            return GetRawValue(0, includeQuotes : true);
+            return GetRawValue(0, includeQuotes: true);
         }
 
         internal ReadOnlyMemory<byte> GetRawValue(int index, bool includeQuotes)
@@ -286,8 +286,6 @@ namespace System.Text.Json
         internal bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
         {
             CheckNotDisposed();
-
-            int matchIndex = isPropertyName ? index - DbRow.Size : index;
 
             byte[]? otherUtf8TextArray = null;
 

@@ -176,8 +176,10 @@
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <!-- NativeAOT specific files -->
-    <PlatformManifestFileEntry Include="libbootstrapper.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbootstrapper.a" IsNative="true" /> <!-- The bootstrapper lib used to be a static library, now it's an object file. -->
     <PlatformManifestFileEntry Include="libbootstrapperdll.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbootstrapper.o" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbootstrapperdll.o" IsNative="true" />
     <PlatformManifestFileEntry Include="libeventpipe-disabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
@@ -199,6 +201,9 @@
     <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libdbgshim.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libdbgshim.dylib" IsNative="true" />
+    <!-- libc++ for C++17 support on older distributions -->
+    <PlatformManifestFileEntry Include="libc++.so.1" IsNative="true" />
+    <PlatformManifestFileEntry Include="libc++abi.so.1" IsNative="true" />
     <!-- Mono components specific files -->
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.so" IsNative="true" />
@@ -237,7 +242,9 @@
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="wasm-bundled-timezones.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.runtime.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />

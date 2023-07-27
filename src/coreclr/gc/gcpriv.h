@@ -108,8 +108,17 @@
 #pragma warning(disable:4477)
 #endif //_MSC_VER
 
+//#define TRACE_GC
+//#define SIMPLE_DPRINTF
+
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
+void flush_gc_log (bool);
+#endif //TRACE_GC && SIMPLE_DPRINTF
 inline void FATAL_GC_ERROR()
 {
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
+    flush_gc_log (true);
+#endif //TRACE_GC && SIMPLE_DPRINTF
     GCToOSInterface::DebugBreak();
     _ASSERTE(!"Fatal Error in GC.");
     GCToEEInterface::HandleFatalError((unsigned int)COR_E_EXECUTIONENGINE);
@@ -233,9 +242,6 @@ inline void FATAL_GC_ERROR()
 #ifndef MAX_LONGPATH
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
-
-//#define TRACE_GC
-//#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
 
@@ -913,8 +919,8 @@ public:
     void unlink_item_no_undo_added (unsigned int bn, uint8_t* item, uint8_t* previous_item);
 #if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
     void count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* fl_items_for_oh_count);
-    void rethread_items (size_t* num_total_fl_items, 
-                         size_t* num_total_fl_items_rethread, 
+    void rethread_items (size_t* num_total_fl_items,
+                         size_t* num_total_fl_items_rethread,
                          gc_heap* current_heap,
                          min_fl_list_info* min_fl_list,
                          size_t* free_list_space_per_heap,
@@ -4197,8 +4203,8 @@ private:
     // in the very next GC done with garbage_collect_pm_full_gc.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED bool pm_trigger_full_gc;
 
-    // This is smoothed "desired_per_heap", ie, smoothed budget. Only used in a join.
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t smoothed_desired_per_heap[total_generation_count];
+    // This is the smoothed *total* budget, i.e. across *all* heaps. Only used in a join.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t smoothed_desired_total[total_generation_count];
 
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t gc_last_ephemeral_decommit_time;
 
@@ -4256,6 +4262,7 @@ private:
         sample          samples[sample_size];
 
         float median_percent_overhead;          // estimated overhead of allocator + gc
+        float smoothed_median_percent_overhead; // exponentially smoothed version
         float percent_heap_space_cost_per_heap; // percent space cost of adding a heap
         float overhead_reduction_per_step_up;   // percentage effect on overhead of increasing heap count
         float overhead_increase_per_step_down;  // percentage effect on overhead of decreasing heap count

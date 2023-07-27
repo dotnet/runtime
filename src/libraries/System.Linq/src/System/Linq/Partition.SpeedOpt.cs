@@ -17,7 +17,7 @@ namespace System.Linq
     /// that an operation will result in zero elements.
     /// </remarks>
     [DebuggerDisplay("Count = 0")]
-    internal sealed class EmptyPartition<TElement> : IPartition<TElement>, IEnumerator<TElement>
+    internal sealed class EmptyPartition<TElement> : IPartition<TElement>, IEnumerator<TElement>, IList<TElement>, IReadOnlyList<TElement>
     {
         /// <summary>
         /// A cached, immutable instance of an empty enumerable.
@@ -77,6 +77,32 @@ namespace System.Linq
         public List<TElement> ToList() => new List<TElement>();
 
         public int GetCount(bool onlyIfCheap) => 0;
+
+        public int Count => 0;
+
+        public bool Contains(TElement item) => false;
+
+        public int IndexOf(TElement item) => -1;
+
+        public void CopyTo(TElement[] array, int arrayIndex) { }
+
+        public TElement this[int index]
+        {
+            get
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                return default!;
+            }
+            set => ThrowHelper.ThrowNotSupportedException();
+        }
+
+        public bool IsReadOnly => true;
+
+        void ICollection<TElement>.Add(TElement item) => ThrowHelper.ThrowNotSupportedException();
+        void ICollection<TElement>.Clear() => ThrowHelper.ThrowNotSupportedException();
+        void IList<TElement>.Insert(int index, TElement item) => ThrowHelper.ThrowNotSupportedException();
+        bool ICollection<TElement>.Remove(TElement item) => ThrowHelper.ThrowNotSupportedException_Boolean();
+        void IList<TElement>.RemoveAt(int index) => ThrowHelper.ThrowNotSupportedException();
     }
 
     internal sealed class OrderedPartition<TElement> : IPartition<TElement>
@@ -143,7 +169,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source list.</typeparam>
         [DebuggerDisplay("Count = {Count}")]
-        private sealed class ListPartition<TSource> : Iterator<TSource>, IPartition<TSource>
+        private sealed class ListPartition<TSource> : Iterator<TSource>, IPartition<TSource>, IList<TSource>, IReadOnlyList<TSource>
         {
             private readonly IList<TSource> _source;
             private readonly int _minIndexInclusive;
@@ -231,7 +257,7 @@ namespace System.Linq
                 return default;
             }
 
-            private int Count
+            public int Count
             {
                 get
                 {
@@ -244,6 +270,8 @@ namespace System.Linq
                     return Math.Min(count - 1, _maxIndexInclusive) - _minIndexInclusive + 1;
                 }
             }
+
+            public int GetCount(bool onlyIfCheap) => Count;
 
             public TSource[] ToArray()
             {
@@ -271,6 +299,9 @@ namespace System.Linq
                 return list;
             }
 
+            public void CopyTo(TSource[] array, int arrayIndex) =>
+                Fill(_source, array.AsSpan(arrayIndex, Count), _minIndexInclusive);
+
             private static void Fill(IList<TSource> source, Span<TSource> destination, int sourceIndex)
             {
                 for (int i = 0; i < destination.Length; i++, sourceIndex++)
@@ -279,7 +310,45 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap) => Count;
+            public bool Contains(TSource item) => IndexOf(item) >= 0;
+
+            public int IndexOf(TSource item)
+            {
+                IList<TSource> source = _source;
+
+                int end = _minIndexInclusive + Count;
+                for (int i = _minIndexInclusive; i < end; i++)
+                {
+                    if (EqualityComparer<TSource>.Default.Equals(source[i], item))
+                    {
+                        return i - _minIndexInclusive;
+                    }
+                }
+
+                return -1;
+            }
+
+            public TSource this[int index]
+            {
+                get
+                {
+                    if ((uint)index >= (uint)Count)
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                    }
+
+                    return _source[_minIndexInclusive + index];
+                }
+                set => ThrowHelper.ThrowNotSupportedException();
+            }
+
+            public bool IsReadOnly => true;
+
+            void ICollection<TSource>.Add(TSource item) => ThrowHelper.ThrowNotSupportedException();
+            void ICollection<TSource>.Clear() => ThrowHelper.ThrowNotSupportedException();
+            void IList<TSource>.Insert(int index, TSource item) => ThrowHelper.ThrowNotSupportedException();
+            bool ICollection<TSource>.Remove(TSource item) => ThrowHelper.ThrowNotSupportedException_Boolean();
+            void IList<TSource>.RemoveAt(int index) => ThrowHelper.ThrowNotSupportedException();
         }
 
         /// <summary>

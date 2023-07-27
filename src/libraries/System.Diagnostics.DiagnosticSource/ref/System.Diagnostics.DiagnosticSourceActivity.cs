@@ -365,6 +365,10 @@ namespace System.Diagnostics.Metrics
         public void Record(T value, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
         public void Record(T value, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
     }
+    public interface IMeterFactory : System.IDisposable
+    {
+        System.Diagnostics.Metrics.Meter Create(System.Diagnostics.Metrics.MeterOptions options);
+    }
     public abstract class Instrument
     {
         public string? Description { get {throw null;} }
@@ -516,6 +520,10 @@ namespace System.Diagnostics.Metrics
         public string? Version { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; }  }
         public object? Scope { get { throw null; }  }
+    }
+    public static class MeterFactoryExtensions
+    {
+        public static System.Diagnostics.Metrics.Meter Create(this System.Diagnostics.Metrics.IMeterFactory meterFactory, string name, string? version = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) { return null!; }
     }
     public sealed class MeterListener : IDisposable
     {

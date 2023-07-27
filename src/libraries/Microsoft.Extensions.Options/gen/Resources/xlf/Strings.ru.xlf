@@ -32,6 +32,16 @@
         <target state="translated">Нельзя использовать "ValidateObjectMembersAttribute" или "ValidateEnumeratedItemsAttribute" для полей или свойств с открытыми универсальными типами.</target>
         <note />
       </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberMessage">
+        <source>Can't apply validation attributes to constant or static member {0}.</source>
+        <target state="translated">Не удалось применить атрибуты проверки к константе или статическому элементу {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberTitle">
+        <source>Can't validate constants, static fields or properties.</source>
+        <target state="translated">Не удалось проверить константы, статические поля или свойства.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
         <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
         <target state="translated">Существует циклическая ссылка на тип, включающая тип {0}, предотвращающий его использование для статической проверки.</target>
@@ -50,6 +60,16 @@
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
         <target state="translated">Тип с аннотацией OptionsValidatorAttribute не реализует необходимый интерфейс.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeMessage">
+        <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
+        <target state="translated">Атрибут проверки "{0}" элемента "{1}" недоступен из типа средства проверки "{2}".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeTitle">
+        <source>Validation attribute on the member is inaccessible from the validator type..</source>
+        <target state="translated">Атрибут проверки элемента недоступен из типа средства проверки.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">

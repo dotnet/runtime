@@ -164,7 +164,7 @@ namespace System.IO.Compression
                 if (mode == ZipArchiveMode.Create)
                     _archiveReader = null;
                 else
-                    _archiveReader = new BinaryReader(_archiveStream);
+                    _archiveReader = new BinaryReader(_archiveStream, Encoding.UTF8, leaveOpen: true);
                 _entries = new List<ZipArchiveEntry>();
                 _entriesCollection = new ReadOnlyCollection<ZipArchiveEntry>(_entries);
                 _entriesDictionary = new Dictionary<string, ZipArchiveEntry>();

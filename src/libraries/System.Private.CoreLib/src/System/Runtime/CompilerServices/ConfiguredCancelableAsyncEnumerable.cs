@@ -36,6 +36,8 @@ namespace System.Runtime.CompilerServices
         public ConfiguredCancelableAsyncEnumerable<T> WithCancellation(CancellationToken cancellationToken) =>
             new ConfiguredCancelableAsyncEnumerable<T>(_enumerable, _continueOnCapturedContext, cancellationToken);
 
+        /// <summary>Returns an enumerator that iterates asynchronously through collections that enables cancelable iteration and configured awaits.</summary>
+        /// <returns>An enumerator for the <see cref="T:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1" /> class.</returns>
         public Enumerator GetAsyncEnumerator() =>
             // as with other "configured" awaitable-related type in CompilerServices, we don't null check to defend against
             // misuse like `default(ConfiguredCancelableAsyncEnumerable<T>).GetAsyncEnumerator()`, which will null ref by design.

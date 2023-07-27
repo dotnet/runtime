@@ -789,8 +789,8 @@ DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
 
     DEBUG_REP(dmpGetMethodAttribs(key, value));
 
-    if (cr->repSetMethodAttribs(methodHandle) == CORINFO_FLG_BAD_INLINEE)
-        value ^= CORINFO_FLG_DONT_INLINE;
+    if ((cr->repSetMethodAttribs(methodHandle) & CORINFO_FLG_BAD_INLINEE) != 0)
+        value |= CORINFO_FLG_DONT_INLINE;
     return value;
 }
 
@@ -1014,12 +1014,6 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.field   = CastHandle(field);
     key.method  = CastHandle(method);
     key.context = CastHandle(context);
-
-    if ((InitClass == nullptr) || (InitClass->GetIndex(key) == -1))
-    {
-        // We could try additional inlines with stress modes, just reject them.
-        return CORINFO_INITCLASS_DONT_INLINE;
-    }
 
     DWORD value = InitClass->Get(key);
     DEBUG_REP(dmpInitClass(key, value));
@@ -1542,6 +1536,19 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     {
         pResult->hMethod = (CORINFO_METHOD_HANDLE)value.hMethod;
         pResult->methodFlags = (unsigned)value.methodFlags;
+        // We could have stored getCallInfo from a previous call in this
+        // context without the CORINFO_FLG_DONT_INLINE bit. If the JIT later
+        // realized that this will be an always no-inline then it would call
+        // setMethodAttribs with that information, but a later getCallInfo call
+        // would not update the recorded SPMI entry. In that case let's mimic
+        // the behavior on the runtime side by calculating this particular
+        // dynamic flag here (the same logic is present in getMethodAttribs).
+        //
+        // This doesn't handle all cases (e.g. parallelism could still cause
+        // us to record these flags without CORINFO_FLG_DONT_INLINE).
+        if ((cr->repSetMethodAttribs(pResult->hMethod) & CORINFO_FLG_BAD_INLINEE) != 0)
+            pResult->methodFlags |= CORINFO_FLG_DONT_INLINE;
+
         pResult->classFlags = (unsigned)value.classFlags;
         pResult->sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap);
         pResult->accessAllowed = (CorInfoIsAccessAllowedResult)value.accessAllowed;
@@ -2939,13 +2946,14 @@ CorInfoHFAElemType MethodContext::repGetHFAType(CORINFO_CLASS_HANDLE clsHnd)
     return (CorInfoHFAElemType)value;
 }
 
-void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE ftn,
-                                     CORINFO_METHOD_INFO*  info,
-                                     bool                  result,
-                                     DWORD                 exceptionCode)
+void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE  ftn,
+                                     CORINFO_METHOD_INFO*   info,
+                                     CORINFO_CONTEXT_HANDLE context,
+                                     bool                   result,
+                                     DWORD                  exceptionCode)
 {
     if (GetMethodInfo == nullptr)
-        GetMethodInfo = new LightWeightMap<DWORDLONG, Agnostic_GetMethodInfo>();
+        GetMethodInfo = new LightWeightMap<DLDL, Agnostic_GetMethodInfo>();
 
     Agnostic_GetMethodInfo value;
     ZeroMemory(&value, sizeof(value));
@@ -2967,16 +2975,18 @@ void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE ftn,
     value.result        = result;
     value.exceptionCode = (DWORD)exceptionCode;
 
-    DWORDLONG key = CastHandle(ftn);
+    DLDL key;
+    key.A = CastHandle(ftn);
+    key.B = CastHandle(context);
     GetMethodInfo->Add(key, value);
     DEBUG_REC(dmpGetMethodInfo(key, value));
 }
-void MethodContext::dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo& value)
+void MethodContext::dmpGetMethodInfo(DLDL key, const Agnostic_GetMethodInfo& value)
 {
     if (value.result)
     {
-        printf("GetMethodInfo key ftn-%016" PRIX64 ", value res-%u ftn-%016" PRIX64 " scp-%016" PRIX64 " ilo-%u ils-%u ms-%u ehc-%u opt-%08X rk-%u args-%s locals-%s excp-%08X",
-            key, value.result, value.info.ftn, value.info.scope, value.info.ILCode_offset, value.info.ILCodeSize,
+        printf("GetMethodInfo key ftn-%016" PRIX64 " ctx-%016" PRIX64 ", value res-%u ftn-%016" PRIX64 " scp-%016" PRIX64 " ilo-%u ils-%u ms-%u ehc-%u opt-%08X rk-%u args-%s locals-%s excp-%08X",
+            key.A, key.B, value.result, value.info.ftn, value.info.scope, value.info.ILCode_offset, value.info.ILCodeSize,
             value.info.maxStack, value.info.EHcount, value.info.options, value.info.regionKind,
             SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.info.args, GetMethodInfo, SigInstHandleMap).c_str(),
             SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.info.locals, GetMethodInfo, SigInstHandleMap).c_str(),
@@ -2984,14 +2994,16 @@ void MethodContext::dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo
     }
     else
     {
-        printf("GetMethodInfo key ftn-%016" PRIX64 ", value res-%u excp-%08X",
-            key, value.result, value.exceptionCode);
+        printf("GetMethodInfo key ftn-%016" PRIX64 " ctx-%016" PRIX64 ", value res-%u excp-%08X",
+            key.A, key.B, value.result, value.exceptionCode);
     }
 }
-bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, DWORD* exceptionCode)
+bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context, DWORD* exceptionCode)
 {
-    DWORDLONG key = CastHandle(ftn);
-    Agnostic_GetMethodInfo value = LookupByKeyOrMiss(GetMethodInfo, key, ": key %016" PRIX64 "", key);
+    DLDL key;
+    key.A = CastHandle(ftn);
+    key.B = CastHandle(context);
+    Agnostic_GetMethodInfo value = LookupByKeyOrMiss(GetMethodInfo, key, ": key %016" PRIX64 "", key.A);
 
     DEBUG_REP(dmpGetMethodInfo(key, value));
 
@@ -3573,12 +3585,14 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     Agnostic_GetThreadLocalStaticBlocksInfo value;
     ZeroMemory(&value, sizeof(value));
 
-    value.tlsIndex.handle                   = CastHandle(pInfo->tlsIndex.addr);
-    value.tlsIndex.accessType               = pInfo->tlsIndex.accessType;
-    value.offsetOfMaxThreadStaticBlocks     = pInfo->offsetOfMaxThreadStaticBlocks;
-    value.offsetOfThreadLocalStoragePointer = pInfo->offsetOfThreadLocalStoragePointer;
-    value.offsetOfThreadStaticBlocks        = pInfo->offsetOfThreadStaticBlocks;
-    value.offsetOfGCDataPointer             = pInfo->offsetOfGCDataPointer;
+    value.tlsIndex                              = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsIndex);
+    value.tlsGetAddrFtnPtr                      = CastPointer(pInfo->tlsGetAddrFtnPtr);
+    value.tlsIndexObject                        = CastPointer(pInfo->tlsIndexObject);
+    value.threadVarsSection                     = CastPointer(pInfo->threadVarsSection);
+    value.offsetOfThreadLocalStoragePointer     = pInfo->offsetOfThreadLocalStoragePointer;
+    value.offsetOfMaxThreadStaticBlocks         = pInfo->offsetOfMaxThreadStaticBlocks;
+    value.offsetOfThreadStaticBlocks            = pInfo->offsetOfThreadStaticBlocks;
+    value.offsetOfGCDataPointer                 = pInfo->offsetOfGCDataPointer;
 
     // This data is same for entire process, so just add it against key '0'.
     DWORD key = isGCType ? 0 : 1;
@@ -3588,10 +3602,13 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
 {
-    printf("GetThreadLocalStaticBlocksInfo key %u, value tlsIndex-%016" PRIX64
+    printf("GetThreadLocalStaticBlocksInfo key %u, tlsIndex-%s, "
+           ", tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject - %016" PRIX64 
+           ", threadVarsSection - %016" PRIX64
            ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u"
-           ", offsetOfThreadStaticBlocks-%u offsetOfGCDataPointer-%u",
-           key, value.tlsIndex.handle, value.offsetOfThreadLocalStoragePointer,
+           ", offsetOfThreadStaticBlocks-%u, offsetOfGCDataPointer-%u",           
+           key, SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndex).c_str(), value.tlsGetAddrFtnPtr,
+           value.tlsIndexObject, value.threadVarsSection, value.offsetOfThreadLocalStoragePointer,
            value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer);
 }
 
@@ -3602,12 +3619,14 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
     DEBUG_REP(dmpGetThreadLocalStaticBlocksInfo(key, value));
 
-    pInfo->tlsIndex.accessType               = (InfoAccessType)value.tlsIndex.accessType;
-    pInfo->tlsIndex.addr                     = (void*)value.tlsIndex.handle;
-    pInfo->offsetOfMaxThreadStaticBlocks     = value.offsetOfMaxThreadStaticBlocks;
-    pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
-    pInfo->offsetOfThreadStaticBlocks        = value.offsetOfThreadStaticBlocks;
-    pInfo->offsetOfGCDataPointer             = value.offsetOfGCDataPointer;
+    pInfo->tlsIndex                             = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.tlsIndex);
+    pInfo->tlsGetAddrFtnPtr                     = (void*)value.tlsGetAddrFtnPtr;
+    pInfo->tlsIndexObject                       = (void*)value.tlsIndexObject;
+    pInfo->threadVarsSection                    = (void*)value.threadVarsSection;
+    pInfo->offsetOfThreadLocalStoragePointer    = value.offsetOfThreadLocalStoragePointer;
+    pInfo->offsetOfMaxThreadStaticBlocks        = value.offsetOfMaxThreadStaticBlocks;    
+    pInfo->offsetOfThreadStaticBlocks           = value.offsetOfThreadStaticBlocks;
+    pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
 }
 
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,
@@ -4733,6 +4752,120 @@ CORINFO_FIELD_HANDLE MethodContext::repGetFieldInClass(CORINFO_CLASS_HANDLE clsH
     DEBUG_REP(dmpGetFieldInClass(key, value));
     CORINFO_FIELD_HANDLE result = (CORINFO_FIELD_HANDLE)value;
     return result;
+}
+
+void MethodContext::recGetTypeLayout(GetTypeLayoutResult result, CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t numNodes)
+{
+    if (GetTypeLayout == nullptr)
+        GetTypeLayout = new LightWeightMap<DWORDLONG, Agnostic_GetTypeLayoutResult>();
+
+    DWORDLONG key = CastHandle(typeHnd);
+
+    int index = GetTypeLayout->GetIndex(key);
+    if (index != -1)
+    {
+        // If we already have this then just skip.
+        Agnostic_GetTypeLayoutResult existing = GetTypeLayout->GetItem(index);
+        if ((existing.result != (DWORD)GetTypeLayoutResult::Partial) ||
+            (result == GetTypeLayoutResult::Failure) ||
+            (numNodes <= existing.numNodes))
+        {
+            // No new data to add
+            return;
+        }
+
+        // Otherwise fall through and update the map with more information.
+    }
+
+    Agnostic_GetTypeLayoutResult value;
+    ZeroMemory(&value, sizeof(value));
+
+    value.result = (DWORD)result;
+    if (result == GetTypeLayoutResult::Failure)
+    {
+        value.nodesBuffer = UINT_MAX;
+    }
+    else
+    {
+        Agnostic_CORINFO_TYPE_LAYOUT_NODE* agnosticFields = new Agnostic_CORINFO_TYPE_LAYOUT_NODE[numNodes];
+        for (size_t i = 0; i < numNodes; i++)
+        {
+            agnosticFields[i] = SpmiRecordsHelper::StoreAgnostic_CORINFO_TYPE_LAYOUT_NODE(nodes[i]);
+        }
+
+        value.nodesBuffer = GetTypeLayout->AddBuffer((unsigned char*)agnosticFields, (unsigned int)(sizeof(Agnostic_CORINFO_TYPE_LAYOUT_NODE) * numNodes));
+        value.numNodes = (DWORD)numNodes;
+
+        delete[] agnosticFields;
+    }
+
+    if (index != -1)
+    {
+        GetTypeLayout->Update(index, value);
+    }
+    else
+    {
+        GetTypeLayout->Add(key, value);
+    }
+}
+void MethodContext::dmpGetTypeLayout(DWORDLONG key, const Agnostic_GetTypeLayoutResult& value)
+{
+    printf("GetTypeLayout key type-%016" PRIX64 " value result=%d numNodes=%d", key, (DWORD)value.result, value.numNodes);
+    if (value.numNodes > 0)
+    {
+        Agnostic_CORINFO_TYPE_LAYOUT_NODE* nodes = reinterpret_cast<Agnostic_CORINFO_TYPE_LAYOUT_NODE*>(GetTypeLayout->GetBuffer(value.nodesBuffer));
+        size_t index = 0;
+        dmpTypeLayoutTree(nodes, value.numNodes, &index, 1);
+    }
+}
+void MethodContext::dmpTypeLayoutTree(const Agnostic_CORINFO_TYPE_LAYOUT_NODE* nodes, size_t maxNodes, size_t* index, size_t indent)
+{
+    for (size_t i = 0; i < indent; i++)
+    {
+        printf("  ");
+    }
+
+    const Agnostic_CORINFO_TYPE_LAYOUT_NODE* node = &nodes[*index];
+    printf("%zu: parent %u offset %u size %u type %s numFields %u hasSignificantPadding %s simdTypeHnd %016" PRIX64 " diagFieldHnd %016" PRIX64,
+        *index,
+        node->parent,
+        node->offset,
+        node->size,
+        toString((CorInfoType)node->type),
+        node->numFields,
+        node->hasSignificantPadding ? "yes" : "no",
+        node->simdTypeHnd,
+        node->diagFieldHnd);
+
+    (*index)++;
+    for (size_t i = 0; i < node->numFields; i++)
+    {
+        if (i >= maxNodes)
+            break;
+
+        dmpTypeLayoutTree(nodes, maxNodes, index, indent + 1);
+    }
+}
+GetTypeLayoutResult MethodContext::repGetTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t* numNodes)
+{
+    DWORDLONG key = CastHandle(typeHnd);
+    Agnostic_GetTypeLayoutResult value = LookupByKeyOrMiss(GetTypeLayout, key, ": key type-%016" PRIX64, key);
+
+    GetTypeLayoutResult result = (GetTypeLayoutResult)value.result;
+    if (result == GetTypeLayoutResult::Failure)
+    {
+        return result;
+    }
+
+    Agnostic_CORINFO_TYPE_LAYOUT_NODE* valueFields = (Agnostic_CORINFO_TYPE_LAYOUT_NODE*)GetTypeLayout->GetBuffer(value.nodesBuffer);
+    size_t nodesToWrite = min((size_t)value.numNodes, *numNodes);
+    for (size_t i = 0; i < nodesToWrite; i++)
+    {
+        nodes[i] = SpmiRecordsHelper::RestoreCORINFO_TYPE_LAYOUT_NODE(valueFields[i]);
+    }
+
+    *numNodes = nodesToWrite;
+    return (result == GetTypeLayoutResult::Partial) || (value.numNodes > *numNodes) ? GetTypeLayoutResult::Partial : GetTypeLayoutResult::Success;
 }
 
 void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,

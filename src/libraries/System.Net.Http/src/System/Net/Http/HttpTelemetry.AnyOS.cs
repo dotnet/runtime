@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Threading;
 
@@ -21,24 +22,22 @@ namespace System.Net.Http
         private EventCounter? _http30RequestsQueueDurationCounter;
 
         [NonEvent]
-        public void Http11RequestLeftQueue(double timeOnQueueMilliseconds)
+        public void RequestLeftQueue(int versionMajor, TimeSpan duration)
         {
-            _http11RequestsQueueDurationCounter?.WriteMetric(timeOnQueueMilliseconds);
-            RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 1, versionMinor: 1);
-        }
+            Debug.Assert(versionMajor is 1 or 2 or 3);
 
-        [NonEvent]
-        public void Http20RequestLeftQueue(double timeOnQueueMilliseconds)
-        {
-            _http20RequestsQueueDurationCounter?.WriteMetric(timeOnQueueMilliseconds);
-            RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 2, versionMinor: 0);
-        }
+            EventCounter? counter = versionMajor switch
+            {
+                1 => _http11RequestsQueueDurationCounter,
+                2 => _http20RequestsQueueDurationCounter,
+                _ => _http30RequestsQueueDurationCounter
+            };
 
-        [NonEvent]
-        public void Http30RequestLeftQueue(double timeOnQueueMilliseconds)
-        {
-            _http30RequestsQueueDurationCounter?.WriteMetric(timeOnQueueMilliseconds);
-            RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 3, versionMinor: 0);
+            double timeOnQueueMs = duration.TotalMilliseconds;
+
+            counter?.WriteMetric(timeOnQueueMs);
+
+            RequestLeftQueue(timeOnQueueMs, (byte)versionMajor, versionMinor: versionMajor == 1 ? (byte)1 : (byte)0);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)

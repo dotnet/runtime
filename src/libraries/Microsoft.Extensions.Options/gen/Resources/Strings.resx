@@ -135,6 +135,12 @@
   <data name="CantUseWithGenericTypesTitle" xml:space="preserve">
     <value>Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</value>
   </data>
+  <data name="CantValidateStaticOrConstMemberMessage" xml:space="preserve">
+    <value>Can't apply validation attributes to constant or static member {0}.</value>
+  </data>
+  <data name="CantValidateStaticOrConstMemberTitle" xml:space="preserve">
+    <value>Can't validate constants, static fields or properties.</value>
+  </data>
   <data name="CircularTypeReferencesMessage" xml:space="preserve">
     <value>There is a circular type reference involving type {0} preventing it from being used for static validation.</value>
   </data>
@@ -194,5 +200,11 @@
   </data>
   <data name="ValidatorsNeedSimpleConstructorTitle" xml:space="preserve">
     <value>Validators used for transitive or enumerable validation must have a constructor with no parameters.</value>
+  </data>
+  <data name="InaccessibleValidationAttributeMessage" xml:space="preserve">
+    <value>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</value>
+  </data>
+  <data name="InaccessibleValidationAttributeTitle" xml:space="preserve">
+    <value>Validation attribute on the member is inaccessible from the validator type..</value>
   </data>
 </root>
