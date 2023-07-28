@@ -40,11 +40,11 @@ namespace System.Net.Http.Json
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => new JsonContent(new JsonContentObjectSerializer(inputValue, inputType, options), mediaType);
 
-        public static JsonContent Create<TValue>(TValue? inputValue, JsonTypeInfo<TValue> jsonTypeInfo,
+        public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo,
             MediaTypeHeaderValue? mediaType = null)
         {
             JsonContentSerializer serializer = inputValue is not null
-                ? new JsonContentSerializer<TValue>(inputValue, jsonTypeInfo)
+                ? new JsonContentSerializer<T>(inputValue, jsonTypeInfo)
                 : new JsonContentTypeInfoSerializer(null, jsonTypeInfo);
 
             return new JsonContent(serializer, mediaType);
