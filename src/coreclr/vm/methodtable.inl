@@ -689,7 +689,7 @@ inline DWORD MethodTable::GetNumVtableIndirections()
 {
     WRAPPER_NO_CONTRACT;
 
-    return GetNumVtableIndirections(GetNumVirtuals_NoLogging());
+    return GetNumVtableIndirections(GetNumVirtuals());
 }
 
 //==========================================================================================

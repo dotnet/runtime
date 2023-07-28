@@ -1398,13 +1398,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return GetNumVirtuals_NoLogging();
-    }
-
-    inline WORD GetNumVirtuals_NoLogging()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
         return m_wNumVirtuals;
     }
 
