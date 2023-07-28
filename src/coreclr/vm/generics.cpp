@@ -709,7 +709,7 @@ void RecursionGraph::AddDependency(MethodTable *pMT, TypeHandleList *pExpansionV
             }
             else
             {
-                _ASSERTE(thArg.IsGenericVariable());
+                _ASSERTE(thArg.IsGenericVariable() || thArg.IsConstValue());
             }
         }
     }

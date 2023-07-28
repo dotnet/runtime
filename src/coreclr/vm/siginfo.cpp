@@ -227,6 +227,17 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
                     pSigBuilder->AppendData(varNum);
                 }
                 break;
+            case ELEMENT_TYPE_CTARG:
+                {
+                    CorElementType etype;
+                    PCCOR_SIGNATURE elem;
+                    uint32_t cb;
+                    // Skip const type argument
+                    IfFailThrowBF(GetConstTypeArg(&etype, &cb, &elem), BFA_BAD_COMPLUS_SIG, pSigModule);
+                    pSigBuilder->AppendElementType(etype);
+                    pSigBuilder->AppendBlob((void*)elem, cb);
+                }
+                break;
             case ELEMENT_TYPE_OBJECT:
             case ELEMENT_TYPE_STRING:
             case ELEMENT_TYPE_TYPEDBYREF:
@@ -1347,7 +1358,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 mask = mask | 0xFF;
             }
             value = value & mask;
-            thRet = ClassLoader::LoadConstValueTypeThrowing(valueType, value);
+            thRet = ClassLoader::LoadConstValueTypeThrowing(valueType, value, typ, fLoadTypes, level);
 #else
             DacNotImpl();
             thRet = TypeHandle();
