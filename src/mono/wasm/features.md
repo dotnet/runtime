@@ -142,7 +142,7 @@ You can also `dotnet publish -c Release` which will publish your app to [AppBund
 
 ## JavaScript interoperability
 
-When you want to call JavaScript functions from C# or managed code from JavaScript, you can annotate static method with `[JSImport]` or `[JSExport]` attributes.
+When you want to call JavaScript functions from C# or managed code from JavaScript, you can annotate static C# methods with `[JSImport]` or `[JSExport]` attributes.
 
 You can read [blog article](https://devblogs.microsoft.com/dotnet/use-net-7-from-any-javascript-app-in-net-7/) about it.
 
@@ -150,14 +150,14 @@ You can also explore simple [TODO app sample](https://github.com/pavelsavara/dot
 
 For more details please see [documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/javascript-interoperability/import-export-interop).
 
-## Embedding in existing applications
-
-You can also explore simple sample of dotnet as [React component](https://github.com/maraf/dotnet-wasm-react).
+## Embedding dotnet in existing JavaScript applications
 
 The npm tool chains usual in the JavaScript community are not well integrated with the MSBuild tool chain of the dotnet.
 Your project will need to handle both build systems.
 
-You will need pass output of the MSBuild from the `AppBundle` folder for the npm toolchain to process and host is on your web server with the other assets of your application.
+You will need pass output of the MSBuild from the `AppBundle` folder for the npm toolchain to process and host it on your web server with the other assets of your application.
+
+You can also explore simple sample of dotnet as [React component](https://github.com/maraf/dotnet-wasm-react).
 
 # Downloaded assets
 
