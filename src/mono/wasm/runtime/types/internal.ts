@@ -174,7 +174,7 @@ export type RuntimeHelpers = {
     ExitStatus: ExitStatusError;
     quit: Function,
     mono_wasm_exit?: (code: number) => void,
-    mono_wasm_abort?: () => void,
+    abort: (reason: any) => void,
     javaScriptExports: JavaScriptExports,
     storeMemorySnapshotPending: boolean,
     memorySnapshotCacheKey: string,

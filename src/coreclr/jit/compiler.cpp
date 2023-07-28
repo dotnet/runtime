@@ -5441,6 +5441,9 @@ void Compiler::SplitTreesRandomly()
     CLRRandom rng;
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
+    // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
+    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+
     for (BasicBlock* block : Blocks())
     {
         for (Statement* stmt : block->NonPhiStatements())
@@ -5484,6 +5487,12 @@ void Compiler::SplitTreesRandomly()
 
                 splitTree--;
             }
+
+            if (lvaCount > maxLvaCount)
+            {
+                JITDUMP("Created too many locals (at %u) -- stopping\n", lvaCount);
+                return;
+            }
         }
     }
 #endif
@@ -5494,6 +5503,9 @@ void Compiler::SplitTreesRandomly()
 //
 void Compiler::SplitTreesRemoveCommas()
 {
+    // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
+    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+
     for (BasicBlock* block : Blocks())
     {
         Statement* stmt = block->FirstNonPhiDef();
@@ -5539,6 +5551,12 @@ void Compiler::SplitTreesRemoveCommas()
 
                 fgMorphStmtBlockOps(block, stmt);
                 gtUpdateStmtSideEffects(stmt);
+
+                if (lvaCount > maxLvaCount)
+                {
+                    JITDUMP("Created too many locals (at %u) -- stopping\n", lvaCount);
+                    return;
+                }
 
                 // Morphing block ops can introduce commas (and the original
                 // statement can also have more commas left). Proceed from the

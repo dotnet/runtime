@@ -487,13 +487,28 @@ namespace ILCompiler
                         continue;
 
                     // Generic methods need to be instantiated over something.
+                    // We try to make up a canonical instantiation if possible to match the
+                    // general expectation that if one has a type, and a method on the uninstantiated type,
+                    // one can GetMemberWithSameMetadataDefinitionAs and MakeGenericMethod the result
+                    // over reference types. We promise reference type instantiations are possible.
+                    MethodDesc reflectedMethod;
                     if (method.HasInstantiation)
-                        continue;
+                    {
+                        Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: true);
+                        if (inst.IsNull)
+                            continue;
+
+                        reflectedMethod = method.MakeInstantiatedMethod(inst);
+                    }
+                    else
+                    {
+                        reflectedMethod = method;
+                    }
 
                     dependencies ??= new CombinedDependencyList();
                     dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        factory.ReflectedMethod(method),
-                        factory.ReflectedMethod(method.GetTypicalMethodDefinition()),
+                        factory.ReflectedMethod(reflectedMethod),
+                        factory.ReflectedMethod(reflectedMethod.GetTypicalMethodDefinition()),
                         "Methods have same reflectability"));
                 }
             }

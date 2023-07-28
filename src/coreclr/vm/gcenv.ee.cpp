@@ -10,6 +10,7 @@
  *
  */
 
+#include <generatedumpflags.h>
 #include "gcrefmap.h"
 
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
