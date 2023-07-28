@@ -2667,20 +2667,44 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		break;
 	case SN_get_Item: {
 		// GetElement is marked as Intrinsic, but handling this in get_Item leads to better code
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
-		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		MonoTypeEnum ty = etype->type;
 		int src1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
+		int elems = 4;
+		MonoTypeEnum ty = etype->type;
+
+		if (args [1]->opcode == OP_ICONST) {
+			// If the index is provably a constant, we can generate vastly better code.
+			int index = args[1]->inst_c0;
+
+			if (index < 0 || index >= elems) {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+			}
+
+			int opcode = type_to_extract_op (ty);
+			ins = emit_simd_ins (cfg, klass, opcode, src1, -1);
+			ins->inst_c0 = args[1]->inst_c0;
+			ins->inst_c1 = ty;
+			return ins;
+		}
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 
 		if (COMPILE_LLVM (cfg)) {
 			int opcode = type_to_xextract_op (ty);
 			ins = emit_simd_ins (cfg, klass, opcode, src1, args [1]->dreg);
+			ins->inst_c1 = ty;
 		} else {
-			int opcode = type_to_extract_op (ty);
-			ins = emit_simd_ins (cfg, klass, opcode, src1, -1);
-			ins->inst_c0 = args[1]->inst_c0;
+			// Load back from vector_dreg + index << elem_size_log2
+			// TODO: on x86, use a LEA
+			int offset_reg = alloc_freg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, args [1]->dreg, type_to_width_log2 (ty));
+			int addr_reg = alloc_freg (cfg);
+			MONO_EMIT_NEW_BIALU(cfg, OP_PADD, addr_reg, args [0]->dreg, offset_reg);
+			int dreg = alloc_freg (cfg);
+			NEW_LOAD_MEMBASE (cfg, ins, mono_type_to_load_membase (cfg, fsig->ret), dreg, addr_reg, 0);
+			MONO_ADD_INS (cfg->cbb, ins);
 		}
-		ins->inst_c1 = ty;
 		return ins;
 	}
 	case SN_get_Zero:
@@ -2734,24 +2758,49 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		int elems = 4, index = args [1]->inst_c0;
 		int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
 
-		// Bounds check only if the index is out of range
-		if (index < 0 || index >= elems) {
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
-			MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+		if (args [1]->opcode == OP_ICONST) {
+			// If the index is provably a constant, we can generate vastly better code.
+			// Bounds check only if the index is out of range
+			if (index < 0 || index >= elems) {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+			}
+
+			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, dreg, args [2]->dreg);
+			ins->inst_c0 = index;
+			ins->inst_c1 = MONO_TYPE_R4;
+			ins->dreg = dreg;
+
+			if (indirect) {
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
+				ins->klass = klass;
+			}
+
+			return ins;
 		}
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 
 		if (COMPILE_LLVM (cfg)) {
 			ins = emit_simd_ins (cfg, klass, OP_XINSERT_R4, dreg, args [2]->dreg);
 			ins->sreg3 = args [1]->dreg;
+			ins->inst_c1 = MONO_TYPE_R4;
+			ins->dreg = dreg;
+
+			if (indirect) {
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
+				ins->klass = klass;
+			}
 		} else {
-			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, dreg, args [2]->dreg);
-			ins->inst_c0 = index;
-		}
-		ins->inst_c1 = MONO_TYPE_R4;
-		ins->dreg = dreg;
-		if (indirect) {
-			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
-			ins->klass = klass;
+			// Overwrite [vector_dreg + index << elem_size_log2] with replacement value
+			// TODO: on x86, use a LEA
+			int offset_reg = alloc_freg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, args [1]->dreg, type_to_width_log2 (MONO_TYPE_R4));
+			int addr_reg = alloc_freg (cfg);
+			MONO_EMIT_NEW_BIALU(cfg, OP_PADD, addr_reg, args [0]->dreg, offset_reg);
+
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [1], addr_reg, 0, args [2]->dreg);
 		}
 
 		return ins;
