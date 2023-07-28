@@ -2090,7 +2090,7 @@ TypeHandle MethodTable::SetupCoClassForInterface()
         CoClassType = TypeName::GetTypeReferencedByCustomAttribute(ss.GetUnicode(), GetAssembly());
 
         // Cache the coclass type
-        GetClass_NoLogging()->SetCoClassForInterface(CoClassType);
+        GetClass()->SetCoClassForInterface(CoClassType);
     }
     return CoClassType;
 }
@@ -2456,7 +2456,7 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
     }
 
     // Cache the interface type
-    GetClass_NoLogging()->SetComInterfaceType(ItfType);
+    GetClass()->SetComInterfaceType(ItfType);
 
     return ItfType;
 }

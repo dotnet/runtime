@@ -5579,7 +5579,7 @@ void MethodTable::SetOHDelegate (OBJECTHANDLE _ohDelegate)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(GetClass());
-    GetClass_NoLogging()->SetOHDelegate(_ohDelegate);
+    GetClass()->SetOHDelegate(_ohDelegate);
 }
 
 //==========================================================================================
@@ -5719,7 +5719,7 @@ CorElementType MethodTable::GetInternalCorElementType()
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     if (IsRestored())
     {
-        PTR_EEClass pClass = GetClass_NoLogging();
+        PTR_EEClass pClass = GetClass();
         if (ret != pClass->GetInternalCorElementType())
         {
             _ASSERTE(!"Mismatched results in MethodTable::GetInternalCorElementType");
@@ -5836,7 +5836,7 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType)
         break;
     }
 
-    GetClass_NoLogging()->SetInternalCorElementType(_NormType);
+    GetClass()->SetInternalCorElementType(_NormType);
     _ASSERTE(GetInternalCorElementType() == _NormType);
 }
 
@@ -7066,7 +7066,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
             // Remember that we didn't find the GUID, so we can skip looking during
             // future checks. (Note that this is a very important optimization in the
             // prejit case.)
-            GetClass_NoLogging()->SetHasNoGuid();
+            GetClass()->SetHasNoGuid();
         }
     }
 

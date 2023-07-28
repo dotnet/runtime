@@ -1807,9 +1807,7 @@ public:
 
     PTR_EEClass GetClass();
 
-    inline PTR_EEClass GetClass_NoLogging();
-
-    PTR_EEClass GetClassWithPossibleAV();
+    inline PTR_EEClass GetClassWithPossibleAV();
 
     BOOL ValidateWithPossibleAV();
 

@@ -969,7 +969,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         MethodTable *pMT = GetMethodTable();
-        EEClass *pClass = pMT->GetClass_NoLogging();
+        EEClass *pClass = pMT->GetClass();
         PREFIX_ASSUME(pClass != NULL);
         return pClass;
     }
