@@ -467,6 +467,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     {
         m_pAvailableParamTypes = EETypeHashTable::Create(GetLoaderAllocator(), this, PARAMTYPES_HASH_BUCKETS, pamTracker);
     }
+    
+    if (m_pAvailableConstValues == NULL)
+    {
+        m_pAvailableConstValues = EETypeHashTable::Create(GetLoaderAllocator(), this, PARAMTYPES_HASH_BUCKETS, pamTracker);
+    }
 
     if (m_pInstMethodHashTable == NULL)
     {

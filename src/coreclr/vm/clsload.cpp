@@ -1121,8 +1121,10 @@ TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey)
 
     Module *pLoaderModule = ComputeLoaderModule(pKey);
     PREFIX_ASSUME(pLoaderModule!=NULL);
-
-    return LookupTypeKey(pKey, pLoaderModule->GetAvailableParamTypes());
+    
+    return LookupTypeKey(pKey, CorTypeInfo::IsConstValue_NoThrow(pKey->GetKind()) ?
+        pLoaderModule->GetAvailableConstValues() :
+        pLoaderModule->GetAvailableParamTypes());
 }
 
 
@@ -1674,7 +1676,18 @@ TypeHandle ClassLoader::LoadConstValueTypeThrowing(CorElementType valueType,
     
     TypeHandle th = TypeHandle(CoreLibBinder::GetElementType(valueType));
     TypeKey key(th, value);
-    TypeHandle typeHnd = TypeHandle();
+
+    TypeHandle typeHnd = LookupTypeHandleForTypeKey(&key);
+    if (!typeHnd.IsNull())
+    {
+        RETURN(typeHnd);
+    }
+    
+    // If we're not loading any types at all, then we're not creating
+    // instantiations either because we're in FORBIDGC_LOADER_USE mode, so
+    // we should bail out here.
+    if (fLoadTypes == DontLoadTypes)
+        RETURN TypeHandle();
 
 #ifndef DACCESS_COMPILE
     // If we got here, we now have to allocate a new const value type.
@@ -3094,7 +3107,8 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
     if (pTypeKey->IsConstructed())
     {
         Module *pLoaderModule = ComputeLoaderModule(pTypeKey);
-        EETypeHashTable *pTable = pLoaderModule->GetAvailableParamTypes();
+        EETypeHashTable *pTable = CorTypeInfo::IsConstValue_NoThrow(pTypeKey->GetKind()) ?
+            pLoaderModule->GetAvailableConstValues() : pLoaderModule->GetAvailableParamTypes();
 
         CrstHolder ch(&pLoaderModule->GetClassLoader()->m_AvailableTypesLock);
 

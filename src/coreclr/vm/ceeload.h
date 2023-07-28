@@ -787,6 +787,9 @@ public:
     // Hashtable of generic type instances
     PTR_EETypeHashTable     m_pAvailableParamTypes;
 
+    // Hashtable of const value instances
+    PTR_EETypeHashTable     m_pAvailableConstValues;
+
     // For protecting additions to m_pInstMethodHashTable
     CrstExplicitInit        m_InstMethodHashTableCrst;
 
@@ -1164,6 +1167,14 @@ public:
         SUPPORTS_DAC;
 
         return m_pAvailableParamTypes;
+    }
+
+    EETypeHashTable *GetAvailableConstValues()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return m_pAvailableConstValues;
     }
 
     InstMethodHashTable *GetInstMethodHashTable()

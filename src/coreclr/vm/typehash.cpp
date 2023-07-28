@@ -604,7 +604,7 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
         PRECONDITION(CheckPointer(data));
         PRECONDITION(!data.IsGenericTypeDefinition()); // Generic type defs live in typedef table (availableClasses)
         PRECONDITION(data.HasInstantiation() || data.HasTypeParam() || data.IsFnPtrType() || data.IsConstValue()); // It's an instantiated type or an array/ptr/byref/const type
-        PRECONDITION(m_pModule == NULL || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
+        PRECONDITION(m_pModule == NULL || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes and m_pAvailableConstValues for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
     }
     CONTRACTL_END
 

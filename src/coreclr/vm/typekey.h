@@ -9,6 +9,7 @@
 // Support for type lookups based on components of the type (as opposed to string)
 // Used in
 // * Table of constructed types (Module::m_pAvailableParamTypes)
+// * Table of const values (Module::m_pAvailableConstValues)
 // * Types currently being loaded (ClassLoader::m_pUnresolvedClassHash)
 //
 // Type handles are in one-to-one correspondence with TypeKeys

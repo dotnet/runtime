@@ -1340,10 +1340,13 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             PCCOR_SIGNATURE elem;
             IfFailThrowBF(psig.GetConstTypeArg(&valueType, &cb, &elem), BFA_BAD_SIGNATURE, pOrigModule);
             uint64_t value = *(uint64_t*)elem;
-            if (fLoadTypes != ClassLoader::LoadTypes)
+            uint64_t mask = 0;
+            for (uint32_t i = 0; i < cb; i++)
             {
-                _ASSERTE(!"NYI: lookup const value from a map instead of allocating a new one.");
+                mask = mask << 8;
+                mask = mask | 0xFF;
             }
+            value = value & mask;
             thRet = ClassLoader::LoadConstValueTypeThrowing(valueType, value);
 #else
             DacNotImpl();
