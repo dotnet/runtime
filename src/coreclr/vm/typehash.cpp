@@ -361,42 +361,8 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
             uint64_t sourceValue = pSearch->GetTypeHandle().GetConstValue();
             uint64_t targetValue = pKey->GetConstValue();
 
-            switch (valueType)
-	        {
-            case ELEMENT_TYPE_BOOLEAN:
-            case ELEMENT_TYPE_CHAR:
-            case ELEMENT_TYPE_I1:
-            case ELEMENT_TYPE_U1:
-                if (*(uint8_t*)&sourceValue != *(uint8_t*)&targetValue)
-                    continue;
-                break;
-            case ELEMENT_TYPE_I2:
-            case ELEMENT_TYPE_U2:
-                if (*(uint16_t*)&sourceValue != *(uint16_t*)&targetValue)
-                    continue;
-                break;
-            case ELEMENT_TYPE_I4:
-            case ELEMENT_TYPE_U4:
-                if (*(uint32_t*)&sourceValue != *(uint32_t*)&targetValue)
-                    continue;
-                break;
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-                if (*(uint64_t*)&sourceValue != *(uint64_t*)&targetValue)
-                    continue;
-                break;
-            case ELEMENT_TYPE_R4:
-                if (*(float*)&sourceValue != *(float*)&targetValue)
-                    continue;
-                break;
-            case ELEMENT_TYPE_R8:
-                if (*(double*)&sourceValue != *(double*)&targetValue)
-                    continue;
-                break;
-            default:
-                _ASSERTE(!"UNKNOWN CONST VALUE TYPE");
-                break;
-	        }
+            if (sourceValue != targetValue)
+                continue;
 
             result = pSearch;
             break;

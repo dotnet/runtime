@@ -65,7 +65,7 @@ inline uint64_t TypeDesc::GetConstValue() {
 
     _ASSERTE(IsConstValue());
     ConstValueTypeDesc* asConstValue = dac_cast<PTR_ConstValueTypeDesc>(this);
-    return(asConstValue->m_value.asUint64);
+    return(asConstValue->m_value);
 }
 
 inline Instantiation TypeDesc::GetClassOrArrayInstantiation() {

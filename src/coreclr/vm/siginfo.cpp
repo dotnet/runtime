@@ -1343,14 +1343,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             uint32_t cb;
             PCCOR_SIGNATURE elem;
             IfFailThrowBF(psig.GetConstTypeArg(&valueType, &cb, &elem), BFA_BAD_SIGNATURE, pOrigModule);
-            uint64_t value = *(uint64_t*)elem;
-            uint64_t mask = 0;
-            for (uint32_t i = 0; i < cb; i++)
-            {
-                mask = mask << 8;
-                mask = mask | 0xFF;
-            }
-            value = value & mask;
+            uint64_t value = 0;
+            memcpy(&value, elem, cb);
             thRet = ClassLoader::LoadConstValueTypeThrowing(valueType, value, typ, fLoadTypes, level);
 #else
             DacNotImpl();

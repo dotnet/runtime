@@ -333,7 +333,7 @@ public:
         }
         CONTRACTL_END;
 
-        m_value.asUint64 = value;
+        m_value = value;
     }
  
 #endif // #ifndef DACCESS_COMPILE
@@ -354,19 +354,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return m_value.asUint64;
+        return m_value;
     }
     
 protected:
     TypeHandle m_type;
-    union {
-        uint8_t asUint8;
-        uint16_t asUint16;
-        uint32_t asUint32;
-        uint64_t asUint64;
-        float asFloat;
-        double asDouble;
-    } m_value;
+    uint64_t m_value;
 };
 
 /*************************************************************************/

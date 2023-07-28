@@ -63,14 +63,7 @@ class TypeKey
         struct
         {
             TADDR m_valueType;
-            union {
-                uint8_t asUint8;
-                uint16_t asUint16;
-                uint32_t asUint32;
-                uint64_t asUint64;
-                float asFloat;
-                double asDouble;
-            } m_value;
+            uint64_t m_value;
         } asConstValue;
     } u;
 
@@ -122,7 +115,7 @@ public:
         SUPPORTS_DAC;
         PRECONDITION(CheckPointer(valueType));
         m_kind = ELEMENT_TYPE_CTARG;
-        u.asConstValue.m_value.asUint64 = value;
+        u.asConstValue.m_value = value;
         u.asConstValue.m_valueType = valueType.AsTAddr();
     }
 
@@ -163,7 +156,7 @@ public:
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
         PRECONDITION(m_kind == ELEMENT_TYPE_CTARG);
-        return u.asConstValue.m_value.asUint64;
+        return u.asConstValue.m_value;
     }
 
     BOOL IsConstructed() const
@@ -284,26 +277,8 @@ public:
         }
         else if (pKey1->m_kind == ELEMENT_TYPE_CTARG)
         {
-            if (pKey1->u.asConstValue.m_valueType != pKey2->u.asConstValue.m_valueType)
-            {
-                return FALSE;
-            }
-            CorElementType valueType = TypeHandle::FromTAddr(pKey1->u.asConstValue.m_valueType).GetInternalCorElementType();
-            _ASSERTE(valueType > ELEMENT_TYPE_VOID);
-            if (valueType <= ELEMENT_TYPE_U1)
-                return pKey1->u.asConstValue.m_value.asUint8 == pKey2->u.asConstValue.m_value.asUint8;
-            if (valueType <= ELEMENT_TYPE_U2)
-                return pKey1->u.asConstValue.m_value.asUint16 == pKey2->u.asConstValue.m_value.asUint16;
-            if (valueType <= ELEMENT_TYPE_U4)
-                return pKey1->u.asConstValue.m_value.asUint32 == pKey2->u.asConstValue.m_value.asUint32;
-            if (valueType <= ELEMENT_TYPE_U8)
-                return pKey1->u.asConstValue.m_value.asUint64 == pKey2->u.asConstValue.m_value.asUint64;
-            if (valueType == ELEMENT_TYPE_R4)
-                return pKey1->u.asConstValue.m_value.asFloat == pKey2->u.asConstValue.m_value.asFloat;
-            if (valueType == ELEMENT_TYPE_R8)
-                return pKey1->u.asConstValue.m_value.asDouble == pKey2->u.asConstValue.m_value.asDouble;
-            _ASSERTE(!"INVALID CONST TYPE ARG TYPE");
-            return FALSE;
+            return pKey1->u.asConstValue.m_valueType == pKey2->u.asConstValue.m_valueType
+                && pKey1->u.asConstValue.m_value == pKey2->u.asConstValue.m_value;
         }
         else
         {
