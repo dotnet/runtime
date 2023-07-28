@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
@@ -3846,7 +3847,23 @@ namespace System
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector128<T>.Count);
                     do
                     {
-                        count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        if (AdvSimd.Arm64.IsSupported)
+                        {
+                            Vector128<T> mask = Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector);
+                            ulong matches = AdvSimd.ShiftRightLogicalNarrowingLower(mask.AsUInt16(), 4).AsUInt64().ToScalar();
+                            count += BitOperations.PopCount(matches) >> (Unsafe.SizeOf<T>() switch
+                            {
+                                1 => 2,
+                                2 => 3,
+                                4 => 4,
+                                _ => 5
+                            });
+                        }
+                        else
+                        {
+                            count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        }
+
                         current = ref Unsafe.Add(ref current, Vector128<T>.Count);
                     }
                     while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
