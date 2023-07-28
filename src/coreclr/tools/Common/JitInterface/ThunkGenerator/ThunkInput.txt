@@ -54,7 +54,7 @@ uint8_t*,byte*
 uint8_t**,byte**
 GSCookie*,IntPtr*
 GSCookie**,IntPtr**
-uint64_t,unsigned long long
+uint64_t,ulong
 
 bool*,ref bool
 BoolStar,byte*,bool*,bool*
