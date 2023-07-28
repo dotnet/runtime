@@ -276,4 +276,39 @@ public class BuildPublishTests : BlazorWasmTestBase
         string oldContent = File.ReadAllText(counterRazorPath);
         File.WriteAllText(counterRazorPath, oldContent + additionalCode);
     }
+
+    [Theory, TestCategory("no-workload")]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public void DefaultTemplate_WithResources_Publish(string config)
+    {
+        string[] cultures = ["ja-JP", "es-ES"];
+        string id = $"blz_no_workload_resources_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
+        CreateBlazorWasmTemplateProject(id);
+
+        // Ensure we have the source data we really on
+        string resxSourcePath = Path.Combine(BuildEnvironment.TestAssetsPath, "resx");
+        foreach (string culture in cultures)
+            Assert.True(File.Exists(Path.Combine(resxSourcePath, $"words.{culture}.resx")));
+
+        Utils.DirectoryCopy(resxSourcePath, Path.Combine(_projectDir!, "resx"));
+
+        // Build and assert resource dlls
+        BlazorBuild(new BlazorBuildOptions(id, config));
+        AssertResourcesDlls(FindBlazorBinFrameworkDir(config, false));
+
+        // Publish and assert resource dlls
+        BlazorPublish(new BlazorBuildOptions(id, config));
+        AssertResourcesDlls(FindBlazorBinFrameworkDir(config, true));
+
+        void AssertResourcesDlls(string basePath)
+        {
+            string dllExtension = UseWebcil ? ProjectProviderBase.WebcilInWasmExtension : ".dll";
+            foreach (string culture in cultures)
+            {
+                string jaJPResources = Path.Combine(basePath, culture, $"{id}.resources{dllExtension}");
+                Assert.True(File.Exists(jaJPResources), $"Expects to have a resource assembly at {jaJPResources}");
+            }
+        }
+    }
 }
