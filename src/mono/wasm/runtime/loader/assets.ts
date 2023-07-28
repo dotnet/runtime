@@ -77,7 +77,7 @@ function getSingleAssetWithResolvedUrl(resources: ResourceList | undefined, beha
     };
 }
 
-export function resolve_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
+export function resolve_single_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
     const resources = loaderHelpers.config.resources;
     mono_assert(resources, "Can't find resources in config");
 

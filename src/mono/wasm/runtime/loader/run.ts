@@ -10,7 +10,7 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObje
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit } from "./exit";
 import { setup_proxy_console, mono_log_info } from "./logging";
-import { resolve_asset_path, start_asset_download } from "./assets";
+import { resolve_single_asset_path, start_asset_download } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
@@ -429,8 +429,8 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
 }
 
 function importModules() {
-    runtimeHelpers.runtimeModuleUrl = resolve_asset_path("js-module-runtime").resolvedUrl!;
-    runtimeHelpers.nativeModuleUrl = resolve_asset_path("js-module-native").resolvedUrl!;
+    runtimeHelpers.runtimeModuleUrl = resolve_single_asset_path("js-module-runtime").resolvedUrl!;
+    runtimeHelpers.nativeModuleUrl = resolve_single_asset_path("js-module-native").resolvedUrl!;
     return [
         // keep js module names dynamic by using config, in the future we can use feature detection to load different flavors
         import(/* webpackIgnore: true */runtimeHelpers.runtimeModuleUrl),
@@ -470,7 +470,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     await initCacheToUseIfEnabled();
 
-    const wasmModuleAsset = resolve_asset_path("dotnetwasm");
+    const wasmModuleAsset = resolve_single_asset_path("dotnetwasm");
     start_asset_download(wasmModuleAsset).then(asset => {
         loaderHelpers.wasmDownloadPromise.promise_control.resolve(asset);
     });

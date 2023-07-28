@@ -7,7 +7,7 @@ import type { AssetEntryInternal, GlobalObjects, LoaderHelpers, RuntimeHelpers }
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
-import { mono_download_assets, resolve_asset_path, retrieve_asset_download } from "./assets";
+import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
 import { mono_log_error, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { hasDebuggingEnabled } from "./config";
@@ -90,7 +90,7 @@ export function setLoaderGlobals(
         getPromiseController,
         assertIsControllablePromise,
         mono_download_assets,
-        resolve_asset_path,
+        resolve_asset_path: resolve_single_asset_path,
         setup_proxy_console,
 
         hasDebuggingEnabled,
