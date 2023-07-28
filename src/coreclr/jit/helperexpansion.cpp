@@ -652,17 +652,21 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #ifdef UNIX_X86_ABI
         tlsRefCall->gtFlags &= ~GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Code sequence to access thread local variable on linux/arm64:
         //
         //      mrs xt, tpidr_elf0
         //      mov xd, [xt+cns]
-        tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
-#elif defined(TARGET_LOONGARCH64)
+        //
         // Code sequence to access thread local variable on linux/loongarch64:
         //
         //      ori, targetReg, $tp, 0
         //      load rd, targetReg, cns
+        //
+        // Code sequence to access thread local variable on linux/riscv64:
+        //
+        //      mov targetReg, $tp, 0
+        //      ld rd, targetReg(cns)
         tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
 #else
         assert(!"Unsupported scenario of optimizing TLS access on Linux Arm32/x86");

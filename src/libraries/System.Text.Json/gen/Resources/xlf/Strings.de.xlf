@@ -33,8 +33,8 @@
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
-        <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="translated">Es sind mehrere Typen namens "{0}" vorhanden. Die Quelle wurde für den ersten festgestellten Typ generiert. Verwenden Sie "JsonSerializableAttribute.TypeInfoPropertyName", um diesen Konflikt zu beheben.</target>
+        <source>There are multiple types named '{0}'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
+        <target state="needs-review-translation">Es sind mehrere Typen namens "{0}" vorhanden. Die Quelle wurde für den ersten festgestellten Typ generiert. Verwenden Sie "JsonSerializableAttribute.TypeInfoPropertyName", um diesen Konflikt zu beheben.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
@@ -90,6 +90,16 @@
       <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
         <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
         <target state="translated">"JsonConverterAttribute.Type" enthält ein ungültiges oder nicht zugängliches Argument.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
+        <source>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</source>
+        <target state="new">The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableAttributeOnNonContextTypeTitle">
+        <source>Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</source>
+        <target state="new">Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -2028,6 +2029,26 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             obj = configuration.Get<IReadOnlyList<Geolocation>>()[0];
             ValidateGeolocation(obj);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void TraceSwitchTest()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"TraceSwitch:Level", "Info"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            TraceSwitch ts = new(displayName: "TraceSwitch", description: "This switch is set via config.");
+            ConfigurationBinder.Bind(config, "TraceSwitch", ts);
+            Assert.Equal(TraceLevel.Info, ts.Level);
+#if NETCOREAPP
+            // Value property is not publicly exposed in .NET Framework.
+            Assert.Equal("Info", ts.Value);
+#endif // NETCOREAPP
         }
 
         private void ValidateGeolocation(IGeolocation location)

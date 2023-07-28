@@ -119,7 +119,8 @@ typedef struct
     int Signal;
     int SignalCode;
     int SignalErrno;
-    void* SignalAddress;
+    uint64_t SignalAddress;
+    uint64_t ExceptionRecord;
 } CreateDumpOptions;
 
 #ifdef HOST_UNIX
@@ -136,6 +137,7 @@ typedef struct
 #include "crashreportwriter.h"
 #include "dumpwriter.h"
 #include "runtimeinfo.h"
+#include "specialdiaginfo.h"
 #endif
 
 #ifndef MAX_LONGPATH
