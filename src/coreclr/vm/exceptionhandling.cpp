@@ -800,11 +800,7 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
     {
         CopyOSContext(pThread->m_OSContext, pContextRecord);
         SetIP(pThread->m_OSContext, (PCODE)uResumePC);
-#ifdef TARGET_UNIX
-        uAbortAddr = NULL;
-#else
         uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(uResumePC);
-#endif
     }
 
     if (uAbortAddr)
@@ -833,7 +829,12 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
         STRESS_LOG1(LF_EH, LL_INFO10, "resume under control: ip: %p\n", uResumePC);
 
 #ifdef TARGET_AMD64
+#ifdef TARGET_UNIX
+        pContextRecord->Rdi = uResumePC;
+        pContextRecord->Rsi = GetIP(pThread->GetAbortContext());
+#else
         pContextRecord->Rcx = uResumePC;
+#endif
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64)
         // On ARM & ARM64, we save off the original PC in Lr. This is the same as done
         // in HandleManagedFault for H/W generated exceptions.
