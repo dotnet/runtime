@@ -19,6 +19,7 @@
 #include "UnixSignals.h"
 #include "UnixContext.h"
 #include "HardwareExceptions.h"
+#include "PalCreateDump.h"
 #include "cgroupcpu.h"
 #include "threadstore.h"
 #include "thread.h"
@@ -87,7 +88,10 @@ static const int tccMicroSecondsToNanoSeconds = 1000;
 
 extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, uint32_t arg3)
 {
-    // Abort aborts the process and causes creation of a crash dump
+    // Causes creation of a crash dump if enabled
+    PalCreateCrashDumpIfEnabled();
+
+    // Aborts the process
     abort();
 }
 
@@ -418,6 +422,11 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 #endif // !USE_PORTABLE_HELPERS
 
     ConfigureSignals();
+
+    if (!PalCreateDumpInitialize())
+    {
+        return false;
+    }
 
     GCConfig::Initialize();
 
@@ -1105,6 +1114,9 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
     if (status != 0)
     {
+        // Causes creation of a crash dump if enabled
+        PalCreateCrashDumpIfEnabled();
+
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
         // if the thread doesn't exist anymore.
