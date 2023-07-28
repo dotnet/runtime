@@ -92,20 +92,26 @@ public class GenerateWasmBootJson : Task
 
         var result = new BootJsonData
         {
-            entryAssembly = entryAssemblyName,
             cacheBootResources = CacheBootResources,
             debugBuild = DebugBuild,
             debugLevel = ParseOptionalInt(DebugLevel) ?? (DebugBuild ? 1 : 0),
             linkerEnabled = LinkerEnabled,
             resources = new ResourcesData(),
-            icuDataMode = GetGlobalizationMode(),
             startupMemoryCache = ParseOptionalBool(StartupMemoryCache),
         };
 
         if (IsTargeting80OrLater())
-            result.config = new List<string>();
+        {
+            result.appsettings = new();
+            result.mainAssemblyName = entryAssemblyName;
+            result.globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant();
+        }
         else
-            result.appsettings = new List<string>();
+        {
+            result.config = new();
+            result.entryAssembly = entryAssemblyName;
+            result.icuDataMode = GetGlobalizationMode();
+        }
 
         if (!string.IsNullOrEmpty(RuntimeOptions))
         {

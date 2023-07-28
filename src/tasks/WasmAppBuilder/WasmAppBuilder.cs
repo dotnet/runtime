@@ -98,8 +98,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         var bootConfig = new BootJsonData()
         {
             appsettings = new(),
-            entryAssembly = MainAssemblyName,
-            icuDataMode = GetGlobalizationMode()
+            mainAssemblyName = MainAssemblyName,
+            globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant()
         };
 
         // Create app

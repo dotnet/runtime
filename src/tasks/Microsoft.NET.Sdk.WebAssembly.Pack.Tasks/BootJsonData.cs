@@ -22,11 +22,7 @@ public class BootJsonData
     /// </remarks>
     public string entryAssembly { get; set; }
 
-    public string mainAssemblyName
-    {
-        get => entryAssembly;
-        set => entryAssembly = value;
-    }
+    public string mainAssemblyName { get; set; }
 
     /// <summary>
     /// Gets the set of resources needed to boot the application. This includes the transitive
@@ -79,16 +75,12 @@ public class BootJsonData
     /// <remarks>
     /// Deprecated since .NET 8. Use <see cref="globalizationMode"/> instead.
     /// </remarks>
-    public GlobalizationMode icuDataMode { get; set; }
+    public GlobalizationMode? icuDataMode { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="GlobalizationMode"/> that determines how icu files are loaded.
     /// </summary>
-    public string globalizationMode
-    {
-        get => icuDataMode.ToString().ToLowerInvariant();
-        set { }
-    }
+    public string globalizationMode { get; set; }
 
     /// <summary>
     /// Gets or sets a value that determines if the caching startup memory is enabled.
