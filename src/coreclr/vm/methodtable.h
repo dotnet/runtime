@@ -1015,7 +1015,7 @@ public:
 
     void DoFullyLoad(Generics::RecursionGraph * const pVisited, const ClassLoadLevel level, DFLPendingList * const pPending, BOOL * const pfBailed,
                      const InstantiationContext * const pInstContext);
-    
+
     //-------------------------------------------------------------------
     // METHOD TABLES AS TYPE DESCRIPTORS
     //

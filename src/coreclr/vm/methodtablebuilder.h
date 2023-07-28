@@ -84,7 +84,6 @@ public:
                             BOOL fHasLayout,
                             BOOL fDelegate,
                             BOOL fIsEnum,
-                            BOOL fIsConstValue,
                             const bmtGenericsInfo *bmtGenericsInfo,
                             LoaderAllocator *pAllocator,
                             AllocMemTracker *pamTracker);

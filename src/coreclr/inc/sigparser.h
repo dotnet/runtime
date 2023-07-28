@@ -161,11 +161,11 @@ class SigParser
         }
 
         //------------------------------------------------------------------------
-        // Remove one compressed const type argument value (using CorSigUncompressConstArgData) 
+        // Remove one compressed const type argument value (using CorSigUncompressConstTypeArgData) 
         // from the head of the stream and return it.
         //------------------------------------------------------------------------
         __checkReturn
-        FORCEINLINE HRESULT GetConstArgData(PCCOR_SIGNATURE* pData, uint32_t* pCb)
+        FORCEINLINE HRESULT GetConstTypeArgData(PCCOR_SIGNATURE* pData, uint32_t* pCb)
         {
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
@@ -446,7 +446,7 @@ class SigParser
             }
 
             *pSize = 0;
-            
+
             BYTE bElementType = 0;
         CHECK_SIZE:
             hr = sigTemp.GetByte(&bElementType);
@@ -511,6 +511,7 @@ class SigParser
                 // We need to check the next CorElementType
                 goto CHECK_SIZE;
                 break;
+
             case ELEMENT_TYPE_END:
             case ELEMENT_TYPE_CMOD_REQD:
             case ELEMENT_TYPE_CMOD_OPT:
@@ -520,6 +521,7 @@ class SigParser
             case ELEMENT_TYPE_VALUETYPE:
                 _ASSERTE(!"Asked for the size of an element that doesn't have a size!");
                 return E_INVALIDARG;
+
             default:
 
                 _ASSERTE( !"CorSigGetElementTypeSize given invalid signature to size!" );

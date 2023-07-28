@@ -689,7 +689,7 @@ PCCOR_SIGNATURE PrettyPrintType(
 #endif
                 }
                 } break;
-                
+
             case ELEMENT_TYPE_VAR        :
                 appendChar(out, '!');
                 n  = CorSigUncompressData(typePtr);
@@ -698,7 +698,7 @@ PCCOR_SIGNATURE PrettyPrintType(
 #endif
                     appendStrNum(out, n);
                 break;
-                
+
             case ELEMENT_TYPE_MVAR        :
                 appendChar(out, '!');
                 appendChar(out, '!');

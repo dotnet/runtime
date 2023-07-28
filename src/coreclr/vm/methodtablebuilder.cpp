@@ -72,7 +72,6 @@ MethodTableBuilder::CreateClass( Module *pModule,
                                 BOOL fHasLayout,
                                 BOOL fDelegate,
                                 BOOL fIsEnum,
-                                BOOL fIsConstValue,
                                 const MethodTableBuilder::bmtGenericsInfo *bmtGenericsInfo,
                                 LoaderAllocator * pAllocator,
                                 AllocMemTracker *pamTracker)
@@ -12372,8 +12371,6 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     // This is a delegate class if it derives from MulticastDelegate (we do not allow single cast delegates)
     BOOL fIsDelegate = pParentMethodTable && pParentMethodTable == g_pMulticastDelegateClass;
 
-    BOOL fIsConstValue = false;
-
     // Create a EEClass entry for it, filling out a few fields, such as the parent class token
     // (and the generic type should we be creating an instantiation)
     EEClass * pClass = MethodTableBuilder::CreateClass(
@@ -12382,7 +12379,6 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         fHasLayout,
         fIsDelegate,
         fIsEnum,
-        fIsConstValue,
         &genericsInfo,
         pAllocator,
         pamTracker);

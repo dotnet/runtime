@@ -1483,6 +1483,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                             else szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s A_%d",pszInstrName, v);
                         }
                         break;
+
                     case CEE_LDLOCA:
                     case CEE_LDLOC:
                     case CEE_STLOC:
@@ -1516,7 +1517,6 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                     PadTheString;
                 }
                 szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s 0x%x", pszInstrName, v);
-                break;
                 PC += 4;
                 break;
             }

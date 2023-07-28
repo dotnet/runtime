@@ -18,7 +18,7 @@ typedef enum opcode_format_t
 {
 	InlineNone		= 0,	// no inline args
 	InlineVar		= 1,	// local variable       (U2 (U1 if Short on))
-	InlineI			= 2,	// a signed integer     (I4 (I1 if Short on))
+	InlineI			= 2,	// an signed integer    (I4 (I1 if Short on))
 	InlineR			= 3,	// a real number        (R8 (R4 if Short on))
 	InlineBrTarget	= 4,    // branch target        (I4 (I1 if Short on))
 	InlineI8		= 5,
@@ -31,6 +31,7 @@ typedef enum opcode_format_t
 	InlineTok		= 12,  // a meta-data token of unknown type (U4)
 	InlineSwitch	= 13,  // count (U4), pcrel1 (U4) .... pcrelN (U4)
 	InlinePhi		= 14,  // count (U1), var1 (U2) ... varN (U2)
+
 	// WATCH OUT we are close to the limit here, if you add
 	// more enumerations you need to change ShortIline definition below
 
