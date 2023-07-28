@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Internal.TypeSystem;
@@ -778,13 +777,16 @@ namespace ILCompiler
             }
 
             FieldDesc firstField = null;
-            int numIntroducedFields = 0;
             foreach (FieldDesc field in mdType.GetFields())
             {
                 if (!field.IsStatic)
                 {
+                    // A type is only an unsafe fixed buffer type if it has exactly one field.
+                    if (firstField is not null)
+                    {
+                        return false;
+                    }
                     firstField = field;
-                    break;
                 }
             }
 
@@ -801,11 +803,9 @@ namespace ILCompiler
             // instead of adding additional padding at the end of a one-field structure.
             // We do this check here to save looking up the FixedBufferAttribute when loading the field
             // from metadata.
-            return numIntroducedFields == 1
-                            && firstFieldElementType.IsValueType
-                            && firstField.Offset.AsInt == 0
-                            && mdType.HasLayout()
-                            && ((mdType.GetElementSize().AsInt % firstFieldElementType.GetElementSize().AsInt) == 0);
+            return firstFieldElementType.IsValueType
+                    && firstField.Offset.AsInt == 0
+                    && ((mdType.GetElementSize().AsInt % firstFieldElementType.GetElementSize().AsInt) == 0);
         }
     }
 }
