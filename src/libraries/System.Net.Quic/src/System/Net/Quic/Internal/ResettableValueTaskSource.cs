@@ -130,6 +130,10 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
         }
     }
 
+    /// <summary>
+    /// Gets a <see cref="Task"/> that will transition to a completed state with the last transition of this source, i.e. into <see cref="State.Completed"/>.
+    /// </summary>
+    /// <returns>The <see cref="Task"/> that will transition to a completed state with the last transition of this source.</returns>
     public Task GetFinalTask() => _finalTaskSource.Task;
 
     private bool TryComplete(Exception? exception, bool final)

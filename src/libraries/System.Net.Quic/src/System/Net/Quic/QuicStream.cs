@@ -134,7 +134,19 @@ public sealed partial class QuicStream
     /// or when <see cref="Abort"/> for <see cref="QuicAbortDirection.Read"/> is called,
     /// or when the peer called <see cref="Abort"/> for <see cref="QuicAbortDirection.Write"/>.
     /// </summary>
-    public Task ReadsClosed => _receiveTcs.GetFinalTask();
+    public Task ReadsClosed
+    {
+        get
+        {
+            GCHandle keepAlive = GCHandle.Alloc(this);
+            Task finalTask = _receiveTcs.GetFinalTask();
+            finalTask.ContinueWith(static (_, state) =>
+            {
+                ((GCHandle)state!).Free();
+            }, keepAlive, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            return finalTask;
+        }
+    }
 
     /// <summary>
     /// A <see cref="Task"/> that will get completed once writing side has been closed.
@@ -143,7 +155,19 @@ public sealed partial class QuicStream
     /// or when <see cref="Abort"/> for <see cref="QuicAbortDirection.Write"/> is called,
     /// or when the peer called <see cref="Abort"/> for <see cref="QuicAbortDirection.Read"/>.
     /// </summary>
-    public Task WritesClosed => _sendTcs.GetFinalTask();
+    public Task WritesClosed
+    {
+        get
+        {
+            GCHandle keepAlive = GCHandle.Alloc(this);
+            Task finalTask = _sendTcs.GetFinalTask();
+            finalTask.ContinueWith(static (_, state) =>
+            {
+                ((GCHandle)state!).Free();
+            }, keepAlive, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            return finalTask;
+        }
+    }
 
     /// <inheritdoc />
     public override string ToString() => _handle.ToString();
@@ -284,7 +308,7 @@ public sealed partial class QuicStream
             }
 
             // Copy data from the buffer, reduce target and increment total.
-            int copied = _receiveBuffers.CopyTo(buffer, out bool complete, out bool empty);
+            int copied = _receiveBuffers.CopyTo(buffer, out bool complete, out bool empty, out int lastReceiveSize);
             buffer = buffer.Slice(copied);
             totalCopied += copied;
 
@@ -607,7 +631,7 @@ public sealed partial class QuicStream
 #pragma warning disable CS3016
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
-    private static unsafe int NativeCallback(QUIC_HANDLE* connection, void* context, QUIC_STREAM_EVENT* streamEvent)
+    private static unsafe int NativeCallback(QUIC_HANDLE* stream, void* context, QUIC_STREAM_EVENT* streamEvent)
     {
         GCHandle stateHandle = GCHandle.FromIntPtr((IntPtr)context);
 
@@ -616,7 +640,7 @@ public sealed partial class QuicStream
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Error(null, $"Received event {streamEvent->Type} while connection is already disposed");
+                NetEventSource.Error(null, $"Received event {streamEvent->Type} for [strm][{(nint)stream:X11}] while stream is already disposed");
             }
             return QUIC_STATUS_INVALID_STATE;
         }

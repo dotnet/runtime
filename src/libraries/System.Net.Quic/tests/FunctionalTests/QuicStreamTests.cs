@@ -1210,44 +1210,47 @@ namespace System.Net.Quic.Tests
         }
 
         [Theory]
-        /*[InlineData(1, true, true)]
+        [InlineData(1, true, true)]
         [InlineData(1024, true, true)]
-        [InlineData(1024*1024*1024, true, true)]*/
-        [InlineData(1, true, false)]
-        /*[InlineData(1024, true, false)]
-        [InlineData(1024*1024*1024, true, false)]
+        [InlineData(1024*1024*1024, true, true)]
         [InlineData(1, false, true)]
         [InlineData(1024, false, true)]
         [InlineData(1024*1024*1024, false, true)]
+        [InlineData(1, true, false)]
+        [InlineData(1024, true, false)]
+        [InlineData(1024*1024*1024, true, false)]
         [InlineData(1, false, false)]
         [InlineData(1024, false, false)]
-        [InlineData(1024*1024*1024, false, false)]*/
-        public async Task ReadsClosedFinishes_ConnectionClose(int payloadSize, bool closeServer, bool closeConnection)
+        [InlineData(1024*1024*1024, false, false)]
+        public async Task ReadsClosedFinishes_ConnectionClose(int payloadSize, bool closeServer, bool useDispose)
         {
-            using var logger = new TestUtilities.TestEventListener(_output, "Private.InternalDiagnostics.System.Net.Quic");
+            using SemaphoreSlim sem = new SemaphoreSlim(0);
             await RunClientServer(
                 serverFunction: async connection =>
                 {
-                    long expectedErrorCode = closeConnection ? DefaultCloseErrorCodeClient : DefaultStreamErrorCodeClient;
-                    QuicError expectedError = closeConnection ? QuicError.ConnectionAborted : QuicError.StreamAborted;
+                    QuicError expectedError = QuicError.ConnectionAborted;
+                    long expectedErrorCode = DefaultCloseErrorCodeClient;
                     await using QuicStream stream = await connection.AcceptInboundStreamAsync();
                     await stream.WriteAsync(new byte[payloadSize], completeWrites: true);
                     if (closeServer)
                     {
+                        await sem.WaitAsync();
                         expectedError = QuicError.OperationAborted;
-                        if (closeConnection)
+                        expectedErrorCode = DefaultCloseErrorCodeServer;
+                        if (useDispose)
                         {
-                            expectedErrorCode = DefaultCloseErrorCodeServer;
                             await connection.DisposeAsync();
                         }
                         else
                         {
-                            expectedErrorCode = DefaultStreamErrorCodeServer;
-                            await stream.DisposeAsync();
+                            await connection.CloseAsync(DefaultCloseErrorCodeServer);
                         }
                     }
+                    else
+                    {
+                        sem.Release();
+                    }
 
-                    _output.WriteLine($"Server {stream} ReadsClosed={stream.ReadsClosed.Status}");
                     var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.ReadsClosed);
                     if (expectedError == QuicError.OperationAborted)
                     {
@@ -1260,27 +1263,120 @@ namespace System.Net.Quic.Tests
                 },
                 clientFunction: async connection =>
                 {
-                    long expectedErrorCode = closeConnection ? DefaultCloseErrorCodeServer : DefaultStreamErrorCodeServer;
-                    QuicError expectedError = closeConnection ? QuicError.ConnectionAborted : QuicError.StreamAborted;
+                    QuicError expectedError = QuicError.ConnectionAborted;
+                    long expectedErrorCode = DefaultCloseErrorCodeServer;
                     await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                     await stream.WriteAsync(new byte[payloadSize], completeWrites: true);
                     if (!closeServer)
                     {
+                        await sem.WaitAsync();
                         expectedError = QuicError.OperationAborted;
-                        if (closeConnection)
+                        expectedErrorCode = DefaultCloseErrorCodeClient;
+                        if (useDispose)
                         {
-                            expectedErrorCode = DefaultCloseErrorCodeClient;
                             await connection.DisposeAsync();
                         }
                         else
                         {
-                            expectedErrorCode = DefaultStreamErrorCodeClient;
-                            await stream.DisposeAsync();
+                            await connection.CloseAsync(DefaultCloseErrorCodeClient);
                         }
                     }
+                    else
+                    {
+                        sem.Release();
+                    }
 
-                    _output.WriteLine($"Client {stream} ReadsClosed={stream.ReadsClosed.Status}");
                     var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.ReadsClosed);
+                    if (expectedError == QuicError.OperationAborted)
+                    {
+                        Assert.Null(ex.ApplicationErrorCode);
+                    }
+                    else
+                    {
+                        Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
+                    }
+                }
+            );
+        }
+
+        [Theory]
+        [InlineData(1, true, true)]
+        [InlineData(1024, true, true)]
+        [InlineData(1024*1024*1024, true, true)]
+        [InlineData(1, false, true)]
+        [InlineData(1024, false, true)]
+        [InlineData(1024*1024*1024, false, true)]
+        [InlineData(1, true, false)]
+        [InlineData(1024, true, false)]
+        [InlineData(1024*1024*1024, true, false)]
+        [InlineData(1, false, false)]
+        [InlineData(1024, false, false)]
+        [InlineData(1024*1024*1024, false, false)]
+        public async Task WritesClosedFinishes_ConnectionClose(int payloadSize, bool closeServer, bool useDispose)
+        {
+            using SemaphoreSlim sem = new SemaphoreSlim(0);
+            await RunClientServer(
+                serverFunction: async connection =>
+                {
+                    QuicError expectedError = QuicError.ConnectionAborted;
+                    long expectedErrorCode = DefaultCloseErrorCodeClient;
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
+                    await stream.WriteAsync(new byte[payloadSize]);
+                    if (closeServer)
+                    {
+                        await sem.WaitAsync();
+                        expectedError = QuicError.OperationAborted;
+                        expectedErrorCode = DefaultCloseErrorCodeServer;
+                        if (useDispose)
+                        {
+                            await connection.DisposeAsync();
+                        }
+                        else
+                        {
+                            await connection.CloseAsync(DefaultCloseErrorCodeServer);
+                        }
+                    }
+                    else
+                    {
+                        sem.Release();
+                    }
+
+                    var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.WritesClosed);
+                    if (expectedError == QuicError.OperationAborted)
+                    {
+                        Assert.Null(ex.ApplicationErrorCode);
+                    }
+                    else
+                    {
+                        Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
+                    }
+                },
+                clientFunction: async connection =>
+                {
+                    QuicError expectedError = QuicError.ConnectionAborted;
+                    long expectedErrorCode = DefaultCloseErrorCodeServer;
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    await stream.WriteAsync(new byte[payloadSize]);
+                    if (!closeServer)
+                    {
+                        await sem.WaitAsync();
+                        expectedError = QuicError.OperationAborted;
+                        expectedErrorCode = DefaultCloseErrorCodeClient;
+                        if (useDispose)
+                        {
+                            await connection.DisposeAsync();
+                        }
+                        else
+                        {
+                            await connection.CloseAsync(DefaultCloseErrorCodeClient);
+                        }
+                    }
+                    else
+                    {
+                        sem.Release();
+                    }
+
+                    var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.WritesClosed);
                     if (expectedError == QuicError.OperationAborted)
                     {
                         Assert.Null(ex.ApplicationErrorCode);
