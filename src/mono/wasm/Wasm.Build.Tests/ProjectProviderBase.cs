@@ -170,7 +170,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             bool expectFingerprint = superSet[expectedFilename];
 
-            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in the list of actual files on disk - {string.Join(", ", actual.Keys)} in bundle directory: {bundleDir}");
+            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in bundle directory: {bundleDir}. Actual files on disk: {string.Join(", ", actual.Keys)}");
 
             // Check that the version and hash are present or not present as expected
             if (ShouldCheckFingerprint(expectedFilename: expectedFilename,

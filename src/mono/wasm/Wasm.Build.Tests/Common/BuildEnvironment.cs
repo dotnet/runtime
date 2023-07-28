@@ -24,7 +24,7 @@ namespace Wasm.Build.Tests
         public string                           BuiltNuGetsPath               { get; init; }
 
         public bool UseWebcil { get; init; }
-        public bool IsMultiThreadingRuntimeAvailableForDefaultTargetFramework { get; init; }
+        public bool IsWorkloadWithMultiThreadingForDefaultFramework { get; init; }
         public bool IsRunningOnCI => EnvironmentVariables.IsRunningOnCI;
 
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
@@ -97,11 +97,13 @@ namespace Wasm.Build.Tests
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
 
-            IsMultiThreadingRuntimeAvailableForDefaultTargetFramework = IsMultiThreadingRuntimePackAvailableFor(BuildTestBase.DefaultTargetFramework);
-            if (EnvironmentVariables.IsRunningOnCI && !IsMultiThreadingRuntimeAvailableForDefaultTargetFramework)
+            IsWorkloadWithMultiThreadingForDefaultFramework = IsMultiThreadingRuntimePackAvailableFor(BuildTestBase.DefaultTargetFramework);
+            if (IsWorkload && EnvironmentVariables.IsRunningOnCI && !IsWorkloadWithMultiThreadingForDefaultFramework)
+            {
                 throw new Exception(
                             "Expected the multithreading runtime pack to be available when running on CI." +
-                            $" {nameof(IsRunningOnCI)} is true but {nameof(IsMultiThreadingRuntimeAvailableForDefaultTargetFramework)} is false.");
+                            $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
+            }
 
             UseWebcil = EnvironmentVariables.UseWebcil;
 

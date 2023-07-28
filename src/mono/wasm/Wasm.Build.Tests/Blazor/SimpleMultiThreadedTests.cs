@@ -10,7 +10,7 @@ using Xunit.Sdk;
 
 #nullable enable
 
-namespace Wasm.Build.Tests.Blazor;
+namespace Wasm.Build.Tests.MT.Blazor;
 
 public class SimpleMultiThreadedTests : BlazorWasmTestBase
 {
@@ -36,7 +36,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     //                          Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(config, forPublish: false), "..")));
     // }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsMultiThreadingRuntimeAvailableForDefaultTargetFramework))]
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
     [InlineData("Debug", false)]
     // [InlineData("Debug", true)]
     [InlineData("Release", false)]
