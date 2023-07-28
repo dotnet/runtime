@@ -283,7 +283,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_WithResources_Publish(string config)
     {
         string[] cultures = ["ja-JP", "es-ES"];
-        string id = $"blz_no_workload_resources_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
+        string id = $"blz_resources_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         // Ensure we have the source data we really on
