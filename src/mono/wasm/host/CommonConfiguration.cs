@@ -22,7 +22,7 @@ internal sealed class CommonConfiguration
     public WasmHostProperties HostProperties { get; init; }
     public IEnumerable<string> HostArguments { get; init; }
     public bool Silent { get; private set; } = true;
-    public bool UseStaticWebAssets { get; private set; } = true;
+    public bool UseStaticWebAssets { get; private set; }
     public string? RuntimeConfigPath { get; private set; }
 
     private string? hostArg;
