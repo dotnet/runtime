@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <memory>
 #include <array>
+#include <vector>
 
 #include <internal/dnmd_platform.hpp>
 
@@ -28,7 +29,7 @@ public:
 
     span(span const & other) = default;
 
-    span& operator=(span&& other) = default;
+    span& operator=(span&& other) noexcept = default;
 
     size_t size() const noexcept
     {
@@ -66,10 +67,10 @@ public:
         : span<T>{ ptr, len }
     { }
 
-    owning_span(owning_span&& other)
+    owning_span(owning_span&& other) noexcept
         : span<T>{}
     {
-        *this = other;
+        *this = std::move(other);
     }
 
     ~owning_span()
@@ -108,6 +109,10 @@ struct free_deleter
 template<typename T>
 using malloc_span = owning_span<T, free_deleter>;
 
+bool read_in_file(char const* file, malloc_span<uint8_t>& b);
+bool get_metadata_from_pe(malloc_span<uint8_t>& b);
+bool get_metadata_from_file(malloc_span<uint8_t>& b);
+
 bool create_mdhandle(malloc_span<uint8_t> const& buffer, mdhandle_ptr& handle)
 {
     mdhandle_t h;
@@ -117,18 +122,42 @@ bool create_mdhandle(malloc_span<uint8_t> const& buffer, mdhandle_ptr& handle)
     return true;
 }
 
-bool read_in_file(char const* file, malloc_span<uint8_t>& b);
-bool get_metadata_from_pe(malloc_span<uint8_t>& b);
-bool get_metadata_from_file(malloc_span<uint8_t>& b);
+bool apply_deltas(mdhandle_t handle, std::vector<char const*>& deltas, std::vector<malloc_span<uint8_t>>& data)
+{
+    for (char const* p : deltas)
+    {
+        malloc_span<uint8_t> d;
+        if (!read_in_file(p, d) || !get_metadata_from_file(d))
+        {
+            std::fprintf(stderr, "Failed to read '%s'.\n", p);
+            return false;
+        }
+        if (!md_apply_delta(handle, d, d.size()))
+        {
+            std::fprintf(stderr, "Failed to apply delta, '%s'.\n", p);
+            return false;
+        }
+        // Store the loaded delta data
+        data.push_back(std::move(d));
+    }
+    return true;
+}
 
 struct dump_config_t
 {
     dump_config_t()
         : path{}
+        , delta_paths{}
+        , data{}
         , table_id{ -1 }
     { }
 
+    dump_config_t(dump_config_t const& other) = delete;
+    dump_config_t(dump_config_t&& other) = default;
+
     char const* path;
+    std::vector<char const*> delta_paths;
+    std::vector<malloc_span<uint8_t>> data;
     int32_t table_id;
 };
 
@@ -153,6 +182,7 @@ void dump(dump_config_t cfg)
 
     mdhandle_ptr handle;
     if (!create_mdhandle(b, handle)
+        || !apply_deltas(handle.get(), cfg.delta_paths, cfg.data)
         || !md_validate(handle.get())
         || !md_dump_tables(handle.get(), cfg.table_id))
     {
@@ -160,7 +190,7 @@ void dump(dump_config_t cfg)
     }
 }
 
-static char const* s_usage = "Syntax: mddump [-t <table_id>]? <path ecma-335 data>";
+static char const* s_usage = "Syntax: mddump [-t <table_id>]? [-d <path_to_delta>]* <path ecma-335 data>";
 
 int main(int ac, char** av)
 {
@@ -197,12 +227,23 @@ int main(int ac, char** av)
                     return EXIT_FAILURE;
                 }
 
-                cfg.table_id = ::strtoul(args[i], nullptr, 0);
+                cfg.table_id = (int32_t)::strtoul(args[i], nullptr, 0);
                 if ((errno == ERANGE) || cfg.table_id >= 64)
                 {
                     std::fprintf(stderr, "Invalid table ID: '%s'. Must be [0, 64)\n", args[i]);
                     return EXIT_FAILURE;
                 }
+                continue;
+            }
+            case 'd':
+            {
+                i++;
+                if (i >= args.size())
+                {
+                    std::fprintf(stderr, "Missing delta file.\n");
+                    return EXIT_FAILURE;
+                }
+                cfg.delta_paths.push_back(args[i]);
                 continue;
             }
             case 'h':
@@ -218,7 +259,7 @@ int main(int ac, char** av)
         return EXIT_FAILURE;
     }
 
-    dump(cfg);
+    dump(std::move(cfg));
 
     return EXIT_SUCCESS;
 }
@@ -256,7 +297,7 @@ PIMAGE_SECTION_HEADER find_section_header(
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 bool read_in_file(char const* file, malloc_span<uint8_t>& b)
@@ -282,7 +323,7 @@ bool get_metadata_from_pe(malloc_span<uint8_t>& b)
 
     // [TODO] Handle endian issues with .NET generated PE images
     // All integers should be read as little-endian.
-    PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)(void*)b;
+    auto dos_header = (PIMAGE_DOS_HEADER)(void*)b;
     bool is_pe = dos_header->e_magic == IMAGE_DOS_SIGNATURE;
     if (!is_pe)
         return false;
@@ -300,11 +341,11 @@ bool get_metadata_from_pe(malloc_span<uint8_t>& b)
     size_t remaining_pe_size = b.size() - dos_header->e_lfanew;
     uint16_t section_header_count;
     uint8_t* section_header_begin;
-    PIMAGE_NT_HEADERS nt_header_any = (PIMAGE_NT_HEADERS)(b + dos_header->e_lfanew);
+    auto nt_header_any = (PIMAGE_NT_HEADERS)(b + dos_header->e_lfanew);
     if (nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64
         || nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_ARM64)
     {
-        PIMAGE_NT_HEADERS64 nt_header64 = (PIMAGE_NT_HEADERS64)nt_header_any;
+        auto nt_header64 = (PIMAGE_NT_HEADERS64)nt_header_any;
         if (remaining_pe_size < sizeof(*nt_header64))
             return false;
         remaining_pe_size -= sizeof(*nt_header64);
@@ -315,7 +356,7 @@ bool get_metadata_from_pe(malloc_span<uint8_t>& b)
     else if (nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_I386
             || nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_ARM)
     {
-        PIMAGE_NT_HEADERS32 nt_header32 = (PIMAGE_NT_HEADERS32)nt_header_any;
+        auto nt_header32 = (PIMAGE_NT_HEADERS32)nt_header_any;
         if (remaining_pe_size < sizeof(*nt_header32))
             return false;
         remaining_pe_size -= sizeof(*nt_header32);
@@ -354,7 +395,7 @@ bool get_metadata_from_pe(malloc_span<uint8_t>& b)
     if (cor_header_offset > b.size() - sizeof(IMAGE_COR20_HEADER))
         return false;
 
-    PIMAGE_COR20_HEADER cor_header = (PIMAGE_COR20_HEADER)(b + cor_header_offset);
+    auto cor_header = (PIMAGE_COR20_HEADER)(b + cor_header_offset);
     tgt_header = find_section_header(section_headers, cor_header->MetaData.VirtualAddress);
     if (tgt_header == nullptr)
         return false;

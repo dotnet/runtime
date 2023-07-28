@@ -140,7 +140,7 @@ bool md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor, m
     if (!try_get_user_string(cxt, *offset, str, &next_offset))
         return false;
 
-    *cursor = next_offset;
+    *cursor = (mduserstringcursor_t)next_offset;
     return true;
 }
 
@@ -874,7 +874,7 @@ static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
 
     assert((tgt_table->column_details[col_index] & mdtc_idx_table) == mdtc_idx_table);
 
-    // If the column in the target table is pointing not pointing to the starting table,
+    // If the column in the target table is not pointing to the starting table,
     // then it is pointing to the corresponding indirection table.
     // We need to find the element in the indirection table that points to the cursor
     // and then find the element in the target table that points to the indirection table.
@@ -984,5 +984,6 @@ bool md_resolve_indirect_cursor(mdcursor_t c, mdcursor_t* target)
         *target = c;
         return true;
     }
-    return 1 == md_get_column_value_as_cursor(c, index_to_col(0, table->table_id), 1, target);
+    col_index_t col_idx = index_to_col(0, table->table_id);
+    return 1 == md_get_column_value_as_cursor(c, col_idx, 1, target);
 }

@@ -458,13 +458,13 @@ bool initialize_table_details(
         assert(mdtFieldRva_ColCount == get_table_column_count(id));
         break;
     case mdtid_ENCLog:
-        table->column_details[0] = mdtc_constant | mdtc_b4;
-        table->column_details[1] = mdtc_constant | mdtc_b4;
-        assert(2 == get_table_column_count(id));
+        table->column_details[mdtENCLog_Token] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtENCLog_Op] = mdtc_constant | mdtc_b4;
+        assert(mdtENCLog_ColCount == get_table_column_count(id));
         break;
     case mdtid_ENCMap:
-        table->column_details[0] = mdtc_constant | mdtc_b4;
-        assert(1 == get_table_column_count(id));
+        table->column_details[mdtENCMap_Token] = mdtc_constant | mdtc_b4;
+        assert(mdtENCMap_ColCount == get_table_column_count(id));
         break;
     case mdtid_Assembly: // II.22.2
         table->column_details[mdtAssembly_HashAlgId] = mdtc_constant | mdtc_b4;

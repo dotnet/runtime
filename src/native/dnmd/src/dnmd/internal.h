@@ -117,6 +117,13 @@ typedef struct _mdtable_t
 
 typedef mdcdata_t mdstream_t;
 
+typedef struct _mdmem_t
+{
+    struct _mdmem_t* next;
+    size_t size;
+    uint8_t data[1]; // Arbitrary sized array
+} mdmem_t;
+
 typedef struct _mdcxt_t
 {
     uint32_t magic; // mdlib magic
@@ -141,10 +148,19 @@ typedef struct _mdcxt_t
 
     // Metadata tables - II.22
     mdtable_t* tables;
+
+    // Additional memory used for dynamic operations
+    mdmem_t* mem;
 } mdcxt_t;
 
 // Extract a context from the mdhandle_t.
 mdcxt_t* extract_mdcxt(mdhandle_t md);
+
+// Allocate tracked memory.
+mdmem_t* alloc_mdmem(mdcxt_t* cxt, size_t length);
+
+// Merge the supplied delta into the context.
+bool merge_in_delta(mdcxt_t* cxt, mdcxt_t* delta);
 
 //
 // Streams

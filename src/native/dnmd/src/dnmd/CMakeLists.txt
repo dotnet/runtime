@@ -5,6 +5,7 @@ set(SOURCES
   streams.c
   tables.c
   sig.c
+  deltas.c
 )
 
 set(HEADERS
@@ -32,4 +33,3 @@ install(TARGETS dnmd EXPORT dnmd
   RUNTIME DESTINATION bin)
 
 install(EXPORT dnmd NAMESPACE dnmd:: FILE dnmdlib.cmake DESTINATION lib/cmake/dnmd)
-  
