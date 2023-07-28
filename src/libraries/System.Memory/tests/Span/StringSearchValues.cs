@@ -199,9 +199,15 @@ namespace System.Memory.Tests.Span
         [Fact]
         public static void IndexOfAny_CanProduceDifferentResultsUnderNls()
         {
-            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " \U00016E40", "\U00016E60");
-            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " \U00016E40abc", "\U00016E60, abc");
-            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " abc\U00016E40", "abc\U00016E60");
+            if (CanTestInvariantCulture)
+            {
+                RunUsingInvariantCulture(static () =>
+                {
+                    IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " \U00016E40", "\U00016E60");
+                    IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " \U00016E40abc", "\U00016E60, abc");
+                    IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, " abc\U00016E40", "abc\U00016E60");
+                });
+            }
 
             if (CanTestNls)
             {
