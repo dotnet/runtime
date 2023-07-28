@@ -1067,7 +1067,7 @@ BOOL MethodTable::FindDynamicallyAddedInterface(MethodTable *pInterface)
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(IsRestored_NoLogging());
+    _ASSERTE(IsRestored());
     _ASSERTE(HasDynamicInterfaceMap());     // This should never be called on for a type that is not an extensible RCW.
 
     unsigned cDynInterfaces = GetNumDynamicallyAddedInterfaces();
@@ -1090,7 +1090,7 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
         PRECONDITION(HasDynamicInterfaceMap());    // This should never be called on for a type that is not an extensible RCW.
     }
     CONTRACTL_END;
@@ -1418,7 +1418,7 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(pTargetMT->IsInterface());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -1459,7 +1459,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(pTargetMT->HasVariance());
         PRECONDITION(pTargetMT->IsInterface() || pTargetMT->IsDelegate());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -1601,7 +1601,7 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
         MODE_COOPERATIVE;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -5226,7 +5226,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     // First ensure that we're loaded to just below CLASS_DEPENDENCIES_LOADED
     ClassLoader::EnsureLoaded(this, (ClassLoadLevel) (level-1));
 
-    CONSISTENCY_CHECK(IsRestored_NoLogging());
+    CONSISTENCY_CHECK(IsRestored());
     CONSISTENCY_CHECK(!HasApproxParent());
 
     if ((level == CLASS_LOADED) && !IsSharedByGenericInstantiations())
@@ -5717,7 +5717,7 @@ CorElementType MethodTable::GetInternalCorElementType()
     // DAC may be targeting a dump; dumps do not guarantee you can retrieve the EEClass from
     // the MethodTable so this is not expected to work in a DAC build.
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    if (IsRestored_NoLogging())
+    if (IsRestored())
     {
         PTR_EEClass pClass = GetClass_NoLogging();
         if (ret != pClass->GetInternalCorElementType())
@@ -7413,8 +7413,8 @@ MethodTable * MethodTable::GetMethodTableMatchingParentClass(MethodTable * pWhic
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pWhichParent));
-        PRECONDITION(IsRestored_NoLogging());
-        PRECONDITION(pWhichParent->IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
+        PRECONDITION(pWhichParent->IsRestored());
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -7469,8 +7469,8 @@ Instantiation MethodTable::GetInstantiationOfParentClass(MethodTable *pWhichPare
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pWhichParent));
-        PRECONDITION(IsRestored_NoLogging());
-        PRECONDITION(pWhichParent->IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
+        PRECONDITION(pWhichParent->IsRestored());
         SUPPORTS_DAC;
     } CONTRACTL_END;
 

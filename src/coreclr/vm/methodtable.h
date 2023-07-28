@@ -875,17 +875,11 @@ public:
 
     void SetIsRestored();
 
-    inline BOOL IsRestored_NoLogging()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return !(GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
-    }
     inline BOOL IsRestored()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return IsRestored_NoLogging();
+        return !(GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
     }
 
     //-------------------------------------------------------------------
@@ -911,7 +905,7 @@ public:
         CONTRACTL_END;
 
         PRECONDITION(!HasApproxParent());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
 
         InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
     }
@@ -970,7 +964,7 @@ public:
         CONTRACTL_END;
 
         PRECONDITION(!HasApproxParent());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
 
         InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
     }
