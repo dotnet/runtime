@@ -2831,6 +2831,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
         GC_TRIGGERS_FROM_GETJITINFO;
     }
     CONTRACTL_END;
+    _ASSERTE(pNativeCodeStartAddress != NULL);
 
 #ifdef PROFILING_SUPPORTED
     // At this point, we're pulling in the debugger.
@@ -2998,6 +2999,7 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     _ASSERTE(pcMap != NULL);
     _ASSERTE(prguiILOffset != NULL);
     _ASSERTE(prguiNativeOffset != NULL);
+    _ASSERTE(pNativeCodeStartAddress != NULL);
 
     // Any caller of GetILToNativeMappingIntoArrays had better call
     // InitializeLazyDataIfNecessary first!
