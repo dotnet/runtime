@@ -142,7 +142,7 @@ export type LoaderHelpers = {
     err(message: string): void;
 
     hasDebuggingEnabled(config: MonoConfig): boolean,
-    retrieve_asset_download(asset: AssetEntry): Promise<Response>;
+    retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     logDownloadStatsToConsole: () => void;
     purgeUnusedCacheEntriesAsync: () => Promise<void>;

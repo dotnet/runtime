@@ -326,10 +326,10 @@ export function delay(ms: number): Promise<void> {
     return new Promise(resolve => globalThis.setTimeout(resolve, ms));
 }
 
-export async function retrieve_asset_download(asset: AssetEntry): Promise<Response> {
+export async function retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer> {
     const pendingAsset = await start_asset_download(asset);
-    const assetResponse = await pendingAsset.pendingDownloadInternal!.response;
-    return assetResponse;
+    await pendingAsset.pendingDownloadInternal!.response;
+    return pendingAsset.buffer!;
 }
 
 // FIXME: Connection reset is probably the only good one for which we should retry

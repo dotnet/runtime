@@ -13,7 +13,7 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
     await Promise.all(culturesToLoad!
         .filter(culture => Object.prototype.hasOwnProperty.call(satelliteResources, culture))
         .map(culture => {
-            const promises: Promise<Response>[] = [];
+            const promises: Promise<ArrayBuffer>[] = [];
             for (const name in satelliteResources[culture]) {
                 const asset: AssetEntry = {
                     name,
@@ -27,10 +27,9 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
 
             return promises;
         })
-        .reduce((previous, next) => previous.concat(next), new Array<Promise<Response>>())
-        .map(async responsePromise => {
-            const response = await responsePromise;
-            const bytes = await response.arrayBuffer();
+        .reduce((previous, next) => previous.concat(next), new Array<Promise<ArrayBuffer>>())
+        .map(async bytesPromise => {
+            const bytes = await bytesPromise;
             runtimeHelpers.javaScriptExports.load_satellite_assembly(new Uint8Array(bytes));
         }));
 }
