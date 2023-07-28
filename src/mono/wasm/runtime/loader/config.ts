@@ -3,7 +3,7 @@
 
 import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
-import type { AssetBehaviors, DotnetModuleConfig, MonoConfig } from "../types";
+import type { AssetBehaviors, DotnetModuleConfig, MonoConfig, ResourceGroups } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
@@ -16,7 +16,12 @@ export function deep_merge_config(target: MonoConfigInternal, source: MonoConfig
         providedConfig.assets = [...(target.assets || []), ...(providedConfig.assets || [])];
     }
     if (providedConfig.resources !== undefined) {
-        providedConfig.resources = { ...(target.resources || {}), ...(providedConfig.resources || {}) };
+        providedConfig.resources = deep_merge_resources(target.resources || {
+            assembly: {},
+            jsModuleNative: {},
+            jsModuleRuntime: {},
+            wasmNative: {}
+        }, providedConfig.resources);
     }
     if (providedConfig.environmentVariables !== undefined) {
         providedConfig.environmentVariables = { ...(target.environmentVariables || {}), ...(providedConfig.environmentVariables || {}) };
@@ -36,6 +41,53 @@ export function deep_merge_module(target: DotnetModuleInternal, source: DotnetMo
     return Object.assign(target, providedConfig);
 }
 
+function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): ResourceGroups {
+    const providedResources: ResourceGroups = { ...source };
+    if (providedResources.assembly !== undefined) {
+        providedResources.assembly = { ...(target.assembly || {}), ...(providedResources.assembly || {}) };
+    }
+    if (providedResources.lazyAssembly !== undefined) {
+        providedResources.lazyAssembly = { ...(target.lazyAssembly || {}), ...(providedResources.lazyAssembly || {}) };
+    }
+    if (providedResources.pdb !== undefined) {
+        providedResources.pdb = { ...(target.pdb || {}), ...(providedResources.pdb || {}) };
+    }
+    if (providedResources.jsModuleWorker !== undefined) {
+        providedResources.jsModuleWorker = { ...(target.jsModuleWorker || {}), ...(providedResources.jsModuleWorker || {}) };
+    }
+    if (providedResources.jsModuleNative !== undefined) {
+        providedResources.jsModuleNative = { ...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {}) };
+    }
+    if (providedResources.jsModuleRuntime !== undefined) {
+        providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
+    }
+    if (providedResources.jsSymbols !== undefined) {
+        providedResources.jsSymbols = { ...(target.jsSymbols || {}), ...(providedResources.jsSymbols || {}) };
+    }
+    if (providedResources.wasmNative !== undefined) {
+        providedResources.wasmNative = { ...(target.wasmNative || {}), ...(providedResources.wasmNative || {}) };
+    }
+    if (providedResources.icu !== undefined) {
+        providedResources.icu = { ...(target.icu || {}), ...(providedResources.icu || {}) };
+    }
+    if (providedResources.satelliteResources !== undefined) {
+        providedResources.satelliteResources = { ...(target.satelliteResources || {}), ...(providedResources.satelliteResources || {}) };
+    }
+    if (providedResources.modulesAfterConfigLoaded !== undefined) {
+        providedResources.modulesAfterConfigLoaded = { ...(target.modulesAfterConfigLoaded || {}), ...(providedResources.modulesAfterConfigLoaded || {}) };
+    }
+    if (providedResources.modulesAfterRuntimeReady !== undefined) {
+        providedResources.modulesAfterRuntimeReady = { ...(target.modulesAfterRuntimeReady || {}), ...(providedResources.modulesAfterRuntimeReady || {}) };
+    }
+    if (providedResources.extensions !== undefined) {
+        providedResources.extensions = { ...(target.extensions || {}), ...(providedResources.extensions || {}) };
+    }
+    if (providedResources.vfs !== undefined) {
+        providedResources.vfs = { ...(target.vfs || {}), ...(providedResources.vfs || {}) };
+    }
+    return Object.assign(target, providedResources);
+}
+
 // NOTE: this is called before setRuntimeGlobals
 export function normalizeConfig() {
     // normalize
@@ -44,6 +96,12 @@ export function normalizeConfig() {
     config.environmentVariables = config.environmentVariables || {};
     config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];
+    config.resources = config.resources || {
+        assembly: {},
+        jsModuleNative: {},
+        jsModuleRuntime: {},
+        wasmNative: {}
+    };
     loaderHelpers.assertAfterExit = config.assertAfterExit = config.assertAfterExit || !ENVIRONMENT_IS_WEB;
 
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {

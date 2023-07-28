@@ -110,25 +110,25 @@ export type MonoConfig = {
 export type ResourceExtensions = { [extensionName: string]: ResourceList };
 
 export interface ResourceGroups {
-    readonly hash?: string;
-    readonly assembly?: ResourceList; // nullable only temporarily
-    readonly lazyAssembly?: ResourceList; // nullable only temporarily
-    readonly pdb?: ResourceList;
+    hash?: string;
+    assembly?: ResourceList; // nullable only temporarily
+    lazyAssembly?: ResourceList; // nullable only temporarily
+    pdb?: ResourceList;
 
-    readonly jsModuleWorker?: ResourceList;
-    readonly jsModuleNative: ResourceList;
-    readonly jsModuleRuntime: ResourceList;
-    readonly jsSymbols?: ResourceList;
-    readonly wasmNative: ResourceList;
-    readonly icu?: ResourceList;
+    jsModuleWorker?: ResourceList;
+    jsModuleNative: ResourceList;
+    jsModuleRuntime: ResourceList;
+    jsSymbols?: ResourceList;
+    wasmNative: ResourceList;
+    icu?: ResourceList;
 
-    readonly satelliteResources?: { [cultureName: string]: ResourceList };
+    satelliteResources?: { [cultureName: string]: ResourceList };
 
-    readonly modulesAfterConfigLoaded?: ResourceList,
-    readonly modulesAfterRuntimeReady?: ResourceList
+    modulesAfterConfigLoaded?: ResourceList,
+    modulesAfterRuntimeReady?: ResourceList
 
-    readonly extensions?: ResourceExtensions
-    readonly vfs?: { [virtualPath: string]: ResourceList };
+    extensions?: ResourceExtensions
+    vfs?: { [virtualPath: string]: ResourceList };
 }
 
 /**

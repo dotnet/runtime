@@ -174,23 +174,23 @@ type ResourceExtensions = {
     [extensionName: string]: ResourceList;
 };
 interface ResourceGroups {
-    readonly hash?: string;
-    readonly assembly?: ResourceList;
-    readonly lazyAssembly?: ResourceList;
-    readonly pdb?: ResourceList;
-    readonly jsModuleWorker?: ResourceList;
-    readonly jsModuleNative: ResourceList;
-    readonly jsModuleRuntime: ResourceList;
-    readonly jsSymbols?: ResourceList;
-    readonly wasmNative: ResourceList;
-    readonly icu?: ResourceList;
-    readonly satelliteResources?: {
+    hash?: string;
+    assembly?: ResourceList;
+    lazyAssembly?: ResourceList;
+    pdb?: ResourceList;
+    jsModuleWorker?: ResourceList;
+    jsModuleNative: ResourceList;
+    jsModuleRuntime: ResourceList;
+    jsSymbols?: ResourceList;
+    wasmNative: ResourceList;
+    icu?: ResourceList;
+    satelliteResources?: {
         [cultureName: string]: ResourceList;
     };
-    readonly modulesAfterConfigLoaded?: ResourceList;
-    readonly modulesAfterRuntimeReady?: ResourceList;
-    readonly extensions?: ResourceExtensions;
-    readonly vfs?: {
+    modulesAfterConfigLoaded?: ResourceList;
+    modulesAfterRuntimeReady?: ResourceList;
+    extensions?: ResourceExtensions;
+    vfs?: {
         [virtualPath: string]: ResourceList;
     };
 }
