@@ -45,13 +45,4 @@ public static class Descriptors
             "XUnitWrapperGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor XUWG1005 =
-        new DiagnosticDescriptor(
-            "XUW1005",
-            "Tests should not be multiple tests",
-            "Tests should not be multiple tests. Split them.",
-            "XUnitWrapperGenerator",
-            DiagnosticSeverity.Warning,
-            isEnabledByDefault: true);
 }
