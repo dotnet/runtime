@@ -5,7 +5,6 @@
 /// <reference path="./types/v8.d.ts" />
 /// <reference path="./types/node.d.ts" />
 
-import { mono_log_error } from "./logging";
 import { RuntimeAPI } from "./types/index";
 import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
 
@@ -87,10 +86,6 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()
         : messageFactory);
-    const abort = runtimeHelpers.mono_wasm_abort;
-    if (abort) {
-        mono_log_error(message);
-        abort();
-    }
-    throw new Error(message);
+    const error = new Error(message);
+    runtimeHelpers.abort(error);
 }

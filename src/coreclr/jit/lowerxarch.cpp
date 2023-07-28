@@ -2119,6 +2119,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                         if (cmpOp == GT_EQ)
                         {
                             testIntrinsicId = NI_AVX512F_PTESTNM;
+                            cmpCnd          = GenCondition::NE;
                         }
 
                         node->Op(1) = op1Intrinsic->Op(1);
