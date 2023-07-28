@@ -36,7 +36,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     //                          Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(config, forPublish: false), "..")));
     // }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsMultiThreadingRuntimeAvailableForDefaultTargetFramework))]
     [InlineData("Debug", false)]
     // [InlineData("Debug", true)]
     [InlineData("Release", false)]
