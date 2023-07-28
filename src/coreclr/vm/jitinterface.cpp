@@ -891,6 +891,9 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     pResolvedToken->cbTypeSpec = NULL;
     pResolvedToken->pMethodSpec = NULL;
     pResolvedToken->cbMethodSpec = NULL;
+    pResolvedToken->isConstValue = false;
+    pResolvedToken->constValueType = ELEMENT_TYPE_END;
+    pResolvedToken->constValue = 0;
 
     TypeHandle th;
     MethodDesc * pMD = NULL;
@@ -1118,10 +1121,6 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     }
     else
     {
-        pResolvedToken->isConstValue = false;
-        pResolvedToken->constValueType = ELEMENT_TYPE_END;
-        pResolvedToken->constValue = 0;
-
         switch (tokenType)
         {
             case CORINFO_TOKENKIND_Ldtoken:
