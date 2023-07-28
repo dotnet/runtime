@@ -328,7 +328,7 @@ export function delay(ms: number): Promise<void> {
 
 export async function retrieve_asset_download(asset: AssetEntry): Promise<Response> {
     const pendingAsset = await start_asset_download(asset);
-    const assetResponse = await pendingAsset.pendingDownload!.response;
+    const assetResponse = await pendingAsset.pendingDownloadInternal!.response;
     return assetResponse;
 }
 
