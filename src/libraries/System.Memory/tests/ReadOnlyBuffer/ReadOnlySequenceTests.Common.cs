@@ -400,11 +400,11 @@ namespace System.Memory.Tests
             var buffer = new ReadOnlySequence<T>(bufferSegment1, 0, bufferSegment3, 0);
 
             var start = buffer.Start;
-            Assert.True(buffer.TryGet(ref start, out var memory));
+            Assert.False(buffer.TryGet(ref start, out var memory));
             Assert.Equal(0, memory.Length);
-            Assert.True(buffer.TryGet(ref start, out memory));
+            Assert.False(buffer.TryGet(ref start, out memory));
             Assert.Equal(0, memory.Length);
-            Assert.True(buffer.TryGet(ref start, out memory));
+            Assert.False(buffer.TryGet(ref start, out memory));
             Assert.Equal(0, memory.Length);
             Assert.False(buffer.TryGet(ref start, out memory));
         }
@@ -511,7 +511,7 @@ namespace System.Memory.Tests
             SequencePosition start = buffer.Start;
             Assert.True(buffer.TryGet(ref start, out ReadOnlyMemory<T> memory));
             Assert.Equal(100, memory.Length);
-            Assert.True(buffer.TryGet(ref start, out memory));
+            Assert.False(buffer.TryGet(ref start, out memory));
             Assert.Equal(0, memory.Length);
             Assert.False(buffer.TryGet(ref start, out memory));
         }
@@ -527,7 +527,7 @@ namespace System.Memory.Tests
             SequencePosition start = buffer.Start;
             Assert.True(buffer.TryGet(ref start, out ReadOnlyMemory<T> memory));
             Assert.Equal(100, memory.Length);
-            Assert.True(buffer.TryGet(ref start, out memory));
+            Assert.False(buffer.TryGet(ref start, out memory));
             Assert.Equal(0, memory.Length);
             Assert.False(buffer.TryGet(ref start, out memory));
         }
@@ -568,8 +568,8 @@ namespace System.Memory.Tests
                 sizes.Add(memory.Length);
             }
 
-            Assert.Equal(2, sizes.Count);
-            Assert.Equal(new[] { 100, 0 }, sizes);
+            Assert.Equal(1, sizes.Count);
+            Assert.Equal(new[] { 100 }, sizes);
         }
 
         [Fact]
@@ -586,8 +586,8 @@ namespace System.Memory.Tests
                 sizes.Add(memory.Length);
             }
 
-            Assert.Equal(2, sizes.Count);
-            Assert.Equal(new[] { 100, 0 }, sizes);
+            Assert.Equal(1, sizes.Count);
+            Assert.Equal(new[] { 100 }, sizes);
         }
 
         #endregion

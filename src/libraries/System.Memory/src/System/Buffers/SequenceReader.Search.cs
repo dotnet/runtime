@@ -209,7 +209,7 @@ namespace System.Buffers
                         AdvanceCurrentSpan(index);
                     }
 
-                    sequence = Sequence.Slice(copy.Position, Position);
+                    sequence = Sequence.Slice(copy.Position, copy.Sequence.End);
                     if (advancePastDelimiter)
                     {
                         Advance(1);

@@ -599,13 +599,13 @@ namespace System.Buffers
         /// </summary>
         public bool TryGet(ref SequencePosition position, out ReadOnlyMemory<T> memory, bool advance = true)
         {
-            bool result = TryGetBuffer(position, out memory, out SequencePosition next);
-            if (advance)
-            {
-                position = next;
-            }
+            MoveResult moveResult;
 
-            return result;
+            moveResult = MoveToNextItem(ref position, advance);
+
+            memory = moveResult.Item;
+
+            return moveResult.IsSuccess;
         }
 
         /// <summary>

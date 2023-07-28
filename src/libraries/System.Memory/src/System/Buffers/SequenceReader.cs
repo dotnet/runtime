@@ -287,24 +287,38 @@ namespace System.Buffers
             if (!Sequence.IsSingleSegment)
             {
                 SequencePosition previousNextPosition = _nextPosition;
-                while (Sequence.TryGet(ref _nextPosition, out ReadOnlyMemory<T> memory, advance: true))
+                ReadOnlySequence<T>.MoveResult moveResult;
+
+                moveResult = Sequence.MoveToNextItem(ref _nextPosition, true);
+
+                switch (moveResult.Status)
                 {
-                    _currentPosition = previousNextPosition;
-                    if (memory.Length > 0)
-                    {
-                        CurrentSpan = memory.Span;
-                        CurrentSpanIndex = 0;
-                        return;
-                    }
-                    else
-                    {
-                        CurrentSpan = default;
-                        CurrentSpanIndex = 0;
-                        previousNextPosition = _nextPosition;
-                    }
+                    case ReadOnlySequence<T>.MoveStatus.Success:
+                        {
+                            CurrentSpan = moveResult.Item.Span;
+                            CurrentSpanIndex = 0;
+                            _currentPosition = previousNextPosition;
+                            break;
+                        }
+                    case ReadOnlySequence<T>.MoveStatus.Empty:
+                        {
+                            CurrentSpan = default;
+                            CurrentSpanIndex = 0;
+                            _currentPosition = previousNextPosition;
+                            _moreData = false;
+                            break;
+                        }
+                    case ReadOnlySequence<T>.MoveStatus.NotExist:
+                        {
+                            _moreData = false;
+                            break;
+                        }
                 }
             }
-            _moreData = false;
+            else
+            {
+                _moreData = false;
+            }
         }
 
         /// <summary>
