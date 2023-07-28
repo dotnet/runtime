@@ -155,7 +155,7 @@ typedef struct _query_cxt_t
     uint32_t next_row_stride;
 } query_cxt_t;
 
-static uint8_t col_to_index(col_index_t col_idx, mdtable_t* table)
+static uint8_t col_to_index(col_index_t col_idx, mdtable_t const* table)
 {
     assert(table != NULL);
     uint32_t idx = (uint32_t)col_idx;
@@ -703,6 +703,18 @@ md_range_result_t md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, u
     mdtable_t* table = CursorTable(&begin);
     if (!table->is_sorted)
         return MD_RANGE_NOT_SUPPORTED;
+        
+    md_key_info const* keys;
+    uint8_t keys_count = get_table_keys(table->table_id, &keys);
+    if (keys_count == 0)
+        return MD_RANGE_NOT_SUPPORTED;
+
+    if (keys[0].index != col_to_index(idx, table))
+        return MD_RANGE_NOT_SUPPORTED;
+
+    // Currently all tables have ascending primary keys.
+    // The algorithm below only works with ascending keys.
+    assert(!keys[0].descending);
 
     // Look for any instance of the value.
     mdcursor_t found;

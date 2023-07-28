@@ -213,6 +213,108 @@ uint8_t get_table_column_count(mdtable_id_t id)
     return table_column_counts[id];
 }
 
+// II.22 Metadata logical format tables
+// DNMD implements the augments to the metadata logical format in the ECMA-335 spec located at https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md
+static md_key_info const keys_ClassLayout[] = { { mdtClassLayout_Parent, false } };
+static md_key_info const keys_Constant[] = { { mdtConstant_Parent, false } };
+static md_key_info const keys_CustomAttribute[] = { { mdtCustomAttribute_Parent, false } };
+static md_key_info const keys_DeclSecurity[] = { { mdtDeclSecurity_Parent, false } };
+static md_key_info const keys_FieldLayout[] = { { mdtFieldLayout_Field, false } };
+static md_key_info const keys_FieldMarshal[] = { { mdtFieldMarshal_Parent, false } };
+static md_key_info const keys_FieldRva[] = { { mdtFieldRva_Field, false } };
+static md_key_info const keys_GenericParam[] = { { mdtGenericParam_Owner, false }, { mdtGenericParam_Number, false } };
+static md_key_info const keys_GenericParamConstraint[] = { { mdtGenericParamConstraint_Owner, false } };
+static md_key_info const keys_ImplMap[] = { { mdtImplMap_MemberForwarded, false } };
+static md_key_info const keys_InterfaceImpl[] = { { mdtInterfaceImpl_Class, false } };
+static md_key_info const keys_MethodImpl[] = { { mdtMethodImpl_Class, false } };
+static md_key_info const keys_MethodSemantics[] = { { mdtMethodSemantics_Association, false } };
+static md_key_info const keys_NestedClass[] = { { mdtNestedClass_NestedClass, false } };
+
+#ifdef DNMD_PORTABLE_PDB
+// https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md
+static md_key_info const keys_LocalScope[] = { { mdtLocalScope_Method, false }, { mdtLocalScope_StartOffset, false }, { mdtLocalScope_Length, true } };
+static md_key_info const keys_StateMachineMethod[] = { { mdtStateMachineMethod_MoveNextMethod, false } };
+static md_key_info const keys_CustomDebugInformation[] = { { mdtCustomDebugInformation_Parent, false } };
+#endif
+
+typedef struct
+{
+    md_key_info const* keys;
+    uint8_t key_count;
+} keys_info;
+
+static keys_info const table_keys[] = 
+{
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { keys_InterfaceImpl, ARRAY_SIZE(keys_InterfaceImpl) },
+    { NULL, 0 },
+    { keys_Constant, ARRAY_SIZE(keys_Constant) },
+    { keys_CustomAttribute, ARRAY_SIZE(keys_CustomAttribute) },
+    { keys_FieldMarshal, ARRAY_SIZE(keys_FieldMarshal) },
+    { keys_DeclSecurity, ARRAY_SIZE(keys_DeclSecurity) },
+    { keys_ClassLayout, ARRAY_SIZE(keys_ClassLayout) },
+    { keys_FieldLayout, ARRAY_SIZE(keys_FieldLayout) },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { keys_MethodSemantics, ARRAY_SIZE(keys_MethodSemantics) },
+    { keys_MethodImpl, ARRAY_SIZE(keys_MethodImpl) },
+    { NULL, 0 },
+    { NULL, 0 },
+    { keys_ImplMap, ARRAY_SIZE(keys_ImplMap) },
+    { keys_FieldRva, ARRAY_SIZE(keys_FieldRva) },
+    { NULL, 0 }, // ENCLog
+    { NULL, 0 }, // ENCMap
+    { NULL, 0 },
+    { NULL, 0 }, // AssemblyProcessor
+    { NULL, 0 }, // AssemblyOS
+    { NULL, 0 },
+    { NULL, 0 }, // AssemblyRefProcessor,
+    { NULL, 0 }, // AssemblyRefOS,
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { keys_NestedClass, ARRAY_SIZE(keys_NestedClass) },
+    { keys_GenericParam, ARRAY_SIZE(keys_GenericParam) },
+    { NULL, 0 },
+    { keys_GenericParamConstraint, ARRAY_SIZE(keys_GenericParamConstraint) },
+#ifdef DNMD_PORTABLE_PDB
+    { NULL, 0 }, // Reserved
+    { NULL, 0 }, // Reserved
+    { NULL, 0 }, // Reserved
+    // https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md
+    { NULL, 0 },
+    { NULL, 0 },
+    { keys_LocalScope, ARRAY_SIZE(keys_LocalScope) },
+    { NULL, 0 },
+    { NULL, 0 },
+    { NULL, 0 },
+    { keys_StateMachineMethod, ARRAY_SIZE(keys_StateMachineMethod) },
+    { keys_CustomDebugInformation, ARRAY_SIZE(keys_CustomDebugInformation) },
+#endif // DNMD_PORTABLE_PDB
+};
+
+// II.22 Metadata logical format tables
+// Primary and secondary key info for tables
+uint8_t get_table_keys(mdtable_id_t id, md_key_info const** keys)
+{
+    assert(mdtid_First <= id && id < mdtid_End);
+    *keys = table_keys[id].keys;
+    return table_keys[id].key_count;
+}
+
 // Compute the row size and embed the offset for
 // each column in the column details.
 static uint32_t compute_row_offsets_size(mdtcol_t* col, size_t col_len)

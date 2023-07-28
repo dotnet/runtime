@@ -243,6 +243,17 @@ bool decompose_coded_index(uint32_t cidx, mdtcol_t col_details, mdtable_id_t* ta
 // Get the column count for a table.
 uint8_t get_table_column_count(mdtable_id_t id);
 
+// II.22 Metadata logical format tables
+// Sort key info for tables
+
+typedef struct _md_key_info
+{
+    uint8_t index;
+    bool descending;
+} md_key_info;
+
+uint8_t get_table_keys(mdtable_id_t id, md_key_info const** keys);
+
 // Initialize the supplied table details
 bool initialize_table_details(
     uint32_t const* all_table_row_counts,
