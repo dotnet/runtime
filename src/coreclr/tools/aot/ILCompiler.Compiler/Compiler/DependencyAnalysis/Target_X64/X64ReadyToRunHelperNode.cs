@@ -237,11 +237,7 @@ namespace ILCompiler.DependencyAnalysis
             // bool isInitialExecutable = factory.CompilationModuleGroup.IsSingleFileCompilation;
             bool isInitialExecutable = false;
 
-            if (factory.Target.OperatingSystem == TargetOS.Windows)
-            {
-                // JIT emits the code for Windows/x64
-            }
-            else if (factory.Target.OperatingSystem == TargetOS.Linux)
+            if (factory.Target.OperatingSystem == TargetOS.Linux)
             {
                 if (isInitialExecutable)
                 {

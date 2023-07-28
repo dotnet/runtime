@@ -443,7 +443,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
         return result;
     }
 
-    return opts.IsReadyToRun() ? fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCallReadyToRun>(true)
+    return opts.IsReadyToRun() ? fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCallReadyToRun>(false)
                                : fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>(true);
 }
 
@@ -1118,11 +1118,6 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
     if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
     {
         fgReorderBlocks(/* useProfileData */ false);
-        // if (info.compMethodHashPrivate == 0x2f7ba577) // 0x009bf64b
-        //{
-        //    printf("Reorder:\n");
-        //    fgDispBasicBlocks(true);
-        //}
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
     }
 
