@@ -10,6 +10,9 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -345,33 +348,27 @@ public class GenerateWasmBootJson : Task
             }
         }
 
+        var jsonOptions = new JsonSerializerOptions()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            WriteIndented = true
+        };
+
         if (Extensions != null && Extensions.Length > 0)
         {
-            var configSerializer = new DataContractJsonSerializer(typeof(Dictionary<string, object>), new DataContractJsonSerializerSettings
-            {
-                UseSimpleDictionaryFormat = true
-            });
-
             result.extensions = new Dictionary<string, Dictionary<string, object>>();
             foreach (var configExtension in Extensions)
             {
                 var key = configExtension.GetMetadata("key");
                 using var fs = File.OpenRead(configExtension.ItemSpec);
-                var config = (Dictionary<string, object>)configSerializer.ReadObject(fs);
+                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(fs, jsonOptions);
                 result.extensions[key] = config;
             }
         }
 
         helper.ComputeResourcesHash(result);
-
-        var serializer = new DataContractJsonSerializer(typeof(BootJsonData), new DataContractJsonSerializerSettings
-        {
-            UseSimpleDictionaryFormat = true,
-            EmitTypeInformation = EmitTypeInformation.Never
-        });
-
-        using var writer = JsonReaderWriterFactory.CreateJsonWriter(output, Encoding.UTF8, ownsStream: false, indent: true);
-        serializer.WriteObject(writer, result);
+        JsonSerializer.Serialize(output, result, jsonOptions);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {
