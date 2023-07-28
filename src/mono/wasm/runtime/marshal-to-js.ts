@@ -198,8 +198,8 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, re
         };
         result.dispose = () => {
             if (!result.isDisposed) {
-                teardown_managed_proxy(result, gc_handle);
                 result.isDisposed = true;
+                teardown_managed_proxy(result, gc_handle);
             }
         };
         result.isDisposed = false;

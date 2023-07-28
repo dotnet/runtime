@@ -321,6 +321,7 @@ namespace System.Net.Http
         public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenRegistration abortRegistration)
         {
             ArgumentNullException.ThrowIfNull(fetchResponse);
+            ArgumentNullException.ThrowIfNull(abortController);
 
             FetchResponse = fetchResponse;
             _abortRegistration = abortRegistration;
