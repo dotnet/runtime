@@ -29,13 +29,6 @@ jobs:
             eq(variables['Build.SourceBranchName'], 'main'),
             eq(variables['System.PullRequest.TargetBranch'], 'main'))
           ]
-      - name: shouldRunOnDefaultPipelines
-        value: $[
-          or(
-            eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
-          ]
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
@@ -45,7 +38,7 @@ jobs:
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),
-          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+          eq(variables['isDefaultPipeline'], variables['shouldRunWasmBuildTestsOnDefaultPipeline']))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
