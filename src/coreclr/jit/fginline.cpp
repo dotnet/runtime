@@ -475,7 +475,8 @@ private:
                     // info.
                 }
 
-                m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr,
+                CORINFO_CONTEXT_HANDLE contextInput = context;
+                m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
                 m_madeChanges = true;
             }
@@ -1632,7 +1633,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 GenTree* argSingleUseNode = argInfo.argBashTmpNode;
 
-                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef)
+                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_MOREUSES) && argIsSingleDef)
                 {
                     // Change the temp in-place to the actual argument.
                     // We currently do not support this for struct arguments, so it must not be a GT_BLK.

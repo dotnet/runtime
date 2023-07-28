@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1289,7 +1290,22 @@ namespace System.Net.Http.Functional.Tests
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             using (HttpClient client = CreateHttpClient(handler))
             {
-                Assert.Contains(expectedContent, await client.GetStringAsync(uri));
+                try
+                {
+                    using HttpResponseMessage response = await client.GetAsync(uri);
+                    if (response.StatusCode is HttpStatusCode.GatewayTimeout or HttpStatusCode.BadGateway)
+                    {
+                        // Ignore the erroneous status code, the test depends on an external server that is out of our control.
+                        _output.WriteLine(response.ToString());
+                        return;
+                    }
+                    Assert.Contains(expectedContent, await response.Content.ReadAsStringAsync());
+                }
+                catch (HttpRequestException hre) when (hre.InnerException is SocketException se && (se.SocketErrorCode is SocketError.WouldBlock or SocketError.TryAgain))
+                {
+                    // Ignore the exception, the test depends on an external server that is out of our control.
+                    _output.WriteLine(hre.ToString());
+                }
             }
         }
 

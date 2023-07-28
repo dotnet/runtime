@@ -584,7 +584,7 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         public async Task RequestDuration_EnrichmentHandler_ContentLengthError_Recorded()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -615,6 +615,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser is relaxed about validating HTTP headers")]
         public async Task FailedRequests_ConnectionClosedWhileReceivingHeaders_Recorded()
         {
             using CancellationTokenSource cancelServerCts = new CancellationTokenSource();
