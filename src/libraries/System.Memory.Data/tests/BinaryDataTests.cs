@@ -476,6 +476,12 @@ namespace System.Tests
         {
             BinaryData data = new BinaryData(jsonSerializable: null);
             Assert.Null(data.ToObjectFromJson<object>());
+            Assert.Equal("application/json", data.MediaType);
+
+            data = new BinaryData(jsonSerializable: null, context: new TestModelJsonContext());
+            Assert.Null(data.ToObjectFromJson<object>());
+            Assert.Equal("application/json", data.MediaType);
+
             data = BinaryData.FromObjectAsJson<object>(null);
             Assert.Null(data.ToObjectFromJson<object>());
             Assert.Equal("application/json", data.MediaType);
