@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class UnrollEqualsStartsWith_x
+public class UnrollEqualsStartsWith
 {
     [Fact]
     public static int TestEntryPoint()
