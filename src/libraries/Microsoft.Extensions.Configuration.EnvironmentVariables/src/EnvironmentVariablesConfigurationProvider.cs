@@ -4,12 +4,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 {
     /// <summary>
     /// An environment variable based <see cref="ConfigurationProvider"/>.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public class EnvironmentVariablesConfigurationProvider : ConfigurationProvider
     {
         private const string MySqlServerPrefix = "MYSQLCONNSTR_";
@@ -115,5 +117,16 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         }
 
         private static string Normalize(string key) => key.Replace("__", ConfigurationPath.KeyDelimiter);
+
+        private string DebuggerToString()
+        {
+            var debugText = GetType().Name;
+
+            if (!string.IsNullOrEmpty(_prefix))
+            {
+                debugText += $" Prefix: '{_prefix}'";
+            }
+            return debugText;
+        }
     }
 }

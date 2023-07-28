@@ -28,10 +28,10 @@ namespace Microsoft.Extensions.Configuration
 
         public override string ToString()
         {
-            var s = $"Path = {Path}";
+            var s = $@"Path = {Path}";
             if (Value is not null)
             {
-                s += $", Value = {Value}";
+                s += $@", Value = ""{Value}""";
             }
             if (Provider is not null)
             {
