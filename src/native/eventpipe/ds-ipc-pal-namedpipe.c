@@ -635,10 +635,8 @@ ds_ipc_close (
 {
 	EP_ASSERT (ipc != NULL);
 
-	// don't attempt cleanup on shutdown and let the OS handle it
-    // except in the case of listen pipes - if they leak the process
-    // will fail to reinitialize the pipe for embedding scenarios.
-	if (is_shutdown && ipc->mode != DS_IPC_CONNECTION_MODE_LISTEN) {
+	// don't attempt cleanup on shutdown and let the OS handle it.
+	if (is_shutdown) {
 		if (callback)
 			callback ("Closing without cleaning underlying handles", 100);
 		return;
