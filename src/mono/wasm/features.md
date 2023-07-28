@@ -60,6 +60,10 @@ NodeJS needs to install `node-fetch` and `node-abort-controller` npm packages to
 
 Is required if the application uses [WebSocketClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.websockets.clientwebsocket)
 
+As opposed to desktop dotnet, we don't have WS client based on top of TCP/IP sockets because that's not available in the browser security sandbox.
+
+See also [WebSocket API on MDN](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)
+
 NodeJS needs to install `ws` npm package to enable the feature.
 
 ## WASM linear memory
