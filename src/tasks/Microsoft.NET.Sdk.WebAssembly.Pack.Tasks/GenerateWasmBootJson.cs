@@ -181,7 +181,9 @@ public class GenerateWasmBootJson : Task
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as satellite assembly with culture '{1}'.", resource.ItemSpec, assetTraitValue);
                     resourceData.satelliteResources ??= new Dictionary<string, ResourceHashesByNameDictionary>(StringComparer.OrdinalIgnoreCase);
-                    resourceName = assetTraitValue + "/" + resourceName;
+
+                    if (!IsTargeting80OrLater())
+                        resourceName = assetTraitValue + "/" + resourceName;
 
                     if (!resourceData.satelliteResources.TryGetValue(assetTraitValue, out resourceList))
                     {
