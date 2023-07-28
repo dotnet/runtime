@@ -98,7 +98,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         var bootConfig = new BootJsonData()
         {
-            appsettings = new(),
             mainAssemblyName = MainAssemblyName,
             globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant()
         };
@@ -206,7 +205,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
         }
 
-        bootConfig.debugBuild = DebugLevel > 0;
         bootConfig.debugLevel = DebugLevel;
 
         ProcessSatelliteAssemblies(args =>

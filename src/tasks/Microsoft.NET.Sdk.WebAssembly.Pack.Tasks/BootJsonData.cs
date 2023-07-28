@@ -39,12 +39,12 @@ public class BootJsonData
     /// Gets a value that determines whether to enable caching of the <see cref="resources"/>
     /// inside a CacheStorage instance within the browser.
     /// </summary>
-    public bool cacheBootResources { get; set; }
+    public bool? cacheBootResources { get; set; }
 
     /// <summary>
     /// Gets a value that determines if this is a debug build.
     /// </summary>
-    public bool debugBuild { get; set; }
+    public bool? debugBuild { get; set; }
 
     /// <summary>
     /// Gets a value that determines what level of debugging is configured.
@@ -54,7 +54,7 @@ public class BootJsonData
     /// <summary>
     /// Gets a value that determines if the linker is enabled.
     /// </summary>
-    public bool linkerEnabled { get; set; }
+    public bool? linkerEnabled { get; set; }
 
     /// <summary>
     /// Config files for the application
