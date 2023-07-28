@@ -365,7 +365,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 // predefined ICU name can be identical with the icu files from runtime pack
                 expected.Add(assertOptions.PredefinedIcudt);
                 break;
-            case GlobalizationMode.Default:
+            case GlobalizationMode.Sharded:
                 // icu shard chosen based on the locale
                 expected.Add("icudt_CJK.dat");
                 expected.Add("icudt_EFIGS.dat");
