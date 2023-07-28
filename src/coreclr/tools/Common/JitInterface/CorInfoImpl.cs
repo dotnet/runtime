@@ -2978,6 +2978,21 @@ namespace Internal.JitInterface
             return CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
         }
 
+        private bool isConstValue(CORINFO_CLASS_STRUCT_* cls)
+        {
+            throw new NotImplementedException();
+        }
+
+        private ulong getConstValue(CORINFO_CLASS_STRUCT_* cls)
+        {
+            throw new NotImplementedException();
+        }
+
+        private CorInfoType getConstValueType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            throw new NotImplementedException();
+        }
+
         private nuint printFieldName(CORINFO_FIELD_STRUCT_* fld, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)
         {
             FieldDesc field = HandleToObject(fld);
