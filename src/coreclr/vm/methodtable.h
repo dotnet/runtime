@@ -2544,7 +2544,6 @@ public:
 
     // Get the RID/token for the metadata for the corresponding type declaration
     unsigned GetTypeDefRid();
-    unsigned GetTypeDefRid_NoLogging();
 
     inline mdTypeDef GetCl()
     {
@@ -2555,7 +2554,7 @@ public:
     inline mdTypeDef GetCl_NoLogging()
     {
         LIMITED_METHOD_CONTRACT;
-        return TokenFromRid(GetTypeDefRid_NoLogging(), mdtTypeDef);
+        return TokenFromRid(GetTypeDefRid(), mdtTypeDef);
     }
 
     void SetCl(mdTypeDef token);
