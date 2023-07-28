@@ -119,9 +119,18 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         var allTests = testsInSource.Collect().Combine(testsInReferencedAssemblies.Collect()).Combine(outOfProcessTests.Collect()).SelectMany((tests, ct) => tests.Left.Left.AddRange(tests.Left.Right).AddRange(tests.Right));
 
         context.RegisterImplementationSourceOutput(
-            methodsInSource,
-            static (context, method) =>
+            methodsInSource
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Where(data =>
             {
+                var (_, configOptions) = data;
+                return configOptions.GlobalOptions.InMergedTestDirectory();
+            }),
+            static (context, data) =>
+            {
+                var (method, _) = data;
+
+                // Only check test methods
                 bool found = false;
                 foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
                 {
@@ -136,6 +145,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     }
                 }
                 if (!found) return;
+
+                // Find methods where all returns are the literal 100 (and there is at least one return)
                 if (method.DeclaringSyntaxReferences.IsEmpty) return;
 
                 found = false;
