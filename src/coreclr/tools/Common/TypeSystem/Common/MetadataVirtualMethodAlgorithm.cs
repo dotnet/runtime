@@ -1003,28 +1003,11 @@ namespace Internal.TypeSystem
                 if (methodImpl.Decl == interfaceMethodDefinition)
                 {
                     MethodDesc resolvedMethodImpl = methodImpl.Body;
-                    TypeDesc bodyOwningType = resolvedMethodImpl.OwningType;
-                    TypeDesc checkOwningType = constrainedType;
-                    bool isValidMethodImpl = (bodyOwningType == checkOwningType);
-                    if (!isValidMethodImpl)
+                    if (interfaceMethod != interfaceMethodDefinition)
                     {
-                        while ((checkOwningType = checkOwningType.BaseType) != null)
-                        {
-                            if (bodyOwningType == checkOwningType)
-                            {
-                                isValidMethodImpl = true;
-                                break;
-                            }
-                        }
+                        resolvedMethodImpl = resolvedMethodImpl.MakeInstantiatedMethod(interfaceMethod.Instantiation);
                     }
-                    if (isValidMethodImpl)
-                    {
-                        if (interfaceMethod != interfaceMethodDefinition)
-                        {
-                            resolvedMethodImpl = resolvedMethodImpl.MakeInstantiatedMethod(interfaceMethod.Instantiation);
-                        }
-                        return resolvedMethodImpl;
-                    }
+                    return resolvedMethodImpl;
                 }
             }
 
