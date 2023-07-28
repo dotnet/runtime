@@ -131,7 +131,10 @@ export interface ResourceGroups {
     readonly vfs?: { [virtualPath: string]: ResourceList };
 }
 
-export type ResourceList = { [name: string]: string };
+/**
+ * A "key" is name of the file, a "value" is optional hash for integrity check.
+ */
+export type ResourceList = { [name: string]: string | null | "" };
 
 /**
  * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
@@ -148,7 +151,7 @@ export interface ResourceRequest {
     name: string, // the name of the asset, including extension.
     behavior: AssetBehaviors, // determines how the asset will be handled once loaded
     resolvedUrl?: string; // this should be absolute url to the asset
-    hash?: string;
+    hash?: string | null | ""; // the integrity hash of the asset (if any)
 }
 
 export interface LoadingResource {

@@ -194,8 +194,11 @@ interface ResourceGroups {
         [virtualPath: string]: ResourceList;
     };
 }
+/**
+ * A "key" is name of the file, a "value" is optional hash for integrity check.
+ */
 type ResourceList = {
-    [name: string]: string;
+    [name: string]: string | null | "";
 };
 /**
  * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
@@ -211,7 +214,7 @@ interface ResourceRequest {
     name: string;
     behavior: AssetBehaviors;
     resolvedUrl?: string;
-    hash?: string;
+    hash?: string | null | "";
 }
 interface LoadingResource {
     name: string;

@@ -10,7 +10,7 @@ const networkLoads: { [name: string]: LoadLogEntry } = {};
 const cacheLoads: { [name: string]: LoadLogEntry } = {};
 let cacheIfUsed: Cache | null;
 
-export function shouldApplyIntegrity(): boolean {
+export function isCacheAvailable(): boolean {
     return !!cacheIfUsed;
 }
 
@@ -25,7 +25,7 @@ export function logDownloadStatsToConsole(): void {
         return;
     }
 
-    const linkerDisabledWarning = loaderHelpers.config.linkerEnabled ? "%c" : "\n%cThis application was built with linking (tree shaking) disabled. Published applications will be significantly smaller.";
+    const linkerDisabledWarning = loaderHelpers.config.linkerEnabled ? "%c" : "\n%cThis application was built with linking (tree shaking) disabled. Published applications will be significantly smaller if you install wasm-tools workload. See also https://aka.ms/dotnet-wasm-features";
     // eslint-disable-next-line no-console
     console.groupCollapsed(`%cdotnet%c Loaded ${toDataSizeString(totalResponseBytes)} resources${linkerDisabledWarning}`, "background: purple; color: white; padding: 1px 3px; border-radius: 3px;", "font-weight: bold;", "font-weight: normal;");
 

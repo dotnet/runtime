@@ -7,7 +7,7 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, 
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
 import { mono_exit } from "./exit";
-import { addCachedReponse, findCachedResponse, shouldApplyIntegrity } from "./assetsCache";
+import { addCachedReponse, findCachedResponse, isCacheAvailable } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
 
 
@@ -90,6 +90,8 @@ export function resolve_single_asset_path(behavior: SingleAssetBehaviors): Asset
             return getSingleAssetWithResolvedUrl(resources.jsModuleNative, behavior);
         case "js-module-runtime":
             return getSingleAssetWithResolvedUrl(resources.jsModuleRuntime, behavior);
+        default:
+            throw new Error(`Unknown single asset behavior ${behavior}`);
     }
 }
 
@@ -590,9 +592,6 @@ function fetchResource(request: ResourceRequest): Promise<Response> {
         }
     }
 
-    // Note that if cacheBootResources was explicitly disabled, we also bypass hash checking
-    // This is to give developers an easy opt-out from the entire caching/validation flow if
-    // there's anything they don't like about it.
     const fetchOptions: RequestInit = {
         cache: "no-cache"
     };
@@ -602,7 +601,10 @@ function fetchResource(request: ResourceRequest): Promise<Response> {
         fetchOptions.credentials = "include";
     } else {
         // Any other resource than configuration should provide integrity check
-        fetchOptions.integrity = shouldApplyIntegrity() ? (request.hash ?? "") : undefined;
+        // Note that if cacheBootResources was explicitly disabled, we also bypass hash checking
+        // This is to give developers an easy opt-out from the entire caching/validation flow if
+        // there's anything they don't like about it.
+        fetchOptions.integrity = isCacheAvailable() ? (request.hash ?? "") : undefined;
     }
 
     return loaderHelpers.fetch_like(url, fetchOptions);
