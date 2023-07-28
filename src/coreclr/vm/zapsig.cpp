@@ -192,7 +192,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     // we will need to add an out-of-module escape for the type
     //
     DWORD index = 0;
-    mdToken token = pMT->GetCl_NoLogging();
+    mdToken token = pMT->GetCl();
 
     if (pTypeHandleModule != this->context.pInfoModule)
     {

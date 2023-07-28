@@ -2551,12 +2551,6 @@ public:
         return TokenFromRid(GetTypeDefRid(), mdtTypeDef);
     }
 
-    inline mdTypeDef GetCl_NoLogging()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return TokenFromRid(GetTypeDefRid(), mdtTypeDef);
-    }
-
     void SetCl(mdTypeDef token);
 
 #ifdef _DEBUG
