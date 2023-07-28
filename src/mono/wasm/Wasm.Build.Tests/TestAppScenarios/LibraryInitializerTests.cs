@@ -44,7 +44,6 @@ public class LibraryInitializerTests : AppTestBase
 
         var result = await RunSdkStyleApp(new(
             Configuration: "Debug",
-            ForPublish: true,
             TestScenario: "LibraryInitializerTest",
             BrowserQueryString: new Dictionary<string, string> { ["throwError"] = "true" },
             ExpectedExitCode: 1
