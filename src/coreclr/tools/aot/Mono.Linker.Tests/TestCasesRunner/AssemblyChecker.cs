@@ -56,6 +56,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				// Ignore NativeAOT injected members
 				"<Module>.StartupCodeMain(Int32,IntPtr)",
+				"<Module>.MainMethodWrapper()",
 				"<Module>.MainMethodWrapper(String[])",
 
 				// Ignore compiler generated code which can't be reasonably matched to the source method
