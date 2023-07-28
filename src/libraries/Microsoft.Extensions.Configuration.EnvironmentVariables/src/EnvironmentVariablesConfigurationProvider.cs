@@ -11,7 +11,6 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
     /// <summary>
     /// An environment variable based <see cref="ConfigurationProvider"/>.
     /// </summary>
-    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public class EnvironmentVariablesConfigurationProvider : ConfigurationProvider
     {
         private const string MySqlServerPrefix = "MYSQLCONNSTR_";
@@ -52,7 +51,14 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// </summary>
         /// <returns> The configuration name. </returns>
         public override string ToString()
-            => $"{GetType().Name} Prefix: '{_prefix}'";
+        {
+            string s = GetType().Name;
+            if (!string.IsNullOrEmpty(_prefix))
+            {
+                s += $" Prefix: '{_prefix}'";
+            }
+            return s;
+        }
 
         internal void Load(IDictionary envVariables)
         {
@@ -117,16 +123,5 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         }
 
         private static string Normalize(string key) => key.Replace("__", ConfigurationPath.KeyDelimiter);
-
-        private string DebuggerToString()
-        {
-            var debugText = GetType().Name;
-
-            if (!string.IsNullOrEmpty(_prefix))
-            {
-                debugText += $" Prefix: '{_prefix}'";
-            }
-            return debugText;
-        }
     }
 }
