@@ -1,13 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
     internal static partial class HashProviderDispenser
     {
-        internal static readonly bool CanUseSubtleCryptoImpl = Interop.BrowserCrypto.CanUseSimpleDigestHash() == 1;
+        internal static bool HashSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
 
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
@@ -17,12 +31,12 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA256:
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
-                    return CanUseSubtleCryptoImpl
-                        ? new SHANativeHashProvider(hashAlgorithmId)
-                        : new SHAManagedHashProvider(hashAlgorithmId);
+                    return new SHAManagedHashProvider(hashAlgorithmId);
             }
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
+
+#pragma warning disable IDE0060
 
         public static class OneShotHashProvider
         {
@@ -32,23 +46,25 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> source,
                 Span<byte> destination)
             {
-                HashProvider provider = CreateMacProvider(hashAlgorithmId, key);
+                using HashProvider provider = CreateMacProvider(hashAlgorithmId, key);
                 provider.AppendHashData(source);
                 return provider.FinalizeHashAndReset(destination);
             }
 
             public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                if (CanUseSubtleCryptoImpl)
-                {
-                    return SHANativeHashProvider.HashOneShot(hashAlgorithmId, source, destination);
-                }
-                else
-                {
-                    HashProvider provider = CreateHashProvider(hashAlgorithmId);
-                    provider.AppendHashData(source);
-                    return provider.FinalizeHashAndReset(destination);
-                }
+                HashProvider provider = CreateHashProvider(hashAlgorithmId);
+                provider.AppendHashData(source);
+                return provider.FinalizeHashAndReset(destination);
+            }
+
+            public static void HashDataXof(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                _ = hashAlgorithmId;
+                _ = source;
+                _ = destination;
+                Debug.Fail("Caller should have checked if platform supported XOFs.");
+                throw new UnreachableException();
             }
         }
 
@@ -64,5 +80,8 @@ namespace System.Security.Cryptography
             }
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
+
+#pragma warning restore IDE0060
+
     }
 }

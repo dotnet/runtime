@@ -42,16 +42,13 @@ namespace System.Text.Json
         public static ReadOnlySpan<byte> NegativeInfinityValue => "-Infinity"u8;
 
         // Used to search for the end of a number
-        public static ReadOnlySpan<byte> Delimiters => new byte[] { ListSeparator, CloseBrace, CloseBracket, Space, LineFeed, CarriageReturn, Tab, Slash };
+        public static ReadOnlySpan<byte> Delimiters => ",}] \n\r\t/"u8;
 
         // Explicitly skipping ReverseSolidus since that is handled separately
-        public static ReadOnlySpan<byte> EscapableChars => new byte[] { Quote, (byte)'n', (byte)'r', (byte)'t', Slash, (byte)'u', (byte)'b', (byte)'f' };
+        public static ReadOnlySpan<byte> EscapableChars => "\"nrt/ubf"u8;
 
         public const int SpacesPerIndent = 2;
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
-
-        public const int StackallocByteThreshold = 256;
-        public const int StackallocCharThreshold = StackallocByteThreshold / 2;
 
         // In the worst case, an ASCII character represented as a single utf-8 byte could expand 6x when escaped.
         // For example: '+' becomes '\u0043'
@@ -73,7 +70,6 @@ namespace System.Text.Json
 
         public const int MaxEscapedTokenSize = 1_000_000_000;   // Max size for already escaped value.
         public const int MaxUnescapedTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping;  // 166_666_666 bytes
-        public const int MaxBase64ValueTokenSize = (MaxEscapedTokenSize >> 2) * 3 / MaxExpansionFactorWhileEscaping;  // 125_000_000 bytes
         public const int MaxCharacterTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping; // 166_666_666 characters
 
         public const int MaximumFormatBooleanLength = 5;

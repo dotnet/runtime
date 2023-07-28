@@ -19,5 +19,12 @@ MONO_API
 int
 mono_cpu_count (void);
 
+MONO_API 
+int
+mono_cpu_limit (void);
+
+gboolean 
+mono_get_cpu_limit(int *limit);
+
 #endif /* __MONO_PROC_LIB_H__ */
 

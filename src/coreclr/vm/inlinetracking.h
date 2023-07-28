@@ -26,7 +26,7 @@
 #include "corhdr.h"
 #include "shash.h"
 #include "sarray.h"
-#include "crsttypes.h"
+#include "crst.h"
 #include "daccess.h"
 #include "crossloaderallocatorhash.h"
 
@@ -131,7 +131,7 @@ public:
 // map can had methods from other modules both as keys and values.
 // - If module has code inlined from other modules we naturally get methods from other modules as keys in the map.
 // - During NGgen process, modules can generate code for generic classes and methods from other modules and
-//   embed them into the image (like List<MyStruct>.FindAll() might get embeded into module of MyStruct).
+//   embed them into the image (like List<MyStruct>.FindAll() might get embedded into module of MyStruct).
 //   In such cases values of the map can belong to other modules.
 //
 // Currently this map is created and updated by modules only during native image generation
@@ -149,7 +149,29 @@ public:
 typedef DPTR(InlineTrackingMap) PTR_InlineTrackingMap;
 
 
+#ifndef DACCESS_COMPILE
+// Used to walk the NGEN/R2R inlining data
+class NativeImageInliningIterator
+{
+public:
+    NativeImageInliningIterator();
 
+    HRESULT Reset(Module* pInlinerModule, MethodInModule inlinee);
+    BOOL Next();
+    MethodInModule GetMethod();
+
+private:
+    Module *m_pModule;
+    MethodInModule m_inlinee;
+    NewArrayHolder<MethodInModule> m_dynamicBuffer;
+    COUNT_T m_dynamicBufferSize;
+    COUNT_T m_dynamicAvailable;
+    COUNT_T m_currentPos;
+
+    const COUNT_T s_bufferSize = 10;
+    const COUNT_T s_failurePos = -2;
+};
+#endif // DACCESS_COMPILE
 
 // ------------------------------------ Persistance support ----------------------------------------------------------
 
@@ -172,9 +194,9 @@ typedef DPTR(InlineTrackingMap) PTR_InlineTrackingMap;
 //
 //                  It is totally possible to have more than one ZapInlineeRecords with the same key, not only due hash collision, but also due to
 //                  the fact that we create one record for each (inlinee module / inliner module) pair.
-//                  For example: we have MyModule!MyType that uses mscorlib!List<T>. Let's say List<T>.ctor got inlined into
-//                  MyType.GetAllThinds() and into List<MyType>.FindAll. In this case we'll have two InlineeRecords for mscorlib!List<T>.ctor
-//                  one for MyModule and another one for mscorlib.
+//                  For example: we have MyModule!MyType that uses System.Private.CoreLib!List<T>. Let's say List<T>.ctor got inlined into
+//                  MyType.GetAllThinds() and into List<MyType>.FindAll. In this case we'll have two InlineeRecords for System.Private.CoreLib!List<T>.ctor
+//                  one for MyModule and another one for System.Private.CoreLib.
 //                  PersistentInlineTrackingMap.GetInliners() always reads all ZapInlineeRecords as long as they have the same key, few of them filtered out
 //                  as hash collisions others provide legitimate inlining information for methods from different modules.
 //
@@ -340,6 +362,34 @@ private:
 typedef DPTR(PersistentInlineTrackingMapR2R2) PTR_PersistentInlineTrackingMapR2R2;
 #endif
 
+#ifndef DACCESS_COMPILE
+namespace NativeFormat
+{
+    class NativeParser;
+}
+
+class CrossModulePersistentInlineTrackingMapR2R : private PersistentInlineTrackingMapR2R
+{
+private:
+    PTR_Module m_module;
+
+    NativeFormat::NativeReader m_reader;
+    NativeFormat::NativeHashtable m_hashtable;
+
+public:
+
+    // runtime deserialization
+    static BOOL TryLoad(Module* pModule, LoaderAllocator* pLoaderAllocator, const BYTE* pBuffer, DWORD cbBuffer, AllocMemTracker* pamTracker, CrossModulePersistentInlineTrackingMapR2R** ppLoadedMap);
+    virtual COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL* incompleteData) override;
+
+private:
+    Module* GetModuleByIndex(DWORD index);
+    void GetILBodySection(MethodDesc*** pppMethods, COUNT_T* pcMethods);
+};
+
+typedef DPTR(CrossModulePersistentInlineTrackingMapR2R) PTR_CrossModulePersistentInlineTrackingMapR2R;
+#endif
+
 #endif //FEATURE_READYTORUN
 
 #if !defined(DACCESS_COMPILE)
@@ -364,7 +414,7 @@ public:
         CONTRACTL
         {
             NOTHROW;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
             CAN_TAKE_LOCK;
             MODE_ANY;
         }
@@ -385,7 +435,7 @@ public:
     static void StaticInitialize()
     {
         WRAPPER_NO_CONTRACT;
-        s_mapCrst.Init(CrstJitInlineTrackingMap);
+        s_mapCrst.Init(CrstJitInlineTrackingMap, CrstFlags(CRST_DEBUGGER_THREAD));
     }
 
     static CrstBase *GetMapCrst() { return &s_mapCrst; }

@@ -46,7 +46,7 @@ namespace System.Composition.Hosting.Util
             }
 
             var name = closedGenericType.Name.Substring(0, closedGenericType.Name.IndexOf('`'));
-            var args = closedGenericType.GenericTypeArguments.Select(t => Format(t));
+            var args = closedGenericType.GenericTypeArguments.Select(Format);
             return $"{name}<{string.Join(", ", args)}>";
         }
     }

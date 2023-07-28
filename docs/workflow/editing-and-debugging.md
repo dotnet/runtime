@@ -27,7 +27,7 @@ The repository has a number of Visual Studio Solutions files (`*.sln`) that are 
      * `crossgen` - This is the host program that runs the JIT compiler and produces .NET Native images (`*.ni.dll`)
      for C# code.
      * This project can be automatically generated and opened in Visual Studio by running `./build.cmd -vs CoreCLR.sln -a <Arch> -c <BuildType>` from the root of the repository.
-   * `artifacts\obj\win-<Arch>.<BuildType>\corehost\ide\corehost.sln` - this solution contains the native (C++) projects for the [host components](../design/features/host-components)
+   * `artifacts\obj\win-<Arch>.<BuildType>\corehost\ide\corehost.sln` - this solution contains the native (C++) projects for the [host components](../design/features/host-components.md)
      * This project can be automatically generated and opened in Visual Studio by running `./build.cmd -vs corehost.sln -a <Arch> -c <BuildType>` from the root of the repository.
 
 Thus opening one of these solution files (double clicking on them in Explorer) is typically all you need
@@ -36,7 +36,7 @@ to do most editing.
 Notice that the CoreCLR and corehost solutions are under the `artifacts` directory.  This is because they are created as part of the build.
 Thus you can only launch these solutions after you have built at least once with the `-msbuild` flag or run the `./build.cmd -vs CoreCLR.sln` or `./build.cmd -vs corehost.sln` command line with the specified architecture and configuration.
 
-* See [Debugging CoreCLR](debugging/coreclr/debugging.md)
+* See [Debugging CoreCLR](debugging/coreclr/debugging-runtime.md)
 
 # See Also
 

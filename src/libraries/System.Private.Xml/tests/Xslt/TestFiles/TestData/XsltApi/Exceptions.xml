@@ -98,6 +98,6 @@
 	<!-- XML Exceptions -->
 	<exception res="Xml_BadStartNameChar" message="The '{0}' character, hexadecimal value {1}, cannot begin a name."/>
 	<exception res="Xml_ResolveUrl" message="There was an error accessing {0}."/>
-	<exception res="Xml_NullResolver" message="Resolving of external URIs was prohibited. "/>
+	<exception res="Xml_NullResolver" message="Resolving of external URIs was prohibited. Attempted access to: {0}"/>
 	
 </exceptions>

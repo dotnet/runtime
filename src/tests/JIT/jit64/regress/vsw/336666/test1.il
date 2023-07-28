@@ -6,6 +6,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 
 
@@ -20,8 +21,7 @@
   .ver 2:0:3600:0
 }
 
-.assembly foo {}
-.module foo.exe
+.assembly 'test1_336666' {}
 
 
 // We inline the call chain foo()->Throw(). This causes the DFS reader
@@ -30,8 +30,12 @@
 
 
 
+.class public auto ansi test1 {
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     
     ldc.i4 100
@@ -44,6 +48,7 @@
     call       void [System.Console]System.Console::WriteLine(string)
     ret
   }
+}
 
 
 

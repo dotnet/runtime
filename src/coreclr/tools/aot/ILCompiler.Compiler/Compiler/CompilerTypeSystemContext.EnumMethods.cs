@@ -10,9 +10,9 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
-        private class EnumInfo
+        private sealed class EnumInfo
         {
             public TypeDesc Type => EqualsMethod.OwningType;
 
@@ -28,7 +28,7 @@ namespace ILCompiler
             }
         }
 
-        private class EnumInfoHashtable : LockFreeReaderHashtable<TypeDesc, EnumInfo>
+        private sealed class EnumInfoHashtable : LockFreeReaderHashtable<TypeDesc, EnumInfo>
         {
             protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(EnumInfo value) => value.Type.GetHashCode();
@@ -78,8 +78,7 @@ namespace ILCompiler
                 yield break;
             }
 
-            if (_objectEqualsMethod == null)
-                _objectEqualsMethod = GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
 
             // If the classlib doesn't have Object.Equals, we don't need this.
             if (_objectEqualsMethod == null)

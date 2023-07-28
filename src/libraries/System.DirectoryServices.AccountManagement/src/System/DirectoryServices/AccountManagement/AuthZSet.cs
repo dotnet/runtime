@@ -101,7 +101,7 @@ namespace System.DirectoryServices.AccountManagement
                                                     out bufferSize,
                                                     IntPtr.Zero
                                                     );
-                        if (!f && (bufferSize > 0) && (Marshal.GetLastWin32Error() == 122) /*ERROR_INSUFFICIENT_BUFFER*/)
+                        if (!f && (bufferSize > 0) && (Marshal.GetLastPInvokeError() == 122) /*ERROR_INSUFFICIENT_BUFFER*/)
                         {
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "Getting info from ctx (size={0})", bufferSize);
 
@@ -155,23 +155,23 @@ namespace System.DirectoryServices.AccountManagement
                             }
                             else
                             {
-                                lastError = Marshal.GetLastWin32Error();
+                                lastError = Marshal.GetLastPInvokeError();
                             }
                         }
                         else
                         {
-                            lastError = Marshal.GetLastWin32Error();
+                            lastError = Marshal.GetLastPInvokeError();
                             Debug.Fail("With a zero-length buffer, this should have never succeeded");
                         }
                     }
                     else
                     {
-                        lastError = Marshal.GetLastWin32Error();
+                        lastError = Marshal.GetLastPInvokeError();
                     }
                 }
                 else
                 {
-                    lastError = Marshal.GetLastWin32Error();
+                    lastError = Marshal.GetLastPInvokeError();
                 }
 
                 if (!f)
@@ -192,14 +192,9 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "AuthZSet", "Caught exception {0} with message {1}", e.GetType(), e.Message);
 
-                if (_psBuffer != null && !_psBuffer.IsInvalid)
-                    _psBuffer.Close();
-
-                if (_psUserSid != null && !_psUserSid.IsInvalid)
-                    _psUserSid.Close();
-
-                if (_psMachineSid != null && !_psMachineSid.IsInvalid)
-                    _psMachineSid.Close();
+                _psBuffer?.Dispose();
+                _psUserSid?.Dispose();
+                _psMachineSid?.Dispose();
 
                 // We're on a platform that doesn't have the AuthZ library
                 if (e is DllNotFoundException)
@@ -354,7 +349,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // It's a local group, because either (1) it's a local machine user, and local users can't be a member of a domain group,
                     // or (2) it's a domain user that's a member of a group on the local machine.  Pass the default machine context options
-                    // If we initially targetted AD then those options will not be valid for the machine store.
+                    // If we initially targeted AD then those options will not be valid for the machine store.
 
                     PrincipalContext ctx = SDSCache.LocalMachine.GetContext(
                                                                     sidIssuerName,

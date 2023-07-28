@@ -3,15 +3,17 @@
 //
 
 using System;
+using Xunit;
 
 enum TestEnum { }
 
-struct AA
+public struct AA
 {
     static short m_shStatic1;
     static TestEnum[] Static2(String[] args)
     {
         return new TestEnum[(long)(m_shStatic1 * 11u - m_shStatic1 * 11u)];
     }
-    static int Main() { Static2(null); return 100; }
+    [Fact]
+    public static int TestEntryPoint() { Static2(null); return 100; }
 }

@@ -18,7 +18,7 @@ namespace System.Formats.Tar
         {
             if (!superStream.CanSeek)
             {
-                throw new InvalidOperationException(SR.IO_NotSupported_UnseekableStream);
+                throw new ArgumentException(SR.IO_NotSupported_UnseekableStream, nameof(superStream));
             }
         }
 
@@ -34,10 +34,8 @@ namespace System.Formats.Tar
             set
             {
                 ThrowIfDisposed();
-                if (value < 0 || value >= _endInSuperStream)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, _endInSuperStream);
                 _positionInSuperStream = _startInSuperStream + value;
             }
         }
@@ -51,9 +49,9 @@ namespace System.Formats.Tar
             int origCount = destination.Length;
             int count = destination.Length;
 
-            if (_positionInSuperStream + count > _endInSuperStream)
+            if ((ulong)(_positionInSuperStream + count) > (ulong)_endInSuperStream)
             {
-                count = (int)(_endInSuperStream - _positionInSuperStream);
+                count = Math.Max(0, (int)(_endInSuperStream - _positionInSuperStream));
             }
 
             Debug.Assert(count >= 0);
@@ -71,6 +69,10 @@ namespace System.Formats.Tar
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
             ThrowIfDisposed();
             VerifyPositionInSuperStream();
             return ReadAsyncCore(buffer, cancellationToken);
@@ -80,22 +82,22 @@ namespace System.Formats.Tar
         {
             ThrowIfDisposed();
 
-            long newPosition = origin switch
+            long newPositionInSuperStream = origin switch
             {
                 SeekOrigin.Begin => _startInSuperStream + offset,
                 SeekOrigin.Current => _positionInSuperStream + offset,
                 SeekOrigin.End => _endInSuperStream + offset,
                 _ => throw new ArgumentOutOfRangeException(nameof(origin)),
             };
-            if (newPosition < _startInSuperStream || newPosition > _endInSuperStream)
+
+            if (newPositionInSuperStream < _startInSuperStream)
             {
-                throw new IndexOutOfRangeException(nameof(offset));
+                throw new IOException(SR.IO_SeekBeforeBegin);
             }
 
-            _superStream.Position = newPosition;
-            _positionInSuperStream = newPosition;
+            _positionInSuperStream = newPositionInSuperStream;
 
-            return _superStream.Position;
+            return _positionInSuperStream - _startInSuperStream;
         }
 
         private void VerifyPositionInSuperStream()

@@ -40,15 +40,7 @@ namespace System.Linq.Parallel
             Debug.Assert(child != null, "child data source cannot be null");
 
             _searchValue = searchValue;
-
-            if (comparer == null)
-            {
-                _comparer = EqualityComparer<TInput>.Default;
-            }
-            else
-            {
-                _comparer = comparer;
-            }
+            _comparer = comparer ?? EqualityComparer<TInput>.Default;
         }
 
         //---------------------------------------------------------------------------------------

@@ -11,12 +11,6 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       64     // Upper bound to let the code generator to loop unroll CpBlk
-  #define CPBLK_LCL_UNROLL_LIMIT   128    // Upper bound to let the code generator to loop unroll CpBlk (when both srcAddr and dstAddr point to the stack)
-  #define INITBLK_UNROLL_LIMIT     64     // Upper bound to let the code generator to loop unroll InitBlk
-  #define INITBLK_LCL_UNROLL_LIMIT 128    // Upper bound to let the code generator to loop unroll InitBlk (when dstAddr points to the stack)
-  #define LCLHEAP_UNROLL_LIMIT     128    // Upper bound to let the code generator to loop unroll LclHeap (when zeroing is required)
-
 #ifdef FEATURE_SIMD
   #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
   #define FEATURE_PARTIAL_SIMD_CALLEE_SAVE 1 // Whether SIMD registers are partially saved at calls
@@ -39,7 +33,7 @@
   #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 128-bit vectors using an HVA)
   #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            4  // Maxiumum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            4  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers

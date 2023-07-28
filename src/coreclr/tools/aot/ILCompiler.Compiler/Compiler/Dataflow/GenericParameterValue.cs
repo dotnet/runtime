@@ -15,7 +15,7 @@ namespace ILLink.Shared.TrimAnalysis
     /// This is a System.Type value which represents generic parameter (basically result of typeof(T))
     /// Its actual type is unknown, but it can have annotations.
     /// </summary>
-    partial record GenericParameterValue
+    internal partial record GenericParameterValue
     {
         public GenericParameterValue(GenericParameterDesc genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
@@ -26,7 +26,7 @@ namespace ILLink.Shared.TrimAnalysis
         public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
         public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
-            => new string[] { GenericParameter.GenericParameter.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(new GenericParameterOrigin(GenericParameter.GenericParameter)) };
+            => new string[] { GenericParameter.GenericParameter.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(GenericParameter.GenericParameter) };
 
         public override SingleValue DeepCopy() => this; // This value is immutable
 

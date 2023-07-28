@@ -36,8 +36,7 @@ namespace System.Reflection.Runtime.Assemblies
             StringBuilder sb = new StringBuilder();
             if (type == null)
             {
-                if (name == null)
-                    throw new ArgumentNullException(nameof(type));
+                ArgumentNullException.ThrowIfNull(name, nameof(type));
             }
             else
             {
@@ -178,8 +177,7 @@ namespace System.Reflection.Runtime.TypeInfos
             Justification = "The returned interface is one of the interfaces implemented by this type and does have DynamicallyAccessedMemberTypes.Interfaces")]
         public sealed override Type? GetInterface(string name, bool ignoreCase)
         {
-            if (name == null)
-                throw new ArgumentNullException("fullname" /* Yep, CoreCLR names this different than the ref assembly */);
+            ArgumentNullException.ThrowIfNull(name, "fullname" /* Yep, CoreCLR names this different than the ref assembly */);
 
             string simpleName;
             string ns;
@@ -201,7 +199,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (ns != null && !ns.Equals(ifc.Namespace))
                     continue;
                 if (match != null)
-                    throw new AmbiguousMatchException();
+                    throw ThrowHelper.GetAmbiguousMatchException(match);
                 match = ifc;
             }
             return match;
@@ -212,7 +210,7 @@ namespace System.Reflection.Runtime.TypeInfos
             Debug.Assert(fullname != null);
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf(".", StringComparison.Ordinal);
+            int nsDelimiter = fullname.LastIndexOf('.');
             if (nsDelimiter != -1)
             {
                 ns = fullname.Substring(0, nsDelimiter);

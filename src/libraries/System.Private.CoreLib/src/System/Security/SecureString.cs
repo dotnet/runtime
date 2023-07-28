@@ -26,14 +26,8 @@ namespace System.Security
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (length > MaxLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Length);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(length, MaxLength);
 
             Initialize(new ReadOnlySpan<char>(value, length));
         }

@@ -88,12 +88,20 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
     {
         int length = (iEnd - iStart) + 2;
         destPattern = (char*)calloc((size_t)length, sizeof(char));
+        if (!destPattern)
+        {
+            return NULL;
+        }
         destPattern[index++] = '-';
     }
     else
     {
         int length = (iEnd - iStart) + 1;
         destPattern = (char*)calloc((size_t)length, sizeof(char));
+        if (!destPattern)
+        {
+            return NULL;
+        }
     }
 
     for (int i = iStart; i <= iEnd; i++)
@@ -177,6 +185,11 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
     char* normalizedPattern = NormalizeNumericPattern(icuPattern, isNegative);
 
     free(icuPattern);
+
+    if (!normalizedPattern)
+    {
+        return U_MEMORY_ALLOCATION_ERROR;
+    }
 
     size_t normalizedPatternLength = strlen(normalizedPattern);
 
@@ -483,7 +496,7 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
         }
         case LocaleNumber_ReadingLayout:
         {
-            // coresponds to values 0 and 1 in LOCALE_IREADINGLAYOUT (values 2 and 3 not
+            // corresponds to values 0 and 1 in LOCALE_IREADINGLAYOUT (values 2 and 3 not
             // used in coreclr)
             //  0 - Left to right (such as en-US)
             //  1 - Right to left (such as arabic locales)

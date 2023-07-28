@@ -47,6 +47,7 @@ namespace System.Tests
             var exception = new MissingMemberException(className, memberName);
             Assert.Contains(className, exception.Message);
             Assert.Contains(memberName, exception.Message);
+            Assert.Equal(COR_E_MISSINGMEMBER, exception.HResult);
         }
     }
 }

@@ -5,7 +5,8 @@
 #pragma warning disable
 
 using System;
-class testout1
+using Xunit;
+public class testout1
 {
     static int static_field_int;
     static bool sfb_false;
@@ -21689,7 +21690,8 @@ class testout1
         Sum += (ab_false[index] || ab_false[index] ? ab[index - 1] : ab[index - 1]);
         return Sum;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int Sum = 0;
         Sum += Sub_Funclet_0();

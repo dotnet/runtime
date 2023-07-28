@@ -3,8 +3,11 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly box_unbox{}
+.assembly extern xunit.core {}
+.assembly 'Box_Unbox'{}
 
+.namespace Box_Unbox
+{
 .class public value sealed valClass {
 .field public int32 Field1
 .field public float32 Field2
@@ -12,11 +15,11 @@
 .maxstack	4
 	ldarg 	0
 	ldc.i4 		0xFF
-	stfld 		int32 valClass::Field1
+	stfld 		int32 Box_Unbox.valClass::Field1
 
 	ldarg 	0
 	ldc.r4 		float32(0x00ABCDEF)
-	stfld 		float32 valClass::Field2
+	stfld 		float32 Box_Unbox.valClass::Field2
 
 	ret
 }
@@ -34,24 +37,27 @@
 
 }
 .class public Box_Unbox {
-.field public static	value class valClass vc
-.method public static int32 main(class [mscorlib]System.String[]) {
+.field public static	value class Box_Unbox.valClass vc
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
-  	ldsflda 	value class valClass Box_Unbox::vc
-  	call		instance void valClass::_init()
-	ldsflda		value class valClass Box_Unbox::vc
-	ldfld		int32 valClass::Field1
+  	ldsflda 	value class Box_Unbox.valClass Box_Unbox.Box_Unbox::vc
+  	call		instance void Box_Unbox.valClass::_init()
+	ldsflda		value class Box_Unbox.valClass Box_Unbox.Box_Unbox::vc
+	ldfld		int32 Box_Unbox.valClass::Field1
 	ldc.i4		0xFF
 	ceq
 	brfalse		FAIL
-	ldsflda		value class valClass Box_Unbox::vc
-	ldfld		float32 valClass::Field2
+	ldsflda		value class Box_Unbox.valClass Box_Unbox.Box_Unbox::vc
+	ldfld		float32 Box_Unbox.valClass::Field2
 	ldc.r4		float32(0x00ABCDEF)
 	ceq
 	brfalse		FAIL
-	ldsfld 	value class valClass Box_Unbox::vc
-	box			valClass
+	ldsfld 	value class Box_Unbox.valClass Box_Unbox.Box_Unbox::vc
+	box			Box_Unbox.valClass
 	callvirt    instance	class [mscorlib]System.String [mscorlib]System.Object::ToString()
 	ldstr		"Some Test String"
 
@@ -67,5 +73,6 @@ FAIL:
 	ldc.i4	0x0
 	ret
 
+}
 }
 }

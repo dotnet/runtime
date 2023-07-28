@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
 
             CustomAttributeBuilder attribute = new CustomAttributeBuilder(constructor, new object[] { 4 }, new FieldInfo[] { field }, new object[] { "hello" });
             parameter.SetCustomAttribute(attribute);
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod("method1");
             ParameterInfo createdParameter = createdMethod.GetParameters()[0];
 
@@ -46,7 +46,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             parameter.SetCustomAttribute(typeof(ParameterBuilderCustomAttribute).GetConstructor(new Type[] { typeof(bool)}), new byte[] { 1, 0, 1, 0, 0});
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod("method1");
             ParameterInfo createdParameter = createdMethod.GetParameters()[0];
 

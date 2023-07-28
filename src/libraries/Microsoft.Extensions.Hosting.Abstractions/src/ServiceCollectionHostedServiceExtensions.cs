@@ -8,6 +8,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// Extension methods for adding hosted services to an <see cref="IServiceCollection" />.
+    /// </summary>
     public static class ServiceCollectionHostedServiceExtensions
     {
         /// <summary>

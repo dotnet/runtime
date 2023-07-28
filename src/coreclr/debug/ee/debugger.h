@@ -689,7 +689,7 @@ public:
         _ASSERTE(m_pDCB != NULL);
         // In case this turns into a continuation event
         GetRCThreadSendBuffer()->next = NULL;
-        LOG((LF_CORDB,LL_EVERYTHING, "GIPCESBuffer: got event 0x%x\n", GetRCThreadSendBuffer()));
+        LOG((LF_CORDB,LL_EVERYTHING, "GIPCESBuffer: got event %p\n", GetRCThreadSendBuffer()));
 
         return GetRCThreadSendBuffer();
     }
@@ -1156,7 +1156,7 @@ static_assert(sizeof(DebuggerHeapExecutableMemoryPage) == DEBUGGERHEAP_PAGESIZE,
 // Handles allocation and freeing (and all necessary bookkeeping) for
 // executable memory that the DebuggerHeap class needs. This is especially
 // useful on systems (like SELinux) where having executable code on the
-// heap is explicity disallowed for security reasons.
+// heap is explicitly disallowed for security reasons.
 // ------------------------------------------------------------------------ */
 
 class DebuggerHeapExecutableMemoryAllocator
@@ -1250,7 +1250,7 @@ public:
                                             MethodDesc           * md = NULL,
                                             PTR_CORDB_ADDRESS_TYPE addr = PTR_NULL);
 
-    // Fills in the CodeRegoinInfo fields from the start address.
+    // Fills in the CodeRegionInfo fields from the start address.
     void InitializeFromStartAddress(PCODE addr)
     {
         CONTRACTL
@@ -1376,7 +1376,7 @@ private:
 //
 // DebuggerILToNativeMap* m_sequenceMap:   This is the sequence map, which
 //      is actually a collection of IL-Native pairs, where each IL corresponds
-//      to a line of source code.  Each pair is refered to as a sequence map point.
+//      to a line of source code.  Each pair is referred to as a sequence map point.
 //
 // SIZE_T m_lastIL:   last nonEPILOG instruction
 //
@@ -1436,6 +1436,27 @@ protected:
 #endif
 
 public:
+    void LogInstance()
+    {
+#ifdef LOGGING
+        const char* encState = "not enabled";
+#ifdef EnC_SUPPORTED
+        encState = m_encBreakpointsApplied ? "true" : "false";
+#endif //EnC_SUPPORTED
+        LOG((LF_CORDB, LL_INFO10000, "  DJI: %p\n"
+            "                m_jitComplete: %s\n"
+            "      m_encBreakpointsApplied: %s\n"
+            "                 m_methodInfo: %p\n"
+            "                 m_addrOfCode: %p\n"
+            "                 m_sizeOfCode: 0x%zx\n"
+            "                     m_lastIL: 0x%x\n"
+            "           m_sequenceMapCount: %u\n"
+            "           m_callsiteMapCount: %u\n",
+            this, (m_jitComplete ? "true" : "false"), encState,
+            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount, m_callsiteMapCount));
+#endif //LOGGING
+    }
+
     unsigned int GetSequenceMapCount()
     {
         SUPPORTS_DAC;
@@ -1751,6 +1772,13 @@ extern "C" void __stdcall SignalHijackCompleteFlare(void);
 extern "C" void __stdcall ExceptionNotForRuntimeFlare(void);
 extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, TADDR Rip, TADDR Rsp);
+#else
+#error Platform not supported
+#endif
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 /* ------------------------------------------------------------------------ *
  * Debugger class
@@ -1900,7 +1928,8 @@ public:
     bool FirstChanceNativeException(EXCEPTION_RECORD *exception,
                                T_CONTEXT *context,
                                DWORD code,
-                               Thread *thread);
+                               Thread *thread,
+                               BOOL fIsVEH = TRUE);
 
     bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod);
 
@@ -2183,6 +2212,15 @@ public:
         return m_trappingRuntimeThreads;
     }
 
+#ifndef DACCESS_COMPILE
+private:
+    HRESULT DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef);
+
+public:
+    HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
+#endif //DACCESS_COMPILE
+    HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
+
     //
     // The debugger mutex is used to protect any "global" Left Side
     // data structures. The RCThread takes it when handling a Right
@@ -2248,13 +2286,6 @@ private:
     // Helper to serialize metadata that has been updated by the profiler into
     // a buffer so that it can be read out-of-proc
     BYTE* SerializeModuleMetaData(Module * pModule, DWORD * countBytes);
-
-    /// Wrapps fusion Module FusionCopyPDBs.
-    HRESULT CopyModulePdb(Module* pRuntimeModule);
-
-    // When attaching to a process, this is called to enumerate all of the
-    // AppDomains currently in the process and allow modules pdbs to be copied over to the shadow dir maintaining out V2 in-proc behaviour.
-    HRESULT IterateAppDomainsForPdbs();
 
 #ifndef DACCESS_COMPILE
 public:
@@ -2346,7 +2377,8 @@ public:
 
     LONG FirstChanceSuspendHijackWorker(
                              T_CONTEXT *pContext,
-                             EXCEPTION_RECORD *pExceptionRecord);
+                             EXCEPTION_RECORD *pExceptionRecord,
+                             BOOL fIsVEH = TRUE);
     static void GenericHijackFunc(void);
     static void SecondChanceHijackFunc(void);
     static void SecondChanceHijackFuncWorker(void);
@@ -2917,6 +2949,11 @@ public:
 private:
     HANDLE GetGarbageCollectionBlockerEvent() { return  GetLazyData()->m_garbageCollectionBlockerEvent; }
 
+private:
+    BOOL m_fOutOfProcessSetContextEnabled;
+public:
+    void SendSetThreadContextNeeded(CONTEXT *context);
+    BOOL IsOutOfProcessSetContextEnabled();
 };
 
 
@@ -2938,7 +2975,7 @@ void RedirectedHandledJITCaseForDbgThreadControl_StubEnd();
 void RedirectedHandledJITCaseForUserSuspend_Stub();
 void RedirectedHandledJITCaseForUserSuspend_StubEnd();
 
-#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
+#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64) && defined(USE_REDIRECT_FOR_GCSTRESS)
 void RedirectedHandledJITCaseForGCStress_Stub();
 void RedirectedHandledJITCaseForGCStress_StubEnd();
 #endif // HAVE_GCCOVER && TARGET_AMD64
@@ -3858,7 +3895,7 @@ HANDLE OpenWin32EventOrThrow(
 bool DbgIsSpecialILOffset(DWORD offset);
 
 #if !defined(TARGET_X86)
-void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, T_CONTEXT* pOriginalContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
+void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
 #endif
 
 #endif /* DEBUGGER_H_ */

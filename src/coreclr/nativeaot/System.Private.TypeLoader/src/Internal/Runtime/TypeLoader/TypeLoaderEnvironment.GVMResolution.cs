@@ -20,85 +20,131 @@ namespace Internal.Runtime.TypeLoader
 {
     public sealed partial class TypeLoaderEnvironment
     {
-#if GVM_RESOLUTION_TRACE
-        private string GetTypeNameDebug(RuntimeTypeHandle rtth)
+        private static string GetTypeNameDebug(TypeDesc type)
         {
             string result;
 
-            if (RuntimeAugments.IsGenericType(rtth))
+            TypeDesc typeDefinition = type.GetTypeDefinition();
+            if (type != typeDefinition)
             {
-                RuntimeTypeHandle[] typeArgumentsHandles;
-                RuntimeTypeHandle openTypeDef = RuntimeAugments.GetGenericInstantiation(rtth, out typeArgumentsHandles); ;
-                result = GetTypeNameDebug(openTypeDef) + "<";
-                for (int i = 0; i < typeArgumentsHandles.Length; i++)
-                    result += (i == 0 ? "" : ",") + GetTypeNameDebug(typeArgumentsHandles[i]);
+                result = GetTypeNameDebug(typeDefinition) + "<";
+                for (int i = 0; i < type.Instantiation.Length; i++)
+                    result += (i == 0 ? "" : ",") + GetTypeNameDebug(type.Instantiation[0]);
                 return result + ">";
             }
-            else
+            else if (type.IsDefType)
             {
                 System.Reflection.Runtime.General.QTypeDefinition qTypeDefinition;
 
+                RuntimeTypeHandle rtth = type.GetRuntimeTypeHandle();
+
                 // Check if we have metadata.
-                if (Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
+                if (TryGetMetadataForNamedType(rtth, out qTypeDefinition))
                     return qTypeDefinition.NativeFormatHandle.GetFullName(qTypeDefinition.NativeFormatReader);
             }
-
-            return rtth.LowLevelToStringRawEETypeAddress();
+            return "?";
         }
-#endif
 
-        public bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeSignature methodSignature, bool lookForDefaultImplementation, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated)
+        internal static InstantiatedMethod GVMLookupForSlotWorker(DefType targetType, InstantiatedMethod slotMethod)
         {
-            MethodNameAndSignature methodNameAndSignature = new MethodNameAndSignature(methodName, methodSignature);
+            InstantiatedMethod resolution = null;
 
-#if GVM_RESOLUTION_TRACE
-            Debug.WriteLine("GVM resolution starting for " + GetTypeNameDebug(declaringType) + "." + methodNameAndSignature.Name + "(...)  on a target of type " + GetTypeNameDebug(targetHandle) + " ...");
-#endif
+            bool lookForDefaultImplementations = false;
 
-            if (RuntimeAugments.IsInterface(declaringType))
+        again:
+            // Walk parent hierarchy attempting to resolve
+            DefType currentType = targetType;
+            bool resolvingInterfaceMethod = slotMethod.OwningType.IsInterface;
+
+            while (currentType is not null)
             {
-                if (!ResolveInterfaceGenericVirtualMethodSlot(targetHandle, lookForDefaultImplementation, ref declaringType, ref methodNameAndSignature))
+                if (resolvingInterfaceMethod)
                 {
-                    methodPointer = dictionaryPointer = IntPtr.Zero;
-                    slotUpdated = false;
-                    return false;
-                }
-
-                if (RuntimeAugments.IsInterface(declaringType))
-                {
-                    slotUpdated = false;
-                    if (!TryGetGenericVirtualMethodPointer(declaringType, methodNameAndSignature, genericArguments, out methodPointer, out dictionaryPointer))
+                    resolution = ResolveInterfaceGenericVirtualMethodSlot(currentType, slotMethod, lookForDefaultImplementations);
+                    if (resolution != null)
                     {
-                        var sb = new System.Text.StringBuilder();
-                        sb.AppendLine("Generic virtual method pointer lookup failure.");
-                        sb.AppendLine();
-                        sb.AppendLine("Declaring type handle: " + declaringType.LowLevelToStringRawEETypeAddress());
-                        sb.AppendLine("Target type handle: " + targetHandle.LowLevelToStringRawEETypeAddress());
-                        sb.AppendLine("Method name: " + methodNameAndSignature.Name);
-                        sb.AppendLine("Instantiation:");
-                        for (int i = 0; i < genericArguments.Length; i++)
+                        // If this is a static virtual, we're done, nobody can override this.
+                        if (IsStaticMethodSignature(resolution.NameAndSignature))
                         {
-                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + genericArguments[i].LowLevelToStringRawEETypeAddress());
+                            Debug.Assert(IsStaticMethodSignature(slotMethod.NameAndSignature));
+                            break;
                         }
 
-                        Environment.FailFast(sb.ToString());
+                        // If this is a default implementation, we're also done.
+                        if (resolution.OwningType.IsInterface)
+                        {
+                            Debug.Assert(lookForDefaultImplementations);
+                            break;
+                        }
+
+                        // Otherwise resolve to whatever implements the virtual method on the type.
+                        return GVMLookupForSlotWorker(currentType, resolution);
                     }
                 }
                 else
                 {
-                    methodPointer = IntPtr.Zero;
-                    dictionaryPointer = IntPtr.Zero;
-                    slotUpdated = true;
-                    methodName = methodNameAndSignature.Name;
-                    methodSignature = methodNameAndSignature.Signature;
+                    resolution = ResolveGenericVirtualMethodTarget(currentType, slotMethod);
+                    if (resolution != null)
+                        break;
                 }
-                return true;
+
+                currentType = currentType.BaseType;
             }
-            else
+
+            if (resolution == null
+                && !lookForDefaultImplementations
+                && resolvingInterfaceMethod)
             {
-                slotUpdated = false;
-                return ResolveGenericVirtualMethodTarget(targetHandle, declaringType, genericArguments, methodNameAndSignature, out methodPointer, out dictionaryPointer);
+                lookForDefaultImplementations = true;
+                goto again;
             }
+
+            if (resolution == null)
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("Generic virtual method pointer lookup failure.");
+                sb.AppendLine();
+                sb.AppendLine("Declaring type: " + GetTypeNameDebug(slotMethod.OwningType));
+                sb.AppendLine("Target type: " + GetTypeNameDebug(targetType));
+                sb.AppendLine("Method name: " + slotMethod.NameAndSignature.Name);
+                sb.AppendLine("Instantiation:");
+                for (int i = 0; i < slotMethod.Instantiation.Length; i++)
+                {
+                    sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + GetTypeNameDebug(slotMethod.Instantiation[i]));
+                }
+
+                Environment.FailFast(sb.ToString());
+            }
+
+            return resolution;
+        }
+
+        internal unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle type, RuntimeMethodHandle slot)
+        {
+            TypeSystemContext context = TypeSystemContextFactory.Create();
+            DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(type);
+
+            InstantiatedMethod slotMethod = (InstantiatedMethod)GetMethodDescForRuntimeMethodHandle(context, slot);
+
+            InstantiatedMethod result = GVMLookupForSlotWorker(targetType, slotMethod);
+
+            if (!TryGetGenericVirtualMethodPointer(result, out IntPtr methodPointer, out IntPtr dictionaryPointer))
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("Failed to create generic virtual method implementation");
+                sb.AppendLine();
+                sb.AppendLine("Declaring type: " + GetTypeNameDebug(result.OwningType));
+                sb.AppendLine("Method name: " + result.NameAndSignature.Name);
+                sb.AppendLine("Instantiation:");
+                for (int i = 0; i < result.Instantiation.Length; i++)
+                {
+                    sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + GetTypeNameDebug(result.Instantiation[i]));
+                }
+                Environment.FailFast(sb.ToString());
+            }
+
+            TypeSystemContextFactory.Recycle(context);
+            return FunctionPointerOps.GetGenericMethodFunctionPointer(methodPointer, dictionaryPointer);
         }
 
         private static MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, TypeManagerHandle moduleHandle, uint nativeLayoutOffset)
@@ -116,15 +162,6 @@ namespace Internal.Runtime.TypeLoader
             return new MethodNameAndSignature(methodName, methodSig);
         }
 
-        private static RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
-        {
-            if (RuntimeAugments.IsGenericType(typeHandle))
-                return RuntimeAugments.GetGenericInstantiation(typeHandle, out typeArgumentsHandles);
-
-            typeArgumentsHandles = null;
-            return typeHandle;
-        }
-
         private static RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
@@ -133,14 +170,17 @@ namespace Internal.Runtime.TypeLoader
             return typeHandle;
         }
 
-        private static bool FindMatchingInterfaceSlot(NativeFormatModuleInfo module, NativeReader nativeLayoutReader, ref NativeParser entryParser, ref ExternalReferencesTable extRefs, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature, RuntimeTypeHandle instanceTypeHandle, RuntimeTypeHandle openTargetTypeHandle, RuntimeTypeHandle[] targetTypeInstantiation, bool variantDispatch, bool defaultMethods)
+        private static InstantiatedMethod FindMatchingInterfaceSlot(NativeFormatModuleInfo module, NativeReader nativeLayoutReader, ref NativeParser entryParser, ref ExternalReferencesTable extRefs, InstantiatedMethod slotMethod, DefType targetType, bool variantDispatch, bool defaultMethods)
         {
             uint numTargetImplementations = entryParser.GetUnsigned();
 
 #if GVM_RESOLUTION_TRACE
-            Debug.WriteLine(" :: Declaring type = " + GetTypeNameDebug(declaringType));
-            Debug.WriteLine(" :: Target type = " + GetTypeNameDebug(openTargetTypeHandle));
+            Debug.WriteLine(" :: Declaring type = " + GetTypeNameDebug(slotMethod.OwningType));
+            Debug.WriteLine(" :: Target type = " + GetTypeNameDebug(targetType));
 #endif
+
+            TypeSystemContext context = slotMethod.Context;
+            TypeDesc declaringType = slotMethod.OwningType;
 
             for (uint j = 0; j < numTargetImplementations; j++)
             {
@@ -156,7 +196,7 @@ namespace Internal.Runtime.TypeLoader
                     targetTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                     isDefaultInterfaceMethodImplementation = RuntimeAugments.IsInterface(targetTypeHandle);
 #if GVM_RESOLUTION_TRACE
-                    Debug.WriteLine("    Searching for GVM implementation on targe type = " + GetTypeNameDebug(targetTypeHandle));
+                    Debug.WriteLine("    Searching for GVM implementation on targe type = " + RuntimeAugments.GetLastResortString(targetTypeHandle));
 #endif
                 }
                 else
@@ -171,12 +211,12 @@ namespace Internal.Runtime.TypeLoader
                     RuntimeTypeHandle implementingTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
 #if GVM_RESOLUTION_TRACE
-                    Debug.WriteLine("      -> Current implementing type = " + GetTypeNameDebug(implementingTypeHandle));
+                    Debug.WriteLine("      -> Current implementing type = " + RuntimeAugments.GetLastResortString(implementingTypeHandle));
 #endif
 
                     uint numIfaceSigs = entryParser.GetUnsigned();
 
-                    if (!openTargetTypeHandle.Equals(implementingTypeHandle)
+                    if (!targetType.GetTypeDefinition().RuntimeTypeHandle.Equals(implementingTypeHandle)
                         || defaultMethods != isDefaultInterfaceMethodImplementation)
                     {
                         // Skip over signatures data
@@ -188,22 +228,25 @@ namespace Internal.Runtime.TypeLoader
 
                     for (uint l = 0; l < numIfaceSigs; l++)
                     {
-                        RuntimeTypeHandle currentIfaceTypeHandle = default(RuntimeTypeHandle);
-
                         NativeParser ifaceSigParser = new NativeParser(nativeLayoutReader, entryParser.GetUnsigned());
 
-                        if (TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(ref ifaceSigParser, module.Handle, targetTypeInstantiation, null, out currentIfaceTypeHandle))
+                        NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
+                        nativeLayoutContext._module = ModuleList.Instance.GetModuleInfoByHandle(module.Handle);
+                        nativeLayoutContext._typeSystemContext = context;
+                        nativeLayoutContext._typeArgumentHandles = targetType.Instantiation;
+
+                        TypeDesc currentIfaceType = nativeLayoutContext.GetType(ref ifaceSigParser);
+
                         {
 #if GVM_RESOLUTION_TRACE
-                            Debug.WriteLine("         -> Current interface on type = " + GetTypeNameDebug(currentIfaceTypeHandle));
+                            Debug.WriteLine("         -> Current interface on type = " + GetTypeNameDebug(currentIfaceType));
 #endif
-                            Debug.Assert(!currentIfaceTypeHandle.IsNull());
 
-                            if ((!variantDispatch && declaringType.Equals(currentIfaceTypeHandle)) ||
-                                (variantDispatch && RuntimeAugments.IsAssignableFrom(declaringType, currentIfaceTypeHandle)))
+                            if ((!variantDispatch && declaringType.Equals(currentIfaceType)) ||
+                                (variantDispatch && currentIfaceType.CanCastTo(declaringType)))
                             {
 #if GVM_RESOLUTION_TRACE
-                                Debug.WriteLine("    " + (declaringType.Equals(currentIfaceTypeHandle) ? "Exact" : "Variant-compatible") + " match found on this target type!");
+                                Debug.WriteLine("    " + (declaringType.Equals(currentIfaceType) ? "Exact" : "Variant-compatible") + " match found on this target type!");
 #endif
                                 if (targetMethodNameAndSignature == null)
                                 {
@@ -218,128 +261,75 @@ namespace Internal.Runtime.TypeLoader
                                     }
                                 }
 
+                                DefType interfaceImplType;
+
                                 // We found the GVM slot target for the input interface GVM call, so let's update the interface GVM slot and return success to the caller
                                 if (!RuntimeAugments.IsInterface(targetTypeHandle) || !RuntimeAugments.IsGenericTypeDefinition(targetTypeHandle))
                                 {
                                     // Not a default interface method or default interface method on a non-generic type.
                                     // We have a usable type handle.
-                                    declaringType = targetTypeHandle;
+                                    interfaceImplType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
                                 }
-                                else if (RuntimeAugments.IsGenericType(currentIfaceTypeHandle) && RuntimeAugments.GetGenericDefinition(currentIfaceTypeHandle).Equals(targetTypeHandle))
+                                else if (currentIfaceType.HasInstantiation && currentIfaceType.GetTypeDefinition().RuntimeTypeHandle.Equals(targetTypeHandle))
                                 {
                                     // Default interface method implemented on the same type that declared the slot.
                                     // Use the instantiation as-is from what we found.
-                                    declaringType = currentIfaceTypeHandle;
+                                    interfaceImplType = (DefType)currentIfaceType;
                                 }
                                 else
                                 {
-                                    declaringType = default;
+                                    interfaceImplType = null;
 
                                     // Default interface method implemented on a different generic interface.
                                     // We need to find a usable instantiation. There should be only one match because we
                                     // would be dealing with a diamond otherwise.
-                                    int numInstanceInterfaces = RuntimeAugments.GetInterfaceCount(instanceTypeHandle);
-                                    for (int instIntfIndex = 0; instIntfIndex < numInstanceInterfaces; instIntfIndex++)
+                                    foreach (DefType instIntf in targetType.RuntimeInterfaces)
                                     {
-                                        RuntimeTypeHandle instIntf = RuntimeAugments.GetInterface(instanceTypeHandle, instIntfIndex);
-                                        if (RuntimeAugments.IsGenericType(instIntf)
-                                            && RuntimeAugments.GetGenericDefinition(instIntf).Equals(targetTypeHandle))
+                                        if (instIntf.GetTypeDefinition().RuntimeTypeHandle.Equals(targetTypeHandle))
                                         {
                                             // Got a potential interface. Check if the implementing interface is in the interface
                                             // list. We don't want IsAssignableFrom because we need an exact match.
-                                            int numIntInterfaces = RuntimeAugments.GetInterfaceCount(instIntf);
-                                            for (int intIntfIndex = 0; intIntfIndex < numIntInterfaces; intIntfIndex++)
+                                            foreach (DefType intfOnIntf in instIntf.RuntimeInterfaces)
                                             {
-                                                if (RuntimeAugments.GetInterface(instIntf, intIntfIndex).Equals(currentIfaceTypeHandle))
+                                                if (intfOnIntf.Equals(currentIfaceType))
                                                 {
-                                                    Debug.Assert(declaringType.IsNull());
-                                                    declaringType = instIntf;
+                                                    Debug.Assert(interfaceImplType == null);
+                                                    interfaceImplType = instIntf;
 #if !DEBUG
                                                     break;
 #endif
                                                 }
                                             }
 #if !DEBUG
-                                            if (!declaringType.IsNull())
+                                            if (interfaceImplType != null)
                                                 break;
 #endif
                                         }
                                     }
 
-                                    Debug.Assert(!declaringType.IsNull());
+                                    Debug.Assert(interfaceImplType != null);
                                 }
 
-                                methodNameAndSignature = targetMethodNameAndSignature;
-                                return true;
+                                return (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, interfaceImplType, targetMethodNameAndSignature, slotMethod.Instantiation, IntPtr.Zero, false);
                             }
                         }
                     }
                 }
             }
 
-            return false;
+            return null;
         }
 
-        private static bool ResolveInterfaceGenericVirtualMethodSlot(RuntimeTypeHandle targetTypeHandle, bool lookForDefaultImplementation, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature)
-        {
-            if (IsPregeneratedOrTemplateRuntimeTypeHandle(targetTypeHandle))
-            {
-                // If the target type isn't dynamic, or at least is template type generated, the static lookup logic is what we want.
-                return ResolveInterfaceGenericVirtualMethodSlot_Static(targetTypeHandle, lookForDefaultImplementation, ref declaringType, ref methodNameAndSignature);
-            }
-            else
-            {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                TypeSystemContext context = TypeSystemContextFactory.Create();
-                DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
-
-                // Method being called...
-                MethodDesc targetVirtualMethod = ResolveTypeHandleAndMethodNameAndSigToVirtualMethodDesc(context, declaringType, methodNameAndSignature);
-
-                if (targetVirtualMethod == null)
-                {
-                    // If we can't find the method in the type system, it must only be present in the static environment. Search there instead.
-                    TypeSystemContextFactory.Recycle(context);
-                    return ResolveInterfaceGenericVirtualMethodSlot_Static(targetTypeHandle, ref declaringType, ref methodNameAndSignature);
-                }
-
-                TypeDesc instanceDefTypeToExamine;
-                MethodDesc newlyFoundVirtualMethod = LazyVTableResolver.ResolveInterfaceMethodToVirtualMethod(targetType, out instanceDefTypeToExamine, targetVirtualMethod);
-
-                targetVirtualMethod = newlyFoundVirtualMethod;
-
-                // The pregenerated base type must be the one that implements the interface method
-                // Call into Redhawk to deal with this.
-                if ((newlyFoundVirtualMethod == null) && (instanceDefTypeToExamine != null))
-                {
-                    TypeSystemContextFactory.Recycle(context);
-                    // If we can't find the method in the type system, the overload must be defined in the static environment. Search there instead.
-                    return ResolveInterfaceGenericVirtualMethodSlot_Static(instanceDefTypeToExamine.GetRuntimeTypeHandle(), ref declaringType, ref methodNameAndSignature);
-                }
-
-                declaringType = targetVirtualMethod.OwningType.GetRuntimeTypeHandle();
-                methodNameAndSignature = targetVirtualMethod.NameAndSignature;
-                TypeSystemContextFactory.Recycle(context);
-                return true;
-#else
-                Environment.FailFast("GVM Resolution for non template or pregenerated type");
-                return false;
-#endif
-            }
-        }
-
-        private static bool ResolveInterfaceGenericVirtualMethodSlot_Static(RuntimeTypeHandle targetTypeHandle, bool lookForDefaultImplementation, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature)
+        private static InstantiatedMethod ResolveInterfaceGenericVirtualMethodSlot(DefType targetType, InstantiatedMethod slotMethod, bool lookForDefaultImplementation)
         {
             // Get the open type definition of the containing type of the generic virtual method being resolved
-            RuntimeTypeHandle openCallingTypeHandle = GetTypeDefinition(declaringType);
+            RuntimeTypeHandle openCallingTypeHandle = slotMethod.OwningType.GetTypeDefinition().RuntimeTypeHandle;
 
             // Get the open type definition of the current type of the object instance on which the GVM is being resolved
-            RuntimeTypeHandle openTargetTypeHandle;
-            RuntimeTypeHandle[] targetTypeInstantiation;
-            openTargetTypeHandle = GetOpenTypeDefinition(targetTypeHandle, out targetTypeInstantiation);
+            RuntimeTypeHandle openTargetTypeHandle = targetType.GetTypeDefinition().RuntimeTypeHandle;
 
 #if GVM_RESOLUTION_TRACE
-            Debug.WriteLine("INTERFACE GVM call = " + GetTypeNameDebug(declaringType) + "." + methodNameAndSignature.Name);
+            Debug.WriteLine("INTERFACE GVM call = " + GetTypeNameDebug(slotMethod.OwningType) + "." + slotMethod.NameAndSignature.Name);
 #endif
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))
@@ -370,7 +360,7 @@ namespace Internal.Runtime.TypeLoader
                     uint nameAndSigToken = entryParser.GetUnsigned();
                     MethodNameAndSignature interfaceMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, module.Handle, nameAndSigToken);
 
-                    if (!interfaceMethodNameAndSignature.Equals(methodNameAndSignature))
+                    if (!interfaceMethodNameAndSignature.Equals(slotMethod.NameAndSignature))
                         continue;
 
                     // For each of the possible GVM slot targets for the current interface call, we will do the following:
@@ -442,134 +432,33 @@ namespace Internal.Runtime.TypeLoader
                     uint currentOffset = entryParser.Offset;
 
                     // Non-variant dispatch of a variant generic interface generic virtual method.
-                    if (FindMatchingInterfaceSlot(module, nativeLayoutReader, ref entryParser, ref extRefs, ref declaringType, ref methodNameAndSignature, targetTypeHandle, openTargetTypeHandle, targetTypeInstantiation, false, lookForDefaultImplementation))
-                    {
-                        return true;
-                    }
+                    InstantiatedMethod result = FindMatchingInterfaceSlot(module, nativeLayoutReader, ref entryParser, ref extRefs, slotMethod, targetType, false, lookForDefaultImplementation);
+                    if (result != null)
+                        return result;
 
                     entryParser.Offset = currentOffset;
 
                     // Variant dispatch of a variant generic interface generic virtual method.
-                    if (FindMatchingInterfaceSlot(module, nativeLayoutReader, ref entryParser, ref extRefs, ref declaringType, ref methodNameAndSignature, targetTypeHandle, openTargetTypeHandle, targetTypeInstantiation, true, lookForDefaultImplementation))
-                    {
-                        return true;
-                    }
+                    return FindMatchingInterfaceSlot(module, nativeLayoutReader, ref entryParser, ref extRefs, slotMethod, targetType, true, lookForDefaultImplementation);
                 }
             }
 
-            return false;
+            return null;
         }
 
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        public MethodDesc ResolveTypeHandleAndMethodNameAndSigToVirtualMethodDesc(TypeSystemContext context, RuntimeTypeHandle declaringTypeHandle, MethodNameAndSignature methodNameAndSignature)
+        private static InstantiatedMethod ResolveGenericVirtualMethodTarget(DefType targetType, InstantiatedMethod slotMethod)
         {
-            TypeDesc declaringType = context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            MethodDesc targetVirtualMethod = null;
-            foreach (MethodDesc m in declaringType.GetAllMethods())
-            {
-                if (!m.IsVirtual)
-                    continue;
-
-                if (m.NameAndSignature.Equals(methodNameAndSignature))
-                {
-                    targetVirtualMethod = m;
-                }
-            }
-
-            return targetVirtualMethod;
-        }
-#endif
-
-        public static unsafe bool IsPregeneratedOrTemplateRuntimeTypeHandle(RuntimeTypeHandle rtth)
-        {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            if (!rtth.IsDynamicType())
-                return true;
-
-            if (rtth.ToEETypePtr()->DynamicModule == null)
-                return true;
-
-            return rtth.ToEETypePtr()->DynamicModule->DynamicTypeSlotDispatchResolve == null;
-#else
-            return true;
-#endif
-        }
-
-        private bool ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle[] genericArguments, MethodNameAndSignature callingMethodNameAndSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer)
-        {
-            if (IsPregeneratedOrTemplateRuntimeTypeHandle(targetTypeHandle))
-            {
-                // If the target type isn't dynamic, or at least is template type generated, the static lookup logic is what we want.
-                return ResolveGenericVirtualMethodTarget_Static(targetTypeHandle, declaringTypeHandle, genericArguments, callingMethodNameAndSignature, out methodPointer, out dictionaryPointer);
-            }
-            else
-            {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                methodPointer = IntPtr.Zero;
-                dictionaryPointer = IntPtr.Zero;
-
-                TypeSystemContext context = TypeSystemContextFactory.Create();
-                DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
-
-                // Method being called...
-                MethodDesc targetVirtualMethod = ResolveTypeHandleAndMethodNameAndSigToVirtualMethodDesc(context, declaringTypeHandle, callingMethodNameAndSignature);
-
-                if (targetVirtualMethod == null)
-                {
-                    // If we can't find the method in the type system, it must only be present in the static environment. Search there instead.
-                    TypeSystemContextFactory.Recycle(context);
-                    return ResolveGenericVirtualMethodTarget_Static(targetTypeHandle, declaringTypeHandle, genericArguments, callingMethodNameAndSignature, out methodPointer, out dictionaryPointer);
-                }
-
-                MethodDesc dispatchMethod = targetType.FindVirtualFunctionTargetMethodOnObjectType(targetVirtualMethod);
-
-                if (dispatchMethod == null)
-                    return false;
-
-                Instantiation targetMethodInstantiation = context.ResolveRuntimeTypeHandles(genericArguments);
-                MethodDesc instantiatedDispatchMethod = dispatchMethod.Context.ResolveGenericMethodInstantiation(dispatchMethod.OwningType.IsValueType/* get the unboxing stub */,
-                    dispatchMethod.OwningType.GetClosestDefType(),
-                    dispatchMethod.NameAndSignature,
-                    targetMethodInstantiation, IntPtr.Zero, false);
-
-                GenericDictionaryCell cell = GenericDictionaryCell.CreateMethodCell(instantiatedDispatchMethod, false);
-                using (LockHolder.Hold(_typeLoaderLock))
-                {
-                    // Now that we hold the lock, we may find that existing types can now find
-                    // their associated RuntimeTypeHandle. Flush the type builder states as a way
-                    // to force the reresolution of RuntimeTypeHandles which couldn't be found before.
-                    context.FlushTypeBuilderStates();
-
-                    TypeBuilder.ResolveSingleCell(cell, out methodPointer);
-                }
-
-                TypeSystemContextFactory.Recycle(context);
-
-                return true;
-#else
-                methodPointer = IntPtr.Zero;
-                dictionaryPointer = IntPtr.Zero;
-                Environment.FailFast("GVM Resolution for non template or pregenerated type");
-                return false;
-#endif
-            }
-        }
-
-        private unsafe bool ResolveGenericVirtualMethodTarget_Static(RuntimeTypeHandle targetTypeHandle, RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, MethodNameAndSignature callingMethodNameAndSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer)
-        {
-            methodPointer = dictionaryPointer = IntPtr.Zero;
-
             // Get the open type definition of the containing type of the generic virtual method being resolved
-            RuntimeTypeHandle openCallingTypeHandle = GetTypeDefinition(declaringType);
+            RuntimeTypeHandle openCallingTypeHandle = GetTypeDefinition(slotMethod.OwningType.GetTypeDefinition().RuntimeTypeHandle);
 
             // Get the open type definition of the current type of the object instance on which the GVM is being resolved
-            RuntimeTypeHandle openTargetTypeHandle = GetTypeDefinition(targetTypeHandle);
+            RuntimeTypeHandle openTargetTypeHandle = GetTypeDefinition(targetType.GetTypeDefinition().RuntimeTypeHandle);
 
             int hashCode = openCallingTypeHandle.GetHashCode();
             hashCode = ((hashCode << 13) ^ hashCode) ^ openTargetTypeHandle.GetHashCode();
 
 #if GVM_RESOLUTION_TRACE
-            Debug.WriteLine("GVM Target Resolution = " + GetTypeNameDebug(targetTypeHandle) + "." + callingMethodNameAndSignature.Name);
+            Debug.WriteLine("GVM Target Resolution = " + GetTypeNameDebug(targetType) + "." + slotMethod.NameAndSignature.Name);
 #endif
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))
@@ -603,7 +492,7 @@ namespace Internal.Runtime.TypeLoader
                     uint parsedCallingNameAndSigToken = entryParser.GetUnsigned();
                     MethodNameAndSignature parsedCallingNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, module.Handle, parsedCallingNameAndSigToken);
 
-                    if (!parsedCallingNameAndSignature.Equals(callingMethodNameAndSignature))
+                    if (!parsedCallingNameAndSignature.Equals(slotMethod.NameAndSignature))
                         continue;
 
                     uint parsedTargetMethodNameAndSigToken = entryParser.GetUnsigned();
@@ -611,28 +500,12 @@ namespace Internal.Runtime.TypeLoader
 
                     Debug.Assert(targetMethodNameAndSignature != null);
 
-                    if (!TryGetGenericVirtualMethodPointer(targetTypeHandle, targetMethodNameAndSignature, genericArguments, out methodPointer, out dictionaryPointer))
-                    {
-                        var sb = new System.Text.StringBuilder();
-                        sb.AppendLine("Generic virtual method pointer lookup failure.");
-                        sb.AppendLine();
-                        sb.AppendLine("Declaring type handle: " + declaringType.LowLevelToStringRawEETypeAddress());
-                        sb.AppendLine("Target type handle: " + targetTypeHandle.LowLevelToStringRawEETypeAddress());
-                        sb.AppendLine("Method name: " + targetMethodNameAndSignature.Name);
-                        sb.AppendLine("Instantiation:");
-                        for (int i = 0; i < genericArguments.Length; i++)
-                        {
-                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + genericArguments[i].LowLevelToStringRawEETypeAddress());
-                        }
-
-                        Environment.FailFast(sb.ToString());
-                    }
-
-                    return true;
+                    TypeSystemContext context = slotMethod.Context;
+                    return (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, targetType, targetMethodNameAndSignature, slotMethod.Instantiation, IntPtr.Zero, false);
                 }
             }
 
-            return false;
+            return null;
         }
     }
 }

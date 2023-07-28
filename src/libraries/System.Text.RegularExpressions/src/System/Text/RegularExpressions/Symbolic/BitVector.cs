@@ -175,12 +175,8 @@ namespace System.Text.RegularExpressions.Symbolic
             if (_hashcode == null)
             {
                 HashCode hc = default;
+                hc.AddBytes(MemoryMarshal.AsBytes<ulong>(_blocks));
                 hc.Add(Length);
-                if (_blocks is ulong[] blocks) // may be null in case of a default struct
-                {
-                    hc.AddBytes(MemoryMarshal.AsBytes<ulong>(blocks));
-                }
-
                 _hashcode = hc.ToHashCode();
             }
 

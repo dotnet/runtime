@@ -44,6 +44,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanCompileToIL", false);
 			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanEmitObjectArrayDelegate", false);
 			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanCreateArbitraryDelegates", false);
+			Options.FeatureSwitches.Add ("System.Diagnostics.Debugger.IsSupported", false);
+			Options.FeatureSwitches.Add ("System.Text.Encoding.EnableUnsafeUTF7Encoding", false);
+			Options.FeatureSwitches.Add ("System.Diagnostics.Tracing.EventSource.IsSupported", false);
+			Options.FeatureSwitches.Add ("System.Globalization.Invariant", true);
+			Options.FeatureSwitches.Add ("System.Resources.UseSystemResourceKeys", true);
+
+			Options.FrameworkCompilation = false;
 		}
 
 		public virtual void AddSearchDirectory (NPath directory)
@@ -61,6 +68,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkXmlFile (string file)
 		{
+			Options.Descriptors.Add (file);
 		}
 
 		public virtual void AddResponseFile (NPath path)
@@ -77,7 +85,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkAssembly (string fileName)
 		{
-			Options.TrimAssemblies.Add (fileName);
+			Options.TrimAssemblies.Add (Path.GetFileNameWithoutExtension(fileName));
 		}
 
 		public virtual void LinkFromAssembly (string fileName)
@@ -113,12 +121,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 		}
 
-		public virtual void AddKeepDebugMembers (string value)
-		{
-		}
-
 		public virtual void AddAssemblyAction (string action, string assembly)
 		{
+			switch (action) {
+			case "copy":
+				Options.AdditionalRootAssemblies.Add (assembly);
+				break;
+			}
 		}
 
 		public virtual void AddSkipUnresolved (bool skipUnresolved)
@@ -149,6 +158,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			if (flag == "--feature") {
 				Options.FeatureSwitches.Add (values[0], bool.Parse (values[1]));
+			}
+			else if (flag == "--singlewarn") {
+				Options.SingleWarn = true;
 			}
 		}
 
@@ -192,9 +204,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (!string.IsNullOrEmpty (options.LinkSymbols))
 				AddLinkSymbols (options.LinkSymbols);
 
-			if (!string.IsNullOrEmpty (options.KeepDebugMembers))
-				AddKeepDebugMembers (options.KeepDebugMembers);
-
 			AddSkipUnresolved (options.SkipUnresolved);
 
 			AddStripDescriptors (options.StripDescriptors);
@@ -219,9 +228,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// we keep the information in flag + values format for as long as we can so that this information doesn't have to be parsed out of a single string
 			foreach (var additionalArgument in options.AdditionalArguments)
 				AddAdditionalArgument (additionalArgument.Key, additionalArgument.Value);
+
+			if (options.IlcFrameworkCompilation)
+				Options.FrameworkCompilation = true;
 		}
 
-		static void AppendExpandedPaths (Dictionary<string, string> dictionary, string pattern)
+		private static void AppendExpandedPaths (Dictionary<string, string> dictionary, string pattern)
 		{
 			bool empty = true;
 

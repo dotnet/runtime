@@ -104,7 +104,9 @@ namespace System.Formats.Asn1
         {
             ReadOnlySpan<byte> contents = ReadIntegerBytes(source, ruleSet, out int consumed, expectedTag);
 
-            // TODO: Split this for netcoreapp/netstandard to use the Big-Endian BigInteger parsing
+#if NETCOREAPP2_1_OR_GREATER
+            BigInteger value = new BigInteger(contents, isBigEndian: true);
+#else
             byte[] tmp = CryptoPool.Rent(contents.Length);
             BigInteger value;
 
@@ -112,10 +114,10 @@ namespace System.Formats.Asn1
             {
                 byte fill = (contents[0] & 0x80) == 0 ? (byte)0 : (byte)0xFF;
                 // Fill the unused portions of tmp with positive or negative padding.
-                new Span<byte>(tmp, contents.Length, tmp.Length - contents.Length).Fill(fill);
+                tmp.AsSpan(contents.Length, tmp.Length - contents.Length).Fill(fill);
                 contents.CopyTo(tmp);
                 // Convert to Little-Endian.
-                AsnWriter.Reverse(new Span<byte>(tmp, 0, contents.Length));
+                tmp.AsSpan(0, contents.Length).Reverse();
                 value = new BigInteger(tmp);
             }
             finally
@@ -124,6 +126,7 @@ namespace System.Formats.Asn1
                 // is returned to the array pool.
                 CryptoPool.Return(tmp);
             }
+#endif
 
             bytesConsumed = consumed;
             return value;

@@ -27,18 +27,16 @@ public class WasmAppHost
         RegisterHostHandler(WasmHost.Browser, BrowserHost.InvokeAsync);
         RegisterHostHandler(WasmHost.V8, JSEngineHost.InvokeAsync);
         RegisterHostHandler(WasmHost.NodeJS, JSEngineHost.InvokeAsync);
+        RegisterHostHandler(WasmHost.Wasmtime, WasiEngineHost.InvokeAsync);
 
         using CancellationTokenSource cts = new();
         ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
-            builder.AddSimpleConsole(options =>
-            {
-                options.SingleLine = true;
-                options.TimestampFormat = "[HH:mm:ss] ";
-            })
-            .AddFilter("DevToolsProxy", LogLevel.Information)
-            .AddFilter("FirefoxMonoProxy", LogLevel.Information)
-            .AddFilter("host", LogLevel.Trace)
-            .AddFilter(null, LogLevel.Warning));
+            builder
+                .AddPassThroughConsole()
+                .AddFilter("DevToolsProxy", LogLevel.Information)
+                .AddFilter("FirefoxMonoProxy", LogLevel.Information)
+                .AddFilter("host", LogLevel.Trace)
+                .AddFilter(null, LogLevel.Warning));
 
         ILogger logger = loggerFactory.CreateLogger("host");
         try

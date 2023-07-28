@@ -356,66 +356,72 @@ namespace Microsoft.Win32
             public CoTaskMemUnicodeSafeHandle Password;
             public int Flags;
 #if NET7_0_OR_GREATER
-            [CustomTypeMarshaller(typeof(EvtRpcLogin), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-            public struct Marshaller
+            [CustomMarshaller(typeof(EvtRpcLogin), MarshalMode.ManagedToUnmanagedRef, typeof(ValueMarshaller))]
+            public static class Marshaller
             {
-                public struct Native
+                public struct ValueMarshaller
                 {
-                    public IntPtr Server;
-                    public IntPtr User;
-                    public IntPtr Domain;
-                    public IntPtr Password;
-                    public int Flags;
-                }
-
-                private CoTaskMemUnicodeSafeHandle _passwordHandle;
-                private Native _value;
-                private bool _passwordHandleAddRefd;
-
-                public Marshaller(EvtRpcLogin managed)
-                {
-                    _passwordHandleAddRefd = false;
-                    _value.Server = Marshal.StringToCoTaskMemUni(managed.Server);
-                    _value.User = Marshal.StringToCoTaskMemUni(managed.User);
-                    _value.Domain = Marshal.StringToCoTaskMemUni(managed.Domain);
-                    _passwordHandle = managed.Password;
-                    _passwordHandle.DangerousAddRef(ref _passwordHandleAddRefd);
-                    _value.Password = _passwordHandle.DangerousGetHandle();
-                    _value.Flags = managed.Flags;
-                }
-
-                public Native ToNativeValue() => _value;
-
-                public void FromNativeValue(Native value)
-                {
-                    // SafeHandle fields cannot change the underlying handle value during marshalling.
-                    if (_value.Password != value.Password)
+                    public struct Native
                     {
-                        throw new InvalidOperationException();
+                        public IntPtr Server;
+                        public IntPtr User;
+                        public IntPtr Domain;
+                        public IntPtr Password;
+                        public int Flags;
                     }
-                    _value = value;
-                }
 
-                public EvtRpcLogin ToManaged()
-                {
-                    return new EvtRpcLogin
-                    {
-                        Server = Marshal.PtrToStringUni(_value.Server),
-                        User = Marshal.PtrToStringUni(_value.User),
-                        Domain = Marshal.PtrToStringUni(_value.Domain),
-                        Password = _passwordHandle,
-                        Flags = _value.Flags
-                    };
-                }
+                    private CoTaskMemUnicodeSafeHandle _passwordHandle;
+                    private IntPtr _originalHandleValue;
+                    private Native _value;
+                    private bool _passwordHandleAddRefd;
 
-                public void FreeNative()
-                {
-                    Marshal.FreeCoTaskMem(_value.Server);
-                    Marshal.FreeCoTaskMem(_value.User);
-                    Marshal.FreeCoTaskMem(_value.Domain);
-                    if (_passwordHandleAddRefd)
+                    public void FromManaged(EvtRpcLogin managed)
                     {
-                        _passwordHandle.DangerousRelease();
+                        _passwordHandleAddRefd = false;
+                        _value.Server = Marshal.StringToCoTaskMemUni(managed.Server);
+                        _value.User = Marshal.StringToCoTaskMemUni(managed.User);
+                        _value.Domain = Marshal.StringToCoTaskMemUni(managed.Domain);
+                        _passwordHandle = managed.Password;
+                        _passwordHandle.DangerousAddRef(ref _passwordHandleAddRefd);
+                        _value.Password = _originalHandleValue = _passwordHandle.DangerousGetHandle();
+                        _value.Flags = managed.Flags;
+                    }
+
+                    public Native ToUnmanaged() => _value;
+
+                    public void FromUnmanaged(Native value)
+                    {
+                        _value = value;
+                    }
+
+                    public EvtRpcLogin ToManaged()
+                    {
+                        // SafeHandle fields cannot change the underlying handle value during marshalling.
+                        if (_value.Password != _originalHandleValue)
+                        {
+                            // Match the same exception type that the built-in marshalling throws.
+                            throw new NotSupportedException();
+                        }
+
+                        return new EvtRpcLogin
+                        {
+                            Server = Marshal.PtrToStringUni(_value.Server),
+                            User = Marshal.PtrToStringUni(_value.User),
+                            Domain = Marshal.PtrToStringUni(_value.Domain),
+                            Password = _passwordHandle,
+                            Flags = _value.Flags
+                        };
+                    }
+
+                    public void Free()
+                    {
+                        Marshal.FreeCoTaskMem(_value.Server);
+                        Marshal.FreeCoTaskMem(_value.User);
+                        Marshal.FreeCoTaskMem(_value.Domain);
+                        if (_passwordHandleAddRefd)
+                        {
+                            _passwordHandle.DangerousRelease();
+                        }
                     }
                 }
             }
@@ -690,7 +696,7 @@ namespace Microsoft.Win32
                             out int propCount);
 
 #if NET7_0_OR_GREATER
-        [NativeMarshalling(typeof(Native))]
+        [NativeMarshalling(typeof(Marshaller))]
 #endif
         [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
         internal struct EvtStringVariant
@@ -703,37 +709,44 @@ namespace Microsoft.Win32
             public uint Type;
 
 #if NET7_0_OR_GREATER
-            [CustomTypeMarshaller(typeof(EvtStringVariant), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
-            [StructLayout(LayoutKind.Explicit)]
-            public struct Native
+            [CustomMarshaller(typeof(EvtStringVariant), MarshalMode.Default, typeof(Marshaller))]
+            public static class Marshaller
             {
-                [FieldOffset(0)]
-                private IntPtr StringVal;
-                [FieldOffset(8)]
-                private uint Count;
-                [FieldOffset(12)]
-                private uint Type;
+                public static Native ConvertToUnmanaged(EvtStringVariant managed) => new(managed);
+                public static EvtStringVariant ConvertToManaged(Native native) => native.ToManaged();
+                public static void Free(Native native) => native.FreeNative();
 
-                public Native(EvtStringVariant managed)
+                [StructLayout(LayoutKind.Explicit)]
+                public struct Native
                 {
-                    StringVal = Marshal.StringToCoTaskMemUni(managed.StringVal);
-                    Count = managed.Count;
-                    Type = managed.Type;
-                }
+                    [FieldOffset(0)]
+                    private IntPtr StringVal;
+                    [FieldOffset(8)]
+                    private uint Count;
+                    [FieldOffset(12)]
+                    private uint Type;
 
-                public EvtStringVariant ToManaged()
-                {
-                    return new EvtStringVariant
+                    public Native(EvtStringVariant managed)
                     {
-                        StringVal = Marshal.PtrToStringUni(StringVal),
-                        Count = Count,
-                        Type = Type
-                    };
-                }
+                        StringVal = Marshal.StringToCoTaskMemUni(managed.StringVal);
+                        Count = managed.Count;
+                        Type = managed.Type;
+                    }
 
-                public void FreeNative()
-                {
-                    Marshal.FreeCoTaskMem(StringVal);
+                    public EvtStringVariant ToManaged()
+                    {
+                        return new EvtStringVariant
+                        {
+                            StringVal = Marshal.PtrToStringUni(StringVal),
+                            Count = Count,
+                            Type = Type
+                        };
+                    }
+
+                    public void FreeNative()
+                    {
+                        Marshal.FreeCoTaskMem(StringVal);
+                    }
                 }
             }
 #endif

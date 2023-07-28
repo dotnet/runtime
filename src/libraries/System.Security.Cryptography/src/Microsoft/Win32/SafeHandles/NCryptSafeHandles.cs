@@ -383,15 +383,6 @@ namespace Microsoft.Win32.SafeHandles
             return Duplicate<SafeNCryptProviderHandle>();
         }
 
-        internal void SetHandleValue(IntPtr newHandleValue)
-        {
-            Debug.Assert(newHandleValue != IntPtr.Zero);
-            Debug.Assert(!IsClosed);
-            Debug.Assert(handle == IntPtr.Zero);
-
-            SetHandle(newHandleValue);
-        }
-
         protected override bool ReleaseNativeHandle()
         {
             return ReleaseNativeWithNCryptFreeObject();

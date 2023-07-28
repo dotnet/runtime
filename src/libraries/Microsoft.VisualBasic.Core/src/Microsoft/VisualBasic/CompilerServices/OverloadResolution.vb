@@ -182,7 +182,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     ' it can occur with user-defined conversions.  If the two param types widen to each other
                     ' (necessarily by using user-defined conversions), and the argument type is known and
                     ' is identical to one of the parameter types, then that parameter wins.  Otherwise,
-                    ' if the arugment type is not specified, we can't make a decision and both lose.
+                    ' if the argument type is not specified, we can't make a decision and both lose.
 
                     If argumentType IsNot Nothing AndAlso argumentType Is leftType Then
                         leftWins = True
@@ -663,7 +663,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         End If
 
                         ' If the base container is a WinRT object implementing collection interfaces they could have
-                        ' the same method name with the same signature. We need to add them to the set to throw 
+                        ' the same method name with the same signature. We need to add them to the set to throw
                         ' ambiguity errors.
                         If baseReference IsNot Nothing AndAlso baseReference.IsWindowsRuntimeObject() AndAlso
                            Symbols.IsCollectionInterface(newCandidate.DeclaringType) AndAlso
@@ -846,13 +846,13 @@ continueloop:
 
                     ' A method with a paramarray can be considered in two forms: in an
                     ' expanded form or in an unexpanded form (i.e. as if the paramarray
-                    ' decoration was not specified). Weirdly, it can apply in both forms, as 
+                    ' decoration was not specified). Weirdly, it can apply in both forms, as
                     ' in the case of passing Object() to ParamArray x As Object() (because
                     ' Object() converts to both Object() and Object).
 
                     ' Does the method apply in its unexpanded form? This can only happen if
                     ' either there is no paramarray or if the argument count matches exactly
-                    ' (if it's less, then the paramarray is expanded to nothing, if it's more, 
+                    ' (if it's less, then the paramarray is expanded to nothing, if it's more,
                     ' it's expanded to one or more parameters).
 
                     If Not hasParamArray OrElse argumentCount = maximumParameterCount Then
@@ -1366,7 +1366,7 @@ RetryInference:
             'If the argument is a boxed ValueType and we're passing it to a
             'ByRef parameter, then we must forcefully copy it to avoid
             'aliasing since the invocation will modify the boxed ValueType
-            'in place. 
+            'in place.
             If isByRef Then
                 Dim argumentType As Type = GetArgumentType(argument)
                 If argumentType IsNot Nothing AndAlso IsValueType(argumentType) Then
@@ -1374,7 +1374,7 @@ RetryInference:
                 End If
             End If
 
-            'Peform the conversion to the parameter type and return the result.
+            'Perform the conversion to the parameter type and return the result.
             Return Conversions.ChangeType(argument, parameterType)
         End Function
 
@@ -1417,7 +1417,7 @@ RetryInference:
 
             targetProcedure.ArgumentsValidated = True
 
-            'First instantiate the generic method.  If type arguments aren't supplied, 
+            'First instantiate the generic method.  If type arguments aren't supplied,
             'we need to infer them first.
             'In error cases, the method might already be instantiated, so need to use the
             'passed in type params only if the method has not yet been instantiated.
@@ -1583,7 +1583,7 @@ RetryInference:
                 '
                 'Given an array of arguments and an array of argument names, the
                 'index n into each of these arrays represents the nth named argument
-                'and its assocated name. If argument n matches the name of the
+                'and its associated name. If argument n matches the name of the
                 'parameter at index m in the array of parameters, then the named
                 'argument mapping table will contain the value m at index n.
 
@@ -1808,7 +1808,7 @@ skipargument:
                 '
                 'Given an array of arguments and an array of argument names, the
                 'index n into each of these arrays represents the nth named argument
-                'and its assocated name. If argument n matches the name of the
+                'and its associated name. If argument n matches the name of the
                 'parameter at index m in the array of parameters, then the named
                 'argument mapping table will contain the value m at index n.
 

@@ -15,7 +15,7 @@ namespace IntelHardwareIntrinsicTest
         const int Pass = 100;
         const int Fail = 0;
 
-        static unsafe int Main(string[] args)
+        static unsafe int Main()
         {
             int testResult = Pass;
             using (TestTable<ulong> ulongTable = new TestTable<ulong>(new ulong[2], new ulong[2]))

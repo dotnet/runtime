@@ -11,6 +11,7 @@ namespace Microsoft.Extensions.Primitives
     /// <summary>
     /// An optimized representation of a substring.
     /// </summary>
+    [DebuggerDisplay("{Value}")]
     public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<string?>
     {
         /// <summary>
@@ -141,7 +142,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="start">The zero-based starting character position in this <see cref="StringSegment"/>.</param>
         /// <param name="length">The number of characters in the span.</param>
-        /// <returns>A <see cref="ReadOnlySpan{T}"/> with length <paramref name="length"/> that begins at
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> with <paramref name="length"/> that begins at
         /// <paramref name="start"/> in this <see cref="StringSegment"/>.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="start"/> or <paramref name="length"/> is less than zero, or <paramref name="start"/> + <paramref name="length"/> is
@@ -387,7 +388,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="offset">The zero-based starting character position of a substring in this <see cref="StringSegment"/>.</param>
         /// <param name="length">The number of characters in the substring.</param>
-        /// <returns>A <see cref="string"/> that is equivalent to the substring of length <paramref name="length"/> that begins at
+        /// <returns>A <see cref="string"/> that is equivalent to the substring of <paramref name="length"/> that begins at
         /// <paramref name="offset"/> in this <see cref="StringSegment"/></returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="offset"/> or <paramref name="length"/> is less than zero, or <paramref name="offset"/> + <paramref name="length"/> is
@@ -422,7 +423,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="offset">The zero-based starting character position of a substring in this <see cref="StringSegment"/>.</param>
         /// <param name="length">The number of characters in the substring.</param>
-        /// <returns>A <see cref="StringSegment"/> that is equivalent to the substring of length <paramref name="length"/> that begins at <paramref name="offset"/> in this <see cref="StringSegment"/></returns>
+        /// <returns>A <see cref="StringSegment"/> that is equivalent to the substring of <paramref name="length"/> that begins at <paramref name="offset"/> in this <see cref="StringSegment"/></returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="offset"/> or <paramref name="length"/> is less than zero, or <paramref name="offset"/> + <paramref name="length"/> is
         /// greater than <see cref="Length"/>.

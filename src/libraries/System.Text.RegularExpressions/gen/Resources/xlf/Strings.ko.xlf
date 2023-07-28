@@ -88,8 +88,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
-        <source>Insufficient hexadecimal digits.</source>
-        <target state="translated">16진수가 충분하지 않습니다.</target>
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">16진수가 부족하거나 잘못되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -97,29 +97,24 @@
         <target state="translated">인식할 수 없는 그룹화 구성입니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 11 or greater is required</source>
-        <target state="translated">11 이상의 C# LangVersion이 필요합니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
         <source>The specified regex is invalid. '{0}'</source>
         <target state="translated">지정한 regex가 잘못되었습니다. '{0}'</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidRegexGeneratorAttributeMessage">
-        <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="translated">RegexGeneratorAttribute의 형식이 잘못되었습니다.</target>
-        <note>{Locked="RegexGeneratorAttribute"}</note>
+      <trans-unit id="InvalidGeneratedRegexAttributeMessage">
+        <source>The GeneratedRegexAttribute is malformed</source>
+        <target state="translated">GeneratedRegexAttribute의 형식이 잘못되었습니다.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
-      <trans-unit id="InvalidRegexGeneratorAttributeTitle">
-        <source>Invalid RegexGenerator usage</source>
-        <target state="translated">잘못된 RegexGenerator 사용</target>
-        <note>{Locked="RegexGenerator"}</note>
+      <trans-unit id="InvalidGeneratedRegexAttributeTitle">
+        <source>Invalid GeneratedRegexAttribute usage</source>
+        <target state="translated">잘못된 GeneratedRegexAttribute 사용</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
-        <source>Incomplete \\p{X} character escape.</source>
-        <target state="translated">\\p{X} 문자 이스케이프가 완전하지 않습니다.</target>
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">\p{X} 문자 이스케이프가 완전하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -128,13 +123,13 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="translated">RegexGenerator가 내부 제한으로 인해 지정된 정규식에 대한 전체 소스 구현을 생성할 수 없습니다.</target>
+        <source>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
+        <target state="translated">regex 생성기가 내부 제한으로 인해 지정된 정규식에 대한 전체 원본 구현을 생성할 수 없습니다. 자세한 내용은 생성된 원본의 설명을 참조하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
-        <source>RegexGenerator limitation reached.</source>
-        <target state="translated">RegexGenerator 제한에 도달했습니다.</target>
+        <source>Regex generator limitation reached.</source>
+        <target state="translated">regex 생성기 제한에 도달했습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -143,13 +138,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
-        <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="translated">\\k&lt;...&gt; 역참조 형식이 잘못되었습니다.</target>
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">\k&lt;...&gt; 역참조 형식이 잘못되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
-        <source>Malformed \\p{X} character escape.</source>
-        <target state="translated">\\p{X} 문자 이스케이프 형식이 잘못되었습니다.</target>
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">\p{X} 문자 이스케이프 형식이 잘못되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -157,9 +152,9 @@
         <target state="translated">제어 문자가 없습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MultipleRegexGeneratorAttributesMessage">
-        <source>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</source>
-        <target state="translated">동일한 메서드에 여러 RegexGeneratorAttributes가 적용되었지만 하나만 허용됩니다.</target>
+      <trans-unit id="MultipleGeneratedRegexAttributesMessage">
+        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
+        <target state="translated">여러 GeneratedRegexAttributes가 동일한 메서드에 적용되었지만 하나만 허용됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -171,11 +166,6 @@
         <source>Result cannot be called on a failed Match.</source>
         <target state="translated">실패한 Match에서 결과를 호출할 수 없습니다.</target>
         <note />
-      </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">RegexOptions.NonBacktracking에서는 그룹을 대체하는 Regex 대체가 지원되지 않습니다.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
@@ -198,13 +188,13 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="translated">RegEx 엔진이 패턴을 입력 문자열에 일치시키는 동안 시간 초과되었습니다. 이 오류는 많은 입력, 중첩 수량자로 인한 과도한 역추적, 역참조, 기타 요인 등의 다양한 이유로 인해 발생할 수 있습니다.</target>
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">Regex 엔진이 패턴을 입력 문자열에 일치시키는 동안 시간 초과되었습니다. 이 오류는 많은 입력, 중첩 수량자로 인한 과도한 역추적, 역참조, 기타 요인 등의 다양한 이유로 인해 발생할 수 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
-        <target state="translated">RegexGenerator 메서드는 부분적이고 매개 변수가 없고 제네릭이 아니어야 하며 비추상적이고 regex 반환이어야 합니다.</target>
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="translated">GeneratedRegexAttribute 메서드는 부분적이고 매개 변수가 없으며 제네릭이 아닌 비추상 메서드여야 하며 regex를 반환해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -218,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
-        <source>Cannot include class \\{0} in character range.</source>
-        <target state="translated">문자 범위에 \\{0} 클래스를 포함할 수 없습니다.</target>
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">문자 범위에 \{0} 클래스를 포함할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -233,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
-        <source>Illegal \\ at end of pattern.</source>
-        <target state="translated">패턴 끝에 잘못된 \\가 있습니다.</target>
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">패턴 끝에 잘못된 \가 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -243,8 +233,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
-        <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="translated">인식할 수 없는 이스케이프 시퀀스 \\{0}.</target>
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">인식할 수 없는 이스케이프 시퀀스 \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">
@@ -263,13 +253,13 @@
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
-        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="translated">'RegexGeneratorAttribute'를 사용하여 컴파일 시간에 정규식 구현을 생성합니다.</target>
+        <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">'GeneratedRegexAttribute'를 사용하여 컴파일 시간에 정규식 구현을 생성합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
-        <source>Convert to 'RegexGenerator'.</source>
-        <target state="translated">'RegexGenerator'로 변환합니다.</target>
+        <source>Convert to 'GeneratedRegexAttribute'.</source>
+        <target state="translated">'GeneratedRegexAttribute'로 변환합니다.</target>
         <note />
       </trans-unit>
     </body>

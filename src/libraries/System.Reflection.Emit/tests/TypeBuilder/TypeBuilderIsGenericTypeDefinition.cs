@@ -57,7 +57,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.EmitCall(OpCodes.Call, genericStringMethod, null);
             ilGenerator.Emit(OpCodes.Ret);
 
-            type1.CreateTypeInfo().AsType();
+            type1.CreateType();
             Assert.True(type1.IsGenericTypeDefinition);
         }
 
@@ -73,7 +73,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.EmitCall(OpCodes.Call, writeLine, null);
             ilGenerator.Emit(OpCodes.Ret);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.False(type.IsGenericTypeDefinition);
         }
     }

@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System;
+using System.Xml.Schema;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
+using System.Threading;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System;
-    using System.Xml.Schema;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Threading;
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Xml.Serialization;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.CompilerServices;
-
     ///<internalonly/>
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
@@ -74,12 +74,8 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlReflectionImporter(XmlAttributeOverrides? attributeOverrides, string? defaultNamespace)
         {
-            if (defaultNamespace == null)
-                defaultNamespace = string.Empty;
-            if (attributeOverrides == null)
-                attributeOverrides = new XmlAttributeOverrides();
-            _attributeOverrides = attributeOverrides;
-            _defaultNs = defaultNamespace;
+            _defaultNs = defaultNamespace ?? string.Empty;
+            _attributeOverrides = attributeOverrides ?? new XmlAttributeOverrides();
             _typeScope = new TypeScope();
             _modelScope = new ModelScope(_typeScope);
         }
@@ -211,7 +207,7 @@ namespace System.Xml.Serialization
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel, XmlMappingAccess access)
         {
             ElementAccessor element = new ElementAccessor();
-            element.Name = elementName == null || elementName.Length == 0 ? elementName : XmlConvert.EncodeLocalName(elementName);
+            element.Name = string.IsNullOrEmpty(elementName) ? elementName : XmlConvert.EncodeLocalName(elementName);
             element.Namespace = ns;
 
             MembersMapping membersMapping = ImportMembersMapping(members, ns, hasWrapperElement, rpc, openModel, new RecursionLimiter());
@@ -260,11 +256,8 @@ namespace System.Xml.Serialization
         {
             XmlAttributes a = GetAttributes(model.Type, true);
 
-            if (root == null)
-                root = a.XmlRoot;
-            string? ns = root == null ? null : root.Namespace;
-            if (ns == null) ns = defaultNamespace;
-            if (ns == null) ns = _defaultNs;
+            root ??= a.XmlRoot;
+            string ns = root?.Namespace ?? defaultNamespace ?? _defaultNs;
 
             _arrayNestingLevel = -1;
             _savedArrayItemAttributes = null;
@@ -365,17 +358,17 @@ namespace System.Xml.Serialization
                 throw new InvalidOperationException(SR.Format(SR.XmlCannotReconcileAccessor, accessor.Name, accessor.Namespace, GetMappingName(existing.Mapping!), GetMappingName(accessor.Mapping!)));
         }
 
-        private static Exception CreateReflectionException(string context, Exception e)
+        private static InvalidOperationException CreateReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlReflectionError, context), e);
         }
 
-        private static Exception CreateTypeReflectionException(string context, Exception e)
+        private static InvalidOperationException CreateTypeReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlTypeReflectionError, context), e);
         }
 
-        private static Exception CreateMemberReflectionException(FieldModel model, Exception e)
+        private static InvalidOperationException CreateMemberReflectionException(FieldModel model, Exception e)
         {
             return new InvalidOperationException(SR.Format(model.IsProperty ? SR.XmlPropertyReflectionError : SR.XmlFieldReflectionError, model.Name), e);
         }
@@ -409,8 +402,7 @@ namespace System.Xml.Serialization
                     }
                 }
 
-                if (a == null)
-                    a = GetAttributes(model.Type, false);
+                a ??= GetAttributes(model.Type, false);
 
                 if ((a.XmlFlags & ~(XmlAttributeFlags.Type | XmlAttributeFlags.Root)) != 0)
                     throw new InvalidOperationException(SR.Format(SR.XmlInvalidTypeAttributes, model.Type.FullName));
@@ -439,9 +431,9 @@ namespace System.Xml.Serialization
                         {
                             TypeDesc valueTypeDesc = string.IsNullOrEmpty(dataType) ? model.TypeDesc.BaseTypeDesc! : TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace)!;
                             string? xsdTypeName = valueTypeDesc.DataType == null ? valueTypeDesc.Name : valueTypeDesc.DataType.Name;
-                            TypeMapping? baseMapping = GetTypeMapping(xsdTypeName, ns, valueTypeDesc, _types, null);
-                            if (baseMapping == null)
-                                baseMapping = ImportTypeMapping(_modelScope.GetTypeModel(model.TypeDesc.BaseTypeDesc!.Type!), ns, context, dataType, null, repeats, openModel, limiter);
+                            TypeMapping baseMapping =
+                                GetTypeMapping(xsdTypeName, ns, valueTypeDesc, _types, null) ??
+                                ImportTypeMapping(_modelScope.GetTypeModel(model.TypeDesc.BaseTypeDesc!.Type!), ns, context, dataType, null, repeats, openModel, limiter);
                             return CreateNullableMapping(baseMapping, model.TypeDesc.Type!);
                         }
                         else
@@ -462,7 +454,7 @@ namespace System.Xml.Serialization
                             if (a.XmlFlags != 0) throw InvalidAttributeUseException(model.Type);
                         }
                         if (model.TypeDesc.IsSpecial)
-                            return ImportSpecialMapping(model.Type, model.TypeDesc, ns, context, limiter);
+                            return ImportSpecialMapping(model.Type, model.TypeDesc, ns, context);
                         throw UnsupportedException(model.TypeDesc, context);
                 }
             }
@@ -499,10 +491,9 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls IncludeTypes")]
-        private SpecialMapping ImportSpecialMapping(Type type, TypeDesc typeDesc, string? ns, ImportContext context, RecursionLimiter limiter)
+        private SpecialMapping ImportSpecialMapping(Type type, TypeDesc typeDesc, string? ns, ImportContext context)
         {
-            if (_specials == null)
-                _specials = new Hashtable();
+            _specials ??= new Hashtable();
             SpecialMapping? mapping = (SpecialMapping?)_specials[type];
             if (mapping != null)
             {
@@ -525,8 +516,7 @@ namespace System.Xml.Serialization
                     XmlQualifiedName? qname = serializableMapping.XsiType;
                     if (qname != null && !qname.IsEmpty)
                     {
-                        if (_serializables == null)
-                            _serializables = new NameTable();
+                        _serializables ??= new NameTable();
                         SerializableMapping? existingMapping = (SerializableMapping?)_serializables[qname];
                         if (existingMapping != null)
                         {
@@ -614,12 +604,12 @@ namespace System.Xml.Serialization
                 _ => throw new ArgumentException(SR.XmlInternalError, nameof(context)),
             };
 
-        private static Exception InvalidAttributeUseException(Type type)
+        private static InvalidOperationException InvalidAttributeUseException(Type type)
         {
             return new InvalidOperationException(SR.Format(SR.XmlInvalidAttributeUse, type.FullName));
         }
 
-        private static Exception UnsupportedException(TypeDesc typeDesc, ImportContext context)
+        private static InvalidOperationException UnsupportedException(TypeDesc typeDesc, ImportContext context)
         {
             return new InvalidOperationException(SR.Format(SR.XmlIllegalTypeContext, typeDesc.FullName, GetContextName(context)));
         }
@@ -706,7 +696,7 @@ namespace System.Xml.Serialization
         private TypeMapping? GetTypeMapping(string? typeName, string? ns, TypeDesc typeDesc, NameTable typeLib, Type? type)
         {
             TypeMapping? mapping;
-            if (typeName == null || typeName.Length == 0)
+            if (string.IsNullOrEmpty(typeName))
                 mapping = type == null ? null : (TypeMapping?)_anonymous[type];
             else
                 mapping = (TypeMapping?)typeLib[typeName, ns];
@@ -721,8 +711,7 @@ namespace System.Xml.Serialization
         private StructMapping ImportStructLikeMapping(StructModel model, string? ns, bool openModel, XmlAttributes? a, RecursionLimiter limiter)
         {
             if (model.TypeDesc.Kind == TypeKind.Root) return GetRootMapping();
-            if (a == null)
-                a = GetAttributes(model.Type, false);
+            a ??= GetAttributes(model.Type, false);
 
             string? typeNs = ns;
             if (a.XmlType != null && a.XmlType.Namespace != null)
@@ -918,7 +907,7 @@ namespace System.Xml.Serialization
             }
             mapping.Members = members.ToArray();
 
-            if (mapping.BaseMapping == null) mapping.BaseMapping = GetRootMapping();
+            mapping.BaseMapping ??= GetRootMapping();
 
             if (mapping.XmlnsMember != null && mapping.BaseMapping.HasXmlnsMember)
                 throw new InvalidOperationException(SR.Format(SR.XmlMultipleXmlns, model.Type.FullName));
@@ -1053,23 +1042,20 @@ namespace System.Xml.Serialization
                 name = $"Choice{(_choiceNum++)}";
             }
 
-            if (name == null)
-                name = "Any";
+            name ??= "Any";
 
             if (element != null)
                 ns = element.Namespace;
 
-            if (ns == null)
-                ns = defaultNs;
+            ns ??= defaultNs;
 
             string uniqueName = name = generateTypeName ? $"ArrayOf{CodeIdentifier.MakePascal(name)}" : name;
             int i = 1;
             TypeMapping? existingMapping = (TypeMapping?)_types[uniqueName, ns];
             while (existingMapping != null)
             {
-                if (existingMapping is ArrayMapping)
+                if (existingMapping is ArrayMapping arrayMapping)
                 {
-                    ArrayMapping arrayMapping = (ArrayMapping)existingMapping;
                     if (AccessorMapping.ElementsMatch(arrayMapping.Elements, mapping.Elements))
                     {
                         break;
@@ -1090,10 +1076,9 @@ namespace System.Xml.Serialization
             ArrayMapping mapping = new ArrayMapping();
             mapping.TypeDesc = model.TypeDesc;
 
-            if (_savedArrayItemAttributes == null)
-                _savedArrayItemAttributes = new XmlArrayItemAttributes();
+            _savedArrayItemAttributes ??= new XmlArrayItemAttributes();
             if (CountAtLevel(_savedArrayItemAttributes, _arrayNestingLevel) == 0)
-                _savedArrayItemAttributes.Add(CreateArrayItemAttribute(_typeScope.GetTypeDesc(model.Element.Type), _arrayNestingLevel));
+                _savedArrayItemAttributes.Add(CreateArrayItemAttribute(_arrayNestingLevel));
             CreateArrayElementsFromAttributes(mapping, _savedArrayItemAttributes, model.Element.Type, _savedArrayNamespace ?? ns, limiter);
             SetArrayMappingType(mapping, ns, model.Type);
 
@@ -1229,8 +1214,7 @@ namespace System.Xml.Serialization
             if (a.XmlIgnore) return null;
             if ((a.XmlFlags & ~XmlAttributeFlags.Enum) != 0)
                 throw new InvalidOperationException(SR.XmlInvalidConstantAttribute);
-            if (a.XmlEnum == null)
-                a.XmlEnum = new XmlEnumAttribute();
+            a.XmlEnum ??= new XmlEnumAttribute();
 
             ConstantMapping constant = new ConstantMapping();
             constant.XmlName = a.XmlEnum.Name ?? model.Name;
@@ -1328,7 +1312,7 @@ namespace System.Xml.Serialization
             {
                 if (typeDesc.IsArrayLike)
                 {
-                    XmlArrayAttribute xmlArray = CreateArrayAttribute(typeDesc);
+                    XmlArrayAttribute xmlArray = CreateArrayAttribute();
                     xmlArray.ElementName = xmlReflectionMember.MemberName;
                     xmlArray.Namespace = rpc ? null : ns;
                     xmlArray.Form = form;
@@ -1453,7 +1437,7 @@ namespace System.Xml.Serialization
                 }
             }
             // Missing '{0}' needed for serialization of choice '{1}'.
-            throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMemberMissing, choice.MemberName, accessorName));
+            throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierMemberMissing, choice.MemberName, accessorName));
         }
 
         [RequiresUnreferencedCode("calls GetFieldModel")]
@@ -1470,21 +1454,21 @@ namespace System.Xml.Serialization
                 if (info == null)
                 {
                     // Missing '{0}' needed for serialization of choice '{1}'.
-                    throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMemberMissing, choice.MemberName, accessorName));
+                    throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierMemberMissing, choice.MemberName, accessorName));
                 }
                 infos = new MemberInfo[] { info };
             }
             else if (infos.Length > 1)
             {
                 // Ambiguous choice identifier: there are several members named '{0}'.
-                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferAmbiguous, choice.MemberName));
+                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierAmbiguous, choice.MemberName));
             }
 
             FieldModel? member = structModel.GetFieldModel(infos[0]);
             if (member == null)
             {
                 // Missing '{0}' needed for serialization of choice '{1}'.
-                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMemberMissing, choice.MemberName, accessorName));
+                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierMemberMissing, choice.MemberName, accessorName));
             }
             choice.SetMemberInfo(member.MemberInfo);
             Type enumType = member.FieldType;
@@ -1536,7 +1520,7 @@ namespace System.Xml.Serialization
             XmlAttributeFlags flags = a.XmlFlags;
             accessor.Ignore = a.XmlIgnore;
             if (rpc)
-                CheckTopLevelAttributes(a, accessorName);
+                CheckTopLevelAttributes(a);
             else
                 CheckAmbiguousChoice(a, accessorType, accessorName);
 
@@ -1604,8 +1588,7 @@ namespace System.Xml.Serialization
                     attribute.Any = (a.XmlAnyAttribute != null);
                     if (attribute.Form == XmlSchemaForm.Qualified && attribute.Namespace != ns)
                     {
-                        if (_xsdAttributes == null)
-                            _xsdAttributes = new NameTable();
+                        _xsdAttributes ??= new NameTable();
                         attribute = (AttributeAccessor)ReconcileAccessor(attribute, _xsdAttributes);
                     }
                     accessor.Attribute = attribute;
@@ -1728,10 +1711,9 @@ namespace System.Xml.Serialization
                     }
 
                     TypeDesc arrayElementTypeDesc = _typeScope.GetTypeDesc(arrayElementType);
-                    if (a.XmlArray == null)
-                        a.XmlArray = CreateArrayAttribute(accessor.TypeDesc);
+                    a.XmlArray ??= CreateArrayAttribute();
                     if (CountAtLevel(a.XmlArrayItems, _arrayNestingLevel) == 0)
-                        a.XmlArrayItems.Add(CreateArrayItemAttribute(arrayElementTypeDesc, _arrayNestingLevel));
+                        a.XmlArrayItems.Add(CreateArrayItemAttribute(_arrayNestingLevel));
                     ElementAccessor arrayElement = new ElementAccessor();
                     arrayElement.Name = XmlConvert.EncodeLocalName(a.XmlArray.ElementName.Length == 0 ? accessorName : a.XmlArray.ElementName);
                     arrayElement.Namespace = rpc ? null : a.XmlArray.Namespace ?? ns;
@@ -1784,8 +1766,7 @@ namespace System.Xml.Serialization
                         attribute.Any = a.XmlAnyAttribute != null;
                         if (attribute.Form == XmlSchemaForm.Qualified && attribute.Namespace != ns)
                         {
-                            if (_xsdAttributes == null)
-                                _xsdAttributes = new NameTable();
+                            _xsdAttributes ??= new NameTable();
                             attribute = (AttributeAccessor)ReconcileAccessor(attribute, _xsdAttributes);
                         }
                         accessor.Attribute = attribute;
@@ -2036,7 +2017,7 @@ namespace System.Xml.Serialization
         }
 
 
-        private static void CheckTopLevelAttributes(XmlAttributes a, string accessorName)
+        private static void CheckTopLevelAttributes(XmlAttributes a)
         {
             XmlAttributeFlags flags = a.XmlFlags;
 
@@ -2081,7 +2062,7 @@ namespace System.Xml.Serialization
                     if (choiceTypes.Contains(type))
                     {
                         // You need to add {0} to the '{1}'.
-                        throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, nameof(XmlChoiceIdentifierAttribute), accessorName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierMissing, nameof(XmlChoiceIdentifierAttribute), accessorName));
                     }
                     else
                     {
@@ -2092,7 +2073,7 @@ namespace System.Xml.Serialization
             if (choiceTypes.Contains(typeof(XmlElement)) && a.XmlAnyElements.Count > 0)
             {
                 // You need to add {0} to the '{1}'.
-                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, nameof(XmlChoiceIdentifierAttribute), accessorName));
+                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierMissing, nameof(XmlChoiceIdentifierAttribute), accessorName));
             }
 
             XmlArrayItemAttributes items = a.XmlArrayItems;
@@ -2157,14 +2138,14 @@ namespace System.Xml.Serialization
             return a.XmlDefaultValue;
         }
 
-        private static XmlArrayItemAttribute CreateArrayItemAttribute(TypeDesc typeDesc, int nestingLevel)
+        private static XmlArrayItemAttribute CreateArrayItemAttribute(int nestingLevel)
         {
             XmlArrayItemAttribute xmlArrayItem = new XmlArrayItemAttribute();
             xmlArrayItem.NestingLevel = nestingLevel;
             return xmlArrayItem;
         }
 
-        private static XmlArrayAttribute CreateArrayAttribute(TypeDesc typeDesc)
+        private static XmlArrayAttribute CreateArrayAttribute()
         {
             XmlArrayAttribute xmlArrayItem = new XmlArrayAttribute();
             return xmlArrayItem;
@@ -2253,7 +2234,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("Calls TypeScope.GetTypeDesc(Type) which has RequiresUnreferencedCode")]
         internal static XmlTypeMapping GetTopLevelMapping(Type type, string? defaultNamespace)
         {
-            defaultNamespace = defaultNamespace ?? string.Empty;
+            defaultNamespace ??= string.Empty;
             XmlAttributes a = new XmlAttributes(type);
             TypeDesc typeDesc = new TypeScope().GetTypeDesc(type);
             ElementAccessor element = new ElementAccessor();
@@ -2359,16 +2340,6 @@ namespace System.Xml.Serialization
         internal bool IsExceededLimit { get { return _depth > _maxDepth; } }
         internal int Depth { get { return _depth; } set { _depth = value; } }
 
-        internal WorkItems DeferredWorkItems
-        {
-            get
-            {
-                if (_deferredWorkItems == null)
-                {
-                    _deferredWorkItems = new WorkItems();
-                }
-                return _deferredWorkItems;
-            }
-        }
+        internal WorkItems DeferredWorkItems => _deferredWorkItems ??= new WorkItems();
     }
 }

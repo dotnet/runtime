@@ -43,7 +43,7 @@ struct AppDomainInfo
         else
             m_szAppDomainName = W("<NoName>");
 
-        m_iNameLengthInBytes = (int) (wcslen(m_szAppDomainName) + 1) * sizeof(WCHAR);
+        m_iNameLengthInBytes = (int) (u16_strlen(m_szAppDomainName) + 1) * sizeof(WCHAR);
     }
 #endif
 };
@@ -283,7 +283,7 @@ struct AppDomainEnumerationIPCBlock
         pADInfo->FreeEntry();
 
 #ifdef _DEBUG
-        memset(pADInfo, 0, sizeof(AppDomainInfo));
+        *pADInfo = {};
 #endif
 
         // decrement the used slot count

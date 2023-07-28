@@ -3,15 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Mono.HotReload;
 
-// TODO: this is just a sketch, instance field additions aren't supported by Mono yet until  https://github.com/dotnet/runtime/issues/63643 is fixed
-#if false
-internal class InstanceFieldTable
+internal sealed class InstanceFieldTable
 {
     // Q: Does CoreCLR EnC allow adding fields to a valuetype?
     // A: No, see EEClass::AddField - if the type has layout or is a valuetype, you can't add fields to it.
@@ -34,13 +33,14 @@ internal class InstanceFieldTable
     // This should behave somewhat like EditAndContinueModule::ResolveOrAddField (and EnCAddedField::Allocate)
     //   we want to create some storage space that has the same lifetime as the instance object.
 
-    // // TODO: should the linker keep this if Hot Reload stuff is enabled?  Hot Reload is predicated on the linker not rewriting user modules, but maybe trimming SPC is ok?
-    internal static FieldStore GetInstanceFieldFieldStore(object inst, RuntimeTypeHandle type, uint fielddef_token)
-        => _singleton.GetOrCreateInstanceFields(inst).LookupOrAdd(type, fielddef_token);
+    internal static FieldStore GetInstanceFieldFieldStore(object inst, IntPtr type, uint fielddef_token)
+    {
+        return _singleton.GetOrCreateInstanceFields(inst).LookupOrAdd(new RuntimeTypeHandle (type), fielddef_token);
+    }
 
-    private static InstanceFieldTable _singleton = new();
+    private static readonly InstanceFieldTable _singleton = new();
 
-    private ConditionalWeakTable<object, InstanceFields> _table;
+    private readonly ConditionalWeakTable<object, InstanceFields> _table;
 
     private InstanceFieldTable()
     {
@@ -50,10 +50,10 @@ internal class InstanceFieldTable
     private InstanceFields GetOrCreateInstanceFields(object key)
         => _table.GetOrCreateValue(key);
 
-    private class InstanceFields
+    private sealed class InstanceFields
     {
-        private Dictionary<uint, FieldStore> _fields;
-        private object _lock;
+        private readonly Dictionary<uint, FieldStore> _fields;
+        private readonly object _lock;
 
         public InstanceFields()
         {
@@ -61,6 +61,8 @@ internal class InstanceFieldTable
             _lock = new();
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Hot reload required untrimmed apps")]
         public FieldStore LookupOrAdd(RuntimeTypeHandle type, uint key)
         {
             if (_fields.TryGetValue(key, out FieldStore? v))
@@ -78,7 +80,6 @@ internal class InstanceFieldTable
     }
 
 }
-#endif
 
 // This is similar to System.Diagnostics.EditAndContinueHelper in CoreCLR, except instead of
 // having the allocation logic in native (see EditAndContinueModule::ResolveOrAllocateField,
@@ -89,25 +90,24 @@ internal class InstanceFieldTable
 internal sealed class FieldStore
 {
     // keep in sync with hot_reload-internals.h
-    private object? _loc;
+    private readonly object? _loc;
 
     private FieldStore (object? loc)
     {
         _loc = loc;
     }
 
-    public object? Location => _loc;
-
+    [RequiresUnreferencedCode("Hot reload required untrimmed apps")]
     public static FieldStore Create (RuntimeTypeHandle type)
     {
-        Type t = Type.GetTypeFromHandle(type) ?? throw new ArgumentException(nameof(type), "Type handle was null");
+        Type t = Type.GetTypeFromHandle(type) ?? throw new ArgumentException(SR.Arg_InvalidHandle, nameof(type));
         object? loc;
         if (t.IsPrimitive || t.IsValueType)
             loc = RuntimeHelpers.GetUninitializedObject(t);
         else if (t.IsClass || t.IsInterface)
             loc = null;
         else
-            throw new ArgumentException("EnC: Expected a primitive, valuetype, class or interface field");
+            throw new ArgumentException(SR.Arg_EnC_ExpectedPrimitive);
         /* FIXME: do we want FieldStore to be pinned? */
         return new FieldStore(loc);
     }

@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Text;
+using System.Xml.Schema;
+
 namespace System.Xml
 {
-    using System.Text;
-    using System.Diagnostics;
-    using System.Xml.Schema;
-
     internal class XmlName : IXmlSchemaInfo
     {
         private readonly string _prefix;
@@ -94,10 +94,7 @@ namespace System.Xml
                             string n = $"{_prefix}:{_localName}";
                             lock (ownerDoc.NameTable)
                             {
-                                if (_name == null)
-                                {
-                                    _name = ownerDoc.NameTable.Add(n);
-                                }
+                                _name ??= ownerDoc.NameTable.Add(n);
                             }
                         }
                         else

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#define DEBUG
-#define TRACE
 using System;
 using System.IO;
 using System.Text;
@@ -145,10 +143,7 @@ namespace System.Diagnostics
 
         private void Write(string? message, bool useLogFile)
         {
-            if (message == null)
-            {
-                message = string.Empty;
-            }
+            message ??= string.Empty;
 
             if (NeedIndent && message.Length != 0)
             {

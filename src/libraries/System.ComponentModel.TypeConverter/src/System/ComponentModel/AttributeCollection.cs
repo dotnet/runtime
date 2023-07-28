@@ -62,10 +62,7 @@ namespace System.ComponentModel
         {
             ArgumentNullException.ThrowIfNull(existing);
 
-            if (newAttributes == null)
-            {
-                newAttributes = Array.Empty<Attribute>();
-            }
+            newAttributes ??= Array.Empty<Attribute>();
 
             Attribute[] newArray = new Attribute[existing.Count + newAttributes.Length];
             int actualCount = existing.Count;
@@ -141,10 +138,7 @@ namespace System.ComponentModel
                     // a relatively expensive call and we try to avoid it
                     // since we rarely encounter derived attribute types
                     // and this list is usually short.
-                    if (_foundAttributeTypes == null)
-                    {
-                        _foundAttributeTypes = new AttributeEntry[FoundTypesLimit];
-                    }
+                    _foundAttributeTypes ??= new AttributeEntry[FoundTypesLimit];
 
                     int ind = 0;
 
@@ -252,10 +246,7 @@ namespace System.ComponentModel
 
             lock (s_internalSyncObject)
             {
-                if (s_defaultAttributes == null)
-                {
-                    s_defaultAttributes = new Dictionary<Type, Attribute?>();
-                }
+                s_defaultAttributes ??= new Dictionary<Type, Attribute?>();
 
                 // If we have already encountered this, use what's in the table.
                 if (s_defaultAttributes.TryGetValue(attributeType, out Attribute? defaultAttribute))

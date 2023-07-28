@@ -131,7 +131,7 @@ namespace System.Net.Tests
             yield return Tuple.Create("%2F%5C%22%09Hello!+%E2%99%A5%3F%2F%5C%22%09World!+%E2%99%A5%3F%E2%99%A5", "/\\\"\tHello! \u2665?/\\\"\tWorld! \u2665?\u2665");
             yield return Tuple.Create("%2f%5c%22%09Hello!+%e2%99%a5%3f%2f%5c%22%09World!+%e2%99%a5%3F%e2%99%a5", "/\\\"\tHello! \u2665?/\\\"\tWorld! \u2665?\u2665");
 
-            // Unecessary escaping
+            // Unnecessary escaping
             yield return Tuple.Create("%61%62%63", "abc");
             yield return Tuple.Create("\u1234%61%62%63\u1234", "\u1234abc\u1234");
 

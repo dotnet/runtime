@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using Internal.IL;
 using Internal.IL.Stubs;
 using Debug = System.Diagnostics.Debug;
 using System.Threading;
@@ -154,7 +153,7 @@ namespace Internal.TypeSystem.Interop
             Debug.Assert(delegateType.IsDelegate);
 
             Module = owningModule;
-            DelegateType = delegateType;            
+            DelegateType = delegateType;
             _interopStateManager = interopStateManager;
         }
 
@@ -232,13 +231,19 @@ namespace Internal.TypeSystem.Interop
             return flags;
         }
 
+        public override int GetInlineArrayLength()
+        {
+            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
+            throw new InvalidOperationException();
+        }
+
         private MethodDesc[] _methods;
 
         private void InitializeMethods()
         {
             MethodDesc[] methods = new MethodDesc[] {
                      new PInvokeDelegateWrapperConstructor(this),                             // Constructor
-                     new DelegateMarshallingMethodThunk(DelegateType, this, _interopStateManager, 
+                     new DelegateMarshallingMethodThunk(DelegateType, this, _interopStateManager,
                         DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper)     // a forward marshalling instance method
                 };
 

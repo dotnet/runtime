@@ -1,0 +1,32 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.StubBodyInvalidSyntax">
+      <method signature="System.SByte TestMethod_1()" body="stub" value="200">
+      </method>
+      <method signature="System.Byte TestMethod_2()" body="stub" value="300">
+      </method>
+      <method signature="System.Char TestMethod_3()" body="stub" value="xy">
+      </method>
+      <method signature="System.Decimal TestMethod_4()" body="stub" value="2">
+      </method>
+      <method signature="System.Boolean TestMethod_5()" body="stub" value="test">
+      </method>
+      <method signature="System.Void TestMethod_6()" body="stub" value="3">
+      </method>
+      <method signature="System.Double TestMethod_7()" body="stub" value="text">
+      </method>
+      <method signature="System.Int32 TestMethod_8`1(T)" body="stub" value="test">
+      </method>
+      <method signature="System.Single TestMethod_9()" body="stub" value="test">
+      </method>
+      <method signature="System.UInt64 TestMethod_10()" body="stub" value="test">
+      </method>
+      <method signature="System.Int64[] TestMethod_11()" body="stub" value="1">
+      </method>
+      <method signature="System.Object TestMethod_12()" body="stub" value="test">
+      </method>
+      <method signature="System.Void .ctor()" body="stub" value="x">>
+      </method>
+    </type>
+  </assembly>
+</linker>

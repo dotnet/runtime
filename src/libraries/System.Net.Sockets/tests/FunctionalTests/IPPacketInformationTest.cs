@@ -48,7 +48,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void GetHashCode_NonDefaultValue_Succes()
+        public void GetHashCode_NonDefaultValue_Success()
         {
             IPPacketInformation packetInfo = GetNonDefaultIPPacketInformation();
 

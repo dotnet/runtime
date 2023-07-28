@@ -3,11 +3,13 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
+        [StructLayout(LayoutKind.Auto)]
         private struct DateTimeParseData
         {
             public int Year;
@@ -214,7 +216,7 @@ namespace System.Text.Json
             // Decimal fractions are allowed for hours, minutes and seconds (5.3.14).
             // We only allow fractions for seconds currently. Lower order components
             // can't follow, i.e. you can have T23.3, but not T23.3:04. There must be
-            // one digit, but the max number of digits is implemenation defined. We
+            // one digit, but the max number of digits is implementation defined. We
             // currently allow up to 16 digits of fractional seconds only. While we
             // support 16 fractional digits we only parse the first seven, anything
             // past that is considered a zero. This is to stay compatible with the
@@ -536,7 +538,7 @@ namespace System.Text.Json
 
             Debug.Assert(parseData.Fraction >= 0 && parseData.Fraction <= JsonConstants.MaxDateTimeFraction); // All of our callers to date parse the fraction from fixed 7-digit fields so this value is trusted.
 
-            int[] days = DateTime.IsLeapYear(parseData.Year) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = DateTime.IsLeapYear(parseData.Year) ? DaysToMonth366 : DaysToMonth365;
             int yearMinusOne = parseData.Year - 1;
             int totalDays = (yearMinusOne * 365) + (yearMinusOne / 4) - (yearMinusOne / 100) + (yearMinusOne / 400) + days[parseData.Month - 1] + parseData.Day - 1;
             long ticks = totalDays * TimeSpan.TicksPerDay;
@@ -547,7 +549,7 @@ namespace System.Text.Json
             return true;
         }
 
-        private static readonly int[] s_daysToMonth365 = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
-        private static readonly int[] s_daysToMonth366 = { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
+        private static ReadOnlySpan<int> DaysToMonth365 => new int[] { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
+        private static ReadOnlySpan<int> DaysToMonth366 => new int[] { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
     }
 }

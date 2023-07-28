@@ -173,9 +173,9 @@ namespace Microsoft.NET.HostModel.Tests
             var secondBundle = CreateSampleBundle(true);
             byte[] secondBundleContent = File.ReadAllBytes(secondBundle.bundleFileName);
 
-            firstBundle.bundleId.ShouldBeEquivalentTo(secondBundle.bundleId,
+            firstBundle.bundleId.Should().BeEquivalentTo(secondBundle.bundleId,
                 "Deterministic/Reproducible build should produce identical bundle id for identical inputs");
-            firstBundleContent.ShouldBeEquivalentTo(secondBundleContent,
+            firstBundleContent.Should().BeEquivalentTo(secondBundleContent,
                 "Deterministic/Reproducible build should produce identical binary for identical inputs");
         }
 
@@ -374,6 +374,7 @@ namespace Microsoft.NET.HostModel.Tests
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid)
                     .PublishProject(runtime: TestFixture.CurrentRid,
+                                    selfContained: true,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFixture));
             }
 

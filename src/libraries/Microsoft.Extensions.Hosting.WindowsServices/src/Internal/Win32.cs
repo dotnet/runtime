@@ -11,17 +11,17 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
     [SupportedOSPlatform("windows")]
     internal static class Win32
     {
-        internal static Process? GetParentProcess()
+        internal static unsafe Process? GetParentProcess()
         {
-            var snapshotHandle = IntPtr.Zero;
+            nint snapshotHandle = 0;
             try
             {
                 // Get a list of all processes
                 snapshotHandle = Interop.Kernel32.CreateToolhelp32Snapshot(Interop.Kernel32.SnapshotFlags.Process, 0);
 
-                Interop.Kernel32.PROCESSENTRY32 procEntry = default(Interop.Kernel32.PROCESSENTRY32);
-                procEntry.dwSize = Marshal.SizeOf(typeof(Interop.Kernel32.PROCESSENTRY32));
-                if (Interop.Kernel32.Process32First(snapshotHandle, ref procEntry))
+                Interop.Kernel32.PROCESSENTRY32 procEntry = default;
+                procEntry.dwSize = sizeof(Interop.Kernel32.PROCESSENTRY32);
+                if (Interop.Kernel32.Process32First(snapshotHandle, &procEntry))
                 {
                     int currentProcessId =
 #if NET
@@ -33,10 +33,10 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
                     {
                         if (currentProcessId == procEntry.th32ProcessID)
                         {
-                            return Process.GetProcessById((int)procEntry.th32ParentProcessID);
+                            return Process.GetProcessById(procEntry.th32ParentProcessID);
                         }
                     }
-                    while (Interop.Kernel32.Process32Next(snapshotHandle, ref procEntry));
+                    while (Interop.Kernel32.Process32Next(snapshotHandle, &procEntry));
                 }
             }
             catch (Exception)

@@ -3,9 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
@@ -13,43 +16,38 @@ namespace Microsoft.Interop
     {
         public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)
         {
-            return context.CompilationProvider
-                .Select(static (compilation, ct) =>
-                {
-                    TargetFramework targetFramework = DetermineTargetFramework(compilation, out Version targetFrameworkVersion);
-                    return (compilation, targetFramework, targetFrameworkVersion);
-                })
-                .Select(
-                    static (data, ct) =>
-                        new StubEnvironment(
-                            data.compilation,
-                            data.targetFramework,
-                            data.targetFrameworkVersion,
-                            data.compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute))
-                );
+            var tfmVersion = context.AnalyzerConfigOptionsProvider
+                .Select((options, ct) => options.GlobalOptions.GetTargetFrameworkSettings());
 
-            static TargetFramework DetermineTargetFramework(Compilation compilation, out Version version)
+            var isModuleSkipLocalsInit = context.SyntaxProvider
+                .ForAttributeWithMetadataName(
+                    TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata,
+                    (node, ct) => node is ICompilationUnitSyntax,
+                    // If SkipLocalsInit is applied at the top level, it is either applied to the module
+                    // or is invalid syntax. As a result, we just need to know if there's any top-level
+                    // SkipLocalsInit attributes. So the result we return here is meaningless.
+                    (context, ct) => true)
+                .Collect()
+                .Select((topLevelAttrs, ct) => !topLevelAttrs.IsEmpty);
+
+            return tfmVersion
+                .Combine(isModuleSkipLocalsInit)
+                .Combine(context.CompilationProvider)
+                .Select((data, ct) =>
+                    new StubEnvironment(data.Right, data.Left.Left.TargetFramework, data.Left.Left.Version, data.Left.Right));
+        }
+
+        public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<DiagnosticInfo> diagnostics)
+        {
+            context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
             {
-                IAssemblySymbol systemAssembly = compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
-                version = systemAssembly.Identity.Version;
-
-                return systemAssembly.Identity.Name switch
-                {
-                    // .NET Framework
-                    "mscorlib" => TargetFramework.Framework,
-                    // .NET Standard
-                    "netstandard" => TargetFramework.Standard,
-                    // .NET Core (when version < 5.0) or .NET
-                    "System.Runtime" or "System.Private.CoreLib" =>
-                        (version.Major < 5) ? TargetFramework.Core : TargetFramework.Net,
-                    _ => TargetFramework.Unknown,
-                };
-            }
+                context.ReportDiagnostic(diagnostic.ToDiagnostic());
+            });
         }
 
         public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)
         {
-            context.RegisterSourceOutput(diagnostics, (context, diagnostic) =>
+            context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
             {
                 context.ReportDiagnostic(diagnostic);
             });
@@ -58,12 +56,19 @@ namespace Microsoft.Interop
         public static void RegisterConcatenatedSyntaxOutputs<TNode>(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<TNode> nodes, string fileName)
             where TNode : SyntaxNode
         {
-            IncrementalValueProvider<string> generatedMethods = nodes
+            IncrementalValueProvider<ImmutableArray<string>> generatedMethods = nodes
                 .Select(
                     static (node, ct) => node.NormalizeWhitespace().ToFullString())
-                .Collect()
-                .Select(static (generatedSources, ct) =>
+                .Collect();
+
+            context.RegisterSourceOutput(generatedMethods,
+                (context, generatedSources) =>
                 {
+                    // Don't generate a file if we don't have to, to avoid the extra IDE overhead once we have generated
+                    // files in play.
+                    if (generatedSources.IsEmpty)
+                        return;
+
                     StringBuilder source = new();
                     // Mark in source that the file is auto-generated.
                     source.AppendLine("// <auto-generated/>");
@@ -71,13 +76,9 @@ namespace Microsoft.Interop
                     {
                         source.AppendLine(generated);
                     }
-                    return source.ToString();
-                });
 
-            context.RegisterSourceOutput(generatedMethods,
-                (context, source) =>
-                {
-                    context.AddSource(fileName, source);
+                    // Once https://github.com/dotnet/roslyn/issues/61326 is resolved, we can avoid the ToString() here.
+                    context.AddSource(fileName, source.ToString());
                 });
         }
     }

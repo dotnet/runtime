@@ -610,6 +610,8 @@
 		<type fullname="Mono.ValueTuple`3" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`4" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`5" preserve="fields"/>
+		<type fullname="Mono.ValueTuple`6" preserve="fields"/>
+		<type fullname="Mono.ValueTuple`7" preserve="fields"/>
 		<!-- aot-compiler.c -->
 		<type fullname="Mono.I8Enum" preserve="fields"/>
 		<type fullname="Mono.UI8Enum" preserve="fields"/>
@@ -632,11 +634,6 @@
 		<!-- aot-compiler.c -->
 		<type fullname="System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"/>
 
-		<type fullname="Mono.NullByRefReturnException">
-			<!-- marshal-ilgen.c:emit_invoke_call -->
-			<method signature="System.Void .ctor()" />
-		</type>
-
 		<type fullname="System.ValueType">
 			<!-- https://github.com/dotnet/runtime/issues/47909 -->
 			<method signature="System.Void .ctor()" />
@@ -644,5 +641,17 @@
 
 		<!-- FIXME: only if  feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="true" -->
 		<type fullname="Mono.HotReload.FieldStore" preserve="fields" />
+                <type fullname="Mono.HotReload.InstanceFieldTable">
+                    <!-- hot_reload.c -->
+                    <method name="GetInstanceFieldFieldStore" />
+                </type>
 	</assembly>
+        <assembly fullname="System.Private.CoreLib" feature="System.StartupHookProvider.IsSupported" featurevalue="true" featuredefault="true">
+            <type fullname="System.StartupHookProvider">
+                <!-- ds-rt-coreclr.h: ds_rt_apply_startup_hook -->
+                <method name="CallStartupHook" />
+                <!-- object.c: mono_runtime_run_startup_hooks -->
+                <method name="ProcessStartupHooks" />
+            </type>
+        </assembly>
 </linker>

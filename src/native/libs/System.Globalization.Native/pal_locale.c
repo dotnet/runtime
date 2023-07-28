@@ -134,7 +134,7 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
 // On Apple related platforms (OSX, iOS, tvOS, MacCatalyst), we'll take what the system locale is.  
 // On all other platforms we'll map this POSIX locale to Invariant instead. 
 // The reason is POSIX locale collation behavior is not desirable at all because it doesn't support case insensitive string comparisons.
-const char* DetectDefaultLocaleName()
+const char* DetectDefaultLocaleName(void)
 {
     const char* icuLocale = uloc_getDefault();
 
@@ -276,4 +276,26 @@ int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName)
     ures_close(uresb);
 
     return err == U_ZERO_ERROR;
+}
+
+/*
+PAL Function:
+GetLocaleTimeFormat
+
+Obtains time format information (in ICU format, it needs to be converted to .NET's format).
+Returns 1 for success, 0 otherwise
+*/
+int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
+                                                int shortFormat,
+                                                UChar* value,
+                                                int32_t valueLength)
+{
+    UErrorCode err = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+    UDateFormatStyle style = (shortFormat != 0) ? UDAT_SHORT : UDAT_MEDIUM;
+    UDateFormat* pFormat = udat_open(style, UDAT_NONE, locale, NULL, 0, NULL, 0, &err);
+    udat_toPattern(pFormat, false, value, valueLength, &err);
+    udat_close(pFormat);
+    return UErrorCodeToBool(err);
 }

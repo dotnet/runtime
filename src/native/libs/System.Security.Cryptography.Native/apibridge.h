@@ -7,6 +7,7 @@
 #include "pal_types.h"
 
 int local_ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm);
+int local_BN_is_zero(const BIGNUM* a);
 int local_BIO_up_ref(BIO *a);
 const BIGNUM* local_DSA_get0_key(const DSA* dsa, const BIGNUM** pubKey, const BIGNUM** privKey);
 void local_DSA_get0_pqg(const DSA* dsa, const BIGNUM** p, const BIGNUM** q, const BIGNUM** g);

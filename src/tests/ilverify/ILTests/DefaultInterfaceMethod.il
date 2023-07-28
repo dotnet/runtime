@@ -107,7 +107,7 @@
 	}
 }
 
-.class public auto ansi beforefieldinit ChildClassInheritsFromInterfaceWithDefaultImplementationWhereChildInterfaceReabstractsInterfaceMethod_InvalidType_InterfaceMethodNotImplemented
+.class public auto ansi beforefieldinit ChildClassInheritsFromInterfaceWithDefaultImplementationWhereChildInterfaceReabstractsInterfaceMethod_InvalidType_InterfaceMethodNotImplemented@InterfaceMethodNotImplemented
 	extends [System.Runtime]System.Object
 	implements IReabstractDefaultImplementation, IInheritedDefaultImplInterface, IInterface
 {

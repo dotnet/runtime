@@ -168,13 +168,12 @@ namespace System
             ArgumentNullException.ThrowIfNull(uriParser);
             ArgumentNullException.ThrowIfNull(schemeName);
 
-            if (schemeName.Length == 1)
-                throw new ArgumentOutOfRangeException(nameof(schemeName));
+            ArgumentOutOfRangeException.ThrowIfEqual(schemeName.Length, 1);
 
             if (!Uri.CheckSchemeName(schemeName))
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
 
-            if ((defaultPort > 0xFFFF || defaultPort < 0) && defaultPort != -1)
+            if ((uint)defaultPort > 0xFFFF && defaultPort != -1)
                 throw new ArgumentOutOfRangeException(nameof(defaultPort));
 
             schemeName = schemeName.ToLowerInvariant();

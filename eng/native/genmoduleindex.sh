@@ -5,7 +5,7 @@
 set -euo pipefail
 
 if [[ "$#" -lt 2 ]]; then
-  echo "Usage: genmoduleindex.sh ModuleBinaryFile IndexHeaderFile"
+  echo "Usage: genmoduleindex.sh ModuleBinaryFile IndexHeaderFile readelfBinaryPath"
   exit 1
 fi
 
@@ -25,16 +25,18 @@ function printIdAsBinary() {
 
 case "$(uname -s)" in
 Darwin)
-  cmd="dwarfdump -u $1"
+  cmd="dwarfdump"
+  arg="-u"
   pattern='^UUID: ([0-9A-Fa-f\-]+)';;
 *)
-  cmd="readelf -n $1"
+  cmd="$3"
+  arg="-n"
   pattern='^[[:space:]]*Build ID: ([0-9A-Fa-f\-]+)';;
 esac
 
-while read -r line; do
+"$cmd" "$arg" "$1" | while read -r line; do
   if [[ "$line" =~ $pattern ]]; then
     printIdAsBinary "${BASH_REMATCH[1]//-/}"
     break
   fi
-done < <(eval "$cmd") > "$2"
+done > "$2"

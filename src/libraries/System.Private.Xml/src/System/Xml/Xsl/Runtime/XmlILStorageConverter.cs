@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -85,7 +84,7 @@ namespace System.Xml.Xsl.Runtime
         public static IList<XPathItem> NavigatorsToItems(IList<XPathNavigator> listNavigators)
         {
             // Check to see if the navigator cache implements IList<XPathItem>
-            IList<XPathItem> listItems = listNavigators as IList<XPathItem>;
+            IList<XPathItem>? listItems = listNavigators as IList<XPathItem>;
             if (listItems != null)
                 return listItems;
 
@@ -96,7 +95,7 @@ namespace System.Xml.Xsl.Runtime
         public static IList<XPathNavigator> ItemsToNavigators(IList<XPathItem> listItems)
         {
             // Check to see if the navigator cache implements IList<XPathNavigator>
-            IList<XPathNavigator> listNavs = listItems as IList<XPathNavigator>;
+            IList<XPathNavigator>? listNavs = listItems as IList<XPathNavigator>;
             if (listNavs != null)
                 return listNavs;
 

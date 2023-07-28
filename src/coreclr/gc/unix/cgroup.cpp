@@ -54,6 +54,8 @@ Abstract:
 
 extern bool ReadMemoryValueFromFile(const char* filename, uint64_t* val);
 
+namespace 
+{
 class CGroup
 {
     // the cgroup version number or 0 to indicate cgroups are not found or not enabled
@@ -128,7 +130,6 @@ private:
             case TMPFS_MAGIC: return 1;
             case CGROUP2_SUPER_MAGIC: return 2;
             default:
-                assert(!"Unexpected file system type for /sys/fs/cgroup");
                 return 0;
         }
 #endif
@@ -454,6 +455,7 @@ private:
         return foundInactiveFileValue;
     }
 };
+}
 
 int CGroup::s_cgroup_version = 0;
 char *CGroup::s_memory_cgroup_path = nullptr;

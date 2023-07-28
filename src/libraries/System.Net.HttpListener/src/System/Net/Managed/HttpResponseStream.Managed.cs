@@ -41,10 +41,10 @@ namespace System.Net
 {
     internal sealed partial class HttpResponseStream : Stream
     {
-        private HttpListenerResponse _response;
-        private bool _ignore_errors;
+        private readonly HttpListenerResponse _response;
+        private readonly bool _ignore_errors;
         private bool _trailer_sent;
-        private Stream _stream;
+        private readonly Stream _stream;
 
         internal HttpResponseStream(Stream stream, HttpListenerResponse response, bool ignore_errors)
         {
@@ -91,8 +91,7 @@ namespace System.Net
 
         internal async Task WriteWebSocketHandshakeHeadersAsync()
         {
-            if (_closed)
-                throw new ObjectDisposedException(GetType().ToString());
+            ObjectDisposedException.ThrowIf(_closed, this);
 
             if (_stream.CanWrite)
             {

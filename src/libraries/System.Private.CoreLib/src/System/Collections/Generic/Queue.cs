@@ -1,28 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-** Purpose: A circular-array implementation of a generic queue.
-**
-**
-=============================================================================*/
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-    // A simple Queue of generic objects.  Internally it is implemented as a
-    // circular buffer, so Enqueue can be O(n).  Dequeue is O(1).
+    /// <summary>
+    /// Represents a first-in, first-out collection of objects.
+    /// </summary>
+    /// <remarks>
+    /// Implemented as a circular buffer, so <see cref="Enqueue(T)"/> and <see cref="Dequeue"/> are typically <c>O(1)</c>.
+    /// </remarks>
     [DebuggerTypeProxy(typeof(QueueDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Queue<T> : IEnumerable<T>,
-        System.Collections.ICollection,
+        ICollection,
         IReadOnlyCollection<T>
     {
         private T[] _array;
@@ -42,8 +38,7 @@ namespace System.Collections.Generic
         // is used.
         public Queue(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             _array = new T[capacity];
         }
 
@@ -164,7 +159,7 @@ namespace System.Collections.Generic
             }
             catch (ArrayTypeMismatchException)
             {
-                throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
             }
         }
 
@@ -184,21 +179,14 @@ namespace System.Collections.Generic
 
         // GetEnumerator returns an IEnumerator over this Queue.  This
         // Enumerator will support removing.
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <internalonly/>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
+            Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
+            GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         // Removes the object at the head of the queue and returns it. If the queue
         // is empty, this method throws an
@@ -231,7 +219,7 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
-                result = default!;
+                result = default;
                 return false;
             }
 
@@ -263,7 +251,7 @@ namespace System.Collections.Generic
         {
             if (_size == 0)
             {
-                result = default!;
+                result = default;
                 return false;
             }
 
@@ -377,10 +365,7 @@ namespace System.Collections.Generic
         /// <returns>The new capacity of this queue.</returns>
         public int EnsureCapacity(int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (_array.Length < capacity)
             {
@@ -417,7 +402,7 @@ namespace System.Collections.Generic
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
         public struct Enumerator : IEnumerator<T>,
-            System.Collections.IEnumerator
+            IEnumerator
         {
             private readonly Queue<T> _q;
             private readonly int _version;
@@ -457,12 +442,12 @@ namespace System.Collections.Generic
 
                 // Cache some fields in locals to decrease code size
                 T[] array = _q._array;
-                int capacity = array.Length;
+                uint capacity = (uint)array.Length;
 
                 // _index represents the 0-based index into the queue, however the queue
                 // doesn't have to start from 0 and it may not even be stored contiguously in memory.
 
-                int arrayIndex = _q._head + _index; // this is the actual index into the queue's backing array
+                uint arrayIndex = (uint)(_q._head + _index); // this is the actual index into the queue's backing array
                 if (arrayIndex >= capacity)
                 {
                     // NOTE: Originally we were using the modulo operator here, however

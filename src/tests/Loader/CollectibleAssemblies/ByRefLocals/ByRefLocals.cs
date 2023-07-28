@@ -25,7 +25,7 @@ class Program
         }
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         var holdResult = HoldAssembliesAliveThroughByRefFields(out GCHandle gch1, out GCHandle gch2);
         if (holdResult != 100)

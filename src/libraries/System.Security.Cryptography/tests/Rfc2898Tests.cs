@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Security.Cryptography
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class Rfc2898Tests
     {
         private static readonly byte[] s_testSalt = new byte[] { 9, 5, 5, 5, 1, 2, 1, 2 };
@@ -21,14 +20,14 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Ctor_NullPasswordBytes()
         {
-            Assert.Throws<NullReferenceException>(() =>
+            Assert.Throws<ArgumentNullException>("password", () =>
                 new Rfc2898DeriveBytes((byte[])null, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1));
         }
 
         [Fact]
         public static void Ctor_NullPasswordString()
         {
-            Assert.Throws<ArgumentNullException>(() =>
+            Assert.Throws<ArgumentNullException>("password", () =>
                 new Rfc2898DeriveBytes((string)null, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1));
         }
 
@@ -189,7 +188,7 @@ namespace System.Security.Cryptography
         [Fact]
         public static void GetBytes_NegativeLength()
         {
-            Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1);
+            using Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1);
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(int.MinValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(int.MinValue / 2));
@@ -362,14 +361,9 @@ namespace System.Security.Cryptography
         }
 
         [Theory]
-        [InlineData("SHA1")]
-        [InlineData("SHA256")]
-        [InlineData("SHA384")]
-        [InlineData("SHA512")]
-        public static void CheckHashAlgorithmValue(string hashAlgorithmName)
+        [MemberData(nameof(HashAlgorithmNames))]
+        public static void CheckHashAlgorithmValue(HashAlgorithmName hashAlgorithm)
         {
-            HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
-
             using (var pbkdf2 = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, hashAlgorithm))
             {
                 Assert.Equal(hashAlgorithm, pbkdf2.HashAlgorithm);
@@ -463,6 +457,24 @@ namespace System.Security.Cryptography
                 }
 
                 yield return new object[] { testCase };
+            }
+        }
+
+        public static IEnumerable<object[]> HashAlgorithmNames
+        {
+            get
+            {
+                yield return new object[] { HashAlgorithmName.SHA1 };
+                yield return new object[] { HashAlgorithmName.SHA256 };
+                yield return new object[] { HashAlgorithmName.SHA384 };
+                yield return new object[] { HashAlgorithmName.SHA512 };
+
+                if (PlatformDetection.SupportsSha3)
+                {
+                    yield return new object[] { HashAlgorithmName.SHA3_256 };
+                    yield return new object[] { HashAlgorithmName.SHA3_384 };
+                    yield return new object[] { HashAlgorithmName.SHA3_512 };
+                }
             }
         }
 
@@ -608,6 +620,42 @@ namespace System.Security.Cryptography
                 IterationCount = 1,
                 AnswerHex = "1E437A1C79D75BE61E91141DAE20",
             };
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                // https://github.com/openssl/openssl/blob/6821acbffda908ec69769ed7f110cfde57d8ca58/test/recipes/30-test_evp_data/evppbe_pbkdf2.txt#L128-L133
+                yield return new KnownValuesTestCase
+                {
+                    CaseName = "OpenSSL SHA3-256",
+                    HashAlgorithmName = "SHA3-256",
+                    Password = "password",
+                    Salt = "salt"u8.ToArray(),
+                    IterationCount = 4096,
+                    AnswerHex = "778B6E237A0F49621549FF70D218D208",
+                };
+
+                // https://github.com/openssl/openssl/blob/6821acbffda908ec69769ed7f110cfde57d8ca58/test/recipes/30-test_evp_data/evppbe_pbkdf2.txt#L135-L140
+                yield return new KnownValuesTestCase
+                {
+                    CaseName = "OpenSSL SHA3-384",
+                    HashAlgorithmName = "SHA3-384",
+                    Password = "password",
+                    Salt = "salt"u8.ToArray(),
+                    IterationCount = 4096,
+                    AnswerHex = "9A5F1E45E8B83F1B259BA72D11C59087",
+                };
+
+                // https://github.com/openssl/openssl/blob/6821acbffda908ec69769ed7f110cfde57d8ca58/test/recipes/30-test_evp_data/evppbe_pbkdf2.txt#L142-L147
+                yield return new KnownValuesTestCase
+                {
+                    CaseName = "OpenSSL SHA3-512",
+                    HashAlgorithmName = "SHA3-512",
+                    Password = "password",
+                    Salt = "salt"u8.ToArray(),
+                    IterationCount = 4096,
+                    AnswerHex = "2BFAF2D5CEB6D10F5E262CD902488CFD",
+                };
+            }
         }
 
         public class KnownValuesTestCase

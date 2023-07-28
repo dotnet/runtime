@@ -23,7 +23,17 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void Exit(object obj);
+        private static extern void InternalExit(object obj);
+
+        public static void Exit(object obj)
+        {
+            if (obj == null)
+                ArgumentNullException.ThrowIfNull(obj);
+            if (ObjectHeader.TryExitChecked(obj))
+                return;
+
+            InternalExit(obj);
+        }
 
         public static bool TryEnter(object obj)
         {
@@ -57,7 +67,7 @@ namespace System.Threading
         public static bool IsEntered(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            return IsEnteredNative(obj);
+            return ObjectHeader.IsEntered(obj);
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -80,15 +90,12 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool Monitor_test_synchronised(object obj);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void Monitor_pulse(object obj);
 
         private static void ObjPulse(object obj)
         {
-            if (!Monitor_test_synchronised(obj))
-                throw new SynchronizationLockException("Object is not synchronized");
+            if (!ObjectHeader.HasOwner(obj))
+                throw new SynchronizationLockException();
 
             Monitor_pulse(obj);
         }
@@ -98,8 +105,8 @@ namespace System.Threading
 
         private static void ObjPulseAll(object obj)
         {
-            if (!Monitor_test_synchronised(obj))
-                throw new SynchronizationLockException("Object is not synchronized");
+            if (!ObjectHeader.HasOwner(obj))
+                throw new SynchronizationLockException();
 
             Monitor_pulse_all(obj);
         }
@@ -111,8 +118,8 @@ namespace System.Threading
         {
             if (millisecondsTimeout < 0 && millisecondsTimeout != (int)Timeout.Infinite)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
-            if (!Monitor_test_synchronised(obj))
-                throw new SynchronizationLockException("Object is not synchronized");
+            if (!ObjectHeader.HasOwner(obj))
+                throw new SynchronizationLockException();
 
             return Monitor_wait(obj, millisecondsTimeout, true);
         }
@@ -120,22 +127,22 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void try_enter_with_atomic_var(object obj, int millisecondsTimeout, bool allowInterruption, ref bool lockTaken);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ReliableEnterTimeout(object obj, int timeout, ref bool lockTaken)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            if (obj == null)
+                ArgumentNullException.ThrowIfNull(obj);
 
             if (timeout < 0 && timeout != (int)Timeout.Infinite)
                 throw new ArgumentOutOfRangeException(nameof(timeout));
 
+            // fast path
+            if (ObjectHeader.TryEnterFast(obj)) {
+                lockTaken = true;
+                return;
+            }
+
             try_enter_with_atomic_var(obj, timeout, true, ref lockTaken);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool Monitor_test_owner(object obj);
-
-        private static bool IsEnteredNative(object obj)
-        {
-            return Monitor_test_owner(obj);
         }
 
         public static extern long LockContentionCount

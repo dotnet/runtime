@@ -44,16 +44,16 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 SafeCapiKeyHandle hKey = _hKey;
-                _hKey = null!;
                 if (hKey != null)
                 {
+                    _hKey = null!;
                     hKey.Dispose();
                 }
 
                 SafeProvHandle hProvider = _hProvider;
-                _hProvider = null!;
                 if (hProvider != null)
                 {
+                    _hProvider = null!;
                     hProvider.Dispose();
                 }
             }

@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
+using System.IO;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -25,6 +26,18 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(dictionary, deserializedDictionary);
         }
 
+        [Theory]
+        [MemberData(nameof(GetTestDictionaries))]
+        public async Task TestDictionaryKey_CustomConverter_ComposingWithDefaultConverter<TKey, TValue>(Dictionary<TKey, TValue> dictionary, string expectedJson)
+        {
+            var options = new JsonSerializerOptions { Converters = { new CustomPropertyNameConverter<TKey>() } };
+            string json = await Serializer.SerializeWrapper(dictionary, options);
+            Assert.Equal(expectedJson, json);
+
+            Dictionary<TKey, TValue> deserializedDictionary = await Serializer.DeserializeWrapper<Dictionary<TKey, TValue>>(json, options);
+            Assert.Equal(dictionary, deserializedDictionary);
+        }
+
         public static IEnumerable<object[]> GetTestDictionaries()
         {
             yield return WrapArgs(true, 1);
@@ -32,11 +45,18 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(char.MaxValue, char.MaxValue, expectedJson: @"{""\uFFFF"":""\uFFFF""}");
             yield return WrapArgs(DateTime.MaxValue, 1, expectedJson: $@"{{""{DateTime.MaxValue:O}"":1}}");
             yield return WrapArgs(DateTimeOffset.MaxValue, 1, expectedJson: $@"{{""{DateTimeOffset.MaxValue:O}"":1}}");
+            yield return WrapArgs(TimeSpan.MaxValue, 1, expectedJson: $@"{{""{TimeSpan.MaxValue}"":1}}");
+#if NET6_0_OR_GREATER
+            yield return WrapArgs(DateOnly.MaxValue, 1, expectedJson: $@"{{""{DateOnly.MaxValue:O}"":1}}");
+            yield return WrapArgs(TimeOnly.MaxValue, 1, expectedJson: $@"{{""{TimeOnly.MaxValue:O}"":1}}");
+#endif
             yield return WrapArgs(decimal.MaxValue, 1, expectedJson: $@"{{""{JsonSerializer.Serialize(decimal.MaxValue)}"":1}}");
             yield return WrapArgs(double.MaxValue, 1, expectedJson: $@"{{""{JsonSerializer.Serialize(double.MaxValue)}"":1}}");
             yield return WrapArgs(MyEnum.Foo, 1);
             yield return WrapArgs(MyEnumFlags.Foo | MyEnumFlags.Bar, 1);
             yield return WrapArgs(Guid.NewGuid(), 1);
+            yield return WrapArgs(new Version(8, 0, 0), 1);
+            yield return WrapArgs(new Uri("http://dot.net/"), 1);
             yield return WrapArgs(short.MaxValue, 1);
             yield return WrapArgs(int.MaxValue, 1);
             yield return WrapArgs(long.MaxValue, 1);
@@ -46,6 +66,11 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(ushort.MaxValue, 1);
             yield return WrapArgs(uint.MaxValue, 1);
             yield return WrapArgs(ulong.MaxValue, 1);
+#if NETCOREAPP
+            yield return WrapArgs(Half.MinValue, 1);
+            yield return WrapArgs(Int128.MinValue, 1);
+            yield return WrapArgs(UInt128.MaxValue, 1);
+#endif
 
             static object[] WrapArgs<TKey, TValue>(TKey key, TValue value, string? expectedJson = null)
             {
@@ -53,6 +78,28 @@ namespace System.Text.Json.Serialization.Tests
                 expectedJson ??= $"{{\"{key}\":{value}}}";
                 return new object[] { dictionary, expectedJson };
             }
+        }
+
+        public class CustomPropertyNameConverter<T> : JsonConverter<T>
+        {
+            private readonly JsonConverter<T> _defaultConverter;
+
+            public CustomPropertyNameConverter()
+            {
+                _defaultConverter = (JsonConverter<T>)JsonSerializerOptions.Default.GetConverter(typeof(T));
+            }
+
+            public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => _defaultConverter.Read(ref reader, typeToConvert, options);
+
+            public override T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => _defaultConverter.ReadAsPropertyName(ref reader, typeToConvert, options);
+
+            public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+                => _defaultConverter.Write(writer, value, options);
+
+            public override void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+                => _defaultConverter.WriteAsPropertyName(writer, value, options);
         }
 
         [Theory]
@@ -80,9 +127,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return WrapArgs(new MyPublicClass(), 0);
             yield return WrapArgs(new MyPublicStruct(), 0);
-            yield return WrapArgs(new Uri("http://foo"), 0);
             yield return WrapArgs(new object(), 0);
-            yield return WrapArgs((object)new Uri("http://foo"), 0);
+            yield return WrapArgs((object)new MyPublicStruct(), 0);
 
             static object[] WrapArgs<TKey, TValue>(TKey key, TValue value) => new object[] { new Dictionary<TKey, TValue>() { [key] = value } };
         }
@@ -293,7 +339,15 @@ namespace System.Text.Json.Serialization.Tests
                     MyEnum.Bar, typeof(Dictionary<MyEnum, int>) },
                 new object[] { @"\u0042\u0061\u0072\u002c\u0042\u0061\u007a",
                     MyEnumFlags.Bar | MyEnumFlags.Baz, typeof(Dictionary<MyEnumFlags, int>) },
-                new object[] { @"\u002b", '+', typeof(Dictionary<char, int>) }
+                new object[] { @"\u002b", '+', typeof(Dictionary<char, int>) },
+#if NETCOREAPP
+                new object[] { @"\u0033\u002e\u0031\u0032\u0035\u0065\u0034",
+                    (Half)3.125e4, typeof(Dictionary<Half, int>) },
+                new object[] { @"\u002D\u0031\u0037\u0030\u0031\u0034\u0031\u0031\u0038\u0033\u0034\u0036\u0030\u0034\u0036\u0039\u0032\u0033\u0031\u0037\u0033\u0031\u0036\u0038\u0037\u0033\u0030\u0033\u0037\u0031\u0035\u0038\u0038\u0034\u0031\u0030\u0035\u0037\u0032\u0038",
+                    Int128.MinValue, typeof(Dictionary<Int128, int>) },
+                new object[] { @"\u0033\u0034\u0030\u0032\u0038\u0032\u0033\u0036\u0036\u0039\u0032\u0030\u0039\u0033\u0038\u0034\u0036\u0033\u0034\u0036\u0033\u0033\u0037\u0034\u0036\u0030\u0037\u0034\u0033\u0031\u0037\u0036\u0038\u0032\u0031\u0031\u0034\u0035\u0035",
+                    UInt128.MaxValue, typeof(Dictionary<UInt128, int>) },
+#endif
             };
 
         public class MyPublicClass { }
@@ -476,6 +530,40 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains(nameof(ClassWithIDictionary), ex.Message);
                 Assert.Contains(nameof(ComplexKeyConverter), ex.Message);
             }
+        }
+
+        [Fact]
+        public void NullKeyReturnedFromDictionary_ThrowsArgumentNullException()
+        {
+            // Via JsonSerializer.Serialize
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<object>()));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<string>()));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<Uri>()));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<Version>()));
+
+            // Via converter directly
+            var writer = new Utf8JsonWriter(Stream.Null);
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.ObjectConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.StringConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.UriConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.VersionConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+        }
+
+        private sealed class NullKeyDictionary<TKey> : IReadOnlyDictionary<TKey, int> where TKey : class?
+        {
+            public int Count => 1;
+
+            public IEnumerator<KeyValuePair<TKey, int>> GetEnumerator()
+            {
+                yield return new KeyValuePair<TKey, int>(null!, 0);
+            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public IEnumerable<TKey> Keys => throw new NotImplementedException();
+            public IEnumerable<int> Values => throw new NotImplementedException();
+            public int this[TKey key] => throw new NotImplementedException();
+            public bool ContainsKey(TKey key) => throw new NotImplementedException();
+            public bool TryGetValue(TKey key, out int value) => throw new NotImplementedException();
         }
 
         private class ComplexKeyConverter : JsonConverter<ClassWithIDictionary>

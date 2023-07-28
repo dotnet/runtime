@@ -9,7 +9,6 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
 using Internal.Text;
-using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
@@ -19,25 +18,21 @@ namespace ILCompiler.DependencyAnalysis
     /// Resources are simply copied from the inputs and concatenated into this blob.
     /// All format information is provided by <see cref="ResourceIndexNode"/>
     /// </summary>
-    internal class ResourceDataNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ResourceDataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
+        private int? _size;
+
         /// <summary>
         /// Resource index information generated while extracting resources into the data blob
         /// </summary>
         private List<ResourceIndexData> _indexData;
         private int _totalLength;
 
-        public ResourceDataNode()
-        {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__embedded_resourcedata_End", true);
-        }
-
-        private ObjectAndOffsetSymbolNode _endSymbol;
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -55,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
             // This node has no relocations.
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
-            
+
             byte[] blob = GenerateResourceBlob(factory);
             return new ObjectData(
                 blob,
@@ -63,8 +58,7 @@ namespace ILCompiler.DependencyAnalysis
                 1,
                 new ISymbolDefinitionNode[]
                 {
-                    this,
-                    EndSymbol
+                    this
                 });
         }
 
@@ -99,13 +93,13 @@ namespace ILCompiler.DependencyAnalysis
                             string resourceName = module.MetadataReader.GetString(resource.Name);
 
                             // Check if emitting the manifest resource is blocked by policy.
-                            if (factory.MetadataManager.IsManifestResourceBlocked(module, resourceName))
+                            if (factory.MetadataManager.IsManifestResourceBlocked(factory, module, resourceName))
                                 continue;
 
                             string assemblyName = module.GetName().FullName;
                             BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
                             int length = (int)reader.ReadUInt32();
-                            ResourceIndexData indexData = new ResourceIndexData(assemblyName, resourceName, _totalLength, (int)resource.Offset + sizeof(Int32), module, length);
+                            ResourceIndexData indexData = new ResourceIndexData(assemblyName, resourceName, _totalLength, (int)resource.Offset + sizeof(int), module, length);
                             _indexData.Add(indexData);
                             _totalLength += length;
                         }
@@ -142,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis
                 currentPos += resourceData.Length;
             }
 
-            _endSymbol.SetSymbolOffset(resourceBlob.Length);
+            _size = resourceBlob.Length;
             return resourceBlob;
         }
 
@@ -153,7 +147,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Data about individual manifest resources
     /// </summary>
-    internal class ResourceIndexData
+    internal sealed class ResourceIndexData
     {
         public ResourceIndexData(string assemblyName, string resourceName, int nativeOffset, int ecmaOffset, EcmaModule ecmaModule, int length)
         {

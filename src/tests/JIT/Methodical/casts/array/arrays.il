@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly arrays { }
+.assembly ASSEMBLY_NAME { }
 .class public auto ansi Test_arrays extends [mscorlib] System.Object {
 .method public static int32 main() cil managed
 {

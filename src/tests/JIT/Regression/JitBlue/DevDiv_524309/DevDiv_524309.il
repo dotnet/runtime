@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime {auto}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly DevDiv_524309 {}
 .assembly extern xunit.core {}
 
 // The test showed problem with x86 long decomposition of unused values,  
 // DecomposeShift did not set unused on the removed shift's children. 
 
-.class private auto ansi beforefieldinit DevDiv_524309.ILGEN_CLASS
+.class public auto ansi beforefieldinit DevDiv_524309.ILGEN_CLASS
        extends [System.Runtime]System.Object
 {
   .method private static bool  ILGEN_METHOD(uint64 a, int16 b) cil managed
@@ -56,7 +56,7 @@
 	IL0057: ret
   } // end of method ILGEN_CLASS::ILGEN_METHOD
 
-  .method private static int32 Main(string[] args) cil managed
+  .method public static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

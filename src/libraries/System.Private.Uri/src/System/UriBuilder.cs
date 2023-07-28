@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -179,10 +180,8 @@ namespace System
             get => _port;
             set
             {
-                if (value < -1 || value > 0xFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0xFFFF);
                 _port = value;
                 _changed = true;
             }
@@ -255,6 +254,27 @@ namespace System
 
         public override int GetHashCode() => Uri.GetHashCode();
 
+        // The following characters ("/" / "\" / "?" / "#" / "@") are from the gen-delims group.
+        // We have to escape them to avoid corrupting the rest of the Uri string.
+        // Other characters like spaces or non-ASCII will be escaped by Uri, we can ignore them here.
+        private static readonly SearchValues<char> s_userInfoReservedChars =
+            SearchValues.Create(@"/\?#@");
+
+        private static string EncodeUserInfo(string input)
+        {
+            if (!input.AsSpan().ContainsAny(s_userInfoReservedChars))
+            {
+                return input;
+            }
+
+            return input
+                .Replace("/", "%2F", StringComparison.Ordinal)
+                .Replace(@"\", "%5C", StringComparison.Ordinal)
+                .Replace("?", "%3F", StringComparison.Ordinal)
+                .Replace("#", "%23", StringComparison.Ordinal)
+                .Replace("@", "%40", StringComparison.Ordinal);
+        }
+
         private void SetFieldsFromUri()
         {
             Debug.Assert(_uri is not null);
@@ -315,12 +335,12 @@ namespace System
                 vsb.Append(schemeDelimiter);
             }
 
-            string username = UserName;
+            string username = EncodeUserInfo(UserName);
             if (username.Length != 0)
             {
                 vsb.Append(username);
 
-                string password = Password;
+                string password = EncodeUserInfo(Password);
                 if (password.Length != 0)
                 {
                     vsb.Append(':');

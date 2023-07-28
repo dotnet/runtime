@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
+.namespace clt_u4
+{
 .class public clt_un {
 
 .field public static	int32 all
@@ -11,95 +14,98 @@
 .method public static void initialize() {
 .maxstack		10
 	ldc.i4		0xFFFFFFFF
-	stsfld	int32 clt_un::all
+	stsfld	int32 clt_u4.clt_un::all
 	ldc.i4		0x00000000
-	stsfld	int32 clt_un::none
+	stsfld	int32 clt_u4.clt_un::none
 	ldc.i4		0x55555555
-	stsfld	int32 clt_un::odd
+	stsfld	int32 clt_u4.clt_un::odd
 	ldc.i4		0xAAAAAAAA
-	stsfld	int32 clt_un::even
+	stsfld	int32 clt_u4.clt_un::even
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	call	void clt_un::initialize()
+	call	void clt_u4.clt_un::initialize()
 
-	ldsfld	int32 clt_un::all
-	ldsfld	int32 clt_un::all
+	ldsfld	int32 clt_u4.clt_un::all
+	ldsfld	int32 clt_u4.clt_un::all
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	int32 clt_un::all
-	ldsfld	int32 clt_un::none
+	ldsfld	int32 clt_u4.clt_un::all
+	ldsfld	int32 clt_u4.clt_un::none
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	int32 clt_un::all
-	ldsfld	int32 clt_un::odd
+	ldsfld	int32 clt_u4.clt_un::all
+	ldsfld	int32 clt_u4.clt_un::odd
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	int32 clt_un::all
-	ldsfld	int32 clt_un::even
+	ldsfld	int32 clt_u4.clt_un::all
+	ldsfld	int32 clt_u4.clt_un::even
 	clt.un
 	brtrue		FAIL
-	ldsfld	int32 clt_un::none
-	ldsfld	int32 clt_un::all
+	ldsfld	int32 clt_u4.clt_un::none
+	ldsfld	int32 clt_u4.clt_un::all
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	int32 clt_un::none
-	ldsfld	int32 clt_un::none
+	ldsfld	int32 clt_u4.clt_un::none
+	ldsfld	int32 clt_u4.clt_un::none
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	int32 clt_un::none
-	ldsfld	int32 clt_un::odd
+	ldsfld	int32 clt_u4.clt_un::none
+	ldsfld	int32 clt_u4.clt_un::odd
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	int32 clt_un::none
-	ldsfld	int32 clt_un::even
+	ldsfld	int32 clt_u4.clt_un::none
+	ldsfld	int32 clt_u4.clt_un::even
 	clt.un
 	brfalse		FAIL
-	ldsfld	int32 clt_un::odd
-	ldsfld	int32 clt_un::all
+	ldsfld	int32 clt_u4.clt_un::odd
+	ldsfld	int32 clt_u4.clt_un::all
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	int32 clt_un::odd
-	ldsfld	int32 clt_un::none
+	ldsfld	int32 clt_u4.clt_un::odd
+	ldsfld	int32 clt_u4.clt_un::none
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	int32 clt_un::odd
-	ldsfld	int32 clt_un::odd
+	ldsfld	int32 clt_u4.clt_un::odd
+	ldsfld	int32 clt_u4.clt_un::odd
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	int32 clt_un::odd
-	ldsfld	int32 clt_un::even
+	ldsfld	int32 clt_u4.clt_un::odd
+	ldsfld	int32 clt_u4.clt_un::even
 	clt.un
 	brfalse		FAIL
-	ldsfld	int32 clt_un::even
-	ldsfld	int32 clt_un::all
+	ldsfld	int32 clt_u4.clt_un::even
+	ldsfld	int32 clt_u4.clt_un::all
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	int32 clt_un::even
-	ldsfld	int32 clt_un::none
+	ldsfld	int32 clt_u4.clt_un::even
+	ldsfld	int32 clt_u4.clt_un::none
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	int32 clt_un::even
-	ldsfld	int32 clt_un::odd
+	ldsfld	int32 clt_u4.clt_un::even
+	ldsfld	int32 clt_u4.clt_un::odd
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	int32 clt_un::even
-	ldsfld	int32 clt_un::even
+	ldsfld	int32 clt_u4.clt_un::even
+	ldsfld	int32 clt_u4.clt_un::even
 	clt.un
 	brtrue		FAIL
 
@@ -111,3 +117,4 @@ FAIL:
 }
 }
 .assembly clt_u4{}
+}

@@ -79,10 +79,8 @@ namespace System.Xml
         // By default, convert base64 value to string and call WriteString.
         public override Task WriteBase64Async(byte[] buffer, int index, int count)
         {
-            if (_base64Encoder == null)
-            {
-                _base64Encoder = new XmlRawWriterBase64Encoder(this);
-            }
+            _base64Encoder ??= new XmlRawWriterBase64Encoder(this);
+
             // Encode will call WriteRaw to write out the encoded characters
             return _base64Encoder.EncodeAsync(buffer, index, count);
         }

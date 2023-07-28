@@ -12,7 +12,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
-    internal sealed class SharedPerformanceCounter
+    internal sealed unsafe class SharedPerformanceCounter
     {
         private const int MaxSpinCount = 5000;
         internal const int DefaultCountersFileMappingSize = 524288;
@@ -24,10 +24,6 @@ namespace System.Diagnostics
         internal const string DefaultFileMappingName = "netfxcustomperfcounters.1.0";
         internal static readonly int s_singleInstanceHashCode = GetWstrHashCode(SingleInstanceName);
         private static readonly Hashtable s_categoryDataTable = new Hashtable(StringComparer.Ordinal);
-        private static readonly int s_categoryEntrySize = Marshal.SizeOf(typeof(CategoryEntry));
-        private static readonly int s_instanceEntrySize = Marshal.SizeOf(typeof(InstanceEntry));
-        private static readonly int s_counterEntrySize = Marshal.SizeOf(typeof(CounterEntry));
-        private static readonly int s_processLifetimeEntrySize = Marshal.SizeOf(typeof(ProcessLifetimeEntry));
 
         private static long s_lastInstanceLifetimeSweepTick;
         private const long InstanceLifetimeSweepWindow = 30 * 10000000; //ticks
@@ -78,7 +74,7 @@ namespace System.Diagnostics
         internal int _initialOffset = 4;
 
         private readonly CategoryData _categoryData;
-        private long _baseAddress;
+        private byte* _baseAddress;
         private readonly unsafe CounterEntry* _counterEntryPointer;
         private readonly string _categoryName;
         private readonly int _categoryNameHashCode;
@@ -167,7 +163,7 @@ namespace System.Diagnostics
                 int endAlignmentAdjustment = (8 - endAddressMod8) & 0x7;
                 newOffset += endAlignmentAdjustment;
 
-            } while (Interlocked.CompareExchange(ref *(int*)((IntPtr)_baseAddress).ToPointer(), newOffset, oldOffset) != oldOffset);
+            } while (Interlocked.CompareExchange(ref *(int*)_baseAddress, newOffset, oldOffset) != oldOffset);
 
             return oldOffset;
         }
@@ -193,7 +189,7 @@ namespace System.Diagnostics
             // make sure the start address is 8 byte aligned
             int startAddressMod8 = (int)(_baseAddress + oldOffset) & 0x7;
             alignmentAdjustment = (8 - startAddressMod8) & 0x7;
-            currentTotalSize = currentTotalSize + alignmentAdjustment;
+            currentTotalSize += alignmentAdjustment;
 
             int newOffset = oldOffset + currentTotalSize;
 
@@ -212,7 +208,7 @@ namespace System.Diagnostics
             int totalSize;
 
             categoryNameLength = (_categoryName.Length + 1) * 2;
-            totalSize = s_categoryEntrySize + s_instanceEntrySize + (s_counterEntrySize * _categoryData.CounterNames.Count) + categoryNameLength;
+            totalSize = sizeof(CategoryEntry) + sizeof(InstanceEntry) + (sizeof(CounterEntry) * _categoryData.CounterNames.Count) + categoryNameLength;
             for (int i = 0; i < _categoryData.CounterNames.Count; i++)
             {
                 totalSize += (((string)_categoryData.CounterNames[i]).Length + 1) * 2;
@@ -221,7 +217,7 @@ namespace System.Diagnostics
             if (_categoryData.UseUniqueSharedMemory)
             {
                 instanceNameLength = InstanceNameSlotSize;
-                totalSize += s_processLifetimeEntrySize + instanceNameLength;
+                totalSize += sizeof(ProcessLifetimeEntry) + instanceNameLength;
 
                 // If we're in a separate shared memory, we need to do a two stage update of the free memory pointer.
                 // First we calculate our alignment adjustment and where the new free offset is.  Then we
@@ -242,7 +238,7 @@ namespace System.Diagnostics
                 freeMemoryOffset = CalculateAndAllocateMemory(totalSize, out alignmentAdjustment);
             }
 
-            long nextPtr = ResolveOffset(freeMemoryOffset, totalSize + alignmentAdjustment);
+            byte* nextPtr = (byte*)ResolveOffset(freeMemoryOffset, totalSize + alignmentAdjustment);
 
             CategoryEntry* newCategoryEntryPointer;
             InstanceEntry* newInstanceEntryPointer;
@@ -250,57 +246,57 @@ namespace System.Diagnostics
             // need to be aligned.  First, we need to align each struct on a 4 byte boundary so we can use interlocked
             // operations on the int Spinlock field.  Second, we need to align the CounterEntry on an 8 byte boundary so that
             // on 64 bit platforms we can use interlocked operations on the Value field.  alignmentAdjustment guarantees 8 byte
-            // alignemnt, so we use that for both.  If we're creating the very first category, however, we can't move that
+            // alignment, so we use that for both.  If we're creating the very first category, however, we can't move that
             // CategoryEntry.  In this case we put the alignmentAdjustment before the InstanceEntry.
             if (freeMemoryOffset == _initialOffset)
             {
                 newCategoryEntryPointer = (CategoryEntry*)nextPtr;
-                nextPtr += s_categoryEntrySize + alignmentAdjustment;
+                nextPtr += sizeof(CategoryEntry) + alignmentAdjustment;
                 newInstanceEntryPointer = (InstanceEntry*)nextPtr;
             }
             else
             {
                 nextPtr += alignmentAdjustment;
                 newCategoryEntryPointer = (CategoryEntry*)nextPtr;
-                nextPtr += s_categoryEntrySize;
+                nextPtr += sizeof(CategoryEntry);
                 newInstanceEntryPointer = (InstanceEntry*)nextPtr;
             }
-            nextPtr += s_instanceEntrySize;
+            nextPtr += sizeof(InstanceEntry);
 
             // create the first CounterEntry and reserve space for all of the rest.  We won't
             // finish creating them until the end
             CounterEntry* newCounterEntryPointer = (CounterEntry*)nextPtr;
-            nextPtr += s_counterEntrySize * _categoryData.CounterNames.Count;
+            nextPtr += sizeof(CounterEntry) * _categoryData.CounterNames.Count;
 
             if (_categoryData.UseUniqueSharedMemory)
             {
                 ProcessLifetimeEntry* newLifetimeEntry = (ProcessLifetimeEntry*)nextPtr;
-                nextPtr += s_processLifetimeEntrySize;
+                nextPtr += sizeof(ProcessLifetimeEntry);
 
-                newCounterEntryPointer->LifetimeOffset = (int)((long)newLifetimeEntry - _baseAddress);
+                newCounterEntryPointer->LifetimeOffset = (int)((byte*)newLifetimeEntry - _baseAddress);
                 PopulateLifetimeEntry(newLifetimeEntry, lifetime);
             }
 
             newCategoryEntryPointer->CategoryNameHashCode = _categoryNameHashCode;
             newCategoryEntryPointer->NextCategoryOffset = 0;
-            newCategoryEntryPointer->FirstInstanceOffset = (int)((long)newInstanceEntryPointer - _baseAddress);
+            newCategoryEntryPointer->FirstInstanceOffset = (int)((byte*)newInstanceEntryPointer - _baseAddress);
             newCategoryEntryPointer->CategoryNameOffset = (int)(nextPtr - _baseAddress);
-            SafeMarshalCopy(_categoryName, (IntPtr)nextPtr);
+            SafeMarshalCopy(_categoryName, nextPtr);
             nextPtr += categoryNameLength;
 
             newInstanceEntryPointer->InstanceNameHashCode = instanceNameHashCode;
             newInstanceEntryPointer->NextInstanceOffset = 0;
-            newInstanceEntryPointer->FirstCounterOffset = (int)((long)newCounterEntryPointer - _baseAddress);
+            newInstanceEntryPointer->FirstCounterOffset = (int)((byte*)newCounterEntryPointer - _baseAddress);
             newInstanceEntryPointer->RefCount = 1;
             newInstanceEntryPointer->InstanceNameOffset = (int)(nextPtr - _baseAddress);
-            SafeMarshalCopy(instanceName, (IntPtr)nextPtr);
+            SafeMarshalCopy(instanceName, nextPtr);
             nextPtr += instanceNameLength;
 
             string counterName = (string)_categoryData.CounterNames[0];
             newCounterEntryPointer->CounterNameHashCode = GetWstrHashCode(counterName);
             SetValue(newCounterEntryPointer, 0);
             newCounterEntryPointer->CounterNameOffset = (int)(nextPtr - _baseAddress);
-            SafeMarshalCopy(counterName, (IntPtr)nextPtr);
+            SafeMarshalCopy(counterName, nextPtr);
             nextPtr += (counterName.Length + 1) * 2;
 
             CounterEntry* previousCounterEntryPointer;
@@ -313,15 +309,15 @@ namespace System.Diagnostics
                 newCounterEntryPointer->CounterNameHashCode = GetWstrHashCode(counterName);
                 SetValue(newCounterEntryPointer, 0);
                 newCounterEntryPointer->CounterNameOffset = (int)(nextPtr - _baseAddress);
-                SafeMarshalCopy(counterName, (IntPtr)nextPtr);
+                SafeMarshalCopy(counterName, nextPtr);
 
                 nextPtr += (counterName.Length + 1) * 2;
-                previousCounterEntryPointer->NextCounterOffset = (int)((long)newCounterEntryPointer - _baseAddress);
+                previousCounterEntryPointer->NextCounterOffset = (int)((byte*)newCounterEntryPointer - _baseAddress);
             }
 
             Debug.Assert(nextPtr - _baseAddress == freeMemoryOffset + totalSize + alignmentAdjustment, "We should have used all of the space we requested at this point");
 
-            int offset = (int)((long)newCategoryEntryPointer - _baseAddress);
+            int offset = (int)((byte*)newCategoryEntryPointer - _baseAddress);
             lastCategoryPointer->IsConsistent = 0;
             // If not the first category node, link it.
             if (offset != _initialOffset)
@@ -340,7 +336,7 @@ namespace System.Diagnostics
                                             PerformanceCounterInstanceLifetime lifetime)
         {
             int instanceNameLength;
-            int totalSize = s_instanceEntrySize + (s_counterEntrySize * _categoryData.CounterNames.Count);
+            int totalSize = sizeof(InstanceEntry) + (sizeof(CounterEntry) * _categoryData.CounterNames.Count);
             int alignmentAdjustment;
             int freeMemoryOffset;
             int newOffset = 0;
@@ -348,7 +344,7 @@ namespace System.Diagnostics
             if (_categoryData.UseUniqueSharedMemory)
             {
                 instanceNameLength = InstanceNameSlotSize;
-                totalSize += s_processLifetimeEntrySize + instanceNameLength;
+                totalSize += sizeof(ProcessLifetimeEntry) + instanceNameLength;
 
                 // If we're in a separate shared memory, we need to do a two stage update of the free memory pointer.
                 // First we calculate our alignment adjustment and where the new free offset is.  Then we
@@ -373,33 +369,33 @@ namespace System.Diagnostics
             }
 
             freeMemoryOffset += alignmentAdjustment;
-            long nextPtr = ResolveOffset(freeMemoryOffset, totalSize);    // don't add alignmentAdjustment since it's already
-                                                                          // been added to freeMemoryOffset
+            byte* nextPtr = (byte*)ResolveOffset(freeMemoryOffset, totalSize);    // don't add alignmentAdjustment since it's already
+                                                                                  // been added to freeMemoryOffset
 
             InstanceEntry* newInstanceEntryPointer = (InstanceEntry*)nextPtr;
-            nextPtr += s_instanceEntrySize;
+            nextPtr += sizeof(InstanceEntry);
 
             // create the first CounterEntry and reserve space for all of the rest.  We won't
             // finish creating them until the end
             CounterEntry* newCounterEntryPointer = (CounterEntry*)nextPtr;
-            nextPtr += s_counterEntrySize * _categoryData.CounterNames.Count;
+            nextPtr += sizeof(CounterEntry) * _categoryData.CounterNames.Count;
 
             if (_categoryData.UseUniqueSharedMemory)
             {
                 ProcessLifetimeEntry* newLifetimeEntry = (ProcessLifetimeEntry*)nextPtr;
-                nextPtr += s_processLifetimeEntrySize;
+                nextPtr += sizeof(ProcessLifetimeEntry);
 
-                newCounterEntryPointer->LifetimeOffset = (int)((long)newLifetimeEntry - _baseAddress);
+                newCounterEntryPointer->LifetimeOffset = (int)((byte*)newLifetimeEntry - _baseAddress);
                 PopulateLifetimeEntry(newLifetimeEntry, lifetime);
             }
 
             // set up the InstanceEntry
             newInstanceEntryPointer->InstanceNameHashCode = instanceNameHashCode;
             newInstanceEntryPointer->NextInstanceOffset = 0;
-            newInstanceEntryPointer->FirstCounterOffset = (int)((long)newCounterEntryPointer - _baseAddress);
+            newInstanceEntryPointer->FirstCounterOffset = (int)((byte*)newCounterEntryPointer - _baseAddress);
             newInstanceEntryPointer->RefCount = 1;
             newInstanceEntryPointer->InstanceNameOffset = (int)(nextPtr - _baseAddress);
-            SafeMarshalCopy(instanceName, (IntPtr)nextPtr);
+            SafeMarshalCopy(instanceName, nextPtr);
 
             nextPtr += instanceNameLength;
 
@@ -407,8 +403,8 @@ namespace System.Diagnostics
             {
                 // in the unique shared mem we'll assume that the CounterEntries of the first instance
                 // are all created.  Then we can just refer to the old counter name rather than copying in a new one.
-                InstanceEntry* firstInstanceInCategoryPointer = (InstanceEntry*)ResolveOffset(categoryPointer->FirstInstanceOffset, s_instanceEntrySize);
-                CounterEntry* firstCounterInCategoryPointer = (CounterEntry*)ResolveOffset(firstInstanceInCategoryPointer->FirstCounterOffset, s_counterEntrySize);
+                InstanceEntry* firstInstanceInCategoryPointer = (InstanceEntry*)ResolveOffset(categoryPointer->FirstInstanceOffset, sizeof(InstanceEntry));
+                CounterEntry* firstCounterInCategoryPointer = (CounterEntry*)ResolveOffset(firstInstanceInCategoryPointer->FirstCounterOffset, sizeof(CounterEntry));
                 newCounterEntryPointer->CounterNameHashCode = firstCounterInCategoryPointer->CounterNameHashCode;
                 SetValue(newCounterEntryPointer, 0);
                 newCounterEntryPointer->CounterNameOffset = firstCounterInCategoryPointer->CounterNameOffset;
@@ -421,12 +417,12 @@ namespace System.Diagnostics
 
                     newCounterEntryPointer++;
                     Debug.Assert(firstCounterInCategoryPointer->NextCounterOffset != 0, "The unique shared memory should have all of its counters created by the time we hit CreateInstance");
-                    firstCounterInCategoryPointer = (CounterEntry*)ResolveOffset(firstCounterInCategoryPointer->NextCounterOffset, s_counterEntrySize);
+                    firstCounterInCategoryPointer = (CounterEntry*)ResolveOffset(firstCounterInCategoryPointer->NextCounterOffset, sizeof(CounterEntry));
                     newCounterEntryPointer->CounterNameHashCode = firstCounterInCategoryPointer->CounterNameHashCode;
                     SetValue(newCounterEntryPointer, 0);
                     newCounterEntryPointer->CounterNameOffset = firstCounterInCategoryPointer->CounterNameOffset;
 
-                    previousCounterEntryPointer->NextCounterOffset = (int)((long)newCounterEntryPointer - _baseAddress);
+                    previousCounterEntryPointer->NextCounterOffset = (int)((byte*)newCounterEntryPointer - _baseAddress);
                 }
             }
             else
@@ -438,13 +434,13 @@ namespace System.Diagnostics
                     string counterName = (string)_categoryData.CounterNames[i];
                     newCounterEntryPointer->CounterNameHashCode = GetWstrHashCode(counterName);
                     newCounterEntryPointer->CounterNameOffset = (int)(nextPtr - _baseAddress);
-                    SafeMarshalCopy(counterName, (IntPtr)nextPtr);
+                    SafeMarshalCopy(counterName, nextPtr);
                     nextPtr += (counterName.Length + 1) * 2;
 
                     SetValue(newCounterEntryPointer, 0);
 
                     if (i != 0)
-                        previousCounterEntryPointer->NextCounterOffset = (int)((long)newCounterEntryPointer - _baseAddress);
+                        previousCounterEntryPointer->NextCounterOffset = (int)((byte*)newCounterEntryPointer - _baseAddress);
 
                     previousCounterEntryPointer = newCounterEntryPointer;
                     newCounterEntryPointer++;
@@ -453,7 +449,7 @@ namespace System.Diagnostics
 
             Debug.Assert(nextPtr - _baseAddress == freeMemoryOffset + totalSize, "We should have used all of the space we requested at this point");
 
-            int offset = (int)((long)newInstanceEntryPointer - _baseAddress);
+            int offset = (int)((byte*)newInstanceEntryPointer - _baseAddress);
             categoryPointer->IsConsistent = 0;
 
             // prepend the new instance rather than append, helps with perf of hooking up subsequent counters
@@ -482,7 +478,7 @@ namespace System.Diagnostics
 
             freeMemoryOffset += alignmentAdjustment;
 
-            long nextPtr = ResolveOffset(freeMemoryOffset, totalSize);
+            byte* nextPtr = (byte*)ResolveOffset(freeMemoryOffset, totalSize);
             CounterEntry* newCounterEntryPointer = (CounterEntry*)nextPtr;
             nextPtr += sizeof(CounterEntry);
 
@@ -490,11 +486,11 @@ namespace System.Diagnostics
             newCounterEntryPointer->CounterNameHashCode = counterNameHashCode;
             newCounterEntryPointer->NextCounterOffset = 0;
             SetValue(newCounterEntryPointer, 0);
-            SafeMarshalCopy(counterName, (IntPtr)nextPtr);
+            SafeMarshalCopy(counterName, nextPtr);
 
             Debug.Assert(nextPtr + counterNameLength - _baseAddress == freeMemoryOffset + totalSize, "We should have used all of the space we requested at this point");
 
-            lastCounterPointer->NextCounterOffset = (int)((long)newCounterEntryPointer - _baseAddress);
+            lastCounterPointer->NextCounterOffset = (int)((byte*)newCounterEntryPointer - _baseAddress);
             return freeMemoryOffset;
         }
 
@@ -670,7 +666,7 @@ namespace System.Diagnostics
                             {
                                 fileMappingSize = GetFileMappingSizeFromConfig();
                                 if (data.UseUniqueSharedMemory)
-                                    fileMappingSize = fileMappingSize >> 2;  // if we have a custom filemapping, only make it 25% as large.
+                                    fileMappingSize >>= 2;  // if we have a custom filemapping, only make it 25% as large.
                             }
 
                             // now read the counter names
@@ -711,13 +707,12 @@ namespace System.Diagnostics
                         }
                         finally
                         {
-                            if (categoryKey != null)
-                                categoryKey.Close();
+                            categoryKey?.Close();
                         }
                     }
                 }
             }
-            _baseAddress = (long)data.FileMapping.FileViewAddress;
+            _baseAddress = (byte*)data.FileMapping.FileViewAddress;
 
             if (data.UseUniqueSharedMemory)
                 _initialOffset = 8;
@@ -744,7 +739,7 @@ namespace System.Diagnostics
         {
             int counterNameHashCode = GetWstrHashCode(counterName);
             int instanceNameHashCode;
-            if (instanceName != null && instanceName.Length != 0)
+            if (!string.IsNullOrEmpty(instanceName))
                 instanceNameHashCode = GetWstrHashCode(instanceName);
             else
             {
@@ -782,8 +777,8 @@ namespace System.Diagnostics
                                 ExitCriticalSection(&(categoryPointer->SpinLock));
                         }
 
-                        categoryPointer = (CategoryEntry*)(ResolveOffset(newCategoryOffset, s_categoryEntrySize));
-                        instancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, s_instanceEntrySize));
+                        categoryPointer = (CategoryEntry*)(ResolveOffset(newCategoryOffset, sizeof(CategoryEntry)));
+                        instancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, sizeof(InstanceEntry)));
                         counterFound = FindCounter(counterNameHashCode, counterName, instancePointer, &counterPointer);
                         Debug.Assert(counterFound, "All counters should be created, so we should always find the counter");
                         return counterPointer;
@@ -818,7 +813,7 @@ namespace System.Diagnostics
                             if (!reused)
                             {
                                 int newInstanceOffset = CreateInstance(categoryPointer, instanceNameHashCode, instanceName, lifetime);
-                                instancePointer = (InstanceEntry*)(ResolveOffset(newInstanceOffset, s_instanceEntrySize));
+                                instancePointer = (InstanceEntry*)(ResolveOffset(newInstanceOffset, sizeof(InstanceEntry)));
 
                                 counterFound = FindCounter(counterNameHashCode, counterName, instancePointer, &counterPointer);
                                 Debug.Assert(counterFound, "All counters should be created, so we should always find the counter");
@@ -851,7 +846,7 @@ namespace System.Diagnostics
                             try
                             {
                                 int newCounterOffset = CreateCounter(counterPointer, counterNameHashCode, counterName);
-                                return (CounterEntry*)(ResolveOffset(newCounterOffset, s_counterEntrySize));
+                                return (CounterEntry*)(ResolveOffset(newCounterOffset, sizeof(CounterEntry)));
                             }
                             finally
                             {
@@ -870,7 +865,7 @@ namespace System.Diagnostics
                 {
                     if (counterPointer != null && instancePointer != null)
                     {
-                        _thisInstanceOffset = ResolveAddress((long)instancePointer, s_instanceEntrySize);
+                        _thisInstanceOffset = ResolveAddress((byte*)instancePointer, sizeof(InstanceEntry));
                     }
                 }
                 catch (InvalidOperationException)
@@ -897,7 +892,7 @@ namespace System.Diagnostics
         //
         private unsafe bool FindCategory(CategoryEntry** returnCategoryPointerReference)
         {
-            CategoryEntry* firstCategoryPointer = (CategoryEntry*)(ResolveOffset(_initialOffset, s_categoryEntrySize));
+            CategoryEntry* firstCategoryPointer = (CategoryEntry*)(ResolveOffset(_initialOffset, sizeof(CategoryEntry)));
             CategoryEntry* currentCategoryPointer = firstCategoryPointer;
             CategoryEntry* previousCategoryPointer = firstCategoryPointer;
 
@@ -917,7 +912,7 @@ namespace System.Diagnostics
 
                 previousCategoryPointer = currentCategoryPointer;
                 if (currentCategoryPointer->NextCategoryOffset != 0)
-                    currentCategoryPointer = (CategoryEntry*)(ResolveOffset(currentCategoryPointer->NextCategoryOffset, s_categoryEntrySize));
+                    currentCategoryPointer = (CategoryEntry*)(ResolveOffset(currentCategoryPointer->NextCategoryOffset, sizeof(CategoryEntry)));
                 else
                 {
                     *returnCategoryPointerReference = previousCategoryPointer;
@@ -928,7 +923,7 @@ namespace System.Diagnostics
 
         private unsafe bool FindCounter(int counterNameHashCode, string counterName, InstanceEntry* instancePointer, CounterEntry** returnCounterPointerReference)
         {
-            CounterEntry* currentCounterPointer = (CounterEntry*)(ResolveOffset(instancePointer->FirstCounterOffset, s_counterEntrySize));
+            CounterEntry* currentCounterPointer = (CounterEntry*)(ResolveOffset(instancePointer->FirstCounterOffset, sizeof(CounterEntry)));
             CounterEntry* previousCounterPointer = currentCounterPointer;
             while (true)
             {
@@ -943,7 +938,7 @@ namespace System.Diagnostics
 
                 previousCounterPointer = currentCounterPointer;
                 if (currentCounterPointer->NextCounterOffset != 0)
-                    currentCounterPointer = (CounterEntry*)(ResolveOffset(currentCounterPointer->NextCounterOffset, s_counterEntrySize));
+                    currentCounterPointer = (CounterEntry*)(ResolveOffset(currentCounterPointer->NextCounterOffset, sizeof(CounterEntry)));
                 else
                 {
                     *returnCounterPointerReference = previousCounterPointer;
@@ -958,7 +953,7 @@ namespace System.Diagnostics
                                            out bool foundFreeInstance)
         {
 
-            InstanceEntry* currentInstancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, s_instanceEntrySize));
+            InstanceEntry* currentInstancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, sizeof(InstanceEntry)));
             InstanceEntry* previousInstancePointer = currentInstancePointer;
             foundFreeInstance = false;
             // Look at the first instance to determine if this is single or multi instance.
@@ -991,7 +986,7 @@ namespace System.Diagnostics
             if (activateUnusedInstances)
             {
 
-                int totalSize = s_instanceEntrySize + s_processLifetimeEntrySize + InstanceNameSlotSize + (s_counterEntrySize * _categoryData.CounterNames.Count);
+                int totalSize = sizeof(InstanceEntry) + sizeof(ProcessLifetimeEntry) + InstanceNameSlotSize + (sizeof(CounterEntry) * _categoryData.CounterNames.Count);
                 int freeMemoryOffset = *((int*)_baseAddress);
                 int alignmentAdjustment;
                 int newOffset = CalculateMemoryNoBoundsCheck(freeMemoryOffset, totalSize, out alignmentAdjustment);
@@ -1022,10 +1017,10 @@ namespace System.Diagnostics
                             // we found a matching instance.
                             *returnInstancePointerReference = currentInstancePointer;
 
-                            CounterEntry* firstCounter = (CounterEntry*)ResolveOffset(currentInstancePointer->FirstCounterOffset, s_counterEntrySize);
+                            CounterEntry* firstCounter = (CounterEntry*)ResolveOffset(currentInstancePointer->FirstCounterOffset, sizeof(CounterEntry));
                             ProcessLifetimeEntry* lifetimeEntry;
                             if (_categoryData.UseUniqueSharedMemory)
-                                lifetimeEntry = (ProcessLifetimeEntry*)ResolveOffset(firstCounter->LifetimeOffset, s_processLifetimeEntrySize);
+                                lifetimeEntry = (ProcessLifetimeEntry*)ResolveOffset(firstCounter->LifetimeOffset, sizeof(ProcessLifetimeEntry));
                             else
                                 lifetimeEntry = null;
 
@@ -1093,7 +1088,7 @@ namespace System.Diagnostics
 
                     previousInstancePointer = currentInstancePointer;
                     if (currentInstancePointer->NextInstanceOffset != 0)
-                        currentInstancePointer = (InstanceEntry*)(ResolveOffset(currentInstancePointer->NextInstanceOffset, s_instanceEntrySize));
+                        currentInstancePointer = (InstanceEntry*)(ResolveOffset(currentInstancePointer->NextInstanceOffset, sizeof(InstanceEntry)));
                     else
                     {
                         *returnInstancePointerReference = previousInstancePointer;
@@ -1114,7 +1109,7 @@ namespace System.Diagnostics
                                                InstanceEntry* lockInstancePointer)
         {
             // 2nd pass find a free instance slot
-            InstanceEntry* currentInstancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, s_instanceEntrySize));
+            InstanceEntry* currentInstancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, sizeof(InstanceEntry)));
             InstanceEntry* previousInstancePointer = currentInstancePointer;
             while (true)
             {
@@ -1122,11 +1117,11 @@ namespace System.Diagnostics
                 {
 
                     bool hasFit;
-                    long instanceNamePtr;       // we need cache this to avoid race conditions.
+                    char* instanceNamePtr;       // we need cache this to avoid race conditions.
 
                     if (_categoryData.UseUniqueSharedMemory)
                     {
-                        instanceNamePtr = ResolveOffset(currentInstancePointer->InstanceNameOffset, InstanceNameSlotSize);
+                        instanceNamePtr = (char*)ResolveOffset(currentInstancePointer->InstanceNameOffset, InstanceNameSlotSize);
                         // In the separate shared memory case we should always have enough space for instances.  The
                         // name slot size is fixed.
                         Debug.Assert(((instanceName.Length + 1) * 2) <= InstanceNameSlotSize, "The instance name length should always fit in our slot size");
@@ -1135,12 +1130,12 @@ namespace System.Diagnostics
                     else
                     {
                         // we don't know the string length yet.
-                        instanceNamePtr = ResolveOffset(currentInstancePointer->InstanceNameOffset, 0);
+                        instanceNamePtr = (char*)ResolveOffset(currentInstancePointer->InstanceNameOffset, 0);
 
                         // In the global shared memory, we require names to be exactly the same length in order
                         // to reuse them.  This way we don't end up leaking any space and we don't need to
                         // depend on the layout of the memory to calculate the space we have.
-                        int length = GetStringLength((char*)instanceNamePtr);
+                        int length = GetStringLength(instanceNamePtr);
                         hasFit = (length == instanceName.Length);
                     }
 
@@ -1160,7 +1155,7 @@ namespace System.Diagnostics
                             try
                             {
                                 // Make copy with zero-term
-                                SafeMarshalCopy(instanceName, (IntPtr)instanceNamePtr);
+                                SafeMarshalCopy(instanceName, instanceNamePtr);
                                 currentInstancePointer->InstanceNameHashCode = instanceNameHashCode;
 
                                 // return
@@ -1170,8 +1165,8 @@ namespace System.Diagnostics
 
                                 if (_categoryData.UseUniqueSharedMemory)
                                 {
-                                    CounterEntry* counterPointer = (CounterEntry*)ResolveOffset(currentInstancePointer->FirstCounterOffset, s_counterEntrySize);
-                                    ProcessLifetimeEntry* lifetimeEntry = (ProcessLifetimeEntry*)ResolveOffset(counterPointer->LifetimeOffset, s_processLifetimeEntrySize);
+                                    CounterEntry* counterPointer = (CounterEntry*)ResolveOffset(currentInstancePointer->FirstCounterOffset, sizeof(CounterEntry));
+                                    ProcessLifetimeEntry* lifetimeEntry = (ProcessLifetimeEntry*)ResolveOffset(counterPointer->LifetimeOffset, sizeof(ProcessLifetimeEntry));
                                     PopulateLifetimeEntry(lifetimeEntry, lifetime);
                                 }
 
@@ -1189,7 +1184,7 @@ namespace System.Diagnostics
 
                 previousInstancePointer = currentInstancePointer;
                 if (currentInstancePointer->NextInstanceOffset != 0)
-                    currentInstancePointer = (InstanceEntry*)(ResolveOffset(currentInstancePointer->NextInstanceOffset, s_instanceEntrySize));
+                    currentInstancePointer = (InstanceEntry*)(ResolveOffset(currentInstancePointer->NextInstanceOffset, sizeof(InstanceEntry)));
                 else
                 {
                     *returnInstancePointerReference = previousInstancePointer;
@@ -1225,7 +1220,7 @@ namespace System.Diagnostics
             ResolveOffset(freeOffset, 0);        // verify next free offset
 
             // begin by verifying the head node's offset
-            int currentOffset = ResolveAddress((long)currentCategoryPointer, s_categoryEntrySize);
+            int currentOffset = ResolveAddress((byte*)currentCategoryPointer, sizeof(CategoryEntry));
             if (currentOffset >= freeOffset)
             {
                 // zero out the bad head node entry
@@ -1241,7 +1236,7 @@ namespace System.Diagnostics
             if (currentCategoryPointer->NextCategoryOffset > freeOffset)
                 currentCategoryPointer->NextCategoryOffset = 0;
             else if (currentCategoryPointer->NextCategoryOffset != 0)
-                VerifyCategory((CategoryEntry*)ResolveOffset(currentCategoryPointer->NextCategoryOffset, s_categoryEntrySize));
+                VerifyCategory((CategoryEntry*)ResolveOffset(currentCategoryPointer->NextCategoryOffset, sizeof(CategoryEntry)));
 
             if (currentCategoryPointer->FirstInstanceOffset != 0)
             {
@@ -1249,7 +1244,7 @@ namespace System.Diagnostics
                 // the head of the list to point to the next instance
                 if (currentCategoryPointer->FirstInstanceOffset > freeOffset)
                 {
-                    InstanceEntry* currentInstancePointer = (InstanceEntry*)ResolveOffset(currentCategoryPointer->FirstInstanceOffset, s_instanceEntrySize);
+                    InstanceEntry* currentInstancePointer = (InstanceEntry*)ResolveOffset(currentCategoryPointer->FirstInstanceOffset, sizeof(InstanceEntry));
                     currentCategoryPointer->FirstInstanceOffset = currentInstancePointer->NextInstanceOffset;
                     if (currentCategoryPointer->FirstInstanceOffset > freeOffset)
                         currentCategoryPointer->FirstInstanceOffset = 0;
@@ -1258,7 +1253,7 @@ namespace System.Diagnostics
                 if (currentCategoryPointer->FirstInstanceOffset != 0)
                 {
                     Debug.Assert(currentCategoryPointer->FirstInstanceOffset <= freeOffset, "The head of the list is inconsistent - possible mismatch of V2 & V3 instances?");
-                    VerifyInstance((InstanceEntry*)ResolveOffset(currentCategoryPointer->FirstInstanceOffset, s_instanceEntrySize));
+                    VerifyInstance((InstanceEntry*)ResolveOffset(currentCategoryPointer->FirstInstanceOffset, sizeof(InstanceEntry)));
                 }
             }
 
@@ -1273,17 +1268,17 @@ namespace System.Diagnostics
             if (currentInstancePointer->NextInstanceOffset > freeOffset)
                 currentInstancePointer->NextInstanceOffset = 0;
             else if (currentInstancePointer->NextInstanceOffset != 0)
-                VerifyInstance((InstanceEntry*)ResolveOffset(currentInstancePointer->NextInstanceOffset, s_instanceEntrySize));
+                VerifyInstance((InstanceEntry*)ResolveOffset(currentInstancePointer->NextInstanceOffset, sizeof(InstanceEntry)));
         }
 
         private unsafe void VerifyLifetime(InstanceEntry* currentInstancePointer)
         {
             Debug.Assert(currentInstancePointer->RefCount != 0, "RefCount must be 1 for instances passed to VerifyLifetime");
 
-            CounterEntry* counter = (CounterEntry*)ResolveOffset(currentInstancePointer->FirstCounterOffset, s_counterEntrySize);
+            CounterEntry* counter = (CounterEntry*)ResolveOffset(currentInstancePointer->FirstCounterOffset, sizeof(CounterEntry));
             if (counter->LifetimeOffset != 0)
             {
-                ProcessLifetimeEntry* lifetime = (ProcessLifetimeEntry*)ResolveOffset(counter->LifetimeOffset, s_processLifetimeEntrySize);
+                ProcessLifetimeEntry* lifetime = (ProcessLifetimeEntry*)ResolveOffset(counter->LifetimeOffset, sizeof(ProcessLifetimeEntry));
                 if (lifetime->LifetimeType == (int)PerformanceCounterInstanceLifetime.Process)
                 {
                     int pid = lifetime->ProcessId;
@@ -1398,7 +1393,7 @@ namespace System.Diagnostics
             if (!FindCategory(&categoryPointer))
                 return;
 
-            InstanceEntry* instancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, s_instanceEntrySize));
+            InstanceEntry* instancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, sizeof(InstanceEntry)));
 
             Mutex mutex = null;
             try
@@ -1409,7 +1404,7 @@ namespace System.Diagnostics
                     RemoveOneInstance(instancePointer, true);
 
                     if (instancePointer->NextInstanceOffset != 0)
-                        instancePointer = (InstanceEntry*)(ResolveOffset(instancePointer->NextInstanceOffset, s_instanceEntrySize));
+                        instancePointer = (InstanceEntry*)(ResolveOffset(instancePointer->NextInstanceOffset, sizeof(InstanceEntry)));
                     else
                     {
                         break;
@@ -1428,7 +1423,7 @@ namespace System.Diagnostics
 
         internal unsafe void RemoveInstance(string instanceName, PerformanceCounterInstanceLifetime instanceLifetime)
         {
-            if (instanceName == null || instanceName.Length == 0)
+            if (string.IsNullOrEmpty(instanceName))
                 return;
 
             int instanceNameHashCode = GetWstrHashCode(instanceName);
@@ -1451,18 +1446,18 @@ namespace System.Diagnostics
                     try
                     {
                         // validate whether the cached instance pointer is pointing at the right instance
-                        instancePointer = (InstanceEntry*)(ResolveOffset(_thisInstanceOffset, s_instanceEntrySize));
+                        instancePointer = (InstanceEntry*)(ResolveOffset(_thisInstanceOffset, sizeof(InstanceEntry)));
                         if (instancePointer->InstanceNameHashCode == instanceNameHashCode)
                         {
                             if (StringEquals(instanceName, instancePointer->InstanceNameOffset))
                             {
                                 validatedCachedInstancePointer = true;
 
-                                CounterEntry* firstCounter = (CounterEntry*)ResolveOffset(instancePointer->FirstCounterOffset, s_counterEntrySize);
+                                CounterEntry* firstCounter = (CounterEntry*)ResolveOffset(instancePointer->FirstCounterOffset, sizeof(CounterEntry));
                                 ProcessLifetimeEntry* lifetimeEntry;
                                 if (_categoryData.UseUniqueSharedMemory)
                                 {
-                                    lifetimeEntry = (ProcessLifetimeEntry*)ResolveOffset(firstCounter->LifetimeOffset, s_processLifetimeEntrySize);
+                                    lifetimeEntry = (ProcessLifetimeEntry*)ResolveOffset(firstCounter->LifetimeOffset, sizeof(ProcessLifetimeEntry));
                                     if (lifetimeEntry != null
                                         && lifetimeEntry->LifetimeType == (int)PerformanceCounterInstanceLifetime.Process
                                         && lifetimeEntry->ProcessId != 0)
@@ -1534,14 +1529,14 @@ namespace System.Diagnostics
             CounterEntry* currentCounterPointer = null;
 
             if (instancePointer->FirstCounterOffset != 0)
-                currentCounterPointer = (CounterEntry*)(ResolveOffset(instancePointer->FirstCounterOffset, s_counterEntrySize));
+                currentCounterPointer = (CounterEntry*)(ResolveOffset(instancePointer->FirstCounterOffset, sizeof(CounterEntry)));
 
             while (currentCounterPointer != null)
             {
                 SetValue(currentCounterPointer, 0);
 
                 if (currentCounterPointer->NextCounterOffset != 0)
-                    currentCounterPointer = (CounterEntry*)(ResolveOffset(currentCounterPointer->NextCounterOffset, s_counterEntrySize));
+                    currentCounterPointer = (CounterEntry*)(ResolveOffset(currentCounterPointer->NextCounterOffset, sizeof(CounterEntry)));
                 else
                     currentCounterPointer = null;
             }
@@ -1622,19 +1617,19 @@ namespace System.Diagnostics
             return (((long)counterEntry & 0x7) != 0);
         }
 
-        private long ResolveOffset(int offset, int sizeToRead)
+        private unsafe void* ResolveOffset(int offset, int sizeToRead)
         {
             //It is very important to check the integrity of the shared memory
             //everytime a new address is resolved.
             if (offset > (FileView._fileMappingSize - sizeToRead) || offset < 0)
                 throw new InvalidOperationException(SR.MappingCorrupted);
 
-            long address = _baseAddress + offset;
+            void* address = (void*)(_baseAddress + offset);
 
             return address;
         }
 
-        private int ResolveAddress(long address, int sizeToRead)
+        private int ResolveAddress(byte* address, int sizeToRead)
         {
             int offset = (int)(address - _baseAddress);
 
@@ -1674,7 +1669,7 @@ namespace System.Diagnostics
             {
                 string mappingName = fileMappingName;
 
-                SafeLocalAllocHandle securityDescriptorPointer = null;
+                void* pSecurityDescriptor = null;
                 try
                 {
                     // The sddl string consists of these parts:
@@ -1686,12 +1681,17 @@ namespace System.Diagnostics
                     // ;S-1-5-33)   the same permission granted to AU is also granted to restricted services
                     string sddlString = "D:(A;OICI;FRFWGRGW;;;AU)(A;OICI;FRFWGRGW;;;S-1-5-33)";
 
-                    if (!Interop.Advapi32.ConvertStringSecurityDescriptorToSecurityDescriptor(sddlString, Interop.Kernel32.PerformanceCounterOptions.SDDL_REVISION_1,
-                                                                                                    out securityDescriptorPointer, IntPtr.Zero))
+                    if (!Interop.Advapi32.ConvertStringSecurityDescriptorToSecurityDescriptor(
+                        sddlString,
+                        Interop.Kernel32.PerformanceCounterOptions.SDDL_REVISION_1,
+                        out pSecurityDescriptor,
+                        null))
+                    {
                         throw new InvalidOperationException(SR.SetSecurityDescriptorFailed);
+                    }
 
                     Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
-                    securityAttributes.lpSecurityDescriptor = securityDescriptorPointer.DangerousGetHandle();
+                    securityAttributes.lpSecurityDescriptor = pSecurityDescriptor;
                     securityAttributes.bInheritHandle = Interop.BOOL.FALSE;
 
                     //
@@ -1761,8 +1761,7 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    if (securityDescriptorPointer != null)
-                        securityDescriptorPointer.Close();
+                    Marshal.FreeHGlobal((IntPtr)pSecurityDescriptor);
                 }
 
                 Interlocked.CompareExchange(ref *(int*)_fileViewAddress.DangerousGetHandle().ToPointer(), initialOffset, 0);
@@ -1773,13 +1772,13 @@ namespace System.Diagnostics
         // SafeMarshalCopy always null terminates the char array
         // before copying it to native memory
         //
-        private static void SafeMarshalCopy(string str, IntPtr nativePointer)
+        private static unsafe void SafeMarshalCopy(string str, void* nativePointer)
         {
             // convert str to a char array and copy it to the unmanaged memory pointer
             char[] tmp = new char[str.Length + 1];
             str.CopyTo(0, tmp, 0, str.Length);
             tmp[str.Length] = '\0';  // make sure the char[] is null terminated
-            Marshal.Copy(tmp, 0, nativePointer, tmp.Length);
+            Marshal.Copy(tmp, 0, (nint)nativePointer, tmp.Length);
         }
 
         // <WARNING>

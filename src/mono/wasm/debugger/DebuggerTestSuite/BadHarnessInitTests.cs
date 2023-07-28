@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Xunit;
+using Xunit.Abstractions;
 
 #nullable enable
 
@@ -14,12 +15,15 @@ namespace DebuggerTests
 {
     public class BadHarnessInitTests : DebuggerTests
     {
+        public BadHarnessInitTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         public override async Task InitializeAsync() => await Task.CompletedTask;
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvalidInitCommands()
         {
-            var bad_cmd_name = "non-existant.command";
+            var bad_cmd_name = "non-existent.command";
 
             Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
                 new List<(string, Task<Result>)>
@@ -30,7 +34,7 @@ namespace DebuggerTests
 
             await Ready();
 
-            var ae = await Assert.ThrowsAsync<ArgumentException>(async () => await insp.OpenSessionAsync(fn, TestTimeout));
+            var ae = await Assert.ThrowsAsync<ArgumentException>(async () => await insp.OpenSessionAsync(fn, "", TestTimeout));
             Assert.Contains(bad_cmd_name, ae.Message);
         }
     }

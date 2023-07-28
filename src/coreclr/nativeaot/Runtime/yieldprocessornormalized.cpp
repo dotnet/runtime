@@ -47,20 +47,19 @@ static void InitializeYieldProcessorNormalized()
     const int MeasureDurationMs = 10;
     const int NsPerSecond = 1000 * 1000 * 1000;
 
-    LARGE_INTEGER li;
-    if (!PalQueryPerformanceFrequency(&li) || (ULONGLONG)li.QuadPart < 1000 / MeasureDurationMs)
+    ULONGLONG ticksPerSecond = PalQueryPerformanceFrequency();
+
+    if (ticksPerSecond < 1000 / MeasureDurationMs)
     {
         // High precision clock not available or clock resolution is too low, resort to defaults
         s_isYieldProcessorNormalizedInitialized = true;
         return;
     }
-    ULONGLONG ticksPerSecond = li.QuadPart;
 
     // Measure the nanosecond delay per yield
     ULONGLONG measureDurationTicks = ticksPerSecond / (1000 / MeasureDurationMs);
     unsigned int yieldCount = 0;
-    PalQueryPerformanceCounter(&li);
-    ULONGLONG startTicks = li.QuadPart;
+      ULONGLONG startTicks = PalQueryPerformanceCounter();
     ULONGLONG elapsedTicks;
     do
     {
@@ -73,8 +72,7 @@ static void InitializeYieldProcessorNormalized()
         }
         yieldCount += 1000;
 
-        PalQueryPerformanceCounter(&li);
-        ULONGLONG nowTicks = li.QuadPart;
+        ULONGLONG nowTicks = PalQueryPerformanceCounter();
         elapsedTicks = nowTicks - startTicks;
     } while (elapsedTicks < measureDurationTicks);
     double nsPerYield = (double)elapsedTicks * NsPerSecond / ((double)yieldCount * ticksPerSecond);

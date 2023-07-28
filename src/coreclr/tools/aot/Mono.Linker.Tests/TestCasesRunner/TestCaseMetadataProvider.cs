@@ -1,15 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Mono.Cecil;
-using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
+using System;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -28,7 +27,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				IgnoreSubstitutions = GetOptionAttributeValue (nameof (IgnoreSubstitutionsAttribute), true),
 				IgnoreLinkAttributes = GetOptionAttributeValue (nameof (IgnoreLinkAttributesAttribute), true),
 				KeepTypeForwarderOnlyAssemblies = GetOptionAttributeValue (nameof (KeepTypeForwarderOnlyAssembliesAttribute), string.Empty),
-				KeepDebugMembers = GetOptionAttributeValue (nameof (SetupLinkerKeepDebugMembersAttribute), string.Empty),
 				LinkSymbols = GetOptionAttributeValue (nameof (SetupLinkerLinkSymbolsAttribute), string.Empty),
 				TrimMode = GetOptionAttributeValue<string> (nameof (SetupLinkerTrimModeAttribute), null),
 				DefaultAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerDefaultActionAttribute), null),
@@ -36,6 +34,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				StripDescriptors = GetOptionAttributeValue (nameof (StripDescriptorsAttribute), true),
 				StripSubstitutions = GetOptionAttributeValue (nameof (StripSubstitutionsAttribute), true),
 				StripLinkAttributes = GetOptionAttributeValue (nameof (StripLinkAttributesAttribute), true),
+				IlcFrameworkCompilation = _testCaseTypeDefinition.HasAttribute (nameof (SetupIlcWholeProgramAnalysisAttribute)),
 			};
 
 			foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerActionAttribute))) {
@@ -72,7 +71,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					if (pos != -1) {
 						string custom_assembly_path = values[0].Substring (pos + 1);
 						if (!Path.IsPathRooted (custom_assembly_path))
-							values[0] = values[0].Substring (0, pos + 1) + Path.Combine (inputPath, custom_assembly_path);
+							values[0] = string.Concat (values[0].AsSpan (0, pos + 1), Path.Combine (inputPath, custom_assembly_path));
 					}
 					break;
 				case "-a":

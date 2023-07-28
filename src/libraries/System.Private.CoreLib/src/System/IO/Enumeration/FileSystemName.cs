@@ -9,18 +9,6 @@ namespace System.IO.Enumeration
     /// <summary>Provides methods for matching file system names.</summary>
     public static class FileSystemName
     {
-        // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
-        // https://msdn.microsoft.com/en-us/library/ff469270.aspx
-        private static readonly char[] s_wildcardChars =
-        {
-            '\"', '<', '>', '*', '?'
-        };
-
-        private static readonly char[] s_simpleWildcardChars =
-        {
-            '*', '?'
-        };
-
         /// <summary>Translates the given Win32 expression. Change '*' and '?' to '&lt;', '&gt;' and '"' to match Win32 behavior.</summary>
         /// <param name="expression">The expression to translate.</param>
         /// <returns>A string with the translated Win32 expression.</returns>
@@ -63,7 +51,13 @@ namespace System.IO.Enumeration
                 }
             }
 
-            return modified ? sb.ToString() : expression;
+            if (!modified)
+            {
+                sb.Dispose();
+                return expression;
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>Verifies whether the given Win32 expression matches the given name. Supports the following wildcards: '*', '?', '&lt;', '&gt;', '"'. The backslash character '\' escapes.</summary>
@@ -72,7 +66,7 @@ namespace System.IO.Enumeration
         /// <param name="ignoreCase"><see langword="true" /> to ignore case (default), <see langword="false" /> if the match should be case-sensitive.</param>
         /// <returns><see langword="true" /> if the given expression matches the given name; otherwise, <see langword="false" />.</returns>
         /// <remarks>The syntax of the <paramref name="expression" /> parameter is based on the syntax used by FileSystemWatcher, which is based on [RtlIsNameInExpression](/windows/win32/devnotes/rtlisnameinexpression), which defines the rules for matching DOS wildcards (`'*'`, `'?'`, `'&lt;'`, `'&gt;'`, `'"'`).
-        /// Matching will not correspond to Win32 behavior unless you transform the expression using <see cref="FileSystemName.TranslateWin32Expression(string)" />.</remarks>
+        /// Matching will not correspond to Win32 behavior unless you transform the expression using <see cref="TranslateWin32Expression(string)" />.</remarks>
         public static bool MatchesWin32Expression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true)
         {
             return MatchPattern(expression, name, ignoreCase, useExtendedWildcards: true);
@@ -161,7 +155,13 @@ namespace System.IO.Enumeration
                     return true;
 
                 ReadOnlySpan<char> expressionEnd = expression.Slice(1);
-                if (expressionEnd.IndexOfAny(useExtendedWildcards ? s_wildcardChars : s_simpleWildcardChars) < 0)
+
+                // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
+                // https://msdn.microsoft.com/en-us/library/ff469270.aspx
+                bool hasWildcards = useExtendedWildcards ?
+                    expressionEnd.ContainsAny("\"<>*?") :
+                    expressionEnd.ContainsAny('*', '?');
+                if (!hasWildcards)
                 {
                     // Handle the special case of a single starting *, which essentially means "ends with"
 
@@ -185,7 +185,7 @@ namespace System.IO.Enumeration
             char nameChar = '\0';
             char expressionChar;
 
-            Span<int> temp = stackalloc int[0];
+            scoped Span<int> temp = default;
             Span<int> currentMatches = stackalloc int[16];
             Span<int> priorMatches = stackalloc int[16];
             priorMatches[0] = 0;

@@ -83,6 +83,12 @@ template<class TRAITS>
 }
 
 template<class TRAITS>
+/*static*/ void* CrossLoaderAllocatorHash<TRAITS>::KeyValueStore::operator new(size_t baseSize, CountWrapper capacity)
+{
+    return ::operator new(baseSize + capacity.value * sizeof(TValue));
+}
+
+template<class TRAITS>
 /*static*/ typename CrossLoaderAllocatorHash<TRAITS>::KeyValueStore *CrossLoaderAllocatorHash<TRAITS>::KeyValueStore::Create(
     TCount capacity,
     const TKey &key)
@@ -95,9 +101,7 @@ template<class TRAITS>
     }
     CONTRACTL_END;
 
-    NewArrayHolder<BYTE> bufferHolder = new BYTE[sizeof(KeyValueStore) + capacity * sizeof(TValue)];
-    KeyValueStore *keyValueStore = new(bufferHolder) KeyValueStore(capacity, key);
-    bufferHolder.SuppressRelease();
+    KeyValueStore *keyValueStore = new({capacity}) KeyValueStore(capacity, key);
     for (TCount i = 0; i < capacity; i++)
     {
         keyValueStore->GetValues()[i] = TRAITS::NullValue();

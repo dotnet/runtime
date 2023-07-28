@@ -38,7 +38,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
 
             Func<Export, object> exportFactoryFactory = (Func<Export, object>)Delegate.CreateDelegate(typeof(Func<Export, object>), this, genericMethod);
-            return (e) => exportFactoryFactory.Invoke(e);
+            return exportFactoryFactory.Invoke;
         }
 
         private object CreateStronglyTypedExportFactoryOfT<T>(Export export)

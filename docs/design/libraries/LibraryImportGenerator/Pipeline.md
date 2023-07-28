@@ -75,11 +75,17 @@ The stub code generator itself will handle some initial setup and variable decla
 1. `Pin`: data pinning in preparation for calling the generated P/Invoke
     - Call `Generate` on the marshalling generator for every parameter
     - Ignore any statements that are not `fixed` statements
+1. `PinnedMarshal`: conversion of managed to native data
+    - Call `Generate` on the marshalling generator for every parameter
 1. `Invoke`: call to the generated P/Invoke
     - Call `AsArgument` on the marshalling generator for every parameter
     - Create invocation statement that calls the generated P/Invoke
-1. `KeepAlive`: keep alive any objects who's native representation won't keep them alive across the call.
+1. `NotifyForSuccessfulInvoke`: Notify a marshaller that all stages through the "Invoke" stage were successful.
+    - Used to keep alive any objects who's native representation won't keep them alive across the call.
     - Call `Generate` on the marshalling generator for every parameter.
+1. `UnmarshalCapture`: capture any native out parameters to avoid memory leaks if exceptions are thrown during `Unmarshal`.
+    - If the method has a non-void return, call `Generate` on the marshalling generator for the return
+    - Call `Generate` on the marshalling generator for every parameter
 1. `Unmarshal`: conversion of native to managed data
     - If the method has a non-void return, call `Generate` on the marshalling generator for the return
     - Call `Generate` on the marshalling generator for every parameter
@@ -97,9 +103,11 @@ try
     << Marshal >>
     << Pin >> (fixed)
     {
+        << Pinned Marshal >>
         << Invoke >>
     }
-    << Keep Alive >>
+    << Notify For Successful Invoke >>
+    << Unmarshal Capture >>
     << Unmarshal >>
 }
 finally

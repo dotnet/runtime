@@ -46,7 +46,7 @@ typedef enum {
  * DiagnosticsIpcPollHandle.
  */
 
-// The bookeeping struct used for polling on server and client structs
+// The bookkeeping struct used for polling on server and client structs
 #if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_SOCKET_GETTER_SETTER)
 struct _DiagnosticsIpcPollHandle {
 #else

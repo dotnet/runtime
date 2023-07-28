@@ -198,7 +198,7 @@ to be practical.
 Second, even if we could obtain the actual size of prospective inline
 candidates, we might not want to use this data. The final code
 sequence emitted by the compiler depends intimately on details of the
-target architecture, runtime conventions (ABIs), and capabilites of the
+target architecture, runtime conventions (ABIs), and capabilities of the
 compiler phases that run after inlining. If we allow feedback into hey
 heuristics by incorporating data from these "downstream" sources, we
 introduce various forms of coupling that have important
@@ -348,7 +348,7 @@ there.
 
 So we can now see why this particular case has such extreme
 `SizeImpact`: the un-inlined call triggers frame creation and a fair
-amount of shuffling to accomodate the potential side effects of the
+amount of shuffling to accommodate the potential side effects of the
 call.
 
 #### Case 2: Typical Savings

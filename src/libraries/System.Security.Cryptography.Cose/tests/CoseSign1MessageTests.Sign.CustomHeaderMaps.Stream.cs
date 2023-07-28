@@ -8,67 +8,55 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-    public abstract class CoseSign1MessageTests_SignStream : CoseSign1MessageTests_Sign_CustomHeaderMaps
+    public class CoseSign1MessageTests_SignStream_Async : CoseMessageTests_SignStream_Async
     {
-        internal override bool OnlySupportsDetachedContent => true;
+        internal override CoseMessageKind MessageKind => CoseMessageKind.Sign1;
+
+        internal override void AddSignature(CoseMultiSignMessage msg, byte[] content, CoseSigner signer, byte[]? associatedData = null)
+            => throw new NotSupportedException();
+
+        internal override CoseMessage Decode(ReadOnlySpan<byte> cborPayload)
+            => CoseMessage.DecodeSign1(cborPayload);
+
+        internal override CoseHeaderMap GetSigningHeaderMap(CoseMessage msg, bool getProtectedMap)
+        {
+            Assert.IsType<CoseSign1Message>(msg);
+            return getProtectedMap ? msg.ProtectedHeaders : msg.UnprotectedHeaders;
+        }
+
+        internal override Task<byte[]> SignDetachedAsync(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
+            => CoseSign1Message.SignDetachedAsync(detachedContent, signer, associatedData);
+
+        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        {
+            Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
+            return Sign1Verify(msg, key, content, associatedData);
+        }
     }
 
-    public class CoseSign1MessageTests_SignStream_Async : CoseSign1MessageTests_SignStream
+    public class CoseSign1MessageTests_SignStream_Sync : CoseMessageTests_SignStream_Sync
     {
-        internal override byte[] Sign(byte[] content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
+        internal override CoseMessageKind MessageKind => CoseMessageKind.Sign1;
+
+        internal override void AddSignature(CoseMultiSignMessage msg, byte[] content, CoseSigner signer, byte[]? associatedData = null)
+            => throw new NotSupportedException();
+
+        internal override CoseMessage Decode(ReadOnlySpan<byte> cborPayload)
+            => CoseMessage.DecodeSign1(cborPayload);
+
+        internal override CoseHeaderMap GetSigningHeaderMap(CoseMessage msg, bool getProtectedMap)
         {
-            Assert.False(isDetached);
-
-            if (content == null)
-            {
-                return CoseSign1Message.SignAsync(null!, key, hashAlgorithm, protectedHeaders, unprotectedHeaders).GetAwaiter().GetResult();
-            }
-
-            using Stream stream = GetTestStream(content);
-            return CoseSign1Message.SignAsync(stream, key, hashAlgorithm, protectedHeaders, unprotectedHeaders).GetAwaiter().GetResult();
+            CoseSign1Message sign1Msg = Assert.IsType<CoseSign1Message>(msg);
+            return getProtectedMap ? msg.ProtectedHeaders : msg.UnprotectedHeaders;
         }
 
-        [Fact]
-        public async Task SignAsyncWithUnseekableStream()
-        {
-            using Stream stream = GetTestStream(s_sampleContent, StreamKind.Unseekable);
-            await Assert.ThrowsAsync<ArgumentException>("detachedContent", () => CoseSign1Message.SignAsync(stream, DefaultKey, DefaultHash));
-        }
+        internal override byte[] SignDetached(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
+            => CoseSign1Message.SignDetached(detachedContent, signer, associatedData);
 
-        [Fact]
-        public async Task SignAsyncWithUnreadableStream()
+        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
         {
-            using Stream stream = GetTestStream(s_sampleContent, StreamKind.Unreadable);
-            await Assert.ThrowsAsync<ArgumentException>("detachedContent", () => CoseSign1Message.SignAsync(stream, DefaultKey, DefaultHash));
-        }
-    }
-    public class CoseSign1MessageTests_SignStream_Sync : CoseSign1MessageTests_SignStream
-    {
-        internal override byte[] Sign(byte[] content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
-        {
-            Assert.False(isDetached);
-
-            if (content == null)
-            {
-                return CoseSign1Message.Sign(null!, key, hashAlgorithm, protectedHeaders, unprotectedHeaders);
-            }
-
-            using Stream stream = GetTestStream(content);
-            return CoseSign1Message.Sign(stream, key, hashAlgorithm, protectedHeaders, unprotectedHeaders);
-        }
-
-        [Fact]
-        public void SignWithUnseekableStream()
-        {
-            using Stream stream = GetTestStream(s_sampleContent, StreamKind.Unseekable);
-            Assert.Throws<ArgumentException>("detachedContent", () => CoseSign1Message.Sign(stream, DefaultKey, DefaultHash));
-        }
-
-        [Fact]
-        public void SignWithUnreadableStream()
-        {
-            using Stream stream = GetTestStream(s_sampleContent, StreamKind.Unreadable);
-            Assert.Throws<ArgumentException>("detachedContent", () => CoseSign1Message.Sign(stream, DefaultKey, DefaultHash));
+            Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
+            return Sign1Verify(msg, key, content, associatedData);
         }
     }
 }

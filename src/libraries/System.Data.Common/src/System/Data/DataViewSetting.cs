@@ -59,10 +59,7 @@ namespace System.Data
             [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if (_rowFilter != value)
                 {
@@ -89,10 +86,7 @@ namespace System.Data
             get { return _sort; }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if (_sort != value)
                 {

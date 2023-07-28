@@ -38,7 +38,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(RefReturnInvokeTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public static void TestNullRefReturnInvoke<T>(T value)
         {
             TestClass<T> tc = new TestClass<T>(value);
@@ -61,7 +60,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public static unsafe void TestNullRefReturnOfPointer()
         {
             TestClassIntPointer tc = new TestClassIntPointer(null);
@@ -109,10 +107,9 @@ namespace System.Reflection.Tests
                 yield return new object[] { 42L };
                 yield return new object[] { 43.67f };
                 yield return new object[] { 43.67 };
-                // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
-                //yield return new object[] { new IntPtr(42) };
-                //yield return new object[] { new UIntPtr(42) };
-                //yield return new object[] { 232953453454m };
+                yield return new object[] { new IntPtr(42) };
+                yield return new object[] { new UIntPtr(42) };
+                yield return new object[] { 232953453454m };
                 yield return new object[] { BindingFlags.IgnoreCase };
                 yield return new object[] { "Hello" };
                 yield return new object[] { new object() };

@@ -543,7 +543,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         // This method adds a list of new sdk version folders in the specified directory.
-        // The actual contents are 'fake' and the mininum required for SDK discovery.
+        // The actual contents are 'fake' and the minimum required for SDK discovery.
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
         private void AddAvailableSdkVersions(string sdkBaseDir, params string[] availableVersions)
         {

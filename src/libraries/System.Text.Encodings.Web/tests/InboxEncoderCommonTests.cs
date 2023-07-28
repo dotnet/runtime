@@ -511,7 +511,7 @@ namespace System.Text.Encodings.Web.Tests
                 Assert.Equal(i, _encoder.FindFirstCharacterToEncodeUtf16(span));
 
                 _boundedChars.MakeWriteable();
-                span[i] = BmpExtendedDisallowedChar; // make this char invaid (BMP extended)
+                span[i] = BmpExtendedDisallowedChar; // make this char invalid (BMP extended)
                 _boundedChars.MakeReadonly();
                 Assert.Equal(i, _encoder.FindFirstCharacterToEncodeUtf16(span));
 

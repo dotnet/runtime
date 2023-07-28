@@ -5,7 +5,56 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
+    public sealed class SignVerify_AllocatingSpan : SignVerify
+    {
+        protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            rsa.SignData(new ReadOnlySpan<byte>(data), hashAlgorithm, padding);
+
+        protected override byte[] SignHash(RSA rsa, byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            rsa.SignHash(new ReadOnlySpan<byte>(hash), hashAlgorithm, padding);
+
+        protected override bool VerifyData(RSA rsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            rsa.VerifyData(new ReadOnlySpan<byte>(data), (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
+
+        protected override bool VerifyHash(RSA rsa, byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            rsa.VerifyHash(new ReadOnlySpan<byte>(hash), (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
+    }
+
     public sealed class SignVerify_Span : SignVerify
+    {
+        protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            WithOutputArray(dest => rsa.SignData(data, dest, hashAlgorithm, padding));
+
+        protected override byte[] SignHash(RSA rsa, byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            WithOutputArray(dest => rsa.SignHash(hash, dest, hashAlgorithm, padding));
+
+        protected override bool VerifyData(RSA rsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            rsa.VerifyData((ReadOnlySpan<byte>)data, (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
+
+        protected override bool VerifyHash(RSA rsa, byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            rsa.VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
+
+        private static byte[] WithOutputArray(Func<byte[], int> func)
+        {
+            for (int length = 1; ; length = checked(length * 2))
+            {
+                byte[] result = new byte[length];
+
+                try
+                {
+                    int written = func(result);
+                    Array.Resize(ref result, written);
+                    return result;
+                }
+                catch (ArgumentException ae) when (ae.ParamName == "destination")
+                {
+                    continue;
+                }
+            }
+        }
+    }
+
+    public sealed class SignVerify_TrySpan : SignVerify
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             TryWithOutputArray(dest => rsa.TrySignData(data, dest, hashAlgorithm, padding, out int bytesWritten) ? (true, bytesWritten) : (false, 0));

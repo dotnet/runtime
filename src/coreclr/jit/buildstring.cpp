@@ -42,7 +42,13 @@
 #define DLLEXPORT
 #endif
 
+#ifdef WITH_NATIVE_PGO
+#define WITH_NATIVE_PGO_MARKER "(with native PGO)"
+#else
+#define WITH_NATIVE_PGO_MARKER "(without native PGO)"
+#endif
+
 // This string is used by superpmi.py when measuring throughput impact of
 // changes to validate that the baseline and diff JITs are comparable.
 extern "C" DLLEXPORT const char jitBuildString[] =
-    "RyuJIT built by " BUILD_COMPILER " targeting " TARGET_OS_STRING "-" TARGET_ARCH_STRING;
+    "RyuJIT built by " BUILD_COMPILER " targeting " TARGET_OS_STRING "-" TARGET_ARCH_STRING " " WITH_NATIVE_PGO_MARKER;

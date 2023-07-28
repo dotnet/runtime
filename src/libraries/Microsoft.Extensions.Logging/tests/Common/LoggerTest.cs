@@ -124,7 +124,8 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(new[] { "provider1.Test-Hello" }, store);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ScopesAreNotCreatedForDisabledLoggers()
         {
@@ -150,7 +151,8 @@ namespace Microsoft.Extensions.Logging.Test
             logger.Verify(l => l.BeginScope(It.IsAny<object>()), Times.Never);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ScopesAreNotCreatedWhenScopesAreDisabled()
         {
@@ -175,7 +177,8 @@ namespace Microsoft.Extensions.Logging.Test
             logger.Verify(l => l.BeginScope(It.IsAny<object>()), Times.Never);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ScopesAreNotCreatedInIScopeProviderWhenScopesAreDisabled()
         {
@@ -208,7 +211,8 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(0, scopeCount);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void CaptureScopesIsReadFromConfiguration()
         {
@@ -248,6 +252,25 @@ namespace Microsoft.Extensions.Logging.Test
                 externalScopeProvider.ForEachScope<object>((_, __) => scopeCount ++, null);
                 Assert.Equal(1, scopeCount);
             }
+        }
+
+        [Fact]
+        public void LoggerDebuggerToString()
+        {
+            // Arrange
+            var loggerFactory = new LoggerFactory();
+            var logger = (Logger<LoggerTest>)loggerFactory.CreateLogger<LoggerTest>();
+
+            // Act
+            var beforeProvider = logger.DebuggerToString();
+
+            loggerFactory.AddProvider(new CustomLoggerProvider("provider1", ThrowExceptionAt.None, new List<string>()));
+
+            var afterProvider = logger.DebuggerToString();
+
+            // Assert
+            Assert.Equal(@"Name = ""Microsoft.Extensions.Logging.Test.LoggerTest"", Enabled = false", beforeProvider);
+            Assert.Equal(@"Name = ""Microsoft.Extensions.Logging.Test.LoggerTest"", MinLevel = Trace", afterProvider);
         }
 
         private class CustomLoggerProvider : ILoggerProvider

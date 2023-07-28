@@ -9,11 +9,6 @@ struct T_RUNTIME_FUNCTION {
     uint32_t EndAddress;
     uint32_t UnwindInfoAddress;
 };
-#elif defined(TARGET_ARM)
-struct T_RUNTIME_FUNCTION {
-    uint32_t BeginAddress;
-    uint32_t UnwindData;
-};
 #elif defined(TARGET_ARM64)
 struct T_RUNTIME_FUNCTION {
     uint32_t BeginAddress;
@@ -81,11 +76,14 @@ public:
                     bool            isActiveStackFrame);
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
+                          uint32_t        flags,
                           REGDISPLAY *    pRegisterSet,                 // in/out
                           PInvokeTransitionFrame**      ppPreviousTransitionFrame);   // out
 
     uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
                                                         REGDISPLAY *   pRegisterSet);
+
+    bool IsUnwindable(PTR_VOID pvAddress);
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,       // in

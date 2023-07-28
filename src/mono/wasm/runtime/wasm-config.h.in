@@ -7,7 +7,7 @@
 /* Support for threads is disabled */
 #cmakedefine DISABLE_THREADS
 
-/* Support for starting user threads is disabled */
-#cmakedefine DISABLE_WASM_USER_THREADS
+/* Support for legacy JS interop is disabled */
+#cmakedefine DISABLE_LEGACY_JS_INTEROP
 
 #endif/*__MONO_WASM_CONFIG_H__*/

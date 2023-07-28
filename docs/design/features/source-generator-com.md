@@ -3,8 +3,8 @@
 The interop team has decided to invest some time into creating a source generator to help support COM scenarios. The basic goals of this work are as follows, in general order of importance:
 
 1. Enable developers who use MCG to be able to move to the new source generator.
-2. Enable developers to interoperate with COM without needing to use linker-unsafe code (the built-in system is linker unsafe)
-3. Enable dotnet/runtime developers to migrate the hand-written linker-safe COM interop code to use the generator instead.
+2. Enable developers to interoperate with COM without needing to use trimming-unsafe code (the built-in system is trimming unsafe)
+3. Enable dotnet/runtime developers to migrate the hand-written trimming-safe COM interop code to use the generator instead.
 4. Enable WinForms to move to the source generated COM support to help make it NativeAOT-compatible.
 5. Generate .NET 6-compatible code for internal partners
 
@@ -39,7 +39,7 @@ Alternatively, the generator that reads C++ could generate its own implementatio
 
 #### Win32Metadata winmd
 
-The Win32Metadata project provides a richly typed surface area for interop scenarios with Win32 APIs, but it has some serious limitations that make it undesireable for us to use as our source of truth:
+The Win32Metadata project provides a richly typed surface area for interop scenarios with Win32 APIs, but it has some serious limitations that make it undesirable for us to use as our source of truth:
 
 - The tooling only runs on Windows
 - The tooling is extremely focused on the Win32 API
@@ -67,7 +67,7 @@ To implement this support, we would need to introduce a strong contract to be ab
 
 Basic support for this feature would naturally fall out from supporting the scenario described in open question 1. Depending on implementation, we may be able to make this more or less efficient.
 
-3. Given two assemblies, `A` and `B`, that each define their own `IComFoo` interface that is a C# projection of an `IFoo` COM interface, should `A`'s `IComFoo` be implicitly convertable to `B`'s `IComFoo`?
+3. Given two assemblies, `A` and `B`, that each define their own `IComFoo` interface that is a C# projection of an `IFoo` COM interface, should `A`'s `IComFoo` be implicitly convertible to `B`'s `IComFoo`?
 
 Supporting this would require either some form of type equivalence, which exists in a limited form in the runtime, or assembly-independent types, for which a C# proposal exists that has not been planned for any release. Since a solution here would require solutions for questions 1 and 2, we can likely require users to use explicit casts and avoid having any issues.
 
@@ -213,7 +213,7 @@ Pros:
 
 - The user only has to annotate the ComWrappers type to enable the source generation.
 - The ComWrappers type exists in the user's source.
-- As the user can define multiple attributed ComWrappers-derived types, this design can be a little more linker optimized as it won't have type checks for every COM interface in the assembly.
+- As the user can define multiple attributed ComWrappers-derived types, this design can be a little more trimming optimized as it won't have type checks for every COM interface in the assembly.
   - Well grouped sets of interfaces might all be able to be linked out completely.
 
 Cons:
@@ -369,7 +369,7 @@ Pros:
 
 Cons:
 
-- This implementation may be slightly less linker-friendly as the single ComWrappers implementation will reference all annotated interfaces.
+- This implementation may be slightly less trimming-friendly as the single ComWrappers implementation will reference all annotated interfaces.
 - The `ComWrappers`-derived type is not defined by the user in their source, instead being generated from other inputs.
 
 #### Option 3: Annotated `ComWrappers`-derived type and `GeneratedComImportAttribute`/`GeneratedComVisibleAttribute`

@@ -5,11 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Text;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: Contains the information needed to generate tracelogging
@@ -23,7 +19,7 @@ namespace System.Diagnostics.Tracing
         private readonly string name;
 
         /// <summary>
-        /// The number of bytes in the UTF8 Encoding of 'name' INCLUDING a null terminator.
+        /// The number of bytes in the UTF-8 Encoding of 'name' INCLUDING a null terminator.
         /// </summary>
         private readonly int nameSize;
         private readonly EventFieldTags tags;

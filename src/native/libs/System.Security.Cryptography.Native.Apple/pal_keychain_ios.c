@@ -45,12 +45,10 @@ static int32_t EnumerateKeychain(CFStringRef matchType, CFArrayRef* pCertsOut)
         assert(result == NULL);
         status = noErr;
     }
-    else
+
+    if (result != NULL)
     {
-        if (result != NULL)
-        {
-            CFRelease(result);
-        }
+        CFRelease(result);
     }
 
     return status;
@@ -128,9 +126,8 @@ int32_t AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, u
             SecCertificateRef cert = (SecCertificateRef)CONST_CAST(void*, certOrIdentity);
             SecKeyRef publicKey = NULL;
             CFTypeRef publicKeyLabel = NULL;
-            int32_t dummyStatus;
 
-            if (AppleCryptoNative_X509GetPublicKey(cert, &publicKey, &dummyStatus))
+            if (AppleCryptoNative_X509GetPublicKey(cert, &publicKey))
             {
                 CFDictionaryRef attrs = SecKeyCopyAttributes(publicKey);
                 publicKeyLabel = CFRetain(CFDictionaryGetValue(attrs, kSecAttrApplicationLabel));

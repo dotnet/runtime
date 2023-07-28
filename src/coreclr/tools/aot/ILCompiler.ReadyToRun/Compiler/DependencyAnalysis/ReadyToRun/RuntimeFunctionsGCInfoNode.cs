@@ -8,7 +8,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class RuntimeFunctionsGCInfoNode : ArrayOfEmbeddedDataNode<MethodGCInfoNode>
     {
         public RuntimeFunctionsGCInfoNode()
-            : base("RuntimeFunctionsGCInfo_Begin", "RuntimeFunctionsGCInfo_End", new EmbeddedObjectNodeComparer(CompilerComparer.Instance))
+            : base("RuntimeFunctionsGCInfo", new EmbeddedObjectNodeComparer(CompilerComparer.Instance))
         {
         }
 
@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 316678892;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 

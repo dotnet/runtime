@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using SharedTypes;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using SharedTypes;
 
 namespace NativeExports
 {
@@ -127,6 +127,27 @@ namespace NativeExports
             return 1;
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "fill_range_array_2d")]
+        [DNNE.C99DeclCode("struct int_struct_wrapper;")]
+        public static byte FillRange2D([DNNE.C99Type("struct int_struct_wrapper**")] IntStructWrapperNative** numValues, int length, int* widths, int start)
+        {
+            if (numValues == null)
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < length; i++)
+            {
+                numValues[i] = (IntStructWrapperNative*)Marshal.AllocCoTaskMem(sizeof(IntStructWrapperNative) * widths[i]);
+                for (int j = 0; j < widths[i]; j++, start++)
+                {
+                    numValues[i][j] = new IntStructWrapperNative { value = start };
+                }
+            }
+
+            return 1;
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "double_values")]
         [DNNE.C99DeclCode("struct int_struct_wrapper { int value; };")]
         public static void DoubleValues([DNNE.C99Type("struct int_struct_wrapper*")] IntStructWrapperNative* numValues, int length)
@@ -234,17 +255,114 @@ namespace NativeExports
             *values = newArray;
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "and_all_members")]
+        [UnmanagedCallersOnly(EntryPoint = "and_bool_struct_array")]
         [DNNE.C99DeclCode("struct bool_struct;")]
-        public static byte AndAllMembers([DNNE.C99Type("struct bool_struct*")] BoolStructNative* pArray, int length)
+        public static byte AndBoolStructs([DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative* pArray, int length)
         {
             bool result = true;
             for (int i = 0; i < length; i++)
             {
-                BoolStruct managed = pArray[i].ToManaged();
+                BoolStruct managed = BoolStructMarshaller.ConvertToManaged(pArray[i]);
                 result &= managed.b1 && managed.b2 && managed.b3;
             }
             return (byte)(result ? 1 : 0);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "and_bool_struct_array_in")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        public static byte AndBoolStructsIn([DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative** pArray, int length)
+        {
+            bool result = true;
+            for (int i = 0; i < length; i++)
+            {
+                BoolStruct managed = BoolStructMarshaller.ConvertToManaged((*pArray)[i]);
+                result &= managed.b1 && managed.b2 && managed.b3;
+            }
+            return (byte)(result ? 1 : 0);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "negate_bool_struct_array")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        public static void NegateBoolStructs(
+            [DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative* array,
+            int length)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                BoolStructMarshaller.BoolStructNative boolStruct = array[i];
+                array[i].b1 = (byte)(boolStruct.b1 != 0 ? 0 : 1);
+                array[i].b2 = (byte)(boolStruct.b2 != 0 ? 0 : 1);
+                array[i].b3 = (byte)(boolStruct.b3 != 0 ? 0 : 1);
+            }
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "negate_bool_struct_array_ref")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        public static void NegateBoolStructsRef(
+            [DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative** array,
+            int length)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                BoolStructMarshaller.BoolStructNative boolStruct = (*array)[i];
+                (*array)[i].b1 = (byte)(boolStruct.b1 != 0 ? 0 : 1);
+                (*array)[i].b2 = (byte)(boolStruct.b2 != 0 ? 0 : 1);
+                (*array)[i].b3 = (byte)(boolStruct.b3 != 0 ? 0 : 1);
+            }
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "negate_bool_struct_array_ref_2d")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        public static void NegateBoolStructsRef2D(
+            [DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative*** array,
+            int length,
+            int* widths)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                for (int j = 0; j < widths[i]; j++)
+                {
+                    BoolStructMarshaller.BoolStructNative boolStruct = *(array[i][j]);
+                    (*array)[i][j].b1 = (byte)(boolStruct.b1 != 0 ? 0 : 1);
+                    (*array)[i][j].b2 = (byte)(boolStruct.b2 != 0 ? 0 : 1);
+                    (*array)[i][j].b3 = (byte)(boolStruct.b3 != 0 ? 0 : 1);
+                }
+            }
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "negate_bool_struct_array_out")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        public static void NegateBoolStructsOut(
+            [DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative* array,
+            int length,
+            [DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative** outArray)
+        {
+            *outArray = NegateBoolStructsImpl(array, length);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "negate_bool_struct_array_out_2d")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        public static void NegateBoolStructsOut2D(
+            [DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative** array,
+            int length,
+            int* widths,
+            [DNNE.C99Type("struct bool_struct***")] BoolStructMarshaller.BoolStructNative*** outArray)
+        {
+            *outArray = (BoolStructMarshaller.BoolStructNative**)Marshal.AllocCoTaskMem(sizeof(BoolStructMarshaller.BoolStructNative**) * length);
+            for (int i = 0; i < length; i++)
+            {
+                (*outArray)[i] = NegateBoolStructsImpl(array[i], widths[i]);
+            }
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "negate_bool_struct_array_return")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        [return: DNNE.C99Type("struct bool_struct*")]
+        public static BoolStructMarshaller.BoolStructNative* NegateBoolStructsReturn(
+            [DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative* array,
+            int length)
+        {
+            return NegateBoolStructsImpl(array, length);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "transpose_matrix")]
@@ -261,6 +379,26 @@ namespace NativeExports
             }
 
             return newRows;
+        }
+
+        private static BoolStructMarshaller.BoolStructNative* NegateBoolStructsImpl(BoolStructMarshaller.BoolStructNative* array, int numValues)
+        {
+            if (array == null)
+                return null;
+
+            BoolStructMarshaller.BoolStructNative* retVal = (BoolStructMarshaller.BoolStructNative*)Marshal.AllocCoTaskMem(sizeof(BoolStructMarshaller.BoolStructNative) * numValues);
+            for (int i = 0; i < numValues; i++)
+            {
+                BoolStructMarshaller.BoolStructNative boolStruct = array[i];
+                retVal[i] = new BoolStructMarshaller.BoolStructNative
+                {
+                    b1 = (byte)(boolStruct.b1 != 0 ? 0 : 1),
+                    b2 = (byte)(boolStruct.b2 != 0 ? 0 : 1),
+                    b3 = (byte)(boolStruct.b3 != 0 ? 0 : 1)
+                };
+            }
+
+            return retVal;
         }
 
         private static int* CreateRangeImpl(int start, int end, int* numValues)

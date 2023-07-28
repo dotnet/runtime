@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Internal.TypeSystem
 {
-    partial class RuntimeDeterminedType
+    public partial class RuntimeDeterminedType
     {
         public override string DiagnosticName
         {
@@ -19,7 +17,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return String.Concat(_runtimeDeterminedDetailsType.DiagnosticName, "_", _rawCanonType.DiagnosticNamespace); ;
+                return string.Concat(_runtimeDeterminedDetailsType.DiagnosticName, "_", _rawCanonType.DiagnosticNamespace); ;
             }
         }
     }

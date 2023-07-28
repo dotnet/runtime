@@ -25,11 +25,11 @@ namespace Microsoft.Extensions.Hosting
         private const string HostBuildingEventName = "HostBuilding";
         private const string HostBuiltEventName = "HostBuilt";
 
-        private List<Action<IConfigurationBuilder>> _configureHostConfigActions = new List<Action<IConfigurationBuilder>>();
-        private List<Action<HostBuilderContext, IConfigurationBuilder>> _configureAppConfigActions = new List<Action<HostBuilderContext, IConfigurationBuilder>>();
-        private List<Action<HostBuilderContext, IServiceCollection>> _configureServicesActions = new List<Action<HostBuilderContext, IServiceCollection>>();
-        private List<IConfigureContainerAdapter> _configureContainerActions = new List<IConfigureContainerAdapter>();
-        private IServiceFactoryAdapter _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
+        private readonly List<Action<IConfigurationBuilder>> _configureHostConfigActions = new List<Action<IConfigurationBuilder>>();
+        private readonly List<Action<HostBuilderContext, IConfigurationBuilder>> _configureAppConfigActions = new List<Action<HostBuilderContext, IConfigurationBuilder>>();
+        private readonly List<Action<HostBuilderContext, IServiceCollection>> _configureServicesActions = new List<Action<HostBuilderContext, IServiceCollection>>();
+        private readonly List<IConfigureContainerAdapter> _configureContainerActions = new List<IConfigureContainerAdapter>();
+        private IServiceFactoryAdapter _serviceProviderFactory;
         private bool _hostBuilt;
         private IConfiguration? _hostConfiguration;
         private IConfiguration? _appConfiguration;
@@ -37,6 +37,14 @@ namespace Microsoft.Extensions.Hosting
         private HostingEnvironment? _hostingEnvironment;
         private IServiceProvider? _appServices;
         private PhysicalFileProvider? _defaultProvider;
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="HostBuilder"/>.
+        /// </summary>
+        public HostBuilder()
+        {
+            _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
+        }
 
         /// <summary>
         /// A central location for sharing state between components during the host building process.
@@ -182,10 +190,15 @@ namespace Microsoft.Extensions.Hosting
             return diagnosticListener;
         }
 
+// Remove when https://github.com/dotnet/runtime/pull/78532 is merged and consumed by the used SDK.
+#if NET7_0
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+            Justification = "DiagnosticSource is used here to pass objects in-memory to code using HostFactoryResolver. This won't require creating new generic types.")]
+#endif
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "The values being passed into Write are being consumed by the application already.")]
-        private static void Write<T>(
-            DiagnosticSource diagnosticSource,
+        private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+            DiagnosticListener diagnosticSource,
             string name,
             T value)
         {
@@ -216,15 +229,20 @@ namespace Microsoft.Extensions.Hosting
         {
             var hostingEnvironment = new HostingEnvironment()
             {
-                ApplicationName = hostConfiguration[HostDefaults.ApplicationKey],
                 EnvironmentName = hostConfiguration[HostDefaults.EnvironmentKey] ?? Environments.Production,
                 ContentRootPath = ResolveContentRootPath(hostConfiguration[HostDefaults.ContentRootKey], AppContext.BaseDirectory),
             };
 
-            if (string.IsNullOrEmpty(hostingEnvironment.ApplicationName))
+            string? applicationName = hostConfiguration[HostDefaults.ApplicationKey];
+            if (string.IsNullOrEmpty(applicationName))
             {
                 // Note GetEntryAssembly returns null for the net4x console test runner.
-                hostingEnvironment.ApplicationName = Assembly.GetEntryAssembly()?.GetName().Name;
+                applicationName = Assembly.GetEntryAssembly()?.GetName().Name;
+            }
+
+            if (applicationName is not null)
+            {
+                hostingEnvironment.ApplicationName = applicationName;
             }
 
             var physicalFileProvider = new PhysicalFileProvider(hostingEnvironment.ContentRootPath);

@@ -312,16 +312,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // Inherit top level class's interface map
     cbMT += pParentClass->GetNumInterfaces() * sizeof(InterfaceInfo_t);
 
-    BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pParentClass, this);
-
-    size_t offsetOfUnsharedVtableChunks = cbMT;
-
-    // We either share all of the parent's virtual slots or none of them
-    // If none, we need to allocate space for the slots
-    if (!canShareVtableChunks)
-    {
-        cbMT += numVirtuals * sizeof(MethodTable::VTableIndir2_t);
-    }
 
     // Canonical methodtable has an array of non virtual slots pointed to by the optional member
     size_t offsetOfNonVirtualSlots = 0;
@@ -365,7 +355,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
     pMT->SetWriteableData(pMTWriteableData);
 
-    // This also disables IBC logging until the type is sufficiently intitialized so
+    // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
     pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -402,8 +392,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             StackSString ssElemName;
             elemTypeHnd.GetName(ssElemName);
 
-            StackScratchBuffer scratch;
-            elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(scratch), IDS_CLASSLOAD_VALUECLASSTOOLARGE);
+            elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(), IDS_CLASSLOAD_VALUECLASSTOOLARGE);
         }
     }
 
@@ -479,28 +468,8 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         MethodTable::VtableIndirectionSlotIterator it = pMT->IterateVtableIndirectionSlots();
         while (it.Next())
         {
-            if (canShareVtableChunks)
-            {
-                // Share the parent chunk
-                it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()]);
-            }
-            else
-            {
-                // Use the locally allocated chunk
-                it.SetIndirectionSlot((MethodTable::VTableIndir2_t *)(pMemory+cbArrayClass+offsetOfUnsharedVtableChunks));
-                offsetOfUnsharedVtableChunks += it.GetSize();
-            }
-        }
-
-        // If we are not sharing parent chunks, copy down the slot contents
-        if (!canShareVtableChunks)
-        {
-            // Copy top level class's vtable - note, vtable is contained within the MethodTable
-            MethodTable::MethodDataWrapper hParentMTData(MethodTable::GetMethodData(pParentClass, FALSE));
-            for (UINT32 i = 0; i < numVirtuals; i++)
-            {
-                pMT->CopySlotFrom(i, hParentMTData, pParentClass);
-            }
+            // Share the parent chunk
+            it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()]);
         }
 
         if (pClass != NULL)
@@ -510,8 +479,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 #ifdef _DEBUG
     StackSString debugName;
     TypeString::AppendType(debugName, TypeHandle(pMT));
-    StackScratchBuffer buff;
-    const char* pDebugNameUTF8 = debugName.GetUTF8(buff);
+    const char* pDebugNameUTF8 = debugName.GetUTF8();
     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
     size_t len = safeLen.Value();
@@ -532,7 +500,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                             + 3;        // for rank specific Get, Set, Address
 
         MethodDescChunk * pChunks = MethodDescChunk::CreateChunk(pAllocator->GetHighFrequencyHeap(),
-                            dwMethodDescs, mcArray, FALSE /* fNonVtableSlot*/, FALSE /* fNativeCodeSlot */, FALSE /* fComPlusCallInfo */,
+                            dwMethodDescs, mcArray, FALSE /* fNonVtableSlot*/, FALSE /* fNativeCodeSlot */,
                             pMT, pamTracker);
         pClass->SetChunks(pChunks);
 
@@ -586,59 +554,65 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     // Set up GC information
-    if (elemType == ELEMENT_TYPE_VALUETYPE || elemType == ELEMENT_TYPE_VOID)
+    if (CorTypeInfo::IsObjRef(elemType) ||
+        ((elemType == ELEMENT_TYPE_VALUETYPE) && pElemMT->IsAllGCPointers()))
+    {
+        pMT->SetContainsPointers();
+
+        // This array is all GC Pointers
+        CGCDesc::GetCGCDescFromMT(pMT)->Init( pMT, 1 );
+
+        CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
+
+        int offsetToData = ArrayBase::GetDataPtrOffset(pMT);
+        // For arrays, the size is the negative of the BaseSize (the GC always adds the total
+        // size of the object, so what you end up with is the size of the data portion of the array)
+        pSeries->SetSeriesSize(-(SSIZE_T)(offsetToData + sizeof(size_t)));
+        pSeries->SetSeriesOffset(offsetToData);
+    }
+    else if (elemType == ELEMENT_TYPE_VALUETYPE)
     {
         // If it's an array of value classes, there is a different format for the GCDesc if it contains pointers
         if (pElemMT->ContainsPointers())
         {
-            CGCDescSeries  *pSeries;
-
-            // There must be only one series for value classes
-            CGCDescSeries  *pByValueSeries = CGCDesc::GetCGCDescFromMT(pElemMT)->GetHighestSeries();
-
             pMT->SetContainsPointers();
+
+            CGCDescSeries* pElemSeries = CGCDesc::GetCGCDescFromMT(pElemMT)->GetHighestSeries();
 
             // negative series has a special meaning, indicating a different form of GCDesc
             SSIZE_T nSeries = (SSIZE_T) CGCDesc::GetCGCDescFromMT(pElemMT)->GetNumSeries();
             CGCDesc::GetCGCDescFromMT(pMT)->InitValueClassSeries(pMT, nSeries);
 
-            pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
+            CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
 
-            // sort by offset
-            SSIZE_T AllocSizeSeries;
-            if (!ClrSafeInt<SSIZE_T>::multiply(sizeof(CGCDescSeries*), nSeries, AllocSizeSeries))
-                COMPlusThrowOM();
-            CGCDescSeries** sortedSeries = (CGCDescSeries**) _alloca(AllocSizeSeries);
-            int index;
-            for (index = 0; index < nSeries; index++)
-                sortedSeries[index] = &pByValueSeries[-index];
-
-            // section sort
-            for (int i = 0; i < nSeries; i++) {
-                for (int j = i+1; j < nSeries; j++)
-                    if (sortedSeries[j]->GetSeriesOffset() < sortedSeries[i]->GetSeriesOffset())
-                    {
-                        CGCDescSeries* temp = sortedSeries[i];
-                        sortedSeries[i] = sortedSeries[j];
-                        sortedSeries[j] = temp;
-                    }
+#if _DEBUG
+            // GC series must be sorted by the offset
+            // we will validate that here just in case.
+            size_t prevOffset = pElemSeries[0].GetSeriesOffset();
+            for (int index = 1; index < nSeries; index++)
+            {
+                size_t offset = pElemSeries[-index].GetSeriesOffset();
+                _ASSERTE((offset - prevOffset) > 0);
+                prevOffset = offset;
             }
+#endif // _DEBUG
 
             // Offset of the first pointer in the array
             // This equals the offset of the first pointer if this were an array of entirely pointers, plus the offset of the
             // first pointer in the value class
             pSeries->SetSeriesOffset(ArrayBase::GetDataPtrOffset(pMT)
-                + (sortedSeries[0]->GetSeriesOffset()) - OBJECT_SIZE);
-            for (index = 0; index < nSeries; index ++)
+                + (pElemSeries[0].GetSeriesOffset()) - OBJECT_SIZE);
+
+            for (int index = 0; index < nSeries; index ++)
             {
-                size_t numPtrsInBytes = sortedSeries[index]->GetSeriesSize()
+                size_t numPtrsInBytes = pElemSeries[-index].GetSeriesSize()
                     + pElemMT->GetBaseSize();
                 size_t currentOffset;
                 size_t skip;
-                currentOffset = sortedSeries[index]->GetSeriesOffset()+numPtrsInBytes;
+                currentOffset = pElemSeries[-index].GetSeriesOffset()+numPtrsInBytes;
                 if (index != nSeries-1)
                 {
-                    skip = sortedSeries[index+1]->GetSeriesOffset()-currentOffset;
+                    skip = pElemSeries[-(index+1)].GetSeriesOffset()-currentOffset;
                 }
                 else if (index == 0)
                 {
@@ -646,7 +620,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                 }
                 else
                 {
-                    skip = sortedSeries[0]->GetSeriesOffset() + pElemMT->GetBaseSize()
+                    skip = pElemSeries[0].GetSeriesOffset() + pElemMT->GetBaseSize()
                          - OBJECT_BASESIZE - currentOffset;
                 }
 
@@ -657,32 +631,18 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                     StackSString ssElemName;
                     elemTypeHnd.GetName(ssElemName);
 
-                    StackScratchBuffer scratch;
-                    elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(scratch),
+                    elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(),
                                                                       IDS_CLASSLOAD_VALUECLASSTOOLARGE);
                 }
 
-                val_serie_item *val_item = &(pSeries->val_serie[-index]);
+                // pSeries->val_serie is a fixed sized array.
+                // Use pointer arithmetic instead of direct array access to avoid compilers, specifically GCC,
+                // to discover undefined behavior and generate unintended code when optimization is turned on.
+                val_serie_item *val_item = pSeries->val_serie - index;
 
                 val_item->set_val_serie_item (NumPtrs, (unsigned short)skip);
             }
         }
-    }
-    else if (CorTypeInfo::IsObjRef(elemType))
-    {
-        CGCDescSeries  *pSeries;
-
-        pMT->SetContainsPointers();
-
-        // This array is all GC Pointers
-        CGCDesc::GetCGCDescFromMT(pMT)->Init( pMT, 1 );
-
-        pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
-
-        pSeries->SetSeriesOffset(ArrayBase::GetDataPtrOffset(pMT));
-        // For arrays, the size is the negative of the BaseSize (the GC always adds the total
-        // size of the object, so what you end up with is the size of the data portion of the array)
-        pSeries->SetSeriesSize(-(SSIZE_T)(pMT->GetBaseSize()));
     }
 
     // If we get here we are assuming that there was no truncation. If this is not the case then
@@ -1164,7 +1124,7 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
 //---------------------------------------------------------
 class ArrayStubCache : public StubCacheBase
 {
-    virtual void CompileStub(const BYTE *pRawStub,
+    virtual DWORD CompileStub(const BYTE *pRawStub,
                              StubLinker *psl);
     virtual UINT Length(const BYTE *pRawStub);
 
@@ -1209,12 +1169,13 @@ Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
     return pArrayOpStub;
 }
 
-void ArrayStubCache::CompileStub(const BYTE *pRawStub,
+DWORD ArrayStubCache::CompileStub(const BYTE *pRawStub,
                                  StubLinker *psl)
 {
     STANDARD_VM_CONTRACT;
 
     ((CPUSTUBLINKER*)psl)->EmitArrayOpStub((ArrayOpScript*)pRawStub);
+    return NEWSTUB_FL_NONE;
 }
 
 UINT ArrayStubCache::Length(const BYTE *pRawStub)
@@ -1254,7 +1215,7 @@ BOOL IsImplicitInterfaceOfSZArray(MethodTable *pInterfaceMT)
 // Calls to (IList<T>)(array).Meth are actually implemented by SZArrayHelper.Meth<T>
 // This workaround exists for two reasons:
 //
-//    - For working set reasons, we don't want insert these methods in the array hierachy
+//    - For working set reasons, we don't want insert these methods in the array hierarchy
 //      in the normal way.
 //    - For platform and devtime reasons, we still want to use the C# compiler to generate
 //      the method bodies.
@@ -1319,7 +1280,7 @@ CorElementType GetNormalizedIntegralArrayElementType(CorElementType elementType)
     _ASSERTE(CorTypeInfo::IsPrimitiveType_NoThrow(elementType));
 
     // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-    // Enums with interchangeable underlying types are interchangable
+    // Enums with interchangeable underlying types are interchangeable
     // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
 
     switch (elementType)

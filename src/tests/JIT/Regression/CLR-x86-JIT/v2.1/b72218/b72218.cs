@@ -4,8 +4,9 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
-class My
+public class My
 {
 
     static void Worker()
@@ -14,7 +15,8 @@ class My
         Thread.Sleep(5);
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         Thread t = new Thread(new ThreadStart(Worker));

@@ -24,7 +24,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal static class ExpressionEvaluator
+    internal static partial class ExpressionEvaluator
     {
         internal static Script<object> script = CSharpScript.Create(
             "",
@@ -33,9 +33,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 typeof(Enumerable).Assembly,
                 typeof(JObject).Assembly
                 ));
-        private sealed class ExpressionSyntaxReplacer : CSharpSyntaxWalker
+        private sealed partial class ExpressionSyntaxReplacer : CSharpSyntaxWalker
         {
-            private static Regex regexForReplaceVarName = new Regex(@"[^A-Za-z0-9_]", RegexOptions.Singleline);
+            [GeneratedRegex(@"[^A-Za-z0-9_]", RegexOptions.Singleline)]
+            private static partial Regex RegexForReplaceVarName();
+
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCalls = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
@@ -58,7 +60,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (visitCount == 0)
                 {
                     if (node is MemberAccessExpressionSyntax maes
-                        && node.Kind() == SyntaxKind.SimpleMemberAccessExpression
+                        && node.IsKind(SyntaxKind.SimpleMemberAccessExpression)
                         && !(node.Parent is MemberAccessExpressionSyntax)
                         && !(node.Parent is InvocationExpressionSyntax)
                         && !(node.Parent is ElementAccessExpressionSyntax))
@@ -111,7 +113,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(ma_str, "_");
+                        string prefix = RegexForReplaceVarName().Replace(ma_str, "_");
                         id_name = $"{prefix}_{suffix}";
 
                         memberAccessToParamName[ma_str] = id_name;
@@ -128,7 +130,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(iesStr, "_");
+                        string prefix = RegexForReplaceVarName().Replace(iesStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         methodCallToParamName[iesStr] = id_name;
                     }
@@ -144,7 +146,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = eaStr.Trim().Replace(".", "_").Replace("[", "_").Replace("]", "_");
+                        string prefix = RegexForReplaceVarName().Replace(eaStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         elementAccessToParamName[eaStr] = id_name;
                     }
@@ -215,17 +217,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                     variableDefinitions.Add(ConvertJSToCSharpLocalVariableAssignment(idName, value));
                 }
             }
+        }
 
-            private static string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
+        public static string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
+        {
+            string typeRet;
+            object valueRet;
+            JToken value = variable["value"];
+            string type = variable["type"].Value<string>();
+            string subType = variable["subtype"]?.Value<string>();
+            switch (type)
             {
-                string typeRet;
-                object valueRet;
-                JToken value = variable["value"];
-                string type = variable["type"].Value<string>();
-                string subType = variable["subtype"]?.Value<string>();
-                switch (type)
-                {
-                    case "string":
+                case "string":
                     {
                         var str = value?.Value<string>();
                         str = str.Replace("\"", "\\\"");
@@ -233,74 +236,73 @@ namespace Microsoft.WebAssembly.Diagnostics
                         typeRet = "string";
                         break;
                     }
-                    case "symbol":
-                     {
-                         valueRet = $"'{value?.Value<char>()}'";
-                         typeRet = "char";
-                         break;
-                     }
-                    case "number":
-                        //casting to double and back to string would loose precision; so casting straight to string
-                        valueRet = value?.Value<string>();
-                        typeRet = "double";
+                case "symbol":
+                    {
+                        valueRet = $"'{value?.Value<char>()}'";
+                        typeRet = "char";
                         break;
-                    case "boolean":
-                        valueRet = value?.Value<string>().ToLowerInvariant();
-                        typeRet = "bool";
-                        break;
-                    case "object":
-                        if (variable["subtype"]?.Value<string>() == "null")
-                        {
-                            (valueRet, typeRet) = GetNullObject(variable["className"]?.Value<string>());
-                        }
-                        else
-                        {
-                            if (!DotnetObjectId.TryParse(variable["objectId"], out DotnetObjectId objectId))
-                                throw new Exception($"Internal error: Cannot parse objectId for var {idName}, with value: {variable}");
+                    }
+                case "number":
+                    //casting to double and back to string would loose precision; so casting straight to string
+                    valueRet = value?.Value<string>();
+                    typeRet = "double";
+                    break;
+                case "boolean":
+                    valueRet = value?.Value<string>().ToLowerInvariant();
+                    typeRet = "bool";
+                    break;
+                case "object":
+                    if (variable["subtype"]?.Value<string>() == "null")
+                    {
+                        (valueRet, typeRet) = GetNullObject(variable["className"]?.Value<string>());
+                    }
+                    else
+                    {
+                        if (!DotnetObjectId.TryParse(variable["objectId"], out DotnetObjectId objectId))
+                            throw new Exception($"Internal error: Cannot parse objectId for var {idName}, with value: {variable}");
 
-                            switch (objectId?.Scheme)
-                            {
-                                case "valuetype" when variable["isEnum"]?.Value<bool>() == true:
-                                    typeRet = variable["className"]?.Value<string>();
-                                    valueRet = $"({typeRet}) {value["value"].Value<double>()}";
-                                    break;
-                                case "object":
-                                default:
-                                    valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
-                                            + $"type = \"{type}\""
-                                            + $", description = \"{variable["description"].Value<string>()}\""
-                                            + $", className = \"{variable["className"].Value<string>()}\""
-                                            + (subType != null ? $", subtype = \"{subType}\"" : "")
-                                            + (objectId != null ? $", objectId = \"{objectId}\"" : "")
-                                            + "})";
-                                    typeRet = "object";
-                                    break;
-                            }
+                        switch (objectId?.Scheme)
+                        {
+                            case "valuetype" when variable["isEnum"]?.Value<bool>() == true:
+                                typeRet = variable["className"]?.Value<string>();
+                                valueRet = $"({typeRet}) {value["value"].Value<double>()}";
+                                break;
+                            case "object":
+                            default:
+                                valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
+                                        + $"type = \"{type}\""
+                                        + $", description = \"{variable["description"].Value<string>()}\""
+                                        + $", className = \"{variable["className"].Value<string>()}\""
+                                        + (subType != null ? $", subtype = \"{subType}\"" : "")
+                                        + (objectId != null ? $", objectId = \"{objectId}\"" : "")
+                                        + "})";
+                                typeRet = "object";
+                                break;
                         }
-                        break;
-                    case "void":
-                        (valueRet, typeRet) = GetNullObject("object");
-                        break;
-                    default:
-                        throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
-                }
-                return $"{typeRet} {idName} = {valueRet};";
-
-                static (string, string) GetNullObject(string className = "object")
-                    => ("Newtonsoft.Json.Linq.JObject.FromObject(new {"
-                    + $"type = \"object\","
-                    + $"description = \"object\","
-                    + $"className = \"{className}\","
-                    + $"subtype = \"null\""
-                    + "})",
-                    "object");
+                    }
+                    break;
+                case "void":
+                    (valueRet, typeRet) = GetNullObject("object");
+                    break;
+                default:
+                    throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
             }
+            return $"{typeRet} {idName} = {valueRet};";
+
+            static (string, string) GetNullObject(string className = "object")
+                => ("Newtonsoft.Json.Linq.JObject.FromObject(new {"
+                + $"type = \"object\","
+                + $"description = \"object\","
+                + $"className = \"{className}\","
+                + $"subtype = \"null\""
+                + "})",
+                "object");
         }
 
         private static async Task<IList<JObject>> Resolve<T>(IList<T> collectionToResolve, MemberReferenceResolver resolver,
                                 Func<T, MemberReferenceResolver, CancellationToken, Task<JObject>> resolutionFunc, CancellationToken token)
         {
-            IList<JObject> values = new List<JObject>();
+            var values = new List<JObject>();
             foreach (T element in collectionToResolve)
                 values.Add(await resolutionFunc(element, resolver, token));
             return values;
@@ -344,8 +346,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 /*
                     Instead of invoking the method on the primitive type in the runtime,
-                    we emit a local for the primitive, and emit the the method call
-                    itself in the script. For example:
+                    we emit a local for the primitive, and emit the method call itself
+                    in the script. For example:
                     double test_propUlong_2c64c = 12;
                     return (test_propUlong_2c64c.ToString());
                 */
@@ -368,13 +370,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private static async Task<IList<JObject>> ResolveElementAccess(IEnumerable<ElementAccessExpressionSyntax> elementAccesses, Dictionary<string, JObject> memberAccessValues, MemberReferenceResolver resolver, CancellationToken token)
+        private static async Task<IList<JObject>> ResolveElementAccess(ExpressionSyntaxReplacer replacer, MemberReferenceResolver resolver, CancellationToken token)
         {
             var values = new List<JObject>();
             JObject index = null;
+            IEnumerable<ElementAccessExpressionSyntax> elementAccesses = replacer.elementAccess;
             foreach (ElementAccessExpressionSyntax elementAccess in elementAccesses.Reverse())
             {
-                index = await resolver.Resolve(elementAccess, memberAccessValues, index, token);
+                index = await resolver.Resolve(elementAccess, replacer.memberAccessValues, index, replacer.variableDefinitions, token);
                 if (index == null)
                     throw new ReturnAsErrorException($"Failed to resolve element access for {elementAccess}", "ReferenceError");
             }
@@ -392,7 +395,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(expression + @";", cancellationToken: token);
 
-            SyntaxNode expressionTree = syntaxTree.GetCompilationUnitRoot(token);
+            CompilationUnitSyntax expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
             ExpressionSyntaxReplacer replacer = new ExpressionSyntaxReplacer();
@@ -400,7 +403,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             // this fails with `"a)"`
             // because the code becomes: return (a));
             // and the returned expression from GetExpressionFromSyntaxTree is `a`!
-            if (expressionTree.Kind() == SyntaxKind.IdentifierName || expressionTree.Kind() == SyntaxKind.ThisExpression)
+            if (expressionTree.IsKind(SyntaxKind.IdentifierName) || expressionTree.IsKind(SyntaxKind.ThisExpression))
             {
                 string varName = expressionTree.ToString();
                 JObject value = await resolver.Resolve(varName, token);
@@ -415,7 +418,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             syntaxTree = replacer.ReplaceVars(syntaxTree, memberAccessValues, identifierValues, null, null);
 
             // eg. "this.dateTime", "  dateTime.TimeOfDay"
-            if (expressionTree.Kind() == SyntaxKind.SimpleMemberAccessExpression && replacer.memberAccesses.Count == 1)
+            if (expressionTree.IsKind(SyntaxKind.SimpleMemberAccessExpression) && replacer.memberAccesses.Count == 1)
             {
                 return memberAccessValues[0];
             }
@@ -438,7 +441,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 replacer.VisitInternal(expressionTree);
 
-                IList<JObject> elementAccessValues = await ResolveElementAccess(replacer.elementAccess, replacer.memberAccessValues, resolver, token);
+                IList<JObject> elementAccessValues = await ResolveElementAccess(replacer, resolver, token);
 
                 syntaxTree = replacer.ReplaceVars(syntaxTree, null, null, null, elementAccessValues);
             }
@@ -447,41 +450,28 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
+            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, replacer.variableDefinitions, logger, token);
+        }
+
+        internal static async Task<JObject> EvaluateSimpleExpression(
+            MemberReferenceResolver resolver, string compiledExpression, string originalExpression, List<string> variableDefinitions, ILogger logger, CancellationToken token)
+        {
             Script<object> newScript = script;
             try
             {
-                newScript = script.ContinueWith(
-                string.Join("\n", replacer.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
+                newScript = script.ContinueWith(string.Join("\n", variableDefinitions) + "\nreturn " + compiledExpression + ";");
                 var state = await newScript.RunAsync(cancellationToken: token);
                 return JObject.FromObject(resolver.ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
             catch (CompilationErrorException cee)
             {
-                logger.LogDebug($"Cannot evaluate '{expression}'. Script used to compile it: {newScript.Code}{Environment.NewLine}{cee.Message}");
-                throw new ReturnAsErrorException($"Cannot evaluate '{expression}': {cee.Message}", "CompilationError");
+                logger.LogDebug($"Cannot evaluate '{originalExpression}'. Script used to compile it: {newScript.Code}{Environment.NewLine}{cee.Message}");
+                throw new ReturnAsErrorException($"Cannot evaluate '{originalExpression}': {cee.Message}", "CompilationError");
             }
             catch (Exception ex)
             {
-                throw new Exception($"Internal Error: Unable to run {expression}, error: {ex.Message}.", ex);
+                throw new Exception($"Internal Error: Unable to run {originalExpression}, error: {ex.Message}.", ex);
             }
-        }
-
-        private static JObject ConvertCLRToJSType(object v)
-        {
-            if (v is JObject jobj)
-                return jobj;
-
-            if (v is null)
-                return JObjectValueCreator.CreateNull("<unknown>")?["value"] as JObject;
-
-            string typeName = v.GetType().ToString();
-            jobj = JObjectValueCreator.CreateFromPrimitiveType(v);
-            return jobj is not null
-                ? jobj["value"] as JObject
-                : JObjectValueCreator.Create<object>(value: null,
-                                                    type: "object",
-                                                    description: v.ToString(),
-                                                    className: typeName)?["value"] as JObject;
         }
     }
 
@@ -492,7 +482,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             get
             {
-                _error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
                 return _error;
             }
             set { }
@@ -516,8 +505,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     result = result,
                     exceptionDetails = new
                     {
-                        exception = result,
-                        stackTrace = StackTrace
+                        exception = result
                     }
                 }));
         }

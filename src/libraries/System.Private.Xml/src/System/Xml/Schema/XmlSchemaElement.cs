@@ -145,17 +145,8 @@ namespace System.Xml.Schema
         [XmlElement("key", typeof(XmlSchemaKey)),
          XmlElement("keyref", typeof(XmlSchemaKeyref)),
          XmlElement("unique", typeof(XmlSchemaUnique))]
-        public XmlSchemaObjectCollection Constraints
-        {
-            get
-            {
-                if (_constraints == null)
-                {
-                    _constraints = new XmlSchemaObjectCollection();
-                }
-                return _constraints;
-            }
-        }
+        public XmlSchemaObjectCollection Constraints =>
+            _constraints ??= new XmlSchemaObjectCollection();
 
         [XmlIgnore]
         public XmlQualifiedName QualifiedName
@@ -198,7 +189,7 @@ namespace System.Xml.Schema
             get { return _finalResolved; }
         }
 
-        [return: NotNullIfNotNull("schemaSet")]
+        [return: NotNullIfNotNull(nameof(schemaSet))]
         internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
             if (schemaSet != null)

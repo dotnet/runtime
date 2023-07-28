@@ -34,20 +34,31 @@ namespace System.Security.Cryptography.Xml.Tests
             using (DSA dsa = DSA.Create())
             {
                 DSAKeyValue dsaKeyValue = new DSAKeyValue(dsa);
-                Assert.Equal(dsa, dsaKeyValue.Key);
+                Assert.Same(dsa, dsaKeyValue.Key);
             }
         }
 
         [Fact]
         public void Ctor_Dsa_Null()
         {
+#if NET
+            Assert.Throws<ArgumentNullException>("key", () => new DSAKeyValue(null));
+#else
             DSAKeyValue dsaKeyValue = new DSAKeyValue(null);
-
-            //From https://github.com/peterwurzinger:
-            //This assertion is incorrect, since the parameter value is stored unvalidated/unprocessed
-            //Assert.NotNull(dsaKeyValue.Key);
-
             Assert.Null(dsaKeyValue.Key);
+#endif
+        }
+
+        [Fact]
+        public static void KeyProperty_SetNull()
+        {
+            DSAKeyValue dsaKeyValue = new DSAKeyValue();
+#if NET
+            Assert.Throws<ArgumentNullException>("value", () => dsaKeyValue.Key = null);
+#else
+            dsaKeyValue.Key = null;
+            Assert.Null(dsaKeyValue.Key);
+#endif
         }
 
         [Fact]

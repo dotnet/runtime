@@ -14,7 +14,6 @@ using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
-using Internal.TypeSystem.NativeFormat;
 using Internal.TypeSystem.NoMetadata;
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
@@ -72,6 +71,65 @@ namespace Internal.TypeSystem
             }
         }
 
+        internal readonly struct FunctionPointerTypeKey
+        {
+            public readonly RuntimeTypeHandle ReturnType;
+            public readonly RuntimeTypeHandle[] ParameterTypes;
+            public readonly bool IsUnmanaged;
+            public FunctionPointerTypeKey(RuntimeTypeHandle returnType, RuntimeTypeHandle[] parameterTypes, bool isUnmanaged)
+                => (ReturnType, ParameterTypes, IsUnmanaged) = (returnType, parameterTypes, isUnmanaged);
+        }
+
+        internal class FunctionPointerRuntimeTypeHandleHashtable : LockFreeReaderHashtableOfPointers<FunctionPointerTypeKey, RuntimeTypeHandle>
+        {
+            protected override bool CompareKeyToValue(FunctionPointerTypeKey key, RuntimeTypeHandle value)
+            {
+                if (key.IsUnmanaged != RuntimeAugments.IsUnmanagedFunctionPointerType(value)
+                    || key.ParameterTypes.Length != RuntimeAugments.GetFunctionPointerParameterCount(value)
+                    || !key.ReturnType.Equals(RuntimeAugments.GetFunctionPointerReturnType(value)))
+                    return false;
+
+                for (int i = 0; i < key.ParameterTypes.Length; i++)
+                    if (!key.ParameterTypes[i].Equals(RuntimeAugments.GetFunctionPointerParameterType(value, i)))
+                        return false;
+
+                return true;
+            }
+
+            protected override bool CompareValueToValue(RuntimeTypeHandle value1, RuntimeTypeHandle value2)
+            {
+                return value1.Equals(value2);
+            }
+
+            protected override RuntimeTypeHandle ConvertIntPtrToValue(IntPtr pointer)
+            {
+                unsafe
+                {
+                    return ((MethodTable*)pointer.ToPointer())->ToRuntimeTypeHandle();
+                }
+            }
+
+            protected override IntPtr ConvertValueToIntPtr(RuntimeTypeHandle value)
+            {
+                return value.ToIntPtr();
+            }
+
+            protected override RuntimeTypeHandle CreateValueFromKey(FunctionPointerTypeKey key)
+            {
+                throw new NotSupportedException();
+            }
+
+            protected override int GetKeyHashCode(FunctionPointerTypeKey key)
+            {
+                return TypeHashingAlgorithms.ComputeMethodSignatureHashCode(key.ReturnType.GetHashCode(), key.ParameterTypes);
+            }
+
+            protected override int GetValueHashCode(RuntimeTypeHandle value)
+            {
+                return value.GetHashCode();
+            }
+        }
+
         internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable[] s_ArrayTypesCaches = new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable[MDArray.MaxRank + 1];
         /// <summary>
         ///  Cache of array types created by the builder to prevent duplication
@@ -101,57 +159,25 @@ namespace Internal.TypeSystem
         internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable ByRefTypesCache { get; } =
             new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable();
 
-        public Instantiation ResolveRuntimeTypeHandles(RuntimeTypeHandle[] runtimeTypeHandles)
+        internal static FunctionPointerRuntimeTypeHandleHashtable FunctionPointerTypesCache { get; }
+            = new FunctionPointerRuntimeTypeHandleHashtable();
+
+        public TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
         {
             TypeDesc[] TypeDescs = new TypeDesc[runtimeTypeHandles.Length];
             for (int i = 0; i < runtimeTypeHandles.Length; i++)
                 TypeDescs[i] = ResolveRuntimeTypeHandle(runtimeTypeHandles[i]);
-            return new Instantiation(TypeDescs);
+            return TypeDescs;
+        }
+
+        public Instantiation ResolveRuntimeTypeHandles(RuntimeTypeHandle[] runtimeTypeHandles)
+        {
+            return new Instantiation(ResolveRuntimeTypeHandlesInternal(runtimeTypeHandles));
         }
 
         // This dictionary is in every scenario - create it eagerly
         private LowLevelDictionary<RuntimeTypeHandle, TypeDesc> _runtimeTypeHandleResolutionCache =
              new LowLevelDictionary<RuntimeTypeHandle, TypeDesc>();
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        internal TypeDesc GetTypeDescFromQHandle(QTypeDefinition qTypeDefinition)
-        {
-#if ECMA_METADATA_SUPPORT
-            if (qTypeDefinition.IsNativeFormatMetadataBased)
-#endif
-            {
-                MetadataReader nativeFormatMetadataReader = qTypeDefinition.NativeFormatReader;
-                TypeDefinitionHandle typeDefinitionHandle = qTypeDefinition.NativeFormatHandle;
-                NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoForMetadataReader(nativeFormatMetadataReader);
-                NativeFormatMetadataUnit metadataUnit = ResolveMetadataUnit(module);
-                NativeFormatType nativeFormatType = (NativeFormatType)metadataUnit.GetType(typeDefinitionHandle);
-                return nativeFormatType;
-            }
-#if ECMA_METADATA_SUPPORT
-            else if (qTypeDefinition.IsEcmaFormatMetadataBased)
-            {
-                EcmaModuleInfo module = ModuleList.Instance.GetModuleInfoForMetadataReader(qTypeDefinition.EcmaFormatReader);
-                Ecma.EcmaModule ecmaModule = ResolveEcmaModule(module);
-                Ecma.EcmaType ecmaType = (Ecma.EcmaType)ecmaModule.GetType(qTypeDefinition.EcmaFormatHandle);
-                return ecmaType;
-            }
-#endif
-            return null;
-        }
-#endif
-
-        // Helper routine for ResolveRuntimeTypeHandle, used to handle lookups which may result in a metadata based type.
-        private static TypeDesc TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(RuntimeTypeHandle rtth)
-        {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            QTypeDefinition qTypeDefinition;
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
-            {
-                return GetTypeDescFromQHandle(qTypeDefinition);
-            }
-#endif
-            return null;
-        }
 
         public TypeDesc ResolveRuntimeTypeHandle(RuntimeTypeHandle rtth)
         {
@@ -169,19 +195,14 @@ namespace Internal.TypeSystem
             }
             else if (RuntimeAugments.IsGenericTypeDefinition(rtth))
             {
-                returnedType = TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(rtth);
-                if (returnedType == null)
+                unsafe
                 {
-                    unsafe
-                    {
-                        TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericArgumentCount];
-                        for (int i = 0; i < genericParameters.Length; i++)
-                        {
-                            genericParameters[i] = GetSignatureVariable(i, false);
-                        }
+                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericParameterCount];
+                    Runtime.GenericVariance* runtimeVariance = rtth.ToEETypePtr()->HasGenericVariance ?
+                        rtth.ToEETypePtr()->GenericVariance : null;
+                    ReadOnlySpan<Runtime.GenericVariance> varianceData = new ReadOnlySpan<Runtime.GenericVariance>(runtimeVariance, runtimeVariance == null ? 0 : genericParameters.Length);
 
-                        returnedType = new NoMetadataType(this, rtth, null, new Instantiation(genericParameters), rtth.GetHashCode());
-                    }
+                    returnedType = new NoMetadataType(this, rtth, genericParameters.Length, varianceData, rtth.GetHashCode());
                 }
             }
             else if (RuntimeAugments.IsGenericType(rtth))
@@ -212,6 +233,20 @@ namespace Internal.TypeSystem
                 TypeDesc targetType = ResolveRuntimeTypeHandle(targetTypeHandle);
                 returnedType = GetPointerType(targetType);
             }
+            else if (RuntimeAugments.IsFunctionPointerType(rtth))
+            {
+                RuntimeTypeHandle returnTypeHandle = RuntimeAugments.GetFunctionPointerReturnType(rtth);
+                RuntimeTypeHandle[] parameterHandles = RuntimeAugments.GetFunctionPointerParameterTypes(rtth);
+                bool isUnmanaged = RuntimeAugments.IsUnmanagedFunctionPointerType(rtth);
+
+                var sig = new MethodSignature(
+                    isUnmanaged ? MethodSignatureFlags.UnmanagedCallingConvention : 0,
+                    genericParameterCount: 0,
+                    ResolveRuntimeTypeHandle(returnTypeHandle),
+                    ResolveRuntimeTypeHandlesInternal(parameterHandles));
+
+                returnedType = GetFunctionPointerType(sig);
+            }
             else if (RuntimeAugments.IsByRefType(rtth))
             {
                 RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(rtth);
@@ -220,11 +255,8 @@ namespace Internal.TypeSystem
             }
             else
             {
-                returnedType = TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(rtth);
-                if (returnedType == null)
-                {
-                    returnedType = new NoMetadataType(this, rtth, null, Instantiation.Empty, rtth.GetHashCode());
-                }
+                returnedType =
+                    new NoMetadataType(this, rtth, null, Instantiation.Empty, rtth.GetHashCode());
             }
 
             // We either retrieved an existing DefType that is already registered with the runtime
@@ -321,10 +353,8 @@ namespace Internal.TypeSystem
 
                 protected override bool CompareKeyToValue(RuntimeMethodKey key, MethodDesc value)
                 {
-                    if (value is RuntimeMethodDesc)
+                    if (value is RuntimeMethodDesc runtimeMethod)
                     {
-                        RuntimeMethodDesc runtimeMethod = (RuntimeMethodDesc)value;
-
                         if (key._unboxingStub != runtimeMethod.UnboxingStub)
                             return false;
 
@@ -391,15 +421,6 @@ namespace Internal.TypeSystem
                             MethodDesc typicalMethod = key._owningType.Context.ResolveRuntimeMethod(key._unboxingStub, (DefType)key._owningType.GetTypeDefinition(), key._methodNameAndSignature, IntPtr.Zero, false);
                             return typicalMethod.Context.GetMethodForInstantiatedType(typicalMethod, (InstantiatedType)key._owningType);
                         }
-
-                        // Otherwise, just check to see if there is a method discoverable via GetMethods
-                        foreach (MethodDesc potentialMethod in key._owningType.GetMethods())
-                        {
-                            if (CompareKeyToValue(key, potentialMethod))
-                            {
-                                return potentialMethod;
-                            }
-                        }
                     }
                     else
                     {
@@ -416,8 +437,7 @@ namespace Internal.TypeSystem
 
         internal MethodDesc ResolveRuntimeMethod(bool unboxingStub, DefType owningType, MethodNameAndSignature nameAndSignature, IntPtr functionPointer, bool usgFunctionPointer)
         {
-            if (_runtimeMethods == null)
-                _runtimeMethods = new RuntimeMethodKey.RuntimeMethodKeyHashtable();
+            _runtimeMethods ??= new RuntimeMethodKey.RuntimeMethodKeyHashtable();
 
             MethodDesc retVal = _runtimeMethods.GetOrCreateValue(new RuntimeMethodKey(unboxingStub, owningType, nameAndSignature));
 
@@ -440,13 +460,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(typeDef.Instantiation.IsNull || typeDef.Instantiation.Length == arguments.Length);
 
-            MetadataType typeAsMetadataType = typeDef as MetadataType;
-
-            if (typeAsMetadataType != null)
-                return GetInstantiatedType(typeAsMetadataType, arguments);
-
-            if (_genericTypeInstances == null)
-                _genericTypeInstances = new LowLevelDictionary<GenericTypeInstanceKey, DefType>();
+            _genericTypeInstances ??= new LowLevelDictionary<GenericTypeInstanceKey, DefType>();
 
             GenericTypeInstanceKey key = new GenericTypeInstanceKey(typeDef, arguments);
 
@@ -488,53 +502,6 @@ namespace Internal.TypeSystem
             return returnedMethod;
         }
 
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        public class ModuleToMetadataUnitHashtable : LockFreeReaderHashtable<NativeFormatModuleInfo, NativeFormat.NativeFormatMetadataUnit>
-        {
-            private TypeSystemContext _context;
-
-            public ModuleToMetadataUnitHashtable(TypeSystemContext context)
-            {
-                _context = context;
-            }
-
-            protected override int GetKeyHashCode(NativeFormatModuleInfo key)
-            {
-                return key.GetHashCode();
-            }
-
-            protected override int GetValueHashCode(NativeFormat.NativeFormatMetadataUnit value)
-            {
-                return value.RuntimeModuleInfo.GetHashCode();
-            }
-
-            protected override bool CompareKeyToValue(NativeFormatModuleInfo key, NativeFormat.NativeFormatMetadataUnit value)
-            {
-                return key == value.RuntimeModuleInfo;
-            }
-
-            protected override bool CompareValueToValue(NativeFormat.NativeFormatMetadataUnit value1, NativeFormat.NativeFormatMetadataUnit value2)
-            {
-                return value1.RuntimeModuleInfo == value2.RuntimeModuleInfo;
-            }
-
-            protected override NativeFormat.NativeFormatMetadataUnit CreateValueFromKey(NativeFormatModuleInfo key)
-            {
-                return new NativeFormat.NativeFormatMetadataUnit(_context, key, key.MetadataReader);
-            }
-        }
-
-        private ModuleToMetadataUnitHashtable _metadataUnits = null;
-
-        internal NativeFormat.NativeFormatMetadataUnit ResolveMetadataUnit(NativeFormatModuleInfo module)
-        {
-            if (_metadataUnits == null)
-                _metadataUnits = new ModuleToMetadataUnitHashtable(this);
-
-            return _metadataUnits.GetOrCreateValue(module);
-        }
-#endif
-
         /// <summary>
         /// Returns an estimate of the number of objects tracked by this context
         /// </summary>
@@ -571,8 +538,7 @@ namespace Internal.TypeSystem
         /// </summary>
         internal void RegisterTypeForTypeSystemStateFlushing(TypeDesc type)
         {
-            if (_typesToFlushTypeSystemStateFrom == null)
-                _typesToFlushTypeSystemStateFrom = new LowLevelList<TypeDesc>();
+            _typesToFlushTypeSystemStateFrom ??= new LowLevelList<TypeDesc>();
             _typesToFlushTypeSystemStateFrom.Add(type);
         }
 
@@ -591,55 +557,6 @@ namespace Internal.TypeSystem
             }
             _typesToFlushTypeSystemStateFrom = null;
         }
-
-#if ECMA_METADATA_SUPPORT
-        public class ModuleToEcmaModuleHashtable : LockFreeReaderHashtable<EcmaModuleInfo, Internal.TypeSystem.Ecma.EcmaModule>
-        {
-            private TypeSystemContext _context;
-
-            public ModuleToEcmaModuleHashtable(TypeSystemContext context)
-            {
-                _context = context;
-            }
-
-            protected override int GetKeyHashCode(EcmaModuleInfo key)
-            {
-                return key.GetHashCode();
-            }
-
-            protected override int GetValueHashCode(Internal.TypeSystem.Ecma.EcmaModule value)
-            {
-                return value.RuntimeModuleInfo.GetHashCode();
-            }
-
-            protected override bool CompareKeyToValue(EcmaModuleInfo key, Internal.TypeSystem.Ecma.EcmaModule value)
-            {
-                return key == value.RuntimeModuleInfo;
-            }
-
-            protected override bool CompareValueToValue(Internal.TypeSystem.Ecma.EcmaModule value1, Internal.TypeSystem.Ecma.EcmaModule value2)
-            {
-                return value1.RuntimeModuleInfo == value2.RuntimeModuleInfo;
-            }
-
-            protected override Internal.TypeSystem.Ecma.EcmaModule CreateValueFromKey(EcmaModuleInfo key)
-            {
-                Internal.TypeSystem.Ecma.EcmaModule result = new Internal.TypeSystem.Ecma.EcmaModule(_context, key.PE, key.MetadataReader, null, null);
-                result.SetRuntimeModuleInfoUNSAFE(key);
-                return result;
-            }
-        }
-
-        private ModuleToEcmaModuleHashtable _ecmaModules = null;
-
-        internal Internal.TypeSystem.Ecma.EcmaModule ResolveEcmaModule(EcmaModuleInfo module)
-        {
-            if (_ecmaModules == null)
-                _ecmaModules = new ModuleToEcmaModuleHashtable(this);
-
-            return _ecmaModules.GetOrCreateValue(module);
-        }
-#endif // ECMA_METADATA_SUPPORT
     }
 
     internal static partial class TypeNameHelper
@@ -648,7 +565,7 @@ namespace Internal.TypeSystem
         public static T WithDebugName<T>(this T type) where T : TypeDesc
         {
 #if DEBUG
-            if (type.DebugName == null) type.DebugName = type.ToString();
+            type.DebugName ??= type.ToString();
 #endif
             return type;
         }

@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using ILCompiler.Reflection.ReadyToRun;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
+using ILCompiler.Reflection.ReadyToRun;
 
 namespace R2RDump
 {
-    public class CoreDisTools
+    internal sealed class CoreDisTools
     {
         private const string _dll = "coredistools";
 
@@ -21,7 +21,8 @@ namespace R2RDump
             Target_X86,
             Target_X64,
             Target_Thumb,
-            Target_Arm64
+            Target_Arm64,
+            Target_LoongArch64
         };
 
         [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
@@ -51,7 +52,7 @@ namespace R2RDump
                 instrSize = DumpInstruction(Disasm, new IntPtr(rtf.StartAddress + rtfOffset), ptr, new IntPtr(rtf.Size));
             }
             IntPtr pBuffer = GetOutputBuffer();
-            instr = Marshal.PtrToStringAnsi(pBuffer);
+            instr = Marshal.PtrToStringUTF8(pBuffer);
             ClearOutputBuffer();
             return instrSize;
         }
@@ -73,8 +74,11 @@ namespace R2RDump
                 case Machine.ArmThumb2:
                     target = TargetArch.Target_Thumb;
                     break;
+                case Machine.LoongArch64:
+                    target = TargetArch.Target_LoongArch64;
+                    break;
                 default:
-                    R2RDump.WriteWarning($"{machine} not supported on CoreDisTools");
+                    Program.WriteWarning($"{machine} not supported on CoreDisTools");
                     return IntPtr.Zero;
             }
             return InitBufferedDisasm(target);
@@ -84,7 +88,7 @@ namespace R2RDump
     /// <summary>
     /// Helper class for converting machine instructions to textual representation.
     /// </summary>
-    public class Disassembler : IDisposable
+    internal sealed class Disassembler : IDisposable
     {
         /// <summary>
         /// Indentation of instruction mnemonics in naked mode with no offsets.
@@ -107,9 +111,9 @@ namespace R2RDump
         private readonly ReadyToRunReader _reader;
 
         /// <summary>
-        /// Dump options
+        /// Dump model
         /// </summary>
-        private readonly DumpOptions _options;
+        private readonly DumpModel _model;
 
         /// <summary>
         /// COM interface to the native disassembler in the CoreDisTools.dll library.
@@ -140,10 +144,10 @@ namespace R2RDump
         /// Store the R2R reader and construct the disassembler for the appropriate architecture.
         /// </summary>
         /// <param name="reader"></param>
-        public Disassembler(ReadyToRunReader reader, DumpOptions options)
+        public Disassembler(ReadyToRunReader reader, DumpModel model)
         {
             _reader = reader;
-            _options = options;
+            _model = model;
             _disasm = CoreDisTools.GetDisasm(_reader.Machine);
             SetIndentations();
         }
@@ -164,9 +168,9 @@ namespace R2RDump
         /// </summary>
         private void SetIndentations()
         {
-            if (_options.Naked)
+            if (_model.Naked)
             {
-                MnemonicIndentation = _options.HideOffsets ? NakedNoOffsetIndentation : NakedWithOffsetIndentation;
+                MnemonicIndentation = _model.HideOffsets ? NakedNoOffsetIndentation : NakedWithOffsetIndentation;
             }
             else
             {
@@ -183,6 +187,9 @@ namespace R2RDump
 
                     // Instructions are dumped as 4-byte hexadecimal integers
                     Machine.Arm64 => 4 * 2 + 1,
+
+                    // Instructions are dumped as 4-byte hexadecimal integers
+                    Machine.LoongArch64 => 4 * 2 + 1,
 
                     _ => throw new NotImplementedException()
                 };
@@ -243,9 +250,9 @@ namespace R2RDump
                 if ((0 < colonIndex) && (colonIndex < tab1Index))
                 {
                     // First handle the address and the byte dump
-                    if (_options.Naked)
+                    if (_model.Naked)
                     {
-                        if (!_options.HideOffsets)
+                        if (!_model.HideOffsets)
                         {
                             // All lines but the last one must represent single-byte prefixes, so add lineNum to the offset
                             builder.Append($"{rtf.CodeOffset + rtfOffset + lineNum,8:x4}:");
@@ -253,7 +260,7 @@ namespace R2RDump
                     }
                     else
                     {
-                        if (_reader.Machine == Machine.Arm64)
+                        if ((_reader.Machine == Machine.Arm64) || (_reader.Machine == Machine.LoongArch64))
                         {
                             // Replace " hh hh hh hh " byte dump with " hhhhhhhh ".
                             // CoreDisTools should be fixed to dump bytes this way for ARM64.
@@ -334,6 +341,10 @@ namespace R2RDump
                         ProbeArm64Quirks(rtf, imageOffset, rtfOffset, ref fixedTranslatedLine);
                         break;
 
+                    case Machine.LoongArch64:
+                        //TODO-LoongArch64: maybe should add ProbeLoongArch64Quirks. At least it's unused now.
+                        break;
+
                     case Machine.ArmThumb2:
                         break;
 
@@ -363,7 +374,7 @@ namespace R2RDump
             _reader.ImportSignatures.TryGetValue(target, out ReadyToRunSignature targetSignature);
             if (targetSignature != null)
             {
-                targetName = targetSignature.ToString(_options.GetSignatureFormattingOptions());
+                targetName = targetSignature.ToString(_model.SignatureFormattingOptions);
                 return true;
             }
             return false;
@@ -392,7 +403,7 @@ namespace R2RDump
 
                 TryGetImportCellName(target, out string targetName);
 
-                if (_options.Naked)
+                if (_model.Naked)
                 {
                     if (targetName != null)
                     {
@@ -445,7 +456,7 @@ namespace R2RDump
 
                 TryGetImportCellName(target, out string targetName);
 
-                if (_options.Naked)
+                if (_model.Naked)
                 {
                     if (targetName != null)
                     {
@@ -508,7 +519,7 @@ namespace R2RDump
                     int thunkTargetRVA = targetRVA + instructionRelativeOffset;
                     bool haveImportCell = TryGetImportCellName(thunkTargetRVA, out string importCellName);
 
-                    if (_options.Naked && haveImportCell)
+                    if (_model.Naked && haveImportCell)
                     {
                         ReplaceRelativeOffset(ref instruction, $@"qword ptr [{importCellName}]", rtf);
                     }
@@ -527,7 +538,7 @@ namespace R2RDump
                 {
                     string runtimeFunctionName = string.Format("RUNTIME_FUNCTION[{0}]", runtimeFunctionIndex);
 
-                    if (_options.Naked)
+                    if (_model.Naked)
                     {
                         ReplaceRelativeOffset(ref instruction, runtimeFunctionName, rtf);
                     }
@@ -651,7 +662,7 @@ namespace R2RDump
         private void ReplaceRelativeOffset(ref string instruction, int target, RuntimeFunction rtf)
         {
             int outputOffset = target;
-            if (_options.Naked)
+            if (_model.Naked)
             {
                 outputOffset = outputOffset - rtf.StartAddress + rtf.CodeOffset;
             }
@@ -812,7 +823,7 @@ namespace R2RDump
 
                     TryGetImportCellName(target, out string targetName);
 
-                    if (_options.Naked && (targetName != null))
+                    if (_model.Naked && (targetName != null))
                     {
                         translated.Append("import_hi21{").Append(targetName).Append('}');
                     }
@@ -837,7 +848,7 @@ namespace R2RDump
 
                 TryGetImportCellName(target, out string targetName);
 
-                if (_options.Naked && (targetName != null))
+                if (_model.Naked && (targetName != null))
                 {
                     translated.Append("import_lo12{").Append(targetName).Append('}');
                 }
@@ -900,7 +911,7 @@ namespace R2RDump
                         TryGetImportCellName(target, out string targetName);
                         var translated = new StringBuilder();
 
-                        if (_options.Naked && (targetName != null))
+                        if (_model.Naked && (targetName != null))
                         {
                             int hashPos = instruction.LastIndexOf('#');
                             translated.Append(instruction, 0, hashPos);
@@ -924,7 +935,7 @@ namespace R2RDump
                     string runtimeFunctionName = string.Format("RUNTIME_FUNCTION[{0}]", runtimeFunctionIndex);
                     var translated = new StringBuilder();
 
-                    if (_options.Naked)
+                    if (_model.Naked)
                     {
                         int hashPos = instruction.LastIndexOf('#');
                         translated.Append(instruction, 0, hashPos);

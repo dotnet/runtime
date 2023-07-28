@@ -19,7 +19,7 @@ namespace Internal.Cryptography.Pal.Windows
             int numRecipients;
             int cbRecipientsCount = sizeof(int);
             if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, CryptMsgParamType.CMSG_CMS_RECIPIENT_COUNT_PARAM, 0, out numRecipients, ref cbRecipientsCount))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
             List<RecipientInfo> recipientInfos = new List<RecipientInfo>(numRecipients);
             for (int index = 0; index < numRecipients; index++)
@@ -33,7 +33,9 @@ namespace Internal.Cryptography.Pal.Windows
             return new RecipientInfoCollection(recipientInfos);
         }
 
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance https://github.com/dotnet/roslyn-analyzers/issues/6751
         private static IEnumerable<RecipientInfo> ToRecipientInfosForThisIndex(SafeHandle pCmsgCmsRecipientInfoMemory, int index)
+#pragma warning restore CA1859
         {
             bool mustRelease = false;
             pCmsgCmsRecipientInfoMemory.DangerousAddRef(ref mustRelease);

@@ -23,10 +23,7 @@ namespace System.Diagnostics
         internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
         {
             // Negative PIDs aren't valid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             ProcessInfo procInfo;
 
@@ -38,7 +35,7 @@ namespace System.Diagnostics
                 // Set the values we have; all the other values don't have meaning or don't exist on OSX
                 Interop.libproc.proc_taskallinfo temp = info.Value;
                 string processName;
-                unsafe { processName = Marshal.PtrToStringAnsi(new IntPtr(temp.pbsd.pbi_comm))!; }
+                unsafe { processName = Marshal.PtrToStringUTF8(new IntPtr(temp.pbsd.pbi_comm))!; }
                 if (!string.IsNullOrEmpty(processNameFilter) && !string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
                 {
                     return null;
@@ -83,7 +80,7 @@ namespace System.Diagnostics
                     _processId = pid,
                     _threadId = t.Key,
                     _basePriority = procInfo.BasePriority,
-                    _startAddress = IntPtr.Zero
+                    _startAddress = null
                 };
 
                 // Fill in additional info if we were able to retrieve such data about the thread

@@ -97,7 +97,7 @@ _ExceptionHijack@0 PROC PUBLIC
     ; The debugger has already pushed the args:
     ; - a CONTEXT
     ; - an EXCEPTION_RECORD onto the stack
-    ; - an DWORD to use to mulitplex the hijack
+    ; - an DWORD to use to multiplex the hijack
     ; - an arbitrary void* data parameter
     call _ExceptionHijackWorker@16
 

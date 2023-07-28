@@ -15,12 +15,11 @@ using System.Text;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.XPath;
+using ScopeRecord = System.Xml.Xsl.Xslt.CompilerScopeManager<System.Xml.Xsl.Qil.QilIterator>.ScopeRecord;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using ScopeRecord = CompilerScopeManager<QilIterator>.ScopeRecord;
-    using T = XmlQueryTypeFactory;
-
     // Everywhere in this code in case of error in the stylesheet we should call ReportError or ReportWarning
 
     internal sealed class ReferenceReplacer : QilReplaceVisitor
@@ -728,7 +727,7 @@ namespace System.Xml.Xsl.Xslt
                     case XslNodeType.LiteralAttribute: result = CompileLiteralAttribute(node); break;
                     case XslNodeType.LiteralElement: result = CompileLiteralElement(node); break;
                     case XslNodeType.Message: result = CompileMessage(node); break;
-                    case XslNodeType.Nop: result = CompileNop(node); break;
+                    case XslNodeType.Nop: result = CompileNop(); break;
                     case XslNodeType.Number: result = CompileNumber((Number)node); break;
                     //              case XslNodeType.Otherwise:         wrapped by Choose
                     //              case XslNodeType.Param:             already compiled by CompileProtoTemplate()
@@ -782,7 +781,7 @@ namespace System.Xml.Xsl.Xslt
             return CompileInstructions(node.Content);
         }
 
-        private QilNode CompileNop(XslNode node)
+        private QilNode CompileNop()
         {
             return _f.Nop(_f.Sequence());
         }
@@ -947,7 +946,7 @@ namespace System.Xml.Xsl.Xslt
                 else
                 {
                     nsUri = (string)(QilLiteral)qilNs;
-                    // if both name and ns are non AVT and this ns is already bind to the same prefix we can avoid reseting ns management
+                    // if both name and ns are non AVT and this ns is already bind to the same prefix we can avoid resetting ns management
                     explicitNamespace = true;
                 }
                 // Check the case <xsl:attribute name="foo:xmlns" namespace=""/>
@@ -1055,14 +1054,14 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        [return: NotNullIfNotNull("avt")]
+        [return: NotNullIfNotNull(nameof(avt))]
         private QilNode? CompileStringAvt(string? avt)
         {
             if (avt == null)
             {
                 return null;
             }
-            if (avt.AsSpan().IndexOfAny('{', '}') < 0)
+            if (!avt.AsSpan().ContainsAny('{', '}'))
             {
                 return _f.String(avt);
             }
@@ -1072,7 +1071,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode CompileTextAvt(string avt)
         {
             Debug.Assert(avt != null);
-            if (avt.AsSpan().IndexOfAny('{', '}') < 0)
+            if (!avt.AsSpan().ContainsAny('{', '}'))
             {
                 return _f.TextCtor(_f.String(avt));
             }
@@ -1517,7 +1516,7 @@ namespace System.Xml.Xsl.Xslt
 
         // REVIEW: Can we handle both sort's and with-param's in the document order?
         // CompileSorts() creates helper variables in varHelper
-        private QilNode? CompileSorts(IList<XslNode> content, ref LoopFocus parentLoop)
+        private QilList? CompileSorts(IList<XslNode> content, ref LoopFocus parentLoop)
         {
             QilList keyList = _f.BaseFactory.SortKeyList();
 
@@ -1620,15 +1619,18 @@ namespace System.Xml.Xsl.Xslt
                         if (!fwdCompat)
                         {
                             // check for qname-but-not-ncname
-                            string prefix, nsUri;
-                            bool isValid = _compiler.ParseQName(dataType, out prefix, out _, (IErrorHelper)this);
-                            nsUri = isValid ? ResolvePrefix(/*ignoreDefaultNs:*/true, prefix) : _compiler.CreatePhantomNamespace();
-
-                            if (nsUri.Length == 0)
+                            if (_compiler.ParseQName(dataType, out string prefix, out _, (IErrorHelper)this))
                             {
-                                // this is a ncname; we might report SR.Xslt_InvalidAttrValue,
-                                // but the following error message is more user friendly
+                                ResolvePrefix(/*ignoreDefaultNs:*/true, prefix);
                             }
+                            else
+                            {
+                                _compiler.CreatePhantomNamespace();
+                            }
+
+                            // If nsUri.Length == 0, this is a ncname; we might report SR.Xslt_InvalidAttrValue,
+                            // but the following error message is more user friendly
+
                             ReportError(/*[XT_034]*/SR.Xslt_BistateAttribute, "data-type", DtText, DtNumber);
                         }
                         // fall through to default case
@@ -1679,7 +1681,7 @@ namespace System.Xml.Xsl.Xslt
         /// returning "1" if AVT evaluates to value1, or "0" if AVT evaluates to value0 or any other value.
         /// If AVT evaluates to neither value0 nor value1 and fwdCompat == false, an error is reported.
         /// </returns>
-        [return: NotNullIfNotNull("attName")]
+        [return: NotNullIfNotNull(nameof(attName))]
         private QilNode CompileOrderAttribute(string attName, string? attValue, string value0, string value1, bool fwdCompat)
         {
             QilNode? result = CompileStringAvt(attValue);
@@ -1906,7 +1908,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode countMatches, fromMatches, A, F, AF;
             QilIterator i, j;
 
-            countPattern2 = (countPattern != null) ? countPattern.DeepClone(_f.BaseFactory) : null;
+            countPattern2 = countPattern?.DeepClone(_f.BaseFactory);
             countMatches = _f.Filter(i = _f.For(_f.AncestorOrSelf(GetCurrentNode())), MatchCountPattern(countPattern, i));
             if (multiple)
             {
@@ -2059,7 +2061,7 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        private QilNode CompileGroupingSizeAttribute(string? attValue, bool fwdCompat)
+        private QilNode CompileGroupingSizeAttribute(string? attValue)
         {
             QilNode? result = CompileStringAvt(attValue);
 
@@ -2126,7 +2128,7 @@ namespace System.Xml.Xsl.Xslt
                 CompileLangAttributeToLcid(num.Lang, fwdCompat),
                 CompileLetterValueAttribute(num.LetterValue, fwdCompat),
                 CompileGroupingSeparatorAttribute(num.GroupingSeparator, fwdCompat),
-                CompileGroupingSizeAttribute(num.GroupingSize, fwdCompat)
+                CompileGroupingSizeAttribute(num.GroupingSize)
             ));
         }
 
@@ -2422,10 +2424,7 @@ namespace System.Xml.Xsl.Xslt
             XPathScanner scanner;
             QilNode result;
 
-            if (_keyMatchBuilder == null)
-            {
-                _keyMatchBuilder = new KeyMatchBuilder((IXPathEnvironment)this);
-            }
+            _keyMatchBuilder ??= new KeyMatchBuilder((IXPathEnvironment)this);
             SetEnvironmentFlags(/*allowVariables:*/false, /*allowCurrent:*/false, /*allowKey:*/false);
             if (pttrn == null)
             {

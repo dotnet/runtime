@@ -13,8 +13,10 @@ namespace System.Net
 {
     internal static partial class CertificateValidation
     {
+#pragma warning disable IDE0060
         internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName, IntPtr certificateBuffer, int bufferLength)
             => BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName);
+#pragma warning restore IDE0060
 
         internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName)
         {

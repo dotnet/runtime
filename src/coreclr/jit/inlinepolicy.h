@@ -8,12 +8,12 @@
 //
 // -- CLASSES --
 //
-// LegalPolicy          - partial class providing common legality checks
-// DefaultPolicy        - default inliner policy
-// ExtendedDefaltPolicy - a more aggressive and profile-driven variation of DefaultPolicy
-// DiscretionaryPolicy  - default variant with uniform size policy
-// ModelPolicy          - policy based on statistical modelling
-// ProfilePolicy        - policy based on statistical modelling and profile feedback
+// LegalPolicy           - partial class providing common legality checks
+// DefaultPolicy         - default inliner policy
+// ExtendedDefaultPolicy - a more aggressive and profile-driven variation of DefaultPolicy
+// DiscretionaryPolicy   - default variant with uniform size policy
+// ModelPolicy           - policy based on statistical modelling
+// ProfilePolicy         - policy based on statistical modelling and profile feedback
 //
 // These experimental policies are available only in
 // DEBUG or release+INLINE_DATA builds of the jit.
@@ -112,6 +112,7 @@ public:
         , m_IsNoReturnKnown(false)
         , m_ConstArgFeedsIsKnownConst(false)
         , m_ArgFeedsIsKnownConst(false)
+        , m_InsideThrowBlock(false)
     {
         // empty
     }
@@ -125,6 +126,11 @@ public:
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
     bool BudgetCheck() const override;
+
+    virtual unsigned EstimatedTotalILSize() const
+    {
+        return m_CodeSize;
+    }
 
     // Policy policies
     bool PropagateNeverToRuntime() const override;
@@ -182,6 +188,7 @@ protected:
     bool                    m_IsNoReturnKnown : 1;
     bool                    m_ConstArgFeedsIsKnownConst : 1;
     bool                    m_ArgFeedsIsKnownConst : 1;
+    bool                    m_InsideThrowBlock : 1;
 };
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of
@@ -209,13 +216,14 @@ public:
         , m_FoldableExprUn(0)
         , m_FoldableBranch(0)
         , m_FoldableSwitch(0)
+        , m_UnrollableMemop(0)
         , m_Switch(0)
         , m_DivByCns(0)
         , m_ReturnsStructByValue(false)
         , m_IsFromValueClass(false)
         , m_NonGenericCallsGeneric(false)
         , m_IsCallsiteInNoReturnRegion(false)
-        , m_HasProfile(false)
+        , m_HasProfileWeights(false)
     {
         // Empty
     }
@@ -225,6 +233,8 @@ public:
     void NoteDouble(InlineObservation obs, double value) override;
 
     double DetermineMultiplier() override;
+
+    unsigned EstimatedTotalILSize() const override;
 
     bool RequiresPreciseScan() override
     {
@@ -259,13 +269,14 @@ protected:
     unsigned m_FoldableExprUn;
     unsigned m_FoldableBranch;
     unsigned m_FoldableSwitch;
+    unsigned m_UnrollableMemop;
     unsigned m_Switch;
     unsigned m_DivByCns;
     bool     m_ReturnsStructByValue : 1;
     bool     m_IsFromValueClass : 1;
     bool     m_NonGenericCallsGeneric : 1;
     bool     m_IsCallsiteInNoReturnRegion : 1;
-    bool     m_HasProfile : 1;
+    bool     m_HasProfileWeights : 1;
 };
 
 // DiscretionaryPolicy is a variant of the default policy.  It
@@ -360,7 +371,7 @@ protected:
     unsigned    m_CallSiteWeight;
     int         m_ModelCodeSizeEstimate;
     int         m_PerCallInstructionEstimate;
-    bool        m_HasProfile;
+    bool        m_HasProfileWeights;
     bool        m_IsClassCtor;
     bool        m_IsSameThis;
     bool        m_CallerHasNewArray;

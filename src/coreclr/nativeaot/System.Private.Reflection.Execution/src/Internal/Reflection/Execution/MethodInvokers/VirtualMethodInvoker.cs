@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using global::System;
-using global::System.Threading;
 using global::System.Reflection;
 using global::System.Diagnostics;
-using global::System.Collections.Generic;
 
 using global::Internal.Runtime.Augments;
 using global::Internal.Runtime.CompilerServices;
-using global::Internal.Reflection.Execution;
-using global::Internal.Reflection.Core.Execution;
 
 namespace Internal.Reflection.Execution.MethodInvokers
 {
@@ -50,25 +46,86 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
-        [DebuggerGuidedStepThroughAttribute]
-        protected sealed override object Invoke(object thisObject, object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        [DebuggerGuidedStepThrough]
+        protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            ValidateThis(thisObject, _declaringTypeHandle);
+            IntPtr resolvedVirtual = IntPtr.Zero;
 
-            IntPtr resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
+            if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
+            {
+                ValidateThis(thisObject, _declaringTypeHandle);
 
-            object result = RuntimeAugments.CallDynamicInvokeMethod(
+                try
+                {
+                    resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
+                }
+                catch (Exception ex) when (wrapInTargetInvocationException)
+                {
+                    throw new TargetInvocationException(ex);
+                }
+            }
+
+            object? result = MethodInvokeInfo.Invoke(
                 thisObject,
                 resolvedVirtual,
-                MethodInvokeInfo.DynamicInvokeMethod,
-                MethodInvokeInfo.DynamicInvokeGenericDictionary,
-                MethodInvokeInfo.MethodInfo,
                 arguments,
                 binderBundle,
-                wrapInTargetInvocationException: wrapInTargetInvocationException,
-                methodToCallIsThisCall: true);
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                wrapInTargetInvocationException);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
+        }
+
+        [DebuggerGuidedStepThrough]
+        protected sealed override object? Invoke(object? thisObject, Span<object?> arguments)
+        {
+            IntPtr resolvedVirtual = IntPtr.Zero;
+
+            if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
+            {
+                ValidateThis(thisObject, _declaringTypeHandle);
+                resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
+            }
+
+            object? result = MethodInvokeInfo.Invoke(
+                thisObject,
+                resolvedVirtual,
+                arguments);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
+        }
+
+        [DebuggerGuidedStepThrough]
+        protected sealed override object? InvokeDirectWithFewArgs(object? thisObject, Span<object?> arguments)
+        {
+            IntPtr resolvedVirtual = IntPtr.Zero;
+
+            if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
+            {
+                ValidateThis(thisObject, _declaringTypeHandle);
+                resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
+            }
+
+            object? result = MethodInvokeInfo.InvokeDirectWithFewArgs(
+                thisObject,
+                resolvedVirtual,
+                arguments);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
+        }
+
+        protected sealed override object CreateInstance(object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            throw NotImplemented.ByDesign;
+        }
+
+        protected sealed override object CreateInstance(Span<object?> arguments)
+        {
+            throw NotImplemented.ByDesign;
+        }
+
+        protected sealed override object CreateInstanceWithFewArgs(Span<object?> arguments)
+        {
+            throw NotImplemented.ByDesign;
         }
 
         internal IntPtr ResolveTarget(RuntimeTypeHandle type)

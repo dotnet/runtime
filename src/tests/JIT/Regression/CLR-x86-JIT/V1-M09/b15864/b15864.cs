@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
@@ -9,7 +10,7 @@ namespace DefaultNamespace
     //@ENDRENAME; Verify this renames
     using System;
 
-    class TestClass
+    public class TestClass
     {
         public static int iExitCode;
 
@@ -49,7 +50,8 @@ namespace DefaultNamespace
 
         }
 
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             (new TestClass()).TestMain();
             Console.WriteLine("Passed.");

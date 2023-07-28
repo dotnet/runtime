@@ -1,0 +1,35 @@
+<Project>
+  <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and '$(Scenario)' == 'WasmTestOnBrowser'">
+    <HelixExtensionTargets>$(HelixExtensionTargets);_AddHelixCrypoItems</HelixExtensionTargets>
+    <_CryptoProjectName>System.Security.Cryptography.Tests</_CryptoProjectName>
+  </PropertyGroup>
+
+  <Target Name="_AddHelixCrypoItems">
+    <ItemGroup>
+      <!-- remove the existing item -->
+      <HelixWorkItem Remove="@(HelixWorkItem)" Condition="'%(HelixWorkItem.Identity)' == '$(Scenario)-$(_CryptoProjectName)'" />
+
+        <!-- add two new ones - managed, and subtylecrypto -->
+      <HelixWorkItem Include="$(WorkItemPrefix)managed-$(_CryptoProjectName)">
+        <PayloadArchive>$(TestArchiveTestsDir)$(_CryptoProjectName).zip</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+
+      <HelixWorkItem Include="$(WorkItemPrefix)subtlecrypto-$(_CryptoProjectName)">
+        <PayloadArchive>$(TestArchiveTestsDir)$(_CryptoProjectName).zip</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;WasmXHarnessArgs=%WasmXHarnessArgs% --web-server-use-cop&quot; &amp; set &quot;WasmXHarnessMonoArgs=--setenv=TEST_EXPECT_SUBTLE_CRYPTO=true&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;WasmXHarnessArgs=$WasmXHarnessArgs --web-server-use-cop&quot; &amp;&amp; export &quot;WasmXHarnessMonoArgs=--setenv=TEST_EXPECT_SUBTLE_CRYPTO=true&quot;</PreCommands>
+      </HelixWorkItem>
+
+      <_CryptoHelixItem Include="@(HelixWorkItem)"
+                        Condition="$([System.String]::new('%(HelixWorkItem.Identity)').EndsWith('-$(_CryptoProjectName)'))" />
+    </ItemGroup>
+
+    <Error Text="Something went wrong. Expected to have only two work items for $(_CryptoProjectName). But got @(_CryptoHelixItem)"
+           Condition="@(_CryptoHelixItem->Count()) != 2" />
+  </Target>
+</Project>

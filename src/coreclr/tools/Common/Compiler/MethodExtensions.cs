@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -77,21 +74,32 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual 
-        /// method that is not overriding any method on a base type. 
-        /// Given that such methods can never be overridden in any derived type, we can 
-        /// save space in the vtable of a type, and all of its derived types by not emitting these methods in their vtables, 
+        /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual
+        /// method that is not overriding any method on a base type.
+        /// Given that such methods can never be overridden in any derived type, we can
+        /// save space in the vtable of a type, and all of its derived types by not emitting these methods in their vtables,
         /// and storing them in a separate table on the side. This is especially beneficial for all array types,
-        /// since all of their collection interface methods are sealed and implemented on the System.Array and 
+        /// since all of their collection interface methods are sealed and implemented on the System.Array and
         /// System.Array&lt;T&gt; base types, and therefore we can minimize the vtable sizes of all derived array types.
         /// </summary>
         public static bool CanMethodBeInSealedVTable(this MethodDesc method)
         {
+            bool isInterfaceMethod = method.OwningType.IsInterface;
+
             // Methods on interfaces never go into sealed vtable
             // We would hit this code path for default implementations of interface methods (they are newslot+final).
-            // Inteface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
+            // Interface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
             // attempt to place final+newslot methods differently.
-            return method.IsFinal && method.IsNewSlot && !method.OwningType.IsInterface;
+            if (method.IsFinal && method.IsNewSlot && !isInterfaceMethod)
+                return true;
+
+            // Implementations of static virtual method also go into the sealed vtable.
+            // Again, we don't let that happen for interface methods because the slot numbers are only logical,
+            // not physical.
+            if (method.Signature.IsStatic && !isInterfaceMethod)
+                return true;
+
+            return false;
         }
 
         public static bool NotCallableWithoutOwningEEType(this MethodDesc method)
@@ -102,26 +110,6 @@ namespace ILCompiler
                 !owningType.IsArrayTypeWithoutGenericInterfaces() && /* Type loader can make these at runtime */
                 (owningType is not MetadataType mdType || !mdType.IsModuleType) && /* Compiler parks some instance methods on the <Module> type */
                 !method.IsSharedByGenericInstantiations; /* Current impl limitation; can be lifted */
-        }
-
-        public static PropertyPseudoDesc GetPropertyForAccessor(this MethodDesc accessor)
-        {
-            if (accessor.GetTypicalMethodDefinition() is not EcmaMethod ecmaAccessor)
-                return null;
-
-            var type = (EcmaType)ecmaAccessor.OwningType;
-            var reader = type.MetadataReader;
-            foreach (var propertyHandle in reader.GetTypeDefinition(type.Handle).GetProperties())
-            {
-                var accessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
-                if (ecmaAccessor.Handle == accessors.Getter
-                    || ecmaAccessor.Handle == accessors.Setter)
-                {
-                    return new PropertyPseudoDesc(type, propertyHandle);
-                }
-            }
-
-            return null;
         }
     }
 }

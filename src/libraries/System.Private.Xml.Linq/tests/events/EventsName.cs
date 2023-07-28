@@ -72,7 +72,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
         private static void ChangedDelegate(object sender, XObjectChangeEventArgs e) { }
 
         [Fact]
-        public void AddingRemovingNullListenersXElementRemoveNullEventListner()
+        public void AddingRemovingNullListenersXElementRemoveNullEventListener()
         {
             XDocument xDoc = new XDocument(InputSpace.GetElement(10, 10));
             EventHandler<XObjectChangeEventArgs> d1 = ChangingDelegate;
@@ -98,7 +98,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
         }
 
         [Fact]
-        public void RemoveBothEventListenersXElementRemoveBothEventListners()
+        public void RemoveBothEventListenersXElementRemoveBothEventListeners()
         {
             XDocument xDoc = new XDocument(InputSpace.GetElement(10, 10));
             EventHandler<XObjectChangeEventArgs> d1 = ChangingDelegate;
@@ -123,7 +123,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
         }
 
         [Fact]
-        public void AddChangedListnerInPreEventAddListnerInPreEvent()
+        public void AddChangedListenerInPreEventAddListenerInPreEvent()
         {
             XElement element = XElement.Parse("<root></root>");
             element.Changing += new EventHandler<XObjectChangeEventArgs>(
@@ -138,7 +138,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
         }
 
         [Fact]
-        public void AddAndRemoveEventListnersXElementAddRemoveEventListners()
+        public void AddAndRemoveEventListenersXElementAddRemoveEventListeners()
         {
             XDocument xDoc = new XDocument(InputSpace.GetElement(10, 10));
             EventsHelper docHelper = new EventsHelper(xDoc);
@@ -146,14 +146,14 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             xDoc.Root.Add(new XElement("Add", "Me"));
             docHelper.Verify(XObjectChange.Add);
             eHelper.Verify(XObjectChange.Add);
-            eHelper.RemoveListners();
+            eHelper.RemoveListeners();
             xDoc.Root.Add(new XComment("Comment"));
             eHelper.Verify(0);
             docHelper.Verify(XObjectChange.Add);
         }
 
         [Fact]
-        public void AttachListnersAtEachLevelNestedElementsXElementAttachAtEachLevel()
+        public void AttachListenersAtEachLevelNestedElementsXElementAttachAtEachLevel()
         {
             XDocument xDoc = new XDocument(XElement.Parse(@"<a>a<b>b<c>c<d>c<e>e<f>f</f></e></d></c></b></a>"));
             EventsHelper[] listeners = new EventsHelper[xDoc.Descendants().Count()];

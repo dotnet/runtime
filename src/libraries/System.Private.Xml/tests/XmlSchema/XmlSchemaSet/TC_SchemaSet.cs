@@ -3,12 +3,12 @@
 
 using System.IO;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlSchemaTests
 {
     public class TestData
     {
-        internal static string _Root = Path.Combine("TestFiles", "TestData");
-        internal static string StandardPath = Path.Combine("TestFiles", "StandardTests");
+        internal static string _Root = Path.Combine("XmlSchema", "TestFiles", "TestData");
+        internal static string StandardPath = Path.Combine("XmlSchema", "TestFiles", "StandardTests");
         internal static string _FileXSD1 = Path.Combine(_Root, "schema1.xsd");
         internal static string _FileXSD1bis = Path.Combine(_Root, "schema1bis.xsd");
         internal static string _NmspXSD1 = Path.Combine(_Root, "schema1.xsd");

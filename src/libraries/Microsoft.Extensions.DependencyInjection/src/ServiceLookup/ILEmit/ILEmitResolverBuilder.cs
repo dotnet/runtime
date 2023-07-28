@@ -5,11 +5,14 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
+    [RequiresDynamicCode("Creates DynamicMethods")]
     internal sealed class ILEmitResolverBuilder : CallSiteVisitor<ILEmitResolverBuilderContext, object?>
     {
         private static readonly MethodInfo ResolvedServicesGetter = typeof(ServiceProviderEngineScope).GetProperty(
@@ -238,10 +241,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object? VisitFactory(FactoryCallSite factoryCallSite, ILEmitResolverBuilderContext argument)
         {
-            if (argument.Factories == null)
-            {
-                argument.Factories = new List<Func<IServiceProvider, object>>();
-            }
+            argument.Factories ??= new List<Func<IServiceProvider, object>>();
 
             // this.Factories[i](ProviderScope)
             argument.Generator.Emit(OpCodes.Ldarg_0);
@@ -259,10 +259,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private static void AddConstant(ILEmitResolverBuilderContext argument, object? value)
         {
-            if (argument.Constants == null)
-            {
-                argument.Constants = new List<object?>();
-            }
+            argument.Constants ??= new List<object?>();
 
             // this.Constants[i]
             argument.Generator.Emit(OpCodes.Ldarg_0);
@@ -275,10 +272,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private static void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
         {
-            Debug.Assert(key.Type != null);
+            Debug.Assert(key.ServiceIdentifier != null);
+            var id = key.ServiceIdentifier.Value;
 
-            // new ServiceCacheKey(typeof(key.Type), key.Slot)
-            argument.Generator.Emit(OpCodes.Ldtoken, key.Type);
+            // new ServiceCacheKey(key.ServiceKey, key.type, key.slot)
+            AddConstant(argument, id.ServiceKey);
+            argument.Generator.Emit(OpCodes.Ldtoken, id.ServiceType);
             argument.Generator.Emit(OpCodes.Call, GetTypeFromHandleMethod);
             argument.Generator.Emit(OpCodes.Ldc_I4, key.Slot);
             argument.Generator.Emit(OpCodes.Newobj, CacheKeyCtor);

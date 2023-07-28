@@ -9,8 +9,8 @@ public class Critical {
 		try {
 			throw new Exception ();
 		} catch (Exception) {
-			Console.WriteLine ("Catched exception in cctor");
-			Program.catched_exception = true;
+			Console.WriteLine ("Caught exception in cctor");
+			Program.caught_exception = true;
 		}
 	}
 }
@@ -20,7 +20,7 @@ public class Program {
 	public static ManualResetEvent mre1 = new ManualResetEvent (false);
 	public static ManualResetEvent mre2 = new ManualResetEvent (false);
 
-	public static bool catched_exception, catched_abort;
+	public static bool caught_exception, caught_abort;
 
 	public static int Main (string[] args)
 	{
@@ -33,9 +33,9 @@ public class Program {
 
 		thread.Join ();
 
-		if (!catched_exception)
+		if (!caught_exception)
 			Environment.Exit (1);
-		if (!catched_abort)
+		if (!caught_abort)
 			Environment.Exit (2);
 
 		Console.WriteLine ("done, all things good");
@@ -47,8 +47,8 @@ public class Program {
 		try {
 			new Critical ();
 		} catch (ThreadAbortException) {
-			Console.WriteLine ("Catched thread abort");
-			Program.catched_abort = true;
+			Console.WriteLine ("Caught thread abort");
+			Program.caught_abort = true;
 		}
 	}
 }

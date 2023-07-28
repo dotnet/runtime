@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-using System;
-using System.Xml;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlDocumentTests
 {
     public class NodeInsertingTests
     {

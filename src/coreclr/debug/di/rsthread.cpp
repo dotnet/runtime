@@ -3003,11 +3003,11 @@ HRESULT CordbUnmanagedThread::RestoreLeafSeh()
 #endif
 
 // Read the contents from the LS's Predefined TLS block.
-// This is an auxillary TLS storage array-of-void*, indexed off the TLS.
+// This is an auxiliary TLS storage array-of-void*, indexed off the TLS.
 // pRead is optional. This makes sense when '0' is a valid default value.
 // 1) On success (block exists in LS, we can read it),
 //    return value of data in the slot, *pRead = true
-// 2) On failure to read block (block doens't exist yet, any other failure)
+// 2) On failure to read block (block doesn't exist yet, any other failure)
 //    return value == 0 (assumed default, *pRead = false
 REMOTE_PTR CordbUnmanagedThread::GetPreDefTlsSlot(SIZE_T offset)
 {
@@ -3091,7 +3091,7 @@ HRESULT CordbUnmanagedThread::GetTlsSlot(DWORD slot, REMOTE_PTR * pValue)
 //
 // Notes:
 //   This is very brittle because the OS can lazily allocates storage for TLS slots.
-//   In order to gaurantee the storage is available, it must have been written to by the debuggee.
+//   In order to guarantee the storage is available, it must have been written to by the debuggee.
 //   For managed threads, that's easy because the Thread* is already written to the slot.
 //   But for pure native threads where GetThread() == NULL, the storage may not yet be allocated.
 //
@@ -4373,7 +4373,7 @@ void CordbUnmanagedThread::SaveRaiseExceptionEntryContext()
         return;
     }
 
-    // If everything was succesful then set this flag, otherwise none of the above data is considered valid
+    // If everything was successful then set this flag, otherwise none of the above data is considered valid
     SetState(CUTS_HasRaiseExceptionEntryCtx);
     return;
 }
@@ -6062,7 +6062,7 @@ HRESULT CordbNativeFrame::IsChild(BOOL * pIsChild)
 //
 // Arguments:
 //    pPotentialParentFrame - the ICDNativeFrame2 to check
-//    pIsParent             - out paramter; returns whether the specified frame is indeed the parent frame
+//    pIsParent             - out parameter; returns whether the specified frame is indeed the parent frame
 //
 // Return Value:
 //    S_OK on success.
@@ -8331,6 +8331,9 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 #elif defined(TARGET_LOONGARCH64)
         hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_LOONGARCH64_F0,
                                                        type, ppValue);
+#elif defined(TARGET_RISCV64)
+        hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_RISCV64_F0,
+                                                       type, ppValue);
 #else
 #error Platform not implemented
 #endif  // TARGET_ARM @ARMTODO
@@ -8769,6 +8772,8 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
     const CorDebugRegister floatRegister = REGISTER_ARM_D0;
 #elif  defined(TARGET_LOONGARCH64)
     const CorDebugRegister floatRegister = REGISTER_LOONGARCH64_F0;
+#elif  defined(TARGET_RISCV64)
+    const CorDebugRegister floatRegister = REGISTER_RISCV64_F0;
 #endif
 
 #if defined(TARGET_X86)
@@ -8783,6 +8788,8 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
     const CorDebugRegister ptrHighWordRegister = REGISTER_ARM_R1;
 #elif  defined(TARGET_LOONGARCH64)
     const CorDebugRegister ptrRegister = REGISTER_LOONGARCH64_A0;
+#elif  defined(TARGET_RISCV64)
+    const CorDebugRegister ptrRegister = REGISTER_RISCV64_A0;
 #endif
 
     CorElementType corReturnType = pType->GetElementType();
@@ -9968,7 +9975,7 @@ HRESULT CordbEval::NewString(LPCWSTR string)
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-    return NewStringWithLength(string, (UINT)wcslen(string));
+    return NewStringWithLength(string, (UINT)u16_strlen(string));
 }
 
 //---------------------------------------------------------------------------------------
@@ -10549,7 +10556,7 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
 /* ------------------------------------------------------------------------- *
  * CordbEval2
  *
- *   Extentions to the CordbEval class for Whidbey
+ *   Extensions to the CordbEval class for Whidbey
  *
  * ------------------------------------------------------------------------- */
 

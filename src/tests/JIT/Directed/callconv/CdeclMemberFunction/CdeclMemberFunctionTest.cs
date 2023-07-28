@@ -63,9 +63,10 @@ unsafe class CdeclMemberFunctionNative
     public static extern CLong GetWidthAsLongFromManaged(C* c);
 }
 
-unsafe class CdeclMemberFunctionTest
+public unsafe class CdeclMemberFunctionTest
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

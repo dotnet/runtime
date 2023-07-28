@@ -153,6 +153,7 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     SIZE_T  m_cbOpcode;                                 // Max size of opcode
     SIZE_T  m_offTraceType;                             // Offset of the trace.type within a patch
     DWORD   m_traceTypeUnmanaged;                       // TRACE_UNMANAGED
+    void   *m_setThreadContextNeededAddr;               // Address of SetThreadContextNeededFlare
 
     DebuggerIPCRuntimeOffsets()
     {
@@ -869,7 +870,7 @@ template <int nMaxLengthIncludingNull>
 class MSLAYOUT EmbeddedIPCString
 {
 public:
-    // Set, caller responsibility that wcslen(pData) < nMaxLengthIncludingNull
+    // Set, caller responsibility that u16_strlen(pData) < nMaxLengthIncludingNull
     void SetString(const WCHAR * pData)
     {
         // If the string doesn't fit into the buffer, that's an issue (and so this is a real
@@ -1283,7 +1284,7 @@ inline bool IsEqualOrCloserToRoot(FramePointer fp1, FramePointer fp2)
 //          the address of the real start address of the native code.
 //          This field will be NULL only if the method hasn't been JITted
 //          yet (and thus no code is available).  Otherwise, it will be
-//          the adress of a CORDB_ADDRESS in the remote memory.  This
+//          the address of a CORDB_ADDRESS in the remote memory.  This
 //          CORDB_ADDRESS may be NULL, in which case the code is unavailable
 //          has been pitched (return CORDBG_E_CODE_NOT_AVAILABLE)
 //
@@ -1332,7 +1333,7 @@ struct MSLAYOUT DebuggerIPCE_FuncData
 //          generic code of some kind)
 // BOOL isInstantiatedGeneric: Indicates if the method is
 //          generic code of some kind.
-// BOOL jsutAfterILThrow: indicates that code just threw a software exception and
+// BOOL justAfterILThrow: indicates that code just threw a software exception and
 //          nativeOffset points to an instruction just after [call IL_Throw].
 //          This is being used to figure out a real offset of the exception origin.
 //          By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get
@@ -1366,7 +1367,7 @@ struct MSLAYOUT DebuggerIPCE_JITFuncData
     // this is the version of the jitted code
     SIZE_T       enCVersion;
 
-    BOOL         jsutAfterILThrow;
+    BOOL         justAfterILThrow;
 };
 
 //
@@ -1894,6 +1895,13 @@ C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif
+#elif defined(TARGET_RISCV64)
+#define DBG_TARGET_REGNUM_SP 2
+#define DBG_TARGET_REGNUM_AMBIENT_SP 34
+#ifdef TARGET_RISCV64
+C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+#endif
 #else
 #error Target registers are not defined for this platform
 #endif
@@ -1929,7 +1937,7 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            // Module whos metadata is being updated
+            // Module whose metadata is being updated
             // This tells the RS that the metadata for that module has become invalid.
             VMPTR_DomainAssembly vmDomainAssembly;
 
@@ -2004,6 +2012,17 @@ struct MSLAYOUT DebuggerIPCEvent
             SIZE_T       encVersion;
             LSPTR_METHODDESC  nativeCodeMethodDescToken; // points to the MethodDesc if !isIL
         } BreakpointData;
+
+        struct MSLAYOUT
+        {
+            mdMethodDef funcMetadataToken;
+            VMPTR_Module pModule;
+        } DisableOptData;
+
+        struct MSLAYOUT
+        {
+            BOOL value;
+        } IsOptsDisabledData;
 
         struct MSLAYOUT
         {

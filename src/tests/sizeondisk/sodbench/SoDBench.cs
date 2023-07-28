@@ -296,7 +296,7 @@ namespace SoDBench
             };
 
             // Used to set where the packages will be unpacked to.
-            // There is a no gaurentee that this is a stable method, but is the only way currently to set the fallback folder location
+            // There is a no guarantee that this is a stable method, but is the only way currently to set the fallback folder location
             dotnet.Environment["DOTNET_CLI_TEST_FALLBACKFOLDER"] = s_fallbackDir.FullName;
 
             LaunchProcess(dotnet, 180000);

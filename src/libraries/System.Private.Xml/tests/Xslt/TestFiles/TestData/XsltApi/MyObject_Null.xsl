@@ -6,8 +6,8 @@
 	<result>
 
 		Test1<xsl:value-of select="myObj:DoNothing()"/>
-		Test2: <xsl:value-of select="myObj:GetUnitialized()"/>
+		Test2: <xsl:value-of select="myObj:GetUninitialized()"/>
 	</result>
-	
+
     </xsl:template>
 </xsl:stylesheet>

@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.InteropServices
 {
-    public static class ComActivator
+    internal static class ComActivator
     {
         /// <summary>
         /// Internal entry point for unmanaged COM activation API from native code

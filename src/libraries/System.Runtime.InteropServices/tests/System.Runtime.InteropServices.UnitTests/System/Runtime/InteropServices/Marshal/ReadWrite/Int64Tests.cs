@@ -154,7 +154,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<AccessViolationException>(() => Marshal.ReadInt64(null, 2));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("Marshal.ReadInt64 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadInt64_NotReadable_ThrowsArgumentException()
         {
@@ -182,7 +182,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<AccessViolationException>(() => Marshal.WriteInt64(null, 2, 0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("Marshal.WriteInt64 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt64_NotReadable_ThrowsArgumentException()
         {

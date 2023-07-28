@@ -7,6 +7,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
     internal static class HostContextResultExtensions
     {
+        public static AndConstraint<CommandResultAssertions> ExecuteSelfContained(this CommandResultAssertions assertion, bool selfContained)
+        {
+            return assertion.HaveStdErrContaining($"Executing as a {(selfContained ? "self-contained" : "framework-dependent")} app");
+        }
+
         public static AndConstraint<CommandResultAssertions> ExecuteAssemblyMock(this CommandResultAssertions assertion, string appPath, string[] appArgs)
         {
             var constraint = assertion.HaveStdOutContaining("mock coreclr_initialize() called")

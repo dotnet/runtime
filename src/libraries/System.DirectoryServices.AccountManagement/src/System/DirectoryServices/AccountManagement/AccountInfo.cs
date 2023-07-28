@@ -79,7 +79,7 @@ namespace System.DirectoryServices.AccountManagement
                 // We don't use HandleSet<T> here because of the slightly non-standard implementation of the change-tracking
                 // for this property.
 
-                // Check that we actually support this propery in our store
+                // Check that we actually support this property in our store
                 //this.owningPrincipal.CheckSupportedProperty(PropertyNames.AcctInfoPermittedLogonTimes);
 
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoPermittedLogonTimes))

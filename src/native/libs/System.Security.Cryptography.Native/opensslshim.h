@@ -9,7 +9,7 @@
 #pragma once
 
 // All the openssl includes need to be here to ensure that the APIs we use
-// are overriden to be called through our function pointers.
+// are overridden to be called through our function pointers.
 #include <openssl/asn1.h>
 #include <openssl/bio.h>
 #include <openssl/bn.h>
@@ -17,6 +17,7 @@
 #include <openssl/dsa.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
+#include <openssl/engine.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -54,6 +55,7 @@
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
 
 // Remove problematic #defines
+#undef BN_is_zero
 #undef SSL_get_state
 #undef SSL_is_init_finished
 #undef X509_get_X509_PUBKEY
@@ -152,6 +154,17 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
 #define EVP_CTRL_AEAD_SET_TAG 0x11
 #endif
 
+#if !HAVE_OPENSSL_SHA3
+#undef HAVE_OPENSSL_SHA3
+#define HAVE_OPENSSL_SHA3 1
+const EVP_MD *EVP_sha3_256(void);
+const EVP_MD *EVP_sha3_384(void);
+const EVP_MD *EVP_sha3_512(void);
+const EVP_MD *EVP_shake128(void);
+const EVP_MD *EVP_shake256(void);
+int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
+#endif
+
 #define API_EXISTS(fn) (fn != NULL)
 
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.
@@ -192,6 +205,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(BN_clear_free) \
     REQUIRED_FUNCTION(BN_dup) \
     REQUIRED_FUNCTION(BN_free) \
+    FALLBACK_FUNCTION(BN_is_zero) \
     REQUIRED_FUNCTION(BN_new) \
     REQUIRED_FUNCTION(BN_num_bits) \
     REQUIRED_FUNCTION(BN_set_word) \
@@ -268,6 +282,12 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EC_POINT_mul) \
     REQUIRED_FUNCTION(EC_POINT_new) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates_GFp) \
+    REQUIRED_FUNCTION(ENGINE_by_id) \
+    REQUIRED_FUNCTION(ENGINE_finish) \
+    REQUIRED_FUNCTION(ENGINE_free) \
+    REQUIRED_FUNCTION(ENGINE_init) \
+    REQUIRED_FUNCTION(ENGINE_load_public_key) \
+    REQUIRED_FUNCTION(ENGINE_load_private_key) \
     REQUIRED_FUNCTION(ERR_clear_error) \
     REQUIRED_FUNCTION(ERR_error_string_n) \
     REQUIRED_FUNCTION(ERR_get_error) \
@@ -319,6 +339,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_des_ede3_cfb8) \
     REQUIRED_FUNCTION(EVP_des_ede3_cfb64) \
     REQUIRED_FUNCTION(EVP_DigestFinal_ex) \
+    LIGHTUP_FUNCTION(EVP_DigestFinalXOF) \
     REQUIRED_FUNCTION(EVP_DigestInit_ex) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
@@ -372,6 +393,11 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_sha256) \
     REQUIRED_FUNCTION(EVP_sha384) \
     REQUIRED_FUNCTION(EVP_sha512) \
+    LIGHTUP_FUNCTION(EVP_sha3_256) \
+    LIGHTUP_FUNCTION(EVP_sha3_384) \
+    LIGHTUP_FUNCTION(EVP_sha3_512) \
+    LIGHTUP_FUNCTION(EVP_shake128) \
+    LIGHTUP_FUNCTION(EVP_shake256) \
     REQUIRED_FUNCTION(EXTENDED_KEY_USAGE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
     REQUIRED_FUNCTION(HMAC) \
@@ -486,6 +512,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_CTX_set_quiet_shutdown) \
     FALLBACK_FUNCTION(SSL_CTX_set_options) \
     FALLBACK_FUNCTION(SSL_CTX_set_security_level) \
+    REQUIRED_FUNCTION(SSL_CTX_set_session_id_context) \
     REQUIRED_FUNCTION(SSL_CTX_set_verify) \
     REQUIRED_FUNCTION(SSL_CTX_use_certificate) \
     REQUIRED_FUNCTION(SSL_CTX_use_PrivateKey) \
@@ -603,6 +630,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(X509_STORE_CTX_new) \
     REQUIRED_FUNCTION(X509_STORE_CTX_set_flags) \
     REQUIRED_FUNCTION(X509_STORE_CTX_set_verify_cb) \
+    REQUIRED_FUNCTION(X509_STORE_CTX_set_ex_data) \
+    REQUIRED_FUNCTION(X509_STORE_CTX_get_ex_data) \
     REQUIRED_FUNCTION(X509_STORE_free) \
     FALLBACK_FUNCTION(X509_STORE_get0_param) \
     REQUIRED_FUNCTION(X509_STORE_new) \
@@ -670,6 +699,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define BN_clear_free BN_clear_free_ptr
 #define BN_dup BN_dup_ptr
 #define BN_free BN_free_ptr
+#define BN_is_zero BN_is_zero_ptr
 #define BN_new BN_new_ptr
 #define BN_num_bits BN_num_bits_ptr
 #define BN_set_word BN_set_word_ptr
@@ -746,6 +776,12 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EC_POINT_mul EC_POINT_mul_ptr
 #define EC_POINT_new EC_POINT_new_ptr
 #define EC_POINT_set_affine_coordinates_GFp EC_POINT_set_affine_coordinates_GFp_ptr
+#define ENGINE_by_id ENGINE_by_id_ptr
+#define ENGINE_finish ENGINE_finish_ptr
+#define ENGINE_free ENGINE_free_ptr
+#define ENGINE_init ENGINE_init_ptr
+#define ENGINE_load_public_key ENGINE_load_public_key_ptr
+#define ENGINE_load_private_key ENGINE_load_private_key_ptr
 #define ERR_clear_error ERR_clear_error_ptr
 #define ERR_error_string_n ERR_error_string_n_ptr
 #define ERR_get_error ERR_get_error_ptr
@@ -797,6 +833,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_des_ede3_cfb64 EVP_des_ede3_cfb64_ptr
 #define EVP_des_ede3_cbc EVP_des_ede3_cbc_ptr
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
+#define EVP_DigestFinalXOF EVP_DigestFinalXOF_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
@@ -850,6 +887,11 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_sha256 EVP_sha256_ptr
 #define EVP_sha384 EVP_sha384_ptr
 #define EVP_sha512 EVP_sha512_ptr
+#define EVP_sha3_256 EVP_sha3_256_ptr
+#define EVP_sha3_384 EVP_sha3_384_ptr
+#define EVP_sha3_512 EVP_sha3_512_ptr
+#define EVP_shake128 EVP_shake128_ptr
+#define EVP_shake256 EVP_shake256_ptr
 #define EXTENDED_KEY_USAGE_free EXTENDED_KEY_USAGE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
 #define HMAC HMAC_ptr
@@ -965,6 +1007,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_set_options SSL_CTX_set_options_ptr
 #define SSL_CTX_set_quiet_shutdown SSL_CTX_set_quiet_shutdown_ptr
 #define SSL_CTX_set_security_level SSL_CTX_set_security_level_ptr
+#define SSL_CTX_set_session_id_context SSL_CTX_set_session_id_context_ptr
 #define SSL_CTX_set_verify SSL_CTX_set_verify_ptr
 #define SSL_CTX_use_certificate SSL_CTX_use_certificate_ptr
 #define SSL_CTX_use_PrivateKey SSL_CTX_use_PrivateKey_ptr
@@ -1084,6 +1127,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_STORE_CTX_new X509_STORE_CTX_new_ptr
 #define X509_STORE_CTX_set_flags X509_STORE_CTX_set_flags_ptr
 #define X509_STORE_CTX_set_verify_cb X509_STORE_CTX_set_verify_cb_ptr
+#define X509_STORE_CTX_set_ex_data X509_STORE_CTX_set_ex_data_ptr
+#define X509_STORE_CTX_get_ex_data X509_STORE_CTX_get_ex_data_ptr
 #define X509_STORE_free X509_STORE_free_ptr
 #define X509_STORE_get0_param X509_STORE_get0_param_ptr
 #define X509_STORE_new X509_STORE_new_ptr
@@ -1179,6 +1224,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 
 // Alias "future" API to the local_ version.
 #define ASN1_TIME_to_tm local_ASN1_TIME_to_tm
+#define BN_is_zero local_BN_is_zero
 #define BIO_up_ref local_BIO_up_ref
 #define DSA_get0_key local_DSA_get0_key
 #define DSA_get0_pqg local_DSA_get0_pqg

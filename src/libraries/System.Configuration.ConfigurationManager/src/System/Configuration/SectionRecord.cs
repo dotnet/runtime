@@ -230,7 +230,7 @@ namespace System.Configuration
             // Only the overrideMode from the parent thats closest to the SectionRecord has effect
             //
             // For location input:
-            // Remember that this method will be called for location inputs comming from the immediate parent first
+            // Remember that this method will be called for location inputs coming from the immediate parent first
             // and then walking the hierarchy up to the root level
             //
             // For indirect location input:

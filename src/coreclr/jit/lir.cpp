@@ -241,11 +241,11 @@ void LIR::Use::ReplaceWith(GenTree* replacement)
 //    lclNum - The local to use for temporary storage. If BAD_VAR_NUM (the
 //             default) is provided, this method will create and use a new
 //             local var.
-//    assign - On return, if non null, contains the created assignment node
+//    pStore - On return, if non null, contains the created store node
 //
 // Return Value: The number of the local var used for temporary storage.
 //
-unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTree** assign)
+unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTree** pStore)
 {
     assert(IsInitialized());
     assert(compiler != nullptr);
@@ -259,7 +259,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
         lclNum = compiler->lvaGrabTemp(true DEBUGARG("ReplaceWithLclVar is creating a new local variable"));
     }
 
-    GenTreeLclVar* const store = compiler->gtNewTempAssign(lclNum, node)->AsLclVar();
+    GenTreeLclVar* const store = compiler->gtNewTempStore(lclNum, node)->AsLclVar();
     assert(store != nullptr);
     assert(store->gtOp1 == node);
 
@@ -273,9 +273,9 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
     JITDUMP("ReplaceWithLclVar created store :\n");
     DISPNODE(store);
 
-    if (assign != nullptr)
+    if (pStore != nullptr)
     {
-        *assign = store;
+        *pStore = store;
     }
     return lclNum;
 }
@@ -305,6 +305,26 @@ LIR::ReadOnlyRange::ReadOnlyRange(GenTree* firstNode, GenTree* lastNode) : m_fir
 {
     assert((m_firstNode == nullptr) == (m_lastNode == nullptr));
     assert((m_firstNode == m_lastNode) || (Contains(m_lastNode)));
+}
+
+//------------------------------------------------------------------------
+// LIR::ReadOnlyRange::operator=:
+//    Move assignment operator= for LIR ranges.
+//
+// Arguments:
+//    other - The range to move from.
+//
+LIR::ReadOnlyRange& LIR::ReadOnlyRange::operator=(ReadOnlyRange&& other)
+{
+    m_firstNode = other.m_firstNode;
+    m_lastNode  = other.m_lastNode;
+
+#ifdef DEBUG
+    other.m_firstNode = nullptr;
+    other.m_lastNode  = nullptr;
+#endif
+
+    return *this;
 }
 
 //------------------------------------------------------------------------
@@ -1111,9 +1131,9 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 }
 
 //------------------------------------------------------------------------
-// LIR::Range::GetTreeRange: Computes the subrange that includes all nodes
-//                           in the dataflow trees rooted at a particular
-//                           set of nodes.
+// LIR::Range::GetMarkedRange:
+//   Computes the subrange that includes all nodes in the dataflow trees rooted
+//   at a particular set of nodes.
 //
 // This method logically uses the following algorithm to compute the
 // range:
@@ -1144,14 +1164,29 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 // occurring before uses).
 //
 // Arguments:
-//    root        - The root of the dataflow tree.
-//    isClosed    - An output parameter that is set to true if the returned
-//                  range contains only nodes in the dataflow tree and false
-//                  otherwise.
+//    markCount         - The number of marks initially set on nodes before the
+//                        start node.
+//    start             - The node to start looking backwards from.
+//    isClosed          - [out] Set to true if the returned range contains only
+//                        nodes in the dataflow tree and false otherwise.
+//    sideEffects       - [out] Combined side effect flags for all nodes in the
+//                        returned range.
+//
+// Template arguments:
+//    markFlagsOperands - Whether the dataflow algorithm should also try to
+//                        mark operands that are defining flags. For example,
+//                        GT_JCC implicitly consumes the flags defined by the
+//                        previous node in linear order. If this argument is
+//                        true, then the algorithm will also include the flags
+//                        definition (which is e.g. a CMP node) in the returned
+//                        range.
+//                        This works on a best-effort basis; the user should not
+//                        rely on all flags defs to be found.
 //
 // Returns:
 //    The computed subrange.
 //
+template <bool     markFlagsOperands>
 LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                                               GenTree*  start,
                                               bool*     isClosed,
@@ -1161,6 +1196,12 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
     assert(start != nullptr);
     assert(isClosed != nullptr);
     assert(sideEffects != nullptr);
+
+#ifndef DEBUG
+    // The treatment of flags definitions is on a best-effort basis; it should
+    // be used for debug purposes only.
+    static_assert_no_msg(!markFlagsOperands);
+#endif
 
     bool     sawUnmarkedNode    = false;
     unsigned sideEffectsInRange = 0;
@@ -1182,6 +1223,17 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                 markCount++;
                 return GenTree::VisitResult::Continue;
             });
+
+            if (markFlagsOperands && firstNode->OperConsumesFlags())
+            {
+                GenTree* prev = firstNode->gtPrev;
+                if ((prev != nullptr) && ((prev->gtFlags & GTF_SET_FLAGS) != 0) &&
+                    ((prev->gtLIRFlags & LIR::Flags::Mark) == 0))
+                {
+                    prev->gtLIRFlags |= LIR::Flags::Mark;
+                    markCount++;
+                }
+            }
 
             // Unmark the node and update `firstNode`
             firstNode->gtLIRFlags &= ~LIR::Flags::Mark;
@@ -1262,6 +1314,34 @@ LIR::ReadOnlyRange LIR::Range::GetTreeRange(GenTree* root, bool* isClosed, unsig
     return GetMarkedRange(markCount, root, isClosed, sideEffects);
 }
 
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// LIR::Range::GetTreeRangeWithFlags:
+// Computes the subrange that includes all nodes in the dataflow tree rooted at
+// a particular node, taking into account that the nodes may also implicitly
+// consume flags defined by non-operands.
+//
+// Arguments:
+//    root        - The root of the dataflow tree range of nodes.
+//    isClosed    - An output parameter that is set to true if the returned
+//                  range contains only nodes in the dataflow tree and false
+//                  otherwise.
+//    sideEffects - An output parameter that summarizes the side effects
+//                  contained in the returned range.
+//
+// Returns:
+//    The computed subrange.
+LIR::ReadOnlyRange LIR::Range::GetTreeRangeWithFlags(GenTree* root, bool* isClosed, unsigned* sideEffects) const
+{
+    assert(root != nullptr);
+
+    unsigned markCount = 1;
+    root->gtLIRFlags |= LIR::Flags::Mark;
+
+    return GetMarkedRange<true>(markCount, root, isClosed, sideEffects);
+}
+#endif
+
 //------------------------------------------------------------------------
 // LIR::Range::GetTreeRange: Computes the subrange that includes all nodes
 //                           in the dataflow trees rooted by the operands
@@ -1333,6 +1413,7 @@ public:
         , range(range)
         , unusedDefs(unusedDefs)
         , unusedLclVarReads(compiler->getAllocator(CMK_DebugOnly))
+        , lclVarReadsMapsCache(compiler->getAllocator(CMK_DebugOnly))
     {
     }
 
@@ -1352,43 +1433,38 @@ public:
             AliasSet::NodeInfo nodeInfo(compiler, node);
             if (nodeInfo.IsLclVarRead() && node->IsValue() && !unusedDefs.Contains(node))
             {
-                jitstd::list<GenTree*>* reads;
-                if (!unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
-                {
-                    reads = new (compiler, CMK_DebugOnly) jitstd::list<GenTree*>(compiler->getAllocator(CMK_DebugOnly));
-                    unusedLclVarReads.AddOrUpdate(nodeInfo.LclNum(), reads);
-                }
-
-                reads->push_back(node);
+                PushLclVarRead(nodeInfo);
             }
 
             if (nodeInfo.IsLclVarWrite())
             {
-                // If this node is a lclVar write, it must be not alias a lclVar with an outstanding read
-                jitstd::list<GenTree*>* reads;
+                // If this node is a lclVar write, it must not alias a lclVar with an outstanding read
+                SmallHashTable<GenTree*, GenTree*>* reads;
                 if (unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
                 {
-                    for (GenTree* read : *reads)
+                    for (auto read : *reads)
                     {
-                        AliasSet::NodeInfo readInfo(compiler, read);
+                        GenTree*           readNode = read.Key();
+                        AliasSet::NodeInfo readInfo(compiler, readNode);
                         assert(readInfo.IsLclVarRead() && readInfo.LclNum() == nodeInfo.LclNum());
+
                         unsigned readStart  = readInfo.LclOffs();
-                        unsigned readEnd    = readStart + genTypeSize(read->TypeGet());
+                        unsigned readEnd    = readStart + genTypeSize(readNode);
                         unsigned writeStart = nodeInfo.LclOffs();
-                        unsigned writeEnd   = writeStart + genTypeSize(node->TypeGet());
+                        unsigned writeEnd   = writeStart + genTypeSize(node);
                         if ((readEnd > writeStart) && (writeEnd > readStart))
                         {
                             JITDUMP("Write to local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
                                     writeStart, writeEnd, readStart, readEnd);
 
                             LIR::Use use;
-                            bool     found = const_cast<LIR::Range*>(range)->TryGetUse(read, &use);
+                            bool     found = const_cast<LIR::Range*>(range)->TryGetUse(readNode, &use);
                             GenTree* user  = found ? use.User() : nullptr;
 
                             for (GenTree* rangeNode : *range)
                             {
                                 const char* prefix = nullptr;
-                                if (rangeNode == read)
+                                if (rangeNode == readNode)
                                 {
                                     prefix = "read:  ";
                                 }
@@ -1433,34 +1509,71 @@ private:
             {
                 UseNodeOperands(operand);
             }
+
             AliasSet::NodeInfo operandInfo(compiler, operand);
             if (operandInfo.IsLclVarRead())
             {
-                jitstd::list<GenTree*>* reads;
-                const bool              foundList = unusedLclVarReads.TryGetValue(operandInfo.LclNum(), &reads);
-                assert(foundList);
-
-                bool found = false;
-                for (jitstd::list<GenTree*>::iterator it = reads->begin(); it != reads->end(); ++it)
-                {
-                    if (*it == operand)
-                    {
-                        reads->erase(it);
-                        found = true;
-                        break;
-                    }
-                }
-
-                assert(found || !"Could not find consumed local in unusedLclVarReads");
+                PopLclVarRead(operandInfo);
             }
+        }
+    }
+
+    //------------------------------------------------------------------------
+    // PushLclVarRead: add a local def the list of outstanding reads.
+    //
+    // Arguments:
+    //    defInfo - the node info representing the def.
+    //
+    void PushLclVarRead(const AliasSet::NodeInfo& defInfo)
+    {
+        SmallHashTable<GenTree*, GenTree*>* reads;
+        if (!unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads))
+        {
+            if (!lclVarReadsMapsCache.Empty())
+            {
+                reads = lclVarReadsMapsCache.Pop();
+            }
+            else
+            {
+                reads = new (compiler, CMK_DebugOnly)
+                    SmallHashTable<GenTree*, GenTree*>(compiler->getAllocator(CMK_DebugOnly));
+            }
+
+            unusedLclVarReads.AddOrUpdate(defInfo.LclNum(), reads);
+        }
+
+        reads->AddOrUpdate(defInfo.Node(), defInfo.Node());
+    }
+
+    //------------------------------------------------------------------------
+    // PopLclVarRead: remove a local def from the list of outstanding reads.
+    //
+    // Arguments:
+    //    defInfo - the node info representing the def.
+    //
+    void PopLclVarRead(const AliasSet::NodeInfo& defInfo)
+    {
+        SmallHashTable<GenTree*, GenTree*>* reads;
+        const bool foundReads = unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads);
+        assert(foundReads);
+
+        bool found = reads->TryRemove(defInfo.Node());
+
+        assert(found || !"Could not find consumed local in unusedLclVarReads");
+
+        if (reads->Count() == 0)
+        {
+            unusedLclVarReads.Remove(defInfo.LclNum());
+            lclVarReadsMapsCache.Push(reads);
         }
     }
 
 private:
     Compiler*         compiler;
     const LIR::Range* range;
-    SmallHashTable<GenTree*, bool, 32U>&              unusedDefs;
-    SmallHashTable<int, jitstd::list<GenTree*>*, 16U> unusedLclVarReads;
+    SmallHashTable<GenTree*, bool, 32U>& unusedDefs;
+    SmallHashTable<int, SmallHashTable<GenTree*, GenTree*>*, 16U> unusedLclVarReads;
+    ArrayStack<SmallHashTable<GenTree*, GenTree*>*> lclVarReadsMapsCache;
 };
 
 //------------------------------------------------------------------------
@@ -1473,8 +1586,6 @@ private:
 // - Uses are correctly linked into the block
 // - Nodes that do not produce values are not used
 // - Only LIR nodes are present in the block
-// - If any phi nodes are present in the range, they precede all other
-//   nodes
 //
 // The first four properties are verified by walking the range's LIR in execution order,
 // inserting defs into a set as they are visited, and removing them as they are used. The
@@ -1494,37 +1605,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         return true;
     }
 
-    // Check the gtNext/gtPrev links: (1) ensure there are no circularities, (2) ensure the gtPrev list is
-    // precisely the inverse of the gtNext list.
-    //
-    // To detect circularity, use the "tortoise and hare" 2-pointer algorithm.
-
-    GenTree* slowNode = FirstNode();
-    assert(slowNode != nullptr); // because it's a non-empty range
-    GenTree* fastNode1    = nullptr;
-    GenTree* fastNode2    = slowNode;
-    GenTree* prevSlowNode = nullptr;
-    while (((fastNode1 = fastNode2->gtNext) != nullptr) && ((fastNode2 = fastNode1->gtNext) != nullptr))
-    {
-        if ((slowNode == fastNode1) || (slowNode == fastNode2))
-        {
-            assert(!"gtNext nodes have a circularity!");
-        }
-        assert(slowNode->gtPrev == prevSlowNode);
-        prevSlowNode = slowNode;
-        slowNode     = slowNode->gtNext;
-        assert(slowNode != nullptr); // the fastNodes would have gone null first.
-    }
-    // If we get here, the list had no circularities, so either fastNode1 or fastNode2 must be nullptr.
-    assert((fastNode1 == nullptr) || (fastNode2 == nullptr));
-
-    // Need to check the rest of the gtPrev links.
-    while (slowNode != nullptr)
-    {
-        assert(slowNode->gtPrev == prevSlowNode);
-        prevSlowNode = slowNode;
-        slowNode     = slowNode->gtNext;
-    }
+    CheckDoublyLinkedList<GenTree, &GenTree::gtPrev, &GenTree::gtNext>(FirstNode());
 
     SmallHashTable<GenTree*, bool, 32> unusedDefs(compiler->getAllocatorDebugOnly());
 

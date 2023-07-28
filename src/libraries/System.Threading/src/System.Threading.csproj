@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
@@ -14,6 +15,8 @@
     <Compile Include="System\Threading\ReaderWriterLock.cs" />
     <Compile Include="$(CommonPath)System\HResults.cs"
              Link="Common\System\HResults.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />

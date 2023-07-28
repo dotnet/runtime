@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.Versioning;
@@ -16,7 +17,7 @@ namespace System.Security.Cryptography
     {
         private const int BitsPerByte = 8;
 
-        private Lazy<SafeEvpPKeyHandle> _key;
+        private Lazy<SafeEvpPKeyHandle>? _key;
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -636,7 +637,7 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 FreeKey();
-                _key = null!;
+                _key = null;
             }
 
             base.Dispose(disposing);
@@ -651,7 +652,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(_key))]
+        [MemberNotNull(nameof(_key))]
         private void SetKey(SafeEvpPKeyHandle newKey)
         {
             Debug.Assert(!newKey.IsInvalid);
@@ -700,12 +701,10 @@ namespace System.Security.Cryptography
             return true;
         }
 
+        [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
-            if (_key == null)
-            {
-                throw new ObjectDisposedException(nameof(RSAOpenSsl));
-            }
+            ObjectDisposedException.ThrowIf(_key is null, this);
         }
 
         private SafeEvpPKeyHandle GetKey()
@@ -874,6 +873,18 @@ namespace System.Security.Cryptography
             {
                 throw PaddingModeNotSupported();
             }
+
+            // If the hash algorithm is not supported by the platform, such as SHA3, then we don't support it for
+            // RSAOpenSsl, even if OpenSSL itself might support OAEP-SHA3. We use the platform's hashing in some
+            // places for RSA, regardless of what is implementing RSA. If RSAOpenSsl were used on macOS, then
+            // there would be some incongruence between what hashes OpenSSL supports and what macOS support. Signing
+            // for example, always uses the platform's implementation of hashing.
+            if (padding.Mode == RSAEncryptionPaddingMode.Oaep &&
+                padding.OaepHashAlgorithm.Name is string name &&
+                !HashProviderDispenser.HashSupported(name))
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
 
         private static void ValidatePadding(RSASignaturePadding padding)
@@ -903,7 +914,7 @@ namespace System.Security.Cryptography
 
         static partial void ThrowIfNotSupported();
 
-        private static Exception PaddingModeNotSupported() =>
+        private static CryptographicException PaddingModeNotSupported() =>
             new CryptographicException(SR.Cryptography_InvalidPaddingMode);
     }
 }

@@ -9,7 +9,7 @@ namespace Dynamic
 
     class Program
     {
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

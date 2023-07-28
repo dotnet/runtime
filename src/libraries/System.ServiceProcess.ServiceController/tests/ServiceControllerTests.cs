@@ -12,9 +12,6 @@ namespace System.ServiceProcess.Tests
         private const int connectionTimeout = 30000;
         private readonly TestServiceProvider _testService;
 
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
-        protected static bool IsProcessElevated => s_isElevated.Value;
-
         private bool _disposed;
 
         public ServiceControllerTests()
@@ -30,28 +27,28 @@ namespace System.ServiceProcess.Tests
             Assert.Equal(ServiceType.Win32OwnProcess, testServiceController.ServiceType);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void ConstructWithServiceName()
         {
             var controller = new ServiceController(_testService.TestServiceName);
             AssertExpectedProperties(controller);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void ConstructWithServiceName_ToUpper()
         {
             var controller = new ServiceController(_testService.TestServiceName.ToUpperInvariant());
             AssertExpectedProperties(controller);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void ConstructWithDisplayName()
         {
             var controller = new ServiceController(_testService.TestServiceDisplayName);
             AssertExpectedProperties(controller);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void ConstructWithMachineName()
         {
             var controller = new ServiceController(_testService.TestServiceName, _testService.TestMachineName);
@@ -60,7 +57,7 @@ namespace System.ServiceProcess.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => { new ServiceController(_testService.TestServiceName, ""); });
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void ControlCapabilities()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -71,14 +68,14 @@ namespace System.ServiceProcess.Tests
             Assert.True(controller.CanShutdown);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void Start_NullArg_ThrowsArgumentNullException()
         {
             var controller = new ServiceController(_testService.TestServiceName);
             Assert.Throws<ArgumentNullException>(() => controller.Start(new string[] { null } ));
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void StopAndStart()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -97,7 +94,7 @@ namespace System.ServiceProcess.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void PauseAndContinue()
         {
             string serviceName = _testService.TestServiceName;
@@ -128,7 +125,7 @@ namespace System.ServiceProcess.Tests
             Assert.Equal(ServiceControllerStatus.Stopped, controller.Status);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void GetServices_FindSelf()
         {
             bool foundTestService = false;
@@ -145,7 +142,7 @@ namespace System.ServiceProcess.Tests
             Assert.True(foundTestService, "Test service was not enumerated with all services");
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void Dependencies()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -160,7 +157,7 @@ namespace System.ServiceProcess.Tests
             Assert.Equal(prerequisiteServiceController.DependentServices[0].ServiceName, controller.ServiceName);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void ServicesStartMode()
         {
             var controller = new ServiceController(_testService.TestServiceName);

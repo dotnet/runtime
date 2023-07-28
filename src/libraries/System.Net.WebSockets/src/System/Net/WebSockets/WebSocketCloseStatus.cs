@@ -18,6 +18,10 @@ namespace System.Net.WebSockets
         MessageTooBig = 1009,
         MandatoryExtension = 1010,
         InternalServerError = 1011
+        // non-RFC IANA registered status codes that we allow as valid closing status
+        // ServiceRestart = 1012,  // indicates that the server / service is restarting.
+        // TryAgainLater = 1013,   // indicates that a temporary server condition forced blocking the client's request.
+        // BadGateway = 1014       // indicates that the server acting as gateway received an invalid response
         // TLSHandshakeFailed = 1015, // 1015 is reserved and should never be used by user
 
         // 0 - 999 Status codes in the range 0-999 are not used.

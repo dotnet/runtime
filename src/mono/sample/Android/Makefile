@@ -19,12 +19,12 @@ DEPLOY_AND_RUN?=true
 all: runtimepack run
 
 runtimepack:
-	../../../../build.sh Mono+Libs -os Android -arch $(MONO_ARCH) -c $(MONO_CONFIG)
+	../../../../build.sh mono+libs -os android -arch $(MONO_ARCH) -c $(MONO_CONFIG)
 
 run:
 	$(DOTNET) publish \
 	/p:TargetArchitecture=$(MONO_ARCH) \
-	/p:TargetOS=Android \
+	/p:TargetOS=android \
 	/p:Configuration=$(MONO_CONFIG) \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:RunAOTCompilation=$(AOT) \
@@ -35,6 +35,5 @@ run:
 	/p:RunActivity=false \
 	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
-
 clean:
 	rm -rf ../../../../artifacts/bin/AndroidSampleApp

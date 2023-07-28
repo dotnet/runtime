@@ -218,7 +218,7 @@ EXPORT(DT) __stdcall nativeCall_PInvoke_Vector3InStruct(DT data)
     ret.b.x = data.b.x + 1;
     ret.b.y = data.b.y + 1;
     ret.b.z = data.b.z + 1;
-    printf("    First struct memeber: (%f %f %f) -> (%f %f %f)\n",
+    printf("    First struct member: (%f %f %f) -> (%f %f %f)\n",
         data.a.x, data.a.y, data.a.z, ret.a.x, ret.a.y, ret.a.z);
     printf("    Second struct member: (%f %f %f) -> (%f %f %f)\n",
         data.b.x, data.b.y, data.b.z, ret.b.x, ret.b.y, ret.b.z);

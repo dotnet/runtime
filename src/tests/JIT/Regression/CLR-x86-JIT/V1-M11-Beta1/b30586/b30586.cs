@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

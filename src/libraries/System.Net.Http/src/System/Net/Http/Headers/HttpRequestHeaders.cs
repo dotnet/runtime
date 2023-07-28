@@ -15,11 +15,12 @@ namespace System.Net.Http.Headers
         private const int IfNoneMatchSlot = 5;
         private const int TransferEncodingSlot = 6;
         private const int UserAgentSlot = 7;
-        private const int NumCollectionsSlots = 8;
+        private const int ExpectSlot = 8;
+        private const int ProtocolSlot = 9;
+        private const int NumCollectionsSlots = 10;
 
-        private object[]? _specialCollectionsSlots;
+        private object?[]? _specialCollectionsSlots;
         private HttpGeneralHeaders? _generalHeaders;
-        private HttpHeaderValueCollection<NameValueWithParametersHeaderValue>? _expect;
         private bool _expectContinueSet;
 
         #region Request Headers
@@ -159,6 +160,18 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(KnownHeaders.MaxForwards.Descriptor, value); }
         }
 
+        /// <summary>Gets or sets the value of the <see langword=":protocol" /> pseudo-header for an HTTP request.</summary>
+        /// <value>The value of the <see langword=":protocol" /> pseudo-header for an HTTP request.</value>
+        public string? Protocol
+        {
+            get => _specialCollectionsSlots is null ? null : (string?)_specialCollectionsSlots[ProtocolSlot];
+            set
+            {
+                CheckContainsNewLine(value);
+                _specialCollectionsSlots ??= new object[NumCollectionsSlots];
+                _specialCollectionsSlots[ProtocolSlot] = value;
+            }
+        }
 
         public AuthenticationHeaderValue? ProxyAuthorization
         {
@@ -185,7 +198,7 @@ namespace System.Net.Http.Headers
             GetSpecializedCollection(UserAgentSlot, static thisRef => new HttpHeaderValueCollection<ProductInfoHeaderValue>(KnownHeaders.UserAgent.Descriptor, thisRef));
 
         public HttpHeaderValueCollection<NameValueWithParametersHeaderValue> Expect =>
-            _expect ??= new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(KnownHeaders.Expect.Descriptor, this);
+            GetSpecializedCollection(ExpectSlot, static thisRef => new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(KnownHeaders.Expect.Descriptor, thisRef));
 
         #endregion
 

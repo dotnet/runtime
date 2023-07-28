@@ -23,7 +23,7 @@ public class StringConcat
     public static String s9 = "91234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     public static String s10 = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    public static void Main(string[] p_args)
+    public static void Main()
     {
         string str = null;
 

@@ -11,10 +11,11 @@
 */
 
 using System;
+using Xunit;
 
 #pragma warning disable 0649
 
-sealed class C
+public sealed class C
 {
     public int i0;
     public int i1;
@@ -4117,7 +4118,8 @@ sealed class C
         return c.i4094;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

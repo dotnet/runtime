@@ -51,9 +51,9 @@ namespace System.Threading
     /// <see cref="SpinWait"/> is a value type, which means that low-level code can utilize SpinWait without
     /// fear of unnecessary allocation overheads. SpinWait is not generally useful for ordinary applications.
     /// In most cases, you should use the synchronization classes provided by the .NET Framework, such as
-    /// <see cref="System.Threading.Monitor"/>. For most purposes where spin waiting is required, however,
+    /// <see cref="Monitor"/>. For most purposes where spin waiting is required, however,
     /// the <see cref="SpinWait"/> type should be preferred over the <see
-    /// cref="System.Threading.Thread.SpinWait"/> method.
+    /// cref="Thread.SpinWait"/> method.
     /// </para>
     /// <para>
     /// While SpinWait is designed to be used in concurrent applications, it is not designed to be
@@ -143,10 +143,7 @@ namespace System.Threading
         /// </remarks>
         public void SpinOnce(int sleep1Threshold)
         {
-            if (sleep1Threshold < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sleep1Threshold), sleep1Threshold, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(sleep1Threshold, -1);
 
             if (sleep1Threshold >= 0 && sleep1Threshold < YieldThreshold)
             {
@@ -276,7 +273,7 @@ namespace System.Threading
         /// or a TimeSpan that represents -1 milliseconds to wait indefinitely.</param>
         /// <returns>True if the condition is satisfied within the timeout; otherwise, false</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="condition"/> argument is null.</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative number
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative number
         /// other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater than
         /// <see cref="int.MaxValue"/>.</exception>
         public static bool SpinUntil(Func<bool> condition, TimeSpan timeout)
@@ -285,7 +282,7 @@ namespace System.Threading
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
-                throw new System.ArgumentOutOfRangeException(
+                throw new ArgumentOutOfRangeException(
                     nameof(timeout), timeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
 
@@ -298,10 +295,10 @@ namespace System.Threading
         /// </summary>
         /// <param name="condition">A delegate to be executed over and over until it returns true.</param>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see
-        /// cref="System.Threading.Timeout.Infinite"/> (-1) to wait indefinitely.</param>
+        /// cref="Timeout.Infinite"/> (-1) to wait indefinitely.</param>
         /// <returns>True if the condition is satisfied within the timeout; otherwise, false</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="condition"/> argument is null.</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
         /// negative number other than -1, which represents an infinite time-out.</exception>
         public static bool SpinUntil(Func<bool> condition, int millisecondsTimeout)
         {

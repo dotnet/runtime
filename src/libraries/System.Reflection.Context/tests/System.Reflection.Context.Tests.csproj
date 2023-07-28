@@ -6,6 +6,10 @@
     <Compile Include="CustomAssemblyAttributes.cs" />
     <Compile Include="CustomPropertyInfoTests.cs" />
     <Compile Include="CustomReflectionContextTests.cs" />
+    <Compile Include="InheritedPropertyInfoTests.cs" />
+    <Compile Include="InteritedMethodInfoTests.cs" />
+    <Compile Include="ProjectingFieldInfoTests.cs" />
+    <Compile Include="ProjectingModuleTests.cs" />
     <Compile Include="TestTypes.cs" />
     <Compile Include="CustomAssemblyTests.cs" />
     <Compile Include="ProjectionConstants.cs" />

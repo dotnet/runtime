@@ -11,6 +11,7 @@ namespace Sample
 {
     public partial class Test
     {
+        internal const string AssemblyName = "Wasm.Console.Bench.Sample";
         static string tasksArg;
 
         static List<string> ProcessArguments(string[] args)

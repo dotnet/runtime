@@ -26,7 +26,7 @@ namespace System.IO.Pipes.Tests
 
             if (result == 0)
             {
-                hostName = Marshal.PtrToStringAnsi((IntPtr)name);
+                hostName = Marshal.PtrToStringUTF8((IntPtr)name);
                 return true;
             }
 

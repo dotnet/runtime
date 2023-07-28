@@ -37,7 +37,7 @@ namespace System.Formats.Tar.Tests
                 using GZipStream decompressorStream = new GZipStream(streamToDecompress, CompressionMode.Decompress);
                 using TarReader reader = new TarReader(decompressorStream);
                 TarEntry entry = reader.GetNextEntry();
-                Assert.Equal(TarEntryFormat.Pax, reader.Format);
+                Assert.Equal(TarEntryFormat.Pax, entry.Format);
                 Assert.Equal(fileName, entry.Name);
                 Assert.Null(reader.GetNextEntry());
             }

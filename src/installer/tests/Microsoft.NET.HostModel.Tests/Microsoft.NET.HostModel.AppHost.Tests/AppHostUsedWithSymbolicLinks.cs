@@ -192,7 +192,6 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
-        // If enabled, this tests will need to set the console code page to output unicode characters: Command.Create("chcp 65001").Execute();
         [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_satellite_assembly_behind_symlink()
         {
@@ -219,7 +218,7 @@ namespace Microsoft.NET.HostModel.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("ನಮಸ್ಕಾರ! வணக்கம்! Hello!");
+                .And.HaveStdOutContaining("[kn-IN]! [ta-IN]! [default]!");
         }
 
         public class SharedTestState : IDisposable
@@ -236,12 +235,12 @@ namespace Microsoft.NET.HostModel.Tests
                 var localizedFixture = new TestProjectFixture("LocalizedApp", RepoDirectories);
                 localizedFixture
                     .EnsureRestoredForRid(localizedFixture.CurrentRid)
-                    .PublishProject(runtime: localizedFixture.CurrentRid);
+                    .PublishProject(runtime: localizedFixture.CurrentRid, selfContained: true);
 
                 var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 publishFixture
                     .EnsureRestoredForRid(publishFixture.CurrentRid)
-                    .PublishProject(runtime: publishFixture.CurrentRid);
+                    .PublishProject(runtime: publishFixture.CurrentRid, selfContained: true);
 
                 var fwPublishedFixture = new TestProjectFixture("PortableApp", RepoDirectories);
                 fwPublishedFixture

@@ -12,7 +12,7 @@ namespace System.Diagnostics
     {
         private readonly AsyncLocal<Guid> _activityId = new AsyncLocal<Guid>();
         private readonly AsyncLocal<StackNode?> _stack = new AsyncLocal<StackNode?>();
-        private readonly Stack _stackWrapper;
+        private readonly AsyncLocalStackWrapper _stackWrapper;
 
         internal CorrelationManager()
         {

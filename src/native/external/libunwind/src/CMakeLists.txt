@@ -156,12 +156,14 @@ SET(libunwind_dwarf_local_la_SOURCES
     dwarf/Lexpr.c dwarf/Lfde.c dwarf/Lparser.c dwarf/Lpe.c
     dwarf/Lfind_proc_info-lsb.c
     dwarf/Lfind_unwind_table.c
+    dwarf/Lget_proc_info_in_range.c
 )
 
 SET(libunwind_dwarf_generic_la_SOURCES
     dwarf/Gexpr.c dwarf/Gfde.c dwarf/Gparser.c dwarf/Gpe.c
     dwarf/Gfind_proc_info-lsb.c
     dwarf/Gfind_unwind_table.c
+    dwarf/Gget_proc_info_in_range.c
 )
 
 SET(libunwind_elf32_la_SOURCES
@@ -351,7 +353,7 @@ endif()
 
 add_library(libunwind
   OBJECT
-  win/pal-single-threaded.c
+  remote/win/missing-functions.c
   # ${libunwind_la_SOURCES}  Local...
   ${libunwind_remote_la_SOURCES}
     # Commented out above for LOCAL + REMOTE runtime build

@@ -312,10 +312,8 @@ namespace System.Net.Sockets
 
             ArgumentNullException.ThrowIfNull(datagram);
 
-            if (bytes > datagram.Length || bytes < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bytes));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bytes);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes, datagram.Length);
 
             if (_active && endPoint != null)
             {
@@ -440,10 +438,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(multicastAddr);
-            if (ifindex < 0)
-            {
-                throw new ArgumentException(SR.net_value_cannot_be_negative, nameof(ifindex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(ifindex);
             if (_family != AddressFamily.InterNetworkV6)
             {
                 // Ensure that this is an IPv6 client, otherwise throw WinSock
@@ -512,10 +507,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(multicastAddr);
-            if (ifindex < 0)
-            {
-                throw new ArgumentException(SR.net_value_cannot_be_negative, nameof(ifindex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(ifindex);
             if (_family != AddressFamily.InterNetworkV6)
             {
                 // Ensure that this is an IPv6 client.
@@ -746,19 +738,13 @@ namespace System.Net.Sockets
                             {
                                 ipv4Socket.Connect(address, port);
                                 _clientSocket = ipv4Socket;
-                                if (ipv6Socket != null)
-                                {
-                                    ipv6Socket.Close();
-                                }
+                                ipv6Socket?.Close();
                             }
                             else if (ipv6Socket != null)
                             {
                                 ipv6Socket.Connect(address, port);
                                 _clientSocket = ipv6Socket;
-                                if (ipv4Socket != null)
-                                {
-                                    ipv4Socket.Close();
-                                }
+                                ipv4Socket?.Close();
                             }
 
 
@@ -801,15 +787,8 @@ namespace System.Net.Sockets
                 //did we connect?
                 if (!_active)
                 {
-                    if (ipv6Socket != null)
-                    {
-                        ipv6Socket.Close();
-                    }
-
-                    if (ipv4Socket != null)
-                    {
-                        ipv4Socket.Close();
-                    }
+                    ipv6Socket?.Close();
+                    ipv4Socket?.Close();
 
                     // The connect failed - rethrow the last error we had
                     if (lastex != null)

@@ -3,14 +3,16 @@
 //
 
 using System;
+using Xunit;
 
 namespace test
 {
 
-    class LargeArray114
+    public class LargeArray114
     {
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
 
             System.String[] array = new System.String[114];

@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Diagnostics;
-
 using Internal.Text;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -18,15 +14,12 @@ namespace ILCompiler.DependencyAnalysis
             _owner = owner;
         }
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_owner.Type.Context.Target.IsWindows)
-                    return ObjectNodeSection.FoldableReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.FoldableReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -58,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
                 _owner.ComputeOptionalEETypeFields(factory, relocsOnly: false);
                 objData.EmitBytes(_owner.GetOptionalFieldsData());
             }
-            
+
             return objData.ToObjectData();
         }
 
@@ -66,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return SortableDependencyNode.CompareImpl(_owner, ((EETypeOptionalFieldsNode)other)._owner, comparer);
+            return CompareImpl(_owner, ((EETypeOptionalFieldsNode)other)._owner, comparer);
         }
     }
 }

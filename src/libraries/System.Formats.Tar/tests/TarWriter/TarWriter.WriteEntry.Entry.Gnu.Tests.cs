@@ -7,30 +7,11 @@ using Xunit;
 namespace System.Formats.Tar.Tests
 {
     // Tests specific to Gnu format.
-    public class TarWriter_WriteEntry_Gnu_Tests : TarTestsBase
+    public class TarWriter_WriteEntry_Gnu_Tests : TarWriter_WriteEntry_Base
     {
         [Fact]
-        public void Write_V7RegularFileEntry_As_RegularFileEntry()
-        {
-            using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarEntryFormat.Gnu, leaveOpen: true))
-            {
-                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
-
-                // Should be written as RegularFile
-                writer.WriteEntry(entry);
-            }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archive))
-            {
-                GnuTarEntry entry = reader.GetNextEntry() as GnuTarEntry;
-                Assert.NotNull(entry);
-                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
-
-                Assert.Null(reader.GetNextEntry());
-            }
-        }
+        public void WriteEntry_Null_Throws() =>
+            WriteEntry_Null_Throws_Internal(TarEntryFormat.Gnu);
 
         [Fact]
         public void WriteRegularFile()
@@ -186,6 +167,10 @@ namespace System.Formats.Tar.Tests
             using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry entry = new GnuTarEntry(entryType, longName);
+                if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
+                {
+                    entry.LinkName = "linktarget";
+                }
                 writer.WriteEntry(entry);
             }
 
@@ -201,7 +186,7 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(TarEntryType.SymbolicLink)]
         [InlineData(TarEntryType.HardLink)]
-        public void Write_LongLinKName(TarEntryType entryType)
+        public void Write_LongLinkName(TarEntryType entryType)
         {
             // LinkName field in header only fits 100 bytes
             string longLinkName = new string('a', 101);
@@ -227,7 +212,7 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(TarEntryType.SymbolicLink)]
         [InlineData(TarEntryType.HardLink)]
-        public void Write_LongName_And_LongLinKName(TarEntryType entryType)
+        public void Write_LongName_And_LongLinkName(TarEntryType entryType)
         {
             // Both the Name and LinkName fields in header only fit 100 bytes
             string longName = new string('a', 101);
@@ -249,6 +234,16 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(longName, entry.Name);
                 Assert.Equal(longLinkName, entry.LinkName);
             }
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.HardLink)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public void Write_LinkEntry_EmptyLinkName_Throws(TarEntryType entryType)
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            using TarWriter writer = new TarWriter(archiveStream, leaveOpen: false);
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(new GnuTarEntry(entryType, "link")));
         }
     }
 }

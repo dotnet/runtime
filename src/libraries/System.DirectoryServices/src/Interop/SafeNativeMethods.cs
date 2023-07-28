@@ -5,7 +5,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 
-namespace System.DirectoryServices.Interop
+namespace System.DirectoryServices
 {
     internal static partial class SafeNativeMethods
     {

@@ -3,11 +3,16 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly 'ldtoken'{}
 
 
 
-.method public static int32 main(class System.String[]) {
+.class public auto ansi _ldtoken {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .locals	()
 .maxstack	2
@@ -21,6 +26,7 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 
 

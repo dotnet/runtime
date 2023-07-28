@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class ArrayType
+    public partial class ArrayType
     {
         public override TypeDesc GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
@@ -17,7 +17,7 @@ namespace Internal.TypeSystem
         }
     }
 
-    partial class ArrayMethod
+    public partial class ArrayMethod
     {
         public override MethodDesc GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {

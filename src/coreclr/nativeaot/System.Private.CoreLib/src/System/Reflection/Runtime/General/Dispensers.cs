@@ -42,7 +42,7 @@ namespace System.Reflection.Runtime.Assemblies
         /// <summary>
         /// Returns non-null or throws.
         /// </summary>
-        internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(byte[] rawAssembly, byte[] pdbSymbolStore)
+        internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore)
         {
             AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
             if (!binder.Bind(rawAssembly, pdbSymbolStore, out AssemblyBindResult bindResult, out Exception exception))
@@ -159,19 +159,6 @@ namespace System.Reflection.Runtime.MethodInfos
             return new RuntimeSyntheticConstructorInfo(syntheticMethodId, declaringType, runtimeParameterTypes, options, action);
         }
     }
-
-#if FEATURE_COMINTEROP
-    //-----------------------------------------------------------------------------------------------------------
-    // Nullary constructor for types manufactured by Type.GetTypeFromCLSID().
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeCLSIDNullaryConstructorInfo : RuntimeConstructorInfo
-    {
-        internal static RuntimeCLSIDNullaryConstructorInfo GetRuntimeCLSIDNullaryConstructorInfo(RuntimeCLSIDTypeInfo declaringType)
-        {
-            return new RuntimeCLSIDNullaryConstructorInfo(declaringType);
-        }
-    }
-#endif
 
     //-----------------------------------------------------------------------------------------------------------
     // MethodInfos for method definitions (i.e. Foo.Moo() or Foo.Moo<>() but not Foo.Moo<int>)

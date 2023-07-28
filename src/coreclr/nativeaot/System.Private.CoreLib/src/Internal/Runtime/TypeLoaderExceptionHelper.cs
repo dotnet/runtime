@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
@@ -63,6 +64,11 @@ namespace Internal.Runtime
             throw new MarshalDirectiveException(GetFormatString(id));
         }
 
+        public static Exception CreateAmbiguousMatchException(ExceptionStringID id)
+        {
+            return new AmbiguousMatchException(GetFormatString(id));
+        }
+
         // TODO: move to a place where we can share this with the compiler
         private static string GetFormatString(ExceptionStringID id)
         {
@@ -80,6 +86,12 @@ namespace Internal.Runtime
                     return SR.ClassLoad_ExplicitLayout;
                 case ExceptionStringID.ClassLoadRankTooLarge:
                     return SR.ClassLoad_RankTooLarge;
+                case ExceptionStringID.ClassLoadInlineArrayFieldCount:
+                    return SR.ClassLoad_InlineArrayFieldCount;
+                case ExceptionStringID.ClassLoadInlineArrayLength:
+                    return SR.ClassLoad_InlineArrayLength;
+                case ExceptionStringID.ClassLoadInlineArrayExplicit:
+                    return SR.ClassLoad_InlineArrayExplicit;
                 case ExceptionStringID.InvalidProgramDefault:
                     return SR.InvalidProgram_Default;
                 case ExceptionStringID.InvalidProgramSpecific:
@@ -88,6 +100,14 @@ namespace Internal.Runtime
                     return SR.InvalidProgram_Vararg;
                 case ExceptionStringID.InvalidProgramCallVirtFinalize:
                     return SR.InvalidProgram_CallVirtFinalize;
+                case ExceptionStringID.InvalidProgramNonStaticMethod:
+                    return SR.InvalidProgram_NonStaticMethod;
+                case ExceptionStringID.InvalidProgramGenericMethod:
+                    return SR.InvalidProgram_GenericMethod;
+                case ExceptionStringID.InvalidProgramNonBlittableTypes:
+                    return SR.InvalidProgram_NonBlittableTypes;
+                case ExceptionStringID.InvalidProgramMultipleCallConv:
+                    return SR.InvalidProgram_MultipleCallConv;
                 case ExceptionStringID.MissingField:
                     return SR.EE_MissingField;
                 case ExceptionStringID.MissingMethod:
@@ -98,6 +118,8 @@ namespace Internal.Runtime
                     return SR.Arg_BadImageFormatException;
                 case ExceptionStringID.MarshalDirectiveGeneric:
                     return SR.Arg_MarshalDirectiveException;
+                case ExceptionStringID.AmbiguousMatchUnsafeAccessor:
+                    return SR.Arg_AmbiguousMatchException_UnsafeAccessor;
                 default:
                     Debug.Assert(false);
                     return "";

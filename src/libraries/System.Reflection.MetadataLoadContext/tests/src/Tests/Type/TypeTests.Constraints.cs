@@ -16,6 +16,7 @@ namespace System.Reflection.Tests
             Assert.Equal(GenericParameterAttributes.None, theT.GenericParameterAttributes);
             Assert.Equal(0, theT.GetGenericParameterConstraints().Length);
             Assert.Equal(typeof(object).Project(), theT.BaseType);
+            Assert.False(theT.IsValueType);
         }
 
         [Fact]
@@ -25,6 +26,7 @@ namespace System.Reflection.Tests
             Assert.Equal(GenericParameterAttributes.ReferenceTypeConstraint, theT.GenericParameterAttributes);
             Assert.Equal(0, theT.GetGenericParameterConstraints().Length);
             Assert.Equal(typeof(object).Project(), theT.BaseType);
+            Assert.False(theT.IsValueType);
         }
 
         [Fact]
@@ -36,6 +38,21 @@ namespace System.Reflection.Tests
             Assert.Equal(1, constraints.Length);
             Assert.Equal(typeof(ValueType).Project(), constraints[0]);
             Assert.Equal(typeof(ValueType).Project(), theT.BaseType);
+            Assert.True(theT.IsValueType);
+            Assert.False(theT.IsEnum);
+        }
+
+        [Fact]
+        public static void TestGenericTypeParameterConstraints_Enum()
+        {
+            Type theT = typeof(GenericClassWithEnumConstraint<>).Project().GetTypeInfo().GenericTypeParameters[0];
+            Assert.Equal(GenericParameterAttributes.None, theT.GenericParameterAttributes);
+            Type[] constraints = theT.GetGenericParameterConstraints();
+            Assert.Equal(1, constraints.Length);
+            Assert.Equal(typeof(Enum).Project(), constraints[0]);
+            Assert.Equal(typeof(Enum).Project(), theT.BaseType);
+            Assert.True(theT.IsValueType);
+            Assert.True(theT.IsEnum);
         }
 
         [Fact]
@@ -45,6 +62,7 @@ namespace System.Reflection.Tests
             Assert.Equal(GenericParameterAttributes.DefaultConstructorConstraint, theT.GenericParameterAttributes);
             Assert.Equal(0, theT.GetGenericParameterConstraints().Length);
             Assert.Equal(typeof(object).Project(), theT.BaseType);
+            Assert.False(theT.IsValueType);
         }
 
         [Fact]
@@ -59,6 +77,7 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(IConstrained1).Project(), constraints[1]);
             Assert.Equal(typeof(IConstrained2<>).Project().MakeGenericType(theT), constraints[2]);
             Assert.Equal(typeof(CConstrained1).Project(), theT.BaseType);
+            Assert.False(theT.IsValueType);
         }
 
         [Fact]
@@ -72,6 +91,7 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(IConstrained1).Project(), constraints[0]);
             Assert.Equal(typeof(IConstrained2<>).Project().MakeGenericType(theT), constraints[1]);
             Assert.Equal(typeof(object).Project(), theT.BaseType);
+            Assert.False(theT.IsValueType);
         }
 
         [Fact]

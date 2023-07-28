@@ -63,5 +63,5 @@ add_executable_clr(gcsample
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(gcsample ${GC_LINK_LIBRARIES})
+    target_link_libraries(gcsample PRIVATE ${GC_LINK_LIBRARIES})
 endif()

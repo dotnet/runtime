@@ -3,11 +3,13 @@
 
 using System;
 using System.Collections;
+using Xunit;
 
 
-internal class test
+public class test
 {
-    public static int Main(String[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         ArrayList objList = new ArrayList();
         objList.Add("hey");

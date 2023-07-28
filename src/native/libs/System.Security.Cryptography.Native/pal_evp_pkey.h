@@ -46,14 +46,14 @@ PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
 /*
 Decodes an X.509 SubjectPublicKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
 
-Requres a non-null buf, and len > 0.
+Requires a non-null buf, and len > 0.
 */
 PALEXPORT EVP_PKEY* CryptoNative_DecodeSubjectPublicKeyInfo(const uint8_t* buf, int32_t len, int32_t algId);
 
 /*
 Decodes an Pkcs8PrivateKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
 
-Requres a non-null buf, and len > 0.
+Requires a non-null buf, and len > 0.
 */
 PALEXPORT EVP_PKEY* CryptoNative_DecodePkcs8PrivateKey(const uint8_t* buf, int32_t len, int32_t algId);
 
@@ -88,3 +88,17 @@ buf must be big enough, or an out of bounds write may occur.
 Returns the number of bytes written.
 */
 PALEXPORT int32_t CryptoNative_EncodeSubjectPublicKeyInfo(EVP_PKEY* pkey, uint8_t* buf);
+
+/*
+Load a named key, via ENGINE_load_private_key, from the named engine.
+
+Returns a valid EVP_PKEY* on success, NULL on failure.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_LoadPrivateKeyFromEngine(const char* engineName, const char* keyName);
+
+/*
+Load a named key, via ENGINE_load_public_key, from the named engine.
+
+Returns a valid EVP_PKEY* on success, NULL on failure.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const char* keyName);

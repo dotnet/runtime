@@ -86,7 +86,7 @@ From the framework's `name` and `version` the appropriate framework location is 
 
 In order for other frameworks (or platforms such as ASP.NET) to get the same benefits of roll-forward and self-containment for serviceability, 2.1 will support multiple frameworks.
 
-For 2.1, a given framework can only depend upon another single framework. An app can still only depend upon a single framework as well. Thus it repesents a "vertical" hierarchy. It is possible to allow additional frameworks in a "horizontal" manner, but that is out of scope for 2.1.
+For 2.1, a given framework can only depend upon another single framework. An app can still only depend upon a single framework as well. Thus it represents a "vertical" hierarchy. It is possible to allow additional frameworks in a "horizontal" manner, but that is out of scope for 2.1.
 
 Each framework has its own roll-forward semantics. This means ASP.NET can roll-forward independently of NETCore.App even though ASP.NET depends upon the NETCore.App framework.
 
@@ -255,7 +255,7 @@ Using the specified version from the `--fx-version` argument or from the runtime
  - For 2.1+, if the apphost (e.g. myapp.exe) use the environment variable %DOTNET_ROOT% (empty by default)
  - For 2.1+, if the apphost and %DOTNET_ROOT% is empty, use the `Default installation location`.
 
-2.	Obtain the most appropriate version from the `Global .NET location` and compare it agaist the most appropriate version from the first step. Select the most appropriate version from the two locations. If a compatible framework cannot be found, then an error will be displayed.
+2.	Obtain the most appropriate version from the `Global .NET location` and compare it against the most appropriate version from the first step. Select the most appropriate version from the two locations. If a compatible framework cannot be found, then an error will be displayed.
 
 Determine the most appropriate version varies for release (production) and pre-release versions.
 - For releases:

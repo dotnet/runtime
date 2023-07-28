@@ -20,3 +20,7 @@ If you want to include casing data (simple case mappings + case folding) in the 
 
 Then move the generated CharUnicodeInfoData.cs file to $(LIBRARIESROOT)/System.Private.CoreLib/src/System/Globalization,
 overwriting the file in that directory, and commit it. DO NOT commit the file to this directory.
+
+### Update other components
+- Follow the [instructions](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Text.RegularExpressions/tools/Readme.md) to update the Unicode data in RegularExpressions library.
+- Follow the [instructions](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Text.Encodings.Web/tools/updating-encodings.md) to update the Unicode data in System.Text.Encodings.Web library.

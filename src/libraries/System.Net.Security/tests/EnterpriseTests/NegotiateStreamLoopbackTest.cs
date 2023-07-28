@@ -223,9 +223,12 @@ namespace System.Net.Security.Enterprise.Tests
             Assert.False(stream.LeaveInnerStreamOpen);
 
             IIdentity remoteIdentity = stream.RemoteIdentity;
-            Assert.Equal("Kerberos", remoteIdentity.AuthenticationType);
-            Assert.True(remoteIdentity.IsAuthenticated);
-            Assert.Equal(remoteName, remoteIdentity.Name);
+            using (remoteIdentity as IDisposable)
+            {
+                Assert.Equal("Kerberos", remoteIdentity.AuthenticationType);
+                Assert.True(remoteIdentity.IsAuthenticated);
+                Assert.Equal(remoteName, remoteIdentity.Name);
+            }
         }
     }
 }

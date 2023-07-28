@@ -109,10 +109,7 @@ namespace System.Xml
         {
             if (_checkNames)
             {
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
 
                 ValidateNCName(localName);
 
@@ -129,10 +126,7 @@ namespace System.Xml
         {
             if (_checkNames)
             {
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
 
                 ValidateNCName(localName);
 
@@ -224,10 +218,7 @@ namespace System.Xml
 
         public override void WriteWhitespace(string? ws)
         {
-            if (ws == null)
-            {
-                ws = string.Empty;
-            }
+            ws ??= string.Empty;
 
             // "checkNames" is intentional here; if false, the whitespace is checked in XmlWellformedWriter
             if (_checkNames)
@@ -273,18 +264,9 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             if (_checkValues)
             {
@@ -308,10 +290,7 @@ namespace System.Xml
         {
             if (_checkNames)
             {
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
 
                 XmlConvert.VerifyNMTOKEN(name);
             }
@@ -382,7 +361,7 @@ namespace System.Xml
             }
         }
 
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         private string? ReplaceNewLines(string? str)
         {
             if (str == null)
@@ -406,10 +385,7 @@ namespace System.Xml
                     {
                         continue;
                     }
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(str.Length + 5);
-                    }
+                    sb ??= new StringBuilder(str.Length + 5);
                     sb.Append(str, start, i - start);
                 }
                 else if (ch == '\r')
@@ -422,11 +398,7 @@ namespace System.Xml
                             continue;
                         }
 
-                        if (sb == null)
-                        {
-                            sb = new StringBuilder(str.Length + 5);
-                        }
-
+                        sb ??= new StringBuilder(str.Length + 5);
                         sb.Append(str, start, i - start);
                         i++;
                     }
@@ -437,10 +409,7 @@ namespace System.Xml
                             continue;
                         }
 
-                        if (sb == null)
-                        {
-                            sb = new StringBuilder(str.Length + 5);
-                        }
+                        sb ??= new StringBuilder(str.Length + 5);
 
                         sb.Append(str, start, i - start);
                     }
@@ -490,10 +459,7 @@ namespace System.Xml
                         continue;
                     }
 
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(len + 5);
-                    }
+                    sb ??= new StringBuilder(len + 5);
 
                     sb.Append(data, start, i - start);
                 }
@@ -507,10 +473,7 @@ namespace System.Xml
                             continue;
                         }
 
-                        if (sb == null)
-                        {
-                            sb = new StringBuilder(len + 5);
-                        }
+                        sb ??= new StringBuilder(len + 5);
 
                         sb.Append(data, start, i - start);
                         i++;
@@ -522,10 +485,7 @@ namespace System.Xml
                             continue;
                         }
 
-                        if (sb == null)
-                        {
-                            sb = new StringBuilder(len + 5);
-                        }
+                        sb ??= new StringBuilder(len + 5);
 
                         sb.Append(data, start, i - start);
                     }
@@ -566,10 +526,7 @@ namespace System.Xml
                 }
                 if (i > 0 && text[i - 1] == invChar1)
                 {
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(text.Length + 5);
-                    }
+                    sb ??= new StringBuilder(text.Length + 5);
 
                     sb.Append(text, start, i - start);
                     sb.Append(' ');

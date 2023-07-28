@@ -27,6 +27,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private IntPtr _authIdentity = IntPtr.Zero;
         private SyncUpdateCallback? _userDelegate;
         private readonly SyncReplicaFromAllServersCallback _syncAllFunctionPointer;
+        private static readonly char[] s_comma = new char[] { ',' };
 
         #region constructors
         internal AdamInstance(DirectoryContext context, string adamInstanceName)
@@ -299,10 +300,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (roleObjectEntry != null)
-                {
-                    roleObjectEntry.Dispose();
-                }
+                roleObjectEntry?.Dispose();
             }
 
             // invalidate the role collection so that it gets loaded again next time
@@ -591,14 +589,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (schemaEntry != null)
-                    {
-                        schemaEntry.Dispose();
-                    }
-                    if (partitionsEntry != null)
-                    {
-                        partitionsEntry.Dispose();
-                    }
+                    schemaEntry?.Dispose();
+                    partitionsEntry?.Dispose();
                 }
                 return _cachedRoles;
             }
@@ -716,7 +708,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the site object name from the server object name
                     // CN=server1,CN=Servers,CN=Site1,CN=Sites
                     // the site object name is the third component onwards
-                    string[] components = ServerObjectName.Split(new char[] { ',' });
+                    string[] components = ServerObjectName.Split(s_comma);
                     if (components.GetLength(0) < 3)
                     {
                         // should not happen

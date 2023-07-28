@@ -95,11 +95,22 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
     fn##_ptr = (TYPEOF(fn)*)GetProcAddress((HMODULE)lib, symbolName); \
     if (fn##_ptr == NULL && required) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", symbolName, GetLastError()); abort(); }
 
-static int FindICULibs()
+static int FindICULibs(void)
 {
     libicuuc = LoadLibraryExW(L"icu.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (libicuuc == NULL)
     {
+        // On Windows Server 2019, the ICU library is installed as icuuc.dll and icuin.dll. Try to load these.
+        libicuuc = LoadLibraryExW(L"icuuc.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (libicuuc != NULL)
+        {
+            libicui18n = LoadLibraryExW(L"icuin.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+            if (libicui18n != NULL)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -146,7 +157,7 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
 
 #elif defined(TARGET_OSX)
 
-static int FindICULibs()
+static int FindICULibs(void)
 {
 #ifndef OSX_ICU_LIBRARY_PATH
     c_static_assert_msg(false, "The ICU Library path is not defined");
@@ -283,16 +294,26 @@ static int FindLibUsingOverride(const char* versionPrefix, char* symbolName, cha
     char* versionOverride = getenv("CLR_ICU_VERSION_OVERRIDE");
     if (versionOverride != NULL)
     {
-        int first = -1;
-        int second = -1;
-        int third = -1;
-
-        int matches = sscanf(versionOverride, "%d.%d.%d", &first, &second, &third);
-        if (matches > 0)
+        if (strcmp(versionOverride, "build") == 0)
         {
-            if (OpenICULibraries(first, second, third, versionPrefix, symbolName, symbolVersion))
+            if (OpenICULibraries(U_ICU_VERSION_MAJOR_NUM, -1, -1, versionPrefix, symbolName, symbolVersion))
             {
                 return true;
+            }
+        }
+        else
+        {
+            int first = -1;
+            int second = -1;
+            int third = -1;
+
+            int matches = sscanf(versionOverride, "%d.%d.%d", &first, &second, &third);
+            if (matches > 0)
+            {
+                if (OpenICULibraries(first, second, third, versionPrefix, symbolName, symbolVersion))
+                {
+                    return true;
+                }
             }
         }
     }
@@ -415,6 +436,7 @@ static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
 #if defined(TARGET_OSX) || defined(TARGET_ANDROID)
     // OSX and Android always run against ICU version which has ucol_setMaxVariable.
     // We shouldn't come here.
+    (void)symbolVersion;
     assert(false);
 #elif defined(TARGET_WINDOWS)
     char symbolName[SYMBOL_NAME_SIZE];
@@ -437,7 +459,7 @@ static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
 // This method get called from the managed side during the globalization initialization.
 // This method shouldn't get called at all if we are running in globalization invariant mode
 // return 0 if failed to load ICU and 1 otherwise
-int32_t GlobalizationNative_LoadICU()
+int32_t GlobalizationNative_LoadICU(void)
 {
     char symbolName[SYMBOL_NAME_SIZE];
     char symbolVersion[MaxICUVersionStringLength + 1]="";
@@ -528,13 +550,14 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     ValidateICUDataCanLoad();
 
     InitializeVariableMaxAndTopPointers(symbolVersion);
+    InitializeUColClonePointers(symbolVersion);
 }
 
 #undef PER_FUNCTION_BLOCK
 
 // GlobalizationNative_GetICUVersion
 // return the current loaded ICU version
-int32_t GlobalizationNative_GetICUVersion()
+int32_t GlobalizationNative_GetICUVersion(void)
 {
     if (u_getVersion_ptr == NULL)
         return 0;

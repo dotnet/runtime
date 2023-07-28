@@ -46,14 +46,11 @@ class  SyncBlockArray
     BYTE            m_Blocks[MAXSYNCBLOCK * sizeof (SyncBlock)];
 };
 
-// For in-place constructor
-BYTE g_SyncBlockCacheInstance[sizeof(SyncBlockCache)];
+SyncBlockCache g_SyncBlockCacheInstance;
 
 SPTR_IMPL (SyncBlockCache, SyncBlockCache, s_pSyncBlockCache);
 
 #ifndef DACCESS_COMPILE
-
-
 
 #ifndef TARGET_UNIX
 // static
@@ -463,27 +460,7 @@ size_t BitMapSize (size_t cacheSize)
 //
 // ***************************************************************************
 
-SyncBlockCache::SyncBlockCache()
-    : m_pCleanupBlockList(NULL),
-      m_FreeBlockList(NULL),
-
-      // NOTE: CRST_UNSAFE_ANYMODE prevents a GC mode switch when entering this crst.
-      // If you remove this flag, we will switch to preemptive mode when entering
-      // g_criticalSection, which means all functions that enter it will become
-      // GC_TRIGGERS.  (This includes all uses of LockHolder around SyncBlockCache::GetSyncBlockCache().
-      // So be sure to update the contracts if you remove this flag.
-      m_CacheLock(CrstSyncBlockCache, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD)),
-
-      m_FreeCount(0),
-      m_ActiveCount(0),
-      m_SyncBlocks(0),
-      m_FreeSyncBlock(0),
-      m_FreeSyncTableIndex(1),
-      m_FreeSyncTableList(0),
-      m_SyncTableSize(SYNC_TABLE_INITIAL_SIZE),
-      m_OldSyncTables(0),
-      m_bSyncBlockCleanupInProgress(FALSE),
-      m_EphemeralBitmap(0)
+void SyncBlockCache::Init()
 {
     CONTRACTL
     {
@@ -494,11 +471,30 @@ SyncBlockCache::SyncBlockCache()
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
+
+    m_pCleanupBlockList = NULL;
+    m_FreeBlockList     = NULL;
+
+    // NOTE: CRST_UNSAFE_ANYMODE prevents a GC mode switch when entering this crst.
+    // If you remove this flag, we will switch to preemptive mode when entering
+    // g_criticalSection, which means all functions that enter it will become
+    // GC_TRIGGERS.  (This includes all uses of LockHolder around SyncBlockCache::GetSyncBlockCache().
+    // So be sure to update the contracts if you remove this flag.
+    m_CacheLock.Init(CrstSyncBlockCache, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
+
+    m_FreeCount = 0;
+    m_ActiveCount = 0;
+    m_SyncBlocks = 0;
+    m_FreeSyncBlock = 0;
+    m_FreeSyncTableIndex = 1;
+    m_FreeSyncTableList = 0;
+    m_SyncTableSize = SYNC_TABLE_INITIAL_SIZE;
+    m_OldSyncTables = 0;
+    m_bSyncBlockCleanupInProgress = FALSE;
+    m_EphemeralBitmap = 0;
 }
 
-
-// This method is NO longer called.
-SyncBlockCache::~SyncBlockCache()
+void SyncBlockCache::Destroy()
 {
     CONTRACTL
     {
@@ -513,6 +509,8 @@ SyncBlockCache::~SyncBlockCache()
     m_FreeBlockList = NULL;
     //<TODO>@todo we can clear this fast too I guess</TODO>
     m_pCleanupBlockList = NULL;
+
+    m_CacheLock.Destroy();
 
     // destruct all arrays
     while (m_SyncBlocks)
@@ -655,7 +653,8 @@ void SyncBlockCache::Start()
 #endif
 
     SyncTableEntry::GetSyncTableEntry()[0].m_SyncBlock = 0;
-    SyncBlockCache::GetSyncBlockCache() = new (&g_SyncBlockCacheInstance) SyncBlockCache;
+    SyncBlockCache::GetSyncBlockCache() = &g_SyncBlockCacheInstance;
+    g_SyncBlockCacheInstance.Init();
 
     SyncBlockCache::GetSyncBlockCache()->m_EphemeralBitmap = bm;
 
@@ -681,7 +680,7 @@ void SyncBlockCache::Stop()
     // sync blocks which are live and thus must have their critical sections destroyed.
     if (SyncBlockCache::GetSyncBlockCache())
     {
-        delete SyncBlockCache::GetSyncBlockCache();
+        SyncBlockCache::GetSyncBlockCache()->Destroy();
         SyncBlockCache::GetSyncBlockCache() = 0;
     }
 
@@ -858,7 +857,7 @@ void SyncBlockCache::Grow()
 
 
         // We chain old table because we can't delete
-        // them before all the threads are stoppped
+        // them before all the threads are stopped
         // (next GC)
         SyncTableEntry::GetSyncTableEntry() [0].m_Object = (Object *)m_OldSyncTables;
         m_OldSyncTables = SyncTableEntry::GetSyncTableEntry();
@@ -1095,14 +1094,14 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
         //table logic above works correctly so that every ephemeral entry is promoted.
         //For verification, we make a copy of the sync table in relocation phase and promote it use the
         //slow approach and compare the result with the original one
-        DWORD freeSyncTalbeIndexCopy = m_FreeSyncTableIndex;
+        DWORD freeSyncTableIndexCopy = m_FreeSyncTableIndex;
         SyncTableEntry * syncTableShadow = NULL;
         if ((g_pConfig->GetHeapVerifyLevel()& EEConfig::HEAPVERIFY_SYNCBLK) && !((ScanContext*)lp1)->promotion)
         {
             syncTableShadow = new(nothrow) SyncTableEntry [m_FreeSyncTableIndex];
             if (syncTableShadow)
             {
-                memcpy (syncTableShadow, SyncTableEntry::GetSyncTableEntry(), m_FreeSyncTableIndex * sizeof (SyncTableEntry));
+                memcpy ((void*)syncTableShadow, SyncTableEntry::GetSyncTableEntry(), m_FreeSyncTableIndex * sizeof (SyncTableEntry));
             }
         }
 #endif //VERIFY_HEAP
@@ -1178,7 +1177,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
                 delete []syncTableShadow;
                 syncTableShadow = NULL;
             }
-            if (freeSyncTalbeIndexCopy != m_FreeSyncTableIndex)
+            if (freeSyncTableIndexCopy != m_FreeSyncTableIndex)
                 DebugBreak ();
         }
 #endif //VERIFY_HEAP
@@ -1449,7 +1448,7 @@ void DumpSyncBlockCache()
 
     SyncBlockCache *pCache = SyncBlockCache::GetSyncBlockCache();
 
-    LogSpewAlways("Dumping SyncBlockCache size %d\n", pCache->m_FreeSyncTableIndex);
+    LogSpewAlways("Dumping SyncBlockCache size %u\n", pCache->m_FreeSyncTableIndex);
 
     static int dumpSBStyle = -1;
     if (dumpSBStyle == -1)
@@ -1457,14 +1456,12 @@ void DumpSyncBlockCache()
     if (dumpSBStyle == 0)
         return;
 
-    BOOL isString = FALSE;
     DWORD objectCount = 0;
     DWORD slotCount = 0;
 
     for (DWORD nb = 1; nb < pCache->m_FreeSyncTableIndex; nb++)
     {
-        isString = FALSE;
-        char buffer[1024], buffer2[1024];
+        char buffer[1024];
         LPCUTF8 descrip = "null";
         SyncTableEntry *pEntry = &SyncTableEntry::GetSyncTableEntry()[nb];
         Object *oref = (Object *) pEntry->m_Object;
@@ -1484,27 +1481,15 @@ void DumpSyncBlockCache()
                 {
                     LPCUTF8 descrip;
                     Object *oref;
-                    char *buffer2;
-                    UINT cch2;
-                    BOOL isString;
                 } param;
                 param.descrip = descrip;
                 param.oref = oref;
-                param.buffer2 = buffer2;
-                param.cch2 = ARRAY_SIZE(buffer2);
-                param.isString = isString;
 
                 PAL_TRY(Param *, pParam, &param)
                 {
                     pParam->descrip = pParam->oref->GetMethodTable()->GetDebugClassName();
                     if (strlen(pParam->descrip) == 0)
                         pParam->descrip = "<INVALID>";
-                    else if (pParam->oref->GetMethodTable() == g_pStringClass)
-                    {
-                        sprintf_s(pParam->buffer2, pParam->cch2, "%s (%S)", pParam->descrip, ObjectToSTRINGREF((StringObject*)pParam->oref)->GetBuffer());
-                        pParam->descrip = pParam->buffer2;
-                        pParam->isString = TRUE;
-                    }
                 }
                 PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
                     param.descrip = "<INVALID>";
@@ -1512,14 +1497,13 @@ void DumpSyncBlockCache()
                 PAL_ENDTRY
 
                 descrip = param.descrip;
-                isString = param.isString;
             }
             sprintf_s(buffer, ARRAY_SIZE(buffer), "%s", descrip);
             descrip = buffer;
         }
         if (dumpSBStyle < 2)
-            LogSpewAlways("[%4.4d]: %8.8x %s\n", nb, oref, descrip);
-        else if (dumpSBStyle == 2 && ! isString)
+            LogSpewAlways("[%4.4d]: %zx %s\n", nb, oref, descrip);
+        else if (dumpSBStyle == 2)
             LogSpewAlways("[%4.4d]: %s\n", nb, descrip);
     }
     LogSpewAlways("Done dumping SyncBlockCache used slots: %d, objects: %d\n", slotCount, objectCount);
@@ -1652,7 +1636,11 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             }
 
             LONG newValue = oldValue | tid;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            if (FastInterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+#else
             if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+#endif
             {
                 return AwareLock::EnterHelperResult_Entered;
             }
@@ -2198,13 +2186,20 @@ SyncBlock *ObjHeader::GetSyncBlock()
                             _ASSERTE(lockThreadId != 0);
 
                             Thread *pThread = g_pThinLockThreadIdDispenser->IdToThreadWithValidation(lockThreadId);
+                            SIZE_T osThreadId;
 
                             if (pThread == NULL)
                             {
                                 // The lock is orphaned.
                                 pThread = (Thread*) -1;
+                                osThreadId = (SIZE_T)-1;
                             }
-                            syncBlock->InitState(recursionLevel + 1, pThread);
+                            else
+                            {
+                                osThreadId = pThread->GetOSThreadId64();
+                            }
+
+                            syncBlock->InitState(recursionLevel + 1, pThread, osThreadId);
                         }
                     }
                     else if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
@@ -2233,8 +2228,8 @@ SyncBlock *ObjHeader::GetSyncBlock()
 
                 LEAVE_SPIN_LOCK(this);
             }
-            // SyncBlockCache::LockHolder goes out of scope here
         }
+        // SyncBlockCache::LockHolder goes out of scope here
     }
 
     RETURN syncBlock;
@@ -2368,6 +2363,7 @@ void AwareLock::Enter()
         {
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
+            m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2430,6 +2426,7 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
         {
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
+            m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2537,21 +2534,31 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     // the object associated with this lock.
     _ASSERTE(pCurThread->PreemptiveGCDisabled());
 
-    BOOLEAN IsContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
-    LARGE_INTEGER startTicks = { {0} };
-
-    if (IsContentionKeywordEnabled)
-    {
-        QueryPerformanceCounter(&startTicks);
-
-        // Fire a contention start event for a managed contention
-        FireEtwContentionStart_V1(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId());
-    }
-
     LogContention();
     Thread::IncrementMonitorLockContentionCount(pCurThread);
 
     OBJECTREF obj = GetOwningObject();
+
+    LARGE_INTEGER startTicks = { {0} };
+    bool isContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
+
+    if (isContentionKeywordEnabled)
+    {
+        QueryPerformanceCounter(&startTicks);
+
+        if (InterlockedCompareExchangeT(&m_emittedLockCreatedEvent, 1, 0) == 0)
+        {
+            FireEtwContentionLockCreated(this, OBJECTREFToObject(obj), GetClrInstanceId());
+        }
+
+        // Fire a contention start event for a managed contention
+        FireEtwContentionStart_V2(
+            ETW::ContentionLog::ContentionStructs::ManagedContention,
+            GetClrInstanceId(),
+            this,
+            OBJECTREFToObject(obj),
+            m_HoldingOSThreadId);
+    }
 
     // We cannot allow the AwareLock to be cleaned up underneath us by the GC.
     IncrementTransientPrecious();
@@ -2680,7 +2687,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     GCPROTECT_END();
     DecrementTransientPrecious();
 
-    if (IsContentionKeywordEnabled)
+    if (isContentionKeywordEnabled)
     {
         LARGE_INTEGER endTicks;
         QueryPerformanceCounter(&endTicks);
@@ -2698,6 +2705,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     }
 
     m_HoldingThread = pCurThread;
+    m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2760,7 +2768,6 @@ BOOL AwareLock::OwnedByCurrentThread()
     WRAPPER_NO_CONTRACT;
     return (GetThread() == m_HoldingThread);
 }
-
 
 // ***************************************************************************
 //
@@ -2946,8 +2953,7 @@ void ObjHeader::IllegalAlignPad()
     WRAPPER_NO_CONTRACT;
 #ifdef LOGGING
     void** object = ((void**) this) + 1;
-    LogSpewAlways("\n\n******** Illegal ObjHeader m_alignpad not 0, object" FMT_ADDR "\n\n",
-                  DBG_ADDR(object));
+    STRESS_LOG1(LF_ASSERT, LL_ALWAYS, "\n\n******** Illegal ObjHeader m_alignpad not 0, m_alignpad value: %d\n", m_alignpad);
 #endif
     _ASSERTE(m_alignpad == 0);
 }

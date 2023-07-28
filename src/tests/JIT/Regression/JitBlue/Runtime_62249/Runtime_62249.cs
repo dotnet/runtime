@@ -1,10 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Runtime_62249
+public class Runtime_62249
 {
     public struct CanBeReinterpretedAsDouble
     {
@@ -29,7 +30,8 @@ class Runtime_62249
         return Callee(0, 0, 0, 6, 2, 2, 4, 9, byRef);
     }
 
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         var val = new CanBeReinterpretedAsDouble();
         val._0 = 62249;

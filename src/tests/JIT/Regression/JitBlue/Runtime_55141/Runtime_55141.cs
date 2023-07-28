@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct S0
 {
@@ -17,7 +18,8 @@ public class Runtime_55141
     // UDIV is lowered to the MULHI/BITCAST nodes and they are stored in field (STORE_LCL_FLD).
     // BITCAST is marked as contained so the value to be stored can be used from MULHI, but marking
     // the containment of BITCAST is not supported in codegen for STORE_LCL_FLD.
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return (uint)Run(0) == 0 ? 100 : 0;
     }

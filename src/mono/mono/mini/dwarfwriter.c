@@ -26,8 +26,8 @@
 #include <mono/metadata/abi-details.h>
 
 #ifndef HOST_WIN32
-#include <mono/utils/freebsd-elf32.h>
-#include <mono/utils/freebsd-elf64.h>
+#include <external/libunwind/include/remote/freebsd-elf32.h>
+#include <external/libunwind/include/remote/freebsd-elf64.h>
 #endif
 
 #include <mono/utils/freebsd-dwarf.h>
@@ -203,7 +203,7 @@ static void
 emit_escaped_string (MonoDwarfWriter *w, char *value)
 {
 	size_t len = (int)strlen (value);
-	for (int i = 0; i < len; ++i) {
+	for (size_t i = 0; i < len; ++i) {
 		char c = value [i];
 		if (!(isalnum (c))) {
 			switch (c) {
@@ -406,9 +406,7 @@ emit_fde (MonoDwarfWriter *w, int fde_index, char *start_symbol, char *end_symbo
 	l = unwind_ops;
 	if (w->cie_program) {
 		// FIXME: Check that the ops really begin with the CIE program */
-		int i;
-
-		for (i = 0; i < g_slist_length (w->cie_program); ++i)
+		for (guint i = 0; i < g_slist_length (w->cie_program); ++i)
 			if (l)
 				l = l->next;
 	}
@@ -457,7 +455,7 @@ static int subprogram_attr [] = {
 	DW_AT_MIPS_linkage_name, DW_FORM_string,
 	DW_AT_decl_file    , DW_FORM_udata,
 	DW_AT_decl_line    , DW_FORM_udata,
-#ifndef TARGET_IOS
+#if !defined (TARGET_IOS) && !defined(TARGET_TVOS)
 	DW_AT_description  , DW_FORM_string,
 #endif
     DW_AT_low_pc       , DW_FORM_addr,
@@ -618,12 +616,12 @@ mono_dwarf_escape_path (const char *name)
 	if (strchr (name, '\\')) {
 		char *s;
 		size_t len;
-		int i, j;
+		size_t j;
 
 		len = strlen (name);
 		s = (char *)g_malloc0 ((len + 1) * 2);
 		j = 0;
-		for (i = 0; i < len; ++i) {
+		for (size_t i = 0; i < len; ++i) {
 			if (name [i] == '\\') {
 				s [j ++] = '\\';
 				s [j ++] = '\\';
@@ -639,7 +637,6 @@ mono_dwarf_escape_path (const char *name)
 static void
 emit_all_line_number_info (MonoDwarfWriter *w)
 {
-	int i;
 	GHashTable *dir_to_index, *index_to_dir;
 	GSList *l;
 	GSList *info_list;
@@ -659,7 +656,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 			continue;
 
 		mono_debug_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
-		for (i = 0; i < source_file_list->len; ++i) {
+		for (guint i = 0; i < source_file_list->len; ++i) {
 			MonoDebugSourceInfo *sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, i);
 			add_line_number_file_name (w, sinfo->source_file, 0, 0);
 		}
@@ -668,7 +665,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 	/* Preprocess files */
 	dir_to_index = g_hash_table_new (g_str_hash, g_str_equal);
 	index_to_dir = g_hash_table_new (NULL, NULL);
-	for (i = 0; i < w->line_number_file_index; ++i) {
+	for (int i = 0; i < w->line_number_file_index; ++i) {
 		char *name = (char *)g_hash_table_lookup (w->index_to_file, GUINT_TO_POINTER (i + 1));
 		char *copy;
 		int dir_index = 0;
@@ -718,7 +715,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 
 	/* Includes */
 	emit_section_change (w, ".debug_line", 0);
-	for (i = 0; i < w->line_number_dir_index; ++i) {
+	for (int i = 0; i < w->line_number_dir_index; ++i) {
 		char *dir = (char *)g_hash_table_lookup (index_to_dir, GUINT_TO_POINTER (i + 1));
 
 		emit_string (w, mono_dwarf_escape_path (dir));
@@ -727,7 +724,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 	emit_byte (w, 0);
 
 	/* Files */
-	for (i = 0; i < w->line_number_file_index; ++i) {
+	for (int i = 0; i < w->line_number_file_index; ++i) {
 		char *name = (char *)g_hash_table_lookup (w->index_to_file, GUINT_TO_POINTER (i + 1));
 		char *basename = NULL, *dir;
 		int dir_index = 0;
@@ -941,6 +938,11 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	die = (char *)g_hash_table_lookup (cache, klass);
 	if (die)
 		return die;
+
+	if (m_class_is_ginst (klass) && !vtype) {
+		/* This could lead to recursion */
+		return NULL;
+	}
 
 	if (!((m_class_get_byval_arg (klass)->type == MONO_TYPE_CLASS) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_OBJECT) || m_class_get_byval_arg (klass)->type == MONO_TYPE_GENERICINST || m_class_is_enumtype (klass) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_VALUETYPE && vtype) ||
 		(m_class_get_byval_arg (klass)->type >= MONO_TYPE_BOOLEAN && m_class_get_byval_arg (klass)->type <= MONO_TYPE_R8 && !vtype)))
@@ -1177,6 +1179,8 @@ get_type_die (MonoDwarfWriter *w, MonoType *t)
 		case MONO_TYPE_GENERICINST:
 			if (!MONO_TYPE_ISSTRUCT (t)) {
 				tdie = (const char *)g_hash_table_lookup (w->class_to_reference_die, klass);
+				if (!tdie)
+					tdie = ".LDIE_OBJECT";
 			} else {
 				tdie = ".LDIE_I4";
 			}
@@ -1504,7 +1508,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	ERROR_DECL (error);
 	guint32 prev_line = 0;
 	guint32 prev_native_offset = 0;
-	int i, file_index, il_offset, prev_il_offset;
+	int file_index, il_offset, prev_il_offset;
 	gboolean first = TRUE;
 	MonoDebugSourceLocation *loc;
 	char *prev_file_name = NULL;
@@ -1533,22 +1537,21 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 
 	native_to_il_offset = g_new0 (int, code_size + 1);
 
-	for (i = 0; i < debug_info->num_line_numbers; ++i) {
-		int j;
+	for (guint32 i = 0; i < debug_info->num_line_numbers; ++i) {
 		MonoDebugLineNumberEntry *lne = &ln_array [i];
 
 		if (i == 0) {
-			for (j = 0; j < lne->native_offset; ++j)
+			for (guint32 j = 0; j < lne->native_offset; ++j)
 				native_to_il_offset [j] = -1;
 		}
 
 		if (i < debug_info->num_line_numbers - 1) {
 			MonoDebugLineNumberEntry *lne_next = &ln_array [i + 1];
 
-			for (j = lne->native_offset; j < lne_next->native_offset; ++j)
+			for (guint32 j = lne->native_offset; j < lne_next->native_offset; ++j)
 				native_to_il_offset [j] = lne->il_offset;
 		} else {
-			for (j = lne->native_offset; j < code_size; ++j)
+			for (guint32 j = lne->native_offset; j < code_size; ++j)
 				native_to_il_offset [j] = lne->il_offset;
 		}
 	}
@@ -1558,7 +1561,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	prev_il_offset = -1;
 
 	w->cur_file_index = -1;
-	for (i = 0; i < code_size; ++i) {
+	for (guint32 i = 0; i < code_size; ++i) {
 		int line_diff, addr_diff;
 
 		if (!minfo)
@@ -1692,7 +1695,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 		/* Emit line number info */
 		prev_line = 1;
 		prev_native_offset = 0;
-		for (i = 0; i < debug_info->num_line_numbers; ++i) {
+		for (guint32 i = 0; i < debug_info->num_line_numbers; ++i) {
 			MonoDebugLineNumberEntry *lne = &debug_info->line_numbers [i];
 			int line;
 
@@ -1737,7 +1740,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 static MonoMethodVar*
 find_vmv (MonoCompile *cfg, MonoInst *ins)
 {
-	int j;
+	guint j;
 
 	if (cfg->varinfo) {
 		for (j = 0; j < cfg->num_varinfo; ++j) {
@@ -1765,7 +1768,6 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	MonoDebugLocalsInfo *locals_info;
 	MonoDebugMethodInfo *minfo;
 	MonoDebugSourceLocation *loc = NULL;
-	int i;
 	guint8 buf [128];
 	guint8 *p;
 
@@ -1776,7 +1778,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 	/* Parameter types */
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		MonoType *t;
 
 		if (i == 0 && sig->hasthis) {
@@ -1793,7 +1795,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	//emit_type (w, mono_get_int32_type ());
 
 	/* Local types */
-	for (i = 0; i < header->num_locals; ++i) {
+	for (guint16 i = 0; i < header->num_locals; ++i) {
 		emit_type (w, header->locals [i]);
 	}
 
@@ -1803,7 +1805,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 	/* Subprogram */
 	names = g_new0 (char *, sig->param_count);
-	mono_method_get_param_names (method, (const char **) names);
+	mono_method_get_param_names_internal (method, (const char **) names);
 
 	emit_uleb128 (w, ABBREV_SUBPROGRAM);
 	/* DW_AT_name */
@@ -1826,7 +1828,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		emit_uleb128 (w, 0);
 		emit_uleb128 (w, 0);
 	}
-#ifndef TARGET_IOS
+#if !defined (TARGET_IOS) && !defined(TARGET_TVOS)
 	emit_string (w, name);
 #endif
 	g_free (name);
@@ -1843,7 +1845,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	emit_byte (w, 16);
 
 	/* Parameters */
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		MonoInst *arg = args ? args [i] : NULL;
 		MonoType *t;
 		const char *pname;
@@ -1897,7 +1899,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	/* Locals */
 	locals_info = mono_debug_lookup_locals (method);
 
-	for (i = 0; i < header->num_locals; ++i) {
+	for (guint16 i = 0; i < header->num_locals; ++i) {
 		MonoInst *ins = locals [i];
 		char name_buf [128];
 		int j;
@@ -1927,7 +1929,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		if (lname) {
 			emit_string (w, lname);
 		} else {
-			sprintf (name_buf, "V_%d", i);
+			sprintf (name_buf, "V_%hu", i);
 			emit_string (w, name_buf);
 		}
 		/* type */

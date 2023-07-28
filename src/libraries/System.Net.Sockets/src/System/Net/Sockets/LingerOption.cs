@@ -41,5 +41,12 @@ namespace System.Net.Sockets
                 _lingerTime = value;
             }
         }
+
+        public override bool Equals(object? comparand)
+        {
+            return comparand is LingerOption option && option.Enabled == _enabled && option.LingerTime == _lingerTime;
+        }
+
+        public override int GetHashCode() => HashCode.Combine(_enabled, _lingerTime);
     }
 }

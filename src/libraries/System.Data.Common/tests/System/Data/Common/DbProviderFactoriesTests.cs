@@ -38,7 +38,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetFactoryWithInvariantNameTest()
         {
             ClearRegisteredFactories();
@@ -50,7 +49,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetFactoryWithDbConnectionTest()
         {
             ClearRegisteredFactories();
@@ -62,7 +60,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetFactoryWithDataRowTest()
         {
             ClearRegisteredFactories();
@@ -70,7 +67,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RegisterFactoryWithTypeNameTest()
         {
             ClearRegisteredFactories();
@@ -78,7 +74,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RegisterFactoryWithTypeTest()
         {
             ClearRegisteredFactories();
@@ -86,7 +81,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RegisterFactoryWithInstanceTest()
         {
             ClearRegisteredFactories();
@@ -102,7 +96,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RegisterFactoryWithBadInvariantNameTest()
         {
             ClearRegisteredFactories();
@@ -111,7 +104,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RegisterFactoryWithAssemblyQualifiedNameTest()
         {
             ClearRegisteredFactories();
@@ -135,7 +127,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void UnregisterFactoryTest()
         {
             ClearRegisteredFactories();
@@ -146,7 +137,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void TryGetFactoryTest()
         {
             ClearRegisteredFactories();
@@ -159,7 +149,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void ReplaceFactoryWithRegisterFactoryWithTypeTest()
         {
             ClearRegisteredFactories();
@@ -174,7 +163,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetProviderInvariantNamesTest()
         {
             ClearRegisteredFactories();

@@ -168,18 +168,18 @@ typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 //     call [DispatchCell]
 //
 // Where we make sure 'DispatchCell' points at stubs that will do the right thing. DispatchCell is writable
-// so we can udpate the code over time. There are three basic types of stubs that the dispatch cell can point
+// so we can update the code over time. There are three basic types of stubs that the dispatch cell can point
 // to.
-//     * Lookup: The intial stub that has no 'fast path' and simply pushes a ID for interface being called
+//     * Lookup: The initial stub that has no 'fast path' and simply pushes a ID for interface being called
 //         and calls into the runtime at code:VirtualCallStubManager.ResolveWorkerStatic.
 //     * Dispatch: Lookup stubs are patched to this stub which has a fast path that checks for a particular
 //         Method Table and if that fails jumps to code that
 //         * Decrements a 'missCount' (starts out as code:STUB_MISS_COUNT_VALUE). If this count goes to zero
 //             code:VirtualCallStubManager.BackPatchWorkerStatic is called, morphs it into a resolve stub
 //             (however since this decrementing logic is SHARED among all dispatch stubs, it may take
-//             multiples of code:STUB_MISS_COUNT_VALUE if mulitple call sites are actively polymorphic (this
-//             seems unlikley).
-//         * Calls a resolve stub (Whenever a dispatch stub is created, it always has a cooresponding resolve
+//             multiples of code:STUB_MISS_COUNT_VALUE if multiple call sites are actively polymorphic (this
+//             seems unlikely).
+//         * Calls a resolve stub (Whenever a dispatch stub is created, it always has a corresponding resolve
 //             stub (but the resolve stubs are shared among many dispatch stubs).
 //     * Resolve: see code:ResolveStub. This looks up the Method table in a process wide cache (see
 //         code:ResolveCacheElem, and if found, jumps to it. This code path is about 17 instructions long (so
@@ -261,11 +261,7 @@ public:
 #ifndef DACCESS_COMPILE
     VirtualCallStubManager()
         : StubManager(),
-          lookup_rangeList(),
-          resolve_rangeList(),
-          dispatch_rangeList(),
           cache_entry_rangeList(),
-          vtable_rangeList(),
           parentDomain(NULL),
           m_loaderAllocator(NULL),
           m_initialReservedMemForHeaps(NULL),
@@ -296,183 +292,57 @@ public:
     ~VirtualCallStubManager();
 #endif // !DACCESS_COMPILE
 
-
-    enum StubKind {
-        SK_UNKNOWN,
-        SK_LOOKUP,      // Lookup Stubs are SLOW stubs that simply call into the runtime to do all work.
-        SK_DISPATCH,    // Dispatch Stubs have a fast check for one type otherwise jumps to runtime.  Works for monomorphic sites
-        SK_RESOLVE,     // Resolve Stubs do a hash lookup before fallling back to the runtime.  Works for polymorphic sites.
-        SK_VTABLECALL,  // Stub that jumps to a target method using vtable-based indirections. Works for non-interface calls.
-        SK_BREAKPOINT
-    };
-
-    // peek at the assembly code and predict which kind of a stub we have
-    StubKind predictStubKind(PCODE stubStartAddress);
-
-    /* know thine own stubs.  It is possible that when multiple
-    virtualcallstub managers are built that these may need to become
-    non-static, and the callers modified accordingly */
-    StubKind getStubKind(PCODE stubStartAddress, BOOL usePredictStubKind = TRUE)
+    static BOOL isStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
 
-        // This method can called with stubStartAddress==NULL, e.g. when handling null reference exceptions
-        // caused by IP=0. Early out for this case to avoid confusing handled access violations inside predictStubKind.
-        if (PCODEToPINSTR(stubStartAddress) == NULL)
-            return SK_UNKNOWN;
-
-        // Rather than calling IsInRange(stubStartAddress) for each possible stub kind
-        // we can peek at the assembly code and predict which kind of a stub we have
-        StubKind predictedKind = (usePredictStubKind) ? predictStubKind(stubStartAddress) : SK_UNKNOWN;
-
-        if (predictedKind == SK_DISPATCH)
-        {
-            if (isDispatchingStub(stubStartAddress))
-                return SK_DISPATCH;
-        }
-        else if (predictedKind == SK_LOOKUP)
-        {
-            if (isLookupStub(stubStartAddress))
-                return SK_LOOKUP;
-        }
-        else if (predictedKind == SK_RESOLVE)
-        {
-            if (isResolvingStub(stubStartAddress))
-                return SK_RESOLVE;
-        }
-        else if (predictedKind == SK_VTABLECALL)
-        {
-            if (isVTableCallStub(stubStartAddress))
-                return SK_VTABLECALL;
-        }
-
-        // This is the slow case. If the predict returned SK_UNKNOWN, SK_BREAKPOINT,
-        // or the predict was found to be incorrect when checked against the RangeLists
-        // (isXXXStub), then we'll check each stub heap in sequence.
-        if (isDispatchingStub(stubStartAddress))
-            return SK_DISPATCH;
-        else if (isLookupStub(stubStartAddress))
-            return SK_LOOKUP;
-        else if (isResolvingStub(stubStartAddress))
-            return SK_RESOLVE;
-        else if (isVTableCallStub(stubStartAddress))
-            return SK_VTABLECALL;
-
-        return SK_UNKNOWN;
-    }
-
-    inline BOOL isStub(PCODE stubStartAddress)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        return (getStubKind(stubStartAddress) != SK_UNKNOWN);
-    }
-
-    BOOL isDispatchingStub(PCODE stubStartAddress)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        return GetDispatchRangeList()->IsInRange(stubStartAddress);
-    }
-
-    BOOL isResolvingStub(PCODE stubStartAddress)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        return GetResolveRangeList()->IsInRange(stubStartAddress);
-    }
-
-    BOOL isLookupStub(PCODE stubStartAddress)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        return GetLookupRangeList()->IsInRange(stubStartAddress);
-    }
-
-    BOOL isVTableCallStub(PCODE stubStartAddress)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        return GetVTableCallRangeList()->IsInRange(stubStartAddress);
+        return sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB ||
+               sk == STUB_CODE_BLOCK_VSD_LOOKUP_STUB ||
+               sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB ||
+               sk == STUB_CODE_BLOCK_VSD_VTABLE_STUB;
     }
 
     static BOOL isDispatchingStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        StubKind stubKind;
-        FindStubManager(addr, &stubKind);
-        return stubKind == SK_DISPATCH;
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
+
+        return sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB;
     }
 
     static BOOL isResolvingStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        StubKind stubKind;
-        FindStubManager(addr, &stubKind);
-        return stubKind == SK_RESOLVE;
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
+
+        return sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB;
     }
 
     static BOOL isLookupStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        StubKind stubKind;
-        FindStubManager(addr, &stubKind);
-        return stubKind == SK_LOOKUP;
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
+
+        return sk == STUB_CODE_BLOCK_VSD_LOOKUP_STUB;
     }
 
     static BOOL isVtableCallStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        StubKind stubKind;
-        FindStubManager(addr, &stubKind);
-        return stubKind == SK_VTABLECALL;
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
+
+        return sk == STUB_CODE_BLOCK_VSD_VTABLE_STUB;
     }
 
     //use range lists to track the chunks of memory that are part of each heap
-    LockedRangeList lookup_rangeList;
-    LockedRangeList resolve_rangeList;
-    LockedRangeList dispatch_rangeList;
     LockedRangeList cache_entry_rangeList;
-    LockedRangeList vtable_rangeList;
 
     // Get dac-ized pointers to rangelist.
-    RangeList* GetLookupRangeList()
-    {
-        SUPPORTS_DAC;
-
-        TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, lookup_rangeList);
-        return PTR_RangeList(addr);
-    }
-    RangeList* GetResolveRangeList()
-    {
-        SUPPORTS_DAC;
-
-        TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, resolve_rangeList);
-        return PTR_RangeList(addr);
-    }
-    RangeList* GetDispatchRangeList()
-    {
-        SUPPORTS_DAC;
-
-        TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, dispatch_rangeList);
-        return PTR_RangeList(addr);
-    }
     RangeList* GetCacheEntryRangeList()
     {
         SUPPORTS_DAC;
         TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, cache_entry_rangeList);
-        return PTR_RangeList(addr);
-    }
-    RangeList* GetVTableCallRangeList()
-    {
-        SUPPORTS_DAC;
-        TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, vtable_rangeList);
         return PTR_RangeList(addr);
     }
 
@@ -487,7 +357,7 @@ private:
 
 #ifdef TARGET_AMD64
     // Used to allocate a long jump dispatch stub. See comment around
-    // m_fShouldAllocateLongJumpDispatchStubs for explaination.
+    // m_fShouldAllocateLongJumpDispatchStubs for explanation.
     DispatchHolder *GenerateDispatchStubLong(PCODE addrOfCode,
                                              PCODE addrOfFail,
                                              void *pMTExpected,
@@ -507,17 +377,6 @@ private:
                                      size_t dispatchToken);
 
     VTableCallHolder* GenerateVTableCallStub(DWORD slot);
-
-    template <typename STUB_HOLDER>
-    void AddToCollectibleVSDRangeList(STUB_HOLDER *holder)
-    {
-        if (m_loaderAllocator->IsCollectible())
-        {
-            parentDomain->GetCollectibleVSDRanges()->AddRange(reinterpret_cast<BYTE *>(holder->stub()),
-                reinterpret_cast<BYTE *>(holder->stub()) + holder->stub()->size(),
-                this);
-        }
-    }
 
     // The resolve cache is static across all AppDomains
     ResolveCacheElem *GenerateResolveCacheElem(void *addrOfCode,
@@ -551,7 +410,7 @@ public:
     static size_t GetTokenFromStub(PCODE stub);
 
     //This is used to get the token out of a stub and we know the stub manager and stub kind
-    static size_t GetTokenFromStubQuick(VirtualCallStubManager * pMgr, PCODE stub, StubKind kind);
+    static size_t GetTokenFromStubQuick(VirtualCallStubManager * pMgr, PCODE stub, StubCodeBlockKind kind);
 
     // General utility functions
     // Quick lookup in the cache. NOTHROW, GC_NOTRIGGER
@@ -595,7 +454,7 @@ private:
     static void STDCALL BackPatchWorkerStatic(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
 
 public:
-    PCODE ResolveWorker(StubCallSite* pCallSite, OBJECTREF *protectedObj, DispatchToken token, StubKind stubKind);
+    PCODE ResolveWorker(StubCallSite* pCallSite, OBJECTREF *protectedObj, DispatchToken token, StubCodeBlockKind stubKind);
     void BackPatchWorker(StubCallSite* pCallSite);
 
     //Change the callsite to point to stub
@@ -617,12 +476,6 @@ public:
             retval+=indcell_heap->GetSize();
         if(cache_entry_heap)
             retval+=cache_entry_heap->GetSize();
-        if(lookup_heap)
-            retval+=lookup_heap->GetSize();
-         if(dispatch_heap)
-            retval+=dispatch_heap->GetSize();
-         if(resolve_heap)
-            retval+=resolve_heap->GetSize();
          return retval;
     };
 
@@ -720,10 +573,10 @@ private:
 
     PTR_LoaderHeap  indcell_heap;       // indirection cells go here
     PTR_LoaderHeap  cache_entry_heap;   // resolve cache elem entries go here
-    PTR_LoaderHeap  lookup_heap;        // lookup stubs go here
-    PTR_LoaderHeap  dispatch_heap;      // dispatch stubs go here
-    PTR_LoaderHeap  resolve_heap;       // resolve stubs go here
-    PTR_LoaderHeap  vtable_heap;        // vtable-based jump stubs go here
+    PTR_CodeFragmentHeap  lookup_heap;        // lookup stubs go here
+    PTR_CodeFragmentHeap  dispatch_heap;      // dispatch stubs go here
+    PTR_CodeFragmentHeap  resolve_heap;       // resolve stubs go here
+    PTR_CodeFragmentHeap  vtable_heap;        // vtable-based jump stubs go here
 
 #ifdef TARGET_AMD64
     // When we layout the stub heaps, we put them close together in a sequential order
@@ -770,8 +623,7 @@ private:
 public:
     // Given a stub address, find the VCSManager that owns it.
     static VirtualCallStubManager *FindStubManager(PCODE addr,
-                                                   StubKind* wbStubKind = NULL,
-                                                   BOOL usePredictStubKind = TRUE);
+                                                   StubCodeBlockKind* wbStubKind = NULL);
 
 #ifndef DACCESS_COMPILE
     // insert a linked list of indirection cells at the beginning of m_RecycledIndCellList
@@ -818,19 +670,7 @@ protected:
         WRAPPER_NO_CONTRACT;
         CONSISTENCY_CHECK(isStub(addr));
 
-        if (isLookupStub(addr))
-        {
-            return W("VSD_LookupStub");
-        }
-        else if (isDispatchingStub(addr))
-        {
-            return W("VSD_DispatchStub");
-        }
-        else
-        {
-            CONSISTENCY_CHECK(isResolvingStub(addr));
-            return W("VSD_ResolveStub");
-        }
+        return W("Unexpected. RangeSectionStubManager should report the name");
     }
 #endif
 };
@@ -968,23 +808,23 @@ size in a table to be a pointer or a pointer sized thing.
 correctly in the face of concurrent updating of the underlying table.  This is accomplished
 by making the underlying structures/entries effectively immutable, if concurrency is in anyway possible.
 By effectively immutatable, we mean that the stub or token structure is either immutable or that
-if it is ever written, all possibley concurrent writes are attempting to write the same value (atomically)
+if it is ever written, all possible concurrent writes are attempting to write the same value (atomically)
 or that the competing (atomic) values do not affect correctness, and that the function operates correctly whether
 or not any of the writes have taken place (is visible yet).  The constraint we maintain is that all competeing
 updates (and their visibility or lack thereof) do not alter the correctness of the program.
 
-3. All tables are inexact.  The counts they hold (e.g. number of contained entries) may be inaccurrate,
+3. All tables are inexact.  The counts they hold (e.g. number of contained entries) may be inaccurate,
 but that inaccurracy cannot affect their correctness.  Table modifications, such as insertion of
 an new entry may not succeed, but such failures cannot affect correctness.  This implies that just
 because a stub/entry is not present in a table, e.g. has been removed, that does not mean that
 it is not in use.  It also implies that internal table structures, such as discarded hash table buckets,
 cannot be freely recycled since another concurrent thread may still be walking thru it.
 
-4. Occassionally it is necessary to pick up the pieces that have been dropped on the floor
+4. Occasionally it is necessary to pick up the pieces that have been dropped on the floor
 so to speak, e.g. actually recycle hash buckets that aren't in use.  Since we have a natural
 sync point already in the GC, we use that to provide cleanup points.  We need to make sure that code that
 is walking our structures is not a GC safe point.  Hence if the GC calls back into us inside the GC
-sync point, we know that nobody is inside our stuctures and we can safely rearrange and recycle things.
+sync point, we know that nobody is inside our structures and we can safely rearrange and recycle things.
 ********************************************************************************************************/
 
 //initial and increment value for fail stub counters
@@ -1035,7 +875,7 @@ as and when needed.  This means we don't have to have vtables attached to stubs.
 
 Summarizing so far, there is a struct for each kind of stub or token of the form XXXXStub.
 They provide that actual storage layouts.
-There is a stuct in which each stub which has code is containted of the form XXXXHolder.
+There is a struct in which each stub which has code is contained of the form XXXXHolder.
 They provide alignment and anciliary storage for the stub code.
 There is a subclass of Entry for each kind of stub or token, of the form XXXXEntry.
 They provide the specific implementations of the virtual functions declared in Entry. */
@@ -1074,7 +914,7 @@ public:
         stub = (LookupStub*) s;
     }
 
-    //default contructor to allow stack and inline allocation of lookup entries
+    //default constructor to allow stack and inline allocation of lookup entries
     LookupEntry() {LIMITED_METHOD_CONTRACT; stub = NULL;}
 
     //implementations of abstract class Entry
@@ -1111,7 +951,7 @@ public:
         stub = (VTableCallStub*)s;
     }
 
-    //default contructor to allow stack and inline allocation of vtable call entries
+    //default constructor to allow stack and inline allocation of vtable call entries
     VTableCallEntry() { LIMITED_METHOD_CONTRACT; stub = NULL; }
 
     //implementations of abstract class Entry
@@ -1152,7 +992,7 @@ public:
         pElem = (ResolveCacheElem*) elem;
     }
 
-    //default contructor to allow stack and inline allocation of lookup entries
+    //default constructor to allow stack and inline allocation of lookup entries
     ResolveCacheEntry() { LIMITED_METHOD_CONTRACT; pElem = NULL; }
 
     //access and compare the keys of the entry
@@ -1197,7 +1037,7 @@ public:
         _ASSERTE(VirtualCallStubManager::isResolvingStubStatic((PCODE)s));
         stub = (ResolveStub*) s;
     }
-    //default contructor to allow stack and inline allocation of resovler entries
+    //default constructor to allow stack and inline allocation of resovler entries
     ResolveEntry()  { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
 
     //implementations of abstract class Entry
@@ -1235,7 +1075,7 @@ public:
         _ASSERTE(VirtualCallStubManager::isDispatchingStubStatic((PCODE)s));
         stub = (DispatchStub*) s;
     }
-    //default contructor to allow stack and inline allocation of resovler entries
+    //default constructor to allow stack and inline allocation of resovler entries
     DispatchEntry()                       { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
 
     //implementations of abstract class Entry
@@ -1436,7 +1276,7 @@ Typically, an entry of the appropriate type is created on the stack and then the
 in a reference to the entry.  The prober is used for a  complete operation, such as look for and find an
 entry (stub), creating and inserting it as necessary.
 
-The initial index and the stride are orthogonal hashes of the key pair, i.e. we are doing a varient of
+The initial index and the stride are orthogonal hashes of the key pair, i.e. we are doing a variant of
 double hashing.  When we initialize the prober (see FormHash below) we set the initial probe based on
 one hash.  The stride (used as a modulo addition of the probe position) is based on a different hash and
 is such that it will vist every location in the bucket before repeating.  Hence it is imperative that
@@ -1445,7 +1285,7 @@ a power of 2, so we force stride to be odd.
 
 Note -- it must be assumed that multiple probers are walking the same tables and buckets at the same time.
 Additionally, the counts may not be accurate, and there may be duplicates in the tables.  Since the tables
-do not allow concurrrent deletion, some of the concurrency issues are ameliorated.
+do not allow concurrent deletion, some of the concurrency issues are ameliorated.
 */
 class Prober
 {
@@ -1545,7 +1385,7 @@ private:
     //find the requested entry (keys of prober), if not there return CALL_STUB_EMPTY_ENTRY
     size_t Find(Prober* probe);
     //add the entry, if it is not already there.  Probe is used to search.
-    //Return the entry actually containted (existing or added)
+    //Return the entry actually contained (existing or added)
     size_t Add(size_t entry, Prober* probe);
     void IncrementCount();
 
@@ -1631,7 +1471,7 @@ public:
         {
             size_t size = bucketCount()+CALL_STUB_FIRST_INDEX;
             for(size_t ix = CALL_STUB_FIRST_INDEX; ix < size; ix++) delete (FastTable*)(buckets[ix]);
-            delete buckets;
+            delete[] buckets;
         }
     }
 

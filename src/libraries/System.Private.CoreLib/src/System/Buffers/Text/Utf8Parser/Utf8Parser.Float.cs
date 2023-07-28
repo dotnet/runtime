@@ -29,12 +29,11 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static unsafe bool TryParse(ReadOnlySpan<byte> source, out float value, out int bytesConsumed, char standardFormat = default)
         {
-            byte* pDigits = stackalloc byte[Number.SingleNumberBufferLength];
-            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, pDigits, Number.SingleNumberBufferLength);
+            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, stackalloc byte[Number.SingleNumberBufferLength]);
 
             if (TryParseNormalAsFloatingPoint(source, ref number, out bytesConsumed, standardFormat))
             {
-                value = Number.NumberToSingle(ref number);
+                value = Number.NumberToFloat<float>(ref number);
                 return true;
             }
 
@@ -63,12 +62,11 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static unsafe bool TryParse(ReadOnlySpan<byte> source, out double value, out int bytesConsumed, char standardFormat = default)
         {
-            byte* pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
-            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, pDigits, Number.DoubleNumberBufferLength);
+            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, stackalloc byte[Number.DoubleNumberBufferLength]);
 
             if (TryParseNormalAsFloatingPoint(source, ref number, out bytesConsumed, standardFormat))
             {
-                value = Number.NumberToDouble(ref number);
+                value = Number.NumberToFloat<double>(ref number);
                 return true;
             }
 

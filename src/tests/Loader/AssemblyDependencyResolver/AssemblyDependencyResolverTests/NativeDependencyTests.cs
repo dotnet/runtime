@@ -134,7 +134,7 @@ namespace AssemblyDependencyResolverTests
             ValidateNativeLibraryResolutions("{0}.ext.dll", "{0}.ext", OS.Windows);
         }
 
-        public void TestWindowsDoesntAddSuffixWhenExectubaleIsPresent()
+        public void TestWindowsDoesntAddSuffixWhenExecutableIsPresent()
         {
             ValidateNativeLibraryResolutions("{0}.dll.dll", "{0}.dll", OS.None);
             ValidateNativeLibraryResolutions("{0}.dll.exe", "{0}.dll", OS.None);

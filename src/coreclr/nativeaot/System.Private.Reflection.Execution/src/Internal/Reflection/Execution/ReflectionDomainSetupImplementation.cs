@@ -21,19 +21,9 @@ namespace Internal.Reflection.Execution
         // Obtain it lazily to avoid using RuntimeAugments.Callbacks before it is initialized
         public sealed override AssemblyBinder AssemblyBinder => AssemblyBinderImplementation.Instance;
 
-        public sealed override Exception CreateMissingMetadataException(TypeInfo pertainant)
-        {
-            return MissingMetadataExceptionCreator.Create(pertainant);
-        }
-
         public sealed override Exception CreateMissingMetadataException(Type pertainant)
         {
             return MissingMetadataExceptionCreator.Create(pertainant);
-        }
-
-        public sealed override Exception CreateMissingMetadataException(TypeInfo pertainant, string nestedTypeName)
-        {
-            return MissingMetadataExceptionCreator.Create(pertainant, nestedTypeName);
         }
 
         public sealed override Exception CreateNonInvokabilityException(MemberInfo pertainant)
@@ -45,24 +35,14 @@ namespace Internal.Reflection.Execution
                 resourceName = methodBase.IsConstructedGenericMethod ? SR.MakeGenericMethod_NoMetadata : SR.Object_NotInvokable;
                 if (methodBase is ConstructorInfo)
                 {
-                    TypeInfo declaringTypeInfo = methodBase.DeclaringType.GetTypeInfo();
-                    if (typeof(Delegate).GetTypeInfo().IsAssignableFrom(declaringTypeInfo))
+                    Type declaringType = methodBase.DeclaringType;
+                    if (declaringType.BaseType == typeof(MulticastDelegate))
                         throw new PlatformNotSupportedException(SR.PlatformNotSupported_CannotInvokeDelegateCtor);
                 }
             }
 
             string pertainantString = MissingMetadataExceptionCreator.ComputeUsefulPertainantIfPossible(pertainant);
-            return new MissingRuntimeArtifactException(SR.Format(resourceName, pertainantString ?? "?"));
-        }
-
-        public sealed override Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
-        {
-            return MissingMetadataExceptionCreator.CreateMissingArrayTypeException(elementType, isMultiDim, rank);
-        }
-
-        public sealed override Exception CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments)
-        {
-            return MissingMetadataExceptionCreator.CreateMissingConstructedGenericTypeException(genericTypeDefinition, genericTypeArguments);
+            return new NotSupportedException(SR.Format(resourceName, pertainantString ?? "?"));
         }
     }
 }

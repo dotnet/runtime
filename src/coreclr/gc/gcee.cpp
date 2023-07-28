@@ -62,6 +62,7 @@ void GCHeap::ReportGenerationBounds()
     {
         g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
         {
+            ASSERT((0 <= generation) && (generation <= poh_generation));
             uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
             uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
             FIRE_EVENT(GCGenerationRange, (uint8_t)generation, rangeStart, range, rangeReserved);
@@ -105,12 +106,10 @@ void GCHeap::UpdatePostGCCounters()
     size_t promoted_finalization_mem = 0;
     size_t total_num_pinned_objects = gc_heap::get_total_pinned_objects();
 
-#ifndef FEATURE_NATIVEAOT
     // if a max gen garbage collection was performed, resync the GC Handle counter;
     // if threads are currently suspended, we do not need to obtain a lock on each handle table
     if (condemned_gen == max_generation)
         total_num_gc_handles = HndCountAllHandles(!IsGCInProgress());
-#endif //FEATURE_NATIVEAOT
 
     // per generation calculation.
     for (int gen_index = 0; gen_index < total_generation_count; gen_index++)
@@ -159,7 +158,7 @@ void GCHeap::UpdatePostGCCounters()
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
 #ifdef SIMPLE_DPRINTF
-    dprintf (2, ("GC#%d: 0: %Id(%Id); 1: %Id(%Id); 2: %Id(%Id); 3: %Id(%Id)",
+    dprintf (2, ("GC#%zu: 0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu)",
         (size_t)pSettings->gc_index,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
@@ -452,6 +451,9 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
     heap_segment_next(seg) = 0;
     heap_segment_used(seg) = heap_segment_allocated(seg);
     heap_segment_plan_allocated(seg) = 0;
+#ifdef USE_REGIONS
+    heap_segment_gen_num(seg) = max_generation;
+#endif //USE_REGIONS
     seg->flags = heap_segment_flags_readonly;
 
 #ifdef MULTIPLE_HEAPS
@@ -505,6 +507,15 @@ bool GCHeap::IsInFrozenSegment(Object *object)
 #endif
 }
 
+void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
+{
+#ifdef FEATURE_BASICFREEZE
+    heap_segment* heap_seg = reinterpret_cast<heap_segment*>(seg);
+    heap_segment_committed(heap_seg) = committed;
+    heap_segment_allocated(heap_seg) = allocated;
+#endif // FEATURE_BASICFREEZE
+}
+
 bool GCHeap::RuntimeStructuresValid()
 {
     return GCScan::GetGcRuntimeStructuresValid();
@@ -530,6 +541,23 @@ void GCHeap::ControlEvents(GCEventKeyword keyword, GCEventLevel level)
 void GCHeap::ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level)
 {
     GCEventStatus::Set(GCEventProvider_Private, keyword, level);
+}
+
+uint64_t GCHeap::GetGenerationBudget(int generation)
+{
+    uint64_t budget = 0;
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [i];
+#else
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif
+        dynamic_data* dd = hp->dynamic_data_of (generation);
+        budget += dd_desired_allocation (dd);
+    }
+    return budget;
 }
 
 #endif // !DACCESS_COMPILE

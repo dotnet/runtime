@@ -58,7 +58,7 @@ HRESULT GetResourceRvaFromResourceSectionRvaByName(ICorDebugDataTarget* pDataTar
 //   pNextLevelRVA - out - The RVA for the next level tree directory or the RVA of the resource entry
 //
 // Returns:
-//   S_OK if succesful or an appropriate failing HRESULT
+//   S_OK if successful or an appropriate failing HRESULT
 HRESULT GetNextLevelResourceEntryRVA(ICorDebugDataTarget* pDataTarget,
     DWORD id,
     ULONG64 moduleBaseAddress,
@@ -77,7 +77,7 @@ HRESULT GetNextLevelResourceEntryRVA(ICorDebugDataTarget* pDataTarget,
 //   pNextLevelRVA - out - The RVA for the next level tree directory or the RVA of the resource entry
 //
 // Returns:
-//   S_OK if succesful or an appropriate failing HRESULT
+//   S_OK if successful or an appropriate failing HRESULT
 HRESULT GetNextLevelResourceEntryRVAByName(ICorDebugDataTarget* pDataTarget,
     LPCWSTR pwzName,
     ULONG64 moduleBaseAddress,

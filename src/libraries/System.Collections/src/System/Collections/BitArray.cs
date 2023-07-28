@@ -42,10 +42,7 @@ namespace System.Collections
         =========================================================================*/
         public BitArray(int length, bool defaultValue)
         {
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), length, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             m_array = new int[GetInt32ArrayLengthFromBitLength(length)];
             m_length = length;
@@ -568,10 +565,7 @@ namespace System.Collections
         {
             if (count <= 0)
             {
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
 
                 _version++;
                 return this;
@@ -635,10 +629,7 @@ namespace System.Collections
         {
             if (count <= 0)
             {
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
 
                 _version++;
                 return this;
@@ -690,10 +681,7 @@ namespace System.Collections
             }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 int newints = GetInt32ArrayLengthFromBitLength(value);
                 if (newints > m_array.Length || newints + _ShrinkThreshold < m_array.Length)
@@ -725,8 +713,7 @@ namespace System.Collections
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -921,6 +908,66 @@ namespace System.Collections
             {
                 throw new ArgumentException(SR.Arg_BitArrayTypeUnsupported, nameof(array));
             }
+        }
+
+        /// <summary>
+        /// Determines whether all bits in the <see cref="BitArray"/> are set to <c>true</c>.
+        /// </summary>
+        /// <returns><c>true</c> if every bit in the <see cref="BitArray"/> is set to <c>true</c>, or if <see cref="BitArray"/> is empty; otherwise, <c>false</c>.</returns>
+        public bool HasAllSet()
+        {
+            Div32Rem(m_length, out int extraBits);
+            int intCount = GetInt32ArrayLengthFromBitLength(m_length);
+            if (extraBits != 0)
+            {
+                intCount--;
+            }
+
+            const int AllSetBits = -1; // 0xFF_FF_FF_FF
+            if (m_array.AsSpan(0, intCount).ContainsAnyExcept(AllSetBits))
+            {
+                return false;
+            }
+
+            if (extraBits == 0)
+            {
+                return true;
+            }
+
+            Debug.Assert(GetInt32ArrayLengthFromBitLength(m_length) > 0);
+            Debug.Assert(intCount == GetInt32ArrayLengthFromBitLength(m_length) - 1);
+
+            int mask = (1 << extraBits) - 1;
+            return (m_array[intCount] & mask) == mask;
+        }
+
+        /// <summary>
+        /// Determines whether any bit in the <see cref="BitArray"/> is set to <c>true</c>.
+        /// </summary>
+        /// <returns><c>true</c> if <see cref="BitArray"/> is not empty and at least one of its bit is set to <c>true</c>; otherwise, <c>false</c>.</returns>
+        public bool HasAnySet()
+        {
+            Div32Rem(m_length, out int extraBits);
+            int intCount = GetInt32ArrayLengthFromBitLength(m_length);
+            if (extraBits != 0)
+            {
+                intCount--;
+            }
+
+            if (m_array.AsSpan(0, intCount).ContainsAnyExcept(0))
+            {
+                return true;
+            }
+
+            if (extraBits == 0)
+            {
+                return false;
+            }
+
+            Debug.Assert(GetInt32ArrayLengthFromBitLength(m_length) > 0);
+            Debug.Assert(intCount == GetInt32ArrayLengthFromBitLength(m_length) - 1);
+
+            return (m_array[intCount] & (1 << extraBits) - 1) != 0;
         }
 
         public int Count => m_length;

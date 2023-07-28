@@ -38,10 +38,6 @@ namespace CorUnix
         CRITICAL_SECTION *pcs
         );
 
-    bool InternalTryEnterCriticalSection(
-        CPalThread * pThread,
-        PCRITICAL_SECTION pCriticalSection);
-
 #ifdef _DEBUG
     void PALCS_ReportStatisticalData(void);
     void PALCS_DumpCSList();

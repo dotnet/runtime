@@ -40,7 +40,8 @@ namespace R2RTest
         protected override ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
         {
             ProcessParameters processParameters = base.ExecutionProcess(modules, folders, noEtw);
-            processParameters.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "0";
+            processParameters.EnvironmentOverrides["DOTNET_ReadyToRun"] = "0";
+            processParameters.EnvironmentOverrides["COMPlus_ReadyToRun"] = "0";
             return processParameters;
         }
 

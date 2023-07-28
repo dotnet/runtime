@@ -85,10 +85,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     finally
                     {
-                        if (importEngine != null)
-                        {
-                            importEngine.Dispose();
-                        }
+                        importEngine?.Dispose();
 
                         if (disposeLock)
                         {
@@ -170,10 +167,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
 
                     // if we have created an engine and didn't set it because of a race condition, we need to dispose of it
-                    if (importEngine != null)
-                    {
-                        importEngine.Dispose();
-                    }
+                    importEngine?.Dispose();
                 }
 
                 return _importEngine;
@@ -342,10 +336,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (parts.Remove(part))
                 {
-                    if (partsToRemove == null)
-                    {
-                        partsToRemove = new List<ComposablePart>();
-                    }
+                    partsToRemove ??= new List<ComposablePart>();
                     partsToRemove.Add(part);
                 }
             }

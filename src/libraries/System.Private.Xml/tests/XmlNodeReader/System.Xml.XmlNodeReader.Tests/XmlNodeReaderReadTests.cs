@@ -4,7 +4,7 @@
 using System.Text;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlNodeReaderTests
 {
     //Unit testing class for all reading related methods
     public class XmlNodeReaderReadTests

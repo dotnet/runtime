@@ -22,7 +22,6 @@ namespace System.Security.Cryptography
 
         private static ILiteSymmetricCipher CreateLiteCipher(
             CipherMode cipherMode,
-            PaddingMode paddingMode,
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             int blockSize,

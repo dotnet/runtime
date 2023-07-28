@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -80,7 +83,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal static void Append(ref ValueStringBuilder outputBuffer, int Number)
+        internal static void Append<TChar>(ref ValueListBuilder<TChar> outputBuffer, int Number) where TChar : unmanaged, IUtfChar<TChar>
         {
             int outputBufferStartingLength = outputBuffer.Length;
 
@@ -113,13 +116,13 @@ namespace System.Globalization
                 // If the number is greater than 400, use the multiples of 400.
                 for (int i = 0; i < (Hundreds / 4); i++)
                 {
-                    outputBuffer.Append('\x05ea');
+                    DateTimeFormat.AppendChar(ref outputBuffer, '\x05ea');
                 }
 
                 int remains = Hundreds % 4;
                 if (remains > 0)
                 {
-                    outputBuffer.Append((char)((int)'\x05e6' + remains));
+                    DateTimeFormat.AppendChar(ref outputBuffer, (char)('\x05e6' + remains));
                 }
             }
 
@@ -188,24 +191,35 @@ namespace System.Globalization
 
             if (cTens != '\x0')
             {
-                outputBuffer.Append(cTens);
+                DateTimeFormat.AppendChar(ref outputBuffer, cTens);
             }
 
             if (cUnits != '\x0')
             {
-                outputBuffer.Append(cUnits);
+                DateTimeFormat.AppendChar(ref outputBuffer, cUnits);
             }
 
             if (outputBuffer.Length - outputBufferStartingLength > 1)
             {
-                char last = outputBuffer[outputBuffer.Length - 1];
-                outputBuffer.Length--;
-                outputBuffer.Append('"');
-                outputBuffer.Append(last);
+                if (typeof(TChar) == typeof(char))
+                {
+                    TChar last = outputBuffer[outputBuffer.Length - 1];
+                    outputBuffer.Length--;
+                    outputBuffer.Append(TChar.CastFrom('"'));
+                    outputBuffer.Append(last);
+                }
+                else
+                {
+                    Debug.Assert(typeof(TChar) == typeof(byte));
+                    Rune.DecodeLastFromUtf8(MemoryMarshal.AsBytes(outputBuffer.AsSpan()), out Rune value, out int bytesConsumed);
+                    outputBuffer.Length -= bytesConsumed;
+                    outputBuffer.Append(TChar.CastFrom('"'));
+                    DateTimeFormat.AppendChar(ref outputBuffer, (char)value.Value);
+                }
             }
             else
             {
-                outputBuffer.Append('\'');
+                DateTimeFormat.AppendChar(ref outputBuffer, '\'');
             }
         }
 
@@ -237,10 +251,11 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        private struct HebrewValue
+        private readonly struct HebrewValue
         {
-            internal HebrewToken token;
-            internal short value;
+            internal readonly HebrewToken token;
+            internal readonly short value;
+
             internal HebrewValue(HebrewToken token, short value)
             {
                 this.token = token;
@@ -317,9 +332,9 @@ namespace System.Globalization
         }
 
         //
-        // The state machine for Hebrew number pasing.
+        // The state machine for Hebrew number passing.
         //
-        private static readonly HS[] s_numberPasingState =
+        private static readonly HS[] s_numberPassingState =
         {
             // 400            300/200         100             90~10           8~1      6,       7,       9,          '           "
             /* 0 */
@@ -358,14 +373,14 @@ namespace System.Globalization
                              HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS.END,  HS.END,  HS._err,    HS._err,    HS._err
         };
 
-        // Count of valid HebrewToken, column count in the NumberPasingState array
+        // Count of valid HebrewToken, column count in the NumberPassingState array
         private const int HebrewTokenCount = 10;
 
         ////////////////////////////////////////////////////////////////////////
         //
         //  Actions:
         //      Parse the Hebrew number by passing one character at a time.
-        //      The state between characters are maintained at HebrewNumberPasingContext.
+        //      The state between characters are maintained at HebrewNumberPassingContext.
         //  Returns:
         //      Return a enum of HebrewNumberParsingState.
         //          NotHebrewDigit: The specified ch is not a valid Hebrew digit.
@@ -381,7 +396,7 @@ namespace System.Globalization
 
         internal static HebrewNumberParsingState ParseByChar(char ch, ref HebrewNumberParsingContext context)
         {
-            Debug.Assert(s_numberPasingState.Length == HebrewTokenCount * ((int)HS.S9_DQ + 1));
+            Debug.Assert(s_numberPassingState.Length == HebrewTokenCount * ((int)HS.S9_DQ + 1));
 
             HebrewToken token;
             if (ch == '\'')
@@ -410,7 +425,7 @@ namespace System.Globalization
                     return HebrewNumberParsingState.NotHebrewDigit;
                 }
             }
-            context.state = s_numberPasingState[(int)context.state * (int)HebrewTokenCount + (int)token];
+            context.state = s_numberPassingState[(int)context.state * (int)HebrewTokenCount + (int)token];
             if (context.state == HS._err)
             {
                 // Invalid Hebrew state.  This indicates an incorrect Hebrew number.

@@ -15,7 +15,6 @@ namespace System.Security.Cryptography
         {
             _cipherLite = new OpenSslCipherLite(
                 algorithm,
-                cipherMode,
                 blockSizeInBytes,
                 paddingSizeInBytes,
                 key,

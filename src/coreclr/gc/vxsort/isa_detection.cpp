@@ -19,28 +19,6 @@ enum class SupportedISA
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 
-static DWORD64 GetEnabledXStateFeaturesHelper()
-{
-    // On Windows we have an api(GetEnabledXStateFeatures) to check if AVX is supported
-    typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
-    PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
-
-    HMODULE hMod = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (hMod == NULL)
-        return 0;
-
-    pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
-
-    if (pfnGetEnabledXStateFeatures == NULL)
-    {
-        return 0;
-    }
-
-    DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
-
-    return FeatureMask;
-}
-
 SupportedISA DetermineSupportedISA()
 {
     // register definitions to make the following code more readable
@@ -77,11 +55,11 @@ SupportedISA DetermineSupportedISA()
     // get xcr0 register
     DWORD64 xcr0 = _xgetbv(0);
 
-    // get OS XState info 
-    DWORD64 FeatureMask = GetEnabledXStateFeaturesHelper();
+    // get OS XState info
+    DWORD64 FeatureMask = GetEnabledXStateFeatures();
 
     // get processor extended feature flag info
-    __cpuid(reg, 7);
+    __cpuidex(reg, 7, 0);
 
     // check if all of AVX2, AVX512F and AVX512DQ are supported by both processor and OS
     if ((reg[EBX] & (AVX2 | AVX512F | AVX512DQ)) == (AVX2 | AVX512F | AVX512DQ) &&

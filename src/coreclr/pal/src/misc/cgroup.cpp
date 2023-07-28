@@ -138,7 +138,6 @@ private:
             case TMPFS_MAGIC: return 1;
             case CGROUP2_SUPER_MAGIC: return 2;
             default:
-                _ASSERTE(!"Unexpected file system type for /sys/fs/cgroup");
                 return 0;
         }
 #endif
@@ -471,7 +470,7 @@ private:
 
     static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     {
-        return ::ReadMemoryValueFromFile(filename, val);
+        return ::PAL_ReadMemoryValueFromFile(filename, val);
     }
 
     static bool GetCGroup1CpuLimit(UINT *val)

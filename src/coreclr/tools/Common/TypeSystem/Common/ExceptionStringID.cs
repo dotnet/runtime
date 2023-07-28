@@ -16,6 +16,10 @@ namespace Internal.TypeSystem
         ClassLoadValueClassTooLarge,
         ClassLoadRankTooLarge,
 
+        ClassLoadInlineArrayFieldCount,
+        ClassLoadInlineArrayLength,
+        ClassLoadInlineArrayExplicit,
+
         // MissingMethodException
         MissingMethod,
 
@@ -43,5 +47,8 @@ namespace Internal.TypeSystem
 
         // MarshalDirectiveException
         MarshalDirectiveGeneric,
+
+        // AmbiguousMatchException
+        AmbiguousMatchUnsafeAccessor,
     }
 }

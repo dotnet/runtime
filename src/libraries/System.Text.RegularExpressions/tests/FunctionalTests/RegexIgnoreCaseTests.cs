@@ -77,8 +77,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Characters_With_Common_Lowercase_Match_Data))]
         public async Task Characters_With_Common_Lowercase_Match(RegexEngine engine, string pattern, string input, string culture)
         {
-            using var _ = new ThreadCultureChange(culture);
-            Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.IgnoreCase);
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.IgnoreCase, CultureInfo.GetCultureInfo(culture));
             Assert.True(regex.IsMatch(input));
         }
 
@@ -132,7 +131,7 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(regex.IsMatch("iI"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser))]
         // This test creates a source generated engine for each of the ~870 cultures and ensures the result compiles. This test alone takes around 30
         // seconds on a fast machine, so marking as OuterLoop.
         [OuterLoop]

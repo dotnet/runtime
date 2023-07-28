@@ -13,7 +13,7 @@ class MightyExceptor
 {
 	static int Result = 100;
 
-	public static int Main(String[] Args)
+	public static int Main()
 	{
 		try
 		{

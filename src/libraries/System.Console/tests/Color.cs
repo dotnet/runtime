@@ -32,7 +32,7 @@ public class Color
         // Changing color on Windows doesn't have effect in some testing environments
         // when there is no associated console, such as when run under a profiler like
         // our code coverage tools, so we don't assert that the change took place and
-        // simple ensure that getting/setting doesn't throw.
+        // simply ensure that getting/setting doesn't throw.
     }
 
     [Fact]
@@ -72,9 +72,10 @@ public class Color
         });
     }
 
-    public static bool TermIsSet => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TERM"));
+    public static bool TermIsSetAndRemoteExecutorIsSupported
+        => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TERM")) && RemoteExecutor.IsSupported;
 
-    [ConditionalTheory(nameof(TermIsSet))]
+    [ConditionalTheory(nameof(TermIsSetAndRemoteExecutorIsSupported))]
     [PlatformSpecific(TestPlatforms.AnyUnix)]
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     [InlineData(null)]

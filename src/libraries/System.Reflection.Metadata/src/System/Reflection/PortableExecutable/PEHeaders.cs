@@ -104,7 +104,7 @@ namespace System.Reflection.PortableExecutable
             if (!isCoffOnly)
             {
                 int offset;
-                if (TryCalculateCorHeaderOffset(actualSize, out offset))
+                if (TryCalculateCorHeaderOffset(out offset))
                 {
                     _corHeaderStartOffset = offset;
                     reader.Seek(offset);
@@ -229,7 +229,7 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
-        private bool TryCalculateCorHeaderOffset(long peStreamSize, out int startOffset)
+        private bool TryCalculateCorHeaderOffset(out int startOffset)
         {
             if (!TryGetDirectoryOffset(_peHeader!.CorHeaderTableDirectory, out startOffset, canCrossSectionBoundary: false))
             {

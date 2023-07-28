@@ -17,7 +17,7 @@ public class NativeLibraryTests : IDisposable
     public NativeLibraryTests()
     {
         assembly = System.Reflection.Assembly.GetExecutingAssembly();
-        testBinDir = Path.GetDirectoryName(assembly.Location);
+        testBinDir = NativeLibraryToLoad.GetDirectory();
         libFullPath = NativeLibraryToLoad.GetFullPath();
     }
 
@@ -107,7 +107,7 @@ public class NativeLibraryTests : IDisposable
     [PlatformSpecific(TestPlatforms.Windows)]
     public void LoadLibraryFullPathWithoutNativePrefixOrSuffix_WithAssembly_Success()
     {
-        // DllImport doesn't add a prefix if the name is preceeded by a path specification.
+        // DllImport doesn't add a prefix if the name is preceded by a path specification.
         // Windows only needs a suffix, so adding only the suffix is successful
         string libName = Path.Combine(testBinDir, NativeLibraryToLoad.Name);
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, null));
@@ -118,7 +118,7 @@ public class NativeLibraryTests : IDisposable
     [PlatformSpecific(~TestPlatforms.Windows)]
     public void LoadLibraryFullPathWithoutNativePrefixOrSuffix_WithAssembly_Failure()
     {
-        // DllImport doesn't add a prefix if the name is preceeded by a path specification.
+        // DllImport doesn't add a prefix if the name is preceded by a path specification.
         // Linux and Mac need both prefix and suffix
         string libName = Path.Combine(testBinDir, NativeLibraryToLoad.Name);
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, null), TestResult.DllNotFound);
@@ -133,11 +133,19 @@ public class NativeLibraryTests : IDisposable
     public void LoadSystemLibrary_WithSearchPath()
     {
         string libName = "url.dll";
-        // Calls on a valid library from System32 directory
+        // Library should be found in the system directory
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.System32));
         EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.System32));
 
-        // Calls on a valid library from application directory
+        // Library should not be found in the assembly directory and should be found in the system directory
+        EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32));
+        EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32));
+
+        // Library should not be found in the assembly directory, but should fall back to the default OS search which includes CWD on Windows
+        EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory));
+        EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory));
+
+        // Library should not be found in application directory
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.ApplicationDirectory), TestResult.DllNotFound);
         EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.ApplicationDirectory), TestResult.ReturnFailure);
     }
@@ -163,6 +171,40 @@ public class NativeLibraryTests : IDisposable
         string libName = Path.Combine(testBinDir, Path.Combine("lib", NativeLibraryToLoad.Name));
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.DllNotFound);
         EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.ReturnFailure);
+    }
+
+    [Fact]
+    public void LoadLibrary_AssemblyDirectory()
+    {
+        string suffix = "-in-subdirectory";
+        string libName = $"{NativeLibraryToLoad.Name}{suffix}";
+
+        string subdirectory = Path.Combine(testBinDir, "subdirectory");
+
+        if (!TestLibrary.Utilities.IsNativeAot && !TestLibrary.PlatformDetection.IsMonoLLVMFULLAOT)
+        {
+            // Library should be found in the assembly directory
+            Assembly assemblyInSubdirectory = Assembly.LoadFile(Path.Combine(subdirectory, $"{assembly.GetName().Name}{suffix}.dll"));
+            EXPECT(LoadLibrary_WithAssembly(libName, assemblyInSubdirectory, DllImportSearchPath.AssemblyDirectory));
+            EXPECT(TryLoadLibrary_WithAssembly(libName, assemblyInSubdirectory, DllImportSearchPath.AssemblyDirectory));
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            string currentDirectory = Environment.CurrentDirectory;
+            try
+            {
+                Environment.CurrentDirectory = subdirectory;
+
+                // Library should not be found in the assembly directory, but should fall back to the default OS search which includes CWD on Windows
+                EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory));
+                EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory));
+            }
+            finally
+            {
+                Environment.CurrentDirectory = currentDirectory;
+            }
+        }
     }
 
     [Fact]

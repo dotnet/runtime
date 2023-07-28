@@ -33,6 +33,8 @@ namespace System.Data.OleDb
             }
         }
 
+        private static readonly char[] s_trimChars = new char[] { '@', ' ', ':' };
+
         private void OleDbRowUpdatingHandler(object sender, OleDbRowUpdatingEventArgs ruevent)
         {
             RowUpdatingHandler(ruevent);
@@ -235,7 +237,7 @@ namespace System.Data.OleDb
                         if ((null != parameterName) && !dataRow.IsNull(parameterName, DataRowVersion.Default))
                         {
                             // $CONSIDER - not trimming the @ from the beginning but to left the designer do that
-                            parameter.ParameterName = Convert.ToString(dataRow[parameterName, DataRowVersion.Default], CultureInfo.InvariantCulture)!.TrimStart(new char[] { '@', ' ', ':' });
+                            parameter.ParameterName = Convert.ToString(dataRow[parameterName, DataRowVersion.Default], CultureInfo.InvariantCulture)!.TrimStart(s_trimChars);
                         }
                         if ((null != parameterDirection) && !dataRow.IsNull(parameterDirection, DataRowVersion.Default))
                         {
@@ -360,11 +362,11 @@ namespace System.Data.OleDb
         {
             ADP.CheckArgumentNull(unquotedIdentifier, "unquotedIdentifier");
 
-            // if the user has specificed a prefix use the user specified  prefix and suffix
+            // if the user has specified a prefix use the user specified  prefix and suffix
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;
-            if (ADP.IsEmpty(quotePrefix) == true)
+            if (ADP.IsEmpty(quotePrefix))
             {
                 if (connection == null)
                 {
@@ -379,10 +381,7 @@ namespace System.Data.OleDb
                 connection.GetLiteralQuotes(ADP.QuoteIdentifier, out quotePrefix, out quoteSuffix);
                 // if the quote suffix is null assume that it is the same as the prefix (See OLEDB spec
                 // IDBInfo::GetLiteralInfo DBLITERAL_QUOTE_SUFFIX.)
-                if (quoteSuffix == null)
-                {
-                    quoteSuffix = quotePrefix;
-                }
+                quoteSuffix ??= quotePrefix;
             }
 
             return ADP.BuildQuotedString(quotePrefix, quoteSuffix, unquotedIdentifier);
@@ -410,11 +409,11 @@ namespace System.Data.OleDb
         {
             ADP.CheckArgumentNull(quotedIdentifier, "quotedIdentifier");
 
-            // if the user has specificed a prefix use the user specified  prefix and suffix
+            // if the user has specified a prefix use the user specified  prefix and suffix
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;
-            if (ADP.IsEmpty(quotePrefix) == true)
+            if (ADP.IsEmpty(quotePrefix))
             {
                 if (connection == null)
                 {
@@ -429,10 +428,7 @@ namespace System.Data.OleDb
                 connection.GetLiteralQuotes(ADP.UnquoteIdentifier, out quotePrefix, out quoteSuffix);
                 // if the quote suffix is null assume that it is the same as the prefix (See OLEDB spec
                 // IDBInfo::GetLiteralInfo DBLITERAL_QUOTE_SUFFIX.)
-                if (quoteSuffix == null)
-                {
-                    quoteSuffix = quotePrefix;
-                }
+                quoteSuffix ??= quotePrefix;
             }
 
             string? unquotedIdentifier;

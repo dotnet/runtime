@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -41,7 +42,7 @@ namespace System.Threading.ThreadPools.Tests
         // Tests concurrent calls to ThreadPool.SetMinThreads. Invoked from the static constructor.
         private static void ConcurrentInitializeTest()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke((usePortableThreadPool) =>
             {
                 int processorCount = Environment.ProcessorCount;
                 var countdownEvent = new CountdownEvent(processorCount);
@@ -50,7 +51,10 @@ namespace System.Threading.ThreadPools.Tests
                     {
                         countdownEvent.Signal();
                         countdownEvent.Wait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
-                        Assert.True(ThreadPool.SetMinThreads(processorCount, processorCount));
+                        if (Boolean.Parse(usePortableThreadPool))
+                        {
+                            Assert.True(ThreadPool.SetMinThreads(processorCount, processorCount));
+                        }
                     };
 
                 var waitForThreadArray = new Action[processorCount];
@@ -65,7 +69,7 @@ namespace System.Threading.ThreadPools.Tests
                 {
                     waitForThread();
                 }
-            }).Dispose();
+            }, UsePortableThreadPool.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -96,7 +100,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(c <= maxc);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         [ActiveIssue("https://github.com/mono/mono/issues/15164", TestRuntimes.Mono)]
         public static void SetMinMaxThreadsTest()
         {
@@ -160,7 +164,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
             RemoteExecutor.Invoke(() =>
@@ -221,7 +225,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(expectedMaxc, maxc);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SetMinThreadsTo0Test()
         {
             RemoteExecutor.Invoke(() =>
@@ -536,7 +540,8 @@ namespace System.Threading.ThreadPools.Tests
                     Assert.True(totalWorkCountToQueue >= 1);
                     waitForWorkStart = true;
                     scheduleWork();
-                    Assert.True(ThreadPool.ThreadCount >= totalWorkCountToQueue);
+                    int threadCountLowerBound = UsePortableThreadPool ? totalWorkCountToQueue : 1;
+                    Assert.True(ThreadPool.ThreadCount >= threadCountLowerBound);
 
                     int runningWorkItemCount = queuedWorkCount;
 
@@ -598,7 +603,6 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/43754", TestPlatforms.Android)]
         public static void ThreadPoolCanPickUpOneOrMoreWorkItemsWhenThreadIsAvailable()
         {
             int processorCount = Environment.ProcessorCount;
@@ -628,7 +632,9 @@ namespace System.Threading.ThreadPools.Tests
                 ThreadPool.QueueUserWorkItem(blockingWorkItem);
             }
 
-            allBlockingWorkItemsStarted.CheckedWait();
+            if (processorCount > 1)
+                allBlockingWorkItemsStarted.CheckedWait();
+
             for (int i = 0; i < processorCount; ++i)
             {
                 ThreadPool.QueueUserWorkItem(testWorkItem);
@@ -699,7 +705,7 @@ namespace System.Threading.ThreadPools.Tests
             done.CheckedWait();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void WorkerThreadStateResetTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -783,7 +789,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SettingMinWorkerThreadsWillCreateThreadsUpToMinimum()
         {
             RemoteExecutor.Invoke(() =>
@@ -1063,7 +1069,106 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
+        private class ClrMinMaxThreadsEventListener : EventListener
+        {
+            private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
+            private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+            private const int ThreadPoolMinMaxThreadsEventId = 59;
+
+            private readonly int _expectedEventCount;
+
+            public List<object[]> Payloads { get; } = new List<object[]>();
+            public AutoResetEvent AllEventsReceived { get; } = new AutoResetEvent(false);
+            public ClrMinMaxThreadsEventListener(int expectedEventCount) => _expectedEventCount = expectedEventCount;
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == ClrProviderName)
+                {
+                    EnableEvents(eventSource, EventLevel.Informational, ThreadingKeyword);
+                }
+
+                base.OnEventSourceCreated(eventSource);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (eventData.EventId == ThreadPoolMinMaxThreadsEventId)
+                {
+                    var payloads = new object[eventData.Payload.Count];
+                    eventData.Payload?.CopyTo(payloads, 0);
+                    Payloads.Add(payloads);
+                    if (Payloads.Count == _expectedEventCount)
+                    {
+                        AllEventsReceived.Set();
+                    }
+
+                }
+
+                base.OnEventWritten(eventData);
+            }
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        public void ThreadPoolMinMaxThreadsEventTest()
+        {
+            // The ThreadPoolMinMaxThreads event is fired when the ThreadPool is created
+            // or when SetMinThreads/SetMaxThreads are called
+            // Each time the event is fired, it is verified that it recorded the correct values
+            RemoteExecutor.Invoke(() =>
+            {
+                const int ExpectedEventCount = 3;
+
+                using var el = new ClrMinMaxThreadsEventListener(ExpectedEventCount);
+
+                int newMinWorkerThreads = 3;
+                int newMinIOCompletionThreads = 4;
+
+                int newMaxWorkerThreads = 10;
+                int newMaxIOCompletionThreads = 11;
+
+                ThreadPool.SetMinThreads(newMinWorkerThreads, newMinIOCompletionThreads);
+                ThreadPool.SetMaxThreads(newMaxWorkerThreads, newMaxIOCompletionThreads);
+
+                el.AllEventsReceived.CheckedWait();
+
+                Assert.Equal(ExpectedEventCount, el.Payloads.Count);
+
+                // Basic validation for all events
+                foreach (object[] payload in el.Payloads)
+                {
+                    Assert.Equal(5, payload.Length);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        Assert.IsType<ushort>(payload[i]);
+                        if (i < 4)
+                        {
+                            Assert.NotEqual((ushort)0, (ushort)payload[i]);
+                        }
+                    }
+                }
+
+                // Based on change from SetMinThreads:
+                Assert.Equal(newMinWorkerThreads, (ushort)el.Payloads[1][0]);
+                Assert.Equal(newMinIOCompletionThreads, (ushort)el.Payloads[1][2]);
+
+                // Based on change from SetMaxThreads:
+                Assert.Equal(newMinWorkerThreads, (ushort)el.Payloads[2][0]);
+                Assert.Equal(newMinIOCompletionThreads, (ushort)el.Payloads[2][2]);
+                Assert.Equal(newMaxWorkerThreads, (ushort)el.Payloads[2][1]);
+                Assert.Equal(newMaxIOCompletionThreads, (ushort)el.Payloads[2][3]);
+            }).Dispose();
+        }
+
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
+
+        private static bool GetUseWindowsThreadPool()
+        {
+            AppContext.TryGetSwitch("System.Threading.ThreadPool.UseWindowsThreadPool", out bool useWindowsThreadPool);
+            return useWindowsThreadPool;
+        }
+
+        private static bool UsePortableThreadPool { get; } = !GetUseWindowsThreadPool();
     }
 }

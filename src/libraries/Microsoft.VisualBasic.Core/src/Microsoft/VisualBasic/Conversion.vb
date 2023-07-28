@@ -338,7 +338,7 @@ RangeCheck:
                         If (LongValue > 0) Then
                             Return Hex(LongValue)
                         Else
-                            'For VB6 compatability, format as Int32 value
+                            'For VB6 compatibility, format as Int32 value
                             ' unless it overflows into an Int64
                             If (LongValue >= System.Int32.MinValue) Then
                                 Return Hex(CInt(LongValue))
@@ -449,7 +449,7 @@ RangeCheck:
                         If (LongValue > 0) Then
                             Return Oct(LongValue)
                         Else
-                            'For VB6 compatability, format as Int32 value
+                            'For VB6 compatibility, format as Int32 value
                             ' unless it overflows into an Int64
                             If (LongValue >= System.Int32.MinValue) Then
                                 Return Oct(CInt(LongValue))
@@ -991,7 +991,7 @@ NextOctCharacter:
                     vtSuffix = VariantType.Integer
                     cDecMax = 0
                 Case "@"c
-                    'Convert currency to Decimal            
+                    'Convert currency to Decimal
                     'vtSuffix = VariantType.Currency
                     vtSuffix = VariantType.Decimal
                     cDecMax = 4
@@ -1059,7 +1059,7 @@ NextOctCharacter:
 
         Private Function ShiftVTBits(ByVal vt As Integer) As Integer
             Select Case vt
-                'Case VariantType.Empty     
+                'Case VariantType.Empty
                 'Case VariantType.Null
                 Case VariantType.Short
                     Return VTBIT_I2

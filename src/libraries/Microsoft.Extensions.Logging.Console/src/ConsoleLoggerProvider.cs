@@ -16,14 +16,14 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     [UnsupportedOSPlatform("browser")]
     [ProviderAlias("Console")]
-    public class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
+    public partial class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
         private readonly IOptionsMonitor<ConsoleLoggerOptions> _options;
         private readonly ConcurrentDictionary<string, ConsoleLogger> _loggers;
         private ConcurrentDictionary<string, ConsoleFormatter> _formatters;
         private readonly ConsoleLoggerProcessor _messageQueue;
 
-        private IDisposable? _optionsReloadToken;
+        private readonly IDisposable? _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
 
         /// <summary>
@@ -43,10 +43,6 @@ namespace Microsoft.Extensions.Logging.Console
             _options = options;
             _loggers = new ConcurrentDictionary<string, ConsoleLogger>();
             SetFormatters(formatters);
-
-            ReloadLoggerOptions(options.CurrentValue);
-            _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
-
             IConsole? console;
             IConsole? errorConsole;
             if (DoesConsoleSupportAnsi())
@@ -59,13 +55,33 @@ namespace Microsoft.Extensions.Logging.Console
                 console = new AnsiParsingLogConsole();
                 errorConsole = new AnsiParsingLogConsole(stdErr: true);
             }
-            _messageQueue = new ConsoleLoggerProcessor(console, errorConsole);
+            _messageQueue = new ConsoleLoggerProcessor(
+                console,
+                errorConsole,
+                options.CurrentValue.QueueFullMode,
+                options.CurrentValue.MaxQueueLength);
+
+            ReloadLoggerOptions(options.CurrentValue);
+            _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
         }
 
         [UnsupportedOSPlatformGuard("windows")]
         private static bool DoesConsoleSupportAnsi()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
+            if (envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)))
+            {
+                // ANSI color support forcibly enabled via environment variable. This logic matches the behaviour
+                // found in System.ConsoleUtils.EmitAnsiColorCodes.
+                return true;
+            }
+            if (
+#if NETFRAMEWORK
+                Environment.OSVersion.Platform != PlatformID.Win32NT
+#else
+                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+#endif
+                )
             {
                 return true;
             }
@@ -123,6 +139,9 @@ namespace Microsoft.Extensions.Logging.Console
 #pragma warning restore CS0618
             }
 
+            _messageQueue.FullMode = options.QueueFullMode;
+            _messageQueue.MaxQueueLength = options.MaxQueueLength;
+
             foreach (KeyValuePair<string, ConsoleLogger> logger in _loggers)
             {
                 logger.Value.Options = options;
@@ -162,7 +181,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 defaultFormatter.FormatterOptions = new SimpleConsoleFormatterOptions()
                 {
-                    ColorBehavior = deprecatedFromOptions.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled,
+                    ColorBehavior = deprecatedFromOptions.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Default,
                     IncludeScopes = deprecatedFromOptions.IncludeScopes,
                     TimestampFormat = deprecatedFromOptions.TimestampFormat,
                     UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp,

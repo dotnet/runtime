@@ -716,7 +716,7 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
-        /// Given a DWORD which represents a buffer of 2 packed UTF-16 values in machine endianess,
+        /// Given a DWORD which represents a buffer of 2 packed UTF-16 values in machine endianness,
         /// converts those scalar values to their 3-byte UTF-8 representation and writes the
         /// resulting 6 bytes to the destination buffer.
         /// </summary>
@@ -733,8 +733,8 @@ namespace System.Text.Unicode
 
                 uint tempA = ((value << 2) & 0x3F00u) | ((value & 0x3Fu) << 16); // = [ 00000000 00xxxxxx 00yyyyyy 00000000 ]
                 uint tempB = ((value >> 4) & 0x0F00_0000u) | ((value >> 12) & 0x0Fu); // = [ 0000ZZZZ 00000000 00000000 0000zzzz ]
-                Unsafe.WriteUnaligned<uint>(ref outputBuffer, tempA + tempB + 0xE080_80E0u); // = [ 1110ZZZZ 10xxxxxx 10yyyyyy 1110zzzz ]
-                Unsafe.WriteUnaligned<ushort>(ref Unsafe.Add(ref outputBuffer, 4), (ushort)(((value >> 22) & 0x3Fu) + ((value >> 8) & 0x3F00u) + 0x8080u)); // = [ 10XXXXXX 10YYYYYY ]
+                Unsafe.WriteUnaligned(ref outputBuffer, tempA + tempB + 0xE080_80E0u); // = [ 1110ZZZZ 10xxxxxx 10yyyyyy 1110zzzz ]
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref outputBuffer, 4), (ushort)(((value >> 22) & 0x3Fu) + ((value >> 8) & 0x3F00u) + 0x8080u)); // = [ 10XXXXXX 10YYYYYY ]
             }
             else
             {
@@ -751,7 +751,7 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
-        /// Given a DWORD which represents a buffer of 2 packed UTF-16 values in machine endianess,
+        /// Given a DWORD which represents a buffer of 2 packed UTF-16 values in machine endianness,
         /// converts the first UTF-16 value to its 3-byte UTF-8 representation and writes the
         /// resulting 3 bytes to the destination buffer.
         /// </summary>
@@ -767,7 +767,7 @@ namespace System.Text.Unicode
 
                 uint tempA = (value << 2) & 0x3F00u; // [ 00yyyyyy 00000000 ]
                 uint tempB = ((uint)(ushort)value >> 12); // [ 00000000 0000zzzz ]
-                Unsafe.WriteUnaligned<ushort>(ref outputBuffer, (ushort)(tempA + tempB + 0x80E0u)); // [ 10yyyyyy 1110zzzz ]
+                Unsafe.WriteUnaligned(ref outputBuffer, (ushort)(tempA + tempB + 0x80E0u)); // [ 10yyyyyy 1110zzzz ]
                 Unsafe.Add(ref outputBuffer, 2) = (byte)((value & 0x3Fu) | ~0x7Fu); // [ 10xxxxxx ]
             }
             else

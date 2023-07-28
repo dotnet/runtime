@@ -9,9 +9,6 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
 using Internal.JitInterface;
-using Internal.TypeSystem;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -44,7 +41,7 @@ namespace ILCompiler
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
         {
-            var builder = new ArrayBuilder<KeyValuePair<string, string>>();
+            var builder = default(ArrayBuilder<KeyValuePair<string, string>>);
 
             foreach (string param in options)
             {
@@ -80,7 +77,7 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            ArrayBuilder<CorJitFlag> jitFlagBuilder = new ArrayBuilder<CorJitFlag>();
+            ArrayBuilder<CorJitFlag> jitFlagBuilder = default(ArrayBuilder<CorJitFlag>);
 
             switch (_optimizationMode)
             {
@@ -126,7 +123,7 @@ namespace ILCompiler
             if (_resilient)
                 options |= RyuJitCompilationOptions.UseResilience;
 
-            var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider, GetPreinitializationManager());
+            var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider, _inlinedThreadStatics, GetPreinitializationManager());
 
             JitConfigProvider.Initialize(_context.Target, jitFlagBuilder.ToArray(), _ryujitOptions, _jitPath);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(CompilerComparer.Instance));

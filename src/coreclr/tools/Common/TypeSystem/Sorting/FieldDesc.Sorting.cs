@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Functionality related to deterministic ordering of types and members
-    partial class FieldDesc
+    public partial class FieldDesc
     {
         /// <summary>
         /// Gets an identifier that is the same for all instances of this <see cref="FieldDesc"/>

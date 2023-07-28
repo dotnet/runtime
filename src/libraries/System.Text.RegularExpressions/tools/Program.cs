@@ -46,7 +46,7 @@ namespace GenerateRegexCasingTable
                                 textInfo.ToLower(equivalence) != equivalenceMapEntry.Key &&
                                 textInfo.ToUpper(equivalence) != equivalenceMapEntry.Key)
                             {
-                                Console.WriteLine($"There shouldn't be a mapping between \\u{((ushort)equivalenceMapEntry.Key).ToString("X4")} and \\u{((ushort)equivalence).ToString("X4")}");
+                                Console.WriteLine($"There shouldn't be a mapping between \\u{((ushort)equivalenceMapEntry.Key):X4} and \\u{((ushort)equivalence):X4}");
                             }
                         }
                     }
@@ -56,7 +56,7 @@ namespace GenerateRegexCasingTable
             if (generateTable)
             {
                 DataTable dataTable = new(equivalenceMap, equivalenceValues);
-                var fileName = "RegexCaseFolding.Data.cs";
+                string fileName = "RegexCaseEquivalences.Data.cs";
                 Console.WriteLine("Generating Regex case folding table...");
                 dataTable.GenerateDataTableWithPartitions(64, fileName);
                 Console.WriteLine($"Regex case folding table file was generated at: {Path.Combine(Directory.GetCurrentDirectory(), fileName)}");

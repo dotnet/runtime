@@ -125,17 +125,8 @@ namespace System.Xml.Schema
                 _reader = reader;
             }
 
-            public override string? LookupNamespace(string prefix)
-            {
-                string? ns = _nsMgr.LookupNamespace(prefix);
-
-                if (ns == null)
-                {
-                    ns = _reader.LookupNamespace(prefix);
-                }
-
-                return ns;
-            }
+            public override string? LookupNamespace(string prefix) =>
+                _nsMgr.LookupNamespace(prefix) ?? _reader.LookupNamespace(prefix);
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////
@@ -607,7 +598,7 @@ namespace System.Xml.Schema
         //
         // for 'block' and 'final' attribute values
         //
-        private static readonly int[] s_derivationMethodValues = {
+        private static ReadOnlySpan<int> DerivationMethodValues => new int[] {
             (int)XmlSchemaDerivationMethod.Substitution,
             (int)XmlSchemaDerivationMethod.Extension,
             (int)XmlSchemaDerivationMethod.Restriction,
@@ -757,10 +748,7 @@ namespace System.Xml.Schema
             {
                 if (ns == _schemaNames.NsXmlNs)
                 {
-                    if (_namespaces == null)
-                    {
-                        _namespaces = new List<XmlQualifiedName>();
-                    }
+                    _namespaces ??= new List<XmlQualifiedName>();
                     _namespaces.Add(new XmlQualifiedName((name == _schemaNames.QnXmlNs.Name) ? string.Empty : name, value));
                 }
                 else
@@ -2537,12 +2525,12 @@ namespace System.Xml.Schema
                 {
                     if (stringValues[i] == s_derivationMethodStrings[j])
                     {
-                        if ((r & s_derivationMethodValues[j]) != 0 && (r & s_derivationMethodValues[j]) != s_derivationMethodValues[j])
+                        if ((r & DerivationMethodValues[j]) != 0 && (r & DerivationMethodValues[j]) != DerivationMethodValues[j])
                         {
                             SendValidationEvent(SR.Sch_InvalidXsdAttributeValue, attributeName, value, null);
                             return 0;
                         }
-                        r |= s_derivationMethodValues[j];
+                        r |= DerivationMethodValues[j];
                         matched = true;
                         break;
                     }

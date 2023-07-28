@@ -20,8 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly List<AssemblyHeaderNode> _assemblyHeaders;
 
-        public AssemblyTableNode(TargetDetails target)
-            : base(target)
+        public AssemblyTableNode()
         {
             _assemblyHeaders = new List<AssemblyHeaderNode>();
         }

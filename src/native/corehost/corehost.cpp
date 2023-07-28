@@ -87,18 +87,8 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
 void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::string_t& host_path)
 {
     trace::error(
-        INSTALL_OR_UPDATE_NET_ERROR_MESSAGE
-        _X("\n\n")
-        _X("App: %s\n")
-        _X("Architecture: %s\n")
-        _X("App host version: %s\n")
-        _X(".NET location: %s\n")
-        _X("\n")
-        _X("Learn about runtime installation:\n")
-        DOTNET_APP_LAUNCH_FAILED_URL
-        _X("\n\n")
-        _X("Download the .NET runtime:\n")
-        _X("%s&apphost_version=%s"),
+        MISSING_RUNTIME_ERROR_FORMAT,
+        INSTALL_OR_UPDATE_NET_ERROR_MESSAGE,
         host_path.c_str(),
         get_current_arch_name(),
         _STRINGIFY(COMMON_HOST_PKG_VER),
@@ -111,6 +101,8 @@ void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::str
 
 int exe_start(const int argc, const pal::char_t* argv[])
 {
+    pal::initialize_createdump();
+
     pal::string_t host_path;
     if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
     {
@@ -126,7 +118,6 @@ int exe_start(const int argc, const pal::char_t* argv[])
     pal::string_t embedded_app_name;
     if (!is_exe_enabled_for_execution(&embedded_app_name))
     {
-        trace::error(_X("A fatal error was encountered. This executable was not bound to load a managed DLL."));
         return StatusCode::AppHostExeNotBoundFailure;
     }
 
@@ -165,7 +156,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         // dotnet.exe is signed by Microsoft. It is technically possible to rename the file MyApp.exe and include it in the application.
         // Then one can create a shortcut for "MyApp.exe MyApp.dll" which works. The end result is that MyApp looks like it's signed by Microsoft.
         // To prevent this dotnet.exe must not be renamed, otherwise it won't run.
-        trace::error(_X("A fatal error was encountered. Cannot execute %s when renamed to %s."), CURHOST_TYPE, own_name.c_str());
+        trace::error(_X("Error: cannot execute %s when renamed to %s."), CURHOST_TYPE, own_name.c_str());
         return StatusCode::CoreHostEntryPointFailure;
     }
 

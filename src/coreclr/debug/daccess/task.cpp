@@ -736,7 +736,7 @@ ClrDataAppDomain::GetName(
                     S_OK : S_FALSE;
                 if (nameLen)
                 {
-                    size_t cchName = wcslen((PCWSTR)rawName) + 1;
+                    size_t cchName = u16_strlen((PCWSTR)rawName) + 1;
                     if (FitsIn<ULONG32>(cchName))
                     {
                         *nameLen = (ULONG32) cchName;
@@ -4771,7 +4771,7 @@ ClrDataExceptionState::GetString(
             status = StringCchCopy(str, bufLen, msgStr) == S_OK ? S_OK : S_FALSE;
             if (strLen != NULL)
             {
-                size_t cchName = wcslen(msgStr) + 1;
+                size_t cchName = u16_strlen(msgStr) + 1;
                 if (FitsIn<ULONG32>(cchName))
                 {
                     *strLen = (ULONG32) cchName;
@@ -5188,49 +5188,31 @@ EnumMethodDefinitions::CdEnd(CLRDATA_ENUM handle)
 
 EnumMethodInstances::EnumMethodInstances(MethodDesc* methodDesc,
                                          IXCLRDataAppDomain* givenAppDomain)
-    : m_domainIter(FALSE)
 {
     m_methodDesc = methodDesc;
     if (givenAppDomain)
     {
-        m_givenAppDomain =
+        m_appDomain =
             ((ClrDataAppDomain*)givenAppDomain)->GetAppDomain();
     }
     else
     {
-        m_givenAppDomain = NULL;
+        m_appDomain = AppDomain::GetCurrentDomain();
     }
-    m_givenAppDomainUsed = false;
-    m_appDomain = NULL;
+    m_appDomainUsed = false;
 }
 
 HRESULT
 EnumMethodInstances::Next(ClrDataAccess* dac,
                           IXCLRDataMethodInstance **instance)
 {
- NextDomain:
-    if (!m_appDomain)
+    if (!m_appDomainUsed)
     {
-        if (m_givenAppDomainUsed ||
-            !m_domainIter.Next())
-        {
-            return S_FALSE;
-        }
-
-        if (m_givenAppDomain)
-        {
-            m_appDomain = m_givenAppDomain;
-            m_givenAppDomainUsed = true;
-        }
-        else
-        {
-            m_appDomain = m_domainIter.GetDomain();
-        }
-
+        m_appDomainUsed = true;
         m_methodIter.Start(m_appDomain,
                            m_methodDesc->GetModule(),       // module
                            m_methodDesc->GetMemberDef(),    // token
-                           m_methodDesc);                   // intial method desc
+                           m_methodDesc);                   // initial method desc
     }
 
  NextMethod:
@@ -5239,12 +5221,11 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
         if (!m_methodIter.Next(pDomainAssembly.This()))
         {
-            m_appDomain = NULL;
-            goto NextDomain;
+            return S_FALSE;
         }
     }
 
-    if (!m_methodIter.Current()->HasNativeCode())
+    if (!m_methodIter.Current()->HasNativeCodeReJITAware())
     {
         goto NextMethod;
     }
@@ -5262,7 +5243,7 @@ EnumMethodInstances::CdStart(MethodDesc* methodDesc,
                              CLRDATA_ENUM* handle)
 {
     if (!methodDesc->HasClassOrMethodInstantiation() &&
-        !methodDesc->HasNativeCode())
+        !methodDesc->HasNativeCodeReJITAware())
     {
         *handle = 0;
         return S_FALSE;

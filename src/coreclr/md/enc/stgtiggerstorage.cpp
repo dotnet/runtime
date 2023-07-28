@@ -793,7 +793,7 @@ TiggerStorage::WriteSignature(
     sSig.SetSignature(STORAGE_MAGIC_SIG);
     sSig.SetMajorVer(FILE_VER_MAJOR);
     sSig.SetMinorVer(FILE_VER_MINOR);
-    sSig.SetExtraDataOffset(0); // We have no extra inforation
+    sSig.SetExtraDataOffset(0); // We have no extra information
     sSig.SetVersionStringLength(alignedVersionSize);
     IfFailRet(m_pStgIO->Write(&sSig, sizeof(STORAGESIGNATURE), &cbWritten));
     IfFailRet(m_pStgIO->Write(pVersion, versionSize, &cbWritten));
@@ -967,7 +967,7 @@ ULONG TiggerStorage::PrintSizeInfo(bool verbose)
         for (int i = 0; i < m_StgHdr.GetiStreams(); i++)
         {
             pNext = storStream->NextStream();
-            printf("Stream #%d (%s) Header: %zd, Data: %lu\n",i,storStream->GetName(), (size_t)((BYTE*)pNext - (BYTE*)storStream), storStream->GetSize());
+            printf("Stream #%d (%s) Header: %zd, Data: %u\n",i,storStream->GetName(), (size_t)((BYTE*)pNext - (BYTE*)storStream), storStream->GetSize());
             total += storStream->GetSize();
             storStream = pNext;
         }

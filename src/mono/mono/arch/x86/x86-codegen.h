@@ -682,6 +682,13 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
+#define x86_alu_membase8_reg(inst,opc,basereg,disp,reg)	\
+	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
+		x86_byte (inst, (((unsigned char)(opc)) << 3));	\
+		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+	} while (0)
+
 #define x86_alu_reg_reg(inst,opc,dreg,reg)	\
 	do {	\
 		x86_codegen_pre(&(inst), 2); \
@@ -2377,15 +2384,6 @@ typedef enum {
 		x86_reg_emit ((inst), (dreg), (sreg));	\
 	} while (0)
 
-#define x86_movd_xreg_membase(inst,sreg,basereg,disp)	\
-	do {	\
-		x86_codegen_pre(&(inst), 3 + kMaxMembaseEmitPadding); \
-		x86_byte (inst, 0x66);	\
-		x86_byte (inst, 0x0f);	\
-		x86_byte (inst, 0x6e);	\
-		x86_membase_emit ((inst), (sreg), (basereg), (disp));	\
-	} while (0)
-
 #define x86_pshufw_reg_reg(inst,dreg,sreg,mask,high_words)	\
 	do {	\
 		x86_codegen_pre(&(inst), 5); \
@@ -2407,5 +2405,505 @@ typedef enum {
 	do {	\
 		x86_sse_alu_pd_reg_reg (inst, opc, dreg, sreg);	\
 	} while (0)
+
+/*
+ * SSE
+ */
+
+/* Avoid errors if amd64-codegen.h is also included */
+#ifdef TARGET_X86
+
+/* Two opcode SSE defines */
+
+#define emit_sse_reg_reg_op2_size(inst,dreg,reg,op1,op2,size) do { \
+    *(inst)++ = (unsigned char)(op1); \
+    *(inst)++ = (unsigned char)(op2); \
+    x86_reg_emit ((inst), (dreg), (reg)); \
+} while (0)
+
+#define emit_sse_reg_reg_op2(inst,dreg,reg,op1,op2) emit_sse_reg_reg_op2_size ((inst), (dreg), (reg), (op1), (op2), 0)
+
+#define emit_sse_reg_reg_op2_imm(inst,dreg,reg,op1,op2,imm) do { \
+   emit_sse_reg_reg_op2 ((inst), (dreg), (reg), (op1), (op2)); \
+   x86_imm_emit8 ((inst), (imm)); \
+} while (0)
+
+#define emit_sse_membase_reg_op2(inst,basereg,disp,reg,op1,op2) do { \
+    *(inst)++ = (unsigned char)(op1); \
+    *(inst)++ = (unsigned char)(op2); \
+    x86_membase_emit ((inst), (reg), (basereg), (disp)); \
+} while (0)
+
+#define emit_sse_reg_membase_op2(inst,dreg,basereg,disp,op1,op2) do { \
+    *(inst)++ = (unsigned char)(op1); \
+    *(inst)++ = (unsigned char)(op2); \
+    x86_membase_emit ((inst), (dreg), (basereg), (disp)); \
+} while (0)
+
+/* Three opcode SSE defines */
+
+#define emit_opcode3(inst,op1,op2,op3) do { \
+   *(inst)++ = (unsigned char)(op1); \
+   *(inst)++ = (unsigned char)(op2); \
+   *(inst)++ = (unsigned char)(op3); \
+} while (0)
+
+#define emit_sse_reg_reg_size(inst,dreg,reg,op1,op2,op3,size) do { \
+    *(inst)++ = (unsigned char)(op1); \
+    *(inst)++ = (unsigned char)(op2); \
+    *(inst)++ = (unsigned char)(op3); \
+    x86_reg_emit ((inst), (dreg), (reg)); \
+} while (0)
+
+#define emit_sse_reg_reg(inst,dreg,reg,op1,op2,op3) emit_sse_reg_reg_size ((inst), (dreg), (reg), (op1), (op2), (op3), 0)
+
+#define emit_sse_reg_reg_imm(inst,dreg,reg,op1,op2,op3,imm) do { \
+   emit_sse_reg_reg ((inst), (dreg), (reg), (op1), (op2), (op3)); \
+   x86_imm_emit8 ((inst), (imm)); \
+} while (0)
+
+#define emit_sse_membase_reg(inst,basereg,disp,reg,op1,op2,op3) do { \
+    x86_prefix((inst), (unsigned char)(op1)); \
+    *(inst)++ = (unsigned char)(op2); \
+    *(inst)++ = (unsigned char)(op3); \
+    x86_membase_emit ((inst), (reg), (basereg), (disp)); \
+} while (0)
+
+#define emit_sse_reg_membase(inst,dreg,basereg,disp,op1,op2,op3) do { \
+    x86_prefix((inst), (unsigned char)(op1)); \
+    *(inst)++ = (unsigned char)(op2); \
+    *(inst)++ = (unsigned char)(op3); \
+    x86_membase_emit ((inst), (dreg), (basereg), (disp)); \
+} while (0)
+
+/* 3 opcode bytes + 1 address byte */
+#define X86_SSE_REG_MEM_OFFSET (3 + 1)
+
+#define emit_sse_reg_mem(inst,dreg,mem,op1,op2,op3) do { \
+    x86_prefix((inst), (unsigned char)(op1)); \
+    *(inst)++ = (unsigned char)(op2); \
+    *(inst)++ = (unsigned char)(op3); \
+    x86_mem_emit ((inst), (dreg), (mem)); \
+} while (0)
+
+/* Four opcode SSE defines */
+
+#define emit_sse_reg_reg_op4_size(inst,dreg,reg,op1,op2,op3,op4,size) do { \
+    x86_prefix((inst), (unsigned char)(op1)); \
+    *(inst)++ = (unsigned char)(op2); \
+    *(inst)++ = (unsigned char)(op3); \
+    *(inst)++ = (unsigned char)(op4); \
+    x86_reg_emit ((inst), (dreg), (reg)); \
+} while (0)
+
+#define emit_sse_reg_reg_op4(inst,dreg,reg,op1,op2,op3,op4) emit_sse_reg_reg_op4_size ((inst), (dreg), (reg), (op1), (op2), (op3), (op4), 0)
+
+#define emit_sse_reg_reg_op4_imm(inst,dreg,reg,op1,op2,op3,op4,imm) do { \
+    emit_sse_reg_reg_op4 ((inst), (dreg), (reg), (op1), (op2), (op3), (op4)); \
+    x86_imm_emit8 ((inst), (imm)); \
+} while (0)
+
+#endif
+
+/* specific SSE opcode defines */
+
+#define x86_sse_xorpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg), 0x66, 0x0f, 0x57)
+
+#define x86_sse_xorpd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst),(dreg),(basereg), (disp), 0x66, 0x0f, 0x57)
+
+#define x86_sse_andpd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst),(dreg),(basereg), (disp), 0x66, 0x0f, 0x54)
+
+#define x86_sse_movsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x10)
+#define x86_sse_movss_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf3, 0x0f, 0x10)
+
+#define x86_sse_movsd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst), (dreg), (basereg), (disp), 0xf2, 0x0f, 0x10)
+
+#define x86_sse_movsd_membase_reg(inst,basereg,disp,reg) emit_sse_membase_reg ((inst), (basereg), (disp), (reg), 0xf2, 0x0f, 0x11)
+
+#define x86_sse_movsd_reg_mem(inst,dreg,mem) emit_sse_reg_mem ((inst), (dreg), (mem), 0xf2, 0x0f, 0x10)
+
+#define x86_sse_movss_membase_reg(inst,basereg,disp,reg) emit_sse_membase_reg ((inst), (basereg), (disp), (reg), 0xf3, 0x0f, 0x11)
+
+#define x86_sse_movss_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst), (dreg), (basereg), (disp), 0xf3, 0x0f, 0x10)
+
+#define x86_sse_movss_reg_mem(inst,dreg,mem) emit_sse_reg_mem ((inst), (dreg), (mem), 0xf3, 0x0f, 0x10)
+
+#define x86_sse_movq_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst), (dreg), (basereg), (disp), 0xf3, 0x0f, 0x7e)
+
+#define x86_sse_comisd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg),0x66,0x0f,0x2f)
+#define x86_sse_comiss_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg),0x67,0x0f,0x2f)
+
+#define x86_sse_comisd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst), (dreg), (basereg), (disp), 0x66, 0x0f, 0x2f)
+
+#define x86_sse_ucomisd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg),0x66,0x0f,0x2e)
+
+#define x86_sse_cvtsd2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2d, 8)
+#define x86_sse_cvtss2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf3, 0x0f, 0x2d, 8)
+
+#define x86_sse_cvttsd2si_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2c, (size))
+#define x86_sse_cvtss2si_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf3, 0x0f, 0x2c, (size))
+
+#define x86_sse_cvttsd2si_reg_reg(inst,dreg,reg) x86_sse_cvttsd2si_reg_reg_size ((inst), (dreg), (reg), 8)
+
+#define x86_sse_cvtsi2sd_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2a, (size))
+
+#define x86_sse_cvtsi2sd_reg_reg(inst,dreg,reg) x86_sse_cvtsi2sd_reg_reg_size ((inst), (dreg), (reg), 8)
+
+#define x86_sse_cvtsi2sd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst), (dreg), (basereg), (disp), 0xf2, 0x0f, 0x2a)
+
+#define x86_sse_cvtsi2ss_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf3, 0x0f, 0x2a, (size))
+
+#define x86_sse_cvtsi2ss_reg_reg(inst,dreg,reg) x86_sse_cvtsi2ss_reg_reg_size ((inst), (dreg), (reg), 8)
+
+#define x86_sse_cvtsd2ss_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x5a)
+
+#define x86_sse_cvtss2sd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf3, 0x0f, 0x5a)
+
+#define x86_sse_addsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x58)
+#define x86_sse_addss_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf3, 0x0f, 0x58)
+
+#define x86_sse_subsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x5c)
+#define x86_sse_subss_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf3, 0x0f, 0x5c)
+
+#define x86_sse_mulsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x59)
+#define x86_sse_mulss_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf3, 0x0f, 0x59)
+
+#define x86_sse_divsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x5e)
+#define x86_sse_divss_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf3, 0x0f, 0x5e)
+
+#define x86_sse_sqrtsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf2, 0x0f, 0x51)
+
+
+#define x86_sse_pinsrw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm ((inst), (dreg), (reg), 0x66, 0x0f, 0xc4, (imm))
+
+#define x86_sse_pextrw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm ((inst), (dreg), (reg), 0x66, 0x0f, 0xc5, (imm))
+
+
+#define x86_sse_cvttsd2si_reg_xreg_size(inst,reg,xreg,size) emit_sse_reg_reg_size ((inst), (reg), (xreg), 0xf2, 0x0f, 0x2c, (size))
+
+
+#define x86_sse_addps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x58)
+
+#define x86_sse_divps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x5e)
+
+#define x86_sse_mulps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x59)
+
+#define x86_sse_subps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x5c)
+
+#define x86_sse_maxps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x5f)
+
+#define x86_sse_minps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x5d)
+
+#define x86_sse_cmpps_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_op2_imm((inst), (dreg), (reg), 0x0f, 0xc2, (imm))
+
+#define x86_sse_andps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x54)
+
+#define x86_sse_andnps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x55)
+
+#define x86_sse_orps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x56)
+
+#define x86_sse_xorps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x57)
+
+#define x86_sse_sqrtps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x51)
+
+#define x86_sse_rsqrtps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x52)
+
+#define x86_sse_rcpps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x53)
+
+#define x86_sse_addsubps_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf2, 0x0f, 0xd0)
+
+#define x86_sse_haddps_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf2, 0x0f, 0x7c)
+
+#define x86_sse_hsubps_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf2, 0x0f, 0x7d)
+
+#define x86_sse_movshdup_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf3, 0x0f, 0x16)
+
+#define x86_sse_movsldup_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf3, 0x0f, 0x12)
+
+
+#define x86_sse_pshufhw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0xf3, 0x0f, 0x70, (imm))
+
+#define x86_sse_pshuflw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0xf2, 0x0f, 0x70, (imm))
+
+#define x86_sse_pshufd_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0x66, 0x0f, 0x70, (imm))
+
+#define x86_sse_shufps_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_op2_imm((inst), (dreg), (reg), 0x0f, 0xC6, (imm))
+
+#define x86_sse_shufpd_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0x66, 0x0f, 0xC6, (imm))
+
+#define x86_sse_roundpd_reg_reg_imm(inst, dreg, reg, imm) emit_sse_reg_reg_op4_imm((inst), (dreg), (reg), 0x66, 0x0f, 0x3a, 0x09, (imm))
+
+#define x86_sse_addpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x58)
+
+#define x86_sse_divpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x5e)
+
+#define x86_sse_mulpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x59)
+
+#define x86_sse_subpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x5c)
+
+#define x86_sse_maxpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x5f)
+
+#define x86_sse_minpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x5d)
+
+#define x86_sse_cmppd_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0x66, 0x0f, 0xc2, (imm))
+
+#define x86_sse_andpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x54)
+
+#define x86_sse_andnpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x55)
+
+#define x86_sse_orpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x56)
+
+#define x86_sse_sqrtpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x51)
+
+#define x86_sse_rsqrtpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x52)
+
+#define x86_sse_rcppd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x53)
+
+#define x86_sse_addsubpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd0)
+
+#define x86_sse_haddpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x7c)
+
+#define x86_sse_hsubpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x7d)
+
+#define x86_sse_movddup_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf2, 0x0f, 0x12)
+
+
+#define x86_sse_pmovmskb_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd7)
+
+
+#define x86_sse_pand_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xdb)
+
+#define x86_sse_pandn_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xdf)
+
+#define x86_sse_por_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xeb)
+
+#define x86_sse_pxor_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xef)
+
+
+#define x86_sse_paddb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xfc)
+
+#define x86_sse_paddw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xfd)
+
+#define x86_sse_paddd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xfe)
+
+#define x86_sse_paddq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd4)
+
+
+#define x86_sse_psubb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xf8)
+
+#define x86_sse_psubw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xf9)
+
+#define x86_sse_psubd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xfa)
+
+#define x86_sse_psubq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xfb)
+
+
+#define x86_sse_pmaxub_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xde)
+
+#define x86_sse_pmaxuw_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x3e)
+
+#define x86_sse_pmaxud_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x3f)
+
+
+#define x86_sse_pmaxsb_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x3c)
+
+#define x86_sse_pmaxsw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xee)
+
+#define x86_sse_pmaxsd_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x3d)
+
+
+#define x86_sse_pavgb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xe0)
+
+#define x86_sse_pavgw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xe3)
+
+
+#define x86_sse_pminub_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xda)
+
+#define x86_sse_pminuw_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x3a)
+
+#define x86_sse_pminud_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x3b)
+
+
+#define x86_sse_pminsb_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x38)
+
+#define x86_sse_pminsw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xea)
+
+#define x86_sse_pminsd_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x39)
+
+
+#define x86_sse_pcmpeqb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x74)
+
+#define x86_sse_pcmpeqw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x75)
+
+#define x86_sse_pcmpeqd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x76)
+
+#define x86_sse_pcmpeqq_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x29)
+
+
+#define x86_sse_pcmpgtb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x64)
+
+#define x86_sse_pcmpgtw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x65)
+
+#define x86_sse_pcmpgtd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x66)
+
+#define x86_sse_pcmpgtq_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x37)
+
+
+#define x86_sse_psadbw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xf6)
+
+
+#define x86_sse_punpcklbw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x60)
+
+#define x86_sse_punpcklwd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x61)
+
+#define x86_sse_punpckldq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x62)
+
+#define x86_sse_punpcklqdq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x6c)
+
+#define x86_sse_unpcklpd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x14)
+
+#define x86_sse_unpcklps_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x14)
+
+
+#define x86_sse_punpckhbw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x68)
+
+#define x86_sse_punpckhwd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x69)
+
+#define x86_sse_punpckhdq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x6a)
+
+#define x86_sse_punpckhqdq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x6d)
+
+#define x86_sse_unpckhpd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x15)
+
+#define x86_sse_unpckhps_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x15)
+
+
+#define x86_sse_packsswb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x63)
+
+#define x86_sse_packssdw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x6b)
+
+#define x86_sse_packuswb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x67)
+
+#define x86_sse_packusdw_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x2b)
+
+
+#define x86_sse_paddusb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xdc)
+
+#define x86_sse_psubusb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd8)
+
+#define x86_sse_paddusw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xdd)
+
+#define x86_sse_psubusw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd8)
+
+
+#define x86_sse_paddsb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xec)
+
+#define x86_sse_psubsb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xe8)
+
+#define x86_sse_paddsw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xed)
+
+#define x86_sse_psubsw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xe9)
+
+
+#define x86_sse_pmullw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd5)
+
+#define x86_sse_pmulld_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x40)
+
+#define x86_sse_pmuludq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xf4)
+
+#define x86_sse_pmulhuw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xe4)
+
+#define x86_sse_pmulhw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xe5)
+
+
+#define x86_sse_psrlw_reg_imm(inst, reg, imm) emit_sse_reg_reg_imm((inst), X86_SSE_SHR, (reg), 0x66, 0x0f, 0x71, (imm))
+
+#define x86_sse_psrlw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd1)
+
+
+#define x86_sse_psraw_reg_imm(inst, reg, imm) emit_sse_reg_reg_imm((inst), X86_SSE_SAR, (reg), 0x66, 0x0f, 0x71, (imm))
+
+#define x86_sse_psraw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xe1)
+
+
+#define x86_sse_psllw_reg_imm(inst, reg, imm) emit_sse_reg_reg_imm((inst), X86_SSE_SHL, (reg), 0x66, 0x0f, 0x71, (imm))
+
+#define x86_sse_psllw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xf1)
+
+
+#define x86_sse_psrld_reg_imm(inst, reg, imm) emit_sse_reg_reg_imm((inst), X86_SSE_SHR, (reg), 0x66, 0x0f, 0x72, (imm))
+
+#define x86_sse_psrld_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd2)
+
+
+#define x86_sse_psrad_reg_imm(inst, reg, imm) emit_sse_reg_reg_imm((inst), X86_SSE_SAR, (reg), 0x66, 0x0f, 0x72, (imm))
+
+#define x86_sse_psrad_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xe2)
+
+
+#define x86_sse_pslld_reg_imm(inst, reg, imm) emit_sse_reg_reg_imm((inst), X86_SSE_SHL, (reg), 0x66, 0x0f, 0x72, (imm))
+
+#define x86_sse_pslld_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xf2)
+
+
+#define x86_sse_psrlq_reg_imm(inst, reg, imm) emit_sse_reg_reg_imm((inst), X86_SSE_SHR, (reg), 0x66, 0x0f, 0x73, (imm))
+
+#define x86_sse_psrlq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd3)
+
+
+#define x86_sse_psraq_reg_imm(inst, reg, imm) emit_sse_reg_reg_imm((inst), X86_SSE_SAR, (reg), 0x66, 0x0f, 0x73, (imm))
+
+#define x86_sse_psraq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xe3)
+
+
+#define x86_sse_psllq_reg_imm(inst, reg, imm) emit_sse_reg_reg_imm((inst), X86_SSE_SHL, (reg), 0x66, 0x0f, 0x73, (imm))
+
+#define x86_sse_psllq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xf3)
+
+
+#define x86_sse_cvtdq2pd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xF3, 0x0F, 0xE6)
+
+#define x86_sse_cvtdq2ps_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0F, 0x5B)
+
+#define x86_sse_cvtpd2dq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xF2, 0x0F, 0xE6)
+
+#define x86_sse_cvtpd2ps_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0F, 0x5A)
+
+#define x86_sse_cvtps2dq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0F, 0x5B)
+
+#define x86_sse_cvtps2pd_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0F, 0x5A)
+
+#define x86_sse_cvttpd2dq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0F, 0xE6)
+
+#define x86_sse_cvttps2dq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xF3, 0x0F, 0x5B)
+
+
+#define x86_movd_xreg_reg_size(inst,dreg,sreg,size) emit_sse_reg_reg_size((inst), (dreg), (sreg), 0x66, 0x0f, 0x6e, (size))
+
+#define x86_movd_reg_xreg_size(inst,dreg,sreg,size) emit_sse_reg_reg_size((inst), (sreg), (dreg), 0x66, 0x0f, 0x7e, (size))
+
+#define x86_movd_xreg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase((inst), (dreg), (basereg), (disp), 0x66, 0x0f, 0x6e)
+
+
+#define x86_movlhps_reg_reg(inst,dreg,sreg) emit_sse_reg_reg_op2((inst), (dreg), (sreg), 0x0f, 0x16)
+
+#define x86_movhlps_reg_reg(inst,dreg,sreg) emit_sse_reg_reg_op2((inst), (dreg), (sreg), 0x0f, 0x12)
+
+#define x86_sse_movups_membase_reg(inst, basereg, disp, reg) emit_sse_membase_reg_op2((inst), (basereg), (disp), (reg), 0x0f, 0x11)
+
+#define x86_sse_movups_reg_membase(inst, dreg, basereg, disp) emit_sse_reg_membase_op2((inst), (dreg), (basereg), (disp), 0x0f, 0x10)
+
+#define x86_sse_movaps_membase_reg(inst, basereg, disp, reg) emit_sse_membase_reg_op2((inst), (basereg), (disp), (reg), 0x0f, 0x29)
+
+#define x86_sse_movaps_reg_membase(inst, dreg, basereg, disp) emit_sse_reg_membase_op2((inst), (dreg), (basereg), (disp), 0x0f, 0x28)
+
+#define x86_sse_movaps_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x28)
+
+#define x86_sse_movntps_reg_membase(inst, dreg, basereg, disp) emit_sse_reg_membase_op2((inst), (dreg), (basereg), (disp), 0x0f, 0x2b)
+
+#define x86_sse_prefetch_reg_membase(inst, arg, basereg, disp) emit_sse_reg_membase_op2((inst), (arg), (basereg), (disp), 0x0f, 0x18)
+
+#define x86_sse_lzcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xbd, (size))
+#define x86_sse_popcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xb8, (size))
 
 #endif // X86_H

@@ -717,13 +717,17 @@ CMiniMdBase::InitColsForTable(
                                     // should we write the data into the structure
 {
     const CMiniTableDef *pTemplate;     // Template table definition.
-    CMiniColDef pCols[9];               // The col defs to init.
+    // Mark the array of columns as not allocated (not ALLOCATED_MEMORY_MARKER) for SetNewColumnDefinition
+    const uint8_t MAX_COL_COUNT = 9;
+    BYTE colData[1 + sizeof(CMiniColDef) * MAX_COL_COUNT];
+    colData[0] = 0;
+    CMiniColDef* pCols = BYTEARRAY_TO_COLDES(colData);
     BYTE        iOffset;                // Running size of a record.
     BYTE        iSize;                  // Size of a field.
     HRESULT     hr = S_OK;
 
     _ASSERTE((bExtra == 0) || (bExtra == 1));
-    _ASSERTE(ARRAY_SIZE(pCols) >= pTable->m_cCols);
+    _ASSERTE(MAX_COL_COUNT >= pTable->m_cCols);
 
     bExtra = 0;//<TODO>@FUTURE: save in schema header.  until then use 0.</TODO>
 
@@ -782,7 +786,7 @@ CMiniMdBase::InitColsForTable(
             // definition templates, only if the fixed field columns appear at the beginning
             // of a table record.
             // Initializing StartOffset and Length (4th and 5th columns of the portable PDB
-            // LocalScope table) can cause assertion to fail at this point, since preceeding
+            // LocalScope table) can cause assertion to fail at this point, since preceding
             // column sizes are determined dynamically (2 or 4 bytes for RIDs depending on the
             // number of records) and cannot be compared against the static template.
 #endif

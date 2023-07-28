@@ -11,10 +11,8 @@ namespace System.Net.Mail
 
         static SmtpAuthenticationManager()
         {
-#if !NO_NTAUTHENTICATION
             Register(new SmtpNegotiateAuthenticationModule());
             Register(new SmtpNtlmAuthenticationModule());
-#endif
             Register(new SmtpLoginAuthenticationModule());
         }
 

@@ -548,21 +548,12 @@ namespace System.Data.ProviderBase
                         DataColumn? column = (items[i] as DataColumn);
                         if (null != column)
                         {
-                            if (null != column.Table)
-                            {
-                                column.Table.Columns.Remove(column);
-                            }
+                            column.Table?.Columns.Remove(column);
                         }
                         else
                         {
                             DataTable? table = (items[i] as DataTable);
-                            if (null != table)
-                            {
-                                if (null != table.DataSet)
-                                {
-                                    table.DataSet.Tables.Remove(table);
-                                }
-                            }
+                            table?.DataSet?.Tables.Remove(table);
                         }
                     }
                 }
@@ -1028,10 +1019,7 @@ namespace System.Data.ProviderBase
                     //
                     if (addPrimaryKeys && schemaRow.IsKey)
                     {
-                        if (keys == null)
-                        {
-                            keys = new DataColumn[schemaRows.Length];
-                        }
+                        keys ??= new DataColumn[schemaRows.Length];
                         keys[keyCount++] = dataColumn;
 
                         // see case 3 above, we do want dataColumn.AllowDBNull not schemaRow.AllowDBNull

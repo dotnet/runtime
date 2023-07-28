@@ -3,15 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: Constants and utility functions.
@@ -87,7 +84,7 @@ namespace System.Diagnostics.Tracing
             int suffixSize,
             int additionalSize)
         {
-            Statics.CheckName(name);
+            CheckName(name);
             int metadataSize = Encoding.UTF8.GetByteCount(name) + 3 + prefixSize + suffixSize;
             var metadata = new byte[metadataSize];
             ushort totalSize = checked((ushort)(metadataSize + additionalSize));
@@ -359,9 +356,7 @@ namespace System.Diagnostics.Tracing
         }
 
         public static Type? FindEnumerableElementType(
-#if !ES_BUILD_STANDALONE
-            [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
-#endif
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
             Type type)
         {
             Type? elementType = null;
@@ -395,9 +390,7 @@ namespace System.Diagnostics.Tracing
             return type.IsGenericType && type.GetGenericTypeDefinition() == (Type?)openType;
         }
 
-#if !ES_BUILD_STANDALONE
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
+        [RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         public static TraceLoggingTypeInfo CreateDefaultTypeInfo(
             Type dataType,
             List<Type> recursionCheck)
@@ -411,9 +404,9 @@ namespace System.Diagnostics.Tracing
 
             recursionCheck.Add(dataType);
 
-            EventDataAttribute? eventAttrib = Statics.GetCustomAttribute<EventDataAttribute>(dataType);
+            EventDataAttribute? eventAttrib = GetCustomAttribute<EventDataAttribute>(dataType);
             if (eventAttrib != null ||
-                Statics.GetCustomAttribute<CompilerGeneratedAttribute>(dataType) != null ||
+                GetCustomAttribute<CompilerGeneratedAttribute>(dataType) != null ||
                 IsGenericMatch(dataType, typeof(KeyValuePair<,>)))
             {
                 var analysis = new TypeAnalysis(dataType, eventAttrib, recursionCheck);

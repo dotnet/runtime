@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ContentType
 {
@@ -21,10 +22,11 @@ public class ContentType
 }
 
 
-class My
+public class My
 {
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         new ContentType();

@@ -9,14 +9,23 @@ using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
+#pragma warning disable IDE0060
+
 namespace System.Threading
 {
-    [UnsupportedOSPlatform("browser")]
+#if FEATURE_WASM_THREADS
+#error when compiled with FEATURE_WASM_THREADS, we use PortableThreadPool.WorkerThread.Browser.Threads.Mono.cs
+#endif
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle()
         {
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        internal bool Repeating => false;
+#pragma warning restore CA1822
 
         public bool Unregister(WaitHandle? waitObject)
         {
@@ -70,22 +79,16 @@ namespace System.Threading
 
         public static long CompletedWorkItemCount => 0;
 
-        internal static void RequestWorkerThread()
+        internal static unsafe void RequestWorkerThread()
         {
             if (_callbackQueued)
                 return;
             _callbackQueued = true;
-            QueueCallback();
+            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         internal static void NotifyWorkItemProgress()
         {
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
-        {
-            return true;
         }
 
         internal static bool NotifyThreadBlocked() => false;
@@ -95,6 +98,11 @@ namespace System.Threading
         }
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
+
+        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
+        {
+            return true;
+        }
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle? waitObject,
@@ -107,18 +115,28 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
-        [DynamicDependency("Callback")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void QueueCallback();
+        internal static extern unsafe void MainThreadScheduleBackgroundJob(void* callback);
 
-        private static void Callback()
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
+        // this callback will arrive on the bound thread, called from mono_background_exec
+        private static void BackgroundJobHandler ()
         {
-            _callbackQueued = false;
-            ThreadPoolWorkQueue.Dispatch();
+            try
+            {
+                _callbackQueued = false;
+                ThreadPoolWorkQueue.Dispatch();
+            }
+            catch (Exception e)
+            {
+                Environment.FailFast("ThreadPool.BackgroundJobHandler failed", e);
+            }
         }
 
         private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
-            _IOCompletionCallback.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
+            IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
@@ -129,7 +147,7 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
             }
 
-            // OS doesn't signal handle, so do it here (CoreCLR does this assignment in ThreadPoolNative::CorPostQueuedCompletionStatus)
+            // OS doesn't signal handle, so do it here
             overlapped->InternalLow = (IntPtr)0;
             // Both types of callbacks are executed on the same thread pool
             return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (nint)overlapped, preferLocal: false);
@@ -146,6 +164,12 @@ namespace System.Threading
         public static bool BindHandle(SafeHandle osHandle)
         {
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
+        }
+
+        [Conditional("unnecessary")]
+        internal static void ReportThreadStatus(bool isWorking)
+        {
+
         }
     }
 }

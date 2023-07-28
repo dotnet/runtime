@@ -243,7 +243,7 @@ namespace System.Xml
             return _impl.ReadElementContentAsBinHex(buffer, index, count);
         }
 
-        // Overriden helper methods
+        // Overridden helper methods
 
         public override string ReadString()
         {

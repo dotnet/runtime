@@ -5,17 +5,17 @@
 #define DEBUG
 
 using System;
-using System.Text;
-using System.Runtime;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Reflection;
+using System.Runtime;
+using System.Text;
 
 using Internal.Runtime.Augments;
 
 namespace Internal.DeveloperExperience
 {
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public class DeveloperExperience
     {
         /// <summary>
@@ -34,25 +34,14 @@ namespace Internal.DeveloperExperience
 
         public virtual string CreateStackTraceString(IntPtr ip, bool includeFileInfo)
         {
-            if (!IsMetadataStackTraceResolutionDisabled())
+            string methodName = GetMethodName(ip, out IntPtr methodStart);
+            if (methodName != null)
             {
-                StackTraceMetadataCallbacks stackTraceCallbacks = RuntimeAugments.StackTraceCallbacksIfAvailable;
-                if (stackTraceCallbacks != null)
+                if (ip != methodStart)
                 {
-                    IntPtr methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
-                    if (methodStart != IntPtr.Zero)
-                    {
-                        string methodName = stackTraceCallbacks.TryGetMethodNameFromStartAddress(methodStart);
-                        if (methodName != null)
-                        {
-                            if (ip != methodStart)
-                            {
-                                methodName += " + 0x" + (ip.ToInt64() - methodStart.ToInt64()).ToString("x");
-                            }
-                            return methodName;
-                        }
-                    }
+                    methodName = $"{methodName} + 0x{(ip - methodStart):x}";
                 }
+                return methodName;
             }
 
             // If we don't have precise information, try to map it at least back to the right module.
@@ -64,13 +53,27 @@ namespace Internal.DeveloperExperience
                 return "<unknown>";
             }
 
-            StringBuilder sb = new StringBuilder();
-            string fileNameWithoutExtension = GetFileNameWithoutExtension(moduleFullFileName);
-            int rva = (int)(ip.ToInt64() - moduleBase.ToInt64());
-            sb.Append(fileNameWithoutExtension);
-            sb.Append("!<BaseAddress>+0x");
-            sb.Append(rva.ToString("x"));
-            return sb.ToString();
+            ReadOnlySpan<char> fileNameWithoutExtension = Path.GetFileNameWithoutExtension(moduleFullFileName.AsSpan());
+            int rva = (int)(ip - moduleBase);
+            return $"{fileNameWithoutExtension}!<BaseAddress>+0x{rva:x}";
+        }
+
+        internal static string GetMethodName(IntPtr ip, out IntPtr methodStart)
+        {
+            methodStart = IntPtr.Zero;
+            if (!IsMetadataStackTraceResolutionDisabled())
+            {
+                StackTraceMetadataCallbacks stackTraceCallbacks = RuntimeAugments.StackTraceCallbacksIfAvailable;
+                if (stackTraceCallbacks != null)
+                {
+                    methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
+                    if (methodStart != IntPtr.Zero)
+                    {
+                        return stackTraceCallbacks.TryGetMethodNameFromStartAddress(methodStart);
+                    }
+                }
+            }
+            return null;
         }
 
         public virtual void TryGetSourceLineInfo(IntPtr ip, out string fileName, out int lineNumber, out int columnNumber)
@@ -120,28 +123,6 @@ namespace Internal.DeveloperExperience
             {
                 s_developerExperience = value;
             }
-        }
-
-        private static string GetFileNameWithoutExtension(string path)
-        {
-            path = GetFileName(path);
-            int i;
-            if ((i = path.LastIndexOf('.')) == -1)
-                return path; // No path extension found
-            else
-                return path.Substring(0, i);
-        }
-
-        private static string GetFileName(string path)
-        {
-            int length = path.Length;
-            for (int i = length; --i >= 0;)
-            {
-                char ch = path[i];
-                if (ch == '/' || ch == '\\' || ch == ':')
-                    return path.Substring(i + 1, length - i - 1);
-            }
-            return path;
         }
 
         private static DeveloperExperience s_developerExperience;

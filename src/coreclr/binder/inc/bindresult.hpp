@@ -22,20 +22,13 @@ namespace BINDER_SPACE
     {
     public:
         inline BindResult();
-        inline ~BindResult();
 
         inline AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE);
         inline Assembly *GetAssembly(BOOL fAddRef = FALSE);
 
-        inline BOOL GetIsInTPA();
-        inline void SetIsInTPA(BOOL fIsInTPA);
         inline BOOL GetIsContextBound();
-        inline void SetIsContextBound(BOOL fIsContextBound);
-        inline BOOL GetIsFirstRequest();
-        inline void SetIsFirstRequest(BOOL fIsFirstRequest);
 
-        inline void SetResult(ContextEntry *pContextEntry, BOOL fIsContextBound = TRUE);
-        inline void SetResult(Assembly *pAssembly);
+        inline void SetResult(Assembly *pAssembly, bool isInContext = false);
         inline void SetResult(BindResult *pBindResult);
 
         inline void SetNoResult();
@@ -58,17 +51,13 @@ namespace BINDER_SPACE
             }
         };
 
-        // Set attempt result for binding to existing context entry
-        void SetAttemptResult(HRESULT hr, ContextEntry *pContextEntry);
-
-        // Set attempt result for binding to platform assemblies
-        void SetAttemptResult(HRESULT hr, Assembly *pAssembly);
+        // Set attempt result for binding to existing context entry or platform assemblies
+        void SetAttemptResult(HRESULT hr, Assembly *pAssembly, bool isInContext = false);
 
         const AttemptResult* GetAttempt(bool foundInContext) const;
 
     protected:
-        DWORD m_dwResultFlags;
-        AssemblyName *m_pAssemblyName;
+        bool m_isContextBound;
         ReleaseHolder<Assembly> m_pAssembly;
 
         AttemptResult m_inContextAttempt;

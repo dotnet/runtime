@@ -62,11 +62,6 @@ namespace System.Reflection.Runtime.General
             return typeInfos;
         }
 
-        public static string LastResortString(this RuntimeTypeHandle typeHandle)
-        {
-            return ReflectionCoreExecution.ExecutionEnvironment.GetLastResortString(typeHandle);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeNamedTypeInfo CastToRuntimeNamedTypeInfo(this Type type)
         {
@@ -83,7 +78,7 @@ namespace System.Reflection.Runtime.General
 
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
         {
-            return new ReadOnlyCollection<T>(enumeration.ToArray());
+            return Array.AsReadOnly(enumeration.ToArray());
         }
 
         public static MethodInfo FilterAccessor(this MethodInfo accessor, bool nonPublic)
@@ -93,25 +88,6 @@ namespace System.Reflection.Runtime.General
             if (accessor.IsPublic)
                 return accessor;
             return null;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Calling Assembly.GetType on a third-party Assembly class.")]
-        public static Type GetTypeCore(this Assembly assembly, string name, bool ignoreCase)
-        {
-            if (assembly is RuntimeAssemblyInfo runtimeAssembly)
-            {
-                // Not a recursion - this one goes to the actual instance method on RuntimeAssembly.
-                return runtimeAssembly.GetTypeCore(name, ignoreCase: ignoreCase);
-            }
-            else
-            {
-                // This is a third-party Assembly object. We can emulate GetTypeCore() by calling the public GetType()
-                // method. This is wasteful because it'll probably reparse a type string that we've already parsed
-                // but it can't be helped.
-                string escapedName = name.EscapeTypeNameIdentifier();
-                return assembly.GetType(escapedName, throwOnError: false, ignoreCase: ignoreCase);
-            }
         }
 
         public static TypeLoadException CreateTypeLoadException(string typeName, Assembly assemblyIfAny)
@@ -203,46 +179,112 @@ namespace System.Reflection.Runtime.General
             return result;
         }
 
-        public static bool GetCustomAttributeDefaultValueIfAny(IEnumerable<CustomAttributeData> customAttributes, bool raw, out object? defaultValue)
+        private static object? GetRawDefaultValue(IEnumerable<CustomAttributeData> customAttributes)
         {
-            // Legacy: If there are multiple default value attribute, the desktop picks one at random (and so do we...)
-            foreach (CustomAttributeData cad in customAttributes)
+            foreach (CustomAttributeData attributeData in customAttributes)
             {
-                Type attributeType = cad.AttributeType;
-                if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
+                Type attributeType = attributeData.AttributeType;
+                if (attributeType == typeof(DecimalConstantAttribute))
                 {
-                    if (raw)
-                    {
-                        foreach (CustomAttributeNamedArgument namedArgument in cad.NamedArguments)
-                        {
-                            if (namedArgument.MemberName.Equals("Value"))
-                            {
-                                defaultValue = namedArgument.TypedValue.Value;
-                                return true;
-                            }
-                        }
-                        defaultValue = null;
-                        return false;
-                    }
-                    else
-                    {
-                        CustomConstantAttribute customConstantAttribute = (CustomConstantAttribute)(cad.Instantiate());
-                        defaultValue = customConstantAttribute.Value;
-                        return true;
-                    }
+                    return GetRawDecimalConstant(attributeData);
                 }
-                if (attributeType.Equals(typeof(DecimalConstantAttribute)))
+                else if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
                 {
-                    // We should really do a non-instanting check if "raw == false" but given that we don't support
-                    // reflection-only loads, there isn't an observable difference.
-                    DecimalConstantAttribute decimalConstantAttribute = (DecimalConstantAttribute)(cad.Instantiate());
-                    defaultValue = decimalConstantAttribute.Value;
-                    return true;
+                    if (attributeType == typeof(DateTimeConstantAttribute))
+                    {
+                        return GetRawDateTimeConstant(attributeData);
+                    }
+                    return GetRawConstant(attributeData);
+                }
+            }
+            return DBNull.Value;
+        }
+
+        private static decimal GetRawDecimalConstant(CustomAttributeData attr)
+        {
+            System.Collections.Generic.IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
+
+            return new decimal(
+                lo: GetConstructorArgument(args, 4),
+                mid: GetConstructorArgument(args, 3),
+                hi: GetConstructorArgument(args, 2),
+                isNegative: ((byte)args[1].Value!) != 0,
+                scale: (byte)args[0].Value!);
+
+            static int GetConstructorArgument(IList<CustomAttributeTypedArgument> args, int index)
+            {
+                // The constructor is overloaded to accept both signed and unsigned arguments
+                object obj = args[index].Value!;
+                return (obj is int value) ? value : (int)(uint)obj;
+            }
+        }
+
+        private static DateTime GetRawDateTimeConstant(CustomAttributeData attr)
+        {
+            return new DateTime((long)attr.ConstructorArguments[0].Value!);
+        }
+
+        // We are relying only on named arguments for historical reasons
+        private static object? GetRawConstant(CustomAttributeData attr)
+        {
+            foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
+            {
+                if (namedArgument.MemberInfo.Name.Equals("Value"))
+                    return namedArgument.TypedValue.Value;
+            }
+            return DBNull.Value;
+        }
+
+        private static object? GetDefaultValue(IEnumerable<CustomAttributeData> customAttributes)
+        {
+            // we first look for a CustomConstantAttribute, but we will save the first occurrence of DecimalConstantAttribute
+            // so we don't go through all custom attributes again
+            CustomAttributeData? firstDecimalConstantAttributeData = null;
+            foreach (CustomAttributeData attributeData in customAttributes)
+            {
+                Type attributeType = attributeData.AttributeType;
+                if (firstDecimalConstantAttributeData == null && attributeType == typeof(DecimalConstantAttribute))
+                {
+                    firstDecimalConstantAttributeData = attributeData;
+                }
+                else if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
+                {
+                    CustomConstantAttribute customConstantAttribute = (CustomConstantAttribute)(attributeData.Instantiate());
+                    return customConstantAttribute.Value;
                 }
             }
 
-            defaultValue = null;
-            return false;
+            if (firstDecimalConstantAttributeData != null)
+            {
+                DecimalConstantAttribute decimalConstantAttribute = (DecimalConstantAttribute)(firstDecimalConstantAttributeData.Instantiate());
+                return decimalConstantAttribute.Value;
+            }
+            else
+            {
+                return DBNull.Value;
+            }
+        }
+
+        public static bool GetCustomAttributeDefaultValueIfAny(IEnumerable<CustomAttributeData> customAttributes, bool raw, out object? defaultValue)
+        {
+            // The resolution of default value is done by following these rules:
+            // 1. For RawDefaultValue, we pick the first custom attribute holding the constant value
+            //  in the following order: DecimalConstantAttribute, DateTimeConstantAttribute, CustomConstantAttribute
+            // 2. For DefaultValue, we first look for CustomConstantAttribute and pick the first occurrence.
+            //  If none is found, then we repeat the same process searching for DecimalConstantAttribute.
+            // IMPORTANT: Please note that there is a subtle difference in order custom attributes are inspected for
+            //  RawDefaultValue and DefaultValue.
+            object? resolvedValue = raw ? GetRawDefaultValue(customAttributes) : GetDefaultValue(customAttributes);
+            if (resolvedValue != DBNull.Value)
+            {
+                defaultValue = resolvedValue;
+                return true;
+            }
+            else
+            {
+                defaultValue = null;
+                return false;
+            }
         }
     }
 }

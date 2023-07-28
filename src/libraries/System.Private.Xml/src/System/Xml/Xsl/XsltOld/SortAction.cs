@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Globalization;
+using System.Xml;
+using System.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Xml;
-    using System.Xml.XPath;
-
     internal sealed class SortAction : CompiledAction
     {
         private int _selectKey = Compiler.InvalidQueryKey;
@@ -35,7 +35,7 @@ namespace System.Xml.Xsl.XsltOld
             // better to remove this method completely and not call it here, but that may
             // change exception types for some stylesheets.
             CultureInfo cultInfo = new CultureInfo(value);
-            if (!XmlComplianceUtil.IsValidLanguageID(value.ToCharArray(), 0, value.Length)
+            if (!XmlComplianceUtil.IsValidLanguageID(value)
                 && (value.Length == 0 || cultInfo == null)
             )
             {

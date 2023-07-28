@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
-using Debug = System.Diagnostics.Debug;
-using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL.Stubs
 {
@@ -18,7 +15,7 @@ namespace Internal.IL.Stubs
         private readonly MetadataType _delegateType;
         private readonly InteropStateManager _interopStateManager;
         private MethodSignature _signature;
-        
+
 
         public ForwardDelegateCreationThunk(MetadataType delegateType, TypeDesc owningType, InteropStateManager interopStateManager)
         {
@@ -55,14 +52,11 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                if (_signature == null)
-                {
-                    _signature = new MethodSignature(MethodSignatureFlags.Static, 0, 
+                _signature ??= new MethodSignature(MethodSignatureFlags.Static, 0,
                         DelegateType,
                         new TypeDesc[] {
                             Context.GetWellKnownType(WellKnownType.IntPtr)
                             });
-                }
                 return _signature;
             }
         }
@@ -87,7 +81,7 @@ namespace Internal.IL.Stubs
         /// This thunk creates a delegate from a native function pointer
         /// by first creating a PInvokeDelegateWrapper from the function pointer
         /// and then creating the delegate from the Invoke method of the wrapper
-        ///  
+        ///
         /// Generated IL:
         ///     ldarg   0
         ///     newobj PInvokeDelegateWrapper.ctor
@@ -95,8 +89,8 @@ namespace Internal.IL.Stubs
         ///     ldvirtftn PInvokeDelegateWrapper.Invoke
         ///     newobj DelegateType.ctor
         ///     ret
-        ///     
-        /// Equivalent C#    
+        ///
+        /// Equivalent C#
         ///     return new DelegateType(new PInvokeDelegateWrapper(functionPointer).Invoke)
         /// </summary>
         public override MethodIL EmitIL()
@@ -116,8 +110,8 @@ namespace Internal.IL.Stubs
                 .GetPInvokeDelegateWrapperMethod(PInvokeDelegateWrapperMethodKind.Invoke)));
 
             codeStream.Emit(ILOpcode.newobj, emitter.NewToken(
-                _delegateType.GetMethod(".ctor", 
-                new MethodSignature(MethodSignatureFlags.None, 
+                _delegateType.GetMethod(".ctor",
+                new MethodSignature(MethodSignatureFlags.None,
                     genericParameterCount: 0,
                     returnType: Context.GetWellKnownType(WellKnownType.Void),
                     parameters: new TypeDesc[] { Context.GetWellKnownType(WellKnownType.Object),

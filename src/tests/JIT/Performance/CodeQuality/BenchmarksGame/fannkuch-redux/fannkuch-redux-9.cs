@@ -15,6 +15,7 @@ using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 //using BenchmarkDotNet.Attributes;
 //using MicroBenchmarks;
 
@@ -23,9 +24,16 @@ namespace BenchmarksGame
     //[BenchmarkCategory(Categories.Runtime, Categories.BenchmarksGame, Categories.JIT)]
     public unsafe class FannkuchRedux_9
     {
-        public static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            int n = args.Length > 0 ? int.Parse(args[0]) : 7;
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 7;
             int sum = Bench(n, true);
 
             int expected = 228;
@@ -164,7 +172,11 @@ namespace BenchmarksGame
                 fact[i] = fact[i - 1] * i;
             }
 
-            var PC = Environment.ProcessorCount;
+            // For n == 7 and nTasks > 8, the algorithm returns chkSum != 228
+            // Hence, we restrict the processor count to 8 to get consistency on
+            // all the hardwares.
+            // See https://github.com/dotnet/runtime/issues/67157
+            var PC = Math.Min(Environment.ProcessorCount, 8);
             taskCount = n > 11 ? fact[n] / (9 * 8 * 7 * 6 * 5 * 4 * 3 * 2) : PC;
             int taskSize = fact[n] / taskCount;
             chkSums = new int[PC];

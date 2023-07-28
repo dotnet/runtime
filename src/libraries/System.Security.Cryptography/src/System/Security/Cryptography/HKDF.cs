@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -14,7 +15,6 @@ namespace System.Security.Cryptography
     /// phase to be skipped, and the master key to be used directly as the pseudorandom key.
     /// See <a href="https://tools.ietf.org/html/rfc5869">RFC5869</a> for more information.
     /// </remarks>
-    [UnsupportedOSPlatform("browser")]
     public static class HKDF
     {
         /// <summary>
@@ -85,8 +85,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(prk);
 
-            if (outputLength <= 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(outputLength);
 
             int hashLength = HashLength(hashAlgorithmName);
 
@@ -132,14 +131,14 @@ namespace System.Security.Cryptography
             if (prk.Length < hashLength)
                 throw new ArgumentException(SR.Format(SR.Cryptography_Prk_TooSmall, hashLength), nameof(prk));
 
-            Span<byte> counterSpan = stackalloc byte[1];
-            ref byte counter = ref counterSpan[0];
+            byte counter = 0;
+            var counterSpan = new Span<byte>(ref counter);
             Span<byte> t = Span<byte>.Empty;
             Span<byte> remainingOutput = output;
 
             const int MaxStackInfoBuffer = 64;
             Span<byte> tempInfoBuffer = stackalloc byte[MaxStackInfoBuffer];
-            ReadOnlySpan<byte> infoBuffer = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> infoBuffer;
             byte[]? rentedTempInfoBuffer = null;
 
             if (output.Overlaps(info))
@@ -210,8 +209,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(ikm);
 
-            if (outputLength <= 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(outputLength);
 
             int hashLength = HashLength(hashAlgorithmName);
             Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
@@ -287,6 +285,18 @@ namespace System.Security.Cryptography
             else if (hashAlgorithmName == HashAlgorithmName.SHA512)
             {
                 return HMACSHA512.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_256)
+            {
+                return HMACSHA3_256.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_384)
+            {
+                return HMACSHA3_384.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_512)
+            {
+                return HMACSHA3_512.HashSizeInBytes;
             }
             else if (hashAlgorithmName == HashAlgorithmName.MD5)
             {

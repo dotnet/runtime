@@ -40,8 +40,7 @@ namespace System.Collections
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Length - index < this.Count)
                 throw new ArgumentException(SR.ArgumentOutOfRange_IndexMustBeLessOrEqual, nameof(index));
@@ -69,12 +68,6 @@ namespace System.Collections
             {
                 ArgumentNullException.ThrowIfNull(key);
 
-                if (!key.GetType().IsSerializable)
-                    throw new ArgumentException(SR.Argument_NotSerializable, nameof(key));
-
-                if ((value != null) && (!value.GetType().IsSerializable))
-                    throw new ArgumentException(SR.Argument_NotSerializable, nameof(value));
-
                 throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
             }
         }
@@ -91,12 +84,6 @@ namespace System.Collections
         public void Add(object key, object? value)
         {
             ArgumentNullException.ThrowIfNull(key);
-
-            if (!key.GetType().IsSerializable)
-                throw new ArgumentException(SR.Argument_NotSerializable, nameof(key));
-
-            if ((value != null) && (!value.GetType().IsSerializable))
-                throw new ArgumentException(SR.Argument_NotSerializable, nameof(value));
 
             throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
         }

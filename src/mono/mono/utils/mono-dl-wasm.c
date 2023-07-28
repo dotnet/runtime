@@ -1,5 +1,6 @@
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/eglib/glib.h>
 
 #if defined (HOST_WASM)
 
@@ -32,13 +33,6 @@ mono_dl_get_so_suffixes (void)
 	};
 	return suffixes;
 }
-
-const char*
-mono_dl_get_system_dir (void)
-{
-	return NULL;
-}
-
 
 void*
 mono_dl_lookup_symbol (MonoDl *module, const char *name)

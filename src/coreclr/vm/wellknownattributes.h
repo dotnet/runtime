@@ -22,7 +22,6 @@ enum class WellKnownAttribute : DWORD
     DefaultDllImportSearchPaths,
     Guid,
     LCIDConversion,
-    IDispatchImpl,
     ImportedFromTypeLib,
     Intrinsic,
     IsByRefLike,
@@ -37,6 +36,8 @@ enum class WellKnownAttribute : DWORD
     WinRTMarshalingBehaviorAttribute,
     PreserveBaseOverridesAttribute,
     ObjectiveCTrackedTypeAttribute,
+    InlineArrayAttribute,
+    UnsafeAccessorAttribute,
 
     CountOfWellKnownAttributes
 };
@@ -77,8 +78,6 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.InteropServices.GuidAttribute";
         case WellKnownAttribute::LCIDConversion:
             return "System.Runtime.InteropServices.LCIDConversionAttribute";
-        case WellKnownAttribute::IDispatchImpl:
-            return "System.Runtime.InteropServices.IDispatchImplAttribute";
         case WellKnownAttribute::ImportedFromTypeLib:
             return "System.Runtime.InteropServices.ImportedFromTypeLibAttribute";
         case WellKnownAttribute::Intrinsic:
@@ -107,6 +106,10 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.CompilerServices.PreserveBaseOverridesAttribute";
         case WellKnownAttribute::ObjectiveCTrackedTypeAttribute:
             return "System.Runtime.InteropServices.ObjectiveC.ObjectiveCTrackedTypeAttribute";
+        case WellKnownAttribute::InlineArrayAttribute:
+            return "System.Runtime.CompilerServices.InlineArrayAttribute";
+        case WellKnownAttribute::UnsafeAccessorAttribute:
+            return "System.Runtime.CompilerServices.UnsafeAccessorAttribute";
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
             break; // Silence compiler warnings

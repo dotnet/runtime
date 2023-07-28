@@ -50,6 +50,16 @@ namespace System.Reflection.TypeLoading.Ecma
             foreach (GenericParameterConstraintHandle h in handles)
             {
                 RoType constraint = h.GetGenericParameterConstraint(reader).Type.ResolveTypeDefRefOrSpec(GetEcmaModule(), typeContext);
+
+                // A constraint can have modifiers such as 'System.Runtime.InteropServices.UnmanagedType' which here is a 'System.ValueType'
+                // modified type with a modreq for 'UnmanagedType' which would be obtainable through 'GetRequiredCustomModifiers()'.
+                // However, for backwards compat, just return the unmodified type ('ValueType' in this case). This also prevents modified types from
+                // "leaking" into an unmodified type hierarchy.
+                if (constraint is RoModifiedType)
+                {
+                    constraint = (RoType)constraint.UnderlyingSystemType;
+                }
+
                 constraints[index++] = constraint;
             }
             return constraints;

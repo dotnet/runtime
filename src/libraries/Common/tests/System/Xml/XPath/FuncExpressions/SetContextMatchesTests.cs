@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
 using System.Xml;
-using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
 {
@@ -18,8 +16,11 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         /// Match node with qname
         /// //NSbook:book
         /// </summary>
-        [Fact]
-        public static void MatchesTest441()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest441(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection/NSbook:book[1]";
@@ -29,7 +30,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
             namespaceManager.AddNamespace("NSbook", "http://book.htm");
             var expected = true;
 
-            Utils.XPathMatchTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathMatchTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -37,21 +38,27 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         /// Prefix is not defined, should throw an error
         /// //NSbook:book
         /// </summary>
-        [Fact]
-        public static void MatchesTest442()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest442(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//NSbook:book[1]";
 
-            Utils.XPathMatchTestThrows<System.Xml.XPath.XPathException>(xml, testExpression);
+            Utils.XPathMatchTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression);
         }
 
         /// <summary>
         /// use of multiple namespaces
         /// /doc/prefix1:elem/prefix2:elem
         /// </summary>
-        [Fact]
-        public static void MatchesTest443()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest443(Utils.NavigatorKind kind)
         {
             var xml = "name4.xml";
             var startingNodePath = "/doc/*[2]/*[1]";
@@ -62,7 +69,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
             namespaceManager.AddNamespace("prefix2", "http://prefix2.htm");
             var expected = true;
 
-            Utils.XPathMatchTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathMatchTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -70,8 +77,11 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         /// Prefix points to a namespace that is not defined in the document, should not match
         /// //NSbook:book
         /// </summary>
-        [Fact]
-        public static void MatchesTest444()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest444(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection/*[1]";
@@ -81,7 +91,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
             namespaceManager.AddNamespace("NSbook", "http://notbook.htm");
             var expected = false;
 
-            Utils.XPathMatchTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathMatchTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -89,8 +99,11 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         /// Uses default namespace in the XmlNamespaceManager. The document has the namespace defined with a prefix. XPath should not match this node since it is not in null namespace.
         /// (//book)[1]
         /// </summary>
-        [Fact]
-        public static void MatchesTest445()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest445(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection/*[1]";
@@ -99,7 +112,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
 
             namespaceManager.AddNamespace("", "http://book.htm");
 
-            Utils.XPathMatchTestThrows<System.Xml.XPath.XPathException>(xml, testExpression,
+            Utils.XPathMatchTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression,
                 namespaceManager: namespaceManager, startingNodePath: startingNodePath);
         }
 
@@ -107,8 +120,11 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         /// The document's default namespace is also the default namespace in the XmlNamespaceManager, XPath should not be able to match the default namespaces, since it will be treated as null namespace.
         /// //book[1]
         /// </summary>
-        [Fact]
-        public static void MatchesTest446()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest446(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/*[1]/*[1]/*[3]";
@@ -118,7 +134,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
             namespaceManager.AddNamespace("", "http://default.htm");
             var expected = false;
 
-            Utils.XPathMatchTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathMatchTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -126,8 +142,11 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         /// The document's default namespace is defined with a prefix in the XmlNamespaceManager, XPath should find the nodes with the default namespace in the document.
         /// //foo:book[1]
         /// </summary>
-        [Fact]
-        public static void MatchesTest447()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest447(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/*[1]/*[1]/*[3]";
@@ -137,7 +156,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
             namespaceManager.AddNamespace("foo", "http://default.htm");
             var expected = true;
 
-            Utils.XPathMatchTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathMatchTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
     }

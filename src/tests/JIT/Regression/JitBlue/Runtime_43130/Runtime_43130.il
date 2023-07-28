@@ -5,9 +5,7 @@
 // with an implicit cast, when we substitute the use as the argument in the inlined body
 // we should be careful about handling the 'PUTARG_TYPE' node that shows the cast.
 
-.assembly extern System.Runtime
-{
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.Extensions
 {
 }
@@ -16,7 +14,7 @@
 }
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Runtime_43130
+.class public auto ansi beforefieldinit Runtime_43130
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Test1(int32 i1) cil managed noinlining

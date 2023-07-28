@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly a1 {}
-.class ILGEN_622380794 {
+.assembly 'b16071' {}
+.class public ILGEN_622380794 {
 
 .field static	unsigned int8 field_0x0
 .field static	int16 field_0x3
@@ -19,7 +20,10 @@
 .field static	int8 field_0x22
 .field static	unsigned int8 field_0x24
 
-.method static int32 main() {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	22
 

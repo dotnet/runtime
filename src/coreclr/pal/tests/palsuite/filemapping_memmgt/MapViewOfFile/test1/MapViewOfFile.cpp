@@ -235,7 +235,7 @@ PALTEST(filemapping_memmgt_MapViewOfFile_test1_paltest_mapviewoffile_test1, "fil
     
     VirtualFree( buf, 0, MEM_RELEASE );
 
-    DeleteFile(lpFilePath);
+    remove(lpFilePath);
 
     PAL_Terminate();
     return PASS;

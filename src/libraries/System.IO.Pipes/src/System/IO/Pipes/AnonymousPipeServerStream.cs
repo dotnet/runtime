@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Pipes
@@ -12,7 +11,8 @@ namespace System.IO.Pipes
     public sealed partial class AnonymousPipeServerStream : PipeStream
     {
         private SafePipeHandle _clientHandle = null!;
-        private bool _clientHandleExposed;
+        private bool _clientHandleExposed, _clientHandleExposedAsString;
+        private readonly HandleInheritability _inheritability;
 
         public AnonymousPipeServerStream()
             : this(PipeDirection.Out, HandleInheritability.None, 0)
@@ -73,6 +73,7 @@ namespace System.IO.Pipes
             }
 
             Create(direction, inheritability, bufferSize);
+            _inheritability = inheritability;
         }
 
         ~AnonymousPipeServerStream()
@@ -84,7 +85,7 @@ namespace System.IO.Pipes
         // processes. For now, people do it via command line arguments.
         public string GetClientHandleAsString()
         {
-            _clientHandleExposed = true;
+            _clientHandleExposedAsString =_clientHandleExposed = true;
             GC.SuppressFinalize(_clientHandle);
             return _clientHandle.DangerousGetHandle().ToString();
         }
@@ -121,10 +122,11 @@ namespace System.IO.Pipes
         {
             try
             {
-                // We should dispose of the client handle if it was not exposed.
-                if (!_clientHandleExposed && _clientHandle != null && !_clientHandle.IsClosed)
+                // We should dispose of the client handle when it was not exposed at all OR
+                // it was exposed as a string (handle finalization has been suppressed) and created inheritable (out-of-proc communication).
+                if (!_clientHandleExposed || (_clientHandleExposedAsString && _inheritability == HandleInheritability.Inheritable))
                 {
-                    _clientHandle.Dispose();
+                    DisposeLocalCopyOfClientHandle();
                 }
             }
             finally

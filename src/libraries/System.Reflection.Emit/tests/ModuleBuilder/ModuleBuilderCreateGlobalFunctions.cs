@@ -17,6 +17,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             module.CreateGlobalFunctions();
+            Assert.Null(method.DeclaringType);
         }
 
         [Fact]
@@ -34,6 +35,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.EmitWriteLine("Hello World from global method again!");
 
             module.CreateGlobalFunctions();
+            Assert.Null(method.DeclaringType);
         }
 
         [Fact]
@@ -46,6 +48,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             module.CreateGlobalFunctions();
+            Assert.Null(method.DeclaringType);
             Assert.Throws<InvalidOperationException>(() => module.CreateGlobalFunctions());
         }
     }

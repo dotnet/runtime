@@ -14,8 +14,8 @@
 
 .assembly 'conv_ovf_i1_un' {}
 .assembly extern mscorlib{auto}
-.class Class_test {
-    .method static int32 Main() {
+.class public Class_test {
+    .method public static int32 Main() {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )

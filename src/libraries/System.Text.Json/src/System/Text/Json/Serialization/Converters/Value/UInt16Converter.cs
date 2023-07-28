@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class UInt16Converter : JsonConverter<ushort>
+    internal sealed class UInt16Converter : JsonPrimitiveConverter<ushort>
     {
         public UInt16Converter()
         {
@@ -23,6 +25,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override ushort ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
             return reader.GetUInt16WithQuotes();
         }
 

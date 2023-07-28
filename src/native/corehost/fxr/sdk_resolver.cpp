@@ -34,7 +34,7 @@ sdk_resolver::sdk_resolver(bool allow_prerelease) :
 }
 
 sdk_resolver::sdk_resolver(fx_ver_t version, sdk_roll_forward_policy roll_forward, bool allow_prerelease) :
-    requested_version(move(version)),
+    requested_version(std::move(version)),
     roll_forward(roll_forward),
     allow_prerelease(allow_prerelease)
 {
@@ -353,7 +353,7 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
         }
     }
 
-    global_file = move(global_file_path);
+    global_file = std::move(global_file_path);
     return true;
 }
 
@@ -464,14 +464,20 @@ bool sdk_resolver::resolve_sdk_path_and_version(const pal::string_t& dir, pal::s
         auto probe_path = dir;
         append_path(&probe_path, requested_version.as_str().c_str());
 
-        if (pal::directory_exists(probe_path))
+        pal::string_t sdk_dll_maybe = probe_path;
+        append_path(&sdk_dll_maybe, SDK_DOTNET_DLL);
+        if (pal::file_exists(sdk_dll_maybe))
         {
-            trace::verbose(_X("Found requested SDK directory [%s]"), probe_path.c_str());
-            sdk_path = move(probe_path);
+            trace::verbose(_X("Found requested SDK [%s]"), probe_path.c_str());
+            sdk_path = std::move(probe_path);
             resolved_version = requested_version;
 
             // The SDK path has been resolved
             return true;
+        }
+        else if (trace::is_enabled() && pal::directory_exists(probe_path))
+        {
+            trace::verbose(_X("Ignoring version [%s] without ") SDK_DOTNET_DLL, requested_version.as_str().c_str());
         }
     }
 
@@ -481,46 +487,42 @@ bool sdk_resolver::resolve_sdk_path_and_version(const pal::string_t& dir, pal::s
         return false;
     }
 
-    vector<pal::string_t> versions;
-    pal::readdir_onlydirectories(dir, &versions);
-
     bool changed = false;
     pal::string_t resolved_version_str = resolved_version.is_empty() ? pal::string_t{} : resolved_version.as_str();
-    for (auto&& version : versions)
-    {
-        fx_ver_t ver;
-        if (!fx_ver_t::parse(version, &ver, false))
+    sdk_info::enumerate_sdk_paths(
+        dir,
+        [&](const fx_ver_t& version, const pal::string_t& version_str)
         {
-            trace::verbose(_X("Ignoring invalid version [%s]"), version.c_str());
-            continue;
-        }
+            if (!matches_policy(version))
+            {
+                trace::verbose(_X("Ignoring version [%s] because it does not match the roll-forward policy"), version_str.c_str());
+                return true;
+            }
 
-        if (!matches_policy(ver))
-        {
-            trace::verbose(_X("Ignoring version [%s] because it does not match the roll-forward policy"), version.c_str());
-            continue;
-        }
+            if (!is_better_match(version, resolved_version))
+            {
+                trace::verbose(
+                    _X("Ignoring version [%s] because it is not a better match than [%s]"),
+                    version_str.c_str(),
+                    resolved_version_str.empty() ? _X("none") : resolved_version_str.c_str()
+                );
+                return true;
+            }
 
-        if (!is_better_match(ver, resolved_version))
+            return false;
+        },
+        [&](const fx_ver_t& version, const pal::string_t& version_str, const pal::string_t& full_path)
         {
             trace::verbose(
-                _X("Ignoring version [%s] because it is not a better match than [%s]"),
-                version.c_str(),
+                _X("Version [%s] is a better match than [%s]"),
+                version_str.c_str(),
                 resolved_version_str.empty() ? _X("none") : resolved_version_str.c_str()
             );
-            continue;
-        }
 
-        trace::verbose(
-            _X("Version [%s] is a better match than [%s]"),
-            version.c_str(),
-            resolved_version_str.empty() ? _X("none") : resolved_version_str.c_str()
-        );
-
-        changed = true;
-        resolved_version = ver;
-        resolved_version_str = move(version);
-    }
+            changed = true;
+            resolved_version = version;
+            resolved_version_str = std::move(version_str);
+        });
 
     if (changed)
     {

@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -52,7 +52,7 @@ namespace Microsoft.Interop
             if (!fixedStatements.IsEmpty)
             {
                 int i = fixedStatements.Length - 1;
-                nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(SyntaxFactory.Block(nestedStatement));
+                nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(WrapStatementInBlock(nestedStatement));
                 i--;
                 for (; i >= 0; i--)
                 {
@@ -60,6 +60,15 @@ namespace Microsoft.Interop
                 }
             }
             return nestedStatement;
+
+            static StatementSyntax WrapStatementInBlock(StatementSyntax statement)
+            {
+                if (statement.IsKind(SyntaxKind.Block))
+                {
+                    return statement;
+                }
+                return SyntaxFactory.Block(statement);
+            }
         }
 
         public static SyntaxTokenList StripTriviaFromTokens(this SyntaxTokenList tokenList)
@@ -68,6 +77,20 @@ namespace Microsoft.Interop
             for (int i = 0; i < tokenList.Count; i++)
             {
                 strippedTokens[i] = tokenList[i].WithoutTrivia();
+            }
+            return new SyntaxTokenList(strippedTokens);
+        }
+
+        public static SyntaxTokenList StripAccessibilityModifiers(this SyntaxTokenList tokenList)
+        {
+            List<SyntaxToken> strippedTokens = new();
+            for (int i = 0; i < tokenList.Count; i++)
+            {
+                if (tokenList[i].Kind() is SyntaxKind.PublicKeyword or SyntaxKind.InternalKeyword or SyntaxKind.ProtectedKeyword or SyntaxKind.PrivateKeyword)
+                {
+                    continue;
+                }
+                strippedTokens.Add(tokenList[i]);
             }
             return new SyntaxTokenList(strippedTokens);
         }
@@ -81,6 +104,20 @@ namespace Microsoft.Interop
             return idx >= 0
                 ? modifiers.Insert(idx, SyntaxFactory.Token(modifierToAdd))
                 : modifiers.Add(SyntaxFactory.Token(modifierToAdd));
+        }
+
+        public static bool IsInPartialContext(this TypeDeclarationSyntax syntax, [NotNullWhen(false)] out SyntaxToken? nonPartialIdentifier)
+        {
+            for (SyntaxNode? parentNode = syntax; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
+            {
+                if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
+                {
+                    nonPartialIdentifier = typeDecl.Identifier;
+                    return false;
+                }
+            }
+            nonPartialIdentifier = null;
+            return true;
         }
     }
 }

@@ -478,8 +478,6 @@ namespace System.Security.Cryptography.X509Certificates
             EventId_CrlCacheExpired,
             Level = EventLevel.Verbose,
             Message = "The cached CRL's nextUpdate value ({1:O}) is not after the verification time ({0:O}).")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "verificationTime and nextUpdate are DateTime values, which are trimmer safe")]
         internal void CrlCacheExpired(DateTime verificationTime, DateTime nextUpdate)
         {
             if (IsEnabled())
@@ -504,8 +502,6 @@ namespace System.Security.Cryptography.X509Certificates
             EventId_CrlCacheAcceptedFile,
             Level = EventLevel.Verbose,
             Message = "The cached crl nextUpdate value ({0:O}) is acceptable, using the cached file.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "nextUpdate is a DateTime value, which is trimmer safe")]
         internal void CrlCacheAcceptedFile(DateTime nextUpdate)
         {
             if (IsEnabled())
@@ -685,11 +681,11 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [NonEvent]
-        internal void CachingIntermediateFailed(X509Certificate2 certificate)
+        internal void CachingIntermediateFailedMessage()
         {
             if (IsEnabled())
             {
-                CachingIntermediateFailed(certificate.Subject);
+                CachingIntermediateFailed();
             }
         }
 
@@ -697,7 +693,7 @@ namespace System.Security.Cryptography.X509Certificates
             EventId_CachingIntermediateFailed,
             Level = EventLevel.Warning,
             Message = "Adding the downloaded intermediate '{0}' to the CurrentUser\\CA store failed.")]
-        private void CachingIntermediateFailed(string subjectName)
+        private void CachingIntermediateFailed()
         {
             WriteEvent(EventId_CachingIntermediateFailed);
         }
@@ -707,8 +703,6 @@ namespace System.Security.Cryptography.X509Certificates
             Message = "Starting revocation check in mode '{0}' with scope '{1}' on a {2}-element chain.",
             Opcode = EventOpcode.Start,
             Level = EventLevel.Informational)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "revocationMode and revocationFlag are enums, and are trimmer safe")]
         internal void RevocationCheckStart(X509RevocationMode revocationMode, X509RevocationFlag revocationFlag, int chainSize)
         {
             if (IsEnabled())

@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -18,7 +20,7 @@ namespace System
     /// </remarks>
     [Serializable]
     [DebuggerDisplay("Count = {InnerExceptionCount}")]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class AggregateException : Exception
     {
         private readonly Exception[] _innerExceptions; // Complete set of exceptions.
@@ -49,7 +51,7 @@ namespace System
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="innerException"/> argument
+        /// <exception cref="ArgumentNullException">The <paramref name="innerException"/> argument
         /// is null.</exception>
         public AggregateException(string? message, Exception innerException)
             : base(message, innerException)
@@ -64,9 +66,9 @@ namespace System
         /// references to the inner exceptions that are the cause of this exception.
         /// </summary>
         /// <param name="innerExceptions">The exceptions that are the cause of the current exception.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="innerExceptions"/> argument
+        /// <exception cref="ArgumentNullException">The <paramref name="innerExceptions"/> argument
         /// is null.</exception>
-        /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
+        /// <exception cref="ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(IEnumerable<Exception> innerExceptions) :
             this(SR.AggregateException_ctor_DefaultMessage, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)))
@@ -78,9 +80,9 @@ namespace System
         /// references to the inner exceptions that are the cause of this exception.
         /// </summary>
         /// <param name="innerExceptions">The exceptions that are the cause of the current exception.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="innerExceptions"/> argument
+        /// <exception cref="ArgumentNullException">The <paramref name="innerExceptions"/> argument
         /// is null.</exception>
-        /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
+        /// <exception cref="ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(params Exception[] innerExceptions) :
             this(SR.AggregateException_ctor_DefaultMessage, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)))
@@ -93,9 +95,9 @@ namespace System
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="innerExceptions">The exceptions that are the cause of the current exception.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="innerExceptions"/> argument
+        /// <exception cref="ArgumentNullException">The <paramref name="innerExceptions"/> argument
         /// is null.</exception>
-        /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
+        /// <exception cref="ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(string? message, IEnumerable<Exception> innerExceptions)
             : this(message, new List<Exception>(innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions))).ToArray(), cloneExceptions: false)
@@ -108,9 +110,9 @@ namespace System
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="innerExceptions">The exceptions that are the cause of the current exception.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="innerExceptions"/> argument
+        /// <exception cref="ArgumentNullException">The <paramref name="innerExceptions"/> argument
         /// is null.</exception>
-        /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
+        /// <exception cref="ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(string? message, params Exception[] innerExceptions) :
             this(message, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)), cloneExceptions: true)
@@ -140,9 +142,9 @@ namespace System
         /// <param name="innerExceptionInfos">
         /// Information about the exceptions that are the cause of the current exception.
         /// </param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="innerExceptionInfos"/> argument
+        /// <exception cref="ArgumentNullException">The <paramref name="innerExceptionInfos"/> argument
         /// is null.</exception>
-        /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptionInfos"/> is
+        /// <exception cref="ArgumentException">An element of <paramref name="innerExceptionInfos"/> is
         /// null.</exception>
         internal AggregateException(List<ExceptionDispatchInfo> innerExceptionInfos) :
             this(SR.AggregateException_ctor_DefaultMessage, innerExceptionInfos)
@@ -158,9 +160,9 @@ namespace System
         /// <param name="innerExceptionInfos">
         /// Information about the exceptions that are the cause of the current exception.
         /// </param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="innerExceptionInfos"/> argument
+        /// <exception cref="ArgumentNullException">The <paramref name="innerExceptionInfos"/> argument
         /// is null.</exception>
-        /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptionInfos"/> is
+        /// <exception cref="ArgumentException">An element of <paramref name="innerExceptionInfos"/> is
         /// null.</exception>
         internal AggregateException(string message, List<ExceptionDispatchInfo> innerExceptionInfos)
             : base(message, innerExceptionInfos.Count != 0 ? innerExceptionInfos[0].SourceException : null)
@@ -177,12 +179,14 @@ namespace System
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateException"/> class with serialized data.
         /// </summary>
-        /// <param name="info">The <see cref="System.Runtime.Serialization.SerializationInfo"/> that holds
+        /// <param name="info">The <see cref="SerializationInfo"/> that holds
         /// the serialized object data about the exception being thrown.</param>
-        /// <param name="context">The <see cref="System.Runtime.Serialization.StreamingContext"/> that
+        /// <param name="context">The <see cref="StreamingContext"/> that
         /// contains contextual information about the source or destination. </param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
-        /// <exception cref="System.Runtime.Serialization.SerializationException">The exception could not be deserialized correctly.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
+        /// <exception cref="SerializationException">The exception could not be deserialized correctly.</exception>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected AggregateException(SerializationInfo info, StreamingContext context) :
             base(info, context)
         {
@@ -196,14 +200,16 @@ namespace System
         }
 
         /// <summary>
-        /// Sets the <see cref="System.Runtime.Serialization.SerializationInfo"/> with information about
+        /// Sets the <see cref="SerializationInfo"/> with information about
         /// the exception.
         /// </summary>
-        /// <param name="info">The <see cref="System.Runtime.Serialization.SerializationInfo"/> that holds
+        /// <param name="info">The <see cref="SerializationInfo"/> that holds
         /// the serialized object data about the exception being thrown.</param>
-        /// <param name="context">The <see cref="System.Runtime.Serialization.StreamingContext"/> that
+        /// <param name="context">The <see cref="StreamingContext"/> that
         /// contains contextual information about the source or destination. </param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -212,7 +218,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns the <see cref="System.AggregateException"/> that is the root cause of this exception.
+        /// Returns the <see cref="AggregateException"/> that is the root cause of this exception.
         /// </summary>
         public override Exception GetBaseException()
         {
@@ -230,22 +236,22 @@ namespace System
         }
 
         /// <summary>
-        /// Gets a read-only collection of the <see cref="System.Exception"/> instances that caused the
+        /// Gets a read-only collection of the <see cref="Exception"/> instances that caused the
         /// current exception.
         /// </summary>
         public ReadOnlyCollection<Exception> InnerExceptions => _rocView ??= new ReadOnlyCollection<Exception>(_innerExceptions);
 
 
         /// <summary>
-        /// Invokes a handler on each <see cref="System.Exception"/> contained by this <see
+        /// Invokes a handler on each <see cref="Exception"/> contained by this <see
         /// cref="AggregateException"/>.
         /// </summary>
         /// <param name="predicate">The predicate to execute for each exception. The predicate accepts as an
-        /// argument the <see cref="System.Exception"/> to be processed and returns a Boolean to indicate
+        /// argument the <see cref="Exception"/> to be processed and returns a Boolean to indicate
         /// whether the exception was handled.</param>
         /// <remarks>
         /// Each invocation of the <paramref name="predicate"/> returns true or false to indicate whether the
-        /// <see cref="System.Exception"/> was handled. After all invocations, if any exceptions went
+        /// <see cref="Exception"/> was handled. After all invocations, if any exceptions went
         /// unhandled, all unhandled exceptions will be put into a new <see cref="AggregateException"/>
         /// which will be thrown. Otherwise, the <see cref="Handle"/> method simply returns. If any
         /// invocations of the <paramref name="predicate"/> throws an exception, it will halt the processing
@@ -253,7 +259,7 @@ namespace System
         /// </remarks>
         /// <exception cref="AggregateException">An exception contained by this <see
         /// cref="AggregateException"/> was not handled.</exception>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="predicate"/> argument is
+        /// <exception cref="ArgumentNullException">The <paramref name="predicate"/> argument is
         /// null.</exception>
         public void Handle(Func<Exception, bool> predicate)
         {

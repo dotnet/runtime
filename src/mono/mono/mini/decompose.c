@@ -1214,6 +1214,10 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				mono_simd_decompose_intrinsic (cfg, bb, ins);
 #endif
 				switch (ins->opcode) {
+				case OP_LDTOKEN_FIELD:
+					ins->opcode = OP_VMOVE;
+					restart = TRUE;
+					break;
 				case OP_VMOVE: {
 					g_assert (ins->klass);
 					if (COMPILE_LLVM (cfg) && !mini_is_gsharedvt_klass (ins->klass))
@@ -1546,7 +1550,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					if (COMPILE_LLVM (cfg)) {
 						int index2_reg = alloc_preg (cfg);
 						MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
-						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, index2_reg, ins->flags & MONO_INST_FAULT, ins->inst_p0);
+						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, GINT32_TO_UINT32(ins->inst_imm), index2_reg, ins->flags & MONO_INST_FAULT, ins->inst_p0);
 					} else {
 						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->inst_p0);
 					}

@@ -34,7 +34,7 @@ c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
 #ifdef NEED_OPENSSL_1_0
-static void EnsureLibSsl10Initialized()
+static void EnsureLibSsl10Initialized(void)
 {
     SSL_library_init();
     SSL_load_error_strings();
@@ -91,7 +91,7 @@ static uint64_t SSL_set_options_dynamic(SSL* s, uint64_t options)
 static int32_t g_config_specified_ciphersuites = 0;
 static char* g_emptyAlpn = "";
 
-static void DetectCiphersuiteConfiguration()
+static void DetectCiphersuiteConfiguration(void)
 {
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
 
@@ -173,7 +173,7 @@ static void DetectCiphersuiteConfiguration()
 #endif
 }
 
-void CryptoNative_EnsureLibSslInitialized()
+void CryptoNative_EnsureLibSslInitialized(void)
 {
     CryptoNative_EnsureOpenSslInitialized();
 
@@ -192,7 +192,7 @@ void CryptoNative_EnsureLibSslInitialized()
     DetectCiphersuiteConfiguration();
 }
 
-const SSL_METHOD* CryptoNative_SslV2_3Method()
+const SSL_METHOD* CryptoNative_SslV2_3Method(void)
 {
     // No error queue impact.
     const SSL_METHOD* method = TLS_method();
@@ -236,12 +236,6 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
                 SSL_CTX_free(ctx);
                 return NULL;
             }
-        }
-
-        // Opportunistically request the server present a stapled OCSP response.
-        if (SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE, TLSEXT_STATUSTYPE_ocsp, NULL) != 1)
-        {
-            ERR_clear_error();
         }
     }
 
@@ -365,7 +359,18 @@ void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 {
     ERR_clear_error();
-    return SSL_new(ctx);
+    SSL* ret = SSL_new(ctx);
+
+    if (ret != NULL)
+    {
+        // Opportunistically request the server present a stapled OCSP response.
+        if (SSL_ctrl(ret, SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE, TLSEXT_STATUSTYPE_ocsp, NULL) != 1)
+        {
+            ERR_clear_error();
+        }
+    }
+
+    return ret;
 }
 
 int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
@@ -482,7 +487,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
 
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     // TLS1.3 uses different API for renegotiation/delayed client cert request
     #ifndef TLS1_3_VERSION
     #define TLS1_3_VERSION 0x0304
@@ -650,7 +655,7 @@ void CryptoNative_SslSetVerifyPeer(SSL* ssl)
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
 }
 
-int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
+int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
 {
     int retValue = 1;
     if (mode && !API_EXISTS(SSL_SESSION_get0_hostname))
@@ -676,6 +681,11 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, SslCtxN
     else if (cacheSize >= 0)
     {
         SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_SIZE, (long)cacheSize, NULL);
+    }
+
+    if (contextIdLength > 0 && contextId != NULL)
+    {
+        SSL_CTX_set_session_id_context(ctx, contextId, contextIdLength <= SSL_MAX_SID_CTX_LENGTH ? (unsigned int)contextIdLength : SSL_MAX_SID_CTX_LENGTH);
     }
 
     if (newSessionCb != NULL)
@@ -899,7 +909,7 @@ const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite
 #endif
 }
 
-int32_t CryptoNative_Tls13Supported()
+int32_t CryptoNative_Tls13Supported(void)
 {
     // No error queue impact.
 
@@ -997,7 +1007,7 @@ void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set)
 
 void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
 {
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     if (API_EXISTS(SSL_set_post_handshake_auth))
     {
         SSL_set_post_handshake_auth(ssl, val);
@@ -1041,7 +1051,7 @@ int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t 
     }
     else
 #else
-    (void)ctx;
+    (void)ssl;
     (void)protos;
     (void)protos_len;
 #endif

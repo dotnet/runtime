@@ -173,7 +173,7 @@ namespace System.Threading.Channels.Tests
     {
         protected override bool RequiresSingleReader => true;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void ValidateInternalDebuggerAttributes()
         {
             Channel<int> c = CreateChannel();

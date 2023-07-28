@@ -3,7 +3,7 @@
 
 // NOTE: This is a generated file - do not manually edit!
 
-#pragma warning disable 649
+#pragma warning disable 649, SA1121, IDE0036, SA1129
 
 using System;
 using System.IO;
@@ -145,6 +145,14 @@ namespace Internal.Metadata.NativeFormat
             uint ivalue;
             offset = reader.DecodeUnsigned(offset, out ivalue);
             value = (CallingConventions)ivalue;
+            return offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out SignatureCallingConvention value)
+        {
+            uint ivalue;
+            offset = reader.DecodeUnsigned(offset, out ivalue);
+            value = (SignatureCallingConvention)ivalue;
             return offset;
         } // Read
 

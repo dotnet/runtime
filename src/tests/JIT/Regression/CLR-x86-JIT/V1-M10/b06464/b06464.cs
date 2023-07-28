@@ -3,8 +3,9 @@
 //
 
 using System;
+using Xunit;
 
-class Test_b06464
+public class Test_b06464
 {
     static int[] a = new int[10];
 
@@ -26,7 +27,8 @@ class Test_b06464
         return 1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         A()[F()] = G();
         return 100;

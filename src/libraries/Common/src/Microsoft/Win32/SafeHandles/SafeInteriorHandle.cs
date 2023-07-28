@@ -19,13 +19,12 @@ namespace Microsoft.Win32.SafeHandles
         protected override bool ReleaseHandle()
         {
             SafeHandle? parent = _parent;
-
             if (parent != null)
             {
                 parent.DangerousRelease();
+                _parent = null;
             }
 
-            _parent = null;
             SetHandle(IntPtr.Zero);
             return true;
         }

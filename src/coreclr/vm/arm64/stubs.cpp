@@ -918,12 +918,6 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
     return *ppContext;
 }
 
-void RedirectForThreadAbort()
-{
-    // ThreadAbort is not supported in .net core
-    throw "NYI";
-}
-
 #if !defined(DACCESS_COMPILE)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
@@ -951,10 +945,9 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    VirtualCallStubManager::StubKind sk;
-    VirtualCallStubManager::FindStubManager(f_IP, &sk);
+    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
         if (*PTR_DWORD(f_IP) != DISPATCH_STUB_FIRST_DWORD)
         {
@@ -963,7 +956,7 @@ AdjustContextForVirtualStub(
         }
     }
     else
-    if (sk == VirtualCallStubManager::SK_RESOLVE)
+    if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
     {
         if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
         {
@@ -1185,7 +1178,7 @@ void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cVecRe
 
 
 
-    // N.B Despite the range of a jump with a sub sp is 4KB, we're limiting to 504 to save from emiting right prolog that's
+    // N.B Despite the range of a jump with a sub sp is 4KB, we're limiting to 504 to save from emitting right prolog that's
     // expressable in unwind codes efficiently. The largest offset in typical unwindinfo encodings that we use is 504.
     // so allocations larger than 504 bytes would require setting the SP in multiple strides, which would complicate both
     // prolog and epilog generation as well as unwindinfo generation.
@@ -1436,7 +1429,7 @@ void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
     else
     {
         //  MOV <Xd>, <Xm>
-        // which is eqivalent to
+        // which is equivalent to
         //  ORR <Xd>. XZR, <Xm>
         // Encoding: sf|0|1|0|1|0|1|0|shift(2)|0|Xm|imm(6)|Xn|Xd
         // where
@@ -2032,7 +2025,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 *(DWORD*)p = 0xd280000a | ((UINT32)slotOffset << 5); p += 4;
                 dataOffset -= 4;
 
-                // cmp x9,x10
+                // cmp x11,x10
                 *(DWORD*)p = 0xeb0a017f; p += 4;
                 dataOffset -= 4;
 

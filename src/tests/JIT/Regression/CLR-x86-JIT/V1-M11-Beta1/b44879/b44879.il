@@ -9,7 +9,7 @@
 }
 .assembly 'b44879' {}
 .assembly extern xunit.core {}
-.class ILGEN_0x152f1077 {
+.class public ILGEN_0x152f1077 {
 
 .method static int32 Method_0x2763af56(int64 Arg_0x0) {
 .maxstack	15
@@ -168,7 +168,7 @@ End_Orphan_31:
  ceq
 ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

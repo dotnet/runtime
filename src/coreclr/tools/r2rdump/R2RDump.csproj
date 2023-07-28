@@ -4,7 +4,7 @@
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <Platforms>x64;x86;arm64;arm</Platforms>
+    <Platforms>x64;x86;arm64;arm;loongarch64</Platforms>
     <AssemblyKey>Open</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
@@ -12,10 +12,15 @@
     <NoWarn>8002,NU1701</NoWarn>
     <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
     <OutputPath>$(RuntimeBinDir)/R2RDump</OutputPath>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
   <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" />
+
+  <ItemGroup>
+    <Compile Include="..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine">

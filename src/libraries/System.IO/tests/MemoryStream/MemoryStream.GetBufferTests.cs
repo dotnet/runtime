@@ -51,7 +51,7 @@ namespace System.IO.Tests
             ms.Write(testdata, 0, 100);
             Assert.Equal(200, ms.Length);
             buffer = ms.GetBuffer();
-            Assert.Equal(256, buffer.Length); // Minimun size after writing
+            Assert.Equal(256, buffer.Length); // Minimum size after writing
         }
     }
 }

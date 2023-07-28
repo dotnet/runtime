@@ -20,7 +20,6 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // Abstract base class for RuntimeNamedMethodInfo, RuntimeConstructedGenericMethodInfo.
     //
-    [DebuggerDisplay("{_debugName}")]
     internal abstract partial class RuntimeMethodInfo : MethodInfo
     {
         protected RuntimeMethodInfo()
@@ -72,8 +71,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         private Delegate CreateDelegateWorker(Type delegateType, object target, bool allowClosed)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
 
             if (!(delegateType is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
@@ -113,13 +111,13 @@ namespace System.Reflection.Runtime.MethodInfos
 
             MethodInfo method = this;
 
-            // For compat: Remove any instantation on generic methods.
+            // For compat: Remove any instantiation on generic methods.
             if (method.IsConstructedGenericMethod)
                 method = method.GetGenericMethodDefinition();
 
             while (true)
             {
-                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember();
+                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
                 if (next == null)
                     return ((RuntimeMethodInfo)method).WithReflectedTypeSetToDeclaringType;
 
@@ -160,14 +158,12 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
 
-        [DebuggerGuidedStepThroughAttribute]
+        [DebuggerGuidedStepThrough]
         public sealed override object? Invoke(object? obj, BindingFlags invokeAttr, Binder binder, object?[]? parameters, CultureInfo culture)
         {
-            if (parameters == null)
-                parameters = Array.Empty<object>();
-            MethodInvoker methodInvoker = this.MethodInvoker;
+            MethodBaseInvoker methodInvoker = this.MethodInvoker;
             object? result = methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
 
@@ -249,7 +245,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         internal abstract RuntimeMethodInfo WithReflectedTypeSetToDeclaringType { get; }
 
-        protected abstract MethodInvoker UncachedMethodInvoker { get; }
+        protected abstract MethodBaseInvoker UncachedMethodInvoker { get; }
 
         //
         // The non-public version of MethodInfo.GetGenericArguments() (does not array-copy and has a more truthful name.)
@@ -294,29 +290,17 @@ namespace System.Reflection.Runtime.MethodInfos
         private volatile RuntimeParameterInfo[] _lazyParameters;
         private volatile RuntimeParameterInfo _lazyReturnParameter;
 
-        internal MethodInvoker MethodInvoker
+        internal MethodBaseInvoker MethodInvoker
         {
             get
             {
-                MethodInvoker methodInvoker = _lazyMethodInvoker;
-                if (methodInvoker == null)
-                {
-                    if (ReturnType.IsByRef)
-                    {
-                        // The invoker is going to dereference and box (for structs) the result of the invocation
-                        // on behalf of the caller. Can't box byref-like types and can't box void.
-                        if (ReturnType.GetElementType().IsByRefLike || ReturnType.GetElementType() == typeof(void))
-                            throw new NotSupportedException();
-                    }
-                    methodInvoker = _lazyMethodInvoker = this.UncachedMethodInvoker;
-                }
-                return methodInvoker;
+                return _lazyMethodInvoker ??= UncachedMethodInvoker;
             }
         }
 
         internal IntPtr LdFtnResult => MethodInvoker.LdFtnResult;
 
-        private volatile MethodInvoker _lazyMethodInvoker;
+        private volatile MethodBaseInvoker _lazyMethodInvoker;
 
         /// <summary>
         /// Common CreateDelegate worker. NOTE: If the method signature is not compatible, this method returns null rather than throwing an ArgumentException.
@@ -327,7 +311,7 @@ namespace System.Reflection.Runtime.MethodInfos
             Debug.Assert(runtimeDelegateType.IsDelegate);
 
             ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
-            MethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
+            RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
 
             // Make sure the return type is assignment-compatible.
             Type expectedReturnType = ReturnParameter.ParameterType;
@@ -341,8 +325,10 @@ namespace System.Reflection.Runtime.MethodInfos
                 return null;
             }
 
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance https://github.com/dotnet/roslyn-analyzers/issues/6751
             IList<ParameterInfo> delegateParameters = invokeMethod.GetParametersNoCopy();
             IList<ParameterInfo> targetParameters = this.GetParametersNoCopy();
+#pragma warning restore CA1859
             IEnumerator<ParameterInfo> delegateParameterEnumerator = delegateParameters.GetEnumerator();
             IEnumerator<ParameterInfo> targetParameterEnumerator = targetParameters.GetEnumerator();
 
@@ -462,21 +448,18 @@ namespace System.Reflection.Runtime.MethodInfos
 
         protected RuntimeMethodInfo WithDebugName()
         {
-            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
-            populateDebugNames = true;
-#endif
-            if (!populateDebugNames)
-                return this;
-
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = RuntimeName;
             }
+#endif
             return this;
         }
 
+#if DEBUG
         private string _debugName;
+#endif
     }
 }

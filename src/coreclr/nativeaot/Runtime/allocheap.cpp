@@ -137,7 +137,7 @@ uint8_t * AllocHeap::_Alloc(
 #endif // FEATURE_RWX_MEMORY
 
     ASSERT((alignment & (alignment - 1)) == 0); // Power of 2 only.
-    ASSERT(alignment <= OS_PAGE_SIZE);          // Can't handle this right now.
+    ASSERT((int32_t)alignment <= OS_PAGE_SIZE);          // Can't handle this right now.
     ASSERT((m_rwProtectType == m_roProtectType) == (pRWAccessHolder == NULL));
     ASSERT(!_UseAccessManager() || pRWAccessHolder != NULL);
 
@@ -231,7 +231,7 @@ bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd, uint
         {
 #ifndef STRESS_MEMACCESSMGR
             // Create or update the alloc cache, used to speed up new allocations.
-            // If there is available commited memory and either m_pNextFree is
+            // If there is available committed memory and either m_pNextFree is
             // being updated past a page boundary or the current cache is empty,
             // then update the cache.
             if (ALIGN_DOWN(m_pNextFree, OS_PAGE_SIZE) != ALIGN_DOWN(pNextFree, OS_PAGE_SIZE) ||
@@ -276,7 +276,7 @@ bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree)
 //-------------------------------------------------------------------------------------------------
 bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
 {
-    cbMem = ALIGN_UP(max(cbMem, s_minBlockSize), OS_PAGE_SIZE);;
+    cbMem = ALIGN_UP(cbMem, OS_PAGE_SIZE);
 
     uint8_t * pbMem = reinterpret_cast<uint8_t*>
         (PalVirtualAlloc(NULL, cbMem, MEM_COMMIT, m_roProtectType));

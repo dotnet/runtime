@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Text;
 using Xunit;
 
@@ -38,19 +39,19 @@ namespace System.SpanTests
             var index = -1;
             if (searchFor.Length == 1)
             {
-                index = span.LastIndexOf((byte)searchFor[0]);
+                index = LastIndexOf(span, (byte)searchFor[0]);
             }
             else if (searchFor.Length == 2)
             {
-                index = span.LastIndexOfAny((byte)searchFor[0], (byte)searchFor[1]);
+                index = LastIndexOfAny(span, (byte)searchFor[0], (byte)searchFor[1]);
             }
             else if (searchFor.Length == 3)
             {
-                index = span.LastIndexOfAny((byte)searchFor[0], (byte)searchFor[1], (byte)searchFor[2]);
+                index = LastIndexOfAny(span, (byte)searchFor[0], (byte)searchFor[1], (byte)searchFor[2]);
             }
             else
             {
-                index = span.LastIndexOfAny(new ReadOnlySpan<byte>(searchForBytes));
+                index = LastIndexOfAny(span, new ReadOnlySpan<byte>(searchForBytes));
             }
 
             var found = span[index];
@@ -61,8 +62,8 @@ namespace System.SpanTests
         [Fact]
         public static void ZeroLengthLastIndexOfAny_Byte_TwoByte()
         {
-            Span<byte> sp = new Span<byte>(Array.Empty<byte>());
-            int idx = sp.LastIndexOfAny<byte>(0, 0);
+            Span<byte> span = new Span<byte>(Array.Empty<byte>());
+            int idx = LastIndexOfAny(span, 0, 0);
             Assert.Equal(-1, idx);
         }
 
@@ -83,7 +84,7 @@ namespace System.SpanTests
                     int index = rnd.Next(0, 2) == 0 ? 0 : 1;
                     byte target0 = targets[index];
                     byte target1 = targets[(index + 1) % 2];
-                    int idx = span.LastIndexOfAny(target0, target1);
+                    int idx = LastIndexOfAny(span, target0, target1);
                     Assert.Equal(span.Length - 1, idx);
                 }
             }
@@ -105,7 +106,7 @@ namespace System.SpanTests
                 {
                     byte target0 = a[targetIndex];
                     byte target1 = 0;
-                    int idx = span.LastIndexOfAny(target0, target1);
+                    int idx = LastIndexOfAny(span, target0, target1);
                     Assert.Equal(targetIndex, idx);
                 }
 
@@ -113,7 +114,7 @@ namespace System.SpanTests
                 {
                     byte target0 = a[targetIndex];
                     byte target1 = a[targetIndex + 1];
-                    int idx = span.LastIndexOfAny(target0, target1);
+                    int idx = LastIndexOfAny(span, target0, target1);
                     Assert.Equal(targetIndex + 1, idx);
                 }
 
@@ -121,7 +122,7 @@ namespace System.SpanTests
                 {
                     byte target0 = 0;
                     byte target1 = a[targetIndex + 1];
-                    int idx = span.LastIndexOfAny(target0, target1);
+                    int idx = LastIndexOfAny(span, target0, target1);
                     Assert.Equal(targetIndex + 1, idx);
                 }
             }
@@ -138,7 +139,7 @@ namespace System.SpanTests
                 byte target1 = (byte)rnd.Next(1, 256);
                 Span<byte> span = new Span<byte>(a);
 
-                int idx = span.LastIndexOfAny(target0, target1);
+                int idx = LastIndexOfAny(span, target0, target1);
                 Assert.Equal(-1, idx);
             }
         }
@@ -160,7 +161,7 @@ namespace System.SpanTests
                 a[length - 3] = 200;
 
                 Span<byte> span = new Span<byte>(a);
-                int idx = span.LastIndexOfAny<byte>(200, 200);
+                int idx = LastIndexOfAny(span, 200, 200);
                 Assert.Equal(length - 1, idx);
             }
         }
@@ -174,7 +175,7 @@ namespace System.SpanTests
                 a[0] = 99;
                 a[length + 1] = 98;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
-                int index = span.LastIndexOfAny<byte>(99, 98);
+                int index = LastIndexOfAny(span, 99, 98);
                 Assert.Equal(-1, index);
             }
 
@@ -184,7 +185,7 @@ namespace System.SpanTests
                 a[0] = 99;
                 a[length + 1] = 99;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
-                int index = span.LastIndexOfAny<byte>(99, 99);
+                int index = LastIndexOfAny(span, 99, 99);
                 Assert.Equal(-1, index);
             }
         }
@@ -192,8 +193,8 @@ namespace System.SpanTests
         [Fact]
         public static void ZeroLengthIndexOf_Byte_ThreeByte()
         {
-            Span<byte> sp = new Span<byte>(Array.Empty<byte>());
-            int idx = sp.LastIndexOfAny<byte>(0, 0, 0);
+            Span<byte> span = new Span<byte>(Array.Empty<byte>());
+            int idx = LastIndexOfAny(span, 0, 0, 0);
             Assert.Equal(-1, idx);
         }
 
@@ -215,7 +216,7 @@ namespace System.SpanTests
                     byte target0 = targets[index];
                     byte target1 = targets[(index + 1) % 2];
                     byte target2 = targets[(index + 1) % 3];
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
+                    int idx = LastIndexOfAny(span, target0, target1, target2);
                     Assert.Equal(span.Length - 1, idx);
                 }
             }
@@ -238,7 +239,7 @@ namespace System.SpanTests
                     byte target0 = a[targetIndex];
                     byte target1 = 0;
                     byte target2 = 0;
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
+                    int idx = LastIndexOfAny(span, target0, target1, target2);
                     Assert.Equal(targetIndex, idx);
                 }
 
@@ -247,7 +248,7 @@ namespace System.SpanTests
                     byte target0 = a[targetIndex];
                     byte target1 = a[targetIndex + 1];
                     byte target2 = a[targetIndex + 2];
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
+                    int idx = LastIndexOfAny(span, target0, target1, target2);
                     Assert.Equal(targetIndex + 2, idx);
                 }
 
@@ -256,7 +257,7 @@ namespace System.SpanTests
                     byte target0 = 0;
                     byte target1 = 0;
                     byte target2 = a[targetIndex + 2];
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
+                    int idx = LastIndexOfAny(span, target0, target1, target2);
                     Assert.Equal(targetIndex + 2, idx);
                 }
             }
@@ -274,7 +275,7 @@ namespace System.SpanTests
                 byte target2 = (byte)rnd.Next(1, 256);
                 Span<byte> span = new Span<byte>(a);
 
-                int idx = span.LastIndexOfAny(target0, target1, target2);
+                int idx = LastIndexOfAny(span, target0, target1, target2);
                 Assert.Equal(-1, idx);
             }
         }
@@ -297,7 +298,7 @@ namespace System.SpanTests
                 a[length - 4] = 200;
 
                 Span<byte> span = new Span<byte>(a);
-                int idx = span.LastIndexOfAny<byte>(200, 200, 200);
+                int idx = LastIndexOfAny(span, 200, 200, 200);
                 Assert.Equal(length - 1, idx);
             }
         }
@@ -311,7 +312,7 @@ namespace System.SpanTests
                 a[0] = 99;
                 a[length + 1] = 98;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
-                int index = span.LastIndexOfAny<byte>(99, 98, 99);
+                int index = LastIndexOfAny(span, 99, 98, 99);
                 Assert.Equal(-1, index);
             }
 
@@ -321,7 +322,7 @@ namespace System.SpanTests
                 a[0] = 99;
                 a[length + 1] = 99;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
-                int index = span.LastIndexOfAny<byte>(99, 99, 99);
+                int index = LastIndexOfAny(span, 99, 99, 99);
                 Assert.Equal(-1, index);
             }
         }
@@ -329,13 +330,13 @@ namespace System.SpanTests
         [Fact]
         public static void ZeroLengthLastIndexOfAny_Byte_ManyByte()
         {
-            Span<byte> sp = new Span<byte>(Array.Empty<byte>());
+            Span<byte> span = new Span<byte>(Array.Empty<byte>());
             var values = new ReadOnlySpan<byte>(new byte[] { 0, 0, 0, 0 });
-            int idx = sp.LastIndexOfAny(values);
+            int idx = LastIndexOfAny(span, values);
             Assert.Equal(-1, idx);
 
             values = new ReadOnlySpan<byte>(new byte[] { });
-            idx = sp.LastIndexOfAny(values);
+            idx = LastIndexOfAny(span, values);
             Assert.Equal(-1, idx);
         }
 
@@ -351,7 +352,7 @@ namespace System.SpanTests
 
                 for (int i = 0; i < length; i++)
                 {
-                    int idx = span.LastIndexOfAny(values);
+                    int idx = LastIndexOfAny(span, values);
                     Assert.Equal(span.Length - 1, idx);
                 }
             }
@@ -372,21 +373,21 @@ namespace System.SpanTests
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
                     var values = new ReadOnlySpan<byte>(new byte[] { a[targetIndex], 0, 0, 0 });
-                    int idx = span.LastIndexOfAny(values);
+                    int idx = LastIndexOfAny(span, values);
                     Assert.Equal(targetIndex, idx);
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 3; targetIndex++)
                 {
                     var values = new ReadOnlySpan<byte>(new byte[] { a[targetIndex], a[targetIndex + 1], a[targetIndex + 2], a[targetIndex + 3] });
-                    int idx = span.LastIndexOfAny(values);
+                    int idx = LastIndexOfAny(span, values);
                     Assert.Equal(targetIndex + 3, idx);
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 3; targetIndex++)
                 {
                     var values = new ReadOnlySpan<byte>(new byte[] { 0, 0, 0, a[targetIndex + 3] });
-                    int idx = span.LastIndexOfAny(values);
+                    int idx = LastIndexOfAny(span, values);
                     Assert.Equal(targetIndex + 3, idx);
                 }
             }
@@ -421,7 +422,7 @@ namespace System.SpanTests
                 }
 
                 var values = new ReadOnlySpan<byte>(targets);
-                int idx = span.LastIndexOfAny(values);
+                int idx = LastIndexOfAny(span, values);
                 Assert.Equal(expectedIndex, idx);
             }
         }
@@ -441,7 +442,7 @@ namespace System.SpanTests
                 Span<byte> span = new Span<byte>(a);
                 var values = new ReadOnlySpan<byte>(targets);
 
-                int idx = span.LastIndexOfAny(values);
+                int idx = LastIndexOfAny(span, values);
                 Assert.Equal(-1, idx);
             }
         }
@@ -461,7 +462,7 @@ namespace System.SpanTests
                 Span<byte> span = new Span<byte>(a);
                 var values = new ReadOnlySpan<byte>(targets);
 
-                int idx = span.LastIndexOfAny(values);
+                int idx = LastIndexOfAny(span, values);
                 Assert.Equal(-1, idx);
             }
         }
@@ -486,7 +487,7 @@ namespace System.SpanTests
 
                 Span<byte> span = new Span<byte>(a);
                 var values = new ReadOnlySpan<byte>(new byte[] { 200, 200, 200, 200, 200, 200, 200, 200, 200 });
-                int idx = span.LastIndexOfAny(values);
+                int idx = LastIndexOfAny(span, values);
                 Assert.Equal(length - 1, idx);
             }
         }
@@ -501,7 +502,7 @@ namespace System.SpanTests
                 a[length + 1] = 98;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
                 var values = new ReadOnlySpan<byte>(new byte[] { 99, 98, 99, 98, 99, 98 });
-                int index = span.LastIndexOfAny(values);
+                int index = LastIndexOfAny(span, values);
                 Assert.Equal(-1, index);
             }
 
@@ -512,9 +513,37 @@ namespace System.SpanTests
                 a[length + 1] = 99;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
                 var values = new ReadOnlySpan<byte>(new byte[] { 99, 99, 99, 99, 99, 99 });
-                int index = span.LastIndexOfAny(values);
+                int index = LastIndexOfAny(span, values);
                 Assert.Equal(-1, index);
             }
+        }
+
+        private static int LastIndexOf(Span<byte> span, byte value)
+        {
+            int index = span.LastIndexOf(value);
+            Assert.Equal(index, span.LastIndexOfAny(SearchValues.Create(stackalloc byte[] { value })));
+            return index;
+        }
+
+        private static int LastIndexOfAny(Span<byte> span, byte value0, byte value1)
+        {
+            int index = span.LastIndexOfAny(value0, value1);
+            Assert.Equal(index, span.LastIndexOfAny(SearchValues.Create(stackalloc byte[] { value0, value1 })));
+            return index;
+        }
+
+        private static int LastIndexOfAny(Span<byte> span, byte value0, byte value1, byte value2)
+        {
+            int index = span.LastIndexOfAny(value0, value1, value2);
+            Assert.Equal(index, span.LastIndexOfAny(SearchValues.Create(stackalloc byte[] { value0, value1, value2 })));
+            return index;
+        }
+
+        private static int LastIndexOfAny(Span<byte> span, ReadOnlySpan<byte> values)
+        {
+            int index = span.LastIndexOfAny(values);
+            Assert.Equal(index, span.LastIndexOfAny(SearchValues.Create(values)));
+            return index;
         }
     }
 }

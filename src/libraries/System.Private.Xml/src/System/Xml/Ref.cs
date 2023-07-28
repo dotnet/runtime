@@ -18,11 +18,5 @@ namespace System.Xml
 #endif
             return (object?)strA == (object?)strB;
         }
-
-        // Prevent typos. If someone uses Ref.Equals instead of Ref.Equal,
-        // the program would not compile.
-        public static new void Equals(object objA, object objB)
-        {
-        }
     }
 }

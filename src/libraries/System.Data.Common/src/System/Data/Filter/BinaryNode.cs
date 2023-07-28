@@ -83,9 +83,8 @@ namespace System.Data
             if (_op == Operators.Is)
             {
                 // only 'Is Null' or 'Is Not Null' are valid
-                if (_right is UnaryNode)
+                if (_right is UnaryNode un)
                 {
-                    UnaryNode un = (UnaryNode)_right;
                     if (un._op != Operators.Not)
                     {
                         throw ExprException.InvalidIsSyntax();
@@ -324,7 +323,7 @@ namespace System.Data
 
                 if (leftIsSqlType || rightIsSqlType)
                 {
-                    resultType = ResultSqlType(leftStorage, rightStorage, (left is ConstNode), (right is ConstNode), op);
+                    resultType = ResultSqlType(leftStorage, rightStorage, op);
                 }
                 else
                 {
@@ -984,7 +983,7 @@ namespace System.Data
                                 break;
                             }
 
-                            if ((bool)vLeft == true)
+                            if ((bool)vLeft)
                             {
                                 value = true;
                                 break;
@@ -1370,7 +1369,7 @@ namespace System.Data
             return result;
         }
 
-        internal static StorageType ResultSqlType(StorageType left, StorageType right, bool lc, bool rc, int op)
+        internal static StorageType ResultSqlType(StorageType left, StorageType right, int op)
         {
             int leftPrecedence = (int)GetPrecedence(left);
             if (leftPrecedence == (int)DataTypePrecedence.Error)

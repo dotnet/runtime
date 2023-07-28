@@ -3,7 +3,8 @@
 //
 
 using System;
-class bug1
+using Xunit;
+public class bug1
 {
     public struct VT
     {
@@ -19,7 +20,8 @@ class bug1
 
     public static VT vtstatic = new VT();
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double a5 = -0.5;
 

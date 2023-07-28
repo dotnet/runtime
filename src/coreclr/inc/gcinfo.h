@@ -4,7 +4,7 @@
 // ******************************************************************************
 // WARNING!!!: These values are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcinfo.h
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcinfo.h
 // ******************************************************************************
 
 /*****************************************************************************/

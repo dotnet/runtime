@@ -8,7 +8,7 @@ using System.Text;
 namespace ILCompiler.Reflection.ReadyToRun.Arm
 {
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/jit/unwindarm.cpp">src/jit/unwindarm.cpp</a> mapRegNumToDwarfReg
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/unwindarm.cpp">src/jit/unwindarm.cpp</a> mapRegNumToDwarfReg
     /// </summary>
     public enum Registers
     {

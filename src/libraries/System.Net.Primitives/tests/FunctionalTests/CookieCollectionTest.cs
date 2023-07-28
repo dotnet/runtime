@@ -198,7 +198,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        public static void Remove_NonExistantCookie_ReturnsFalse()
+        public static void Remove_NonExistentCookie_ReturnsFalse()
         {
             ICollection<Cookie> cc = CreateCookieCollection1();
             Assert.Equal(5, cc.Count);

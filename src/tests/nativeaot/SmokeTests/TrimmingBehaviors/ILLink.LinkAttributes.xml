@@ -1,0 +1,15 @@
+<linker>
+  <!-- IL2049 -->
+  <type fullname="ILLinkLinkAttributes/TestRemoveAttribute">
+    <attribute internal="RemoveAttributeInstances"/>
+  </type>
+  <!-- IL2048 -->
+  <type fullname="ILLinkLinkAttributes">
+    <method signature="_fieldWithCustomAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+    </method>
+  </type>
+  <type fullname="ILLinkLinkAttributes/TestMarkAllRemoveAttribute">
+    <attribute internal="RemoveAttributeInstances"/>
+  </type>
+</linker>

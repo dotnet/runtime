@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace System.Reflection.Metadata
 {
     // TODO: argument checking
-    public unsafe struct BlobWriter
+    public struct BlobWriter
     {
         // writable slice:
         private readonly byte[] _buffer;
@@ -54,7 +54,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public bool ContentEquals(BlobWriter other)
         {
-            return Length == other.Length && ByteSequenceComparer.Equals(_buffer, _start, other._buffer, other._start, Length);
+            return Length == other.Length && _buffer.AsSpan(_start, Length).SequenceEqual(other._buffer.AsSpan(other._start, other.Length));
         }
 
         public int Offset
@@ -88,9 +88,7 @@ namespace System.Reflection.Metadata
         {
             BlobUtilities.ValidateRange(Length, start, byteCount, nameof(byteCount));
 
-            var result = new byte[byteCount];
-            Array.Copy(_buffer, _start + start, result, 0, byteCount);
-            return result;
+            return _buffer.AsSpan(_start + start, byteCount).ToArray();
         }
 
         public ImmutableArray<byte> ToImmutableArray()
@@ -101,8 +99,9 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the buffer content.</exception>
         public ImmutableArray<byte> ToImmutableArray(int start, int byteCount)
         {
-            byte[]? array = ToArray(start, byteCount);
-            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
+            BlobUtilities.ValidateRange(Length, start, byteCount, nameof(byteCount));
+
+            return ImmutableArray.Create(_buffer.AsSpan(_start + start, byteCount));
         }
 
         private int Advance(int value)
@@ -128,14 +127,7 @@ namespace System.Reflection.Metadata
             }
 
             int start = Advance(byteCount);
-            fixed (byte* buffer = _buffer)
-            {
-                byte* ptr = buffer + start;
-                for (int i = 0; i < byteCount; i++)
-                {
-                    ptr[i] = value;
-                }
-            }
+            _buffer.AsSpan(start, byteCount).Fill(value);
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
@@ -152,13 +144,13 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentOutOfRange(nameof(byteCount));
             }
 
-            WriteBytesUnchecked(buffer, byteCount);
+            WriteBytes(new ReadOnlySpan<byte>(buffer, byteCount));
         }
 
-        private unsafe void WriteBytesUnchecked(byte* buffer, int byteCount)
+        internal void WriteBytes(ReadOnlySpan<byte> buffer)
         {
-            int start = Advance(byteCount);
-            Marshal.Copy((IntPtr)buffer, _buffer, start, byteCount);
+            int start = Advance(buffer.Length);
+            buffer.CopyTo(_buffer.AsSpan(start));
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
@@ -195,25 +187,42 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         public void WriteBytes(ImmutableArray<byte> buffer)
         {
-            WriteBytes(buffer, 0, buffer.IsDefault ? 0 : buffer.Length);
+            if (buffer.IsDefault)
+            {
+                Throw.ArgumentNull(nameof(buffer));
+            }
+
+            WriteBytes(buffer.AsSpan());
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the <paramref name="buffer"/>.</exception>
         public void WriteBytes(ImmutableArray<byte> buffer, int start, int byteCount)
         {
-            WriteBytes(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(buffer)!, start, byteCount);
+            if (buffer.IsDefault)
+            {
+                Throw.ArgumentNull(nameof(buffer));
+            }
+
+            BlobUtilities.ValidateRange(buffer.Length, start, byteCount, nameof(byteCount));
+
+            WriteBytes(buffer.AsSpan(start, byteCount));
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
-        public unsafe void WriteBytes(byte[] buffer)
+        public void WriteBytes(byte[] buffer)
         {
-            WriteBytes(buffer, 0, buffer?.Length ?? 0);
+            if (buffer is null)
+            {
+                Throw.ArgumentNull(nameof(buffer));
+            }
+
+            WriteBytes(buffer.AsSpan());
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the <paramref name="buffer"/>.</exception>
-        public unsafe void WriteBytes(byte[] buffer, int start, int byteCount)
+        public void WriteBytes(byte[] buffer, int start, int byteCount)
         {
             if (buffer is null)
             {
@@ -222,16 +231,7 @@ namespace System.Reflection.Metadata
 
             BlobUtilities.ValidateRange(buffer.Length, start, byteCount, nameof(byteCount));
 
-            // an empty array has no element pointer:
-            if (buffer.Length == 0)
-            {
-                return;
-            }
-
-            fixed (byte* ptr = &buffer[0])
-            {
-                WriteBytes(ptr + start, byteCount);
-            }
+            WriteBytes(buffer.AsSpan(start, byteCount));
         }
 
         public void PadTo(int offset)
@@ -366,7 +366,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes UTF16 (little-endian) encoded string at the current position.
+        /// Writes UTF-16 (little-endian) encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public void WriteUTF16(char[] value)
@@ -376,29 +376,11 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(value));
             }
 
-            if (value.Length == 0)
-            {
-                return;
-            }
-
-            if (BitConverter.IsLittleEndian)
-            {
-                fixed (char* ptr = &value[0])
-                {
-                    WriteBytesUnchecked((byte*)ptr, value.Length * sizeof(char));
-                }
-            }
-            else
-            {
-                for (int i = 0; i < value.Length; i++)
-                {
-                    WriteUInt16((ushort)value[i]);
-                }
-            }
+            WriteUTF16(value.AsSpan());
         }
 
         /// <summary>
-        /// Writes UTF16 (little-endian) encoded string at the current position.
+        /// Writes UTF-16 (little-endian) encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public void WriteUTF16(string value)
@@ -408,18 +390,20 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(value));
             }
 
+            WriteUTF16(value.AsSpan());
+        }
+
+        private void WriteUTF16(ReadOnlySpan<char> value)
+        {
             if (BitConverter.IsLittleEndian)
             {
-                fixed (char* ptr = value)
-                {
-                    WriteBytesUnchecked((byte*)ptr, value.Length * sizeof(char));
-                }
+                WriteBytes(MemoryMarshal.AsBytes(value));
             }
             else
             {
-                for (int i = 0; i < value.Length; i++)
+                foreach (char c in value)
                 {
-                    WriteUInt16((ushort)value[i]);
+                    WriteUInt16(c);
                 }
             }
         }
@@ -428,7 +412,7 @@ namespace System.Reflection.Metadata
         /// Writes string in SerString format (see ECMA-335-II 23.3 Custom attributes).
         /// </summary>
         /// <remarks>
-        /// The string is UTF8 encoded and prefixed by the its size in bytes.
+        /// The string is UTF-8 encoded and prefixed by the its size in bytes.
         /// Null string is represented as a single byte 0xFF.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
@@ -447,9 +431,9 @@ namespace System.Reflection.Metadata
         /// Writes string in User String (#US) heap format (see ECMA-335-II 24.2.4 #US and #Blob heaps):
         /// </summary>
         /// <remarks>
-        /// The string is UTF16 encoded and prefixed by the its size in bytes.
+        /// The string is UTF-16 encoded and prefixed by the its size in bytes.
         ///
-        /// This final byte holds the value 1 if and only if any UTF16 character within the string has any bit set in its top byte,
+        /// This final byte holds the value 1 if and only if any UTF-16 character within the string has any bit set in its top byte,
         /// or its low byte is any of the following: 0x01-0x08, 0x0E-0x1F, 0x27, 0x2D, 0x7F. Otherwise, it holds 0.
         /// The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets.
         /// </remarks>
@@ -467,7 +451,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes UTF8 encoded string at the current position.
+        /// Writes UTF-8 encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public void WriteUTF8(string value, bool allowUnpairedSurrogates)
@@ -480,7 +464,7 @@ namespace System.Reflection.Metadata
             WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
         }
 
-        private void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
+        private unsafe void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
         {
             fixed (char* strPtr = str)
             {

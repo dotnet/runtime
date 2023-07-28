@@ -230,7 +230,7 @@ bool InlDecisionIsFailure(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// InlDecisionIsSuccess: check if this decision describes a sucessful inline
+// InlDecisionIsSuccess: check if this decision describes a successful inline
 //
 // Arguments:
 //    d - the decision in question
@@ -330,20 +330,21 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Child(nullptr)
     , m_Sibling(nullptr)
     , m_Code(nullptr)
+    , m_Callee(nullptr)
+    , m_RuntimeContext(nullptr)
     , m_ILSize(0)
     , m_ImportedILSize(0)
+    , m_ActualCallOffset(BAD_IL_OFFSET)
     , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
     , m_CodeSizeEstimate(0)
+    , m_Ordinal(0)
     , m_Success(true)
     , m_Devirtualized(false)
     , m_Guarded(false)
     , m_Unboxed(false)
 #if defined(DEBUG) || defined(INLINE_DATA)
     , m_Policy(nullptr)
-    , m_Callee(nullptr)
     , m_TreeID(0)
-    , m_Ordinal(0)
-    , m_ActualCallOffset(BAD_IL_OFFSET)
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 #ifdef DEBUG
     , m_ILInstsSet(nullptr)
@@ -415,16 +416,7 @@ void InlineContext::Dump(bool verbose, unsigned indent)
         const char* guarded       = m_Guarded ? " GUARDED" : "";
         const char* unboxed       = m_Unboxed ? " UNBOXED" : "";
 
-        IL_OFFSET offs = BAD_IL_OFFSET;
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-        offs = m_ActualCallOffset;
-#endif
-
-        if (offs == BAD_IL_OFFSET && m_Location.IsValid())
-        {
-            offs = m_Location.GetOffset();
-        }
+        IL_OFFSET offs = m_ActualCallOffset;
 
         if (verbose)
         {
@@ -758,7 +750,8 @@ void InlineResult::Report()
     if (IsFailure() && (m_Call != nullptr))
     {
         // compiler should have revoked candidacy on the call by now
-        assert((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
+        // Unless it's a call has both failed and successful candidates (GDV candidates)
+        assert(((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0) || m_Call->IsGuardedDevirtualizationCandidate());
 
         if (m_Call->gtInlineObservation == InlineObservation::CALLEE_UNUSED_INITIAL)
         {
@@ -823,7 +816,7 @@ void InlineResult::Report()
 }
 
 //------------------------------------------------------------------------
-// InlineStrategy construtor
+// InlineStrategy constructor
 //
 // Arguments
 //    compiler - root compiler instance
@@ -844,6 +837,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_InlineCount(0)
     , m_MaxInlineSize(DEFAULT_MAX_INLINE_SIZE)
     , m_MaxInlineDepth(DEFAULT_MAX_INLINE_DEPTH)
+    , m_MaxForceInlineDepth(DEFAULT_MAX_FORCE_INLINE_DEPTH)
     , m_InitialTimeBudget(0)
     , m_InitialTimeEstimate(0)
     , m_CurrentTimeBudget(0)
@@ -894,6 +888,18 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     if (m_MaxInlineDepth > IMPLEMENTATION_MAX_INLINE_DEPTH)
     {
         m_MaxInlineDepth = IMPLEMENTATION_MAX_INLINE_DEPTH;
+    }
+
+    // Possibly modify the max force inline depth
+    //
+    // Default value of JitForceInlineDepth is the same as our default.
+    // So normally this next line does not change the size.
+    m_MaxForceInlineDepth = JitConfig.JitForceInlineDepth();
+
+    // But don't overdo it
+    if (m_MaxForceInlineDepth > m_MaxInlineDepth)
+    {
+        m_MaxForceInlineDepth = m_MaxInlineDepth;
     }
 
 #endif // DEBUG
@@ -1256,12 +1262,11 @@ InlineContext* InlineStrategy::NewRoot()
 
     rootContext->m_ILSize = m_Compiler->info.compILCodeSize;
     rootContext->m_Code   = m_Compiler->info.compCode;
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-
     rootContext->m_Callee = m_Compiler->info.compMethodHnd;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+    // May fail to block recursion for normal methods
+    // Might need the actual context handle here
+    rootContext->m_RuntimeContext = METHOD_BEING_COMPILED_CONTEXT();
 
     return rootContext;
 }
@@ -1282,9 +1287,11 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
 
     if (call->IsInlineCandidate())
     {
-        InlineCandidateInfo* info = call->gtInlineCandidateInfo;
-        context->m_Code           = info->methInfo.ILCode;
-        context->m_ILSize         = info->methInfo.ILCodeSize;
+        InlineCandidateInfo* info   = call->GetSingleInlineCandidateInfo();
+        context->m_Code             = info->methInfo.ILCode;
+        context->m_ILSize           = info->methInfo.ILCodeSize;
+        context->m_ActualCallOffset = info->ilOffset;
+        context->m_RuntimeContext   = info->exactContextHnd;
 
 #ifdef DEBUG
         // All inline candidates should get their own statements that have
@@ -1293,25 +1300,33 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
         assert(diInlineContext == nullptr || diInlineContext == parentContext);
 #endif
     }
+    else
+    {
+// Should only get here in debug builds/build with inline data
+#if defined(DEBUG) || defined(INLINE_DATA)
+        context->m_ActualCallOffset = call->gtRawILOffset;
+#endif
+    }
 
-    // TODO-DEBUGINFO: Currently, to keep the same behavior as before, we use
-    // the location of the statement containing the call being inlined. This is
-    // not always the exact IL offset of the call instruction, consider e.g.
+    // We currently store both the statement location (used when reporting
+    // only-style mappings) and the actual call offset (used when reporting the
+    // inline tree for rich debug info).
+    // These are not always the same, consider e.g.
     // ldarg.0
     // call <foo>
     // which becomes a single statement where the IL location points to the
-    // ldarg instruction. For SPGO purposes we should consider always storing
-    // the exact offset of the call instruction which will be more precise. We
-    // may consider storing the statement itself as well.
-    context->m_Location      = stmt->GetDebugInfo().GetLocation();
+    // ldarg instruction.
+    context->m_Location = stmt->GetDebugInfo().GetLocation();
+
+    assert(call->gtCallType == CT_USER_FUNC);
+    context->m_Callee = call->gtCallMethHnd;
+
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();
     context->m_Unboxed       = call->IsUnboxed();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    context->m_TreeID           = call->gtTreeID;
-    context->m_Callee           = call->gtCallType == CT_INDIRECT ? nullptr : call->gtCallMethHnd;
-    context->m_ActualCallOffset = call->gtRawILOffset;
+    context->m_TreeID = call->gtTreeID;
 #endif
 
     return context;
@@ -1327,8 +1342,9 @@ void InlineContext::SetSucceeded(const InlineInfo* info)
 #if defined(DEBUG) || defined(INLINE_DATA)
     m_Policy           = info->inlineResult->GetPolicy();
     m_CodeSizeEstimate = m_Policy->CodeSizeEstimate();
-    m_Ordinal          = m_InlineStrategy->m_InlineCount + 1;
 #endif
+
+    m_Ordinal = m_InlineStrategy->m_InlineCount + 1;
 
     m_InlineStrategy->NoteOutcome(this);
 }
@@ -1673,7 +1689,7 @@ void InlineStrategy::FinalizeXml(FILE* file)
         fprintf(file, "</InlineForest>\n");
         fflush(file);
 
-        // Workaroud compShutdown getting called twice.
+        // Workaround compShutdown getting called twice.
         s_HasDumpedXmlHeader = false;
     }
 
@@ -1706,7 +1722,7 @@ CLRRandom* InlineStrategy::GetRandom(int optionalSeed)
         if (m_Compiler->compRandomInlineStress())
         {
             externalSeed = getJitStressLevel();
-            // We can set COMPlus_JitStressModeNames without setting COMPlus_JitStress,
+            // We can set DOTNET_JitStressModeNames without setting DOTNET_JitStress,
             // but we need external seed to be non-zero.
             if (externalSeed == 0)
             {

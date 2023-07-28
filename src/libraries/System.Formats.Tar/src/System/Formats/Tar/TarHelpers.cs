@@ -2,25 +2,52 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
     // Static class containing a variety of helper methods.
-    internal static class TarHelpers
+    internal static partial class TarHelpers
     {
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
+        internal const long MaxSizeLength = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
 
-        internal const int ZeroChar = 0x30;
-        internal const byte SpaceChar = 0x20;
-        internal const byte EqualsChar = 0x3d;
-        internal const byte NewLineChar = 0xa;
+        internal const UnixFileMode ValidUnixFileModes =
+            UnixFileMode.UserRead |
+            UnixFileMode.UserWrite |
+            UnixFileMode.UserExecute |
+            UnixFileMode.GroupRead |
+            UnixFileMode.GroupWrite |
+            UnixFileMode.GroupExecute |
+            UnixFileMode.OtherRead |
+            UnixFileMode.OtherWrite |
+            UnixFileMode.OtherExecute |
+            UnixFileMode.StickyBit |
+            UnixFileMode.SetGroup |
+            UnixFileMode.SetUser;
 
-        internal const TarFileMode DefaultMode = // 644 in octal
-            TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.OtherRead;
+        // Default mode for TarEntry created for a file-type.
+        private const UnixFileMode DefaultFileMode =
+            UnixFileMode.UserRead | UnixFileMode.UserWrite |
+            UnixFileMode.GroupRead |
+            UnixFileMode.OtherRead;
+
+        // Default mode for TarEntry created for a directory-type.
+        private const UnixFileMode DefaultDirectoryMode =
+            DefaultFileMode |
+            UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+
+        internal static int GetDefaultMode(TarEntryType type)
+            => type is TarEntryType.Directory or TarEntryType.DirectoryList ? (int)DefaultDirectoryMode : (int)DefaultFileMode;
 
         // Helps advance the stream a total number of bytes larger than int.MaxValue.
         internal static void AdvanceStream(Stream archiveStream, long bytesToDiscard)
@@ -31,14 +58,33 @@ namespace System.Formats.Tar
             }
             else if (bytesToDiscard > 0)
             {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: MaxBufferLength);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
                 while (bytesToDiscard > 0)
                 {
                     int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    if (archiveStream.Read(buffer.AsSpan(0, currentLengthToRead)) != currentLengthToRead)
-                    {
-                        throw new EndOfStreamException();
-                    }
+                    archiveStream.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
+                    bytesToDiscard -= currentLengthToRead;
+                }
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        // Asynchronously helps advance the stream a total number of bytes larger than int.MaxValue.
+        internal static async ValueTask AdvanceStreamAsync(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (archiveStream.CanSeek)
+            {
+                archiveStream.Position += bytesToDiscard;
+            }
+            else if (bytesToDiscard > 0)
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
+                while (bytesToDiscard > 0)
+                {
+                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
+                    await archiveStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
                     bytesToDiscard -= currentLengthToRead;
                 }
                 ArrayPool<byte>.Shared.Return(buffer);
@@ -48,15 +94,29 @@ namespace System.Formats.Tar
         // Helps copy a specific number of bytes from one stream into another.
         internal static void CopyBytes(Stream origin, Stream destination, long bytesToCopy)
         {
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: MaxBufferLength);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
             while (bytesToCopy > 0)
             {
                 int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
-                if (origin.Read(buffer.AsSpan(0, currentLengthToRead)) != currentLengthToRead)
-                {
-                    throw new EndOfStreamException();
-                }
+                origin.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
                 destination.Write(buffer.AsSpan(0, currentLengthToRead));
+                bytesToCopy -= currentLengthToRead;
+            }
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+
+        // Asynchronously helps copy a specific number of bytes from one stream into another.
+        internal static async ValueTask CopyBytesAsync(Stream origin, Stream destination, long bytesToCopy, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
+            while (bytesToCopy > 0)
+            {
+                int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
+                Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
+                await origin.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
+                await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
                 bytesToCopy -= currentLengthToRead;
             }
             ArrayPool<byte>.Shared.Return(buffer);
@@ -70,77 +130,150 @@ namespace System.Formats.Tar
             return padding;
         }
 
-        // Returns the specified 8-base number as a 10-base number.
-        internal static int ConvertDecimalToOctal(int value)
-        {
-            int multiplier = 1;
-            int accum = value;
-            int actual = 0;
-            while (accum != 0)
-            {
-                actual += (accum % 8) * multiplier;
-                accum /= 8;
-                multiplier *= 10;
-            }
-            return actual;
-        }
-
-        // Returns the specified 10-base number as an 8-base number.
-        internal static long ConvertDecimalToOctal(long value)
-        {
-            long multiplier = 1;
-            long accum = value;
-            long actual = 0;
-            while (accum != 0)
-            {
-                actual += (accum % 8) * multiplier;
-                accum /= 8;
-                multiplier *= 10;
-            }
-            return actual;
-        }
-
         // Returns true if all the bytes in the specified array are nulls, false otherwise.
-        internal static bool IsAllNullBytes(Span<byte> buffer)
+        internal static bool IsAllNullBytes(Span<byte> buffer) =>
+            !buffer.ContainsAnyExcept((byte)0);
+
+        // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
+        internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(long secondsSinceUnixEpoch) =>
+            new DateTimeOffset((secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+
+        // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
+        private static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(decimal secondsSinceUnixEpoch) =>
+            new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+
+        // Converts the specified DateTimeOffset to the number of seconds that have passed since the Unix Epoch.
+        private static decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset dateTimeOffset) =>
+            ((decimal)(dateTimeOffset.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
+
+        // If the specified fieldName is found in the provided dictionary and it is a valid decimal number, returns true and sets the value in 'dateTimeOffset'.
+        internal static bool TryGetDateTimeOffsetFromTimestampString(Dictionary<string, string>? dict, string fieldName, out DateTimeOffset dateTimeOffset)
         {
-            for (int i = 0; i < buffer.Length; i++)
+            dateTimeOffset = default;
+            if (dict != null &&
+                dict.TryGetValue(fieldName, out string? value) &&
+                decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch))
             {
-                if (buffer[i] != 0)
+                dateTimeOffset = GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
+                return true;
+            }
+            return false;
+        }
+
+        // Converts the specified DateTimeOffset to the string representation of seconds since the Unix Epoch.
+        internal static string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
+        {
+            decimal secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
+
+            // Use 'G' to ensure the decimals get preserved (avoid losing precision).
+            return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
+        }
+
+        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenInteger'.
+        internal static bool TryGetStringAsBaseTenInteger(IReadOnlyDictionary<string, string> dict, string fieldName, out int baseTenInteger)
+        {
+            if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
+            {
+                baseTenInteger = int.Parse(strNumber, CultureInfo.InvariantCulture);
+                return true;
+            }
+
+            baseTenInteger = 0;
+            return false;
+        }
+
+        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenLong'.
+        internal static bool TryGetStringAsBaseTenLong(IReadOnlyDictionary<string, string> dict, string fieldName, out long baseTenLong)
+        {
+            if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
+            {
+                baseTenLong = long.Parse(strNumber, CultureInfo.InvariantCulture);
+                return true;
+            }
+
+            baseTenLong = 0;
+            return false;
+        }
+
+        // When writing an entry that came from an archive of a different format, if its entry type happens to
+        // be an incompatible regular file entry type, convert it to the compatible one.
+        // No change for all other entry types.
+        internal static TarEntryType GetCorrectTypeFlagForFormat(TarEntryFormat format, TarEntryType entryType)
+        {
+            if (format is TarEntryFormat.V7)
+            {
+                if (entryType is TarEntryType.RegularFile)
                 {
-                    return false;
+                    return TarEntryType.V7RegularFile;
                 }
             }
-            return true;
+            else if (entryType is TarEntryType.V7RegularFile)
+            {
+                return TarEntryType.RegularFile;
+            }
+
+            return entryType;
         }
 
-        // Returns a DateTimeOffset instance representing the number of seconds that have passed since the Unix Epoch.
-        internal static DateTimeOffset GetDateTimeFromSecondsSinceEpoch(double secondsSinceUnixEpoch)
+        /// <summary>Parses a byte span that represents an ASCII string containing a number in octal base.</summary>
+        internal static T ParseOctal<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>
         {
-            DateTimeOffset offset = new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
-            return offset;
+            buffer = TrimEndingNullsAndSpaces(buffer);
+            buffer = TrimLeadingNullsAndSpaces(buffer);
+
+            if (buffer.Length == 0)
+            {
+                return T.Zero;
+            }
+
+            T octalFactor = T.CreateTruncating(8u);
+            T value = T.Zero;
+            foreach (byte b in buffer)
+            {
+                uint digit = (uint)(b - '0');
+                if (digit >= 8)
+                {
+                    ThrowInvalidNumber();
+                }
+
+                value = checked((value * octalFactor) + T.CreateTruncating(digit));
+            }
+
+            return value;
         }
 
-        // Receives a byte array that represents an ASCII string containing a number in octal base.
-        // Converts the array to an octal base number, then transforms it to ten base and returns it.
-        internal static int GetTenBaseNumberFromOctalAsciiChars(Span<byte> buffer)
-        {
-            string str = GetTrimmedAsciiString(buffer);
-            return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt32(str, fromBase: 8);
-        }
+        [DoesNotReturn]
+        private static void ThrowInvalidNumber() =>
+            throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
 
         // Returns the string contained in the specified buffer of bytes,
         // in the specified encoding, removing the trailing null or space chars.
         private static string GetTrimmedString(ReadOnlySpan<byte> buffer, Encoding encoding)
         {
+            buffer = TrimEndingNullsAndSpaces(buffer);
+            return buffer.IsEmpty ? string.Empty : encoding.GetString(buffer);
+        }
+
+        internal static ReadOnlySpan<byte> TrimEndingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        {
             int trimmedLength = buffer.Length;
-            while (trimmedLength > 0 && IsByteNullOrSpace(buffer[trimmedLength - 1]))
+            while (trimmedLength > 0 && buffer[trimmedLength - 1] is 0 or 32)
             {
                 trimmedLength--;
             }
 
-            return trimmedLength == 0 ? string.Empty : encoding.GetString(buffer.Slice(0, trimmedLength));
+            return buffer.Slice(0, trimmedLength);
+        }
 
-            static bool IsByteNullOrSpace(byte c) => c is 0 or 32;
+        private static ReadOnlySpan<byte> TrimLeadingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        {
+            int newStart = 0;
+            while (newStart < buffer.Length && buffer[newStart] is 0 or 32)
+            {
+                newStart++;
+            }
+
+            return buffer.Slice(newStart);
         }
 
         // Returns the ASCII string contained in the specified buffer of bytes,
@@ -150,22 +283,6 @@ namespace System.Formats.Tar
         // Returns the UTF8 string contained in the specified buffer of bytes,
         // removing the trailing null or space chars.
         internal static string GetTrimmedUtf8String(ReadOnlySpan<byte> buffer) => GetTrimmedString(buffer, Encoding.UTF8);
-
-        // Returns true if it successfully converts the specified string to a DateTimeOffset, false otherwise.
-        internal static bool TryConvertToDateTimeOffset(string value, out DateTimeOffset timestamp)
-        {
-            timestamp = default;
-            if (!string.IsNullOrEmpty(value))
-            {
-                if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double doubleTime))
-                {
-                    return false;
-                }
-
-                timestamp = GetDateTimeFromSecondsSinceEpoch(doubleTime);
-            }
-            return timestamp != default;
-        }
 
         // After the file contents, there may be zero or more null characters,
         // which exist to ensure the data is aligned to the record size. Skip them and
@@ -177,9 +294,20 @@ namespace System.Formats.Tar
             return bytesToSkip;
         }
 
+        // After the file contents, there may be zero or more null characters,
+        // which exist to ensure the data is aligned to the record size.
+        // Asynchronously skip them and set the stream position to the first byte of the next entry.
+        internal static async ValueTask<int> SkipBlockAlignmentPaddingAsync(Stream archiveStream, long size, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            int bytesToSkip = CalculatePadding(size);
+            await AdvanceStreamAsync(archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
+            return bytesToSkip;
+        }
+
         // Throws if the specified entry type is not supported for the specified format.
-        // If 'forWriting' is true, an incompatible 'Regular File' entry type is allowed. It will be converted to the compatible version before writing.
-        internal static void VerifyEntryTypeIsSupported(TarEntryType entryType, TarEntryFormat archiveFormat, bool forWriting)
+        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat, [CallerArgumentExpression(nameof(entryType))] string? paramName = null)
         {
             switch (archiveFormat)
             {
@@ -189,10 +317,6 @@ namespace System.Formats.Tar
                         TarEntryType.HardLink or
                         TarEntryType.V7RegularFile or
                         TarEntryType.SymbolicLink)
-                    {
-                        return;
-                    }
-                    if (forWriting && entryType is TarEntryType.RegularFile)
                     {
                         return;
                     }
@@ -210,10 +334,6 @@ namespace System.Formats.Tar
                     {
                         return;
                     }
-                    if (forWriting && entryType is TarEntryType.V7RegularFile)
-                    {
-                        return;
-                    }
                     break;
 
                 case TarEntryFormat.Pax:
@@ -226,13 +346,10 @@ namespace System.Formats.Tar
                         TarEntryType.RegularFile or
                         TarEntryType.SymbolicLink)
                     {
+                        // GlobalExtendedAttributes is handled via PaxGlobalExtendedAttributesEntry
+
                         // Not supported for writing - internally autogenerated:
                         // - ExtendedAttributes
-                        // - GlobalExtendedAttributes
-                        return;
-                    }
-                    if (forWriting && entryType is TarEntryType.V7RegularFile)
-                    {
                         return;
                     }
                     break;
@@ -260,18 +377,86 @@ namespace System.Formats.Tar
                         // - LongPath
                         return;
                     }
-                    if (forWriting && entryType is TarEntryType.V7RegularFile)
-                    {
-                        return;
-                    }
                     break;
 
                 case TarEntryFormat.Unknown:
                 default:
-                    throw new FormatException(string.Format(SR.TarInvalidFormat, archiveFormat));
+                    throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, archiveFormat));
             }
 
-            throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupported, entryType, archiveFormat));
+            throw new ArgumentException(SR.Format(SR.TarEntryTypeNotSupportedInFormat, entryType, archiveFormat), paramName);
+        }
+
+        public static void SetPendingModificationTimes(Stack<(string, DateTimeOffset)> directoryModificationTimes)
+        {
+            // note: these are ordered child to parent.
+            while (directoryModificationTimes.TryPop(out (string Path, DateTimeOffset Modified) item))
+            {
+                AttemptDirectorySetLastWriteTime(item.Path, item.Modified);
+            }
+        }
+
+        public static void UpdatePendingModificationTimes(Stack<(string, DateTimeOffset)> directoryModificationTimes, string fullPath, DateTimeOffset modified)
+        {
+            // We can't set the modification time when we create the directory because extracting entries into it
+            // will cause that time to change. Instead, we track the times to set them later.
+
+            // We take into account that regular tar files are ordered:
+            // when we see a new directory which is not a child of the previous directory
+            // we can set the parent directory timestamps, and stop tracking them.
+            // This avoids having to track all directory entries until we've finished extracting the entire archive.
+            while (directoryModificationTimes.TryPeek(out (string Path, DateTimeOffset Modified) previous) &&
+                   !IsChildPath(previous.Path, fullPath))
+            {
+                directoryModificationTimes.TryPop(out previous);
+                AttemptDirectorySetLastWriteTime(previous.Path, previous.Modified);
+            }
+
+            directoryModificationTimes.Push((fullPath, modified));
+        }
+
+        private static bool IsChildPath(string parentFullPath, string childFullPath)
+        {
+            // Both paths may end with an additional separator.
+
+            // Verify that either the parent path ends with a separator
+            // or the child path has a separator where the parent path ends.
+            if (IsDirectorySeparatorChar(parentFullPath[^1]))
+            {
+                // The child needs to be at least a char longer than the parent for the name.
+                if (childFullPath.Length <= parentFullPath.Length)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // The child needs to be at least 2 chars longer than the parent:
+                // one for the separator, and one for the name.
+                if ((childFullPath.Length < parentFullPath.Length + 2) ||
+                    !IsDirectorySeparatorChar(childFullPath[parentFullPath.Length]))
+                {
+                    return false;
+                }
+            }
+
+            return childFullPath.StartsWith(parentFullPath, PathInternal.StringComparison);
+
+            // We don't need to check for AltDirectorySeparatorChar, full paths are normalized to DirectorySeparatorChar.
+            static bool IsDirectorySeparatorChar(char c)
+                => c == Path.DirectorySeparatorChar;
+        }
+
+        private static void AttemptDirectorySetLastWriteTime(string fullPath, DateTimeOffset lastWriteTime)
+        {
+            try
+            {
+                Directory.SetLastWriteTime(fullPath, lastWriteTime.UtcDateTime);
+            }
+            catch
+            {
+                // Some OSes like Android might not support setting the last write time, the extraction should not fail because of that
+            }
         }
     }
 }

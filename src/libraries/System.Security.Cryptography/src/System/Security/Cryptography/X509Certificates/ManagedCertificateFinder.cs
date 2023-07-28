@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.X509Certificates
                         return false;
                     }
 
-                    ISet<string> policyOids = CertificatePolicyChain.ReadCertPolicyExtension(ext.RawData);
+                    HashSet<string> policyOids = CertificatePolicyChain.ReadCertPolicyExtension(ext.RawData);
                     return policyOids.Contains(oidValue);
                 });
         }
@@ -275,7 +275,7 @@ namespace System.Security.Cryptography.X509Certificates
                 (keyIdentifier, cert) =>
                 {
                     X509Extension? ext = FindExtension(cert, Oids.SubjectKeyIdentifier);
-                    Span<byte> certKeyId = stackalloc byte[0];
+                    scoped Span<byte> certKeyId;
 
                     if (ext != null)
                     {

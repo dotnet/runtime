@@ -10,7 +10,7 @@ internal class GCSmall
     internal int i;
     internal int j;
 
-    public static void Main(string[] p_args) 
+    public static void Main() 
     {
         long iterations = 200000000;
         GCSmall ns = new GCSmall();

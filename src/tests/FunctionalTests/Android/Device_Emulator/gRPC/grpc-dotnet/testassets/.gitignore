@@ -1,0 +1,5 @@
+# we need the server1.pfx file
+!Certs/InteropTests/server1.pfx
+
+# we copy eng/Versions.props during the build process
+InteropTestsWebsite/Versions.props

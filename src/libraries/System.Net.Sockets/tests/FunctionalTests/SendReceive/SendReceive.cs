@@ -165,50 +165,54 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(Loopbacks))]
         public async Task SendRecv_Stream_TCP_LargeMultiBufferSends(IPAddress listenAt)
         {
-            using (var listener = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
-            using (var client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+            using var portBlocker = new PortBlocker(() => {
+                var l = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                l.BindToAnonymousPort(listenAt);
+                return l;
+            });
+
+            Socket listener = portBlocker.MainSocket;
+            using var client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            listener.Listen(1);
+
+            Task<Socket> acceptTask = AcceptAsync(listener);
+            await client.ConnectAsync(listener.LocalEndPoint).WaitAsync(TestSettings.PassingTestTimeout);
+            using Socket server = await acceptTask.WaitAsync(TestSettings.PassingTestTimeout);
+            
+            var sentChecksum = new Fletcher32();
+            var rand = new Random();
+            int bytesToSend = 0;
+            var buffers = new List<ArraySegment<byte>>();
+            const int NumBuffers = 5;
+            for (int i = 0; i < NumBuffers; i++)
             {
-                listener.BindToAnonymousPort(listenAt);
-                listener.Listen(1);
-
-                Task<Socket> acceptTask = AcceptAsync(listener);
-                await client.ConnectAsync(listener.LocalEndPoint);
-                using (Socket server = await acceptTask)
-                {
-                    var sentChecksum = new Fletcher32();
-                    var rand = new Random();
-                    int bytesToSend = 0;
-                    var buffers = new List<ArraySegment<byte>>();
-                    const int NumBuffers = 5;
-                    for (int i = 0; i < NumBuffers; i++)
-                    {
-                        var sendBuffer = new byte[12345678];
-                        rand.NextBytes(sendBuffer);
-                        bytesToSend += sendBuffer.Length - i; // trim off a few bytes to test offset/count
-                        sentChecksum.Add(sendBuffer, i, sendBuffer.Length - i);
-                        buffers.Add(new ArraySegment<byte>(sendBuffer, i, sendBuffer.Length - i));
-                    }
-
-                    Task<int> sendTask = SendAsync(client, buffers);
-
-                    var receivedChecksum = new Fletcher32();
-                    int bytesReceived = 0;
-                    byte[] recvBuffer = new byte[1024];
-                    while (bytesReceived < bytesToSend)
-                    {
-                        int received = await ReceiveAsync(server, new ArraySegment<byte>(recvBuffer));
-                        if (received <= 0)
-                        {
-                            break;
-                        }
-                        bytesReceived += received;
-                        receivedChecksum.Add(recvBuffer, 0, received);
-                    }
-
-                    Assert.Equal(bytesToSend, await sendTask);
-                    Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
-                }
+                var sendBuffer = new byte[12345678];
+                rand.NextBytes(sendBuffer);
+                bytesToSend += sendBuffer.Length - i; // trim off a few bytes to test offset/count
+                sentChecksum.Add(sendBuffer, i, sendBuffer.Length - i);
+                buffers.Add(new ArraySegment<byte>(sendBuffer, i, sendBuffer.Length - i));
             }
+
+            Task<int> sendTask = SendAsync(client, buffers);
+
+            var receivedChecksum = new Fletcher32();
+            int bytesReceived = 0;
+            byte[] recvBuffer = new byte[1024];
+            while (bytesReceived < bytesToSend)
+            {
+                int received = await ReceiveAsync(server, new ArraySegment<byte>(recvBuffer)).WaitAsync(TestSettings.PassingTestTimeout);
+                if (received <= 0)
+                {
+                    break;
+                }
+                bytesReceived += received;
+                receivedChecksum.Add(recvBuffer, 0, received);
+            }
+
+            int bytesSent = await sendTask.WaitAsync(TestSettings.PassingTestLongTimeout);
+            Assert.Equal(bytesToSend, bytesSent);
+            Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
         }
 
         [OuterLoop]
@@ -328,7 +332,7 @@ namespace System.Net.Sockets.Tests
                     Task clientConnect = ConnectAsync(client, clientEndpoint);
                     using (Socket remote = await AcceptAsync(server))
                     {
-                        await clientConnect;
+                        await clientConnect.WaitAsync(TestSettings.PassingTestTimeout);
 
                         if (useMultipleBuffers)
                         {
@@ -340,7 +344,8 @@ namespace System.Net.Sockets.Tests
 
                             await Task.WhenAll(
                                 SendAsync(remote, new ArraySegment<byte>(new byte[] { 1, 2, 3, 4, 5 })),
-                                receive1, receive2, receive3);
+                                receive1, receive2, receive3)
+                                .WaitAsync(TestSettings.PassingTestTimeout);
 
                             Assert.True(receive1.Result == 1 || receive1.Result == 2, $"Expected 1 or 2, got {receive1.Result}");
                             Assert.True(receive2.Result == 1 || receive2.Result == 2, $"Expected 1 or 2, got {receive2.Result}");
@@ -394,7 +399,8 @@ namespace System.Net.Sockets.Tests
 
                             await Task.WhenAll(
                                 SendAsync(remote, new ArraySegment<byte>(new byte[] { 1, 2, 3 })),
-                                receive1, receive2, receive3);
+                                receive1, receive2, receive3)
+                                .WaitAsync(TestSettings.PassingTestTimeout);
 
                             Assert.Equal(3, receive1.Result + receive2.Result + receive3.Result);
 
@@ -479,7 +485,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows8x))]
+        [Theory]
         [MemberData(nameof(LoopbacksAndBuffers))]
         public async Task SendRecvPollSync_TcpListener_Socket(IPAddress listenAt, bool pollBeforeOperation)
         {
@@ -815,17 +821,10 @@ namespace System.Net.Sockets.Tests
 
                     client.Dispose();
 
-                    if (DisposeDuringOperationResultsInDisposedException)
-                    {
-                        await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask);
-                    }
-                    else
-                    {
-                        var se = await Assert.ThrowsAsync<SocketException>(() => receiveTask);
-                        Assert.True(
-                            se.SocketErrorCode == SocketError.OperationAborted || se.SocketErrorCode == SocketError.ConnectionAborted,
-                            $"Expected {nameof(SocketError.OperationAborted)} or {nameof(SocketError.ConnectionAborted)}, got {se.SocketErrorCode}");
-                    }
+                    var se = await Assert.ThrowsAsync<SocketException>(() => receiveTask);
+                    Assert.True(
+                        se.SocketErrorCode == SocketError.OperationAborted || se.SocketErrorCode == SocketError.ConnectionAborted,
+                        $"Expected {nameof(SocketError.OperationAborted)} or {nameof(SocketError.ConnectionAborted)}, got {se.SocketErrorCode}");
                 }
             }
         }
@@ -899,14 +898,14 @@ namespace System.Net.Sockets.Tests
                     {
                         b.SignalAndWait();
                         client.Dispose();
-                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).WaitAsync(TestSettings.PassingTestTimeout);
 
                     Task send = Task.Factory.StartNew(() =>
                     {
                         SendAsync(server, new ArraySegment<byte>(new byte[1])).GetAwaiter().GetResult();
                         b.SignalAndWait();
                         ReceiveAsync(client, new ArraySegment<byte>(new byte[1])).GetAwaiter().GetResult();
-                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).WaitAsync(TestSettings.PassingTestTimeout);
 
                     await dispose;
                     Exception error = await Record.ExceptionAsync(() => send);
@@ -922,25 +921,36 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public static readonly TheoryData<IPAddress> UdpReceiveGetsCanceledByDispose_Data = new TheoryData<IPAddress>
+        public static readonly TheoryData<IPAddress, bool> UdpReceiveGetsCanceledByDispose_Data = new TheoryData<IPAddress, bool>
         {
-            { IPAddress.Loopback },
-            { IPAddress.IPv6Loopback },
-            { IPAddress.Loopback.MapToIPv6() }
+            { IPAddress.Loopback, true },
+            { IPAddress.IPv6Loopback, true },
+            { IPAddress.Loopback.MapToIPv6(), true },
+            { IPAddress.Loopback, false },
+            { IPAddress.IPv6Loopback, false },
+            { IPAddress.Loopback.MapToIPv6(), false }
         };
 
         [Theory]
         [MemberData(nameof(UdpReceiveGetsCanceledByDispose_Data))]
         [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        public async Task UdpReceiveGetsCanceledByDispose(IPAddress address)
+        public async Task UdpReceiveGetsCanceledByDispose(IPAddress address, bool owning)
         {
+            // Aborting sync operations for non-owning handles is not supported on Unix.
+            if (!owning && UsesSync && !PlatformDetection.IsWindows)
+            {
+                return;
+            }
+
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
                 var socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+                using SafeSocketHandle? owner = ReplaceWithNonOwning(ref socket, owning);
+
                 if (address.IsIPv4MappedToIPv6) socket.DualMode = true;
                 socket.BindToAnonymousPort(address);
                 ConfigureNonBlocking(socket);
@@ -957,7 +967,7 @@ namespace System.Net.Sockets.Tests
                 await disposeTask;
 
                 SocketError? localSocketError = null;
-                bool disposedException = false;
+
                 try
                 {
                     await receiveTask;
@@ -968,15 +978,10 @@ namespace System.Net.Sockets.Tests
                 }
                 catch (ObjectDisposedException)
                 {
-                    disposedException = true;
+                    Assert.Fail("Dispose happened before the operation, retry.");
                 }
 
-                if (UsesApm)
-                {
-                    Assert.Null(localSocketError);
-                    Assert.True(disposedException);
-                }
-                else if (UsesSync)
+                if (UsesSync)
                 {
                     Assert.Equal(SocketError.Interrupted, localSocketError);
                 }
@@ -987,21 +992,33 @@ namespace System.Net.Sockets.Tests
             }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
-        public static readonly TheoryData<bool, bool, bool> TcpReceiveSendGetsCanceledByDispose_Data = new TheoryData<bool, bool, bool>
+        public static readonly TheoryData<bool, bool, bool, bool> TcpReceiveSendGetsCanceledByDispose_Data = new TheoryData<bool, bool, bool, bool>
         {
-            { true, false, false },
-            { true, false, true },
-            { true, true, false },
-            { false, false, false },
-            { false, false, true },
-            { false, true, false },
+            { true, false, false, true },
+            { true, false, true, true },
+            { true, true, false, true },
+            { false, false, false, true },
+            { false, false, true, true },
+            { false, true, false, true },
+            { true, false, false, false },
+            { true, false, true, false },
+            { true, true, false, false },
+            { false, false, false, false },
+            { false, false, true, false },
+            { false, true, false, false },
         };
 
         [Theory]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
-        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
+        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient, bool owning)
         {
+            // Aborting sync operations for non-owning handles is not supported on Unix.
+            if (!owning && UsesSync && !PlatformDetection.IsWindows)
+            {
+                return;
+            }
+
             // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.
             // In this case Dispose will trigger a graceful shutdown, which means that receive will succeed on socket2.
             // This bug is fixed in kernel 3.10.0-1160.25+.
@@ -1015,6 +1032,8 @@ namespace System.Net.Sockets.Tests
             await RetryHelper.ExecuteAsync(async () =>
             {
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair(ipv6Server, dualModeClient);
+                using SafeSocketHandle? owner = ReplaceWithNonOwning(ref socket1, owning);
+
                 using (socket2)
                 {
                     Task socketOperation;
@@ -1047,7 +1066,6 @@ namespace System.Net.Sockets.Tests
                               .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
 
                     SocketError? localSocketError = null;
-                    bool disposedException = false;
                     try
                     {
                         await socketOperation
@@ -1059,15 +1077,10 @@ namespace System.Net.Sockets.Tests
                     }
                     catch (ObjectDisposedException)
                     {
-                        disposedException = true;
+                        Assert.Fail("Dispose happened before the operation, retry.");
                     }
 
-                    if (UsesApm)
-                    {
-                        Assert.Null(localSocketError);
-                        Assert.True(disposedException);
-                    }
-                    else if (UsesSync)
+                    if (UsesSync)
                     {
                         Assert.Equal(SocketError.ConnectionAborted, localSocketError);
                     }
@@ -1075,6 +1088,8 @@ namespace System.Net.Sockets.Tests
                     {
                         Assert.Equal(SocketError.OperationAborted, localSocketError);
                     }
+
+                    owner?.Dispose();
 
                     // On OSX, we're unable to unblock the on-going socket operations and
                     // perform an abortive close.
@@ -1140,7 +1155,7 @@ namespace System.Net.Sockets.Tests
                     int received;
                     do
                     {
-                        received = await ReceiveAsync(socket2, receiveBuffer);
+                        received = await ReceiveAsync(socket2, receiveBuffer).WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                         receivedTotal += received;
                     } while (received != 0);
 

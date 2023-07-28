@@ -11,7 +11,7 @@
 }
 .assembly b71831 { }
 .assembly extern xunit.core {}
-.class ILGEN_0x42acd912 {
+.class public ILGEN_0x42acd912 {
 
 //BEGIN STATIC FIELDS
 .field static	unsigned int16 field_0x0
@@ -225,7 +225,7 @@ ldelem.i4
 /*c0*/
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

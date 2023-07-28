@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlReaderTests
 {
     public class ByteAttributeTests
     {

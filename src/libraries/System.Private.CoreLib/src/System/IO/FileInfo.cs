@@ -14,23 +14,22 @@ namespace System.IO
         private FileInfo() { }
 
         public FileInfo(string fileName)
-            : this(fileName, isNormalized: false)
+            : this(fileName ?? throw new ArgumentNullException(nameof(fileName)), isNormalized: false)
         {
         }
 
         internal FileInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            ArgumentNullException.ThrowIfNull(originalPath);
-
-            // Want to throw the original argument name
             OriginalPath = originalPath;
 
-            fullPath = fullPath ?? originalPath;
+            fullPath ??= originalPath;
             Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath.AsSpan()), "should be fully qualified if normalized");
 
             FullPath = isNormalized ? fullPath ?? originalPath : Path.GetFullPath(fullPath);
-            _name = fileName ?? Path.GetFileName(originalPath);
+            _name = fileName;
         }
+
+        public override string Name => _name ??= Path.GetFileName(OriginalPath);
 
         public long Length
         {
@@ -73,19 +72,19 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.IO.FileStream" /> class with the specified creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size, additional file options and the allocation size.
+        /// Initializes a new instance of the <see cref="FileStream" /> class with the specified creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size, additional file options and the allocation size.
         /// </summary>
-        /// <remarks><see cref="System.IO.FileStream(string,System.IO.FileStreamOptions)"/> for information about exceptions.</remarks>
+        /// <remarks><see cref="FileStream(string,FileStreamOptions)"/> for information about exceptions.</remarks>
         public FileStream Open(FileStreamOptions options) => File.Open(NormalizedPath, options);
 
         public StreamReader OpenText()
             => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
         public StreamWriter CreateText()
-            => new StreamWriter(NormalizedPath, append: false);
+            => CreateStreamWriter(append: false);
 
         public StreamWriter AppendText()
-            => new StreamWriter(NormalizedPath, append: true);
+            => CreateStreamWriter(append: true);
 
         public FileInfo CopyTo(string destFileName) => CopyTo(destFileName, overwrite: false);
 
@@ -109,6 +108,21 @@ namespace System.IO
         {
             FileSystem.DeleteFile(FullPath);
             Invalidate();
+        }
+
+        public override bool Exists
+        {
+            get
+            {
+                try
+                {
+                    return ExistsCore;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
         }
 
         public FileStream Open(FileMode mode)
@@ -183,5 +197,12 @@ namespace System.IO
 
         [SupportedOSPlatform("windows")]
         public void Encrypt() => File.Encrypt(FullPath);
+
+        private StreamWriter CreateStreamWriter(bool append)
+        {
+            StreamWriter streamWriter = new StreamWriter(NormalizedPath, append);
+            Invalidate();
+            return streamWriter;
+        }
     }
 }

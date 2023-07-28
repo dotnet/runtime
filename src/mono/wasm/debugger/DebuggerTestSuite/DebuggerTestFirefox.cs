@@ -8,13 +8,16 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests;
 
 public class DebuggerTestFirefox : DebuggerTestBase
 {
+    private new TimeSpan TestTimeout => base.TestTimeout * 5;
     internal FirefoxInspectorClient _client;
-    public DebuggerTestFirefox(string driver = "debugger-driver.html"):base(driver)
+    public DebuggerTestFirefox(ITestOutputHelper testOutput, string driver = "debugger-driver.html", string locale = "en-US")
+        : base(testOutput, driver, locale)
     {
         if (insp.Client is not FirefoxInspectorClient)
             throw new Exception($"Bug: client should be {nameof(FirefoxInspectorClient)} for use with {nameof(DebuggerTestFirefox)}");
@@ -36,7 +39,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             };
 
         await Ready();
-        await insp.OpenSessionAsync(fn, TestTimeout);
+        await insp.OpenSessionAsync(fn, "", TestTimeout);
     }
 
     internal override Dictionary<string, string> SubscribeToScripts(Inspector insp)
@@ -47,8 +50,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
         {
             var script_id = args?["source"]?["actor"].Value<string>();
             var url = args?["source"]?["sourceMapBaseURL"]?.Value<string>();
-            /*Console.WriteLine(script_id);
-            Console.WriteLine(args);*/
+            /*_testOutput.WriteLine(script_id);
+            _testOutput.WriteLine(args);*/
             if (script_id.StartsWith("dotnet://"))
             {
                 var dbgUrl = args?["source"]?["dotNetUrl"]?.Value<string>();
@@ -64,7 +67,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                 dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
                 dicFileToUrl[new Uri(url).AbsolutePath] = url;
             }
-            await Task.FromResult(0);
+            return await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
         });
         insp.On("resource-available-form", async (args, c) =>
         {
@@ -85,7 +88,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                 dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
                 dicFileToUrl[new Uri(url).AbsolutePath] = url;
             }
-            await Task.FromResult(0);
+            return await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
         });
         return dicScriptsIdToUrl;
     }
@@ -117,7 +120,6 @@ public class DebuggerTestFirefox : DebuggerTestBase
                     locals_fn: locals_fn);
     }
 
-
     internal override void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
     {
         if (location == null) //probably trying to check startLocation endLocation or functionLocation which are not available on Firefox
@@ -132,6 +134,13 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
         var expected_loc_str = $"{script_loc}#{line+1}#{column}";
         Assert.Equal(expected_loc_str, loc_str);
+    }
+
+    internal override void CheckLocationLine(JToken location, int line)
+    {
+        if (location == null) //probably trying to check startLocation endLocation or functionLocation which are not available on Firefox
+            return;
+        Assert.Equal(location["lineNumber"].Value<int>(), line+1);
     }
 
     private JObject ConvertFirefoxToDefaultFormat(JArray frames, JObject wait_res)
@@ -173,6 +182,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
                 });
     }
 
+    internal override Task SetJustMyCode(bool enabled) => Task.CompletedTask;
+
     internal override async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)
     {
@@ -186,7 +197,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         var res = await cli.SendCommand(method, args, token);
         if (!res.IsOk)
         {
-            Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
+            _testOutput.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
             Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
         }
         var wait_res = await WaitFor(waitForEvent);
@@ -225,52 +236,63 @@ public class DebuggerTestFirefox : DebuggerTestBase
         JToken value = variable.Value;
         JObject variableValue = null;
         string valueType = "value";
-        if (value?["type"] == null || value["type"].Value<string>() == "object")
+        if (value?["type"] == null || value["type"].Value<string>() == "object" || value["type"].Value<string>() == "string")
         {
             var actor = value["value"]?["actor"]?.Value<string>();
-            if (value["value"]["type"].Value<string>() == "null")
+            string type = value["value"]?["type"]?.Value<string>();
+            switch (type)
             {
-                variableValue = JObject.FromObject(new
+                case "null":
+                    variableValue = JObject.FromObject(new
                         {
                             type = "object",
                             subtype = "null",
                             className = value["value"]["class"].Value<string>(),
                             description = value["value"]["class"].Value<string>()
                         });
-                if (actor != null && actor.StartsWith("dotnet:pointer:"))
-                    variableValue["type"] = "symbol";
-            }
-            else if (value?["value"]?["type"].Value<string>() == "function")
-            {
-                variableValue = JObject.FromObject(new
-                    {
-                        type = "function",
-                        objectId = value["value"]["actor"].Value<string>(),
-                        className = "Function",
-                        description = $"get {name} ()"
-                    });
-                valueType = "get";
-            }
-            else {
-                variableValue = JObject.FromObject(new
+                    if (actor != null && actor.StartsWith("dotnet:pointer:"))
+                        variableValue["type"] = "symbol";
+                    break;
+                case "function":
+                    variableValue = JObject.FromObject(new
                         {
-                            type = value["value"]["type"],
+                            type = type,
+                            objectId = value["value"]["actor"].Value<string>(),
+                            className = "Function",
+                            description = $"get {name} ()"
+                        });
+                    valueType = "get";
+                    break;
+                case "string":
+                    variableValue = JObject.FromObject(new
+                        {
+                            type = type,
+                            objectId = value["value"]["actor"]?.Value<string>(),
+                            value = value["value"]["value"]?.Value<string>(),
+                            description = value["value"]["value"].Value<string>()
+                        });
+                    break;
+                default:
+                    variableValue = JObject.FromObject(new
+                        {
+                            type = type,
                             value = (string)null,
                             description = value["value"]?["value"]?.Value<string>() == null ? value["value"]["class"].Value<string>() : value["value"]?["value"]?.Value<string>(),
                             className = value["value"]["class"].Value<string>(),
                             objectId = actor,
                         });
-                if (actor.StartsWith("dotnet:valuetype:"))
-                    variableValue["isValueType"] = true;
-                if (actor.StartsWith("dotnet:array:"))
-                    variableValue["subtype"] = "array";
-                if (actor.StartsWith("dotnet:pointer:"))
-                    variableValue["type"] = "object";
-                if (actor.StartsWith("dotnet:pointer:-1"))
-                {
-                    variableValue["type"] = "symbol";
-                    variableValue["value"] = value["value"]?["value"]?.Value<string>();
-                }
+                    if (actor.StartsWith("dotnet:valuetype:"))
+                        variableValue["isValueType"] = true;
+                    if (actor.StartsWith("dotnet:array:"))
+                        variableValue["subtype"] = "array";
+                    if (actor.StartsWith("dotnet:pointer:"))
+                        variableValue["type"] = "object";
+                    if (actor.StartsWith("dotnet:pointer:-1"))
+                    {
+                        variableValue["type"] = "symbol";
+                        variableValue["value"] = value["value"]?["value"]?.Value<string>();
+                    }
+                    break;
             }
         }
         else

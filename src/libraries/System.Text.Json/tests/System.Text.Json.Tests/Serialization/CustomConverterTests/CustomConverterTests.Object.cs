@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -8,7 +10,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class CustomConverterTests
     {
         /// <summary>
-        /// A converter that uses Object as it's type.
+        /// A converter that uses Object as its type.
         /// </summary>
         private class ObjectToCustomerOrIntConverter : JsonConverter<object>
         {
@@ -307,9 +309,19 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
             {
-                Assert.IsType<object>(value);
-                writer.WriteStartObject();
-                writer.WriteEndObject();
+                if (value is null)
+                {
+                    writer.WriteNullValue();
+                }
+                else if (value.GetType() == typeof(object))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    JsonSerializer.Serialize(writer, value, value.GetType(), options);
+                }
             }
         }
 
@@ -743,6 +755,33 @@ namespace System.Text.Json.Serialization.Tests
             string expectedJson = "42";
             string actualJson = JsonSerializer.Serialize(new object(), options);
             Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Theory]
+        [InlineData(-2)]
+        [InlineData(false)]
+        [InlineData("string")]
+        [InlineData(3.1415926)]
+        public static void CustomSystemObjectConverter_DoesNotUsePolymorphismInAllContexts(object value)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/72681
+
+            var options = new JsonSerializerOptions { Converters = { new CustomSystemObjectConverter() } };
+
+            TestValue(value, "42");
+            TestValue(new { Value = value }, """{"Value":42}""");
+            TestValue(new object[] { value }, "[42]");
+            TestValue(new Dictionary<string, object> { ["key"] = value }, """{"key":42}""");
+
+            void TestValue<T>(T value, string expectedJson)
+            {
+                string json = JsonSerializer.Serialize(value, options);
+                Assert.Equal(expectedJson, json);
+
+                JsonTypeInfo<T> jsonTypeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+                json = JsonSerializer.Serialize(value, jsonTypeInfo);
+                Assert.Equal(expectedJson, json);
+            }
         }
 
         private class CustomSystemObjectConverter : JsonConverter<object>

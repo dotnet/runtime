@@ -22,7 +22,6 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
@@ -380,7 +379,7 @@ mono_get_root_domain (void)
  * \returns the current domain
  */
 MonoDomain *
-mono_domain_get ()
+mono_domain_get (void)
 {
 	return GET_APPDOMAIN ();
 }

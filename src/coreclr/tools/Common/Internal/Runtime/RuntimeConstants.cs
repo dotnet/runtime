@@ -64,11 +64,29 @@ namespace Internal.Runtime
         public const uint Reabstraction = 0xFFFFFFFE;
     }
 
+    internal static class StaticVirtualMethodContextSource
+    {
+        public const ushort None = 0;
+        public const ushort ContextFromThisClass = 1;
+        public const ushort ContextFromFirstInterface = 2;
+    }
+
     internal enum RuntimeHelperKind
     {
         AllocateObject,
         IsInst,
         CastClass,
         AllocateArray,
+    }
+
+    /// <summary>
+    /// Constants that describe the bits of the Flags field of MethodFixupCell.
+    /// </summary>
+    internal static class MethodFixupCellFlagsConstants
+    {
+        public const int CharSetMask = 0x7;
+        public const int IsObjectiveCMessageSendMask = 0x8;
+        public const int ObjectiveCMessageSendFunctionMask = 0x70;
+        public const int ObjectiveCMessageSendFunctionShift = 4;
     }
 }

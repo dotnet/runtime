@@ -31,7 +31,7 @@ namespace System.Xml
         private OnXmlDictionaryReaderClose? _onClose;
         private bool _buffered;
         private int _maxBytesPerRead;
-        private static readonly byte[] s_charType = new byte[256]
+        private static ReadOnlySpan<byte> CharTypeMap => new byte[256]
             {
                 /*  0 (.) */
                          CharType.None,
@@ -557,14 +557,12 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (offset > buffer.Length)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, buffer.Length)));
-            if (count < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, buffer.Length));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - offset)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset));
             MoveToInitial(quotas, onClose);
             ArraySegment<byte> seg = EncodingStreamWrapper.ProcessBuffer(buffer, offset, count, encoding);
             BufferReader.SetBuffer(seg.Array!, seg.Offset, seg.Count, null, null);
@@ -594,22 +592,12 @@ namespace System.Xml
             base.Close();
             OnXmlDictionaryReaderClose? onClose = _onClose;
             _onClose = null;
-            if (onClose != null)
-            {
-                try
-                {
-                    onClose(this);
-                }
-                catch (Exception e)
-                {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperCallback(e);
-                }
-            }
+            onClose?.Invoke(this);
         }
 
         private void SkipWhitespace()
         {
-            while (!BufferReader.EndOfFile && (s_charType[BufferReader.GetByte()] & CharType.Whitespace) != 0)
+            while (!BufferReader.EndOfFile && (CharTypeMap[BufferReader.GetByte()] & CharType.Whitespace) != 0)
                 BufferReader.SkipByte();
         }
 
@@ -623,7 +611,7 @@ namespace System.Xml
                 buffer[offset + 1] != (byte)'x' ||
                 buffer[offset + 2] != (byte)'m' ||
                 buffer[offset + 3] != (byte)'l' ||
-                (s_charType[buffer[offset + 4]] & CharType.Whitespace) == 0)
+                (CharTypeMap[buffer[offset + 4]] & CharType.Whitespace) == 0)
             {
                 XmlExceptionHelper.ThrowProcessingInstructionNotSupported(this);
             }
@@ -646,7 +634,7 @@ namespace System.Xml
             while (valueLength > 0)
             {
                 byte ch = BufferReader.GetByte(valueOffset + valueLength - 1);
-                if ((s_charType[ch] & CharType.Whitespace) == 0)
+                if ((CharTypeMap[ch] & CharType.Whitespace) == 0)
                     break;
                 valueLength--;
             }
@@ -689,14 +677,14 @@ namespace System.Xml
             {
                 ch = buffer[offset];
                 prefixChar = ch;
-                if ((s_charType[ch] & CharType.FirstName) == 0)
+                if ((CharTypeMap[ch] & CharType.FirstName) == 0)
                     anyChar |= 0x80;
                 anyChar |= ch;
                 offset++;
                 while (offset < offsetMax)
                 {
                     ch = buffer[offset];
-                    if ((s_charType[ch] & CharType.Name) == 0)
+                    if ((CharTypeMap[ch] & CharType.Name) == 0)
                         break;
                     anyChar |= ch;
                     offset++;
@@ -720,14 +708,14 @@ namespace System.Xml
                 if (offset < offsetMax)
                 {
                     ch = buffer[offset];
-                    if ((s_charType[ch] & CharType.FirstName) == 0)
+                    if ((CharTypeMap[ch] & CharType.FirstName) == 0)
                         anyChar |= 0x80;
                     anyChar |= ch;
                     offset++;
                     while (offset < offsetMax)
                     {
                         ch = buffer[offset];
-                        if ((s_charType[ch] & CharType.Name) == 0)
+                        if ((CharTypeMap[ch] & CharType.Name) == 0)
                             break;
                         anyChar |= ch;
                         offset++;
@@ -758,9 +746,9 @@ namespace System.Xml
 
         private static int ReadAttributeText(byte[] buffer, int offset, int offsetMax)
         {
-            byte[] charType = XmlUTF8TextReader.s_charType;
+            ReadOnlySpan<byte> charTypeMap = XmlUTF8TextReader.CharTypeMap;
             int textOffset = offset;
-            while (offset < offsetMax && (charType[buffer[offset]] & CharType.AttributeText) != 0)
+            while (offset < offsetMax && (charTypeMap[buffer[offset]] & CharType.AttributeText) != 0)
                 offset++;
             return offset - textOffset;
         }
@@ -864,7 +852,7 @@ namespace System.Xml
                 ch = BufferReader.GetByte();
 
                 bool space = false;
-                while ((s_charType[ch] & CharType.Whitespace) != 0)
+                while ((CharTypeMap[ch] & CharType.Whitespace) != 0)
                 {
                     space = true;
                     BufferReader.SkipByte();
@@ -888,7 +876,7 @@ namespace System.Xml
         // 0xFFFE and 0xFFFF are not valid characters per Unicode specification. The first byte in the UTF8 representation is 0xEF.
         private static bool IsNextCharacterNonFFFE(byte[] buffer, int offset)
         {
-            Fx.Assert(buffer[offset] == 0xEF, "buffer[offset] MUST be 0xEF.");
+            Debug.Assert(buffer[offset] == 0xEF, "buffer[offset] MUST be 0xEF.");
 
             if (buffer[offset + 1] == 0xBF && (buffer[offset + 2] == 0xBE || buffer[offset + 2] == 0xBF))
             {
@@ -958,7 +946,7 @@ namespace System.Xml
             ReadQualifiedName(elementNode.Prefix, elementNode.LocalName);
             elementNode.NameLength = BufferReader.Offset - elementNode.NameOffset;
             byte ch = BufferReader.GetByte();
-            while ((s_charType[ch] & CharType.Whitespace) != 0)
+            while ((CharTypeMap[ch] & CharType.Whitespace) != 0)
             {
                 BufferReader.SkipByte();
                 ch = BufferReader.GetByte();
@@ -1024,7 +1012,7 @@ namespace System.Xml
                     byte b = BufferReader.GetByte();
                     if (b == '-')
                         break;
-                    if ((s_charType[b] & CharType.Comment) == 0)
+                    if ((CharTypeMap[b] & CharType.Comment) == 0)
                     {
                         if (b == 0xEF)
                             ReadNonFFFE();
@@ -1097,7 +1085,7 @@ namespace System.Xml
 
         private int ReadCharRef()
         {
-            DiagnosticUtility.DebugAssert(BufferReader.GetByte() == '&', "");
+            Debug.Assert(BufferReader.GetByte() == '&');
             int charEntityOffset = BufferReader.Offset;
             BufferReader.SkipByte();
             while (BufferReader.GetByte() != ';')
@@ -1136,18 +1124,18 @@ namespace System.Xml
 
         private static int ReadWhitespace(byte[] buffer, int offset, int offsetMax)
         {
-            byte[] charType = XmlUTF8TextReader.s_charType;
+            ReadOnlySpan<byte> charTypeMap = XmlUTF8TextReader.CharTypeMap;
             int wsOffset = offset;
-            while (offset < offsetMax && (charType[buffer[offset]] & CharType.SpecialWhitespace) != 0)
+            while (offset < offsetMax && (charTypeMap[buffer[offset]] & CharType.SpecialWhitespace) != 0)
                 offset++;
             return offset - wsOffset;
         }
 
         private static int ReadText(byte[] buffer, int offset, int offsetMax)
         {
-            byte[] charType = XmlUTF8TextReader.s_charType;
+            ReadOnlySpan<byte> charTypeMap = XmlUTF8TextReader.CharTypeMap;
             int textOffset = offset;
-            while (offset < offsetMax && (charType[buffer[offset]] & CharType.Text) != 0)
+            while (offset < offsetMax && (charTypeMap[buffer[offset]] & CharType.Text) != 0)
                 offset++;
             return offset - textOffset;
         }
@@ -1155,10 +1143,10 @@ namespace System.Xml
         // Read Unicode codepoints 0xFvvv
         private int ReadTextAndWatchForInvalidCharacters(byte[] buffer, int offset, int offsetMax)
         {
-            byte[] charType = XmlUTF8TextReader.s_charType;
+            ReadOnlySpan<byte> charTypeMap = XmlUTF8TextReader.CharTypeMap;
             int textOffset = offset;
 
-            while (offset < offsetMax && ((charType[buffer[offset]] & CharType.Text) != 0 || buffer[offset] == 0xEF))
+            while (offset < offsetMax && ((charTypeMap[buffer[offset]] & CharType.Text) != 0 || buffer[offset] == 0xEF))
             {
                 if (buffer[offset] != 0xEF)
                 {
@@ -1286,7 +1274,7 @@ namespace System.Xml
         private void ReadEscapedText()
         {
             int ch = ReadCharRef();
-            if (ch < 256 && (s_charType[ch] & CharType.Whitespace) != 0)
+            if (ch < 256 && (CharTypeMap[ch] & CharType.Whitespace) != 0)
                 MoveToWhitespaceText().Value.SetCharValue(ch);
             else
                 MoveToComplexText().Value.SetCharValue(ch);
@@ -1345,7 +1333,7 @@ namespace System.Xml
                 else
                     ReadStartElement();
             }
-            else if ((s_charType[ch] & CharType.SpecialWhitespace) != 0)
+            else if ((CharTypeMap[ch] & CharType.SpecialWhitespace) != 0)
             {
                 ReadWhitespace();
             }
@@ -1353,7 +1341,7 @@ namespace System.Xml
             {
                 XmlExceptionHelper.ThrowInvalidRootData(this);
             }
-            else if ((s_charType[ch] & CharType.Text) != 0)
+            else if ((CharTypeMap[ch] & CharType.Text) != 0)
             {
                 ReadText(false);
             }
@@ -1427,10 +1415,7 @@ namespace System.Xml
 
         private void GetPosition(out int row, out int column)
         {
-            if (_rowOffsets == null)
-            {
-                _rowOffsets = BufferReader.GetRows();
-            }
+            _rowOffsets ??= BufferReader.GetRows();
 
             int offset = BufferReader.Offset;
 

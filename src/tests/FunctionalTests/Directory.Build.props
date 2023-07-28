@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <!-- Modeled after Microsoft.Android.Sdk.ILLink.targets https://github.com/xamarin/xamarin-android/blob/main/src/Xamarin.Android.Build.Tasks/Microsoft.Android.Sdk/targets/Microsoft.Android.Sdk.DefaultProperties.targets -->
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'android'">
     <DebuggerSupport Condition="'$(DebuggerSupport)' == ''">false</DebuggerSupport>
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' != 'true'"></InvariantGlobalization>
@@ -25,21 +25,22 @@
   </PropertyGroup>
 
   <!-- Modeled after Microsoft.NET.Sdk.BlazorWebAssembly.Current.targets https://github.com/dotnet/sdk/blob/main/src/BlazorWasmSdk/Targets/Microsoft.NET.Sdk.BlazorWebAssembly.Current.targets -->
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
 
   <!-- Modeled after Xamarin.Shared.Sdk.targets https://github.com/xamarin/xamarin-macios/blob/main/dotnet/targets/Xamarin.Shared.Sdk.targets -->
-  <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
     <CustomResourceTypesSupport Condition="'$(CustomResourceTypesSupport)' == ''">false</CustomResourceTypesSupport>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == ''">false</DebuggerSupport>
     <EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization Condition="'$(EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)' == ''">false</EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization>
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
-    <InvariantGlobalization Condition="'$(TargetOS)' == 'MacCatalyst' and '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
+    <InvariantGlobalization Condition="'$(TargetOS)' == 'maccatalyst' and '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
     <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
   </PropertyGroup>
 
   <Import Project="..\..\libraries\Directory.Build.props" />

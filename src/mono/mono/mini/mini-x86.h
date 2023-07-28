@@ -79,15 +79,21 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_CALLEE_REGS X86_CALLEE_REGS
 #define MONO_ARCH_CALLEE_SAVED_REGS X86_CALLER_REGS
 
-#define MONO_ARCH_CALLEE_FREGS (0xff & ~(regmask (MONO_ARCH_FPSTACK_SIZE)))
+#ifdef TARGET_WIN32
+/* xmm7 is used as a scratch register */
+#define MONO_ARCH_CALLEE_FREGS 0x7f
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
+#define MONO_ARCH_FP_SCRATCH_REG X86_XMM7
+#else
+/* xmm7 is used as a scratch register */
+#define MONO_ARCH_CALLEE_FREGS 0x7f
+#define MONO_ARCH_CALLEE_SAVED_FREGS 0
+#define MONO_ARCH_FP_SCRATCH_REG X86_XMM7
+#endif
 
 /* All registers are clobered by a call */
-#define MONO_ARCH_CALLEE_XREGS (0xff & ~(regmask (MONO_MAX_XREGS)))
+#define MONO_ARCH_CALLEE_XREGS MONO_ARCH_CALLEE_FREGS
 #define MONO_ARCH_CALLEE_SAVED_XREGS 0
-
-#define MONO_ARCH_USE_FPSTACK TRUE
-#define MONO_ARCH_FPSTACK_SIZE 6
 
 #define MONO_ARCH_INST_FIXED_REG(desc) (((desc == ' ') || (desc == 'i')) ? -1 : ((desc == 's') ? X86_ECX : ((desc == 'a') ? X86_EAX : ((desc == 'd') ? X86_EDX : ((desc == 'l') ? X86_EAX : -1)))))
 
@@ -117,7 +123,7 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 /* This is the max size of the locals area of a given frame. I think 1MB is a safe default for now */
 #define MONO_ARCH_MAX_FRAME_SIZE 0x100000
 
-/* This is how much a try block must be extended when it is preceeded by a Monitor.Enter() call.
+/* This is how much a try block must be extended when it is preceded by a Monitor.Enter() call.
 It's 4 bytes as this is how many bytes + 1 that 'add 0x10, %esp' takes. It is used to pop the arguments from
 the monitor.enter call and must be already protected. */
 #define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT 4
@@ -172,6 +178,7 @@ typedef struct {
 
 #define MONO_ARCH_EMULATE_FCONV_TO_U8 1
 #define MONO_ARCH_EMULATE_FCONV_TO_U4 1
+#define MONO_ARCH_EMULATE_FREM 1
 
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
@@ -222,6 +229,9 @@ typedef struct {
 #define MONO_ARCH_HAVE_OP_TAILCALL_REG 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-p:32:32-n32-S128"
+#define MONO_ARCH_FLOAT32_SUPPORTED 1
+#define MONO_ARCH_NEED_SIMD_BANK 1
+#define MONO_ARCH_USE_SHARED_FP_SIMD_BANK 1
 
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)

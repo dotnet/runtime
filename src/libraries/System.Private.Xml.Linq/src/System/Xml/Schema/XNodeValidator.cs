@@ -22,7 +22,7 @@ namespace System.Xml.Schema
         private XmlNamespaceManager? namespaceManager;
         private XmlSchemaValidator? validator;
 
-        private Dictionary<XmlSchemaInfo, XmlSchemaInfo>? schemaInfos;
+        private HashSet<XmlSchemaInfo>? schemaInfos;
         private ArrayList? defaultAttributes;
         private readonly XName xsiTypeName;
         private readonly XName xsiNilName;
@@ -73,7 +73,7 @@ namespace System.Xml.Schema
                 validator.Initialize();
             }
 
-            IXmlLineInfo orginal = SaveLineInfo(source);
+            IXmlLineInfo original = SaveLineInfo(source);
             if (nt == XmlNodeType.Attribute)
             {
                 ValidateAttribute((XAttribute)source);
@@ -83,7 +83,7 @@ namespace System.Xml.Schema
                 ValidateElement((XElement)source);
             }
             validator.EndValidation();
-            RestoreLineInfo(orginal);
+            RestoreLineInfo(original);
         }
 
         private XmlSchemaInfo GetDefaultAttributeSchemaInfo(XmlSchemaAttribute sa)
@@ -153,23 +153,17 @@ namespace System.Xml.Schema
 
         private void ReplaceSchemaInfo(XObject o, XmlSchemaInfo schemaInfo)
         {
-            if (schemaInfos == null)
-            {
-                schemaInfos = new Dictionary<XmlSchemaInfo, XmlSchemaInfo>(new XmlSchemaInfoEqualityComparer());
-            }
+            schemaInfos ??= new HashSet<XmlSchemaInfo>(new XmlSchemaInfoEqualityComparer());
             XmlSchemaInfo? si = o.Annotation<XmlSchemaInfo>();
             if (si != null)
             {
-                if (!schemaInfos.ContainsKey(si))
-                {
-                    schemaInfos.Add(si, si);
-                }
+                schemaInfos.Add(si);
                 o.RemoveAnnotations<XmlSchemaInfo>();
             }
             if (!schemaInfos.TryGetValue(schemaInfo, out si))
             {
                 si = schemaInfo;
-                schemaInfos.Add(si, si);
+                schemaInfos.Add(si);
             }
             o.AddAnnotation(si);
         }
@@ -265,7 +259,7 @@ namespace System.Xml.Schema
         private void ValidateAttributes(XElement e)
         {
             XAttribute? a = e.lastAttr;
-            IXmlLineInfo orginal = SaveLineInfo(a);
+            IXmlLineInfo original = SaveLineInfo(a);
             if (a != null)
             {
                 do
@@ -296,7 +290,7 @@ namespace System.Xml.Schema
                     e.Add(a);
                 }
             }
-            RestoreLineInfo(orginal);
+            RestoreLineInfo(original);
         }
 
         private void ValidateElement(XElement e)
@@ -328,7 +322,7 @@ namespace System.Xml.Schema
         private void ValidateNodes(XElement e)
         {
             XNode? n = e.content as XNode;
-            IXmlLineInfo orginal = SaveLineInfo(n);
+            IXmlLineInfo original = SaveLineInfo(n);
             if (n != null)
             {
                 do
@@ -363,7 +357,7 @@ namespace System.Xml.Schema
                     validator!.ValidateText(s);
                 }
             }
-            RestoreLineInfo(orginal);
+            RestoreLineInfo(original);
         }
 
         private void ValidationCallback(object? sender, ValidationEventArgs e)

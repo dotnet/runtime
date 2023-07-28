@@ -41,7 +41,6 @@ namespace System.Net.WebSockets.Tests
         [Theory]
         [MemberData(nameof(EchoServers))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CanSendReceiveData(Uri echoUri)
         {
             if (PlatformDetection.IsWindows7)
@@ -104,7 +103,6 @@ namespace System.Net.WebSockets.Tests
 
         [Theory]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0b_1000_0001, 0b_0_000_0001, false)] // fin + text, no mask + length == 1
         [InlineData(0b_1100_0001, 0b_0_000_0001, true)] // fin + rsv1 + text, no mask + length == 1
         [InlineData(0b_1010_0001, 0b_0_000_0001, true)] // fin + rsv2 + text, no mask + length == 1
@@ -182,7 +180,6 @@ namespace System.Net.WebSockets.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ReceiveAsync_ServerSplitHeader_ValidDataReceived()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -237,7 +234,6 @@ namespace System.Net.WebSockets.Tests
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncClosesStream(Uri echoUri, bool explicitCloseAsync)
         {
             if (PlatformDetection.IsWindows7)

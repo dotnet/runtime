@@ -10,6 +10,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
@@ -65,6 +66,8 @@ namespace System.Threading
         /// </summary>
         /// <param name="info">The object that holds the serialized object data.</param>
         /// <param name="context">The contextual information about the source or destination.</param>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected BarrierPostPhaseException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -215,11 +218,8 @@ namespace System.Threading
         /// </remarks>
         public Barrier(int participantCount, Action<Barrier>? postPhaseAction)
         {
-            // the count must be non negative value
-            if (participantCount < 0 || participantCount > MAX_PARTICIPANTS)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount, SR.Barrier_ctor_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(participantCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(participantCount, MAX_PARTICIPANTS);
             _currentTotalCount = (int)participantCount;
             _postPhaseAction = postPhaseAction;
 
@@ -316,18 +316,10 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public long AddParticipants(int participantCount)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (participantCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
-                    SR.Barrier_AddParticipants_NonPositive_ArgumentOutOfRange);
-            }
-            else if (participantCount > MAX_PARTICIPANTS) //overflow
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount),
-                        SR.Barrier_AddParticipants_Overflow_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(participantCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(participantCount, MAX_PARTICIPANTS);
 
             // in case of this is called from the PHA
             if (_actionCallerID != 0 && Environment.CurrentManagedThreadId == _actionCallerID)
@@ -420,13 +412,9 @@ namespace System.Threading
         /// disposed.</exception>
         public void RemoveParticipants(int participantCount)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (participantCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
-                    SR.Barrier_RemoveParticipants_NonPositive_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(participantCount);
 
             // in case of this is called from the PHA
             if (_actionCallerID != 0 && Environment.CurrentManagedThreadId == _actionCallerID)
@@ -620,7 +608,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool SignalAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             cancellationToken.ThrowIfCancellationRequested();
 
             if (millisecondsTimeout < -1)
@@ -814,7 +802,7 @@ namespace System.Threading
         private void SetResetEvents(bool observedSense)
         {
             // Increment the phase count using Volatile class because m_currentPhase is 64 bit long type, that could cause torn write on 32 bit machines
-            CurrentPhaseNumber = CurrentPhaseNumber + 1;
+            CurrentPhaseNumber++;
             if (observedSense)
             {
                 _oddEvent.Reset();
@@ -930,17 +918,6 @@ namespace System.Threading
                     _evenEvent.Dispose();
                 }
                 _disposed = true;
-            }
-        }
-
-        /// <summary>
-        /// Throw ObjectDisposedException if the barrier is disposed
-        /// </summary>
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Barrier), SR.Barrier_Dispose);
             }
         }
     }

@@ -24,19 +24,8 @@ namespace System.Threading
     {
         #region Object->Lock/Condition mapping
 
-        private static ConditionalWeakTable<object, Condition> s_conditionTable = new ConditionalWeakTable<object, Condition>();
-        private static ConditionalWeakTable<object, Condition>.CreateValueCallback s_createCondition = (o) => new Condition(GetLock(o));
-
-        internal static Lock GetLock(object obj)
-        {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
-
-            Debug.Assert(!(obj is Lock),
-                "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
-
-            return ObjectHeader.GetLockObject(obj);
-        }
+        private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = new ConditionalWeakTable<object, Condition>();
+        private static readonly ConditionalWeakTable<object, Condition>.CreateValueCallback s_createCondition = (o) => new Condition(ObjectHeader.GetLockObject(o));
 
         private static Condition GetCondition(object obj)
         {
@@ -49,77 +38,97 @@ namespace System.Threading
 
         #region Public Enter/Exit methods
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Enter(object obj)
         {
-            Lock lck = GetLock(obj);
+            int resultOrIndex = ObjectHeader.Acquire(obj);
+            if (resultOrIndex < 0)
+                return;
+
+            Lock lck = resultOrIndex == 0 ?
+                ObjectHeader.GetLockObject(obj) :
+                SyncTable.GetLockObject(resultOrIndex);
+
             if (lck.TryAcquire(0))
                 return;
+
             TryAcquireContended(lck, obj, Timeout.Infinite);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Enter(object obj, ref bool lockTaken)
         {
+            // we are inlining lockTaken check as the check is likely be optimized away
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
-            Lock lck = GetLock(obj);
-            if (lck.TryAcquire(0))
-            {
-                lockTaken = true;
-                return;
-            }
-            TryAcquireContended(lck, obj, Timeout.Infinite);
+            Enter(obj);
             lockTaken = true;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj)
         {
-            return GetLock(obj).TryAcquire(0);
+            int resultOrIndex = ObjectHeader.TryAcquire(obj);
+            if (resultOrIndex < 0)
+                return true;
+
+            if (resultOrIndex == 0)
+                return false;
+
+            Lock lck = SyncTable.GetLockObject(resultOrIndex);
+            return lck.TryAcquire(0);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TryEnter(object obj, ref bool lockTaken)
         {
+            // we are inlining lockTaken check as the check is likely be optimized away
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
-            lockTaken = GetLock(obj).TryAcquire(0);
+            lockTaken = TryEnter(obj);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-            Lock lck = GetLock(obj);
+            int resultOrIndex = ObjectHeader.TryAcquire(obj);
+            if (resultOrIndex < 0)
+                return true;
+
+            Lock lck = resultOrIndex == 0 ?
+                ObjectHeader.GetLockObject(obj) :
+                SyncTable.GetLockObject(resultOrIndex);
+
             if (lck.TryAcquire(0))
                 return true;
+
             return TryAcquireContended(lck, obj, millisecondsTimeout);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
         {
+            // we are inlining lockTaken check as the check is likely be optimized away
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
-            Lock lck = GetLock(obj);
-            if (lck.TryAcquire(0))
-            {
-                lockTaken = true;
-                return;
-            }
-            lockTaken = TryAcquireContended(lck, obj, millisecondsTimeout);
+            lockTaken = TryEnter(obj, millisecondsTimeout);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Exit(object obj)
         {
-            GetLock(obj).Release();
+            ObjectHeader.Release(obj);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool IsEntered(object obj)
         {
-            return GetLock(obj).IsAcquired;
+            return ObjectHeader.IsAcquired(obj);
         }
 
         #endregion
@@ -139,20 +148,14 @@ namespace System.Threading
 
         public static void Pulse(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             GetCondition(obj).SignalOne();
         }
 
         public static void PulseAll(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             GetCondition(obj).SignalAll();
         }
@@ -192,20 +195,19 @@ namespace System.Threading
         }
 
         // Represents an item a thread is blocked on. This structure is allocated on the stack and accessed by the debugger.
-        // Fields are volatile to avoid potential compiler optimizations.
         private struct DebugBlockingItem
         {
             // The object the thread is waiting on
-            public volatile object _object;
+            public object _object;
 
             // Indicates how the thread is blocked on the item
-            public volatile DebugBlockingItemType _blockingType;
+            public DebugBlockingItemType _blockingType;
 
             // Blocking timeout in milliseconds or Timeout.Infinite for no timeout
-            public volatile int _timeout;
+            public int _timeout;
 
             // Next pointer in the linked list of DebugBlockingItem records
-            public volatile IntPtr _next;
+            public IntPtr _next;
         }
 
         private unsafe struct DebugBlockingScope : IDisposable

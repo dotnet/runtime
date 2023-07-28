@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -233,63 +234,23 @@ namespace System.Security.Cryptography
             out int base64End,
             out int base64DecodedSize)
         {
-            base64Start = 0;
-            base64End = str.Length;
+            // Trim starting and ending allowed white space characters
+            int start = 0;
+            int end = str.Length - 1;
+            for (; start < str.Length && IsWhiteSpaceCharacter(str[start]); start++);
+            for (; end > start && IsWhiteSpaceCharacter(str[end]); end--);
 
-            if (str.IsEmpty)
+            // Validate that the remaining characters are valid base-64 encoded data.
+            if (Base64.IsValid(str.Slice(start, end + 1 - start), out base64DecodedSize))
             {
-                base64DecodedSize = 0;
+                base64Start = start;
+                base64End = end + 1;
                 return true;
             }
 
-            int significantCharacters = 0;
-            int paddingCharacters = 0;
-
-            for (int i = 0; i < str.Length; i++)
-            {
-                char ch = str[i];
-
-                if (IsWhiteSpaceCharacter(ch))
-                {
-                    if (significantCharacters == 0)
-                    {
-                        base64Start++;
-                    }
-                    else
-                    {
-                        base64End--;
-                    }
-
-                    continue;
-                }
-
-                base64End = str.Length;
-
-                if (ch == '=')
-                {
-                    paddingCharacters++;
-                }
-                else if (paddingCharacters == 0 && IsBase64Character(ch))
-                {
-                    significantCharacters++;
-                }
-                else
-                {
-                    base64DecodedSize = 0;
-                    return false;
-                }
-            }
-
-            int totalChars = paddingCharacters + significantCharacters;
-
-            if (paddingCharacters > 2 || (totalChars & 0b11) != 0)
-            {
-                base64DecodedSize = 0;
-                return false;
-            }
-
-            base64DecodedSize = (totalChars >> 2) * 3 - paddingCharacters;
-            return true;
+            base64Start = 0;
+            base64End = 0;
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -353,10 +314,8 @@ namespace System.Security.Cryptography
             // is accounted for assuming an empty label.
             const int MaxDataLength = 1_585_834_053;
 
-            if (labelLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(labelLength), SR.ArgumentOutOfRange_NeedPosNum);
-            if (dataLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(dataLength), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(labelLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(dataLength);
             if (labelLength > MaxLabelSize)
                 throw new ArgumentOutOfRangeException(nameof(labelLength), SR.Argument_PemEncoding_EncodedSizeTooLarge);
             if (dataLength > MaxDataLength)
@@ -572,26 +531,24 @@ namespace System.Security.Cryptography
 
             int encodedSize = GetEncodedSize(label.Length, data.Length);
 
-            fixed (char* pLabel = label)
-            fixed (byte* pData = data)
-            {
-                return string.Create(
-                    encodedSize,
-                    (LabelPointer : new IntPtr(pLabel), LabelLength : label.Length, DataPointer : new IntPtr(pData), DataLength : data.Length),
-                    static (destination, state) =>
+#pragma warning disable CS8500 // takes address of managed type
+            return string.Create(
+                encodedSize,
+                (LabelPointer: (IntPtr)(&label), DataPointer: (IntPtr)(&data)),
+                static (destination, state) =>
+                {
+                    ReadOnlySpan<char> label = *(ReadOnlySpan<char>*)state.LabelPointer;
+                    ReadOnlySpan<byte> data = *(ReadOnlySpan<byte>*)state.DataPointer;
+
+                    int charsWritten = WriteCore(label, data, destination);
+
+                    if (charsWritten != destination.Length)
                     {
-                        ReadOnlySpan<byte> data = new ReadOnlySpan<byte>(state.DataPointer.ToPointer(), state.DataLength);
-                        ReadOnlySpan<char> label = new ReadOnlySpan<char>(state.LabelPointer.ToPointer(), state.LabelLength);
-
-                        int charsWritten = WriteCore(label, data, destination);
-
-                        if (charsWritten != destination.Length)
-                        {
-                            Debug.Fail("WriteCore wrote the wrong amount of data");
-                            throw new CryptographicException();
-                        }
-                    });
-            }
+                        Debug.Fail("WriteCore wrote the wrong amount of data");
+                        throw new CryptographicException();
+                    }
+                });
+#pragma warning restore CS8500
         }
     }
 }

@@ -10,4 +10,4 @@ endif()
 
 # add the executable
 add_library (DelegateTestNative SHARED ${SOURCES})
-target_link_libraries(DelegateTestNative ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(DelegateTestNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})

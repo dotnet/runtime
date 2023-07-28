@@ -343,7 +343,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
                 ByteUtils.HexToByteArray("F8D88E9DAFC828DA2400F5144271C2F630A1C061C654FC9DE2E7900E121461B9"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public static void GetBytes_KnownValues_SHA256_40()
         {
             TestKnownValue_GetBytes(

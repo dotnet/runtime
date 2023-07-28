@@ -10,10 +10,10 @@
 // "StructY" is struct with exposed addr, it needs to be larger than 8 bytes for amd64.
 
 
-.class private auto ansi beforefieldinit Test_GitHub_16041
+.class public auto ansi beforefieldinit Test_GitHub_16041
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32  Main() cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

@@ -14,12 +14,13 @@ namespace System.IO.Compression
         private BrotliEncoder _encoder;
 
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression level.</summary>
-        /// <param name="stream">The stream to compress.</param>
-        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
+        /// <param name="stream">The stream to which compressed data is written.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
         public BrotliStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false) { }
+
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression level, and optionally leaves the stream open.</summary>
-        /// <param name="stream">The stream to compress.</param>
-        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
+        /// <param name="stream">The stream to which compressed data is written.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after disposing the <see cref="System.IO.Compression.BrotliStream" /> object; otherwise, <see langword="false" />.</param>
         public BrotliStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, CompressionMode.Compress, leaveOpen)
         {
@@ -46,7 +47,7 @@ namespace System.IO.Compression
         /// <para>The encoder ran into invalid data.</para></exception>
         public override void WriteByte(byte value)
         {
-            WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            WriteCore(new ReadOnlySpan<byte>(in value));
         }
 
         /// <summary>Writes a sequence of bytes to the current Brotli stream from a read-only byte span and advances the current position within this Brotli stream by the number of bytes written.</summary>
@@ -93,13 +94,13 @@ namespace System.IO.Compression
         /// <exception cref="System.NotSupportedException">The current <see cref="System.IO.Compression.BrotliStream" /> implementation does not support the write operation.</exception>
         /// <exception cref="System.InvalidOperationException">The write operation cannot be performed because the stream is closed.</exception>
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         /// <summary>Handles the end of an asynchronous write operation. (Consider using the <see cref="System.IO.Stream.WriteAsync(byte[],int,int)" /> method instead.)</summary>
         /// <param name="asyncResult">The object that represents the asynchronous call.</param>
         /// <exception cref="System.InvalidOperationException">The underlying stream is closed or <see langword="null" />.</exception>
         public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         /// <summary>Asynchronously writes compressed bytes to the underlying Brotli stream from the specified byte array.</summary>
         /// <param name="buffer">The buffer that contains the data to compress.</param>

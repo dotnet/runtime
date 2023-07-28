@@ -11,7 +11,9 @@
 **
 ===========================================================*/
 
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
@@ -51,10 +53,10 @@ namespace System.Collections
     // the Hashtable.  That hash function (and the equals method on the
     // IEqualityComparer) would be used for all objects in the table.
     //
-    [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
+    [DebuggerTypeProxy(typeof(HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable
     {
         /*
@@ -257,8 +259,7 @@ namespace System.Collections
         //
         public Hashtable(int capacity, float loadFactor)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             if (!(loadFactor >= 0.1f && loadFactor <= 1.0f))
                 throw new ArgumentOutOfRangeException(nameof(loadFactor), SR.ArgumentOutOfRange_HashtableLoadFactor);
 
@@ -362,6 +363,8 @@ namespace System.Collections
                 Add(e.Key, e.Value);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Hashtable(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
@@ -571,8 +574,7 @@ namespace System.Collections
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-            if (arrayIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
             if (array.Length - arrayIndex < Count)
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
 
@@ -789,12 +791,12 @@ namespace System.Collections
         protected virtual bool KeyEquals(object? item, object key)
         {
             Debug.Assert(key != null, "key can't be null here!");
-            if (object.ReferenceEquals(_buckets, item))
+            if (ReferenceEquals(_buckets, item))
             {
                 return false;
             }
 
-            if (object.ReferenceEquals(item, key))
+            if (ReferenceEquals(item, key))
                 return true;
 
             if (_keycomparer != null)
@@ -1021,6 +1023,8 @@ namespace System.Collections
             return new SyncHashtable(table);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
@@ -1191,8 +1195,7 @@ namespace System.Collections
 
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-                if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
                 if (array.Length - arrayIndex < _hashtable._count)
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 _hashtable.CopyKeys(array, arrayIndex);
@@ -1227,8 +1230,7 @@ namespace System.Collections
 
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-                if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
                 if (array.Length - arrayIndex < _hashtable._count)
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 _hashtable.CopyValues(array, arrayIndex);
@@ -1249,18 +1251,14 @@ namespace System.Collections
         // Synchronized wrapper for hashtable
         private sealed class SyncHashtable : Hashtable, IEnumerable
         {
-            private Hashtable _table;
+            private readonly Hashtable _table;
 
             internal SyncHashtable(Hashtable table) : base(false)
             {
                 _table = table;
             }
 
-            internal SyncHashtable(SerializationInfo info, StreamingContext context) : base(info, context)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
+            [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 throw new PlatformNotSupportedException();
@@ -1336,7 +1334,7 @@ namespace System.Collections
             {
                 lock (_table.SyncRoot)
                 {
-                    return Hashtable.Synchronized((Hashtable)_table.Clone());
+                    return Synchronized((Hashtable)_table.Clone());
                 }
             }
 

@@ -10,13 +10,20 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : Stack<TElement>
     {
+        internal override bool CanPopulate => true;
+
         protected override void Add(in TElement value, ref ReadStack state)
         {
             ((TCollection)state.Current.ReturnValue!).Push(value);
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
+            if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+            {
+                return;
+            }
+
             if (state.Current.JsonTypeInfo.CreateObject == null)
             {
                 ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);

@@ -3,12 +3,12 @@
 
 #include "pal_x509chain.h"
 
-SecPolicyRef AppleCryptoNative_X509ChainCreateDefaultPolicy()
+SecPolicyRef AppleCryptoNative_X509ChainCreateDefaultPolicy(void)
 {
     return SecPolicyCreateBasicX509();
 }
 
-SecPolicyRef AppleCryptoNative_X509ChainCreateRevocationPolicy()
+SecPolicyRef AppleCryptoNative_X509ChainCreateRevocationPolicy(void)
 {
     return SecPolicyCreateRevocation(kSecRevocationUseAnyAvailableMethod | kSecRevocationRequirePositiveResponse);
 }

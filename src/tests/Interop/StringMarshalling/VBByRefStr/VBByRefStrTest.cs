@@ -12,7 +12,7 @@ using Xunit;
 class Test
 {
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {

@@ -424,7 +424,7 @@ namespace System.Globalization
             // First do a shortcut for Invariant
             if (string.IsNullOrEmpty(cultureName))
             {
-                return CultureData.Invariant;
+                return Invariant;
             }
 
             // First check if GetCultureData() can find it (ie: its a real culture)
@@ -672,7 +672,7 @@ namespace System.Globalization
             // First do a shortcut for Invariant
             if (string.IsNullOrEmpty(cultureName))
             {
-                return CultureData.Invariant;
+                return Invariant;
             }
 
             if (GlobalizationMode.PredefinedCulturesOnly)
@@ -804,7 +804,7 @@ namespace System.Globalization
                 // Always map the "C" locale to Invariant to avoid mapping it to en_US_POSIX on Linux because POSIX
                 // locale collation doesn't support case insensitive comparisons.
                 // We do the same mapping on Windows for the sake of consistency.
-                return CultureData.Invariant;
+                return Invariant;
             }
 
             CultureData culture = new CultureData();
@@ -868,6 +868,16 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
+                if (!GlobalizationMode.PredefinedCulturesOnly)
+                {
+                    if (culture is < 1 or > 0xf_ffff)
+                    {
+                        throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+                    }
+
+                    return Invariant;
+                }
+
                 // LCID is not supported in the InvariantMode
                 throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupportedInInvariantMode);
             }
@@ -1541,7 +1551,11 @@ namespace System.Globalization
             {
                 if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    _iFirstDayOfWeek = GlobalizationMode.Hybrid ? GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek) : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+#else
                     _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+#endif
                 }
                 return _iFirstDayOfWeek;
             }
@@ -1949,7 +1963,11 @@ namespace System.Globalization
                     }
                     else
                     {
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                        string? longTimeFormat =  GlobalizationMode.Hybrid ? GetTimeFormatStringNative() : IcuGetTimeFormatString();
+#else
                         string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
+#endif
                         if (string.IsNullOrEmpty(longTimeFormat))
                         {
                             longTimeFormat = LongTimes[0];
@@ -2094,7 +2112,7 @@ namespace System.Globalization
         private static int IndexOfTimePart(string format, int startIndex, string timeParts)
         {
             Debug.Assert(startIndex >= 0, "startIndex cannot be negative");
-            Debug.Assert(timeParts.AsSpan().IndexOfAny('\'', '\\') < 0, "timeParts cannot include quote characters");
+            Debug.Assert(!timeParts.AsSpan().ContainsAny('\'', '\\'), "timeParts cannot include quote characters");
             bool inQuote = false;
             for (int i = startIndex; i < format.Length; ++i)
             {
@@ -2138,7 +2156,7 @@ namespace System.Globalization
         {
             string[] result = NumberFormatInfo.s_asciiDigits;
 
-            // LOCALE_SNATIVEDIGITS (array of 10 single character strings).
+            // NLS LOCALE_SNATIVEDIGITS (array of 10 single character strings). In case of ICU, the buffer can be longer.
             string digits = GetLocaleInfoCoreUserOverride(LocaleStringData.Digits);
 
             // if digits.Length < NumberFormatInfo.s_asciiDigits.Length means the native digits setting is messed up in the host machine.
@@ -2148,31 +2166,49 @@ namespace System.Globalization
                 return result;
             }
 
-            // Try to check if the digits are all ASCII so we can avoid the array allocation and use the static array NumberFormatInfo.s_asciiDigits instead.
-            // If we have non-ASCII digits, we should exit the loop very quickly.
-            int i = 0;
-            while (i < NumberFormatInfo.s_asciiDigits.Length)
-            {
-                if (digits[i] != NumberFormatInfo.s_asciiDigits[i][0])
-                {
-                    break;
-                }
-                i++;
-            }
+            // In ICU we separate the digits with the '\uFFFF' character
 
-            if (i >= NumberFormatInfo.s_asciiDigits.Length)
+            if (digits.StartsWith("0\uFFFF1\uFFFF2\uFFFF3\uFFFF4\uFFFF5\uFFFF6\uFFFF7\uFFFF8\uFFFF9\uFFFF", StringComparison.Ordinal) ||  // ICU common cases
+                digits.StartsWith("0123456789", StringComparison.Ordinal))  // NLS common cases
             {
                 return result;
             }
 
-            // we have non-ASCII digits
+            // Non-ASCII digits
+
+            // Check if values coming from ICU separated by 0xFFFF
+            int ffffPos = digits.IndexOf('\uFFFF');
+
             result = new string[10];
-            for (i = 0; i < result.Length; i++)
+            if (ffffPos < 0) // NLS case
             {
-                result[i] = char.ToString(digits[i]);
+                for (int i = 0; i < result.Length; i++)
+                {
+                    result[i] = char.ToString(digits[i]);
+                }
+
+                return result;
             }
 
-            return result;
+            // ICU case
+
+            int start = 0;
+            int index = 0;
+
+            do
+            {
+                result[index++] = digits.Substring(start, ffffPos - start);
+                start = ++ffffPos;
+                while ((uint)ffffPos < (uint)digits.Length && digits[ffffPos] != '\uFFFF')
+                {
+                    ffffPos++;
+                }
+
+            } while (ffffPos < digits.Length && index < 10);
+
+            Debug.Assert(index >= 10, $"Couldn't read native digits for '{_sWindowsName}' successfully.");
+
+            return index < 10 ? NumberFormatInfo.s_asciiDigits : result;
         }
 
         internal void GetNFIValues(NumberFormatInfo nfi)
@@ -2267,8 +2303,11 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return 0;
-
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
+#else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+#endif
         }
 
         private int GetLocaleInfoCoreUserOverride(LocaleNumberData type)
@@ -2276,8 +2315,11 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return 0;
-
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
+#else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+#endif
         }
 
         private string GetLocaleInfoCoreUserOverride(LocaleStringData type)
@@ -2286,7 +2328,11 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
+#else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+#endif
         }
 
         private string GetLocaleInfoCore(LocaleStringData type, string? uiCultureName = null)
@@ -2295,7 +2341,11 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type, uiCultureName);
+#else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
+#endif
         }
 
         private string GetLocaleInfoCore(string localeName, LocaleStringData type, string? uiCultureName = null)
@@ -2304,7 +2354,11 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
+#else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
+#endif
         }
 
         private int[] GetLocaleInfoCoreUserOverride(LocaleGroupingData type)
@@ -2313,7 +2367,11 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
+#else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+#endif
         }
 
         /// <remarks>

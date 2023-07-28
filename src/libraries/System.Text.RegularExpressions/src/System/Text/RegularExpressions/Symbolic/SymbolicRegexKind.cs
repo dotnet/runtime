@@ -48,7 +48,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Effects to be applied when taking a transition.</summary>
         /// <remarks>
         /// Left child is the pattern itself and the right child is a concatenation of nodes whose effects should be applied.
-        /// Effect nodes are created in the rule for concatenation in <see cref="SymbolicRegexNode{TSet}.CreateDerivative(TSet, uint)"/>,
+        /// Effect nodes are created in the rule for concatenation in <see cref="SymbolicRegexNode{TSet}.CreateDerivative(SymbolicRegexBuilder{TSet}, TSet, uint)"/>,
         /// where they are used to represent additional operations that should be performed in the current position if
         /// the pattern in the left child is used to match the input. Since these Effect nodes are relative to the current
         /// position in the input, the effects from the right child must be applied in the transition that the derivative is

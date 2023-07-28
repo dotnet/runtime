@@ -64,7 +64,7 @@ namespace System.IO.Pipelines
         private int ReadInternal(Span<byte> buffer)
         {
             ValueTask<ReadResult> vt = _pipeReader.ReadAsync();
-            ReadResult result = vt.IsCompletedSuccessfully ? vt.Result : vt.AsTask().Result;
+            ReadResult result = vt.IsCompletedSuccessfully ? vt.Result : vt.AsTask().GetAwaiter().GetResult();
             return HandleReadResult(result, buffer);
         }
 
@@ -75,10 +75,10 @@ namespace System.IO.Pipelines
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
         public sealed override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count, default), callback, state);
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, default), callback, state);
 
         public sealed override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
+            TaskToAsyncResult.End<int>(asyncResult);
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

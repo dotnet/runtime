@@ -149,6 +149,10 @@ namespace System.Text.RegularExpressions.Tests
 
             int[] numbers = regex.GetGroupNumbers();
             Assert.Equal(expectedNumbers.Length, numbers.Length);
+            for (int i = 0; i < numbers.Length - 1; i++)
+            {
+                Assert.True(numbers[i] <= numbers[i + 1]);
+            }
 
             string[] names = regex.GetGroupNames();
             Assert.Equal(expectedNames.Length, names.Length);

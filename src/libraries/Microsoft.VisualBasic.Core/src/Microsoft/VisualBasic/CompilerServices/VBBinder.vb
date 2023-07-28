@@ -134,8 +134,8 @@ CleanupAndExit:
         End Sub
 
         '/**
-        ' * This method is passed a of methods and must choose the best fit.  
-        ' * 
+        ' * This method is passed a of methods and must choose the best fit.
+        ' *
         ' * @exception MissingMethodException
         ' * @exception ArgumentException
         ' * @exception AmbiguousMatchException
@@ -189,7 +189,7 @@ CleanupAndExit:
             '  but we do not know about these methods, because only asked for
             '  public members.  To get early bound binding semantics, we need
             '  to query for all methods and then remove all private/protected members
-            '  from the match list after we remove the methods that are shadowed 
+            '  from the match list after we remove the methods that are shadowed
             '  on the base class, since they should not be visible in the derived class
 
             'STEP 1 - Remove Shadowed members
@@ -257,7 +257,7 @@ CleanupAndExit:
             InitialMemberCount = SelectedCount
 
             'STEP 2 - Remove all Private and Protected members
-            ' 
+            '
             ' TBD IF NEEDED : see note above on shadows
 
             'STEP 3 - Remove functions that don't have matching argument names
@@ -342,7 +342,7 @@ CleanupAndExit:
 
             'STEP 4 - Rearrange the arguments
             '         Named arguments and ParamArrays affect the ordering,
-            '         so we have to move them around a bit, 
+            '         so we have to move them around a bit,
             '         but also keep track of what order they
             '         were in so we can reorder them on the way out
 
@@ -487,9 +487,9 @@ CleanupAndExit:
                             ArgIndexes(TmpLastIndex) = args.GetUpperBound(0)
                         End If
                     Else
-                        ' Named parameters, reorder the mapping.  If 
+                        ' Named parameters, reorder the mapping.  If
                         '  CreateParamOrder fails, it means that the method
-                        '  doesn't have a name that matchs one of the named
+                        '  doesn't have a name that matches one of the named
                         '  parameters so we don't consider it any further.
 
                         Dim ex As Exception
@@ -530,7 +530,7 @@ CleanupAndExit:
             Next
 
 
-            'STEP 7 - Eliminate methods that have types that cannot be called 
+            'STEP 7 - Eliminate methods that have types that cannot be called
             '         (i.e. no widening or narrowing posibilities)
             '
 
@@ -625,7 +625,7 @@ CleanupAndExit:
                             GoTo NextParm7
                         End If
 
-                        'Check if this can be converted 
+                        'Check if this can be converted
                         Dim ParmTypeCode As TypeCode
                         Dim ArgTypeCode As TypeCode
 
@@ -835,7 +835,7 @@ NextMethod7:
                         GoTo NextParm8
                     End If
 
-                    'Check if this can be converted 
+                    'Check if this can be converted
                     Dim ParmTypeCode As TypeCode
                     Dim ArgTypeCode As TypeCode
 
@@ -938,7 +938,7 @@ NextMethod8:
                 LowestScore = BindScore.Unknown
                 AmbiguousCount = 0
 
-                ' Score each method 
+                ' Score each method
                 '    0 ==> Exact match
                 '    1 ==> Casting down conversion required
                 '    2 ==> Intrinsic widening conversion required
@@ -1111,7 +1111,7 @@ NextMethod8:
             If args.Length > 0 Then
                 state.m_ByRefFlags = New Boolean(args.GetUpperBound(0)) {}
 
-                'Could have been multiple matches, so check the 
+                'Could have been multiple matches, so check the
                 'selected match
                 HasByRefArgs = False
 
@@ -1610,7 +1610,7 @@ NextMethod8:
             LowestScore = BindScore.Unknown
             AmbiguousCount = 0
 
-            ' Score each method 
+            ' Score each method
             '    0 ==> Exact match
             '    1 ==> Casting down conversion required
             '    2 ==> Intrinsic widening conversion required
@@ -1638,7 +1638,7 @@ NextMethod8:
 
                         If Score = BindScore.Widening1 Then
 
-                            'It is possible that one is more 
+                            'It is possible that one is more
                             ' precise than another
                             Dim MostSpecific As Integer = -1
                             Dim Index0, Index1 As Integer
@@ -1897,7 +1897,7 @@ NextMethod8:
                 paramOrder(i) = names.Length + i
             Next i
 
-            ' Find the parameters with names. 
+            ' Find the parameters with names.
             For i = 0 To names.GetUpperBound(0)
 
                 For j = 0 To LastNonSetIndex
@@ -2266,7 +2266,7 @@ NextMethod8:
             declaringType = member.DeclaringType
 
             ' For nested types IsNotPublic doesn't return the right value so
-            ' we need to use Not IsPublic. 
+            ' we need to use Not IsPublic.
             '
             ' The following code will only allow calls to members of top level public types
             ' in the runtime library. Read the reflection documentation and test with
@@ -2298,7 +2298,7 @@ NextMethod8:
                 Case MemberTypes.Property
                     Debug.Assert(False, "How can a property get here ?")
                     ' We always decided based on the context and use the get or the set accessor
-                    ' appropriately. So by the time this method is invoked, we should just see 
+                    ' appropriately. So by the time this method is invoked, we should just see
                     ' the MethodInfos of the Getter or the Setter
                     Return False
 

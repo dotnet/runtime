@@ -13,8 +13,8 @@ namespace NetCoreServer
         {
             string responseBody = "Sending DEFLATE compressed";
 
-            context.Response.Headers.Add("Content-MD5", Convert.ToBase64String(ContentHelper.ComputeMD5Hash(responseBody)));
-            context.Response.Headers.Add("Content-Encoding", "deflate");
+            context.Response.Headers["Content-MD5"] = Convert.ToBase64String(ContentHelper.ComputeMD5Hash(responseBody));
+            context.Response.Headers["Content-Encoding"] = "deflate";
 
             context.Response.ContentType = "text/plain";
 

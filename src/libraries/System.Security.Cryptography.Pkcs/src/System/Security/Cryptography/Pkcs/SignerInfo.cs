@@ -58,48 +58,18 @@ namespace System.Security.Cryptography.Pkcs
             _document = ownerDocument;
         }
 
-        public CryptographicAttributeObjectCollection SignedAttributes
-        {
-            get
-            {
-                if (_parsedSignedAttrs == null)
-                {
-                    _parsedSignedAttrs = MakeAttributeCollection(_signedAttributes);
-                }
+        public CryptographicAttributeObjectCollection SignedAttributes =>
+            _parsedSignedAttrs ??= MakeAttributeCollection(_signedAttributes);
 
-                return _parsedSignedAttrs;
-            }
-        }
-
-        public CryptographicAttributeObjectCollection UnsignedAttributes
-        {
-            get
-            {
-                if (_parsedUnsignedAttrs == null)
-                {
-                    _parsedUnsignedAttrs = MakeAttributeCollection(_unsignedAttributes);
-                }
-
-                return _parsedUnsignedAttrs;
-            }
-        }
+        public CryptographicAttributeObjectCollection UnsignedAttributes =>
+            _parsedUnsignedAttrs ??= MakeAttributeCollection(_unsignedAttributes);
 
         internal ReadOnlyMemory<byte> GetSignatureMemory() => _signature;
 
         public byte[] GetSignature() => _signature.ToArray();
 
-        public X509Certificate2? Certificate
-        {
-            get
-            {
-                if (_signerCertificate == null)
-                {
-                    _signerCertificate = FindSignerCertificate();
-                }
-
-                return _signerCertificate;
-            }
-        }
+        public X509Certificate2? Certificate =>
+            _signerCertificate ??= FindSignerCertificate();
 
         public SignerInfoCollection CounterSignerInfos
         {
@@ -580,7 +550,17 @@ namespace System.Security.Cryptography.Pkcs
         {
             HashAlgorithmName hashAlgorithmName = GetDigestAlgorithm();
 
-            IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName);
+
+            IncrementalHash hasher;
+
+            try
+            {
+                hasher = IncrementalHash.CreateHash(hashAlgorithmName);
+            }
+            catch (PlatformNotSupportedException ex)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName), ex);
+            }
 
             if (_parentSignerInfo == null)
             {

@@ -79,6 +79,11 @@ namespace AppHost.Bundle.Tests
             if (relativePath == "foo/bar" && OperatingSystem.IsWindows())
                 return;
 
+            // Similarly on non-Windows OSes, we don't convert backslash directory separators
+            // to forward ones.
+            if (relativePath == "foo\\bar" && !OperatingSystem.IsWindows())
+                return;
+
             var fixture = sharedTestState.TestFixture.Copy();
             var bundler = BundleSelfContainedApp(fixture, out var singleFile, bundleOptions);
 

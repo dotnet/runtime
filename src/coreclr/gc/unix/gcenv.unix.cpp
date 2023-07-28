@@ -20,6 +20,7 @@
 #include "gcenv.os.h"
 #include "gcenv.unix.inl"
 #include "volatile.h"
+#include "numasupport.h"
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -135,37 +136,7 @@ typedef cpuset_t cpu_set_t;
 #endif
 #endif // __APPLE__
 
-#if HAVE_NUMA_H
-
-#include <numa.h>
-#include <numaif.h>
-#include <dlfcn.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-// List of all functions from the numa library that are used
-#define FOR_ALL_NUMA_FUNCTIONS \
-    PER_FUNCTION_BLOCK(mbind) \
-    PER_FUNCTION_BLOCK(numa_available) \
-    PER_FUNCTION_BLOCK(numa_max_node) \
-    PER_FUNCTION_BLOCK(numa_node_of_cpu)
-
-// Declare pointers to all the used numa functions
-#define PER_FUNCTION_BLOCK(fn) extern decltype(fn)* fn##_ptr;
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
-// Redefine all calls to numa functions as calls through pointers that are set
-// to the functions of libnuma in the initialization.
-#define mbind(...) mbind_ptr(__VA_ARGS__)
-#define numa_available() numa_available_ptr()
-#define numa_max_node() numa_max_node_ptr()
-#define numa_node_of_cpu(...) numa_node_of_cpu_ptr(__VA_ARGS__)
-
-#endif // HAVE_NUMA_H
-
-#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
 #else
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
@@ -233,120 +204,8 @@ uint32_t g_pageSizeUnixInl = 0;
 
 AffinitySet g_processAffinitySet;
 
-// The highest NUMA node available
-int g_highestNumaNode = 0;
-// Is numa available
-bool g_numaAvailable = false;
-
-void* g_numaHandle = nullptr;
-
-#if HAVE_NUMA_H
-#define PER_FUNCTION_BLOCK(fn) decltype(fn)* fn##_ptr;
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
-#if defined(__linux__)
-static bool ShouldOpenLibNuma()
-{
-    // This is a simple heuristic to determine if libnuma.so should be opened.  There's
-    // no point in linking and resolving everything in this library if we're running on
-    // a system that's not NUMA-capable.
-    int fd = open("/sys/devices/system/node/possible", O_RDONLY | O_CLOEXEC);
-
-    if (fd == -1)
-    {
-        // sysfs might not be mounted, not available, or the interface might have
-        // changed.  Return `true' here so NUMASupportInitialize() can try initializing
-        // NUMA support with libnuma.
-        return true;
-    }
-
-    while (true)
-    {
-        char buffer[32];
-        ssize_t bytesRead = read(fd, buffer, 32);
-
-        if (bytesRead == -1 && errno == EINTR)
-        {
-            continue;
-        }
-
-        close(fd);
-
-        // If an unknown error happened (bytesRead < 0), or the file was empty
-        // (bytesRead = 0), let libnuma handle this.  Otherwise, if there's just
-        // one NUMA node, don't bother linking in libnuma.
-        return (bytesRead <= 0) ? true : strncmp(buffer, "0\n", bytesRead) != 0;
-    }
-}
-#else
-static bool ShouldOpenLibNuma()
-{
-    return true;
-}
-#endif // __linux__
-
-#endif // HAVE_NUMA_H
-
-// Initialize data structures for getting and setting thread affinities to processors and
-// querying NUMA related processor information.
-// On systems with no NUMA support, it behaves as if there was a single NUMA node with
-// a single group of processors.
-void NUMASupportInitialize()
-{
-#if HAVE_NUMA_H
-    if (!ShouldOpenLibNuma())
-    {
-        g_numaAvailable = false;
-        g_highestNumaNode = 0;
-        return;
-    }
-
-    g_numaHandle = dlopen("libnuma.so.1", RTLD_LAZY);
-    if (g_numaHandle == 0)
-    {
-        g_numaHandle = dlopen("libnuma.so.1.0.0", RTLD_LAZY);
-        if (g_numaHandle == 0)
-        {
-            g_numaHandle = dlopen("libnuma.so", RTLD_LAZY);
-        }
-    }
-    if (g_numaHandle != 0)
-    {
-#define PER_FUNCTION_BLOCK(fn) \
-    fn##_ptr = (decltype(fn)*)dlsym(g_numaHandle, #fn); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from libnuma\n"); abort(); }
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
-        if (numa_available() == -1)
-        {
-            dlclose(g_numaHandle);
-        }
-        else
-        {
-            g_numaAvailable = true;
-            g_highestNumaNode = numa_max_node();
-        }
-    }
-#endif // HAVE_NUMA_H
-    if (!g_numaAvailable)
-    {
-        // No NUMA
-        g_highestNumaNode = 0;
-    }
-}
-
-// Cleanup of the NUMA support data structures
-void NUMASupportCleanup()
-{
-#if HAVE_NUMA_H
-    if (g_numaAvailable)
-    {
-        dlclose(g_numaHandle);
-    }
-#endif // HAVE_NUMA_H
-}
+extern "C" int g_highestNumaNode;
+extern "C" bool g_numaAvailable;
 
 // Initialize the interface implementation
 // Return:
@@ -376,7 +235,7 @@ bool GCToOSInterface::Initialize()
     {
         s_flushUsingMemBarrier = TRUE;
     }
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
     else
     {
         assert(g_helperPage == 0);
@@ -408,7 +267,7 @@ bool GCToOSInterface::Initialize()
             return false;
         }
     }
-#endif // !TARGET_OSX
+#endif // !TARGET_APPLE
 
     InitializeCGroup();
 
@@ -459,11 +318,10 @@ void GCToOSInterface::Shutdown()
     munmap(g_helperPage, OS_PAGE_SIZE);
 
     CleanupCGroup();
-    NUMASupportCleanup();
 }
 
 // Get numeric id of the current thread if possible on the
-// current platform. It is indended for logging purposes only.
+// current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread, as best we can retrieve it.
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
@@ -548,7 +406,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     else
     {
         mach_msg_type_number_t cThreads;
@@ -562,31 +420,47 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         // Iterate through each of the threads in the list.
         for (mach_msg_type_number_t i = 0; i < cThreads; i++)
         {
-            // Request the threads pointer values to force the thread to emit a memory barrier
-            size_t registers = 128;
-            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+            if (__builtin_available (macOS 10.14, iOS 12, tvOS 9, *))
+            {
+                // Request the threads pointer values to force the thread to emit a memory barrier
+                size_t registers = 128;
+                machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+            }
+            else
+            {
+                // fallback implementation for older OS versions
+#if defined(HOST_AMD64)
+                x86_thread_state64_t threadState;
+                mach_msg_type_number_t count = x86_THREAD_STATE64_COUNT;
+                machret = thread_get_state(pThreads[i], x86_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#elif defined(HOST_ARM64)
+                arm_thread_state64_t threadState;
+                mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
+                machret = thread_get_state(pThreads[i], ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#else
+                #error Unexpected architecture
+#endif
+            }
+
             if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
             {
                 CHECK_MACH("thread_get_register_pointer_values()", machret);
             }
+
+            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
+            CHECK_MACH("mach_port_deallocate()", machret);
         }
         // Deallocate the thread list now we're done with it.
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
 // otherwise raises a SIGTRAP.
 void GCToOSInterface::DebugBreak()
 {
-    // __has_builtin is only defined by clang. GCC doesn't have a debug
-    // trap intrinsic anyway.
-#ifndef __has_builtin
- #define __has_builtin(x) 0
-#endif // __has_builtin
-
 #if __has_builtin(__builtin_debugtrap)
     __builtin_debugtrap();
 #else
@@ -636,7 +510,7 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag = 0)
 {
     assert(!(flags & VirtualReserveFlags::WriteWatch) && "WriteWatch not supported on Unix");
-    if (alignment == 0)
+    if (alignment < OS_PAGE_SIZE)
     {
         alignment = OS_PAGE_SIZE;
     }
@@ -644,7 +518,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
     void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE | hugePagesFlag, -1, 0);
 
-    if (pRetVal != NULL)
+    if (pRetVal != MAP_FAILED)
     {
         void * pAlignedRetVal = (void *)(((size_t)pRetVal + (alignment - 1)) & ~(alignment - 1));
         size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
@@ -662,9 +536,14 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
+#ifdef MADV_DONTDUMP
+        // Do not include reserved memory in coredump.
+        madvise(pRetVal, size, MADV_DONTDUMP);
+#endif
+        return pRetVal;
     }
 
-    return pRetVal;
+    return NULL; // return NULL if mmap failed
 }
 
 // Reserve virtual memory range.
@@ -727,7 +606,15 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 {
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 
-#if HAVE_NUMA_H
+#ifdef MADV_DODUMP
+    if (success)
+    {
+        // Include committed memory in coredump.
+        madvise(address, size, MADV_DODUMP);
+    }
+#endif
+
+#ifdef TARGET_LINUX
     if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
     {
         if ((int)node <= g_highestNumaNode)
@@ -740,12 +627,12 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
             int index = node / sizeof(unsigned long);
             nodeMask[index] = ((unsigned long)1) << (node & (sizeof(unsigned long) - 1));
 
-            int st = mbind(address, size, MPOL_PREFERRED, nodeMask, usedNodeMaskBits, 0);
+            int st = BindMemoryPolicy(address, size, nodeMask, usedNodeMaskBits);
             assert(st == 0);
             // If the mbind fails, we still return the allocated memory since the node is just a hint
         }
     }
-#endif // HAVE_NUMA_H
+#endif // TARGET_LINUX
 
     return success;
 }
@@ -761,9 +648,19 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // TODO: This can fail, however the GC does not handle the failure gracefully
     // Explicitly calling mmap instead of mprotect here makes it
     // that much more clear to the operating system that we no
-    // longer need these pages. Also, GC depends on re-commited pages to
+    // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
-    return mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != NULL;
+    bool bRetVal = mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != MAP_FAILED;
+
+#ifdef MADV_DONTDUMP
+    if (bRetVal)
+    {
+        // Do not include freed memory in coredump.
+        madvise(address, size, MADV_DONTDUMP);
+    }
+#endif
+
+    return  bRetVal;
 }
 
 // Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
@@ -793,6 +690,14 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
         st = EINVAL;
 #endif
     }
+
+#ifdef MADV_DONTDUMP
+    if (st == 0)
+    {
+        // Do not include reset memory in coredump.
+        madvise(address, size, MADV_DONTDUMP);
+    }
+#endif
 
     return (st == 0);
 }
@@ -876,21 +781,29 @@ done:
     return result;
 }
 
+#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > cacheSize) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
+
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
+    size_t cacheLevel = 0;
     size_t cacheSize = 0;
+    size_t size;
 
 #ifdef _SC_LEVEL1_DCACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE);
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 1)
 #endif
 #ifdef _SC_LEVEL2_CACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE);
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 2)
 #endif
 #ifdef _SC_LEVEL3_CACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE);
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 3)
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE);
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 4)
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
@@ -901,25 +814,39 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // for the platform. Currently musl and arm64 should be only cases to use
         // this method to determine cache size.
         //
-        size_t size;
+        size_t level;
+        char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
+        char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
+        int index = 40;
+        assert(path_to_size_file[index] == '-');
+        assert(path_to_level_file[index] == '-');
 
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index1/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index2/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index3/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index4/size", &size))
-            cacheSize = std::max(cacheSize, size);
+        for (int i = 0; i < 5; i++)
+        {
+            path_to_size_file[index] = (char)(48 + i);
+
+            if (ReadMemoryValueFromFile(path_to_size_file, &size))
+            {
+                path_to_level_file[index] = (char)(48 + i);
+
+                if (ReadMemoryValueFromFile(path_to_level_file, &level))
+                {
+                    UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
+                }
+                else
+                {
+                    cacheSize = std::max(cacheSize, size);
+                }
+            }
+        }
     }
 #endif
 
-#if defined(HOST_ARM64) && !defined(TARGET_OSX)
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
     if (cacheSize == 0)
     {
-        // It is currently expected to be missing cache size info
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
         //
         // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
         //
@@ -937,7 +864,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // Estimate cache size based on CPU count
         // Assume lower core count are lighter weight parts which are likely to have smaller caches
         // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
-        DWORD logicalCPUs = g_totalCpuCount;
+        DWORD logicalCPUs = g_processAffinitySet.Count();
 
         cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
     }
@@ -949,10 +876,11 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         int64_t cacheSizeFromSysctl = 0;
         size_t sz = sizeof(cacheSizeFromSysctl);
         const bool success = false
-            // macOS-arm64: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
+            // macOS: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
             // and performance cores separately. "perflevel0" stands for "performance"
+            || sysctlbyname("hw.perflevel0.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.perflevel0.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
-            // macOS-arm64: these report cache sizes for efficiency cores only:
+            // macOS: these report cache sizes for efficiency cores only:
             || sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
@@ -961,6 +889,38 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
             assert(cacheSizeFromSysctl > 0);
             cacheSize = ( size_t) cacheSizeFromSysctl;
         }
+    }
+#endif
+
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
+    if (cacheLevel != 3)
+    {
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
+        // Hence, just use the following heuristics at best depending on the CPU count
+        // 1 ~ 4   :  4 MB
+        // 5 ~ 16  :  8 MB
+        // 17 ~ 64 : 16 MB
+        // 65+     : 32 MB
+        DWORD logicalCPUs = g_processAffinitySet.Count();
+        if (logicalCPUs < 5)
+        {
+            cacheSize = 4;
+        }
+        else if (logicalCPUs < 17)
+        {
+            cacheSize = 8;
+        }
+        else if (logicalCPUs < 65)
+        {
+            cacheSize = 16;
+        }
+        else
+        {
+            cacheSize = 32;
+        }
+
+        cacheSize *= (1024 * 1024);
     }
 #endif
 
@@ -1037,15 +997,10 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
     size_t maxSize, maxTrueSize;
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); // Returns the size of the highest level processor cache
 
-#if defined(HOST_ARM64)
-    // Bigger gen0 size helps arm64 targets
-    maxSize = maxTrueSize * 3;
-#endif
-
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
 
-    //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    // printf("GetCacheSizePerLogicalCpu returns %zu, adjusted size %zu\n", maxSize, maxTrueSize);
     return trueSize ? maxTrueSize : maxSize;
 }
 
@@ -1125,12 +1080,18 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
 #ifdef HOST_64BIT
+#ifndef TARGET_RISCV64
     // There is no API to get the total virtual address space size on
     // Unix, so we use a constant value representing 128TB, which is
     // the approximate size of total user virtual address space on
     // the currently supported Unix systems.
     static const uint64_t _128TB = (1ull << 47);
     return _128TB;
+#else // TARGET_RISCV64
+    // For RISC-V Linux Kernel SV39 virtual memory limit is 256gb.
+    static const uint64_t _256GB = (1ull << 38);
+    return _256GB;
+#endif // TARGET_RISCV64
 #else
     return (size_t)-1;
 #endif
@@ -1177,7 +1138,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
         return 0;
     }
 
-    return pages * pageSize;
+    return (uint64_t)pages * (uint64_t)pageSize;
 #elif HAVE_SYSCTL
     int mib[3];
     mib[0] = CTL_HW;
@@ -1364,17 +1325,22 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 //  The counter value
 int64_t GCToOSInterface::QueryPerformanceCounter()
 {
-    // TODO: This is not a particularly efficient implementation - we certainly could
-    // do much more specific platform-dependent versions if we find that this method
-    // runs hot. However, most likely it does not.
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == -1)
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+#elif HAVE_CLOCK_MONOTONIC
+    struct timespec ts;
+    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    if (result != 0)
     {
-        assert(!"gettimeofday() failed");
-        // TODO (segilles) unconditional asserts
-        return 0;
+        assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
+        __UNREACHABLE();
     }
-    return (int64_t) tv.tv_sec * (int64_t) tccSecondsToMicroSeconds + (int64_t) tv.tv_usec;
+
+    return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
+#else
+#error " clock_gettime(CLOCK_MONOTONIC) or clock_gettime_nsec_np() must be supported."
+#endif
 }
 
 // Get a frequency of the high precision performance counter
@@ -1383,16 +1349,38 @@ int64_t GCToOSInterface::QueryPerformanceCounter()
 int64_t GCToOSInterface::QueryPerformanceFrequency()
 {
     // The counter frequency of gettimeofday is in microseconds.
-    return tccSecondsToMicroSeconds;
+    return tccSecondsToNanoSeconds;
 }
 
 // Get a time stamp with a low precision
 // Return:
 //  Time stamp in milliseconds
-uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
+uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
-    // TODO(segilles) this is pretty naive, we can do better
     uint64_t retval = 0;
+
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    retval = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / tccMilliSecondsToNanoSeconds;
+#elif HAVE_CLOCK_MONOTONIC
+    struct timespec ts;
+
+#if HAVE_CLOCK_MONOTONIC_COARSE
+    clockid_t clockType = CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
+#else
+    clockid_t clockType = CLOCK_MONOTONIC;
+#endif
+
+    if (clock_gettime(clockType, &ts) != 0)
+    {
+#if HAVE_CLOCK_MONOTONIC_COARSE
+        assert(!"clock_gettime(HAVE_CLOCK_MONOTONIC_COARSE) failed\n");
+#else
+        assert(!"clock_gettime(CLOCK_MONOTONIC) failed\n");
+#endif
+    }
+
+    retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
+#else
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == 0)
     {
@@ -1402,6 +1390,7 @@ uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
     {
         assert(!"gettimeofday() failed\n");
     }
+#endif
 
     return retval;
 }
@@ -1446,14 +1435,14 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
             if (availableProcNumber == heap_number)
             {
                 *proc_no = procNumber;
-#if HAVE_NUMA_H
+#ifdef TARGET_LINUX
                 if (GCToOSInterface::CanEnableGCNumaAware())
                 {
-                    int result = numa_node_of_cpu(procNumber);
+                    int result = GetNumaNodeNumByCpu(procNumber);
                     *node_no = (result >= 0) ? (uint16_t)result : NUMA_NODE_UNDEFINED;
                 }
                 else
-#endif // HAVE_NUMA_H
+#endif // TARGET_LINUX
                 {
                     *node_no = NUMA_NODE_UNDEFINED;
                 }

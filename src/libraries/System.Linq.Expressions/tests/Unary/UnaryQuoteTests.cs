@@ -450,7 +450,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69944", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Quote_RuntimeVariables_ClosureAndLocal(bool useInterpreter)
         {
             var x = Parameter(typeof(int));

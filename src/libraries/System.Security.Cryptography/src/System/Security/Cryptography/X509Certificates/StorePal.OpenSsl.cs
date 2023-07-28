@@ -10,10 +10,12 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class StorePal
     {
+#pragma warning disable IDE0060
         internal static partial IStorePal FromHandle(IntPtr storeHandle)
         {
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore IDE0060
 
         internal static partial ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
@@ -37,7 +39,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (OpenSslPkcsFormatReader.TryReadPkcs7Der(rawData, out certPals) ||
                 OpenSslPkcsFormatReader.TryReadPkcs7Pem(rawData, out certPals) ||
-                OpenSslPkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, out certPals, out openSslException))
+                OpenSslPkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, readingFromFile: false, out certPals, out openSslException))
             {
                 Debug.Assert(certPals != null);
 
@@ -108,7 +110,7 @@ namespace System.Security.Cryptography.X509Certificates
             // Capture the exception so in case of failure, the call to BioSeek does not override it.
             Exception? openSslException;
             byte[] data = File.ReadAllBytes(fileName);
-            if (OpenSslPkcsFormatReader.TryReadPkcs12(data, password, ephemeralSpecified, out certPals, out openSslException))
+            if (OpenSslPkcsFormatReader.TryReadPkcs12(data, password, ephemeralSpecified, readingFromFile: true, out certPals, out openSslException))
             {
                 return ListToLoaderPal(certPals);
             }
@@ -177,14 +179,8 @@ namespace System.Security.Cryptography.X509Certificates
                 new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresRootOnly));
         }
 
-        private static ILoaderPal SingleCertToLoaderPal(ICertificatePal singleCert)
-        {
-            return new OpenSslSingleCertLoader(singleCert);
-        }
+        private static OpenSslSingleCertLoader SingleCertToLoaderPal(ICertificatePal singleCert) => new OpenSslSingleCertLoader(singleCert);
 
-        private static ILoaderPal ListToLoaderPal(List<ICertificatePal> certPals)
-        {
-            return new CertCollectionLoader(certPals);
-        }
+        private static CertCollectionLoader ListToLoaderPal(List<ICertificatePal> certPals) => new CertCollectionLoader(certPals);
     }
 }

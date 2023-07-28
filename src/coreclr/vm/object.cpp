@@ -211,7 +211,7 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pInterfaceMT));
-        PRECONDITION(pObj->GetMethodTable()->IsRestored_NoLogging());
+        PRECONDITION(pObj->GetMethodTable()->IsRestored());
         PRECONDITION(pInterfaceMT->IsInterface());
     }
     CONTRACTL_END
@@ -392,11 +392,11 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
         return;
     }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     if (argDest->IsStructPassedInRegs())
     {
-        argDest->CopyStructToRegisters(src, pMT->GetNumInstanceFieldBytes());
+        argDest->CopyStructToRegisters(src, pMT->GetNumInstanceFieldBytes(), destOffset);
         return;
     }
 
@@ -425,7 +425,7 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
 
 #endif
 
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (argDest->IsStructPassedInRegs())
     {
         *(UINT64*)(argDest->GetStructGenRegDestinationAddress()) = 0;
@@ -572,6 +572,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
         {
             Object * nextObj = GCHeapUtilities::GetGCHeap ()->NextObj (this);
             if ((nextObj != NULL) &&
+                (nextObj->GetGCSafeMethodTable() != nullptr) &&
                 (nextObj->GetGCSafeMethodTable() != g_pFreeObjectMethodTable))
             {
                 // we need a read barrier here - to make sure we read the object header _after_
@@ -693,7 +694,7 @@ STRINGREF StringObject::NewString(const WCHAR *pwsz)
     else
     {
 
-        DWORD nch = (DWORD)wcslen(pwsz);
+        DWORD nch = (DWORD)u16_strlen(pwsz);
         if (nch==0) {
             return GetEmptyString();
         }
@@ -816,7 +817,8 @@ STRINGREF StringObject::NewString(LPCUTF8 psz, int cBytes)
 // STATIC MEMBER VARIABLES
 //
 //
-STRINGREF* StringObject::EmptyStringRefPtr=NULL;
+STRINGREF* StringObject::EmptyStringRefPtr = NULL;
+bool StringObject::EmptyStringIsFrozen = false;
 
 //The special string helpers are used as flag bits for weird strings that have bytes
 //after the terminating 0.  The only case where we use this right now is the VB BSTR as
@@ -853,7 +855,9 @@ STRINGREF* StringObject::InitEmptyStringRefPtr() {
     GCX_COOP();
 
     EEStringData data(0, W(""), TRUE);
-    EmptyStringRefPtr = SystemDomain::System()->DefaultDomain()->GetLoaderAllocator()->GetStringObjRefPtrFromUnicodeString(&data);
+    void* pinnedStr = nullptr;
+    EmptyStringRefPtr = SystemDomain::System()->DefaultDomain()->GetLoaderAllocator()->GetStringObjRefPtrFromUnicodeString(&data, &pinnedStr);
+    EmptyStringIsFrozen = pinnedStr != nullptr;
     return EmptyStringRefPtr;
 }
 

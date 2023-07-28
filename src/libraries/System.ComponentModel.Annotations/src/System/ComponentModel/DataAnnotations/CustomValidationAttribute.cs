@@ -105,18 +105,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         /// Gets a unique identifier for this attribute.
         /// </summary>
-        public override object TypeId
-        {
-            get
-            {
-                if (_typeId is null)
-                {
-                    _typeId = new Tuple<string, Type>(Method, ValidatorType);
-                }
-
-                return _typeId;
-            }
-        }
+        public override object TypeId => _typeId ??= new Tuple<string, Type>(Method, ValidatorType);
 
         /// <summary>
         ///     Gets the name of the method in <see cref="ValidatorType" /> to invoke to perform validation.

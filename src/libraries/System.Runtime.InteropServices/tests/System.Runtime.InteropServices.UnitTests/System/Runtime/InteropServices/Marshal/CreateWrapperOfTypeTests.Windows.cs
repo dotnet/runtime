@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class CreateWrapperOfTypeTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CreateWrapperOfType_SameType_ReturnsSameInstance()
         {
             var comObject = new ComImportObject();
@@ -16,14 +16,14 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Same(comObject, Marshal.CreateWrapperOfType<ComImportObject, ComImportObject>(comObject));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CreateWrapperOfType_NullObject_ReturnsNull()
         {
             Assert.Null(Marshal.CreateWrapperOfType(null, typeof(ComImportObject)));
             Assert.Null(Marshal.CreateWrapperOfType<ComImportObject, ComImportObject>(null));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData(typeof(int))]
         [InlineData(typeof(GenericSubComImportObject<string>))]
         [InlineData(typeof(GenericSubComImportObject<>))]
@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("t", () => Marshal.CreateWrapperOfType(new ComImportObject(), t));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CreateWrappedOfType_ObjectNotComObject_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("o", () => Marshal.CreateWrapperOfType(10, typeof(ComImportObject)));

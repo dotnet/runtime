@@ -257,7 +257,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
 }
 
-void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)
 {
     // Signal to finalizer thread that there are objects to finalize
     // TODO: Implement for finalization
@@ -356,5 +356,9 @@ uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
 }
 
 void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+{
+}
+
+void GCToEEInterface::LogErrorToHost(const char *message)
 {
 }

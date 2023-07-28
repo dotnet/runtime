@@ -49,7 +49,8 @@ namespace System.Security.Cryptography.Asn1
 
             // DEFAULT value handler for Critical.
             {
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                const int AsnBoolDerEncodeSize = 3;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
                 tmp.WriteBoolean(Critical);
 
                 if (!tmp.EncodedValueEquals(DefaultCritical))

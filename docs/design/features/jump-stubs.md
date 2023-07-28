@@ -91,7 +91,7 @@ space range, using OS virtual memory query/allocation APIs, to find and
 allocate a new block of memory in the acceptable range. If this function
 can't find and allocate space in the required range, we have, on AMD64,
 one more fallback: if an emergency jump stub reserve was created using
-the `COMPlus_NGenReserveForjumpStubs` configuration (see below), we
+the `DOTNET_NGenReserveForjumpStubs` configuration (see below), we
 attempt to find an appropriate, in range, allocation from that emergency
 pool. If all attempts fail to create an allocation in the appropriate
 range, we encounter a fatal error (and tear down the process), with a
@@ -105,12 +105,12 @@ occurrence of jump stub allocation failure. The following CLR
 configuration variables are relevant (these can be set in the registry
 as well as the environment, as usual):
 
-* `COMPlus_CodeHeapReserveForJumpStubs`. This value specifies a percentage
+* `DOTNET_CodeHeapReserveForJumpStubs`. This value specifies a percentage
 of every code heap to reserve for jump stubs. When a non-jump stub
 allocation in the code heap would eat into the reserved percentage, a
 new code heap is allocated instead, leaving some buffer in the existing
 code heap. The default value is 2.
-* `COMPlus_NGenReserveForjumpStubs`. This value, when non-zero, creates an
+* `DOTNET_NGenReserveForjumpStubs`. This value, when non-zero, creates an
 "emergency jump stub reserve". For each NGEN image loaded, an emergency
 jump stub reserve space is calculated by multiplying this number, as a
 percentage, against the loaded native image size. This amount of space
@@ -124,14 +124,14 @@ looking to allocate jump stubs, the normal mechanisms for finding jump
 stub space are followed, and only if they fail to find appropriate space
 are the emergency jump stub reserve heaps tried. The default value is
 zero.
-* `COMPlus_BreakOnOutOfMemoryWithinRange`. When set to 1, this breaks into
+* `DOTNET_BreakOnOutOfMemoryWithinRange`. When set to 1, this breaks into
 the debugger when the specific jump stub allocation failure condition
 occurs.
 
-The `COMPlus_NGenReserveForjumpStubs` mitigation is described publicly
+The `DOTNET_NGenReserveForjumpStubs` mitigation is described publicly
 here:
 https://support.microsoft.com/en-us/help/3152158/out-of-memory-exception-in-a-managed-application-that-s-running-on-the-64-bit-.net-framework.
-(It also mentions, in passing, `COMPlus_CodeHeapReserveForJumpStubs`, but
+(It also mentions, in passing, `DOTNET_CodeHeapReserveForJumpStubs`, but
 only to say not to use it.)
 
 ## Jump stubs and the JIT
@@ -470,7 +470,7 @@ the pre-allocated space if a jump stub is required.
 
 For non-LCG, we are reserving, but not allocating, a space at the end
 of the code heap. This is similar and in addition to the reservation done by
-COMPlus_CodeHeapReserveForJumpStubs. (See https://github.com/dotnet/coreclr/pull/15296).
+DOTNET_CodeHeapReserveForJumpStubs. (See https://github.com/dotnet/coreclr/pull/15296).
 
 ## Ready2Run
 
@@ -491,7 +491,7 @@ compact entrypoints are not enabled for AMD64 currently.
 
 ## Stress modes
 
-Setting `COMPlus_ForceRelocs=1` forces jump stubs to be created in all
+Setting `DOTNET_ForceRelocs=1` forces jump stubs to be created in all
 scenarios except for JIT generated code. As described previously, the
 VM doesn't know when the JIT is reporting a rel32 data address or code
 address, and in addition the JIT reports relocations for intra-function
@@ -503,5 +503,5 @@ We should improve the communication between the JIT and VM such that we
 can reliably force jump stub creation for every rel32 call or jump. In
 addition, we should make sure to enable code to stress the creation of
 jump stubs for every mitigation that is implemented whether that be
-using the existing `COMPlus_ForceRelocs` configuration, or the creation of
+using the existing `DOTNET_ForceRelocs` configuration, or the creation of
 a new configuration option.

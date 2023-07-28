@@ -200,6 +200,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class RethrowException : Exception
     {
         public RethrowException() : base() { }
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         internal RethrowException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 
@@ -241,7 +242,7 @@ namespace System.Linq.Expressions.Interpreter
                     return null;
                 }
                 //return the last one that is smaller
-                i = i - 1;
+                i--;
             }
 
             return debugInfos[i];
@@ -1743,10 +1744,7 @@ namespace System.Linq.Expressions.Interpreter
                 Debug.Assert(label != null);
             }
 
-            if (label == null)
-            {
-                label = DefineLabel(node.Target);
-            }
+            label ??= DefineLabel(node.Target);
 
             if (node.DefaultValue != null)
             {
@@ -2166,10 +2164,7 @@ namespace System.Linq.Expressions.Interpreter
                     ByRefUpdater? updater = CompileAddress(arg, i);
                     if (updater != null)
                     {
-                        if (updaters == null)
-                        {
-                            updaters = new List<ByRefUpdater>();
-                        }
+                        updaters ??= new List<ByRefUpdater>();
 
                         updaters.Add(updater);
                     }
@@ -2406,10 +2401,7 @@ namespace System.Linq.Expressions.Interpreter
                         ByRefUpdater? updater = CompileAddress(arg, i);
                         if (updater != null)
                         {
-                            if (updaters == null)
-                            {
-                                updaters = new List<ByRefUpdater>();
-                            }
+                            updaters ??= new List<ByRefUpdater>();
                             updaters.Add(updater);
                         }
                     }

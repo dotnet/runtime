@@ -87,8 +87,7 @@ namespace System.Collections.Generic
         //
         public SortedList(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             keys = new TKey[capacity];
             values = new TValue[capacity];
             comparer = Comparer<TKey>.Default;
@@ -161,7 +160,7 @@ namespace System.Collections.Generic
                 {
                     comparer = Comparer; // obtain default if this is null.
                     Array.Sort<TKey, TValue>(keys, values, comparer);
-                    for (int i = 1; i != keys.Length; ++i)
+                    for (int i = 1; i < keys.Length; ++i)
                     {
                         if (comparer.Compare(keys[i - 1], keys[i]) == 0)
                         {
@@ -359,19 +358,9 @@ namespace System.Collections.Generic
             }
         }
 
-        private KeyList GetKeyListHelper()
-        {
-            if (keyList == null)
-                keyList = new KeyList(this);
-            return keyList;
-        }
+        private KeyList GetKeyListHelper() => keyList ??= new KeyList(this);
 
-        private ValueList GetValueListHelper()
-        {
-            if (valueList == null)
-                valueList = new ValueList(this);
-            return valueList;
-        }
+        private ValueList GetValueListHelper() => valueList ??= new ValueList(this);
 
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly
         {
@@ -496,7 +485,7 @@ namespace System.Collections.Generic
                 object[]? objects = array as object[];
                 if (objects == null)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
 
                 try
@@ -508,7 +497,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
             }
         }
@@ -526,7 +515,12 @@ namespace System.Collections.Generic
             Capacity = newCapacity;
         }
 
-        // Returns the value of the entry at the given index.
+        /// <summary>
+        /// Gets the value corresponding to the specified index.
+        /// </summary>
+        /// <param name="index">The zero-based index of the value within the entire <see cref="SortedList{TKey, TValue}"/>.</param>
+        /// <returns>The value corresponding to the specified index.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The specified index was out of range.</exception>
         public TValue GetValueAtIndex(int index)
         {
             if (index < 0 || index >= _size)
@@ -534,7 +528,12 @@ namespace System.Collections.Generic
             return values[index];
         }
 
-        // Sets the value of the entry at the given index.
+        /// <summary>
+        /// Updates the value corresponding to the specified index.
+        /// </summary>
+        /// <param name="index">The zero-based index of the value within the entire <see cref="SortedList{TKey, TValue}"/>.</param>
+        /// <param name="value">The value with which to replace the entry at the specified index.</param>
+        /// <exception cref="ArgumentOutOfRangeException">The specified index was out of range.</exception>
         public void SetValueAtIndex(int index, TValue value)
         {
             if (index < 0 || index >= _size)
@@ -543,27 +542,22 @@ namespace System.Collections.Generic
             version++;
         }
 
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            return new Enumerator(this, Enumerator.KeyValuePair);
-        }
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
 
-        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
-        {
-            return new Enumerator(this, Enumerator.KeyValuePair);
-        }
+        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
+            Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<KeyValuePair<TKey, TValue>>() :
+            GetEnumerator();
 
-        IDictionaryEnumerator IDictionary.GetEnumerator()
-        {
-            return new Enumerator(this, Enumerator.DictEntry);
-        }
+        IDictionaryEnumerator IDictionary.GetEnumerator() => new Enumerator(this, Enumerator.DictEntry);
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(this, Enumerator.KeyValuePair);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<TKey, TValue>>)this).GetEnumerator();
 
-        // Returns the key of the entry at the given index.
+        /// <summary>
+        /// Gets the key corresponding to the specified index.
+        /// </summary>
+        /// <param name="index">The zero-based index of the key within the entire <see cref="SortedList{TKey, TValue}"/>.</param>
+        /// <returns>The key corresponding to the specified index.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The specified index is out of range.</exception>
         public TKey GetKeyAtIndex(int index)
         {
             if (index < 0 || index >= _size)
@@ -1066,7 +1060,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
             }
 
@@ -1087,15 +1081,11 @@ namespace System.Collections.Generic
                 }
             }
 
-            public IEnumerator<TKey> GetEnumerator()
-            {
-                return new SortedListKeyEnumerator(_dict);
-            }
+            public IEnumerator<TKey> GetEnumerator() =>
+                Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<TKey>() :
+                new SortedListKeyEnumerator(_dict);
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return new SortedListKeyEnumerator(_dict);
-            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             public int IndexOf(TKey key)
             {
@@ -1184,7 +1174,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
             }
 
@@ -1205,15 +1195,11 @@ namespace System.Collections.Generic
                 }
             }
 
-            public IEnumerator<TValue> GetEnumerator()
-            {
-                return new SortedListValueEnumerator(_dict);
-            }
+            public IEnumerator<TValue> GetEnumerator() =>
+                Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<TValue>() :
+                new SortedListValueEnumerator(_dict);
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return new SortedListValueEnumerator(_dict);
-            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             public int IndexOf(TValue value)
             {

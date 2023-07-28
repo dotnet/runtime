@@ -37,10 +37,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
             else
             {
-                if (_startArc == null)
-                {
-                    _startArc = _endArc = _backend.EpsilonTransition(1.0f);
-                }
+                _startArc ??= _endArc = _backend.EpsilonTransition(1.0f);
                 _backend.AddSemanticInterpretationTag(_endArc, propertyInfo);
             }
         }
@@ -49,10 +46,7 @@ namespace System.Speech.Internal.SrgsCompiler
         // _propInfo._ulId = (uint) ((ParseElement) parent).StartState._rule._iSerialize2;
         internal void AddSementicPropertyTag(CfgGrammar.CfgProperty propertyInfo)
         {
-            if (_startArc == null)
-            {
-                _startArc = _endArc = _backend.EpsilonTransition(1.0f);
-            }
+            _startArc ??= _endArc = _backend.EpsilonTransition(1.0f);
             _backend.AddPropertyTag(_startArc, _endArc, propertyInfo);
         }
 

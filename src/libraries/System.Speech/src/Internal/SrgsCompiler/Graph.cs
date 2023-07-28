@@ -473,10 +473,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     if (!skipTransition)
                     {
                         // Lazy init as entering this loop is a rare event
-                        if (arcsToMerge == null)
-                        {
-                            arcsToMerge = new List<Arc>();
-                        }
+                        arcsToMerge ??= new List<Arc>();
                         // Add the first element
                         if (!refSet)
                         {
@@ -618,10 +615,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     if (!skipTransition)
                     {
                         // Lazy init as entering this loop is a rare event
-                        if (arcsToMerge == null)
-                        {
-                            arcsToMerge = new List<Arc>();
-                        }
+                        arcsToMerge ??= new List<Arc>();
                         // Add the first element
                         if (!refSet)
                         {
@@ -847,10 +841,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     if (identicalWords.Count >= 2)
                     {
                         identicalWords.Sort(Arc.CompareIdenticalTransitions);
-                        if (segmentsToDelete == null)
-                        {
-                            segmentsToDelete = new List<List<Arc>>();
-                        }
+                        segmentsToDelete ??= new List<List<Arc>>();
 
                         // Add the list of same words into a list for further processing.
                         // The expectation of having an identical transition is very low so the code
@@ -908,11 +899,8 @@ namespace System.Speech.Internal.SrgsCompiler
                     // Identical transition
                     arc.Weight += refArc.Weight;
                     refArc.ClearTags();
-                    if (arcsToDelete == null)
-                    {
-                        // delay the creation of the collection as this operation in infrequent.
-                        arcsToDelete = new Collection<Arc>();
-                    }
+                    // delay the creation of the collection as this operation in infrequent.
+                    arcsToDelete ??= new Collection<Arc>();
                     arcsToDelete.Add(refArc);
                 }
                 refArc = arc;

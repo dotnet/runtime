@@ -18,7 +18,7 @@ namespace System.Runtime.Caching
         private int _state;
         // expiration
         private DateTime _utcAbsExp;
-        private TimeSpan _slidingExp;
+        private readonly TimeSpan _slidingExp;
         private ExpiresEntryRef _expiresEntryRef;
         private byte _expiresBucket; // index of the expiration list (bucket)
         // usage
@@ -164,18 +164,10 @@ namespace System.Runtime.Caching
                 {
                     return;
                 }
-                if (_fields == null)
-                {
-                    _fields = new SeldomUsedFields();
-                }
-                if (_fields._cache == null)
-                {
-                    _fields._cache = cache;
-                }
-                if (_fields._dependents == null)
-                {
-                    _fields._dependents = new Dictionary<MemoryCacheEntryChangeMonitor, MemoryCacheEntryChangeMonitor>();
-                }
+
+                _fields ??= new SeldomUsedFields();
+                _fields._cache ??= cache;
+                _fields._dependents ??= new Dictionary<MemoryCacheEntryChangeMonitor, MemoryCacheEntryChangeMonitor>();
                 _fields._dependents[dependent] = dependent;
             }
         }
@@ -219,10 +211,7 @@ namespace System.Runtime.Caching
         {
             lock (this)
             {
-                if (_fields == null)
-                {
-                    _fields = new SeldomUsedFields();
-                }
+                _fields ??= new SeldomUsedFields();
                 _fields._updateSentinel = Tuple.Create(sentinelStore, sentinelEntry);
             }
         }
@@ -272,10 +261,7 @@ namespace System.Runtime.Caching
             {
                 foreach (MemoryCacheEntryChangeMonitor dependent in deps)
                 {
-                    if (dependent != null)
-                    {
-                        dependent.OnCacheEntryReleased();
-                    }
+                    dependent?.OnCacheEntryReleased();
                 }
             }
 

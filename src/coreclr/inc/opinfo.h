@@ -18,7 +18,7 @@
 
 	// Decribes the flow of control properties of the instruction
 enum OpFlow {
-	FLOW_META,			// not a real instuction
+	FLOW_META,			// not a real instruction
 	FLOW_CALL,			// a call instruction
 	FLOW_BRANCH,			// unconditional branch, does not fall through
 	FLOW_COND_BRANCH,	// may fall through

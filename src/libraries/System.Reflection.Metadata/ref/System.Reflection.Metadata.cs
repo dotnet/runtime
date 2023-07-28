@@ -1663,6 +1663,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.MetadataStringDecoder UTF8Decoder { get { throw null; } }
         public System.Reflection.Metadata.AssemblyDefinition GetAssemblyDefinition() { throw null; }
         public System.Reflection.Metadata.AssemblyFile GetAssemblyFile(System.Reflection.Metadata.AssemblyFileHandle handle) { throw null; }
+        public static System.Reflection.AssemblyName GetAssemblyName(string assemblyFile) { throw null; }
         public System.Reflection.Metadata.AssemblyReference GetAssemblyReference(System.Reflection.Metadata.AssemblyReferenceHandle handle) { throw null; }
         public byte[] GetBlobBytes(System.Reflection.Metadata.BlobHandle handle) { throw null; }
         public System.Collections.Immutable.ImmutableArray<byte> GetBlobContent(System.Reflection.Metadata.BlobHandle handle) { throw null; }
@@ -2688,6 +2689,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void OpCode(System.Reflection.Metadata.ILOpCode code) { }
         public void StoreArgument(int argumentIndex) { }
         public void StoreLocal(int slotIndex) { }
+        public System.Reflection.Metadata.Ecma335.SwitchInstructionEncoder Switch(int branchCount) { throw null; }
         public void Token(int token) { }
         public void Token(System.Reflection.Metadata.EntityHandle handle) { }
     }
@@ -3062,11 +3064,16 @@ namespace System.Reflection.Metadata.Ecma335
         public void String() { }
         public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder SZArray() { throw null; }
         public void Type(System.Reflection.Metadata.EntityHandle type, bool isValueType) { }
+        public void TypedReference() { }
         public void UInt16() { }
         public void UInt32() { }
         public void UInt64() { }
         public void UIntPtr() { }
         public void VoidPointer() { }
+    }
+    public readonly struct SwitchInstructionEncoder
+    {
+        public void Branch(System.Reflection.Metadata.Ecma335.LabelHandle label) { }
     }
     public enum TableIndex : byte
     {
@@ -3247,12 +3254,14 @@ namespace System.Reflection.PortableExecutable
         ThreadTerm = (ushort)8,
         HighEntropyVirtualAddressSpace = (ushort)32,
         DynamicBase = (ushort)64,
+        ForceIntegrity = (ushort)128,
         NxCompatible = (ushort)256,
         NoIsolation = (ushort)512,
         NoSeh = (ushort)1024,
         NoBind = (ushort)2048,
         AppContainer = (ushort)4096,
         WdmDriver = (ushort)8192,
+        ControlFlowGuard = (ushort)16384,
         TerminalServerAware = (ushort)32768,
     }
     public enum Machine : ushort

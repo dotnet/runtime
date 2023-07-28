@@ -307,7 +307,7 @@
  * 	[ip: sleb128]* instruction pointer as difference from ptr_base
  *	[mbt_count: uleb128] number of managed backtrace frames
  *	[method: sleb128]* MonoMethod* as a pointer difference from the last such
- * 	pointer or the buffer method_base (the first such method can be also indentified by ip, but this is not neccessarily true)
+ * 	pointer or the buffer method_base (the first such method can be also indentified by ip, but this is not necessarily true)
  * if exinfo == TYPE_SAMPLE_USYM
  * 	[address: sleb128] symbol address as a difference from ptr_base
  * 	[size: uleb128] symbol size (may be 0 if unknown)

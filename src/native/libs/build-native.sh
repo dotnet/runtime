@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net7.0-Linux-Release-x64', used to name output directory.")
+usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net8.0-linux-Release-x64', used to name output directory.")
 usage_list+=("-staticLibLink: Optional argument to statically link any native library.")
 
 __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
@@ -16,6 +16,15 @@ handle_arguments() {
             __ShiftArgs=1
             ;;
 
+        icudir|-icudir)
+            __icuDir="$2"
+            __ShiftArgs=1
+            ;;
+
+        usepthreads|-usepthreads)
+            __usePThreads=1
+            ;;
+
         staticliblink|-staticliblink)
             __StaticLibLink=1
             ;;
@@ -27,7 +36,7 @@ handle_arguments() {
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __TargetArch=x64
-__TargetOS=Linux
+__TargetOS=linux
 __BuildType=Debug
 __CMakeArgs=""
 __Compiler=clang
@@ -38,26 +47,43 @@ __SkipConfigure=0
 __StaticLibLink=0
 __UnprocessedBuildArgs=
 __VerboseBuild=false
+__icuDir=""
+__usePThreads=0
 
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
 # Set cross build
-
-if [[ "$__TargetArch" == wasm ]]; then
+if [[ "$__TargetOS" == browser ]]; then
     if [[ -z "$EMSDK_PATH" ]]; then
-        echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
-        exit 1
+        if [[ -d "$__RepoRootDir"/src/mono/wasm/emsdk/ ]]; then
+            export EMSDK_PATH="$__RepoRootDir"/src/mono/wasm/emsdk/
+        else
+            echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
+            exit 1
+        fi
     fi
     source "$EMSDK_PATH"/emsdk_env.sh
-
     export CLR_CC=$(which emcc)
-elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
+elif [[ "$__TargetOS" == wasi ]]; then
+    if [[ -z "$WASI_SDK_PATH" ]]; then
+        if [[ -d "$__RepoRootDir"/src/mono/wasi/wasi-sdk ]]; then
+            export WASI_SDK_PATH="$__RepoRootDir"/src/mono/wasi/wasi-sdk
+        else
+            echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
+            exit 1
+        fi
+    fi
+    export WASI_SDK_PATH="${WASI_SDK_PATH%/}/"
+    export CLR_CC="$WASI_SDK_PATH"bin/clang
+    export TARGET_BUILD_ARCH=wasm
+    __CMakeArgs="-DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake $__CMakeArgs"
+elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == tvOS || "$__TargetOS" == tvOSSimulator ]]; then
+elif [[ "$__TargetOS" == tvos || "$__TargetOS" == tvossimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+elif [[ "$__TargetOS" == android && -z "$ROOTFS_DIR" ]]; then
     # nothing to do here
     true
 else
@@ -70,16 +96,16 @@ else
     fi
 fi
 
-if [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+if [[ "$__TargetOS" == android && -z "$ROOTFS_DIR" ]]; then
     # Android SDK defaults to c++_static; we only need C support
     __CMakeArgs="-DANDROID_STL=none $__CMakeArgs"
 elif [[ "$__TargetOS" == linux-bionic && -z "$ROOTFS_DIR" ]]; then
     # Android SDK defaults to c++_static; we only need C support
-    __CMakeArgs="-DFORCE_ANDROID_OPENSSL=1 -DANDROID_STL=none $__CMakeArgs"
-elif [[ "$__TargetOS" == iOSSimulator ]]; then
+    __CMakeArgs="-DFORCE_ANDROID_OPENSSL=1 -DANDROID_STL=none -DANDROID_FORCE_ICU_DATA_DIR=1 $__CMakeArgs"
+elif [[ "$__TargetOS" == iossimulator ]]; then
     # set default iOS simulator deployment target
-    # keep in sync with src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
+    # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
     if [[ "$__TargetArch" == x64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__TargetArch" == x86 ]]; then
@@ -87,13 +113,13 @@ elif [[ "$__TargetOS" == iOSSimulator ]]; then
     elif [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown iOSSimulator architecture $__TargetArch."
+        echo "Error: Unknown iOS Simulator architecture $__TargetArch."
         exit 1
     fi
-elif [[ "$__TargetOS" == iOS ]]; then
+elif [[ "$__TargetOS" == ios ]]; then
     # set default iOS device deployment target
-    # keep in sync with src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
+    # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
     if [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     elif [[ "$__TargetArch" == arm ]]; then
@@ -102,22 +128,22 @@ elif [[ "$__TargetOS" == iOS ]]; then
         echo "Error: Unknown iOS architecture $__TargetArch."
         exit 1
     fi
-elif [[ "$__TargetOS" == tvOSSimulator ]]; then
+elif [[ "$__TargetOS" == tvossimulator ]]; then
     # set default tvOS simulator deployment target
-    # keep in sync with src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
+    # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
     if [[ "$__TargetArch" == x64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown tvOSSimulator architecture $__TargetArch."
+        echo "Error: Unknown tvOS Simulator architecture $__TargetArch."
         exit 1
     fi
-elif [[ "$__TargetOS" == tvOS ]]; then
+elif [[ "$__TargetOS" == tvos ]]; then
     # set default tvOS device deployment target
-    # keep in sync with src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
+    # keep in sync with the root Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
     if [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
@@ -125,6 +151,11 @@ elif [[ "$__TargetOS" == tvOS ]]; then
         exit 1
     fi
 fi
+
+if [[ -n "$__icuDir" ]]; then
+    __CMakeArgs="-DCMAKE_ICU_DIR=\"$__icuDir\" $__CMakeArgs"
+fi
+__CMakeArgs="-DCMAKE_USE_PTHREADS=$__usePThreads $__CMakeArgs"
 
 # Set the remaining variables based upon the determined build configuration
 __outConfig="${__outConfig:-"$__TargetOS-$__TargetArch-$__BuildType"}"

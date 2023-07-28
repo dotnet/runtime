@@ -14,8 +14,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.CreateWrapperOfType("object", null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CreateWrapperOfType_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("t", () => Marshal.CreateWrapperOfType("object", null));

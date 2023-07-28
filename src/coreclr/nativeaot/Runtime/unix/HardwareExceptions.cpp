@@ -8,9 +8,16 @@
 #include "daccess.h"
 #include "regdisplay.h"
 #include "UnixContext.h"
-
-#include <signal.h>
 #include "HardwareExceptions.h"
+#include "UnixSignals.h"
+#include "PalCreateDump.h"
+
+#if defined(HOST_APPLE)
+#include <mach/mach.h>
+#include <mach/mach_error.h>
+#include <mach/exception.h>
+#include <mach/task.h>
+#endif
 
 #if !HAVE_SIGINFO_T
 #error Cannot handle hardware exceptions on this platform
@@ -48,8 +55,6 @@
 
 struct sigaction g_previousSIGSEGV;
 struct sigaction g_previousSIGFPE;
-
-typedef void (*SignalHandler)(int code, siginfo_t *siginfo, void *context);
 
 // Exception handler for hardware exceptions
 static PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
@@ -284,7 +289,7 @@ bool IsDivByZeroAnIntegerOverflow(void* context)
 
     uint8_t code = SkipPrefixes(&ip, &hasOpSizePrefix);
 
-    // The REX prefix must directly preceed the instruction code
+    // The REX prefix must directly precede the instruction code
     if ((code & 0xF0) == 0x40)
     {
         rex = code;
@@ -537,53 +542,6 @@ bool HardwareExceptionHandler(int code, siginfo_t *siginfo, void *context, void*
     return false;
 }
 
-// Add handler for hardware exception signal
-bool AddSignalHandler(int signal, SignalHandler handler, struct sigaction* previousAction)
-{
-    struct sigaction newAction;
-
-    newAction.sa_flags = SA_RESTART;
-    newAction.sa_handler = NULL;
-    newAction.sa_sigaction = handler;
-    newAction.sa_flags |= SA_SIGINFO;
-
-    sigemptyset(&newAction.sa_mask);
-
-    if (sigaction(signal, NULL, previousAction) == -1)
-    {
-        ASSERT_UNCONDITIONALLY("Failed to get previous signal handler");
-        return false;
-    }
-
-    if (previousAction->sa_flags & SA_ONSTACK)
-    {
-        // If the previous signal handler uses an alternate stack, we need to use it too
-        // so that when we chain-call the previous handler, it is called on the kind of
-        // stack it expects.
-        // We also copy the signal mask to make sure that if some signals were blocked
-        // from execution on the alternate stack by the previous action, we honor that.
-        newAction.sa_flags |= SA_ONSTACK;
-        newAction.sa_mask = previousAction->sa_mask;
-    }
-
-    if (sigaction(signal, &newAction, previousAction) == -1)
-    {
-        ASSERT_UNCONDITIONALLY("Failed to install signal handler");
-        return false;
-    }
-
-    return true;
-}
-
-// Restore original handler for hardware exception signal
-void RestoreSignalHandler(int signal_id, struct sigaction *previousAction)
-{
-    if (-1 == sigaction(signal_id, previousAction, NULL))
-    {
-        ASSERT_UNCONDITIONALLY("RestoreSignalHandler: sigaction() call failed");
-    }
-}
-
 // Handler for the SIGSEGV signal
 void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
 {
@@ -602,6 +560,8 @@ void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
         // Restore the original or default handler and restart h/w exception
         RestoreSignalHandler(code, &g_previousSIGSEGV);
     }
+
+    PalCreateCrashDumpIfEnabled(code, siginfo);
 }
 
 // Handler for the SIGFPE signal
@@ -622,6 +582,8 @@ void SIGFPEHandler(int code, siginfo_t *siginfo, void *context)
         // Restore the original or default handler and restart h/w exception
         RestoreSignalHandler(code, &g_previousSIGFPE);
     }
+
+    PalCreateCrashDumpIfEnabled(code, siginfo);
 }
 
 // Initialize hardware exception handling
@@ -636,6 +598,29 @@ bool InitializeHardwareExceptionHandling()
     {
         return false;
     }
+
+#if defined(HOST_APPLE)
+#ifndef HOST_TVOS // task_set_exception_ports is not supported on tvOS
+	// LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
+	// exceptions first to any registered "activation" handler and then to
+	// any registered task handler before dispatching the exception to a
+	// host-wide Mach exception handler that does translation to POSIX
+	// signals. This makes it impossible to use LLDB with implicit null
+    // checks in NativeAOT; continuing execution after LLDB traps an
+    // EXC_BAD_ACCESS will result in LLDB's EXC_BAD_ACCESS handler being
+    // invoked again. This also interferes with the translation of SIGFPEs
+    // to .NET-level ArithmeticExceptions. Work around this here by
+	// installing a no-op task-wide Mach exception handler for
+	// EXC_BAD_ACCESS and EXC_ARITHMETIC.
+	kern_return_t kr = task_set_exception_ports(
+		mach_task_self(),
+		EXC_MASK_BAD_ACCESS | EXC_MASK_ARITHMETIC, /* SIGSEGV, SIGFPE */
+		MACH_PORT_NULL,
+		EXCEPTION_STATE_IDENTITY,
+		MACHINE_THREAD_STATE);
+    ASSERT(kr == KERN_SUCCESS);
+#endif
+#endif
 
     return true;
 }

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Xml.Serialization;
+
 namespace System.Xml.Schema
 {
-    using System.Diagnostics;
-    using System.Xml.Serialization;
-
     public abstract class XmlSchemaObject
     {
         private int _lineNum;
@@ -48,13 +48,8 @@ namespace System.Xml.Schema
         [XmlNamespaceDeclarations]
         public XmlSerializerNamespaces Namespaces
         {
-            get
-            {
-                if (_namespaces == null)
-                    _namespaces = new XmlSerializerNamespaces();
-                return _namespaces;
-            }
-            set { _namespaces = value; }
+            get => _namespaces ??= new XmlSerializerNamespaces();
+            set => _namespaces = value;
         }
 
         internal virtual void OnAdd(XmlSchemaObjectCollection container, object? item) { }

@@ -244,12 +244,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_notconnected);
             }
 
-            if (_dataStream == null)
-            {
-                _dataStream = new NetworkStream(Client, true);
-            }
-
-            return _dataStream;
+            return _dataStream ??= new NetworkStream(Client, true);
         }
 
         public void Close() => Dispose();
@@ -261,7 +256,7 @@ namespace System.Net.Sockets
             {
                 if (disposing)
                 {
-                    IDisposable? dataStream = _dataStream;
+                    NetworkStream? dataStream = _dataStream;
                     if (dataStream != null)
                     {
                         dataStream.Dispose();

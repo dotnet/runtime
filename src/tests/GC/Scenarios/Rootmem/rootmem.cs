@@ -24,7 +24,7 @@ namespace DefaultNamespace {
         {
         }
 
-        public static int Main( String [] args )
+        public static int Main()
         {
             int iSize = 1000;
             Object [] arVar = new Object[iSize];

@@ -144,14 +144,20 @@ update_gc_info (mword used_slots_size)
 
 	sgen_gc_info.heap_size_bytes = major_size + sgen_los_memory_usage_total;
 	sgen_gc_info.fragmented_bytes = sgen_gc_info.heap_size_bytes - sgen_los_memory_usage - major_size_in_use;
-	guint64 physical_ram_size = mono_determine_physical_ram_size ();
-	sgen_gc_info.memory_load_bytes = physical_ram_size ? sgen_gc_info.total_available_memory_bytes - (guint64)(((double)sgen_gc_info.total_available_memory_bytes*mono_determine_physical_ram_available_size ())/physical_ram_size) : 0;
 	sgen_gc_info.total_committed_bytes = major_size_in_use + sgen_los_memory_usage;
 	sgen_gc_info.total_promoted_bytes = sgen_total_promoted_size - total_promoted_size_start;
 	sgen_gc_info.total_major_size_bytes = major_size;
 	sgen_gc_info.total_major_size_in_use_bytes = major_size_in_use;
 	sgen_gc_info.total_los_size_bytes = sgen_los_memory_usage_total;
 	sgen_gc_info.total_los_size_in_use_bytes = sgen_los_memory_usage;
+}
+
+static void
+update_gc_info_memory_load (void)
+{
+	// We update this separately because it is not safe to do it during GC stw
+	guint64 physical_ram_size = mono_determine_physical_ram_size ();
+	sgen_gc_info.memory_load_bytes = physical_ram_size ? sgen_gc_info.total_available_memory_bytes - (guint64)(((double)sgen_gc_info.total_available_memory_bytes*mono_determine_physical_ram_available_size ())/physical_ram_size) : 0;
 }
 
 gboolean
@@ -225,6 +231,7 @@ sgen_memgov_minor_collection_end (const char *reason, gboolean is_overflow)
 		log_entry->promoted_size = (mword)sgen_gc_info.total_promoted_bytes;
 		log_entry->major_size = (mword)sgen_gc_info.total_major_size_bytes;
 		log_entry->major_size_in_use = (mword)sgen_gc_info.total_major_size_in_use_bytes;
+		log_entry->major_empty_reserved_size = (mword)sgen_major_collector.get_num_empty_blocks () * sgen_major_collector.section_size;
 		log_entry->los_size = (mword)sgen_gc_info.total_los_size_bytes;
 		log_entry->los_size_in_use = (mword)sgen_gc_info.total_los_size_in_use_bytes;
 
@@ -327,7 +334,7 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 
 	switch (entry->type) {
 		case SGEN_LOG_NURSERY:
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MINOR%s: (%s) time %.2fms, %s promoted %luK major size: %luK in use: %luK los size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MINOR%s: (%s) time %.2fms, %s promoted %luK major size: %luK in use: %luK empty reserved: %luK los size: %luK in use: %luK",
 				entry->is_overflow ? "_OVERFLOW" : "",
 				entry->reason ? entry->reason : "",
 				entry->time / 10000.0f,
@@ -335,6 +342,7 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 				(unsigned long)entry->promoted_size / 1024,
 				(unsigned long)entry->major_size / 1024,
 				(unsigned long)entry->major_size_in_use / 1024,
+				(unsigned long)entry->major_empty_reserved_size / 1024,
 				(unsigned long)entry->los_size / 1024,
 				(unsigned long)entry->los_size_in_use / 1024);
 			break;
@@ -359,9 +367,10 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 				(unsigned long)entry->los_size_in_use / 1024);
 			break;
 		case SGEN_LOG_MAJOR_SWEEP_FINISH:
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major size: %luK in use: %luK empty reserved: %luK",
 				(unsigned long)entry->major_size / 1024,
-				(unsigned long)entry->major_size_in_use / 1024);
+				(unsigned long)entry->major_size_in_use / 1024,
+				(unsigned long)entry->major_empty_reserved_size / 1024);
 			break;
 		default:
 			SGEN_ASSERT (0, FALSE, "Invalid log entry type");
@@ -387,6 +396,8 @@ sgen_memgov_collection_end (int generation, gint64 stw_time)
 		sgen_pointer_queue_clear (&log_entries);
 		mono_os_mutex_unlock (&log_entries_mutex);
 	}
+
+	update_gc_info_memory_load ();
 }
 
 /*

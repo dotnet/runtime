@@ -12,7 +12,7 @@
 .assembly extern localloc_common{}
 .assembly 'unwind04_small'{}
 
-.class private auto ansi beforefieldinit LocallocTest
+.class public auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
 {
   .field private static bool testFailed

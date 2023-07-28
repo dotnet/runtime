@@ -9,6 +9,8 @@ namespace System.Collections.Tests
 {
     public class Dictionary_Generic_Tests_Keys : ICollection_Generic_Tests<string>
     {
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
         protected override bool DefaultValueAllowed => false;
         protected override bool DuplicateValuesAllowed => false;
         protected override bool IsReadOnly => true;
@@ -61,6 +63,7 @@ namespace System.Collections.Tests
         protected override bool NullAllowed => false;
         protected override bool DuplicateValuesAllowed => false;
         protected override bool IsReadOnly => true;
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
         protected override bool SupportsSerialization => false;

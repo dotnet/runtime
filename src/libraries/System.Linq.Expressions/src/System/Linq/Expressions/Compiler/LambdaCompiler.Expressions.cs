@@ -529,10 +529,7 @@ namespace System.Linq.Expressions.Compiler
                     WriteBack? wb = EmitAddressWriteBack(argument, type);
                     if (wb != null)
                     {
-                        if (writeBacks == null)
-                        {
-                            writeBacks = new List<WriteBack>();
-                        }
+                        writeBacks ??= new List<WriteBack>();
 
                         writeBacks.Add(wb);
                     }

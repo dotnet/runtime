@@ -54,7 +54,7 @@ then
 fi
         ]]></GCSimulatorTestBashScript>
 
-        <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(GCLongGCTestBashScript);$(GCSimulatorTestBashScript)</BashCLRTestPreCommands>
+        <CLRTestBashPreCommands>$(CLRTestBashPreCommands);$(GCLongGCTestBashScript);$(GCSimulatorTestBashScript)</CLRTestBashPreCommands>
         <GCLongGCTestBatchScript Condition="'$(IsLongRunningGCTest)' != 'true'"><![CDATA[
 REM Long GC script
 if defined RunningLongGCTests (

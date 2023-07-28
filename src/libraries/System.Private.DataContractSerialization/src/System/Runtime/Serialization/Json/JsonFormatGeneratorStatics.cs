@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Xml;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
 using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
@@ -318,17 +319,7 @@ namespace System.Runtime.Serialization
                 return s_serializationExceptionCtor;
             }
         }
-        public static Type[] SerInfoCtorArgs
-        {
-            get
-            {
-                if (s_serInfoCtorArgs == null)
-                {
-                    s_serInfoCtorArgs = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
-                }
-                return s_serInfoCtorArgs;
-            }
-        }
+        public static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
         public static MethodInfo ThrowDuplicateMemberExceptionMethod
         {
             get

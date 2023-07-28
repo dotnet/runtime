@@ -26,12 +26,12 @@ namespace System.Net.Http
                 "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT",
                 true);
 
-            // Default to disable HTTP/3 (and by an extent QUIC), but enable that to be overridden
-            // by an AppContext switch, or by an environment variable being set to true/1.
+            // Default to allowing HTTP/3, but enable that to be overridden by an
+            // AppContext switch, or by an environment variable being set to false/0.
             public static bool AllowHttp3 { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.SocketsHttpHandler.Http3Support",
                 "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3SUPPORT",
-                false);
+                true);
 
             // Switch to disable the HTTP/2 dynamic window scaling algorithm. Enabled by default.
             public static bool DisableDynamicHttp2WindowSizing { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
@@ -44,6 +44,10 @@ namespace System.Net.Http
 
             // Defaults to 1.0. Higher values result in shorter window, but slower downloads.
             public static double Http2StreamWindowScaleThresholdMultiplier { get; } = GetHttp2StreamWindowScaleThresholdMultiplier();
+
+            public static int PendingConnectionTimeoutOnRequestCompletion { get; } = RuntimeSettingParser.QueryRuntimeSettingInt32(
+                "System.Net.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion",
+                "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION", 5000);
 
             public const int DefaultHttp2MaxStreamWindowSize = 16 * 1024 * 1024;
             public const double DefaultHttp2StreamWindowScaleThresholdMultiplier = 1.0;

@@ -1,7 +1,6 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -316,7 +315,7 @@ namespace System.Tests
             var data = BinaryData.FromStream(new OverFlowStream(offset: int.MaxValue - 1000));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void CanCreateBinaryDataFromCustomType()
         {
             TestModel payload = new TestModel { A = "value", B = 5, C = true, D = null };
@@ -342,7 +341,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void CanSerializeNullData()
         {
             BinaryData data = new BinaryData(jsonSerializable: null);
@@ -362,7 +361,7 @@ namespace System.Tests
             data = BinaryData.FromObjectAsJson<TestModel>(null);
             Assert.Null(data.ToObjectFromJson<TestModel>());
 
-            data = BinaryData.FromObjectAsJson<TestModel>(null, TestModelJsonContext.Default.TestModel as JsonTypeInfo<TestModel>);
+            data = BinaryData.FromObjectAsJson<TestModel>(null, TestModelJsonContext.Default.TestModel);
             Assert.Null(data.ToObjectFromJson<TestModel>(TestModelJsonContext.Default.TestModel));
         }
 
@@ -374,7 +373,6 @@ namespace System.Tests
 
             ex = await Assert.ThrowsAsync<ArgumentNullException>(() => BinaryData.FromStreamAsync(null));
             Assert.Contains("stream", ex.Message);
-
         }
 
         [Fact]
@@ -399,7 +397,29 @@ namespace System.Tests
             Assert.Contains("data", ex.Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        public void ToObjectHandlesBOM()
+        {
+            TestModel payload = new TestModel { A = "string", B = 42, C = true };
+            using var buffer = new MemoryStream();
+            using var writer = new StreamWriter(buffer, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            writer.Write(JsonSerializer.Serialize(payload));
+            writer.Flush();
+
+            BinaryData data = new BinaryData(buffer.ToArray());
+            var model = data.ToObjectFromJson<TestModel>();
+            Assert.Equal(payload.A, model.A);
+            Assert.Equal(payload.B, model.B);
+            Assert.Equal(payload.C, model.C);
+
+            var typeInfo = (JsonTypeInfo<TestModel>)JsonSerializerOptions.Default.GetTypeInfo(typeof(TestModel));
+            model = data.ToObjectFromJson<TestModel>(typeInfo);
+            Assert.Equal(payload.A, model.A);
+            Assert.Equal(payload.B, model.B);
+            Assert.Equal(payload.C, model.C);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void ToObjectThrowsExceptionOnIncompatibleType()
         {
             TestModel payload = new TestModel { A = "value", B = 5, C = true };
@@ -598,6 +618,143 @@ namespace System.Tests
             Assert.Equal(string.Empty, BinaryData.Empty.ToString());
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(int count)
+        {
+            var data = BinaryData.FromBytes(new ReadOnlyMemory<byte>(new byte[count]));
+            Assert.Equal(count, data.Length);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void LengthReturnsNumberOfBytesForBinaryDataFromArray(int count)
+        {
+            var data = BinaryData.FromBytes(new byte[count]);
+            Assert.Equal(count, data.Length);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void LengthReturnsNumberOfBytesForBinaryDataFromString(int count)
+        {
+            var data = BinaryData.FromString(new string('*', count));
+            Assert.Equal(count, data.Length);
+        }
+
+        [Fact]
+        public void BinaryDataEmptyIsEmpty()
+        {
+            Assert.True(BinaryData.Empty.IsEmpty);
+        }
+
+        [Fact]
+        public void BinaryDataFromEmptyReadOnlyMemoryIsEmpty()
+        {
+            var data = BinaryData.FromBytes(ReadOnlyMemory<byte>.Empty);
+            Assert.True(data.IsEmpty);
+        }
+
+        [Fact]
+        public void BinaryDataFromEmptyArrayIsEmpty()
+        {
+            var data = BinaryData.FromBytes(Array.Empty<byte>());
+            Assert.True(data.IsEmpty);
+        }
+
+        [Fact]
+        public void BinaryDataFromEmptyStringIsEmpty()
+        {
+            var data = BinaryData.FromString("");
+            Assert.True(data.IsEmpty);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(int count)
+        {
+            var data = BinaryData.FromBytes(new ReadOnlyMemory<byte>(new byte[count]));
+            Assert.False(data.IsEmpty);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void NonEmptyBinaryDataFromArrayIsNotEmpty(int count)
+        {
+            var data = BinaryData.FromBytes(new byte[count]);
+            Assert.False(data.IsEmpty);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void NonEmptyBinaryDataFromStringIsNotEmpty(int count)
+        {
+            var data = BinaryData.FromString(new string('*', count));
+            Assert.False(data.IsEmpty);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        public void IsBinaryDataMemberPropertySerialized()
+        {
+            var data = new BinaryData("A test value");
+            var dataBase64 = Convert.ToBase64String(data.ToArray());
+            var jsonTestModel = $"{{\"A\":\"{dataBase64}\"}}";
+            TestModelWithBinaryDataProperty testModel = new TestModelWithBinaryDataProperty { A = data };
+
+            var serializedTestModel = JsonSerializer.Serialize(testModel);
+
+            Assert.Equal(jsonTestModel, serializedTestModel);           
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        public void IsBinaryDataMemberPropertyDeserialized()
+        {
+            var data = new BinaryData("A test value");
+            var dataBase64 = Convert.ToBase64String(data.ToArray());
+            var jsonTestModel = $"{{\"A\":\"{dataBase64}\"}}";
+
+            TestModelWithBinaryDataProperty deserializedModel = JsonSerializer.Deserialize<TestModelWithBinaryDataProperty>(jsonTestModel);
+
+            Assert.Equal(data.ToString(), deserializedModel.A.ToString());
+        }
+
+        [Fact]
+        public void IsBinaryDataMemberPropertySerialized_SourceGen()
+        {
+            var data = new BinaryData("A test value");
+            var dataBase64 = Convert.ToBase64String(data.ToArray());
+            var jsonTestModel = $"{{\"A\":\"{dataBase64}\"}}";
+            TestModelWithBinaryDataProperty testModel = new TestModelWithBinaryDataProperty { A = data };
+
+            var serializedTestModel = JsonSerializer.Serialize(testModel, TestModelWithBinaryDataPropertyContext.Default.TestModelWithBinaryDataProperty);
+
+            Assert.Equal(jsonTestModel, serializedTestModel);
+        }
+
+        [Fact]
+        public void IsBinaryDataMemberPropertyDeserialized_SourceGen()
+        {
+            var data = new BinaryData("A test value");
+            var dataBase64 = Convert.ToBase64String(data.ToArray());
+            var jsonTestModel = $"{{\"A\":\"{dataBase64}\"}}";
+
+            TestModelWithBinaryDataProperty deserializedModel = JsonSerializer.Deserialize<TestModelWithBinaryDataProperty>(jsonTestModel, TestModelWithBinaryDataPropertyContext.Default.TestModelWithBinaryDataProperty);
+
+            Assert.Equal(data.ToString(), deserializedModel.A.ToString());
+        }
+
         internal class TestModel
         {
             public string A { get; set; }
@@ -645,5 +802,14 @@ namespace System.Tests
             public NonSeekableStream(byte[] buffer) : base(buffer) { }
             public override bool CanSeek => false;
         }
+
+        internal class TestModelWithBinaryDataProperty
+        {
+            public BinaryData A { get; set; }
+        }
+
+        [JsonSerializable(typeof(TestModelWithBinaryDataProperty))]
+        internal partial class TestModelWithBinaryDataPropertyContext : JsonSerializerContext
+        { }
     }
 }

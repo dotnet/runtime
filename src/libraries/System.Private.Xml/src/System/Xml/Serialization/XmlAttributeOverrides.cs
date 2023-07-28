@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System.Collections;
+using System.IO;
+using System.Xml.Schema;
+using System;
+using System.ComponentModel;
+using System.Collections.Generic;
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System.Collections;
-    using System.IO;
-    using System.Xml.Schema;
-    using System;
-    using System.ComponentModel;
-    using System.Collections.Generic;
-
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>

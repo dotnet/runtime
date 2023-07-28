@@ -6,7 +6,7 @@ using Internal.TypeSystem;
 namespace Internal.IL.Stubs
 {
     // Functionality related to deterministic ordering of types
-    partial class DelegateThunk
+    public partial class DelegateThunk
     {
         protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
@@ -15,7 +15,7 @@ namespace Internal.IL.Stubs
         }
     }
 
-    partial class DelegateInvokeOpenStaticThunk
+    public partial class DelegateInvokeOpenStaticThunk
     {
         protected override int ClassCode => 386356101;
     }
@@ -25,27 +25,27 @@ namespace Internal.IL.Stubs
         protected override int ClassCode => -1787190244;
     }
 
-    partial class DelegateInvokeClosedStaticThunk
+    public partial class DelegateInvokeClosedStaticThunk
     {
         protected override int ClassCode => 28195375;
     }
 
-    partial class DelegateInvokeMulticastThunk
+    public partial class DelegateInvokeMulticastThunk
     {
         protected override int ClassCode => 639863471;
     }
 
-    partial class DelegateInvokeInstanceClosedOverGenericMethodThunk
+    public partial class DelegateInvokeInstanceClosedOverGenericMethodThunk
     {
         protected override int ClassCode => -354480633;
     }
 
-    partial class DelegateInvokeObjectArrayThunk
+    public partial class DelegateInvokeObjectArrayThunk
     {
         protected override int ClassCode => 1993292344;
     }
 
-    partial class DelegateGetThunkMethodOverride
+    public partial class DelegateGetThunkMethodOverride
     {
         protected override int ClassCode => -321263379;
 

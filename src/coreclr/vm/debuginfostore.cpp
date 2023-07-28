@@ -67,14 +67,27 @@ public:
         m_w.WriteEncodedU32(dwDelta);
     }
 
-
-    // Some U32 may have a few sentinal negative values .
+    // Some U32 may have a few sentinel negative values .
     // We adjust it to be a real U32 and then encode that.
     // dwAdjust should be the lower bound on the enum.
     void DoEncodedAdjustedU32(uint32_t dw, uint32_t dwAdjust)
     {
         //_ASSERTE(dwAdjust < 0); // some negative lower bound.
         m_w.WriteEncodedU32(dw - dwAdjust);
+    }
+
+    void DoEncodedDeltaU32NonMonotonic(uint32_t& dw, uint32_t dwLast)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        int32_t dwDelta = static_cast<int32_t>(dw) - static_cast<int32_t>(dwLast);
+        m_w.WriteEncodedI32(dwDelta);
     }
 
     // Typesafe versions of EncodeU32.
@@ -110,6 +123,18 @@ public:
         {
             m_w.WriteNibble(b);
         }
+#endif
+    }
+
+    void DoMethodHandle(CORINFO_METHOD_HANDLE p)
+    {
+        uintptr_t up = reinterpret_cast<uintptr_t>(p);
+
+#ifdef TARGET_64BIT
+        m_w.WriteUnencodedU32(static_cast<uint32_t>(up));
+        m_w.WriteUnencodedU32(static_cast<uint32_t>(up >> 32));
+#else
+        m_w.WriteUnencodedU32(static_cast<uint32_t>(up));
 #endif
     }
 
@@ -152,6 +177,13 @@ public:
         dw = m_r.ReadEncodedU32() + dwAdjust;
     }
 
+    void DoEncodedDeltaU32NonMonotonic(uint32_t& dw, uint32_t dwLast)
+    {
+        SUPPORTS_DAC;
+        int32_t dwDelta = m_r.ReadEncodedI32();
+        dw = static_cast<uint32_t>(static_cast<int32_t>(dwLast) + dwDelta);
+    }
+
     void DoEncodedSourceType(ICorDebugInfo::SourceTypes & dw)
     {
         SUPPORTS_DAC;
@@ -189,6 +221,18 @@ public:
         reg = (ICorDebugInfo::RegNum) m_r.ReadEncodedU32();
     }
 
+    void DoMethodHandle(CORINFO_METHOD_HANDLE& p)
+    {
+#ifdef TARGET_64BIT
+        uint32_t lo = m_r.ReadUnencodedU32();
+        uint32_t hi = m_r.ReadUnencodedU32();
+        p = reinterpret_cast<CORINFO_METHOD_HANDLE>(uintptr_t(lo) | (uintptr_t(hi) << 32));
+#else
+        uint32_t val = m_r.ReadUnencodedU32();
+        p = reinterpret_cast<CORINFO_METHOD_HANDLE>(static_cast<uintptr_t>(val));
+#endif
+    }
+
     // For debugging purposes, inject cookies into the Compression.
     void DoCookie(BYTE b)
     {
@@ -217,13 +261,16 @@ static int g_CDI_bMethodTotalCompress   = 0;
 
 static int g_CDI_bVarsTotalUncompress   = 0;
 static int g_CDI_bVarsTotalCompress     = 0;
+
+static int g_CDI_bRichDebugInfoTotalUncompress = 0;
+static int g_CDI_bRichDebugInfoTotalCompress = 0;
 #endif
 
 //-----------------------------------------------------------------------------
 // Serialize Bounds info.
 //-----------------------------------------------------------------------------
 template <class T>
-void DoBounds(
+static void DoBounds(
     T trans, // transfer object.
     ULONG32                       cMap,
     ICorDebugInfo::OffsetMapping *pMap
@@ -243,7 +290,7 @@ void DoBounds(
     // - Sorted by native offset (so use a delta encoding for that).
     // - IL offsets aren't sorted, but they should be close to each other (so a signed delta encoding)
     //   They may also include a sentinel value from MappingTypes.
-    // - flags is 3 indepedent bits.
+    // - flags is 3 independent bits.
 
     // Loop through and transfer each Entry in the Mapping.
     uint32_t dwLastNativeOffset = 0;
@@ -267,7 +314,7 @@ void DoBounds(
 
 // Helper to write a compressed Native Var Info
 template<class T>
-void DoNativeVarInfo(
+static void DoNativeVarInfo(
     T trans,
     ICorDebugInfo::NativeVarInfo * pVar
 )
@@ -354,6 +401,67 @@ void DoNativeVarInfo(
     trans.DoCookie(0xC);
 }
 
+template<typename T>
+static void DoInlineTreeNodes(
+    T trans,
+    ULONG32 cNodes,
+    ICorDebugInfo::InlineTreeNode* nodes)
+{
+    uint32_t lastILOffset = static_cast<uint32_t>(ICorDebugInfo::PROLOG);
+    uint32_t lastChildIndex = 0;
+    uint32_t lastSiblingIndex = 0;
+
+    for (uint32_t i = 0; i < cNodes; i++)
+    {
+        ICorDebugInfo::InlineTreeNode* node = &nodes[i];
+
+        trans.DoMethodHandle(node->Method);
+
+        trans.DoEncodedDeltaU32NonMonotonic(node->ILOffset, lastILOffset);
+        lastILOffset = node->ILOffset;
+
+        trans.DoEncodedDeltaU32NonMonotonic(node->Child, lastChildIndex);
+        lastChildIndex = node->Child;
+
+        trans.DoEncodedDeltaU32NonMonotonic(node->Sibling, lastSiblingIndex);
+        lastSiblingIndex = node->Sibling;
+    }
+}
+
+template<typename T>
+static void DoRichOffsetMappings(
+    T trans,
+    ULONG32 cMappings,
+    ICorDebugInfo::RichOffsetMapping* mappings)
+{
+    // Loop through and transfer each Entry in the Mapping.
+    uint32_t lastNativeOffset = 0;
+    uint32_t lastInlinee = 0;
+    uint32_t lastILOffset = static_cast<uint32_t>(ICorDebugInfo::PROLOG);
+    for (uint32_t i = 0; i < cMappings; i++)
+    {
+        ICorDebugInfo::RichOffsetMapping* mapping = &mappings[i];
+
+        trans.DoEncodedDeltaU32(mapping->NativeOffset, lastNativeOffset);
+        lastNativeOffset = mapping->NativeOffset;
+
+        trans.DoEncodedDeltaU32NonMonotonic(mapping->Inlinee, lastInlinee);
+        lastInlinee = mapping->Inlinee;
+
+        trans.DoEncodedDeltaU32NonMonotonic(mapping->ILOffset, lastILOffset);
+        lastILOffset = mapping->ILOffset;
+
+        trans.DoEncodedSourceType(mapping->Source);
+    }
+}
+
+enum EXTRA_DEBUG_INFO_FLAGS
+{
+    // Debug info contains patchpoint information
+    EXTRA_DEBUG_INFO_PATCHPOINT = 1,
+    // Debug info contains rich information
+    EXTRA_DEBUG_INFO_RICH = 2,
+};
 
 #ifndef DACCESS_COMPILE
 
@@ -395,7 +503,6 @@ void CompressDebugInfo::CompressBoundaries(
 #endif // _DEBUG
 }
 
-
 void CompressDebugInfo::CompressVars(
     IN ULONG32                         cVars,
     IN ICorDebugInfo::NativeVarInfo    *vars,
@@ -435,21 +542,63 @@ void CompressDebugInfo::CompressVars(
 #endif
 }
 
+void CompressDebugInfo::CompressRichDebugInfo(
+    IN ULONG32                           cInlineTree,
+    IN ICorDebugInfo::InlineTreeNode*    pInlineTree,
+    IN ULONG32                           cRichOffsetMappings,
+    IN ICorDebugInfo::RichOffsetMapping* pRichOffsetMappings,
+    IN OUT NibbleWriter*                 pWriter)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pWriter != NULL);
+    _ASSERTE((cInlineTree > 0) || (cRichOffsetMappings > 0));
+    pWriter->WriteEncodedU32(cInlineTree);
+    pWriter->WriteEncodedU32(cRichOffsetMappings);
+
+    TransferWriter t(*pWriter);
+    DoInlineTreeNodes(t, cInlineTree, pInlineTree);
+    DoRichOffsetMappings(t, cRichOffsetMappings, pRichOffsetMappings);
+
+    pWriter->Flush();
+
+#ifdef _DEBUG
+    DWORD cbBlob;
+    PVOID pBlob = pWriter->GetBlob(&cbBlob);
+
+    g_CDI_bRichDebugInfoTotalUncompress += 8 + cInlineTree * sizeof(ICorDebugInfo::InlineTreeNode) + cRichOffsetMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+    g_CDI_bRichDebugInfoTotalCompress   += 4 + cbBlob;
+#endif
+}
+
 PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
-    IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
-    IN ULONG            iOffsetMapping,
-    IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
-    IN ULONG            iNativeVarInfo,
-    IN PatchpointInfo * patchpointInfo,
-    IN OUT SBuffer    * pDebugInfoBuffer,
-    IN LoaderHeap     * pLoaderHeap
+    IN ICorDebugInfo::OffsetMapping*     pOffsetMapping,
+    IN ULONG                             iOffsetMapping,
+    IN ICorDebugInfo::NativeVarInfo*     pNativeVarInfo,
+    IN ULONG                             iNativeVarInfo,
+    IN PatchpointInfo*                   patchpointInfo,
+    IN ICorDebugInfo::InlineTreeNode*    pInlineTree,
+    IN ULONG                             iInlineTree,
+    IN ICorDebugInfo::RichOffsetMapping* pRichOffsetMappings,
+    IN ULONG                             iRichOffsetMappings,
+    IN BOOL                              writeFlagByte,
+    IN LoaderHeap*                       pLoaderHeap
     )
 {
     CONTRACTL {
         THROWS; // compression routines throw
         PRECONDITION((iOffsetMapping == 0) == (pOffsetMapping == NULL));
         PRECONDITION((iNativeVarInfo == 0) == (pNativeVarInfo == NULL));
-        PRECONDITION((pDebugInfoBuffer != NULL) ^ (pLoaderHeap != NULL));
+        PRECONDITION((iInlineTree == 0) || (pInlineTree != NULL));
+        PRECONDITION((iRichOffsetMappings == 0) || (pRichOffsetMappings != NULL));
+        PRECONDITION(writeFlagByte || ((patchpointInfo == NULL) && (iInlineTree == 0) && (iRichOffsetMappings == 0)));
+        PRECONDITION(pLoaderHeap != NULL);
     } CONTRACTL_END;
 
     // Patchpoint info is currently uncompressed.
@@ -483,6 +632,15 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         pVars = varsBuffer.GetBlob(&cbVars);
     }
 
+    NibbleWriter richDebugInfoBuffer;
+    DWORD cbRichDebugInfo = 0;
+    PVOID pRichDebugInfo = NULL;
+    if ((iInlineTree > 0) || (iRichOffsetMappings > 0))
+    {
+        CompressDebugInfo::CompressRichDebugInfo(iInlineTree, pInlineTree, iRichOffsetMappings, pRichOffsetMappings, &richDebugInfoBuffer);
+        pRichDebugInfo = richDebugInfoBuffer.GetBlob(&cbRichDebugInfo);
+    }
+
     // Now write it all out to the buffer in a compact fashion.
     NibbleWriter w;
     w.WriteEncodedU32(cbBounds);
@@ -492,63 +650,55 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     DWORD cbHeader;
     PVOID pHeader = w.GetBlob(&cbHeader);
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    S_UINT32 cbFinalSize = S_UINT32(1) + S_UINT32(cbPatchpointInfo) + S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
-#else
-    S_UINT32 cbFinalSize = S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
-#endif
+    S_UINT32 cbFinalSize(0);
+    if (writeFlagByte)
+        cbFinalSize += 1;
+
+    cbFinalSize += cbPatchpointInfo;
+    cbFinalSize += S_UINT32(4) + S_UINT32(cbRichDebugInfo);
+    cbFinalSize += S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
 
     if (cbFinalSize.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
-    BYTE *ptrStart = NULL;
-    if (pLoaderHeap != NULL)
-    {
-        ptrStart = (BYTE *)(void *)pLoaderHeap->AllocMem(S_SIZE_T(cbFinalSize.Value()));
-    }
-    else
-    {
-        // Create a conservatively large buffer to hold all the data.
-        ptrStart = pDebugInfoBuffer->OpenRawBuffer(cbFinalSize.Value());
-    }
-    _ASSERTE(ptrStart != NULL); // throws on oom.
-
+    BYTE *ptrStart = (BYTE *)(void *)pLoaderHeap->AllocMem(S_SIZE_T(cbFinalSize.Value()));
     BYTE *ptr = ptrStart;
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-
-    // First byte is a flag byte:
-    //   0 - no patchpoint info
-    //   1 - patchpoint info
-
-    *ptr++ = (cbPatchpointInfo > 0) ? 1 : 0;
-
-    if (cbPatchpointInfo > 0)
+    if (writeFlagByte)
     {
-        memcpy(ptr, (BYTE*) patchpointInfo, cbPatchpointInfo);
-        ptr += cbPatchpointInfo;
+        BYTE flagByte = 0;
+        if (cbPatchpointInfo > 0)
+            flagByte |= EXTRA_DEBUG_INFO_PATCHPOINT;
+        if (cbRichDebugInfo > 0)
+            flagByte |= EXTRA_DEBUG_INFO_RICH;
+
+        *ptr++ = flagByte;
     }
 
-#endif
+    if (cbPatchpointInfo > 0)
+        memcpy(ptr, (BYTE*) patchpointInfo, cbPatchpointInfo);
+    ptr += cbPatchpointInfo;
+
+    if (cbRichDebugInfo > 0)
+    {
+        memcpy(ptr, &cbRichDebugInfo, 4);
+        ptr += 4;
+        memcpy(ptr, pRichDebugInfo, cbRichDebugInfo);
+        ptr += cbRichDebugInfo;
+    }
 
     memcpy(ptr, pHeader, cbHeader);
     ptr += cbHeader;
 
-    memcpy(ptr, pBounds, cbBounds);
+    if (cbBounds > 0)
+        memcpy(ptr, pBounds, cbBounds);
     ptr += cbBounds;
 
-    memcpy(ptr, pVars, cbVars);
+    if (cbVars > 0)
+        memcpy(ptr, pVars, cbVars);
     ptr += cbVars;
 
-    if (pLoaderHeap != NULL)
-    {
-        return ptrStart;
-    }
-    else
-    {
-        pDebugInfoBuffer->CloseRawBuffer(cbFinalSize.Value());
-        return NULL;
-    }
+    return ptrStart;
 }
 
 #endif // DACCESS_COMPILE
@@ -582,27 +732,29 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     if (pcVars != NULL) *pcVars = 0;
     if (ppVars != NULL) *ppVars = NULL;
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
     if (hasFlagByte)
     {
         // Check flag byte and skip over any patchpoint info
         BYTE flagByte = *pDebugInfo;
         pDebugInfo++;
 
-        if (flagByte == 1)
+        if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
         {
             PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
             pDebugInfo += patchpointInfo->PatchpointInfoSize();
+            flagByte &= ~EXTRA_DEBUG_INFO_PATCHPOINT;
         }
-        else
-        {
-            _ASSERTE(flagByte == 0);
-        }
-    }
 
-#else
-    _ASSERTE(!hasFlagByte);
-#endif
+        if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
+        {
+            UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
+            pDebugInfo += 4;
+            pDebugInfo += cbRichDebugInfo;
+            flagByte &= ~EXTRA_DEBUG_INFO_RICH;
+        }
+
+        _ASSERTE(flagByte == 0);
+    }
 
     NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
 
@@ -680,25 +832,76 @@ PatchpointInfo * CompressDebugInfo::RestorePatchpointInfo(IN PTR_BYTE pDebugInfo
     }
     CONTRACTL_END;
 
-    PTR_PatchpointInfo patchpointInfo = NULL;
-
     // Check flag byte.
     BYTE flagByte = *pDebugInfo;
     pDebugInfo++;
 
-    if (flagByte == 1)
-    {
-        patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
-    }
-    else
-    {
-        _ASSERTE(flagByte == 0);
-    }
+    if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) == 0)
+        return NULL;
 
-    return patchpointInfo;
+    return static_cast<PatchpointInfo*>(PTR_READ(dac_cast<TADDR>(pDebugInfo), dac_cast<PTR_PatchpointInfo>(pDebugInfo)->PatchpointInfoSize()));
 }
 
 #endif
+
+void CompressDebugInfo::RestoreRichDebugInfo(
+        IN FP_IDS_NEW                          fpNew,
+        IN void*                               pNewData,
+        IN PTR_BYTE                            pDebugInfo,
+        OUT ICorDebugInfo::InlineTreeNode**    ppInlineTree,
+        OUT ULONG32*                           pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32*                           pNumRichMappings)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    BYTE flagByte = *pDebugInfo;
+    if ((flagByte & EXTRA_DEBUG_INFO_RICH) == 0)
+    {
+        *ppInlineTree = NULL;
+        *pNumInlineTree = 0;
+        *ppRichMappings = NULL;
+        *pNumRichMappings = 0;
+        return;
+    }
+
+    pDebugInfo++;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
+    {
+        PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
+        pDebugInfo += patchpointInfo->PatchpointInfoSize();
+    }
+#endif
+
+    UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
+    pDebugInfo += 4;
+    NibbleReader r(pDebugInfo, cbRichDebugInfo);
+
+    *pNumInlineTree = r.ReadEncodedU32();
+    *pNumRichMappings = r.ReadEncodedU32();
+
+    UINT32 cbInlineTree = *pNumInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
+    *ppInlineTree = reinterpret_cast<ICorDebugInfo::InlineTreeNode*>(fpNew(pNewData, cbInlineTree));
+    if (*ppInlineTree == NULL)
+        ThrowOutOfMemory();
+
+    UINT32 cbRichOffsetMappings = *pNumRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+    *ppRichMappings = reinterpret_cast<ICorDebugInfo::RichOffsetMapping*>(fpNew(pNewData, cbRichOffsetMappings));
+    if (*ppRichMappings == NULL)
+        ThrowOutOfMemory();
+
+    TransferReader t(r);
+    DoInlineTreeNodes(t, *pNumInlineTree, *ppInlineTree);
+    DoRichOffsetMappings(t, *pNumRichMappings, *ppRichMappings);
+}
 
 #ifdef DACCESS_COMPILE
 void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte)
@@ -711,33 +914,40 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
+    PTR_BYTE pStart = pDebugInfo;
+
     if (hasFlagByte)
     {
         // Check flag byte and skip over any patchpoint info
         BYTE flagByte = *pDebugInfo;
         pDebugInfo++;
 
-        if (flagByte == 1)
+        if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
         {
             PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
             pDebugInfo += patchpointInfo->PatchpointInfoSize();
+            flagByte &= ~EXTRA_DEBUG_INFO_PATCHPOINT;
         }
-        else
+
+        if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
         {
-            _ASSERTE(flagByte == 0);
+            UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
+            pDebugInfo += 4;
+            pDebugInfo += cbRichDebugInfo;
+            flagByte &= ~EXTRA_DEBUG_INFO_RICH;
         }
+
+        _ASSERTE(flagByte == 0);
     }
-#else
-    _ASSERTE(!hasFlagByte);
-#endif
 
     NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
 
     ULONG cbBounds = r.ReadEncodedU32();
     ULONG cbVars   = r.ReadEncodedU32();
 
-    DacEnumMemoryRegion(dac_cast<TADDR>(pDebugInfo), r.GetNextByteIndex() + cbBounds + cbVars);
+    pDebugInfo += r.GetNextByteIndex() + cbBounds + cbVars;
+
+    DacEnumMemoryRegion(dac_cast<TADDR>(pStart), pDebugInfo - pStart);
 }
 #endif // DACCESS_COMPILE
 
@@ -787,6 +997,31 @@ BOOL DebugInfoManager::GetBoundariesAndVars(
     }
 
     return pJitMan->GetBoundariesAndVars(request, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
+}
+
+BOOL DebugInfoManager::GetRichDebugInfo(
+    const DebugInfoRequest& request,
+    IN FP_IDS_NEW fpNew, IN void* pNewData,
+    OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+    OUT ULONG32* pNumInlineTree,
+    OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+    OUT ULONG32* pNumRichMappings)
+{
+    CONTRACTL
+    {
+        THROWS;
+        WRAPPER(GC_TRIGGERS); // depends on fpNew
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    IJitManager* pJitMan = ExecutionManager::FindJitMan(request.GetStartAddress());
+    if (pJitMan == NULL)
+    {
+        return FALSE; // no info available.
+    }
+
+    return pJitMan->GetRichDebugInfo(request, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
 }
 
 #ifdef DACCESS_COMPILE

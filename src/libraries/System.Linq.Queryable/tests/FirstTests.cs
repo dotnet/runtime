@@ -72,14 +72,14 @@ namespace System.Linq.Tests
         [Fact]
         public void First1()
         {
-            var val = (new int[] { 1, 2 }).AsQueryable().First();
+            var val = new[] { 1, 2 }.AsQueryable().First();
             Assert.Equal(1, val);
         }
 
         [Fact]
         public void First2()
         {
-            var val = (new int[] { 0, 1, 2 }).AsQueryable().First(n => n > 1);
+            var val = new[] { 0, 1, 2 }.AsQueryable().First(n => n > 1);
             Assert.Equal(2, val);
         }
     }

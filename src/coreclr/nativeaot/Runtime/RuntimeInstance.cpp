@@ -11,7 +11,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "rhbinder.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "event.h"
 #include "regdisplay.h"
@@ -28,6 +27,7 @@
 #include "CommonMacros.inl"
 #include "slist.inl"
 #include "MethodTable.inl"
+#include "../../inc/clrversion.h"
 
 #ifdef  FEATURE_GC_STRESS
 enum HijackType { htLoop, htCallsite };
@@ -36,17 +36,32 @@ bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
 
 #include "shash.inl"
 
-#ifndef DACCESS_COMPILE
-COOP_PINVOKE_HELPER(uint8_t *, RhSetErrorInfoBuffer, (uint8_t * pNewBuffer))
-{
-    return (uint8_t *) PalSetWerDataBuffer(pNewBuffer);
-}
-#endif // DACCESS_COMPILE
-
+#define MAX_CRASHINFOBUFFER_SIZE 8192
+uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE] = { 0 };
 
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
     return m_pThreadStore;
+}
+
+COOP_PINVOKE_HELPER(uint8_t *, RhGetCrashInfoBuffer, (int32_t* pcbMaxSize))
+{
+    *pcbMaxSize = MAX_CRASHINFOBUFFER_SIZE;
+    return g_CrashInfoBuffer;
+}
+
+#if TARGET_UNIX
+#include "PalCreateDump.h"
+COOP_PINVOKE_HELPER(void, RhCreateCrashDumpIfEnabled, (PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext))
+{
+    PalCreateCrashDumpIfEnabled(pExceptionRecord, pExContext);
+}
+#endif
+
+COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcbLength))
+{
+    *pcbLength = sizeof(CLR_PRODUCT_VERSION) - 1;           // don't include the terminating null
+    return (uint8_t*)&CLR_PRODUCT_VERSION;
 }
 
 COOP_PINVOKE_HELPER(uint8_t *, RhFindMethodStartAddress, (void * codeAddr))
@@ -149,22 +164,9 @@ PTR_RuntimeInstance GetRuntimeInstance()
     return g_pTheRuntimeInstance;
 }
 
-void RuntimeInstance::EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackData)
-{
-    for (TypeManagerList::Iterator iter = m_TypeManagerList.Begin(); iter != m_TypeManagerList.End(); iter++)
-    {
-        iter->m_pTypeManager->EnumStaticGCRefs(pfnCallback, pvCallbackData);
-    }
-}
-
 RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
 {
     return dac_cast<DPTR(OsModuleList)>(dac_cast<TADDR>(this) + offsetof(RuntimeInstance, m_OsModuleList));
-}
-
-ReaderWriterLock& RuntimeInstance::GetTypeManagerLock()
-{
-    return m_TypeManagerLock;
 }
 
 #ifndef DACCESS_COMPILE
@@ -258,12 +260,7 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
         return false;
 
     pEntry->m_pTypeManager = pTypeManager;
-
-    {
-        ReaderWriterLock::WriteHolder write(&m_TypeManagerLock);
-
-        m_TypeManagerList.PushHead(pEntry);
-    }
+    m_TypeManagerList.PushHeadInterlocked(pEntry);
 
     return true;
 }
@@ -283,13 +280,8 @@ COOP_PINVOKE_HELPER(void*, RhpRegisterOsModule, (HANDLE hOsModule))
         return nullptr; // Return null on failure.
 
     pEntry->m_osModule = hOsModule;
-
-    {
-        RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
-        ReaderWriterLock::WriteHolder write(&pRuntimeInstance->GetTypeManagerLock());
-
-        pRuntimeInstance->GetOsModuleList()->PushHead(pEntry);
-    }
+    RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
+    pRuntimeInstance->GetOsModuleList()->PushHeadInterlocked(pEntry);
 
     return hOsModule; // Return non-null on success
 }
@@ -374,17 +366,5 @@ COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (MethodTable * pInterfac
     return pCell;
 }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
-
-COOP_PINVOKE_HELPER(PTR_UInt8, RhGetThreadLocalStorageForDynamicType, (uint32_t uOffset, uint32_t tlsStorageSize, uint32_t numTlsCells))
-{
-    Thread * pCurrentThread = ThreadStore::GetCurrentThread();
-
-    PTR_UInt8 pResult = pCurrentThread->GetThreadLocalStorageForDynamicType(uOffset);
-    if (pResult != NULL || tlsStorageSize == 0 || numTlsCells == 0)
-        return pResult;
-
-    ASSERT(tlsStorageSize > 0 && numTlsCells > 0);
-    return pCurrentThread->AllocateThreadLocalStorageForDynamicType(uOffset, tlsStorageSize, numTlsCells);
-}
 
 #endif // DACCESS_COMPILE

@@ -17,18 +17,10 @@ namespace System.Text.Json
 {
     internal static partial class JsonTestHelper
     {
-#if BUILDING_INBOX_LIBRARY
-        public const string DoubleFormatString = null;
-        public const string SingleFormatString = null;
-#else
-        public const string DoubleFormatString = "G17";
-        public const string SingleFormatString = "G9";
-#endif
-
         public static string NewtonsoftReturnStringHelper(TextReader reader)
         {
             var sb = new StringBuilder();
-            var json = new JsonTextReader(reader);
+            var json = new JsonTextReader(reader) { MaxDepth = null };
             while (json.Read())
             {
                 if (json.Value != null)
@@ -358,7 +350,7 @@ namespace System.Text.Json
             {
                 writer.Formatting = Formatting.Indented;
 
-                var newtonsoft = new JsonTextReader(new StringReader(jsonString));
+                var newtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
                 writer.WriteComment("comment");
                 while (newtonsoft.Read())
                 {
@@ -372,7 +364,7 @@ namespace System.Text.Json
 
         public static List<JsonTokenType> GetTokenTypes(string jsonString)
         {
-            var newtonsoft = new JsonTextReader(new StringReader(jsonString));
+            var newtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
             int totalReads = 0;
             while (newtonsoft.Read())
             {
@@ -383,7 +375,7 @@ namespace System.Text.Json
 
             for (int i = 0; i < totalReads; i++)
             {
-                newtonsoft = new JsonTextReader(new StringReader(jsonString));
+                newtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
                 for (int j = 0; j < i; j++)
                 {
                     Assert.True(newtonsoft.Read());
@@ -681,29 +673,9 @@ namespace System.Text.Json
             return arrayList;
         }
 
-        public static float NextFloat(Random random)
-        {
-            double mantissa = (random.NextDouble() * 2.0) - 1.0;
-            double exponent = Math.Pow(2.0, random.Next(-126, 128));
-            float value = (float)(mantissa * exponent);
-            return value;
-        }
-
-        public static double NextDouble(Random random, double minValue, double maxValue)
-        {
-            double value = random.NextDouble() * (maxValue - minValue) + minValue;
-            return value;
-        }
-
-        public static decimal NextDecimal(Random random, double minValue, double maxValue)
-        {
-            double value = random.NextDouble() * (maxValue - minValue) + minValue;
-            return (decimal)value;
-        }
-
         public static string GetCompactString(string jsonString)
         {
-            using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(jsonString)))
+            using (var jsonReader = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null })
             {
                 jsonReader.FloatParseHandling = FloatParseHandling.Decimal;
                 JToken jtoken = JToken.ReadFrom(jsonReader);

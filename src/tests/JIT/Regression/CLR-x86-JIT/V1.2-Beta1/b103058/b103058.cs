@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 internal struct VT
 {
@@ -15,7 +16,7 @@ internal struct VT
     public char m4;
 }
 
-internal unsafe class test
+public unsafe class test
 {
     private static unsafe bool CheckDoubleAlignment1(VT* p)
     {
@@ -39,7 +40,8 @@ internal unsafe class test
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         VT vt1 = new VT();
         VT vt2 = new VT();

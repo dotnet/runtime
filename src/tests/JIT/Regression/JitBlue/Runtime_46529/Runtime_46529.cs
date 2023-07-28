@@ -3,13 +3,15 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Test_Runtime_46529
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Foo(byte* bytes) => (int)(((ulong)bytes[0]) << 56);
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         byte p = 0xFF;
         int result = Foo(&p);

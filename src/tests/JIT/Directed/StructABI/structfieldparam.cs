@@ -9,6 +9,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 namespace structfieldparam
 {
 
@@ -104,7 +105,8 @@ namespace structfieldparam
             return s.sum();
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int result = 100;
 

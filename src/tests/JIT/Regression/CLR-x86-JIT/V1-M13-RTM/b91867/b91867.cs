@@ -3,9 +3,11 @@
 //
 
 using System;
-class CC
+using Xunit;
+public class CC
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool b = false;
         object local19 = b ? null : (object)new CC();

@@ -29,6 +29,16 @@ namespace Microsoft.Win32.RegistryTests
             return RegQueryValueEx(key.Handle, null, null, IntPtr.Zero, b, ref size) != ERROR_FILE_NOT_FOUND;
         }
 
+        internal static bool IsSystemKeyDefaultValueSet(this RegistryKey key)
+        {
+            const int ERROR_FILE_NOT_FOUND = 2;
+            byte[] b = new byte[4];
+            int size = 4;
+
+            using SafeRegistryHandle handle = key.Handle;
+            return RegQueryValueEx(handle, null, null, IntPtr.Zero, b, ref size) != ERROR_FILE_NOT_FOUND;
+        }
+
         [LibraryImport(Interop.Libraries.Kernel32, EntryPoint = "SetEnvironmentVariableW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetEnvironmentVariable(string lpName, string lpValue);

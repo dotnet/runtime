@@ -26,7 +26,7 @@ namespace System.Net.WebSockets
     /// </remarks>
     internal sealed partial class ManagedWebSocket : WebSocket
     {
-        /// <summary>Encoding for the payload of text messages: UTF8 encoding that throws if invalid bytes are discovered, per the RFC.</summary>
+        /// <summary>Encoding for the payload of text messages: UTF-8 encoding that throws if invalid bytes are discovered, per the RFC.</summary>
         private static readonly UTF8Encoding s_textEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         /// <summary>Valid states to be in when calling SendAsync.</summary>
@@ -61,7 +61,7 @@ namespace System.Net.WebSockets
         /// <summary>Buffer used for reading data from the network.</summary>
         private readonly Memory<byte> _receiveBuffer;
         /// <summary>
-        /// Tracks the state of the validity of the UTF8 encoding of text payloads.  Text may be split across fragments.
+        /// Tracks the state of the validity of the UTF-8 encoding of text payloads.  Text may be split across fragments.
         /// </summary>
         private readonly Utf8MessageState _utf8TextState = new Utf8MessageState();
         /// <summary>
@@ -213,12 +213,35 @@ namespace System.Net.WebSockets
                 _disposed = true;
                 _keepAliveTimer?.Dispose();
                 _stream.Dispose();
-                _inflater?.Dispose();
-                _deflater?.Dispose();
 
                 if (_state < WebSocketState.Aborted)
                 {
                     _state = WebSocketState.Closed;
+                }
+
+                DisposeSafe(_inflater, _receiveMutex);
+                DisposeSafe(_deflater, _sendMutex);
+            }
+        }
+
+        private static void DisposeSafe(IDisposable? resource, AsyncMutex mutex)
+        {
+            if (resource is not null)
+            {
+                Task lockTask = mutex.EnterAsync(CancellationToken.None);
+
+                if (lockTask.IsCompleted)
+                {
+                    resource.Dispose();
+                    mutex.Exit();
+                }
+                else
+                {
+                    lockTask.GetAwaiter().UnsafeOnCompleted(() =>
+                    {
+                        resource.Dispose();
+                        mutex.Exit();
+                    });
                 }
             }
         }
@@ -423,7 +446,17 @@ namespace System.Net.WebSockets
                 // the task, and we're done.
                 if (writeTask.IsCompleted)
                 {
-                    return writeTask;
+                    writeTask.GetAwaiter().GetResult();
+                    ValueTask flushTask = new ValueTask(_stream.FlushAsync());
+                    if (flushTask.IsCompleted)
+                    {
+                        return flushTask;
+                    }
+                    else
+                    {
+                        releaseSendBufferAndSemaphore = false;
+                        return WaitForWriteTaskAsync(flushTask, shouldFlush: false);
+                    }
                 }
 
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
@@ -447,14 +480,18 @@ namespace System.Net.WebSockets
                 }
             }
 
-            return WaitForWriteTaskAsync(writeTask);
+            return WaitForWriteTaskAsync(writeTask, shouldFlush: true);
         }
 
-        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask)
+        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask, bool shouldFlush)
         {
             try
             {
                 await writeTask.ConfigureAwait(false);
+                if (shouldFlush)
+                {
+                    await _stream.FlushAsync().ConfigureAwait(false);
+                }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
             {
@@ -478,6 +515,7 @@ namespace System.Net.WebSockets
                 using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
                 {
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
@@ -496,6 +534,8 @@ namespace System.Net.WebSockets
         /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
         private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlySpan<byte> payloadBuffer)
         {
+            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+
             if (_deflater is not null && !disableCompression)
             {
                 payloadBuffer = _deflater.Deflate(payloadBuffer, endOfMessage);
@@ -620,7 +660,7 @@ namespace System.Net.WebSockets
                 for (int i = 9; i >= 2; i--)
                 {
                     sendBuffer[i] = unchecked((byte)length);
-                    length = length / 256;
+                    length /= 256;
                 }
                 maskOffset = 2 + sizeof(ulong); // additional 8 bytes for 64-bit length
             }
@@ -665,6 +705,8 @@ namespace System.Net.WebSockets
             try
             {
                 await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
+                ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+
                 try
                 {
                     while (true) // in case we get control frames that should be ignored from the user's perspective
@@ -682,6 +724,21 @@ namespace System.Net.WebSockets
                                 // Make sure we have the first two bytes, which includes the start of the payload length.
                                 if (_receiveBufferCount < 2)
                                 {
+                                    if (payloadBuffer.IsEmpty)
+                                    {
+                                        // The caller has issued a zero-byte read.  The only meaningful reason to do that is to
+                                        // wait for data to be available without actually consuming any of it. If we just pass down
+                                        // our internal buffer, the underlying stream might end up renting and/or pinning a buffer
+                                        // for the duration of the operation, which isn't necessary when we don't actually want to
+                                        // consume anything. Instead, we issue a zero-byte read against the underlying stream;
+                                        // given that the receive buffer currently stores fewer than the minimum number of bytes
+                                        // necessary for a header, it's safe to issue a read (if there were at least the minimum
+                                        // number of bytes available, we could end up issuing a read that would erroneously wait
+                                        // for data that would never arrive). Once that read completes, we can proceed with any
+                                        // other reads necessary, and they'll have a reduced chance of pinning the receive buffer.
+                                        await _stream.ReadAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                                    }
+
                                     await EnsureBufferContainsAsync(2, cancellationToken).ConfigureAwait(false);
                                 }
 
@@ -1044,6 +1101,9 @@ namespace System.Net.WebSockets
                 case WebSocketCloseStatus.NormalClosure:
                 case WebSocketCloseStatus.PolicyViolation:
                 case WebSocketCloseStatus.ProtocolError:
+                case (WebSocketCloseStatus)1012: // ServiceRestart
+                case (WebSocketCloseStatus)1013: // TryAgainLater
+                case (WebSocketCloseStatus)1014: // BadGateway
                     return true;
 
                 default:
@@ -1381,11 +1441,7 @@ namespace System.Net.WebSockets
             // The connection closed before we were able to read everything we needed.
             // If it was due to us being disposed, fail with the correct exception.
             // Otherwise, it was due to the connection being closed and it wasn't expected.
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(WebSocket));
-            }
-
+            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
             throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
         }
 
@@ -1437,61 +1493,26 @@ namespace System.Net.WebSockets
             {
                 byte* toMaskPtr = toMaskBeg;
                 byte* toMaskEnd = toMaskBeg + toMask.Length;
-                byte* maskPtr = (byte*)&mask;
 
                 if (toMaskEnd - toMaskPtr >= sizeof(int))
                 {
-                    // align our pointer to sizeof(int)
+                    int rolledMask = BitConverter.IsLittleEndian ?
+                        (int)BitOperations.RotateRight((uint)mask, maskIndex * 8) :
+                        (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
 
-                    while ((ulong)toMaskPtr % sizeof(int) != 0)
+                    // Process Vector<byte>.Count bytes at a time.
+                    if (Vector.IsHardwareAccelerated && (toMaskEnd - toMaskPtr) >= Vector<byte>.Count)
                     {
-                        Debug.Assert(toMaskPtr < toMaskEnd);
-
-                        *toMaskPtr++ ^= maskPtr[maskIndex];
-                        maskIndex = (maskIndex + 1) & 3;
-                    }
-
-                    int rolledMask;
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        rolledMask = (int)BitOperations.RotateRight((uint)mask, maskIndex * 8);
-                    }
-                    else
-                    {
-                        rolledMask = (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
-                    }
-
-                    // use SIMD if possible.
-
-                    if (Vector.IsHardwareAccelerated && Vector<byte>.Count % sizeof(int) == 0 && (toMaskEnd - toMaskPtr) >= Vector<byte>.Count)
-                    {
-                        // align our pointer to Vector<byte>.Count
-
-                        while ((ulong)toMaskPtr % (uint)Vector<byte>.Count != 0)
+                        Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(rolledMask));
+                        do
                         {
-                            Debug.Assert(toMaskPtr < toMaskEnd);
-
-                            *(int*)toMaskPtr ^= rolledMask;
-                            toMaskPtr += sizeof(int);
+                            *(Vector<byte>*)toMaskPtr ^= maskVector;
+                            toMaskPtr += Vector<byte>.Count;
                         }
-
-                        // use SIMD.
-
-                        if (toMaskEnd - toMaskPtr >= Vector<byte>.Count)
-                        {
-                            Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(rolledMask));
-
-                            do
-                            {
-                                *(Vector<byte>*)toMaskPtr ^= maskVector;
-                                toMaskPtr += Vector<byte>.Count;
-                            }
-                            while (toMaskEnd - toMaskPtr >= Vector<byte>.Count);
-                        }
+                        while (toMaskEnd - toMaskPtr >= Vector<byte>.Count);
                     }
 
-                    // process remaining data (or all, if couldn't use SIMD) 4 bytes at a time.
-
+                    // Process 4 bytes at a time.
                     while (toMaskEnd - toMaskPtr >= sizeof(int))
                     {
                         *(int*)toMaskPtr ^= rolledMask;
@@ -1499,8 +1520,8 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                // do any remaining data a byte at a time.
-
+                // Process 1 byte at a time.
+                byte* maskPtr = (byte*)&mask;
                 while (toMaskPtr != toMaskEnd)
                 {
                     *toMaskPtr++ ^= maskPtr[maskIndex];
@@ -1524,7 +1545,7 @@ namespace System.Net.WebSockets
         private static void ThrowOperationInProgress(string? methodName) => throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
 
         /// <summary>Creates an OperationCanceledException instance, using a default message and the specified inner exception and token.</summary>
-        private static Exception CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
+        private static OperationCanceledException CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
         {
             return new OperationCanceledException(
                 new OperationCanceledException().Message,

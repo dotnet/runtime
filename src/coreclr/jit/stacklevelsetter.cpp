@@ -137,19 +137,16 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             SetThrowHelperBlock(bndsChk->gtThrowKind, block);
         }
         break;
+
         case GT_INDEX_ADDR:
         case GT_ARR_ELEM:
-        case GT_ARR_INDEX:
-        {
             SetThrowHelperBlock(SCK_RNGCHK_FAIL, block);
-        }
-        break;
+            break;
 
         case GT_CKFINITE:
-        {
             SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
-        }
-        break;
+            break;
+
         default: // Other opers can target throw only due to overflow.
             break;
     }
@@ -298,7 +295,7 @@ void StackLevelSetter::SubStackLevel(unsigned value)
 // Notes:
 //    CheckArgCnt records the maximum number of pushed arguments.
 //    Depending upon this value of the maximum number of pushed arguments
-//    we may need to use an EBP frame or be partially interuptible.
+//    we may need to use an EBP frame or be partially interruptible.
 //    This functionality has to be called after maxStackLevel is set.
 //
 // Assumptions:

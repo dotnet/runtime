@@ -74,7 +74,7 @@ namespace System.ComponentModel
             // The char case conversion specified in the mask. Required for formatting the string when requested.
             public CaseConversion CaseConversion;
 
-            // The char type according to the mask language indentifiers. (Separator, Editable char...).
+            // The char type according to the mask language identifiers. (Separator, Editable char...).
             // Required for validating the input char.
             public CharType CharType;
 
@@ -88,17 +88,11 @@ namespace System.ComponentModel
                 CharType = charType;
             }
 
-            public override string ToString()
-            {
-                return string.Format(
-                                        CultureInfo.InvariantCulture,
-                                        "MaskPosition[{0}] <CaseConversion.{1}><CharType.{2}><IsAssigned: {3}",
-                                        MaskPosition,
-                                        CaseConversion,
-                                        CharType,
-                                        IsAssigned
-                                     );
-            }
+            public override string ToString() =>
+                string.Create(
+                    CultureInfo.InvariantCulture,
+                    stackalloc char[256],
+                    $"MaskPosition[{MaskPosition}] <CaseConversion.{CaseConversion}><CharType.{CharType}><IsAssigned: {IsAssigned}");
         }
 
         //// class data.
@@ -122,9 +116,6 @@ namespace System.ComponentModel
         private static readonly int s_RESET_ON_PROMPT = BitVector32.CreateMask(s_INCLUDE_LITERALS);
         private static readonly int s_RESET_ON_LITERALS = BitVector32.CreateMask(s_RESET_ON_PROMPT);
         private static readonly int s_SKIP_SPACE = BitVector32.CreateMask(s_RESET_ON_LITERALS);
-
-        // Type cached to speed up cloning of this object.
-        private static readonly Type s_maskTextProviderType = typeof(MaskedTextProvider);
 
         //// Instance data.
 
@@ -237,10 +228,7 @@ namespace System.ComponentModel
                 }
             }
 
-            if (culture == null)
-            {
-                culture = CultureInfo.CurrentCulture;
-            }
+            culture ??= CultureInfo.CurrentCulture;
 
             _flagState = default;
 
@@ -264,10 +252,7 @@ namespace System.ComponentModel
                 }
 
                 // Last resort use invariant culture.
-                if (Culture == null)
-                {
-                    Culture = CultureInfo.InvariantCulture;
-                }
+                Culture ??= CultureInfo.InvariantCulture;
             }
             else
             {
@@ -367,7 +352,7 @@ namespace System.ComponentModel
                             caseConversion = CaseConversion.ToUpper;
                             continue;
 
-                        case '|':   // no convertion performed on the chars that follow.
+                        case '|':   // no conversion performed on the chars that follow.
                             caseConversion = CaseConversion.None;
                             continue;
 
@@ -472,9 +457,8 @@ namespace System.ComponentModel
         public object Clone()
         {
             MaskedTextProvider clonedProvider;
-            Type providerType = GetType();
 
-            if (providerType == s_maskTextProviderType)
+            if (GetType() == typeof(MaskedTextProvider))
             {
                 clonedProvider = new MaskedTextProvider(
                                                         Mask,
@@ -496,7 +480,7 @@ namespace System.ComponentModel
                     AsciiOnly
                 };
 
-                clonedProvider = (Activator.CreateInstance(providerType, parameters) as MaskedTextProvider)!;
+                clonedProvider = (Activator.CreateInstance(GetType(), parameters) as MaskedTextProvider)!;
             }
 
             clonedProvider.ResetOnPrompt = false;
@@ -1218,7 +1202,6 @@ namespace System.ComponentModel
             if (position < 0 || position >= _testString.Length)
             {
                 return false;
-                //throw new ArgumentOutOfRangeException("position");
             }
 
             return InsertAt(input.ToString(), position);
@@ -1264,7 +1247,6 @@ namespace System.ComponentModel
                 testPosition = position;
                 resultHint = MaskedTextResultHint.PositionOutOfRange;
                 return false;
-                //throw new ArgumentOutOfRangeException("position");
             }
 
             return InsertAtInt(input, position, out testPosition, out resultHint, false);
@@ -1412,7 +1394,6 @@ namespace System.ComponentModel
             if (position < 0 || position >= _testString.Length)
             {
                 return false;
-                //throw new ArgumentOutOfRangeException("position");
             }
 
             CharDescriptor chDex = _stringDescriptor[position];
@@ -1427,7 +1408,6 @@ namespace System.ComponentModel
             if (position < 0 || position >= _testString.Length)
             {
                 return false;
-                //throw new ArgumentOutOfRangeException("position");
             }
 
             CharDescriptor chDex = _stringDescriptor[position];
@@ -1548,7 +1528,6 @@ namespace System.ComponentModel
                 testPosition = endPosition;
                 resultHint = MaskedTextResultHint.PositionOutOfRange;
                 return false;
-                //throw new ArgumentOutOfRangeException("endPosition");
             }
 
             if (startPosition < 0 || startPosition > endPosition)
@@ -1556,7 +1535,6 @@ namespace System.ComponentModel
                 testPosition = startPosition;
                 resultHint = MaskedTextResultHint.PositionOutOfRange;
                 return false;
-                //throw new ArgumentOutOfRangeException("startPosition");
             }
 
             return RemoveAtInt(startPosition, endPosition, out testPosition, out resultHint, /*testOnly*/ false);
@@ -1712,7 +1690,6 @@ namespace System.ComponentModel
                 testPosition = position;
                 resultHint = MaskedTextResultHint.PositionOutOfRange;
                 return false;
-                //throw new ArgumentOutOfRangeException("position");
             }
 
             testPosition = position;
@@ -1757,7 +1734,6 @@ namespace System.ComponentModel
                 testPosition = endPosition;
                 resultHint = MaskedTextResultHint.PositionOutOfRange;
                 return false;
-                //throw new ArgumentOutOfRangeException("endPosition");
             }
 
             if (startPosition < 0 || startPosition > endPosition)
@@ -1765,7 +1741,6 @@ namespace System.ComponentModel
                 testPosition = startPosition;
                 resultHint = MaskedTextResultHint.PositionOutOfRange;
                 return false;
-                //throw new ArgumentOutOfRangeException("startPosition");
             }
 
             if (startPosition == endPosition)
@@ -1806,7 +1781,6 @@ namespace System.ComponentModel
                 testPosition = position;
                 resultHint = MaskedTextResultHint.PositionOutOfRange;
                 return false;
-                //throw new ArgumentOutOfRangeException("position");
             }
 
             if (input.Length == 0) // remove the character at position.
@@ -1842,7 +1816,6 @@ namespace System.ComponentModel
                 testPosition = endPosition;
                 resultHint = MaskedTextResultHint.PositionOutOfRange;
                 return false;
-                //throw new ArgumentOutOfRangeException("endPosition");
             }
 
             if (startPosition < 0 || startPosition > endPosition)
@@ -1850,7 +1823,6 @@ namespace System.ComponentModel
                 testPosition = startPosition;
                 resultHint = MaskedTextResultHint.PositionOutOfRange;
                 return false;
-                //throw new ArgumentOutOfRangeException("startPosition");
             }
 
             if (input.Length == 0) // remove character at position.
@@ -1858,7 +1830,7 @@ namespace System.ComponentModel
                 return RemoveAt(startPosition, endPosition, out testPosition, out resultHint);
             }
 
-            // If replacing the entire text with a same-lenght text, we are just setting (not replacing) the test string to the new value;
+            // If replacing the entire text with a same-length text, we are just setting (not replacing) the test string to the new value;
             // in this case we just call SetString.
             // If the text length is different than the specified range we would need to remove or insert characters; there are three possible
             // cases as follows:
@@ -2598,13 +2570,11 @@ namespace System.ComponentModel
             if (startPosition < 0)
             {
                 startPosition = 0;
-                //throw new ArgumentOutOfRangeException("startPosition");
             }
 
             if (startPosition >= _testString.Length)
             {
                 return string.Empty;
-                //throw new ArgumentOutOfRangeException("startPosition");
             }
 
             int maxLength = _testString.Length - startPosition;
@@ -2612,7 +2582,6 @@ namespace System.ComponentModel
             if (length > maxLength)
             {
                 length = maxLength;
-                //throw new ArgumentOutOfRangeException("length");
             }
 
             if (!IsPassword || ignorePasswordChar) // we may not need to format the text...
@@ -2741,7 +2710,7 @@ namespace System.ComponentModel
         {
             testPosition = 0;
 
-            if (input == null || input.Length == 0) // nothing to verify.
+            if (string.IsNullOrEmpty(input)) // nothing to verify.
             {
                 resultHint = MaskedTextResultHint.NoEffect;
                 return true;

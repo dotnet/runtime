@@ -53,10 +53,8 @@ namespace System.Data
                 (node.Content is XmlSchemaSimpleTypeUnion))
                 throw ExceptionBuilder.SimpleTypeNotSupported();
 
-            if (node.Content is XmlSchemaSimpleTypeRestriction)
+            if (node.Content is XmlSchemaSimpleTypeRestriction content)
             {
-                XmlSchemaSimpleTypeRestriction content = (XmlSchemaSimpleTypeRestriction)node.Content;
-
                 XmlSchemaSimpleType? ancestor = node.BaseXmlSchemaType as XmlSchemaSimpleType;
                 if ((ancestor != null) && (ancestor.QualifiedName.Namespace != Keywords.XSDNS))
                 {
@@ -231,7 +229,7 @@ namespace System.Data
         {
             XmlElement typeNode = dc.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_SIMPLETYPE, Keywords.XSDNS);
 
-            if (_name != null && _name.Length != 0)
+            if (!string.IsNullOrEmpty(_name))
             {
                 // this is a global type
                 typeNode.SetAttribute(Keywords.NAME, _name);
@@ -298,7 +296,7 @@ namespace System.Data
             return enumType;
         }
 
-        internal static SimpleType CreateByteArrayType(string encoding)
+        internal static SimpleType CreateByteArrayType()
         {
             SimpleType byteArrayType = new SimpleType("base64Binary");
             return byteArrayType;

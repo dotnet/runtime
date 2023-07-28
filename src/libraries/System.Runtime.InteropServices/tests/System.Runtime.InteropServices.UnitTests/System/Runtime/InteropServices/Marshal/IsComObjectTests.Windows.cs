@@ -15,11 +15,11 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new ComImportObject[0], false };
             yield return new object[] { new SubComImportObject(), true };
             yield return new object[] { new GenericSubComImportObject<string>(), true };
-            yield return new object[] { new InterfaceAndComImportObject(), true };
+            yield return new object[] { new InterfaceOnComImportObject(), true };
             yield return new object[] { new InterfaceComImportObject(), false };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(IsComObject_Windows_TestData))]
         public void IsComObject_Windows_ReturnsExpected(object value, bool expected)
         {

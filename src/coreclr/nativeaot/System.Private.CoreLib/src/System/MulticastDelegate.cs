@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -61,9 +62,9 @@ namespace System
             Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
             var d = Unsafe.As<MulticastDelegate>(obj);
 
-            // there are 2 kind of delegate kinds for comparision
+            // there are 2 kind of delegate kinds for comparison
             // 1- Multicast (m_helperObject is Delegate[])
-            // 2- Single-cast delegate, which can be compared with a structural comparision
+            // 2- Single-cast delegate, which can be compared with a structural comparison
 
             IntPtr multicastThunk = GetThunk(MulticastThunk);
             if (m_functionPointer == multicastThunk)
@@ -79,7 +80,7 @@ namespace System
                     return false;
                 }
 
-                // Those delegate kinds with thunks put themselves into the m_firstParamter, so we can't
+                // Those delegate kinds with thunks put themselves into the m_firstParameter, so we can't
                 // blindly compare the m_firstParameter fields for equality.
                 if (object.ReferenceEquals(m_firstParameter, this))
                 {
@@ -408,6 +409,8 @@ namespace System
             return base.GetMethodImpl();
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException(SR.Serialization_DelegatesNotSupported);

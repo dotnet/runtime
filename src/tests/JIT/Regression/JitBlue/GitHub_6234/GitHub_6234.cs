@@ -5,11 +5,13 @@
 // interaction between CSE and constant prop.
 
 using System;
+using Xunit;
 
-internal class Program
+public class Program
 {
     public static int ii;
-    private static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         int res = 0;
         ii = 99;

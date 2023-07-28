@@ -20,9 +20,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32)]
         internal static partial uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, BOOL bAlertable);
 
-        [LibraryImport(Libraries.Kernel32)]
-        internal static partial void Sleep(uint milliseconds);
-
         internal const uint CREATE_SUSPENDED = 0x00000004;
         internal const uint STACK_SIZE_PARAM_IS_A_RESERVATION = 0x00010000;
 
@@ -73,5 +70,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32)]
         [return:MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetThreadPriority(SafeWaitHandle hThread, int nPriority);
+
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetThreadIOPendingFlag(nint hThread, out BOOL lpIOIsPending);
     }
 }

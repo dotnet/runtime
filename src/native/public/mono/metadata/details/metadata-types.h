@@ -52,7 +52,7 @@ typedef enum {
 	MONO_NATIVE_BSTR = 0x13, /* prefixed length, Unicode */
 	MONO_NATIVE_LPSTR = 0x14, /* ANSI, null terminated */
 	MONO_NATIVE_LPWSTR = 0x15, /* UNICODE, null terminated */
-	MONO_NATIVE_LPTSTR = 0x16, /* plattform dep., null terminated */
+	MONO_NATIVE_LPTSTR = 0x16, /* platform dep., null terminated */
 	MONO_NATIVE_BYVALTSTR = 0x17,
 	MONO_NATIVE_IUNKNOWN = 0x19,
 	MONO_NATIVE_IDISPATCH = 0x1a,
@@ -64,7 +64,7 @@ typedef enum {
 	MONO_NATIVE_UINT  = 0x20,
 	MONO_NATIVE_VBBYREFSTR  = 0x22,
 	MONO_NATIVE_ANSIBSTR  = 0x23,  /* prefixed length, ANSI */
-	MONO_NATIVE_TBSTR  = 0x24, /* prefixed length, plattform dep. */
+	MONO_NATIVE_TBSTR  = 0x24, /* prefixed length, platform dep. */
 	MONO_NATIVE_VARIANTBOOL  = 0x25,
 	MONO_NATIVE_FUNC  = 0x26,
 	MONO_NATIVE_ASANY = 0x28,

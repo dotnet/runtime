@@ -17,6 +17,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -98,9 +99,16 @@ namespace BenchmarksGame
             maxFlips[taskId] = maxflips;
         }
 
-        public static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            int n = args.Length > 0 ? int.Parse(args[0]) : 7;
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 7;
             int sum = Bench(n, true);
 
             int expected = 16;
@@ -116,7 +124,11 @@ namespace BenchmarksGame
             var factn = 1;
             for (int i = 1; i < fact.Length; i++) { fact[i] = factn *= i; }
 
-            int nTasks = Environment.ProcessorCount;
+            // For n == 7 and nTasks > 8, the algorithm returns chkSum != 228
+            // Hence, we restrict the processor count to 8 to get consistency on
+            // all the hardwares.
+            // See https://github.com/dotnet/runtime/issues/67157
+            int nTasks = Math.Min(Environment.ProcessorCount, 8);
             chkSums = new int[nTasks];
             maxFlips = new int[nTasks];
             int taskSize = factn / nTasks;

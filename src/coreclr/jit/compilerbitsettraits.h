@@ -40,7 +40,7 @@ class TrackedVarBitSetTraits : public CompAllocBitSetTraits
 public:
     static inline unsigned GetSize(Compiler* comp);
 
-    static inline unsigned GetArrSize(Compiler* comp, unsigned elemSize);
+    static inline unsigned GetArrSize(Compiler* comp);
 
     static inline unsigned GetEpoch(class Compiler* comp);
 
@@ -62,7 +62,7 @@ class AllVarBitSetTraits : public CompAllocBitSetTraits
 public:
     static inline unsigned GetSize(Compiler* comp);
 
-    static inline unsigned GetArrSize(Compiler* comp, unsigned elemSize);
+    static inline unsigned GetArrSize(Compiler* comp);
 
     static inline unsigned GetEpoch(class Compiler* comp);
 
@@ -86,7 +86,7 @@ class BasicBlockBitSetTraits : public CompAllocBitSetTraits
 public:
     static inline unsigned GetSize(Compiler* comp);
 
-    static inline unsigned GetArrSize(Compiler* comp, unsigned elemSize);
+    static inline unsigned GetArrSize(Compiler* comp);
 
     static inline unsigned GetEpoch(class Compiler* comp);
 
@@ -103,11 +103,14 @@ struct BitVecTraits
 {
 private:
     unsigned  size;
+    unsigned  arraySize; // pre-computed to avoid computation in GetArrSize
     Compiler* comp;
 
 public:
     BitVecTraits(unsigned size, Compiler* comp) : size(size), comp(comp)
     {
+        const unsigned elemBits = 8 * sizeof(size_t);
+        arraySize               = roundUp(size, elemBits) / elemBits;
     }
 
     static inline void* Alloc(BitVecTraits* b, size_t byteSize);
@@ -118,7 +121,7 @@ public:
 
     static inline unsigned GetSize(BitVecTraits* b);
 
-    static inline unsigned GetArrSize(BitVecTraits* b, unsigned elemSize);
+    static inline unsigned GetArrSize(BitVecTraits* b);
 
     static inline unsigned GetEpoch(BitVecTraits* b);
 

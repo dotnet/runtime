@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace ldarga_r8
+{
 .class public _ldarga {
 
 .method public static	int32 args(float64,float64) {
@@ -17,47 +20,50 @@
 }
 
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _ldarga::args(float64,float64)
+	call	int32 ldarga_r8._ldarga::args(float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _ldarga::args(float64,float64)
+	call	int32 ldarga_r8._ldarga::args(float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
-	call	int32 _ldarga::args(float64,float64)
+	call	int32 ldarga_r8._ldarga::args(float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x8000000000000000)
-	call	int32 _ldarga::args(float64,float64)
+	call	int32 ldarga_r8._ldarga::args(float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _ldarga::args(float64,float64)	
+	call	int32 ldarga_r8._ldarga::args(float64,float64)	
 	brfalse		FAIL
 
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
-	call	int32 _ldarga::args(float64,float64)
+	call	int32 ldarga_r8._ldarga::args(float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _ldarga::args(float64,float64)
+	call	int32 ldarga_r8._ldarga::args(float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _ldarga::args(float64,float64)
+	call	int32 ldarga_r8._ldarga::args(float64,float64)
 	brfalse		FAIL
 
 
@@ -70,3 +76,4 @@ FAIL:
 }
 }
 .assembly ldarga_r8{}
+}

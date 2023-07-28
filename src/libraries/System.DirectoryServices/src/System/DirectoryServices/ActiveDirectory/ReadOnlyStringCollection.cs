@@ -11,12 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ReadOnlyStringCollection(ArrayList values)
         {
-            if (values == null)
-            {
-                values = new ArrayList();
-            }
-
-            this.InnerList.AddRange(values);
+            this.InnerList.AddRange(values ?? new ArrayList());
         }
         public string this[int index]
         {

@@ -36,7 +36,9 @@ namespace Microsoft.Win32.RegistryTests
         private static void RemoveKeyIfExists(string keyName)
         {
             RegistryKey rk = Registry.CurrentUser;
-            if (rk.OpenSubKey(keyName) != null)
+
+            using RegistryKey subkey = rk.OpenSubKey(keyName);
+            if (subkey != null)
             {
                 rk.DeleteSubKeyTree(keyName);
                 Assert.Null(rk.OpenSubKey(keyName));

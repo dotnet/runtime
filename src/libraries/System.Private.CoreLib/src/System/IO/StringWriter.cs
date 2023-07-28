@@ -57,17 +57,7 @@ namespace System.IO
         }
 
 
-        public override Encoding Encoding
-        {
-            get
-            {
-                if (s_encoding == null)
-                {
-                    s_encoding = new UnicodeEncoding(false, false);
-                }
-                return s_encoding;
-            }
-        }
+        public override Encoding Encoding => s_encoding ??= new UnicodeEncoding(false, false);
 
         // Returns the underlying StringBuilder. This is either the StringBuilder
         // that was passed to the constructor, or the StringBuilder that was
@@ -99,14 +89,8 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);

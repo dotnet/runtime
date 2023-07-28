@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
+#pragma warning disable 8500 // taking address of managed types
+
 namespace System.Net.NetworkInformation
 {
     internal sealed class BsdIPv4GlobalStatistics : IPGlobalStatistics
@@ -37,10 +39,10 @@ namespace System.Net.NetworkInformation
         [UnmanagedCallersOnly]
         private static unsafe void ProcessIpv4Address(void* pContext, byte* ifaceName, Interop.Sys.IpAddressInfo* ipAddr)
         {
-            ref Context context = ref Unsafe.As<byte, Context>(ref *(byte*)pContext);
+            Context* context = (Context*)pContext;
 
-            context._interfaceSet.Add(new string((sbyte*)ifaceName));
-            context._numIPAddresses++;
+            context->_interfaceSet.Add(new string((sbyte*)ifaceName));
+            context->_numIPAddresses++;
         }
 
         public unsafe BsdIPv4GlobalStatistics()
@@ -71,7 +73,7 @@ namespace System.Net.NetworkInformation
             context._interfaceSet = new HashSet<string>();
 
             Interop.Sys.EnumerateInterfaceAddresses(
-                Unsafe.AsPointer(ref context),
+                &context,
                 &ProcessIpv4Address,
                 null,
                 null);

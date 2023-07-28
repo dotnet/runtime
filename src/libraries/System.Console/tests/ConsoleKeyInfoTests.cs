@@ -12,9 +12,19 @@ namespace System.Tests
         public void Ctor_DefaultCtor_PropertiesReturnDefaults()
         {
             ConsoleKeyInfo cki = new ConsoleKeyInfo();
-            Assert.Equal(default(ConsoleKey), cki.Key);
+            Assert.Equal(ConsoleKey.None, cki.Key);
             Assert.Equal(default(char), cki.KeyChar);
-            Assert.Equal(default(ConsoleModifiers), cki.Modifiers);
+            Assert.Equal(ConsoleModifiers.None, cki.Modifiers);
+        }
+
+        [Fact]
+        public void Ctor_ValueCtor_ReturnsNoneForDefault()
+        {
+            ConsoleKeyInfo cki = new ConsoleKeyInfo(';', default(ConsoleKey), false, false, false);
+
+            Assert.Equal(ConsoleKey.None, cki.Key);
+            Assert.Equal(';', cki.KeyChar);
+            Assert.Equal(ConsoleModifiers.None, cki.Modifiers);
         }
 
         [Theory]

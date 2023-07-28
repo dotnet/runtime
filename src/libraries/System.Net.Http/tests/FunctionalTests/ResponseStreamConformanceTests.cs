@@ -20,6 +20,28 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(pair.Stream2.CanRead);
             return pair;
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72586")]
+#pragma warning disable xUnit1026 // unused parameter
+        public override Task ReadAsync_CancelPendingTask_ThrowsCancellationException(int cancellationDelay)
+        {
+            return Task.CompletedTask;
+        }
+#pragma warning restore xUnit1026
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72586")]
+#pragma warning disable xUnit1026 // unused parameter
+        public override Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException(int cancellationDelay)
+        {
+            return Task.CompletedTask;
+        }
+#pragma warning restore xUnit1026
     }
 
     public sealed class Http1RawResponseStreamConformanceTests : ResponseConnectedStreamConformanceTests
@@ -33,6 +55,17 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(pair.Stream2.CanRead);
             return pair;
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72586")]
+#pragma warning disable xUnit1026 // unused parameter
+        public override Task ReadAsync_CancelPendingTask_ThrowsCancellationException(int cancellationDelay)
+        {
+            return Task.CompletedTask;
+        }
+#pragma warning restore xUnit1026
     }
 
     public sealed class Http1ContentLengthResponseStreamConformanceTests : ResponseStandaloneStreamConformanceTests

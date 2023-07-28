@@ -139,7 +139,7 @@ namespace SciMark2
         /// reordering of the rows of A during factorization.
         /// </param>
         /// <returns>
-        /// 0, if OK, nozero value, othewise.
+        /// 0, if OK, nozero value, otherwise.
         /// </returns>
         public static int factor(double[][] A, int[] pivot)
         {

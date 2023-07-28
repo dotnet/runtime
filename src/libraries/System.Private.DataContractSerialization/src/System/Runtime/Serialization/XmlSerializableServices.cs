@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Xml;
+using System.Xml.Schema;
+
 namespace System.Runtime.Serialization
 {
-    using System.Collections.Generic;
-    using System.Xml;
-    using System.Xml.Schema;
-
     public static class XmlSerializableServices
     {
         public static XmlNode[] ReadNodes(XmlReader xmlReader)
@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization
                     {
                         XmlNode? node = doc.ReadNode(xmlReader);
                         if (node == null)
-                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
+                            throw XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile);
                         nodeList.Add(node);
                     }
                 } while (xmlReader.MoveToNextAttribute());
@@ -37,7 +37,7 @@ namespace System.Runtime.Serialization
                 {
                     XmlNode? node = doc.ReadNode(xmlReader);
                     if (node == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
+                        throw XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile);
                     nodeList.Add(node);
                 }
             }

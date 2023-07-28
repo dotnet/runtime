@@ -3,9 +3,11 @@
 //
 
 using System;
-class testout1
+using Xunit;
+public class testout1
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("In First func (doing 5 iters - not unrolled)");
         Test1(2);

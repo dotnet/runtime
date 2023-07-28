@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
+.namespace xor_u8
+{
 .class public _xor {
 .method public static	int32 _xor(int64,int64,int64) {
 .maxstack		20
@@ -14,223 +17,226 @@
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		20
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x0000000000000000
-	call  int32 _xor::_xor(int64,int64,int64)
+	call  int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x0000000000000001
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x8000000000000000
 	ldc.i8		0x8000000000000000
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x5555555555555555
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000000
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000000
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x0000000000000001
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x0000000000000000
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x8000000000000000
 	ldc.i8		0x8000000000000001
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x5555555555555554
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xAAAAAAAAAAAAAAAB
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x8000000000000000
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x8000000000000000
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x8000000000000000
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x8000000000000001
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x8000000000000000
 	ldc.i8		0x8000000000000000
 	ldc.i8		0x0000000000000000
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x8000000000000000
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xD555555555555555
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x8000000000000000
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x2AAAAAAAAAAAAAAA
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x8000000000000000
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x7FFFFFFFFFFFFFFF
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x5555555555555555
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x5555555555555554
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x8000000000000000
 	ldc.i8		0xD555555555555555
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x0000000000000000
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x0000000000000000
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xAAAAAAAAAAAAAAAB
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x8000000000000000
 	ldc.i8		0x2AAAAAAAAAAAAAAA
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x0000000000000000
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x5555555555555555
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x0000000000000000
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x8000000000000000
 	ldc.i8		0x7FFFFFFFFFFFFFFF
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x5555555555555555
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x0000000000000000
-	call	int32 _xor::_xor(int64,int64,int64)
+	call	int32 xor_u8._xor::_xor(int64,int64,int64)
 	brfalse		FAIL
 
 	ldc.i4 100
@@ -241,3 +247,4 @@ FAIL:
 }
 }
 .assembly xor_u8{}
+}

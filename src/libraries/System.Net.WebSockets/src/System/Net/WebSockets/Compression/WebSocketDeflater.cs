@@ -26,11 +26,7 @@ namespace System.Net.WebSockets.Compression
 
         public void Dispose()
         {
-            if (_stream is not null)
-            {
-                _stream.Dispose();
-                _stream = null;
-            }
+            _stream?.Dispose();
         }
 
         public void ReleaseBuffer()
@@ -204,13 +200,13 @@ namespace System.Net.WebSockets.Compression
 
             string message = errorCode == ErrorCode.StreamError
                 ? SR.ZLibErrorInconsistentStream
-                : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
+                : SR.Format(SR.ZLibErrorUnexpected, (int)errorCode);
             throw new WebSocketException(message);
         }
 
         private ZLibStreamHandle CreateDeflater()
         {
-            ZLibStreamHandle stream;
+            ZLibStreamHandle? stream = null;
             ErrorCode errorCode;
             try
             {
@@ -222,6 +218,7 @@ namespace System.Net.WebSockets.Compression
             }
             catch (Exception cause)
             {
+                stream?.Dispose();
                 throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
             }
 
@@ -234,7 +231,7 @@ namespace System.Net.WebSockets.Compression
 
             string message = errorCode == ErrorCode.MemError
                 ? SR.ZLibErrorNotEnoughMemory
-                : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
+                : SR.Format(SR.ZLibErrorUnexpected, (int)errorCode);
             throw new WebSocketException(message);
         }
     }

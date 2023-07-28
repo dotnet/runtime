@@ -6,7 +6,7 @@ namespace System.Reflection
     [Flags]
     public enum MethodAttributes
     {
-        // NOTE: This Enum matchs the CorMethodAttr defined in CorHdr.h
+        // NOTE: This Enum matches the CorMethodAttr defined in CorHdr.h
 
         // member access mask - Use this mask to retrieve accessibility information.
         MemberAccessMask = 0x0007,

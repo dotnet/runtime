@@ -398,7 +398,7 @@ namespace System.Management
         /// </overload>
         /// <summary>
         /// <para>Adds a new <see cref='System.Management.PropertyData'/> with the specified value. The value cannot
-        ///    be null and must be convertable to a CIM type.</para>
+        ///    be null and must be convertible to a CIM type.</para>
         /// </summary>
         /// <param name='propertyName'>The name of the new property.</param>
         /// <param name='propertyValue'>The value of the property (cannot be null).</param>
@@ -461,7 +461,7 @@ namespace System.Management
             if ((null != propertyValue) && propertyValue.GetType().IsArray)
             {
                 isArray = true;
-                wmiCimType = (wmiCimType | (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY);
+                wmiCimType |= (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY;
             }
 
             object wmiValue = PropertyData.MapValueToWmiValue(propertyValue, propertyType, isArray);
@@ -500,7 +500,7 @@ namespace System.Management
             int wmiCimType = (int)propertyType;
 
             if (isArray)
-                wmiCimType = (wmiCimType | (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY);
+                wmiCimType |= (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY;
 
             object dummyObj = System.DBNull.Value;
 

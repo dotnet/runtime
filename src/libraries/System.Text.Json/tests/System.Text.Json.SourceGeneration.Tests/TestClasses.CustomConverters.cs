@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace System.Text.Json.SourceGeneration.Tests
 {
     /// <summary>
-    /// Custom converter that adds\substract 100 from MyIntProperty.
+    /// Custom converter that adds\subtract 100 from MyIntProperty.
     /// </summary>
     public class CustomConverter_ClassWithCustomConverter : JsonConverter<ClassWithCustomConverter>
     {
@@ -47,7 +47,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     /// <summary>
-    /// Custom converter that adds\substract 100 from MyIntProperty.
+    /// Custom converter that adds\subtract 100 from MyIntProperty.
     /// </summary>
     public class CustomConverter_ClassWithCustomConverterFactory : JsonConverter<ClassWithCustomConverterFactory>
     {
@@ -88,7 +88,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     /// <summary>
-    /// Custom converter that adds\substract 100 from MyIntProperty.
+    /// Custom converter that adds\subtract 100 from MyIntProperty.
     /// </summary>
     public class CustomConverter_StructWithCustomConverter : JsonConverter<StructWithCustomConverter>
     {
@@ -129,7 +129,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     /// <summary>
-    /// Custom converter that adds\substract 100 from MyIntProperty.
+    /// Custom converter that adds\subtract 100 from MyIntProperty.
     /// </summary>
     public class CustomConverter_StructWithCustomConverterFactory : JsonConverter<StructWithCustomConverterFactory>
     {
@@ -247,14 +247,39 @@ namespace System.Text.Json.SourceGeneration.Tests
 
     public class ClassWithCustomConverterFactoryProperty
     {
-        [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
-        public Serialization.Tests.SampleEnum MyEnum { get; set; }
+        [JsonConverter(typeof(JsonStringEnumConverter<SourceGenSampleEnum>))] // This converter is a JsonConverterFactory
+        public SourceGenSampleEnum MyEnum { get; set; }
     }
 
     public struct StructWithCustomConverterFactoryProperty
     {
-        [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
-        public Serialization.Tests.SampleEnum MyEnum { get; set; }
+        [JsonConverter(typeof(JsonStringEnumConverter<SourceGenSampleEnum>))] // This converter is a JsonConverterFactory
+        public SourceGenSampleEnum MyEnum { get; set; }
+    }
+
+    public class ClassWithCustomConverterFactoryNullableProperty
+    {
+        [JsonConverter(typeof(JsonStringEnumConverter<SourceGenSampleEnum>))] // This converter is a JsonConverterFactory
+        public SourceGenSampleEnum? MyEnum { get; set; }
+    }
+
+    public class ClassWithCustomConverterNullableProperty
+    {
+        [JsonConverter(typeof(TimeSpanSecondsConverter))]
+        public TimeSpan? TimeSpan { get; set; }
+    }
+
+    public class TimeSpanSecondsConverter : JsonConverter<TimeSpan>
+    {
+        public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            return TimeSpan.FromSeconds(reader.GetDouble());
+        }
+
+        public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
+        {
+            writer.WriteNumberValue(value.TotalSeconds);
+        }
     }
 
     [JsonConverter(typeof(CustomConverter_StructWithCustomConverter))] // Invalid
@@ -267,5 +292,12 @@ namespace System.Text.Json.SourceGeneration.Tests
     public struct StructWithBadCustomConverter
     {
         public int MyInt { get; set; }
+    }
+
+    public enum SourceGenSampleEnum
+    {
+        MinZero = 0,
+        One = 1,
+        Two = 2
     }
 }

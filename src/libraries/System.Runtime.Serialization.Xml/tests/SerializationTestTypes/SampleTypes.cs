@@ -4995,7 +4995,7 @@ namespace SerializationTestTypes
     }
 
     [CollectionDataContract(IsReference = true)]
-    public class CDC_Possitive : IList<string>
+    public class CDC_Positive : IList<string>
     {
         private List<string> _innerList = new List<string>();
 
@@ -5071,9 +5071,9 @@ namespace SerializationTestTypes
             return _innerList.GetEnumerator();
         }
 
-        public static CDC_Possitive CreateInstance()
+        public static CDC_Positive CreateInstance()
         {
-            CDC_Possitive list = new CDC_Possitive();
+            CDC_Positive list = new CDC_Positive();
             list.Add("112");
             return list;
         }
@@ -5252,7 +5252,7 @@ namespace SerializationTestTypes
     }
 
     [CollectionDataContract(IsReference = true)]
-    public class Base_Possitive_VirtualAdd : IEnumerable<string>
+    public class Base_Positive_VirtualAdd : IEnumerable<string>
     {
         private List<string> _innerList = new List<string>();
 
@@ -5328,9 +5328,9 @@ namespace SerializationTestTypes
             return _innerList.GetEnumerator();
         }
 
-        public static Base_Possitive_VirtualAdd CreateInstance()
+        public static Base_Positive_VirtualAdd CreateInstance()
         {
-            Base_Possitive_VirtualAdd list = new Base_Possitive_VirtualAdd();
+            Base_Positive_VirtualAdd list = new Base_Positive_VirtualAdd();
             list.Insert(0, "222323");
             list.Insert(1, "222323");
             return list;
@@ -5338,7 +5338,7 @@ namespace SerializationTestTypes
     }
 
     [CollectionDataContract(IsReference = true)]
-    public class CDC_NewAddToPrivate : Base_Possitive_VirtualAdd
+    public class CDC_NewAddToPrivate : Base_Positive_VirtualAdd
     {
         private new void Add(string item)
         {

@@ -212,7 +212,7 @@ HRESULT CPackedLen::SafeGetData(    // S_OK, or error
 
     BYTE const *pbData = reinterpret_cast<BYTE const*>(*ppData);
 
-    if (pbData + *pcbData < pbData)
+    if (*pcbData > reinterpret_cast<SIZE_T>(pDataSourceEnd) - reinterpret_cast<SIZE_T>(pDataSource))
     {   // First check for integer overflow
         return COR_E_OVERFLOW;
     }

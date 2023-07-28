@@ -3,11 +3,12 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Resources;
-using System.Threading;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Text
 {
@@ -115,14 +116,12 @@ namespace System.Text
 
             int byteCount = bytes.Length - byteIndex;
 
-            // Fixed doesn't like empty arrays
-            if (bytes.Length == 0)
-                bytes = new byte[1];
-
             fixed (char* pChars = s)
-            fixed (byte* pBytes = &bytes[0])
+            fixed (byte* pBytes = &CodePagesEncodingProvider.GetNonNullPinnableReference(bytes))
+            {
                 return GetBytes(pChars + charIndex, charCount,
                                 pBytes + byteIndex, byteCount, null);
+            }
         }
 
         // Encodes a range of characters in a character array into a range of bytes
@@ -155,22 +154,20 @@ namespace System.Text
             if (byteIndex < 0 || byteIndex > bytes.Length)
                 throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
-            // If nothing to encode return 0, avoid fixed problem
+            // If nothing to encode return 0
             if (chars.Length == 0)
                 return 0;
 
             // Just call pointer version
             int byteCount = bytes.Length - byteIndex;
 
-            // Fixed doesn't like empty arrays
-            if (bytes.Length == 0)
-                bytes = new byte[1];
-
             fixed (char* pChars = &chars[0])
-            fixed (byte* pBytes = &bytes[0])
+            fixed (byte* pBytes = &CodePagesEncodingProvider.GetNonNullPinnableReference(bytes))
+            {
                 // Remember that byteCount is # to decode, not size of array.
                 return GetBytes(pChars + charIndex, charCount,
                                 pBytes + byteIndex, byteCount, null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -249,22 +246,20 @@ namespace System.Text
             if (charIndex < 0 || charIndex > chars.Length)
                 throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
-            // If no input, return 0 & avoid fixed problem
+            // If no input, return 0
             if (bytes.Length == 0)
                 return 0;
 
             // Just call pointer version
             int charCount = chars.Length - charIndex;
 
-            // Fixed doesn't like empty arrays
-            if (chars.Length == 0)
-                chars = new char[1];
-
             fixed (byte* pBytes = &bytes[0])
-            fixed (char* pChars = &chars[0])
+            fixed (char* pChars = &CodePagesEncodingProvider.GetNonNullPinnableReference(chars))
+            {
                 // Remember that charCount is # to decode, not size of array
                 return GetChars(pBytes + byteIndex, byteCount,
                                 pChars + charIndex, charCount, null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)

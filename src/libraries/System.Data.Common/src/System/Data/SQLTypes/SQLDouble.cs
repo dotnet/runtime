@@ -26,7 +26,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlDouble(bool fNull)
+        private SqlDouble(bool _)
         {
             m_fNotNull = false;
             m_value = 0.0;
@@ -366,10 +366,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlDouble)
+            if (value is SqlDouble i)
             {
-                SqlDouble i = (SqlDouble)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlDouble));

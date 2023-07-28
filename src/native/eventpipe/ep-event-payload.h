@@ -107,7 +107,7 @@ void
 ep_event_payload_fini (EventPipeEventPayload *event_payload);
 
 // Copy the data (whether flat or array of objects) into a flat buffer at dst
-// Assumes that dst points to an appropriatly sized buffer.
+// Assumes that dst points to an appropriately sized buffer.
 void
 ep_event_payload_copy_data (
 	EventPipeEventPayload *event_payload,

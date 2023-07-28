@@ -4,11 +4,11 @@
 // The MIT License(MIT)
 // =====================
 //
-// Copyright © `2015-2017` `Lucas Meijer`
+// Copyright \u00A9 `2015-2017` `Lucas Meijer`
 //
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation
-// files (the “Software”), to deal in the Software without
+// files (the "Software"), to deal in the Software without
 // restriction, including without limitation the rights to use,
 // copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the
@@ -18,7 +18,7 @@
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 // NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
@@ -47,14 +47,13 @@ namespace Mono.Linker.Tests.Extensions
 
 		public NPath (string path)
 		{
-			if (path == null)
-				throw new ArgumentNullException ();
+			ArgumentNullException.ThrowIfNull (path);
 
 			path = ParseDriveLetter (path, out _driveLetter);
 
 			if (path == "/") {
 				_isRelative = false;
-				_elements = new string[] { };
+				_elements = Array.Empty<string> ();
 			} else {
 				var split = path.Split ('/', '\\');
 
@@ -97,7 +96,7 @@ namespace Mono.Linker.Tests.Extensions
 			return stack.Count > 0 && stack[stack.Count - 1] != "..";
 		}
 
-		private string ParseDriveLetter (string path, out string? driveLetter)
+		private static string ParseDriveLetter (string path, out string? driveLetter)
 		{
 			if (path.Length >= 2 && path[1] == ':') {
 				driveLetter = path[0].ToString ();
@@ -242,7 +241,7 @@ namespace Mono.Linker.Tests.Extensions
 
 				var last = _elements.Last ();
 				var index = last.LastIndexOf (".");
-				if (index < 0) return String.Empty;
+				if (index < 0) return string.Empty;
 				return last.Substring (index);
 			}
 		}
@@ -274,7 +273,7 @@ namespace Mono.Linker.Tests.Extensions
 			var sb = new StringBuilder ();
 			if (_driveLetter != null) {
 				sb.Append (_driveLetter);
-				sb.Append (":");
+				sb.Append (':');
 			}
 			if (!_isRelative)
 				sb.Append (Slash (slashMode));
@@ -294,7 +293,7 @@ namespace Mono.Linker.Tests.Extensions
 			return path.ToString ();
 		}
 
-		static char Slash (SlashMode slashMode)
+		private static char Slash (SlashMode slashMode)
 		{
 			return slashMode switch {
 				SlashMode.Backward => '\\',
@@ -303,7 +302,7 @@ namespace Mono.Linker.Tests.Extensions
 			};
 		}
 
-		public override bool Equals (Object? obj)
+		public override bool Equals (object? obj)
 		{
 			if (obj == null)
 				return false;
@@ -329,7 +328,7 @@ namespace Mono.Linker.Tests.Extensions
 			if (p._elements.Length != _elements.Length)
 				return false;
 
-			for (var i = 0; i != _elements.Length; i++)
+			for (var i = 0; i < _elements.Length; i++)
 				if (!string.Equals (p._elements[i], _elements[i], PathStringComparison))
 					return false;
 
@@ -379,8 +378,8 @@ namespace Mono.Linker.Tests.Extensions
 
 		public bool HasExtension (params string[] extensions)
 		{
-			var extensionWithDotLower = ExtensionWithDot.ToLower ();
-			return extensions.Any (e => WithDot (e).ToLower () == extensionWithDotLower);
+			var extensionWithDotLower = ExtensionWithDot.ToLowerInvariant ();
+			return extensions.Any (e => WithDot (e).ToLowerInvariant () == extensionWithDotLower);
 		}
 
 		private static string WithDot (string extension)
@@ -439,7 +438,7 @@ namespace Mono.Linker.Tests.Extensions
 			ThrowIfRelative ();
 			ThrowIfRoot ();
 			EnsureParentDirectoryExists ();
-			File.WriteAllBytes (ToString (), new byte[0]);
+			File.WriteAllBytes (ToString (), Array.Empty<byte> ());
 			return this;
 		}
 
@@ -511,10 +510,10 @@ namespace Mono.Linker.Tests.Extensions
 			if (!IsRelative)
 				return this;
 
-			return NPath.CurrentDirectory.Combine (this);
+			return CurrentDirectory.Combine (this);
 		}
 
-		NPath? CopyWithDeterminedDestination (NPath absoluteDestination, Func<NPath, bool> fileFilter)
+		private NPath? CopyWithDeterminedDestination (NPath absoluteDestination, Func<NPath, bool> fileFilter)
 		{
 			if (absoluteDestination.IsRelative)
 				throw new ArgumentException ("absoluteDestination must be absolute");
@@ -792,7 +791,7 @@ namespace Mono.Linker.Tests.Extensions
 			return Files (recurse).Where (fileFilter ?? AlwaysTrue).Select (file => file.Move (destination.Combine (file.RelativeTo (this)))).ToArray ();
 		}
 
-		static bool AlwaysTrue (NPath p)
+		private static bool AlwaysTrue (NPath p)
 		{
 			return true;
 		}

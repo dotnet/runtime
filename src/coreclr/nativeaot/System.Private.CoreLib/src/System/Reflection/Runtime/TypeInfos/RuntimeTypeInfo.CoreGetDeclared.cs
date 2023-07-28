@@ -139,20 +139,4 @@ namespace System.Reflection.Runtime.TypeInfos
             return GenericTypeDefinitionTypeInfo.CoreGetDeclaredNestedTypes(optionalNameFilter);
         }
     }
-
-    internal sealed partial class RuntimeBlockedTypeInfo
-    {
-        internal sealed override IEnumerable<Type> CoreGetDeclaredNestedTypes(NameFilter optionalNameFilter)
-        {
-            return Array.Empty<Type>();
-        }
-    }
-
-    internal sealed partial class RuntimeNoMetadataNamedTypeInfo
-    {
-        internal sealed override IEnumerable<Type> CoreGetDeclaredNestedTypes(NameFilter optionalNameFilter)
-        {
-            throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
-        }
-    }
 }

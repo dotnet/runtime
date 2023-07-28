@@ -259,7 +259,7 @@ namespace System.Net.NetworkInformation
                     NetworkAddressChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec == null) // Flow suppressed
                     {
                         handler(null, EventArgs.Empty);
                     }
@@ -281,7 +281,7 @@ namespace System.Net.NetworkInformation
                     NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec == null) // Flow suppressed
                     {
                         handler(null, args);
                     }

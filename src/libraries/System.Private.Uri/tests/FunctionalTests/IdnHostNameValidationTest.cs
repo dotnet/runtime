@@ -100,12 +100,16 @@ namespace System.PrivateUri.Tests
         {
             string unicodeHost = "a\u00FChost.dom\u00FCin.n\u00FCet";
             string punycodeHost = "xn--ahost-kva.xn--domin-mva.xn--net-hoa";
+            string fqdnHost = "foo.bar.";
 
             // initial unicode host
             ValidateUri(scheme, unicodeHost, UriHostNameType.Dns, unicodeHost, unicodeHost, punycodeHost);
 
             // initial punycode host
             ValidateUri(scheme, punycodeHost, UriHostNameType.Dns, punycodeHost, punycodeHost, punycodeHost);
+
+            // Host ending with a dot
+            ValidateUri(scheme, fqdnHost, UriHostNameType.Dns, fqdnHost, fqdnHost, fqdnHost);
         }
 
         private static void ValidateUri(

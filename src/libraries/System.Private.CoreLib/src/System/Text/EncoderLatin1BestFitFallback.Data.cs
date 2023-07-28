@@ -6,7 +6,7 @@ namespace System.Text
     internal sealed partial class EncoderLatin1BestFitFallbackBuffer
     {
         // Best fit for ASCII, and since it works for ASCII, we use it for latin1 as well.
-        private static readonly char[] s_arrayCharBestFit =
+        private static ReadOnlySpan<char> ArrayCharBestFit => new char[]
         {
 // The first many are in case you wanted to use this for ASCIIEncoding, which we don't need to do any more.
 //          (char)0x00a0, (char)0x0020,    // No-Break Space -> Space

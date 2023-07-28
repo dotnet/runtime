@@ -49,7 +49,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (validPath && validType && validMethod)
             {
                 result.Should().Pass()
-                    .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, 1, 1);
+                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                    .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
             }
             else
             {
@@ -84,7 +85,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (validPath && validType && validMethod)
             {
                 result.Should().Pass()
-                    .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, 1, 1);
+                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                    .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
             }
             else
             {
@@ -112,7 +114,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             result.Should()
                 .InitializeContextForApp(appProject.AppDll)
                 .And.Pass()
-                .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, 1, 1);
+                .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
         }
 
         [Theory]
@@ -153,13 +156,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson);
+                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson)
+                .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
 
             for (int i = 1; i <= callCount; ++i)
             {
                 result.Should()
-                    .ExecuteComponentEntryPoint(comp1Name, i * 2 - 1, i)
-                    .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint2, i * 2, i);
+                    .ExecuteFunctionPointer(comp1Name, i * 2 - 1, i)
+                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint2, i * 2, i);
             }
         }
 
@@ -197,13 +201,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson);
+                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson)
+                .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
 
             for (int i = 1; i <= callCount; ++i)
             {
                 result.Should()
-                    .ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, i, i)
-                    .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint2, i, i);
+                    .ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, i, i)
+                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint2, i, i);
             }
         }
 
@@ -226,7 +231,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.InitializeContextForConfig(componentProject.RuntimeConfigJson)
-                .And.ExecuteComponentEntryPointWithException(entryPoint, 1);
+                .And.ExecuteFunctionPointerWithException(entryPoint, 1);
         }
 
         public class SharedTestState : SharedTestStateBase
@@ -271,35 +276,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 base.Dispose(disposing);
             }
-        }
-    }
-
-    internal static class ComponentActivationResultExtensions
-    {
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteComponentEntryPoint(this CommandResultAssertions assertion, string methodName, int componentCallCount, int returnValue)
-        {
-            return assertion.ExecuteComponentEntryPoint(methodName, componentCallCount)
-                .And.HaveStdOutContaining($"{methodName} delegate result: 0x{returnValue.ToString("x")}");
-        }
-
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteComponentEntryPointWithException(this CommandResultAssertions assertion, string methodName, int componentCallCount)
-        {
-            var constraint = assertion.ExecuteComponentEntryPoint(methodName, componentCallCount);
-            if (OperatingSystem.IsWindows())
-            {
-                return constraint.And.HaveStdOutContaining($"{methodName} delegate threw exception: 0x{Constants.ErrorCode.COMPlusException.ToString("x")}");
-            }
-            else
-            {
-                // Exception is unhandled by native host on non-Windows systems
-                return constraint.And.ExitWith(Constants.ErrorCode.SIGABRT)
-                    .And.HaveStdErrContaining($"Unhandled exception. System.InvalidOperationException: {methodName}");
-            }
-        }
-
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteComponentEntryPoint(this CommandResultAssertions assertion, string methodName, int componentCallCount)
-        {
-            return assertion.HaveStdOutContaining($"Called {methodName}(0xdeadbeef, 42) - component call count: {componentCallCount}");
         }
     }
 }

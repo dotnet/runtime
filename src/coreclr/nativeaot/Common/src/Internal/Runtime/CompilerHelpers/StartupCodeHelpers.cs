@@ -85,16 +85,31 @@ namespace Internal.Runtime.CompilerHelpers
                     moduleCount++;
             }
 
-            TypeManagerHandle[] modules = new TypeManagerHandle[moduleCount];
+            // We cannot use the new keyword just yet, so stackalloc the array first
+            TypeManagerHandle* pHandles = stackalloc TypeManagerHandle[moduleCount];
             int moduleIndex = 0;
             for (int i = 0; i < count; i++)
             {
                 if (pModuleHeaders[i] != IntPtr.Zero)
                 {
-                    modules[moduleIndex] = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
-                    moduleIndex++;
+                    TypeManagerHandle handle = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
+
+                    // Rehydrate any dehydrated data structures
+                    IntPtr dehydratedDataSection = RuntimeImports.RhGetModuleSection(
+                        handle, ReadyToRunSectionType.DehydratedData, out int dehydratedDataLength);
+                    if (dehydratedDataSection != IntPtr.Zero)
+                    {
+                        RehydrateData(dehydratedDataSection, dehydratedDataLength);
+                    }
+
+                    pHandles[moduleIndex++] = handle;
                 }
             }
+
+            // Any potentially dehydrated MethodTables got rehydrated, we can safely use `new` now.
+            TypeManagerHandle[] modules = new TypeManagerHandle[moduleCount];
+            for (int i = 0; i < moduleCount; i++)
+                modules[i] = pHandles[i];
 
             return modules;
         }
@@ -117,7 +132,7 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
             {
-                Debug.Assert(length % IntPtr.Size == 0);
+                Debug.Assert(length % (MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint)) == 0);
 
                 object[] spine = InitializeStatics(staticsSection, length);
 
@@ -155,32 +170,40 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static unsafe void RunInitializers(TypeManagerHandle typeManager, ReadyToRunSectionType section)
         {
-            var initializers = (delegate*<void>*)RuntimeImports.RhGetModuleSection(typeManager, section, out int length);
-            Debug.Assert(length % IntPtr.Size == 0);
-            int count = length / IntPtr.Size;
-            for (int i = 0; i < count; i++)
+            var pInitializers = (byte*)RuntimeImports.RhGetModuleSection(typeManager, section, out int length);
+            Debug.Assert(length % (MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint)) == 0);
+
+            for (byte* pCurrent = pInitializers;
+                pCurrent < (pInitializers + length);
+                pCurrent += MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint))
             {
-                initializers[i]();
+                var initializer = MethodTable.SupportsRelativePointers ? (delegate*<void>)ReadRelPtr32(pCurrent) : *(delegate*<void>*)pCurrent;
+                initializer();
             }
+
+            static void* ReadRelPtr32(void* address)
+                => (byte*)address + *(int*)address;
         }
 
         private static unsafe object[] InitializeStatics(IntPtr gcStaticRegionStart, int length)
         {
-            IntPtr gcStaticRegionEnd = (IntPtr)((byte*)gcStaticRegionStart + length);
+            byte* gcStaticRegionEnd = (byte*)gcStaticRegionStart + length;
 
-            object[] spine = new object[length / IntPtr.Size];
+            object[] spine = new object[length / (MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint))];
 
             ref object rawSpineData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(spine).Data);
 
             int currentBase = 0;
-            for (IntPtr* block = (IntPtr*)gcStaticRegionStart; block < (IntPtr*)gcStaticRegionEnd; block++)
+            for (byte* block = (byte*)gcStaticRegionStart;
+                block < gcStaticRegionEnd;
+                block += MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint))
             {
                 // Gc Static regions can be shared by modules linked together during compilation. To ensure each
                 // is initialized once, the static region pointer is stored with lowest bit set in the image.
                 // The first time we initialize the static region its pointer is replaced with an object reference
                 // whose lowest bit is no longer set.
-                IntPtr* pBlock = (IntPtr*)*block;
-                nint blockAddr = *pBlock;
+                IntPtr* pBlock = MethodTable.SupportsRelativePointers ? (IntPtr*)ReadRelPtr32(block) : *(IntPtr**)block;
+                nint blockAddr = MethodTable.SupportsRelativePointers ? (nint)ReadRelPtr32(pBlock) : *pBlock;
                 if ((blockAddr & GCStaticRegionConstants.Uninitialized) == GCStaticRegionConstants.Uninitialized)
                 {
                     object? obj = null;
@@ -200,7 +223,7 @@ namespace Internal.Runtime.CompilerHelpers
                         // which are pointer relocs to GC objects in frozen segment.
                         // It actually has all GC fields including non-preinitialized fields and we simply copy over the
                         // entire blob to this object, overwriting everything.
-                        IntPtr pPreInitDataAddr = *(pBlock + 1);
+                        void* pPreInitDataAddr = MethodTable.SupportsRelativePointers ? ReadRelPtr32((int*)pBlock + 1) : (void*)*(pBlock + 1);
                         RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawObjectDataSize());
                     }
 
@@ -216,6 +239,103 @@ namespace Internal.Runtime.CompilerHelpers
             }
 
             return spine;
+
+            static void* ReadRelPtr32(void* address)
+                => (byte*)address + *(int*)address;
+        }
+
+        private static unsafe void RehydrateData(IntPtr dehydratedData, int length)
+        {
+            // Destination for the hydrated data is in the first 32-bit relative pointer
+            byte* pDest = (byte*)ReadRelPtr32((void*)dehydratedData);
+
+            // The dehydrated data follows
+            byte* pCurrent = (byte*)dehydratedData + sizeof(int);
+            byte* pEnd = (byte*)dehydratedData + length;
+
+            // Fixup table immediately follows the command stream
+            int* pFixups = (int*)pEnd;
+
+            while (pCurrent < pEnd)
+            {
+                pCurrent = DehydratedDataCommand.Decode(pCurrent, out int command, out int payload);
+                switch (command)
+                {
+                    case DehydratedDataCommand.Copy:
+                        Debug.Assert(payload != 0);
+                        if (payload < 4)
+                        {
+                            *pDest = *pCurrent;
+                            if (payload > 1)
+                                *(short*)(pDest + payload - 2) = *(short*)(pCurrent + payload - 2);
+                        }
+                        else if (payload < 8)
+                        {
+                            *(int*)pDest = *(int*)pCurrent;
+                            *(int*)(pDest + payload - 4) = *(int*)(pCurrent + payload - 4);
+                        }
+                        else if (payload <= 16)
+                        {
+#if TARGET_64BIT
+                            *(long*)pDest = *(long*)pCurrent;
+                            *(long*)(pDest + payload - 8) = *(long*)(pCurrent + payload - 8);
+#else
+                            *(int*)pDest = *(int*)pCurrent;
+                            *(int*)(pDest + 4) = *(int*)(pCurrent + 4);
+                            *(int*)(pDest + payload - 8) = *(int*)(pCurrent + payload - 8);
+                            *(int*)(pDest + payload - 4) = *(int*)(pCurrent + payload - 4);
+#endif
+                        }
+                        else
+                        {
+                            // At the time of writing this, 90% of DehydratedDataCommand.Copy cases
+                            // would fall into the above specialized cases. 10% fall back to memmove.
+                            memmove(pDest, pCurrent, (nuint)payload);
+
+                            // Not a DllImport - we don't need a GC transition since this is early startup
+                            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+                            [RuntimeImport("*", "memmove")]
+                            static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
+                        }
+
+                        pDest += payload;
+                        pCurrent += payload;
+                        break;
+                    case DehydratedDataCommand.ZeroFill:
+                        pDest += payload;
+                        break;
+                    case DehydratedDataCommand.PtrReloc:
+                        *(void**)pDest = ReadRelPtr32(pFixups + payload);
+                        pDest += sizeof(void*);
+                        break;
+                    case DehydratedDataCommand.RelPtr32Reloc:
+                        WriteRelPtr32(pDest, ReadRelPtr32(pFixups + payload));
+                        pDest += sizeof(int);
+                        break;
+                    case DehydratedDataCommand.InlinePtrReloc:
+                        while (payload-- > 0)
+                        {
+                            *(void**)pDest = ReadRelPtr32(pCurrent);
+                            pDest += sizeof(void*);
+                            pCurrent += sizeof(int);
+                        }
+                        break;
+                    case DehydratedDataCommand.InlineRelPtr32Reloc:
+                        while (payload-- > 0)
+                        {
+                            WriteRelPtr32(pDest, ReadRelPtr32(pCurrent));
+                            pDest += sizeof(int);
+                            pCurrent += sizeof(int);
+                        }
+                        break;
+                }
+            }
+
+            static void* ReadRelPtr32(void* address)
+                => (byte*)address + *(int*)address;
+
+            static void WriteRelPtr32(void* dest, void* value)
+                => *(int*)dest = (int)((byte*)value - (byte*)dest);
         }
     }
 

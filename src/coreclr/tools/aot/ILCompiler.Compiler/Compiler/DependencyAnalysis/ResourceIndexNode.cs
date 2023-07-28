@@ -5,30 +5,28 @@ using System;
 
 using Internal.NativeFormat;
 using Internal.Text;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a hash table of resources within the resource blob in the image.
     /// </summary>
-    internal class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
         private ResourceDataNode _resourceDataNode;
 
         public ResourceIndexNode(ResourceDataNode resourceDataNode)
         {
             _resourceDataNode = resourceDataNode;
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__embedded_resourceindex_End", true);
         }
 
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
 
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -54,8 +52,7 @@ namespace ILCompiler.DependencyAnalysis
                 1,
                 new ISymbolDefinitionNode[]
                 {
-                    this,
-                    EndSymbol
+                    this
                 });
         }
 
@@ -71,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
             indexHashtableSection.Place(indexHashtable);
 
             // Build a table with a tuple of Assembly Full Name, Resource Name, Offset within the resource data blob, Length
-            // for each resource. 
+            // for each resource.
             // This generates a hashtable for the convenience of managed code since there's
             // a reader for VertexHashtable, but not for VertexSequence.
 
@@ -91,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] blob = nativeWriter.Save();
-            _endSymbol.SetSymbolOffset(blob.Length);
+            _size = blob.Length;
             return blob;
         }
 

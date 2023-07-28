@@ -1,6 +1,10 @@
 #define PVOLATILE(T) T* volatile
 #define PPVOLATILE(T) T* volatile *
 
+#if !defined(TARGET_BROWSER) && !defined(EMSCRIPTEN_KEEPALIVE)
+#define EMSCRIPTEN_KEEPALIVE
+#endif
+
 #define gpointer void*
 
 MONO_API MONO_RT_EXTERNAL_ONLY gpointer
@@ -61,3 +65,9 @@ static void
 copy_volatile (PPVOLATILE(MonoObject) destination, PPVOLATILE(MonoObject) source) {
 	mono_gc_wbarrier_generic_store_atomic((void*)destination, (MonoObject*)(*source));
 }
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_register_root (char *start, size_t size, const char *name);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_deregister_root (char *addr);

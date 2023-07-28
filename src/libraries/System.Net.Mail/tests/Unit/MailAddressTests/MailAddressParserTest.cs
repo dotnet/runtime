@@ -505,7 +505,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAdresses_WithOnlyOneAddress_ShouldReadCorrectly()
+        public void ParseAddresses_WithOnlyOneAddress_ShouldReadCorrectly()
         {
             IList<MailAddress> result = MailAddressParser.ParseMultipleAddresses("Dr M\u00FCller <test@mail.com>");
 

@@ -3,7 +3,8 @@
 //
 
 using System;
-class AA
+using Xunit;
+public class AA
 {
     static void f(ref Array param)
     {
@@ -24,7 +25,8 @@ class AA
         }
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         f(ref m_arr);
         Console.WriteLine("Passed.");

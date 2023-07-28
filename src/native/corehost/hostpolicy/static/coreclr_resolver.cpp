@@ -39,6 +39,9 @@ extern "C"
         const char* entryPointTypeName,
         const char* entryPointMethodName,
         void** delegate);
+
+    pal::hresult_t STDMETHODCALLTYPE coreclr_set_error_writer(
+        coreclr_error_writer_callback_fn error_writer);
 }
 
 
@@ -49,6 +52,7 @@ bool coreclr_resolver_t::resolve_coreclr(const pal::string_t& libcoreclr_path, c
     coreclr_resolver_contract.coreclr_shutdown = reinterpret_cast<coreclr_shutdown_fn>(coreclr_shutdown_2);
     coreclr_resolver_contract.coreclr_execute_assembly = reinterpret_cast<coreclr_execute_assembly_fn>(coreclr_execute_assembly);
     coreclr_resolver_contract.coreclr_create_delegate = reinterpret_cast<coreclr_create_delegate_fn>(coreclr_create_delegate);
+    coreclr_resolver_contract.coreclr_set_error_writer = reinterpret_cast<coreclr_set_error_writer_fn>(coreclr_set_error_writer);
 
     return true;
 }

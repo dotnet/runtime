@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -25,7 +24,7 @@ namespace System.Xml.Xsl.Runtime
             // Get the default constructor
             _namespaceUri = namespaceUri;
             _ebType = ebType;
-            _constrInfo = ebType.GetConstructor(Type.EmptyTypes);
+            _constrInfo = ebType.GetConstructor(Type.EmptyTypes)!;
             Debug.Assert(_constrInfo != null, $"The early bound object type {ebType.FullName} must have a public default constructor");
         }
 
@@ -51,9 +50,9 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Override Equals method so that EarlyBoundInfo to implement value comparison.
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            EarlyBoundInfo info = obj as EarlyBoundInfo;
+            EarlyBoundInfo? info = obj as EarlyBoundInfo;
             if (info == null)
                 return false;
 

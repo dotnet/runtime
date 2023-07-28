@@ -9,7 +9,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace Internal.NativeFormat
 {
@@ -215,7 +214,7 @@ namespace Internal.NativeFormat
         }
     }
 
-    internal unsafe partial class NativeReader
+    internal sealed unsafe partial class NativeReader
     {
         private readonly byte* _base;
         private readonly uint _size;

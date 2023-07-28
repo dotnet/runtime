@@ -47,7 +47,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 ADSearcher adSearcher = new ADSearcher(de,
                                                       "(&(objectClass=subnet)(objectCategory=subnet)(name=" + Utils.GetEscapedFilterValue(subnetName) + "))",
-                                                      new string[] { "distinguishedName" },
+                                                      ActiveDirectorySite.s_distinguishedName,
                                                       SearchScope.OneLevel,
                                                       false, /* don't need paged search */
                                                       false /* don't need to cache result */);
@@ -102,8 +102,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (de != null)
-                    de.Dispose();
+                de?.Dispose();
             }
         }
 
@@ -143,8 +142,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (de != null)
-                    de.Dispose();
+                de?.Dispose();
             }
         }
 
@@ -169,7 +167,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ActiveDirectorySubnet(DirectoryContext context, string subnetName, string? siteName, bool existing)
         {
-            Debug.Assert(existing == true);
+            Debug.Assert(existing);
 
             this.context = context;
             _name = subnetName;
@@ -365,8 +363,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (cachedEntry != null)
-                    cachedEntry.Dispose();
+                cachedEntry?.Dispose();
             }
 
             // free your own state (unmanaged objects)

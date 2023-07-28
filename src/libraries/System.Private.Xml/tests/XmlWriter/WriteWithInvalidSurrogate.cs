@@ -5,7 +5,7 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterTests
 {
     public class XmlWriterTests_InvalidSurrogate
     {

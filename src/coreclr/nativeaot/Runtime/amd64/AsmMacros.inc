@@ -235,11 +235,11 @@ Name    dq      offset AddressToExport
 _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 ;;
-;; __declspec(thread) version
+;; __declspec(thread) variable
 ;;
-INLINE_GETTHREAD macro destReg, trashReg
+INLINE_GET_TLS_VAR macro destReg, trashReg, variable
     EXTERN _tls_index : DWORD
-    EXTERN tls_CurrentThread:DWORD
+    EXTERN variable:DWORD
 
 ;;
 ;; construct 'eax' from 'rax' so that the register size and data size match
@@ -255,9 +255,16 @@ endif
     mov         destRegDWORD, [_tls_index]
     mov         trashReg, gs:[_tls_array]
     mov         trashReg, [trashReg + destReg * 8]
-    mov         destRegDWORD, SECTIONREL tls_CurrentThread
+    mov         destRegDWORD, SECTIONREL variable
     add         destReg, trashReg
 
+endm
+
+;;
+;; __declspec(thread) tls_CurrentThread
+;;
+INLINE_GETTHREAD macro destReg, trashReg
+    INLINE_GET_TLS_VAR destReg, trashReg, tls_CurrentThread
 endm
 
 INLINE_THREAD_UNHIJACK macro threadReg, trashReg1, trashReg2
@@ -365,11 +372,11 @@ PTFF_SAVE_R14           equ 00000040h
 PTFF_SAVE_R15           equ 00000080h
 PTFF_SAVE_ALL_PRESERVED equ 000000F7h   ;; NOTE: RBP is not included in this set!
 PTFF_SAVE_RSP           equ 00008000h
-PTFF_SAVE_RAX           equ 00000100h   ;; RAX is saved if it contains a GC ref and we're in hijack handler
+PTFF_SAVE_RAX           equ 00000100h   ;; RAX is saved in hijack handler - in case it contains a GC ref
 PTFF_SAVE_ALL_SCRATCH   equ 00007F00h
 PTFF_RAX_IS_GCREF       equ 00010000h   ;; iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
 PTFF_RAX_IS_BYREF       equ 00020000h   ;; iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
-PTFF_THREAD_ABORT       equ 00040000h   ;; indicates that ThreadAbortException should be thrown when returning from the transition
+PTFF_THREAD_ABORT       equ 00100000h   ;; indicates that ThreadAbortException should be thrown when returning from the transition
 
 ;; These must match the TrapThreadsFlags enum
 TrapThreadsFlags_None            equ 0
@@ -395,9 +402,7 @@ endif ;; FEATURE_GC_STRESS
 EXTERN RhpGcAlloc                               : PROC
 EXTERN RhpValidateExInfoPop                     : PROC
 EXTERN RhDebugBreak                             : PROC
-EXTERN RhpWaitForSuspend2                       : PROC
 EXTERN RhpWaitForGC2                            : PROC
-EXTERN RhpReversePInvokeAttachOrTrapThread2     : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC
 EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC
@@ -408,10 +413,17 @@ EXTERN REDHAWKGCINTERFACE__STRESSGC             : PROC
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
 endif ;; FEATURE_GC_STRESS
 
+EXTERN RhpTrapThreads       : DWORD
 EXTERN g_lowest_address     : QWORD
 EXTERN g_highest_address    : QWORD
 EXTERN g_ephemeral_low      : QWORD
 EXTERN g_ephemeral_high     : QWORD
 EXTERN g_card_table         : QWORD
-EXTERN RhpTrapThreads       : DWORD
 
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN g_card_bundle_table  : QWORD
+endif
+
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+EXTERN g_write_watch_table  : QWORD
+endif

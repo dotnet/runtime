@@ -28,6 +28,7 @@ namespace System.Security.Cryptography
             return new RC2Implementation();
         }
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new RC2? Create(string AlgName)
         {

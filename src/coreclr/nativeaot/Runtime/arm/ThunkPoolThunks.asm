@@ -29,7 +29,7 @@ RW$name % 4
         LOAD_DATA_ADDRESS $groupIndex, $index
         ALIGN       0x10                        ;; make sure we align to 16-byte boundary for CFG table
 
-        ;; set r12 to begining of data page : r12 <- pc - (THUNK_CODESIZE * current thunk's index - sizeof(mov+add instructions)) + PAGE_SIZE
+        ;; set r12 to beginning of data page : r12 <- pc - (THUNK_CODESIZE * current thunk's index - sizeof(mov+add instructions)) + PAGE_SIZE
         ;; fix offset of the data           : r12 <- r12 + (THUNK_DATASIZE * current thunk's index)
         mov.w     r12, PAGE_SIZE + ($groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * $index) - (8 + $groupIndex * THUNK_CODESIZE * 10 + THUNK_CODESIZE * $index)
         add.n     r12, r12, pc
@@ -39,7 +39,7 @@ RW$name % 4
         JUMP_TO_COMMON $groupIndex, $index
         ;; start                                        : r12 points to the current thunks first data cell in the data page
         ;; put r12 into the red zone                    : r12 isn't changed
-        ;; set r12 to begining of data page             : r12 <- r12 - (THUNK_DATASIZE * current thunk's index)
+        ;; set r12 to beginning of data page             : r12 <- r12 - (THUNK_DATASIZE * current thunk's index)
         ;; fix offset to point to last DWROD in page    : r12 <- r11 + PAGE_SIZE - POINTER_SIZE
         ;; jump to the location pointed at by the last dword in the data page
         str.w     r12, [sp, #-4]

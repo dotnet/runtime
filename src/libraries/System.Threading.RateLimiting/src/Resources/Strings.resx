@@ -126,4 +126,13 @@
   <data name="ReplenishmentLimitTooHigh" xml:space="preserve">
     <value>Over 49 days is not supported.</value>
   </data>
+  <data name="ShouldBeGreaterThan0" xml:space="preserve">
+    <value>{0} must be set to a value greater than 0.</value>
+  </data>
+  <data name="ShouldBeGreaterThanOrEqual0" xml:space="preserve">
+    <value>{0} must be set to a value greater than or equal to 0.</value>
+  </data>
+  <data name="ShouldBeGreaterThanTimeSpan0" xml:space="preserve">
+    <value>{0} must be set to a value greater than TimeSpan.Zero.</value>
+  </data>
 </root>

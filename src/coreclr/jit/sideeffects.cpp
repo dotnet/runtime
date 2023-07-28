@@ -174,19 +174,18 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
 
     // Is the operation a write? If so, set `node` to the location that is being written to.
     bool isWrite = false;
-    if (node->OperIs(GT_ASG))
-    {
-        isWrite = true;
-        node    = node->gtGetOp1();
-    }
-    else if (node->OperIsStore() || node->OperIs(GT_MEMORYBARRIER))
+    if (node->OperIsStore() || node->OperIs(GT_STORE_DYN_BLK, GT_MEMORYBARRIER))
     {
         isWrite = true;
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStore())
+    else if (node->OperIsHWIntrinsic())
     {
-        isWrite = true;
+        if (node->AsHWIntrinsic()->OperIsMemoryStoreOrBarrier())
+        {
+            // For barriers, we model the behavior after GT_MEMORYBARRIER
+            isWrite = true;
+        }
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -203,7 +202,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         // If the indirection targets a lclVar, we can be more precise with regards to aliasing by treating the
         // indirection as a lclVar access.
         GenTree* address = node->AsIndir()->Addr();
-        if (address->OperIsLocalAddr())
+        if (address->OperIs(GT_LCL_ADDR))
         {
             isLclVarAccess = true;
             lclNum         = address->AsLclVarCommon()->GetLclNum();
@@ -234,7 +233,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     assert(isMemoryAccess || isLclVarAccess);
 
     // Now that we've determined whether or not this access is a read or a write and whether the accessed location is
-    // memory or a lclVar, determine whther or not the location is addressable and udpate the alias set.
+    // memory or a lclVar, determine whether or not the location is addressable and update the alias set.
     const bool isAddressableLocation = isMemoryAccess || compiler->lvaTable[lclNum].IsAddressExposed();
 
     if (!isWrite)

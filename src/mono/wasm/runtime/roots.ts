@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { Module } from "./imports";
+import { Module } from "./globals";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
-import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish } from "./types";
-import { _zero_region } from "./memory";
+import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
+import { _zero_region, localHeapViewU32 } from "./memory";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -33,7 +33,7 @@ export function mono_wasm_new_root_buffer(capacity: number, name?: string): Wasm
 
     _zero_region(offset, capacityBytes);
 
-    return new WasmRootBuffer(offset, capacity, true, name);
+    return new WasmRootBufferImpl(offset, capacity, true, name);
 }
 
 /**
@@ -52,7 +52,7 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
 
     _zero_region(offset, capacityBytes);
 
-    return new WasmRootBuffer(offset, capacity, false, name);
+    return new WasmRootBufferImpl(offset, capacity, false, name);
 }
 
 /**
@@ -173,8 +173,7 @@ function _mono_wasm_claim_scratch_index() {
     return result;
 }
 
-
-export class WasmRootBuffer {
+export class WasmRootBufferImpl implements WasmRootBuffer {
     private __count: number;
     private length: number;
     private __offset: VoidPtr;
@@ -218,7 +217,7 @@ export class WasmRootBuffer {
     get(index: number): ManagedPointer {
         this._check_in_range(index);
         const offset = this.get_address_32(index);
-        return <any>Module.HEAPU32[offset];
+        return <any>localHeapViewU32()[offset];
     }
 
     set(index: number, value: ManagedPointer): ManagedPointer {
@@ -233,7 +232,7 @@ export class WasmRootBuffer {
     }
 
     _unsafe_get(index: number): number {
-        return Module.HEAPU32[this.__offset32 + index];
+        return localHeapViewU32()[this.__offset32 + index];
     }
 
     _unsafe_set(index: number, value: ManagedPointer | NativePointer): void {
@@ -261,24 +260,6 @@ export class WasmRootBuffer {
     }
 }
 
-export interface WasmRoot<T extends MonoObject> {
-    get_address(): MonoObjectRef;
-    get_address_32(): number;
-    get address(): MonoObjectRef;
-    get(): T;
-    set(value: T): T;
-    get value(): T;
-    set value(value: T);
-    copy_from_address(source: MonoObjectRef): void;
-    copy_to_address(destination: MonoObjectRef): void;
-    copy_from(source: WasmRoot<T>): void;
-    copy_to(destination: WasmRoot<T>): void;
-    valueOf(): T;
-    clear(): void;
-    release(): void;
-    toString(): string;
-}
-
 class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     private __buffer: WasmRootBuffer;
     private __index: number;
@@ -301,7 +282,7 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     get(): T {
-        const result = this.__buffer._unsafe_get(this.__index);
+        const result = (<WasmRootBufferImpl>this.__buffer)._unsafe_get(this.__index);
         return <any>result;
     }
 
@@ -346,7 +327,10 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     clear(): void {
-        this.set(<any>0);
+        // .set performs an expensive write barrier, and that is not necessary in most cases
+        //  for clear since clearing a root cannot cause new objects to survive a GC
+        const address32 = this.__buffer.get_address_32(this.__index);
+        localHeapViewU32()[address32] = 0;
     }
 
     release(): void {
@@ -395,7 +379,7 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     get(): T {
-        const result = Module.HEAPU32[this.__external_address_32];
+        const result = localHeapViewU32()[this.__external_address_32];
         return <any>result;
     }
 
@@ -439,7 +423,9 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     clear(): void {
-        this.set(<any>0);
+        // .set performs an expensive write barrier, and that is not necessary in most cases
+        //  for clear since clearing a root cannot cause new objects to survive a GC
+        localHeapViewU32()[<any>this.__external_address >>> 2] = 0;
     }
 
     release(): void {

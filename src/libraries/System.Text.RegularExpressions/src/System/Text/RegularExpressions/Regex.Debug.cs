@@ -27,7 +27,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Generates UnicodeCategoryRanges.cs for the namespace System.Text.RegularExpressions.Symbolic.Unicode
-        /// in the given directory path. Only avaliable in DEBUG mode.
+        /// in the given directory path. Only available in DEBUG mode.
         /// </summary>
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal static void GenerateUnicodeTables(string path)

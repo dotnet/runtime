@@ -4,7 +4,6 @@
 #ifdef _MSC_VER
 
 // FIXME This is all questionable but the logs are flooded and nothing else is fixing them.
-#pragma warning(disable:4018) // W3: signed/unsigned mismatch
 #pragma warning(disable:4090) // W1: const problem
 #pragma warning(disable:4100) // W4: unreferenced formal parameter
 #pragma warning(disable:4152) // W4: nonstandard extension, function/data pointer conversion in expression
@@ -15,35 +14,6 @@
 #pragma warning(disable:4505) // W4: unreferenced function with internal linkage has been removed
 #pragma warning(disable:4702) // W4: unreachable code
 #pragma warning(disable:4706) // W4: assignment within conditional expression
-
-// promote warnings to errors
-#pragma warning(error:4005) // W1: 'identifier' : macro redefinition
-#pragma warning(error:4013) // W3: function undefined; assuming extern returning int
-#pragma warning(error:4022) // W1: call and prototype disagree
-#pragma warning(error:4047) // W1: differs in level of indirection
-#pragma warning(error:4065) // W?: switch with default but no case
-#pragma warning(error:4098) // W1: void return returns a value
-#pragma warning(error:4113) // W1: call and prototype disagree
-#pragma warning(error:4127) // W4: conditional expression is constant
-#pragma warning(error:4131) // W4: 'function' : uses old-style declarator
-#pragma warning(error:4146) // W2: unary minus operator applied to unsigned type, result still unsigned
-#pragma warning(error:4172) // W1: returning address of local variable or temporary
-#pragma warning(error:4189) // W4: local variable is initialized but not referenced
-#pragma warning(error:4197) // W3: top-level volatile in cast is ignored
-#pragma warning(error:4273) // W1: inconsistent dll linkage
-#pragma warning(error:4293) // W1: shift count negative or too big, undefined behavior
-#pragma warning(error:4297) // W1: function assumed not to throw an exception but does
-#pragma warning(error:4306) // W2: conversion from 'type1' to 'type2' of greater size
-#pragma warning(error:4309) // W2: truncation of constant
-#pragma warning(error:4310) // W3: cast truncates constant value
-#pragma warning(error:4312) // W1: conversion from 'type1' to 'type2' of greater size
-#pragma warning(error:4324) // W4: structure was padded due to __declspec(align())
-#pragma warning(error:4456) // W4: declaration of 'identifier' hides previous local declaration
-#pragma warning(error:4459) // W4: declaration of 'identifier' hides global declaration
-#pragma warning(error:4701) // W4: potentially uninitialized local variable 'name' used
-#pragma warning(error:4703) // W4: potentially uninitialized local pointer variable 'name' used
-#pragma warning(error:4715) // W1: 'function' : not all control paths return a value
-#pragma warning(error:4740) // W4: flow in or out of inline asm code suppresses global optimization, x86 only
 
 #include <SDKDDKVer.h>
 
@@ -81,6 +51,9 @@
 /* pthread is a pointer */
 #cmakedefine PTHREAD_POINTER_ID 1
 
+/* Targeting a Unix-like platform */
+#cmakedefine TARGET_UNIX 1
+
 /* Targeting the Android platform */
 #cmakedefine HOST_ANDROID 1
 
@@ -102,11 +75,17 @@
 /* Target Platform is Win32 */
 #cmakedefine TARGET_WIN32 1
 
+/* ... */
+#cmakedefine TARGET_WINDOWS 1
+
 /* Host Platform is Darwin */
 #cmakedefine HOST_DARWIN 1
 
 /* Host Platform is OSX or Mac Catalyst */
 #cmakedefine HOST_OSX 1
+
+/* ... */
+#cmakedefine TARGET_OSX 1
 
 /* Host Platform is iOS */
 #cmakedefine HOST_IOS 1
@@ -116,6 +95,15 @@
 
 /* Host Platform is Mac Catalyst */
 #cmakedefine HOST_MACCAT 1
+
+/* Target Platform is Linux */
+#cmakedefine TARGET_LINUX 1
+
+/* Target Platform is Linux (bionic libc)*/
+#cmakedefine TARGET_LINUX_BIONIC 1
+
+/* Target Platform is Linux (musl libc)*/
+#cmakedefine TARGET_LINUX_MUSL 1
 
 /* Use classic Windows API support */
 #cmakedefine HAVE_CLASSIC_WINAPI_SUPPORT 1
@@ -200,6 +188,9 @@
 
 /* Define to 1 if you have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H 1
+
+/* Define to 1 if you have the <grp.h> header file. */
+#cmakedefine HAVE_GRP_H 1
 
 /* Define to 1 if you have the <sys/select.h> header file. */
 #cmakedefine HAVE_SYS_SELECT_H 1
@@ -290,9 +281,6 @@
 /* Disable the interpreter. */
 #cmakedefine DISABLE_INTERPRETER 1
 
-/* Some VES is available at runtime */
-#cmakedefine ENABLE_ILGEN 1
-
 /* Disable non-blittable marshalling */
 #cmakedefine DISABLE_NONBLITTABLE
 
@@ -328,9 +316,6 @@
 
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
-
-/* Disable user thread creation on WebAssembly */
-#cmakedefine DISABLE_WASM_USER_THREADS 1
 
 /* Disable MONO_LOG_DEST */
 #cmakedefine DISABLE_LOG_DEST
@@ -406,9 +391,6 @@
 
 /* sched_setaffinity */
 #cmakedefine HAVE_SCHED_SETAFFINITY 1
-
-/* Define to 1 if you have the `sched_getcpu' function. */
-#cmakedefine HAVE_SCHED_GETCPU 1
 
 /* Define to 1 if you have the `chmod' function. */
 #cmakedefine HAVE_CHMOD 1
@@ -547,9 +529,6 @@
 /* Have getifaddrs */
 #cmakedefine HAVE_GETIFADDRS 1
 
-/* Have struct ifaddrs */
-#cmakedefine HAVE_IFADDRS 1
-
 /* Have access */
 #cmakedefine HAVE_ACCESS 1
 
@@ -645,6 +624,9 @@
 /* Define to 1 if `st_atimespec' is a member of `struct stat'. */
 #cmakedefine HAVE_STRUCT_STAT_ST_ATIMESPEC 1
 
+/* Define to 1 if `super_class' is a member of `struct objc_super'. */
+#cmakedefine HAVE_OBJC_SUPER_SUPER_CLASS 1
+
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H 1
 
@@ -697,7 +679,13 @@
 #cmakedefine MONO_CROSS_COMPILE 1
 
 /* ... */
+#cmakedefine TARGET_BROWSER 1
+
+/* ... */
 #cmakedefine TARGET_WASM 1
+
+/* ... */
+#cmakedefine TARGET_WASI 1
 
 /* The JIT/AOT targets WatchOS */
 #cmakedefine TARGET_WATCHOS 1
@@ -921,6 +909,9 @@
 /* Define to 1 if you have /usr/include/malloc.h. */
 #cmakedefine HAVE_USR_INCLUDE_MALLOC_H 1
 
+/* Define to 1 if you have linux cgroups */
+#cmakedefine HAVE_CGROUP_SUPPORT 1
+
 /* The architecture this is running on */
 #define MONO_ARCHITECTURE @MONO_ARCHITECTURE@
 
@@ -962,6 +953,12 @@
 
 /* Enable System.WeakAttribute support */
 #cmakedefine ENABLE_WEAK_ATTR 1
+
+/* Enable WebCIL image loader */
+#cmakedefine ENABLE_WEBCIL 1
+
+/* define if clockgettime exists */
+#cmakedefine HAVE_CLOCK_GETTIME 1
 
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.

@@ -41,7 +41,9 @@ namespace System.Runtime.InteropServices
                 // The runtime performs additional checks in debug builds
                 return InternalCalls.RhHandleGet(_handle);
 #else
-                return Unsafe.As<IntPtr, object>(ref *(IntPtr*)_handle);
+#pragma warning disable 8500 // address of managed types
+                return *(object*)_handle;
+#pragma warning restore 8500
 #endif
             }
 

@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Xml.XPath;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Collections;
+using System.Xml.Schema;
+using MS.Internal.Xml.XPath;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
-    using System.Collections;
-    using System.Xml.Schema;
-    using MS.Internal.Xml.XPath;
-    using System.Diagnostics.CodeAnalysis;
-
     /*--------------------------------------------------------------------------------------------- *
      * Dynamic Part Below...                                                                        *
      * -------------------------------------------------------------------------------------------- */
@@ -428,7 +428,7 @@ namespace System.Xml.Schema
         }
 
         // recursive here
-        [return: NotNullIfNotNull("axis")]
+        [return: NotNullIfNotNull(nameof(axis))]
         internal static DoubleLinkAxis? ConvertTree(Axis? axis)
         {
             if (axis == null)

@@ -5,18 +5,17 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System
 {
     // TimeSpan represents a duration of time.  A TimeSpan can be negative
     // or positive.
     //
-    // TimeSpan is internally represented as a number of milliseconds.  While
-    // this maps well into units of time such as hours and days, any
-    // periods longer than that aren't representable in a nice fashion.
+    // TimeSpan is internally represented as a number of ticks. A tick is equal
+    // to 100 nanoseconds. While this maps well into units of time such as hours
+    // and days, any periods longer than that aren't representable in a nice fashion.
     // For instance, a month can be between 28 and 31 days, while a year
-    // can contain 365 or 364 days.  A decade can have between 1 and 3 leapyears,
+    // can contain 365 or 366 days.  A decade can have between 1 and 3 leapyears,
     // depending on when you map the TimeSpan into the calendar.  This is why
     // we do not provide Years() or Months().
     //
@@ -32,7 +31,8 @@ namespace System
           IComparable<TimeSpan>,
           IEquatable<TimeSpan>,
           ISpanFormattable,
-          ISpanParsable<TimeSpan>
+          ISpanParsable<TimeSpan>,
+          IUtf8SpanFormattable
     {
         /// <summary>
         /// Represents the number of nanoseconds per tick. This field is constant.
@@ -273,7 +273,7 @@ namespace System
 
         public TimeSpan Duration()
         {
-            if (Ticks == TimeSpan.MinValue.Ticks)
+            if (Ticks == MinValue.Ticks)
                 throw new OverflowException(SR.Overflow_Duration);
             return new TimeSpan(_ticks >= 0 ? _ticks : -_ticks);
         }
@@ -319,7 +319,7 @@ namespace System
             if ((ticks > long.MaxValue) || (ticks < long.MinValue) || double.IsNaN(ticks))
                 ThrowHelper.ThrowOverflowException_TimeSpanTooLong();
             if (ticks == long.MaxValue)
-                return TimeSpan.MaxValue;
+                return MaxValue;
             return new TimeSpan((long)ticks);
         }
 
@@ -360,7 +360,7 @@ namespace System
 
         public TimeSpan Negate()
         {
-            if (Ticks == TimeSpan.MinValue.Ticks)
+            if (Ticks == MinValue.Ticks)
                 throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             return new TimeSpan(-_ticks);
         }
@@ -561,15 +561,18 @@ namespace System
             return TimeSpanFormat.Format(this, format, formatProvider);
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null)
-        {
-            return TimeSpanFormat.TryFormat(this, destination, out charsWritten, format, formatProvider);
-        }
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
+            TimeSpanFormat.TryFormat(this, destination, out charsWritten, format, formatProvider);
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
+            TimeSpanFormat.TryFormat(this, utf8Destination, out bytesWritten, format, formatProvider);
+
         #endregion
 
         public static TimeSpan operator -(TimeSpan t)
         {
-            if (t._ticks == TimeSpan.MinValue._ticks)
+            if (t._ticks == MinValue._ticks)
                 throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             return new TimeSpan(-t._ticks);
         }
@@ -616,22 +619,22 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static double operator /(TimeSpan t1, TimeSpan t2) => t1.Ticks / (double)t2.Ticks;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(TimeSpan t1, TimeSpan t2) => t1._ticks == t2._ticks;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(TimeSpan t1, TimeSpan t2) => t1._ticks != t2._ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(TimeSpan t1, TimeSpan t2) => t1._ticks < t2._ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(TimeSpan t1, TimeSpan t2) => t1._ticks <= t2._ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(TimeSpan t1, TimeSpan t2) => t1._ticks > t2._ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(TimeSpan t1, TimeSpan t2) => t1._ticks >= t2._ticks;
     }
 }

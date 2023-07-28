@@ -42,7 +42,7 @@ namespace System.Runtime.Serialization
                     // For each method find if attribute is present, the return type is void and the method is not virtual
                     if (m.IsDefined(attribute, false))
                     {
-                        if (mi == null) mi = new List<MethodInfo>();
+                        mi ??= new List<MethodInfo>();
                         mi.Add(m);
                     }
                 }
@@ -99,7 +99,7 @@ namespace System.Runtime.Serialization
 
         internal static SerializationEvents GetSerializationEventsForType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t) =>
-            s_cache.GetOrAdd(t, type => CreateSerializationEvents(type));
+            s_cache.GetOrAdd(t, CreateSerializationEvents);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "The Type is annotated correctly, it just can't pass through the lambda method.")]

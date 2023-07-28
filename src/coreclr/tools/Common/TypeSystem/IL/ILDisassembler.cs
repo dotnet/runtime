@@ -143,7 +143,7 @@ namespace Internal.IL
             sb.Append(field.Name);
         }
 
-        private void AppendStringLiteral(StringBuilder sb, string s)
+        private static void AppendStringLiteral(StringBuilder sb, string s)
         {
             sb.Append('"');
             for (int i = 0; i < s.Length; i++)
@@ -187,19 +187,20 @@ namespace Internal.IL
             return _ilBytes[_currentOffset++];
         }
 
-        private UInt16 ReadILUInt16()
+        private ushort ReadILUInt16()
         {
-            UInt16 val = (UInt16)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8));
+            ushort val = (ushort)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8));
             _currentOffset += 2;
             return val;
         }
 
-        private UInt32 ReadILUInt32()
+        private uint ReadILUInt32()
         {
-            UInt32 val = (UInt32)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8) + (_ilBytes[_currentOffset + 2] << 16) + (_ilBytes[_currentOffset + 3] << 24));
+            uint val = (uint)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8) + (_ilBytes[_currentOffset + 2] << 16) + (_ilBytes[_currentOffset + 3] << 24));
             _currentOffset += 4;
             return val;
         }
+
 
         private int ReadILToken()
         {
@@ -418,7 +419,7 @@ namespace Internal.IL
                             int delta = (int)ReadILUInt32();
                             AppendOffset(decodedInstruction, jmpBase + delta);
                         }
-                        decodedInstruction.Append(")");
+                        decodedInstruction.Append(')');
                         return decodedInstruction.ToString();
                     }
 
@@ -493,7 +494,7 @@ namespace Internal.IL
 
             public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
             {
-                sb.Append("!");
+                sb.Append('!');
                 sb.Append(type.Index.ToStringInvariant());
             }
 
@@ -514,7 +515,7 @@ namespace Internal.IL
                     if (i > 0)
                         sb.Append(", ");
                     AppendNameWithValueClassPrefix(sb, type.Instantiation[i]);
-                }   
+                }
 
                 sb.Append('>');
             }

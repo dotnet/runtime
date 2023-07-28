@@ -9,7 +9,7 @@
 #include "pal_errors_internal.h"
 #include "pal_calendarData.h"
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) || defined(TARGET_WASI)
 #include <strings.h>
 
 #define STRING_COPY(destination, numberOfElements, source) \
@@ -549,7 +549,7 @@ GetLatestJapaneseEra
 
 Gets the latest era in the Japanese calendar.
 */
-int32_t GlobalizationNative_GetLatestJapaneseEra()
+int32_t GlobalizationNative_GetLatestJapaneseEra(void)
 {
     UErrorCode err = U_ZERO_ERROR;
     UCalendar* pCal = ucal_open(NULL, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);

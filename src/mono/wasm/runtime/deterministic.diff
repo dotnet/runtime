@@ -1,0 +1,41 @@
+diff --git a/src/deterministic.js b/src/deterministic.js
+index 0b894b4ac..05f50abba 100644
+--- a/src/deterministic.js
++++ b/src/deterministic.js
+@@ -4,7 +4,13 @@
+  * SPDX-License-Identifier: MIT
+  */
+ 
+-var MAGIC = 0;
++var randomBuffer3 = new Uint8Array(2);
++crypto.getRandomValues(randomBuffer3);
++
++var MAGIC = (randomBuffer3 [0] << 8) | randomBuffer3 [1];
++console.log ("SEED2: " + MAGIC);
++
++//var MAGIC = 0;
+ Math.random = () => {
+   MAGIC = Math.pow(MAGIC + 1.8912, 3) % 1;
+   return MAGIC;
+diff --git a/src/library.js b/src/library.js
+index 603f94dbf..698e9fe29 100644
+--- a/src/library.js
++++ b/src/library.js
+@@ -2196,6 +2196,17 @@ mergeInto(LibraryManager.library, {
+   // TODO: consider allowing the API to get a parameter for the number of
+   // bytes.
+   $getRandomDevice: function() {
++	var randomBuffer2 = new Uint8Array(2);
++	crypto.getRandomValues(randomBuffer2);
++
++	  if (FS.seed2 == null)
++		  FS.seed2 = (randomBuffer2 [0] << 8) | randomBuffer2 [1];
++	console.log('SEED: ' + FS.seed2);
++	return function() {
++		FS.seed2 = FS.seed2 * 16807 % 2147483647;
++		return FS.seed2;
++	};
++
+     if (typeof crypto == 'object' && typeof crypto['getRandomValues'] == 'function') {
+       // for modern web browsers
+       var randomBuffer = new Uint8Array(1);

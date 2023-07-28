@@ -12,9 +12,9 @@ namespace System.IO.Packaging.Tests
 {
     public class Tests : FileCleanupTestBase
     {
-        private const string Mime_MediaTypeNames_Text_Xml = "text/xml";
+        internal const string Mime_MediaTypeNames_Text_Xml = "text/xml";
         private const string Mime_MediaTypeNames_Image_Jpeg = "image/jpeg"; // System.Net.Mime.MediaTypeNames.Image.Jpeg
-        private const string s_DocumentXml = @"<Hello>Test</Hello>";
+        internal const string s_DocumentXml = @"<Hello>Test</Hello>";
         private const string s_ResourceXml = @"<Resource>Test</Resource>";
 
         private FileInfo GetTempFileInfoFromExistingFile(string existingFileName, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
@@ -3660,7 +3660,6 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60582", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write")]
         public void CreateWithFileAccessWrite()
         {
@@ -3696,11 +3695,10 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60582", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write")]
         public void ZipPackage_CreateWithFileAccessWrite()
         {
-            string packageName = "test.zip";
+            string packageName = Path.Combine(TestDirectory, "test.zip");
 
             using (Package package = Package.Open(packageName, FileMode.Create, FileAccess.Write))
             {

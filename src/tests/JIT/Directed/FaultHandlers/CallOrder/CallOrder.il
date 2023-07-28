@@ -14,7 +14,7 @@
 //------------------------------------------------------
 //	This test ensures that fault handlers are called in
 //	the correct order.
-.class TEST
+.class public TEST
 {
 	.field public static int32 result
 	
@@ -109,7 +109,7 @@
 		ret
 	}
 
-	.method public static int32 Main(class [mscorlib]System.String[]) il managed
+	.method public static int32 Main() il managed
 	{
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00

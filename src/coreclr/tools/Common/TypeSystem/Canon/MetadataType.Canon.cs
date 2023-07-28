@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Holds code for canonicalization of metadata types
-    partial class MetadataType
+    public partial class MetadataType
     {
         public override bool IsCanonicalSubtype(CanonicalFormKind policy)
         {

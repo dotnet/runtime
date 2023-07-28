@@ -212,7 +212,7 @@ namespace System.Linq.Expressions.Tests
             f.VerifyIL(
                 @".method valuetype [System.Private.CoreLib]System.Nullable`1<int16> ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,valuetype [System.Private.CoreLib]System.Nullable`1<int16>)
                 {
-                    .maxstack 4
+                    .maxstack 3
                     .locals init (
                         [0] valuetype [System.Private.CoreLib]System.Nullable`1<int16>
                     )

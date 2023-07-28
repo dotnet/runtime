@@ -3,7 +3,7 @@ Param(
     [string] $CoreRootDirectory,
     [string] $BaselineCoreRootDirectory,
     [string] $Architecture="x64",
-    [string] $Framework="net5.0",
+    [string] $Framework,
     [string] $CompilationMode="Tiered",
     [string] $Repository=$env:BUILD_REPOSITORY_NAME,
     [string] $Branch=$env:BUILD_SOURCEBRANCH,
@@ -22,11 +22,13 @@ Param(
     [string] $LogicalMachine="",
     [switch] $AndroidMono,
     [switch] $iOSMono,
-    [switch] $NoPGO,
-    [switch] $DynamicPGO,
-    [switch] $FullPGO,
+    [switch] $iOSNativeAOT,
+    [switch] $NoDynamicPGO,
+    [switch] $PhysicalPromotion,
     [switch] $iOSLlvmBuild,
-    [string] $MauiVersion
+    [switch] $iOSStripSymbols,
+    [string] $MauiVersion,
+    [switch] $UseLocalCommitTime
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -50,6 +52,7 @@ if ($Internal) {
         "perfsurf" { $Queue = "Windows.10.Arm64.Perf.Surf"  }
         "perfpixel4a" { $Queue = "Windows.10.Amd64.Pixel.Perf" }
         "perfampere" { $Queue = "Windows.Server.Arm64.Perf" }
+        "cloudvm" { $Queue = "Windows.10.Amd64" }
         Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
     }
     $PerfLabArguments = "--upload-to-perflab-container"
@@ -61,13 +64,11 @@ else {
     $Queue = "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
 }
 
-if($MonoInterpreter)
-{
+if ($MonoInterpreter) {
     $ExtraBenchmarkDotNetArguments = "--category-exclusion-filter NoInterpreter"
 }
 
-if($MonoDotnet -ne "")
-{
+if ($MonoDotnet -ne "") {
     $Configurations += " LLVM=$LLVM MonoInterpreter=$MonoInterpreter MonoAOT=$MonoAOT"
     if($ExtraBenchmarkDotNetArguments -eq "")
     {
@@ -81,21 +82,21 @@ if($MonoDotnet -ne "")
     }
 }
 
-if($NoPGO)
-{
-    $Configurations += " PGOType=nopgo"
+if ($NoDynamicPGO) {
+    $Configurations += " PGOType=nodynamicpgo"
 }
-elseif($DynamicPGO)
-{
-    $Configurations += " PGOType=dynamicpgo"
-}
-elseif($FullPGO)
-{
-    $Configurations += " PGOType=fullpgo"
+
+if ($PhysicalPromotion) {
+    $Configurations += " PhysicalPromotionType=physicalpromotion"
 }
 
 if ($iOSMono) {
     $Configurations += " iOSLlvmBuild=$iOSLlvmBuild"
+    $Configurations += " iOSStripSymbols=$iOSStripSymbols"
+}
+
+if ($iOSNativeAOT) {
+    $Configurations += " iOSStripSymbols=$iOSStripSymbols"
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
@@ -107,17 +108,17 @@ if($Branch.Contains("refs/heads/release"))
 $CommonSetupArguments="--channel $CleanedBranchName --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
 $SetupArguments = "--repository https://github.com/$Repository --branch $Branch --get-perf-hash --commit-sha $CommitSha $CommonSetupArguments"
 
-if($NoPGO)
-{
-    $SetupArguments = "$SetupArguments --no-pgo"
+if ($NoDynamicPGO) {
+    $SetupArguments = "$SetupArguments --no-dynamic-pgo"
 }
-elseif($DynamicPGO)
-{
-    $SetupArguments = "$SetupArguments --dynamic-pgo"
+
+if ($PhysicalPromotion) {
+    $SetupArguments = "$SetupArguments --physical-promotion"
 }
-elseif($FullPGO)
-{
-    $SetupArguments = "$SetupArguments --full-pgo"
+
+if ($UseLocalCommitTime) {
+    $LocalCommitTime = (git show -s --format=%ci $CommitSha)
+    $SetupArguments = "$SetupArguments --commit-time `"$LocalCommitTime`""
 }
 
 if ($RunFromPerformanceRepo) {
@@ -129,8 +130,7 @@ else {
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
 }
 
-if($MonoDotnet -ne "")
-{
+if ($MonoDotnet -ne "") {
     $UsingMono = "true"
     $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
     Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
@@ -145,8 +145,7 @@ if ($UseBaselineCoreRun) {
     Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
 }
 
-if($MauiVersion -ne "")
-{
+if ($MauiVersion -ne "") {
     $SetupArguments = "$SetupArguments --maui-version $MauiVersion"
 }
 
@@ -155,28 +154,8 @@ if ($AndroidMono) {
     {
         mkdir $WorkItemDirectory
     }
-
+    Copy-Item -path "$SourceDirectory\MonoBenchmarksDroid.apk" $PayloadDirectory -Verbose
     Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose
-    Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory -Verbose
-    Copy-Item -path "$SourceDirectory\MauiBlazorAndroidDefault.apk" $PayloadDirectory -Verbose
-    Copy-Item -path "$SourceDirectory\MauiAndroidPodcast.apk" $PayloadDirectory -Verbose
-    $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
-}
-
-if ($iOSMono) {
-    if(!(Test-Path $WorkItemDirectory))
-    {
-        mkdir $WorkItemDirectory
-    }
-    if($iOSLlvmBuild) {
-        Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
-    } else {
-        Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
-        Copy-Item -path "$SourceDirectory\MauiiOSDefaultIPA" $PayloadDirectory\MauiiOSDefaultIPA -Recurse
-        Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault\MauiMacCatalystDefault.app" $PayloadDirectory\MauiMacCatalystDefault -Recurse
-        Copy-Item -path "$SourceDirectory\MauiiOSPodcastIPA" $PayloadDirectory\MauiiOSPodcastIPA -Recurse
-    }
-
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -208,6 +187,7 @@ Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRep
 Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iOSLlvmBuild" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iOSStripSymbols" -IsMultiJobVariable $false
 
 # Helix Arguments
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false

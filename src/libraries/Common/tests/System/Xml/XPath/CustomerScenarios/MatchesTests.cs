@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
-using System.Xml;
-using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.CustomerScenarios
 {
@@ -18,60 +15,72 @@ namespace XPathTests.FunctionalTests.CustomerScenarios
         /// Expected: The last line element of the first section of the last chapter of the context node.
         /// Chapter[last()]/Section[1]/Line[last()]
         /// </summary>
-        [Fact]
-        public static void MatchesTest311()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest311(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
             var startingNodePath = "/Book/Chapter[3]/Section[1]/Line[3]";
             var testExpression = @"Chapter[last()]/Section[1]/Line[last()]";
             var expected = true;
 
-            Utils.XPathMatchTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathMatchTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: The last line element of the first section of the last chapter of the doc.
         /// /Book/Chapter[last()]/Section[1]/Line[last()]
         /// </summary>
-        [Fact]
-        public static void MatchesTest312()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest312(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
             var startingNodePath = "/Book/Chapter[3]/Section[1]/Line[3]";
             var testExpression = @"/Book/Chapter[last()]/Section[1]/Line[last()]";
             var expected = true;
 
-            Utils.XPathMatchTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathMatchTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the second chapter element child if that child has a name attribute with value ""Chapter2"".
         /// Chapter[2][@name="Chapter2"]
         /// </summary>
-        [Fact]
-        public static void MatchesTest313()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest313(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
             var startingNodePath = "/Book/Chapter[2]";
             var testExpression = @"Chapter[2][@name='Entrees']";
             var expected = true;
 
-            Utils.XPathMatchTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathMatchTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: The 2nd to 4th chapter child node of the context node.
         /// Chapter[position() >= 2 and position() <= 4]
         /// </summary>
-        [Fact]
-        public static void MatchesTest314()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void MatchesTest314(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
             var startingNodePath = "/Book/Chapter[3]";
             var testExpression = @"Chapter[position() >= 2 and position() <= 4]";
             var expected = true;
 
-            Utils.XPathMatchTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathMatchTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
     }
 }

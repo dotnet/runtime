@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_58373
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Use up a lot of registers
         int a = GetVal();

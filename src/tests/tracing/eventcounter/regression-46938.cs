@@ -64,7 +64,7 @@ namespace EventCounterRegressionTests
 
     public partial class TestEventCounter
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             // Create an EventListener.
             using (SimpleEventListener myListener = new SimpleEventListener())

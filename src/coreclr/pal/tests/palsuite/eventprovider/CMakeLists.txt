@@ -37,7 +37,7 @@ if(FEATURE_EVENT_TRACE)
     endif(CLR_CMAKE_HOST_LINUX)
 endif(FEATURE_EVENT_TRACE)
 
-target_link_libraries(eventprovidertest  ${EVENT_PROVIDER_DEPENDENCIES} coreclrpal)
+target_link_libraries(eventprovidertest PUBLIC ${EVENT_PROVIDER_DEPENDENCIES} coreclrpal)
 add_dependencies(eventprovidertest eventing_headers)
 
 install (TARGETS eventprovidertest DESTINATION paltests/eventprovider COMPONENT paltests EXCLUDE_FROM_ALL)

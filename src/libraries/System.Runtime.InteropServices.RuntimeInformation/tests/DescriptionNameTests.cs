@@ -42,11 +42,11 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Console.WriteLine($"### FRAMEWORK: Version={Environment.Version} Description={RuntimeInformation.FrameworkDescription.Trim()}");
 
             string binariesLocation = Path.GetDirectoryName(typeof(object).Assembly.Location);
-            string binariesLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(binariesLocation).DriveFormat;
+            string binariesLocationFormat = string.IsNullOrEmpty(binariesLocation) ? "Unknown" : new DriveInfo(binariesLocation).DriveFormat;
             Console.WriteLine($"### BINARIES: {binariesLocation} (drive format {binariesLocationFormat})");
 
             string tempPathLocation = Path.GetTempPath();
-            string tempPathLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(tempPathLocation).DriveFormat;
+            string tempPathLocationFormat = string.IsNullOrEmpty(binariesLocation) ? "Unknown" : new DriveInfo(tempPathLocation).DriveFormat;
             Console.WriteLine($"### TEMP PATH: {tempPathLocation} (drive format {tempPathLocationFormat})");
 
             Console.WriteLine($"### CURRENT DIRECTORY: {Environment.CurrentDirectory}");
@@ -171,7 +171,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         public void VerifyRuntimeNameOnNetCoreApp()
         {
             Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET"), RuntimeInformation.FrameworkDescription);
@@ -201,7 +200,14 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [Fact, PlatformSpecific(TestPlatforms.Linux)]  // Checks Linux name in RuntimeInformation
         public void VerifyLinuxName()
         {
-            Assert.Contains("linux", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
+            if (File.Exists("/etc/os-release"))
+            {
+                Assert.Equal(Interop.OSReleaseFile.GetPrettyName("/etc/os-release"), RuntimeInformation.OSDescription);
+            }
+            else
+            {
+                Assert.Contains("linux", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         [Fact, PlatformSpecific(TestPlatforms.NetBSD)]  // Checks NetBSD name in RuntimeInformation

@@ -315,7 +315,7 @@ def generateMethodBody(template, providerName, eventName, runtimeFlavor):
             result.append("    INT " + paramname + "_path_size = -1;\n")
             result.append("    PathCharString " + paramname + "_PS;\n")
             result.append("    INT " + paramname + "_full_name_path_size")
-            result.append(" = (wcslen(" + paramname + ") + 1)*sizeof(WCHAR);\n")
+            result.append(" = (lttng_strlen16(" + paramname + ") + 1)*sizeof(WCHAR);\n")
             result.append("    CHAR* " + paramname + "_full_name = ")
             result.append(paramname + "_PS.OpenStringBuffer(" + paramname + "_full_name_path_size );\n")
             result.append("    if (" + paramname + "_full_name == NULL )")
@@ -429,6 +429,17 @@ def generateMethodBody(template, providerName, eventName, runtimeFlavor):
 
 def generateLttngTpProvider(providerName, eventNodes, allTemplates, runtimeFlavor):
     lTTngImpl = []
+
+    lTTngImpl.append("""// Local implementation of WCHAR (UTF-16) string length
+static size_t lttng_strlen16(const WCHAR* string)
+{
+    size_t nChar = 0;
+    while (*string++)
+        nChar++;
+    return nChar;
+}
+""")
+
     for eventNode in eventNodes:
         eventName    = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
@@ -583,8 +594,6 @@ extern "C" bool XplatEventLoggerIsEnabled();
 #define do_tracepoint tracepoint
 #endif
 
-#define wcslen PAL_wcslen
-
 bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
 bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
 bool WriteToBuffer(const char *str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
@@ -624,7 +633,7 @@ def main(argv):
 
     required = parser.add_argument_group('required arguments')
     required.add_argument('--man',  type=str, required=True,
-                                    help='full path to manifest containig the description of events')
+                                    help='full path to manifest containing the description of events')
     required.add_argument('--intermediate', type=str, required=True,
                                     help='full path to eventprovider  intermediate directory')
     required.add_argument('--runtimeflavor', type=str,default="CoreCLR",

@@ -15,7 +15,7 @@ namespace System.IO.Ports.Tests
         //The string used with Write(str) to fill the input buffer
         private const string DEFAULT_STRING = "Hello World";
 
-        //The buffer lenght used whe filling the ouput buffer
+        //The buffer length used whe filling the output buffer
         private const int DEFAULT_BUFFER_LENGTH = 8;
 
         #region Test Cases

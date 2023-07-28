@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -861,6 +862,62 @@ namespace System.PrivateUri.Tests
             Assert.Equal(port, uri.Port);
             Assert.Equal(isDefaultPort, uri.IsDefaultPort);
             Assert.Equal(uriString + "/", uri.ToString());
+        }
+
+        public static IEnumerable<object[]> ToStringTest_MemberData()
+        {
+            // Return funcs rather than Uri instances directly so that:
+            // a) We can test each method without it being impacted by implicit caching of a previous method's results
+            // b) xunit's implicit formatting of arguments doesn't similarly disturb the results
+
+            yield return new object[] { () => new Uri("http://test"), "http://test/" };
+            yield return new object[] { () => new Uri("   http://test   "), "http://test/" };
+            yield return new object[] { () => new Uri("/test", UriKind.Relative), "/test" };
+            yield return new object[] { () => new Uri("test", UriKind.Relative), "test" };
+            yield return new object[] { () => new Uri("http://foo/bar/baz#frag"), "http://foo/bar/baz#frag" };
+            yield return new object[] { () => new Uri(new Uri(@"http://www.contoso.com/"), "catalog/shownew.htm?date=today"), "http://www.contoso.com/catalog/shownew.htm?date=today" };
+            yield return new object[] { () => new Uri("http://test/a/b/c/d/../../e/f"), "http://test/a/b/e/f" };
+            yield return new object[] { () => { var uri = new Uri("http://test/a/b/c/d/../../e/f"); uri.ToString(); return uri; }, "http://test/a/b/e/f" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToStringTest_MemberData))]
+        public static void ToStringTest(Func<Uri> func, string expected)
+        {
+            // object.ToString
+            Assert.Equal(expected, func().ToString());
+
+            // IFormattable.ToString
+            Assert.Equal(expected, ((IFormattable)func()).ToString("asdfasdf", new CultureInfo("fr-FR")));
+
+            // TryFormat - Big enough destination
+            foreach (int length in new[] { expected.Length, expected.Length + 1 })
+            {
+                // TryFormat
+                char[] formatted = new char[length];
+                Assert.True(func().TryFormat(formatted, out int charsWritten));
+                AssertExtensions.SequenceEqual(expected, (ReadOnlySpan<char>)formatted.AsSpan(0, charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+
+                // ISpanFormattable.TryFormat
+                Array.Clear(formatted);
+                Assert.True(((ISpanFormattable)func()).TryFormat(formatted, out charsWritten, "asdfasdf", new CultureInfo("fr-FR")));
+                AssertExtensions.SequenceEqual(expected, (ReadOnlySpan<char>)formatted.AsSpan(0, charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+            }
+
+            // TryFormat - Too small destination
+            {
+                char[] formatted = new char[expected.Length - 1];
+
+                // TryFormat
+                Assert.False(func().TryFormat(formatted, out int charsWritten));
+                Assert.Equal(0, charsWritten);
+
+                // ISpanFormattable.TryFormat
+                Assert.False(((ISpanFormattable)func()).TryFormat(formatted, out charsWritten, default, null));
+                Assert.Equal(0, charsWritten);
+            }
         }
     }
 }

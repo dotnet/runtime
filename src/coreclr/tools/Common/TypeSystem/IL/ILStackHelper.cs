@@ -24,7 +24,7 @@ namespace Internal.IL
         /// </summary>
         public static int ComputeMaxStack(this MethodIL methodIL)
         {
-            const int StackHeightNotSet = Int32.MinValue;
+            const int StackHeightNotSet = int.MinValue;
 
             byte[] ilbytes = methodIL.GetILBytes();
             int currentOffset = 0;
@@ -278,7 +278,7 @@ namespace Internal.IL
                                 stackHeight = StackHeightNotSet;
                         }
                         break;
-                    
+
                     case ILOpcode.call:
                     case ILOpcode.calli:
                     case ILOpcode.callvirt:

@@ -13,8 +13,8 @@
 // Then it uses the ThrowExceptionHelper to throw the passed in exception from that context.
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
-#ifdef HAS_ASAN
-        // Need to call __asan_handle_no_return explicitly here because we re-intialize RSP before
+#ifdef HAS_ADDRESS_SANITIZER
+        // Need to call __asan_handle_no_return explicitly here because we re-initialize RSP before
         // throwing exception in ThrowExceptionHelper
         push_nonvol_reg rdi
         push_nonvol_reg rsi

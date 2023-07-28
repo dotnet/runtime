@@ -29,7 +29,7 @@ namespace System.Tests
 
         private static IEnumerable<PosixSignal> SupportedPosixSignals => new[] { PosixSignal.SIGINT, PosixSignal.SIGQUIT, PosixSignal.SIGTERM, PosixSignal.SIGHUP };
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExternalConsoleManipulation_RegistrationRemoved_UnregisterSucceeds()
         {
             RemoteExecutor.Invoke(() =>

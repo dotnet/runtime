@@ -81,14 +81,25 @@ namespace System.Net.Http.Headers
 
         internal static bool? GetTransferEncodingChunked(HttpHeaders parent, HttpGeneralHeaders? headers)
         {
-            if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+            if (parent.TryGetHeaderValue(KnownHeaders.TransferEncoding.Descriptor, out object? value))
             {
-                return true;
+                // Fast-path for the very common case where "chunked" is the only value.
+                if (value is string stringValue && stringValue.Equals("chunked", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+                {
+                    return true;
+                }
             }
+
             if (headers != null && headers._transferEncodingChunkedSet)
             {
                 return false;
             }
+
             return null;
         }
 

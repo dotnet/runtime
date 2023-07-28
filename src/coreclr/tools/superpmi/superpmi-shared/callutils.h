@@ -29,9 +29,6 @@ public:
                                           /*out*/ CORINFO_SIG_INFO* outSigInfo,
                                           /*out*/ char**            outCallTargetSymbol);
     static CorInfoHelpFunc GetHelperNum(CORINFO_METHOD_HANDLE method);
-    static bool IsNativeMethod(CORINFO_METHOD_HANDLE method);
-    static CORINFO_METHOD_HANDLE GetMethodHandleForNative(CORINFO_METHOD_HANDLE method);
-    static const char* GetMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE method, const char** classNamePtr);
     static const char* GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDLE hnd, CORINFO_SIG_INFO sig, bool ignoreMethodName = false);
 };
 

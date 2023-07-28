@@ -66,7 +66,7 @@ VOID InitLogging()
     LPWSTR fileName = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFile);
     if (fileName != 0)
     {
-        if (SUCCEEDED(szLogFileName.ReSizeNoThrow(wcslen(fileName) + 32)))
+        if (SUCCEEDED(szLogFileName.ReSizeNoThrow(u16_strlen(fileName) + 32)))
         {
             wcscpy_s(szLogFileName.Ptr(), szLogFileName.Size(), fileName);
         }
@@ -98,9 +98,9 @@ VOID InitLogging()
             NULL);
 
             // Some other logging may be going on, try again with another file name
-        if (LogFileHandle == INVALID_HANDLE_VALUE && wcslen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
+        if (LogFileHandle == INVALID_HANDLE_VALUE && u16_strlen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
         {
-            WCHAR* ptr = szLogFileName.Ptr() + wcslen(szLogFileName.Ptr()) + 1;
+            WCHAR* ptr = szLogFileName.Ptr() + u16_strlen(szLogFileName.Ptr()) + 1;
             ptr[-1] = W('.');
             ptr[0] = W('0');
             ptr[1] = 0;
@@ -309,7 +309,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     // the process heap. Why? Because our debug memory allocator will log out of memory
     // conditions. If we're low on memory, and we try to log an out of memory condition, and we try
     // and allocate memory again using the debug allocator, we could (and probably will) hit
-    // another low memory condition, try to log it, and we spin indefinately until we hit a stack overflow.
+    // another low memory condition, try to log it, and we spin indefinitely until we hit a stack overflow.
 
     const int BUFFERSIZE = 1000;
     static char rgchBuffer[BUFFERSIZE];
@@ -327,8 +327,8 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     needsPrefix = (fmt[strlen(fmt)-1] == '\n');
 
-    int cCountWritten = _vsnprintf_s(&pBuffer[buflen], BUFFERSIZE-buflen, _TRUNCATE, fmt, args );
-    pBuffer[BUFFERSIZE-1] = 0;
+    int cCountWritten = _vsnprintf_s(&pBuffer[buflen], BUFFERSIZE - buflen - 1, _TRUNCATE, fmt, args );
+    pBuffer[BUFFERSIZE - 1] = 0;
     if (cCountWritten < 0) {
         buflen = BUFFERSIZE - 1;
     } else {

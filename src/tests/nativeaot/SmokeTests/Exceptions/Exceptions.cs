@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 public class BringUpTest
@@ -24,11 +25,17 @@ public class BringUpTest
 
     public static int Main()
     {
+        // This test also doubles as server GC test
+        if (!System.Runtime.GCSettings.IsServerGC)
+            return 42;
+
         if (string.Empty.Length > 0)
         {
             // Just something to make sure we generate reflection metadata for the type
             new BringUpTest().ToString();
         }
+
+        TestGenericExceptions();
 
         int counter = 0;
         AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionEventHandler;
@@ -50,8 +57,8 @@ public class BringUpTest
             Console.WriteLine("Exception caught!");
             if (e.Message != "My exception")
             {
-                 Console.WriteLine("Unexpected exception message!");
-                 return Fail;
+                Console.WriteLine("Unexpected exception message!");
+                return Fail;
             }
 
             string stackTrace = e.StackTrace;
@@ -65,7 +72,7 @@ public class BringUpTest
 
         try
         {
-             g.myObjectField = new Object();
+            g.myObjectField = new Object();
         }
         catch (NullReferenceException)
         {
@@ -75,14 +82,14 @@ public class BringUpTest
 
         try
         {
-             try
-             {
-                 g.myField++;
-             }
-             finally
-             {
-                 counter++;
-             }
+            try
+            {
+                g.myField++;
+            }
+            finally
+            {
+                counter++;
+            }
         }
         catch (NullReferenceException)
         {
@@ -99,8 +106,8 @@ public class BringUpTest
             Console.WriteLine("Exception caught via filter!");
             if (e.Message != "Testing filter")
             {
-                 Console.WriteLine("Unexpected exception message!");
-                 return Fail;
+                Console.WriteLine("Unexpected exception message!");
+                return Fail;
             }
             counter++;
         }
@@ -150,6 +157,8 @@ public class BringUpTest
             Console.WriteLine("Unexpected counter value");
             return Fail;
         }
+
+        TestFirstChanceExceptionEvent();
 
         throw new Exception("UnhandledException");
 
@@ -207,6 +216,73 @@ public class BringUpTest
             Console.WriteLine("Executing finally in {0}", s);
             finallyCounter++;
         }
+    }
+
+    static void TestGenericExceptions()
+    {
+        if (CatchGenericException<DivideByZeroException>(100, 0) != 42)
+        {
+            Environment.Exit(Fail);
+        }
+
+        try
+        {
+            CatchGenericException<NotSupportedException>(100, 0);
+        }
+        catch (DivideByZeroException)
+        {
+            return;
+        }
+        Environment.Exit(Fail);
+    }
+
+    static int CatchGenericException<T>(int a, int b) where T : Exception
+    {
+        try
+        {
+            return a / b;
+        }
+        catch (T)
+        {
+            return 42;
+        }
+    }
+
+    static void TestFirstChanceExceptionEvent()
+    {
+        bool didInvokeHandler = false;
+        Exception exception = new Exception();
+        EventHandler<FirstChanceExceptionEventArgs> handler = (_, e) =>
+        {
+            Console.WriteLine("Exception triggered FirstChanceException event handler");
+            if (e.Exception != exception)
+            {
+                Console.WriteLine("Unexpected exception!");
+                Environment.Exit(Fail);
+            }
+
+            didInvokeHandler = true;
+        };
+        Func<Exception, bool> check = e =>
+        {
+            if (!didInvokeHandler)
+            {
+                Console.WriteLine("Did not invoke FirstChanceException event handler!");
+                Environment.Exit(Fail);
+            }
+
+            return e == exception;
+        };
+
+        AppDomain.CurrentDomain.FirstChanceException += handler;
+        try
+        {
+            throw exception;
+        }
+        catch (Exception e) when (check(e))
+        {
+        }
+        AppDomain.CurrentDomain.FirstChanceException -= handler;
     }
 
     static bool FilterWithStackTrace(Exception e)

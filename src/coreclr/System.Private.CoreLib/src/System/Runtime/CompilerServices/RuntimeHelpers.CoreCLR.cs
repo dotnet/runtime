@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -37,7 +38,7 @@ namespace System.Runtime.CompilerServices
         // Of course, reference types are not cloned.
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [return: NotNullIfNotNull("obj")]
+        [return: NotNullIfNotNull(nameof(obj))]
         public static extern object? GetObjectValue(object? obj);
 
         // RunClassConstructor causes the class constructor for the given type to be triggered
@@ -48,7 +49,7 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified class constructor threw an
         // exception when it ran.
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
         private static partial void RunClassConstructor(QCallTypeHandle type);
 
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
@@ -69,7 +70,7 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified module constructor threw an
         // exception when it ran.
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
         private static partial void RunModuleConstructor(QCallModule module);
 
         public static void RunModuleConstructor(ModuleHandle module)
@@ -81,10 +82,10 @@ namespace System.Runtime.CompilerServices
             RunModuleConstructor(new QCallModule(ref rm));
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
         internal static partial void CompileMethod(RuntimeMethodHandleInternal method);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
         private static unsafe partial void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
 
         public static void PrepareMethod(RuntimeMethodHandle method) => PrepareMethod(method, null);
@@ -113,6 +114,17 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetHashCode(object? o);
 
+        /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        /// <remarks>
+        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
+        /// code to the object if it does not already have one.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int TryGetHashCode(object o);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern new bool Equals(object? o1, object? o2);
 
@@ -121,7 +133,7 @@ namespace System.Runtime.CompilerServices
         {
             // This offset is baked in by string indexer intrinsic, so there is no harm
             // in getting it baked in here as well.
-            [System.Runtime.Versioning.NonVersionable]
+            [NonVersionable]
             get =>
                 // Number of bytes from the address pointed to by a reference to
                 // a String to the first 16-bit character in the String.  Skip
@@ -170,7 +182,7 @@ namespace System.Runtime.CompilerServices
             return obj!;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
         private static partial void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -297,13 +309,13 @@ namespace System.Runtime.CompilerServices
         }
 
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
+        [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
         /// <summary>
         /// Allocate memory that is associated with the <paramref name="type"/> and
-        /// will be freed if and when the <see cref="System.Type"/> is unloaded.
+        /// will be freed if and when the <see cref="Type"/> is unloaded.
         /// </summary>
         /// <param name="type">Type associated with the allocated memory.</param>
         /// <param name="size">Amount of memory in bytes to allocate.</param>
@@ -313,13 +325,12 @@ namespace System.Runtime.CompilerServices
             if (type is not RuntimeType rt)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
-            if (size < 0)
-                throw new ArgumentOutOfRangeException(nameof(size));
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             return AllocateTypeAssociatedMemory(new QCallTypeHandle(ref rt), (uint)size);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
+        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -331,8 +342,8 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
-            delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> callTarget,
-            IntPtr retVal)
+            delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> callTarget,
+            ref byte retVal)
         {
             IntPtr callersRetAddr;
             TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
@@ -354,7 +365,7 @@ namespace System.Runtime.CompilerServices
 
                 do
                 {
-                    callTarget(tls->ArgBuffer, retVal, &newFrame);
+                    callTarget(tls->ArgBuffer, ref retVal, &newFrame);
                     callTarget = newFrame.NextCall;
                 } while (callTarget != null);
             }
@@ -369,34 +380,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
-
-#pragma warning disable 0414
-        // Type that represents a managed view of the unmanaged GCFrame
-        // data structure in coreclr. The type layouts between the two should match.
-        internal unsafe ref struct GCFrameRegistration
-        {
-            private nuint m_reserved1;
-            private nuint m_reserved2;
-            private void* m_pObjRefs;
-            private uint m_numObjRefs;
-            private int m_MaybeInterior;
-
-            public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
-            {
-                m_reserved1 = 0;
-                m_reserved2 = 0;
-                m_pObjRefs = allocation;
-                m_numObjRefs = elemCount;
-                m_MaybeInterior = areByRefs ? 1 : 0;
-            }
-        }
-#pragma warning restore 0414
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -488,11 +471,21 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
+        // WFLAGS_LOW_ENUM
+        private const uint enum_flag_GenericsMask = 0x00000030;
+        private const uint enum_flag_GenericsMask_NonGeneric = 0x00000000; // no instantiation
+        private const uint enum_flag_GenericsMask_GenericInst = 0x00000010; // regular instantiation, e.g. List<String>
+        private const uint enum_flag_GenericsMask_SharedInst = 0x00000020; // shared instantiation, e.g. List<__Canon> or List<MyValueType<__Canon>>
+        private const uint enum_flag_GenericsMask_TypicalInst = 0x00000030; // the type instantiated at its formal parameters, e.g. List<T>
+        private const uint enum_flag_HasDefaultCtor = 0x00000200;
+
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
+        private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
+        private const uint enum_flag_Category_Nullable = 0x00050000;
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
@@ -527,37 +520,17 @@ namespace System.Runtime.CompilerServices
         private const int InterfaceMapOffset = 0x24 + DebugClassNamePtr;
 #endif
 
-        public bool HasComponentSize
-        {
-            get
-            {
-                return (Flags & enum_flag_HasComponentSize) != 0;
-            }
-        }
+        public bool HasComponentSize => (Flags & enum_flag_HasComponentSize) != 0;
 
-        public bool ContainsGCPointers
-        {
-            get
-            {
-                return (Flags & enum_flag_ContainsPointers) != 0;
-            }
-        }
+        public bool ContainsGCPointers => (Flags & enum_flag_ContainsPointers) != 0;
 
-        public bool NonTrivialInterfaceCast
-        {
-            get
-            {
-                return (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
-            }
-        }
+        public bool NonTrivialInterfaceCast => (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
 
-        public bool HasTypeEquivalence
-        {
-            get
-            {
-                return (Flags & enum_flag_HasTypeEquivalence) != 0;
-            }
-        }
+        public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
+
+        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
+
+        public bool HasDefaultConstructor => (Flags & (enum_flag_HasComponentSize | enum_flag_HasDefaultCtor)) == enum_flag_HasDefaultCtor;
 
         public bool IsMultiDimensionalArray
         {
@@ -582,11 +555,20 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public bool IsValueType
+        public bool IsValueType => (Flags & enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
+
+        public bool IsNullable => (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable;
+
+        public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
+
+        public bool IsGenericTypeDefinition => (Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == enum_flag_GenericsMask_TypicalInst;
+
+        public bool IsConstructedGenericType
         {
             get
             {
-                return (Flags & enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
+                uint genericsFlags = Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask);
+                return genericsFlags == enum_flag_GenericsMask_GenericInst || genericsFlags == enum_flag_GenericsMask_SharedInst;
             }
         }
 
@@ -650,6 +632,12 @@ namespace System.Runtime.CompilerServices
 
             return (MethodTable*)m_asTAddr;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TypeHandle TypeHandleOf<T>()
+        {
+            return new TypeHandle((void*)RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle));
+        }
     }
 
     // Helper structs used for tail calls via helper.
@@ -657,7 +645,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct PortableTailCallFrame
     {
         public IntPtr TailCallAwareReturnAddress;
-        public delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> NextCall;
+        public delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> NextCall;
     }
 
     [StructLayout(LayoutKind.Sequential)]

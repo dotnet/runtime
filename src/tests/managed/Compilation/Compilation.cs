@@ -11,7 +11,7 @@ using System.IO;
 
 class Program
 {
-    static int Main(string[] args)
+    static int Main()
     {
         Console.WriteLine("Starting the test");
         string codeFile = @"HelloWorld.cs";

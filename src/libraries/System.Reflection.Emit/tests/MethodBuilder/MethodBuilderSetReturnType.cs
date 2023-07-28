@@ -17,7 +17,7 @@ namespace System.Reflection.Emit.Tests
             Type returnType = typeParameters[0].AsType();
             method.SetReturnType(returnType);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             VerifyReturnType(method, returnType);
         }
 
@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
             Type returnType = typeParameters[1].AsType();
             method.SetReturnType(returnType);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             VerifyReturnType(method, returnType);
         }
 
@@ -49,7 +49,7 @@ namespace System.Reflection.Emit.Tests
             Type returnType = typeof(void);
             method.SetReturnType(returnType);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             VerifyReturnType(method, returnType);
         }
 
@@ -62,7 +62,7 @@ namespace System.Reflection.Emit.Tests
             Type returnType = typeof(void);
             method.SetReturnType(returnType);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             VerifyReturnType(method, returnType);
         }
 
@@ -80,7 +80,7 @@ namespace System.Reflection.Emit.Tests
             method.SetReturnType(typeParameters[0].AsType());
             method.SetReturnType(returnType);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             VerifyReturnType(method, returnType);
         }
 
@@ -97,7 +97,7 @@ namespace System.Reflection.Emit.Tests
             method.SetReturnType(typeParameters[0].AsType());
             method.SetReturnType(returnType);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             VerifyReturnType(method, returnType);
         }
 
@@ -113,7 +113,7 @@ namespace System.Reflection.Emit.Tests
             Type returnType = typeParameters[0].AsType();
             method.SetReturnType(returnType);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             VerifyReturnType(method, returnType);
         }
 
@@ -127,7 +127,7 @@ namespace System.Reflection.Emit.Tests
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters(typeParamNames);
 
             Type returnType = typeParameters[0].AsType();
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             method.SetReturnType(returnType);
         }
 
@@ -139,7 +139,7 @@ namespace System.Reflection.Emit.Tests
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
             method.SetReturnType(null);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             VerifyReturnType(method, typeof(void));
         }
 

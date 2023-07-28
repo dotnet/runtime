@@ -69,13 +69,13 @@ namespace System.Tests
                 Assert.InRange(r.NextInt64(20, 30), 20, 29);
             }
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 5_000_000; i++)
             {
                 float x = r.NextSingle();
                 Assert.True(x >= 0.0 && x < 1.0);
             }
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 5_000_000; i++)
             {
                 double x = r.NextDouble();
                 Assert.True(x >= 0.0 && x < 1.0);
@@ -611,38 +611,38 @@ namespace System.Tests
                 Assert.Equal(0, randOuter.Next(0));
                 Assert.Equal(0, randOuter.Next(1));
 
-                Assert.Equal(11, randOuter.Next(42));
-                Assert.Equal(1865324524, randOuter.Next(int.MaxValue));
+                Assert.Equal(36, randOuter.Next(42));
+                Assert.Equal(414373255, randOuter.Next(int.MaxValue));
 
                 Assert.Equal(0, randOuter.Next(0, 0));
                 Assert.Equal(1, randOuter.Next(1, 2));
-                Assert.Equal(12, randOuter.Next(0, 42));
-                Assert.Equal(7234, randOuter.Next(42, 12345));
-                Assert.Equal(2147483642, randOuter.Next(int.MaxValue - 5, int.MaxValue));
-                Assert.Equal(-1236260882, randOuter.Next(int.MinValue, int.MaxValue));
+                Assert.Equal(8, randOuter.Next(0, 42));
+                Assert.Equal(4903, randOuter.Next(42, 12345));
+                Assert.Equal(2147483643, randOuter.Next(int.MaxValue - 5, int.MaxValue));
+                Assert.Equal(241160533, randOuter.Next(int.MinValue, int.MaxValue));
 
-                Assert.Equal(3644728249650840822, randOuter.NextInt64());
-                Assert.Equal(2809750975933744783, randOuter.NextInt64());
+                Assert.Equal(7986543274318426717, randOuter.NextInt64());
+                Assert.Equal(2184762751940478242, randOuter.NextInt64());
 
                 Assert.Equal(0, randOuter.NextInt64(0));
                 Assert.Equal(0, randOuter.NextInt64(1));
-                Assert.Equal(35, randOuter.NextInt64(42));
-                Assert.Equal(7986543274318426717, randOuter.NextInt64(long.MaxValue));
+                Assert.Equal(8, randOuter.NextInt64(42));
+                Assert.Equal(4799330244130288536, randOuter.NextInt64(long.MaxValue));
 
                 Assert.Equal(0, randOuter.NextInt64(0, 0));
                 Assert.Equal(1, randOuter.NextInt64(1, 2));
-                Assert.Equal(15, randOuter.NextInt64(0, 42));
-                Assert.Equal(4155, randOuter.NextInt64(42, 12345));
-                Assert.Equal(9223372036854775803, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
-                Assert.Equal(375288451405801266, randOuter.NextInt64(long.MinValue, long.MaxValue));
+                Assert.Equal(29, randOuter.NextInt64(0, 42));
+                Assert.Equal(9575, randOuter.NextInt64(42, 12345));
+                Assert.Equal(9223372036854775802, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
+                Assert.Equal(-8248911992647668710, randOuter.NextInt64(long.MinValue, long.MaxValue));
 
-                Assert.Equal(0.2885307561293763, randOuter.NextDouble());
-                Assert.Equal(0.8319616593420064, randOuter.NextDouble());
-                Assert.Equal(0.694751074593599, randOuter.NextDouble());
+                Assert.Equal(0.4319359955262648, randOuter.NextDouble());
+                Assert.Equal(0.00939284326802925, randOuter.NextDouble());
+                Assert.Equal(0.4631264615107299, randOuter.NextDouble());
 
-                Assert.Equal(0.7749006f, randOuter.NextSingle());
-                Assert.Equal(0.13424736f, randOuter.NextSingle());
-                Assert.Equal(0.05282557f, randOuter.NextSingle());
+                Assert.Equal(0.33326554f, randOuter.NextSingle());
+                Assert.Equal(0.85681933f, randOuter.NextSingle());
+                Assert.Equal(0.6594592f, randOuter.NextSingle());
             }
             else
             {
@@ -671,41 +671,166 @@ namespace System.Tests
                 Assert.Equal(0, randOuter.Next(1));
 
                 Assert.Equal(23, randOuter.Next(42));
-                Assert.Equal(1207874445, randOuter.Next(int.MaxValue));
+                Assert.Equal(1109044164, randOuter.Next(int.MaxValue));
 
                 Assert.Equal(0, randOuter.Next(0, 0));
                 Assert.Equal(1, randOuter.Next(1, 2));
-                Assert.Equal(33, randOuter.Next(0, 42));
-                Assert.Equal(2525, randOuter.Next(42, 12345));
-                Assert.Equal(2147483646, randOuter.Next(int.MaxValue - 5, int.MaxValue));
-                Assert.Equal(-1841045958, randOuter.Next(int.MinValue, int.MaxValue));
+                Assert.Equal(2, randOuter.Next(0, 42));
+                Assert.Equal(528, randOuter.Next(42, 12345));
+                Assert.Equal(2147483643, randOuter.Next(int.MaxValue - 5, int.MaxValue));
+                Assert.Equal(-246770113, randOuter.Next(int.MinValue, int.MaxValue));
 
-                Assert.Equal(364988307769675967, randOuter.NextInt64());
-                Assert.Equal(4081751239945971648, randOuter.NextInt64());
+                Assert.Equal(7961633792735929777, randOuter.NextInt64());
+                Assert.Equal(1188783949680720902, randOuter.NextInt64());
 
                 Assert.Equal(0, randOuter.NextInt64(0));
                 Assert.Equal(0, randOuter.NextInt64(1));
-                Assert.Equal(8, randOuter.NextInt64(42));
-                Assert.Equal(3127675200855610302, randOuter.NextInt64(long.MaxValue));
+                Assert.Equal(1, randOuter.NextInt64(42));
+                Assert.Equal(3659990215800279771, randOuter.NextInt64(long.MaxValue));
 
                 Assert.Equal(0, randOuter.NextInt64(0, 0));
                 Assert.Equal(1, randOuter.NextInt64(1, 2));
-                Assert.Equal(25, randOuter.NextInt64(0, 42));
-                Assert.Equal(593, randOuter.NextInt64(42, 12345));
+                Assert.Equal(5, randOuter.NextInt64(0, 42));
+                Assert.Equal(9391, randOuter.NextInt64(42, 12345));
                 Assert.Equal(9223372036854775805, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
-                Assert.Equal(-1415073976784572606, randOuter.NextInt64(long.MinValue, long.MaxValue));
+                Assert.Equal(7588547406678852723, randOuter.NextInt64(long.MinValue, long.MaxValue));
 
-                Assert.Equal(0.054582986776168796, randOuter.NextDouble());
-                Assert.Equal(0.7599686772523376, randOuter.NextDouble());
-                Assert.Equal(0.9113759792165226, randOuter.NextDouble());
+                Assert.Equal(0.3010761548802774, randOuter.NextDouble());
+                Assert.Equal(0.5866389350236931, randOuter.NextDouble());
+                Assert.Equal(0.4726054469222304, randOuter.NextDouble());
 
-                Assert.Equal(0.3010761f, randOuter.NextSingle());
-                Assert.Equal(0.8162224f, randOuter.NextSingle());
-                Assert.Equal(0.5866389f, randOuter.NextSingle());
+                Assert.Equal(0.35996222f, randOuter.NextSingle());
+                Assert.Equal(0.929421f, randOuter.NextSingle());
+                Assert.Equal(0.5790618f, randOuter.NextSingle());
             }
         }
 
-        private static Random Create(bool derived, bool seeded, int seed = 42) =>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void Shuffle_Array_Seeded(bool emptyShuffle)
+        {
+            Random random = new Random(0x70636A61);
+            int[] items = new int[] { 1, 2, 3, 4 };
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 4, 2, 1, 3 }, items);
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 3, 4, 1 }, items);
+
+            if (emptyShuffle)
+            {
+                // Empty shuffle should have no observable effect.
+                random.Shuffle(Span<int>.Empty);
+            }
+
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items);
+        }
+
+        [Fact]
+        public static void Shuffle_Array_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            AssertExtensions.Throws<ArgumentNullException>("values", () => random.Shuffle((int[])null));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void Shuffle_Span_Seeded(bool emptyShuffle)
+        {
+            Random random = new Random(0x70636A61);
+            Span<int> items = new int[] { 1, 2, 3, 4 };
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 4, 2, 1, 3 }, items);
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 3, 4, 1 }, items);
+
+            if (emptyShuffle)
+            {
+                // Empty shuffle should have no observable effect.
+                random.Shuffle(Array.Empty<int>());
+            }
+
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items);
+        }
+
+        [Fact]
+        public static void GetItems_Span_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems<int>(stackalloc int[1], length: -1));
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, length: 1));
+        }
+
+        [Fact]
+        public static void GetItems_Array_Allocating_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems(new int[1], length: -1));
+            AssertExtensions.Throws<ArgumentNullException>("choices", () => random.GetItems((int[])null, length: 1));
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(Array.Empty<int>(), length: 1));
+        }
+
+        [Fact]
+        public static void GetItems_Buffer_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            int[] destination = new int[1];
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, destination));
+        }
+
+        [Fact]
+        public static void GetItems_Allocating_Array_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            byte[] items = new byte[] { 1, 2, 3 };
+
+            byte[] result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, result);
+        }
+
+        [Fact]
+        public static void GetItems_Allocating_Span_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            ReadOnlySpan<byte> items = new byte[] { 1, 2, 3 };
+
+            byte[] result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, result);
+        }
+
+        [Fact]
+        public static void GetItems_Buffer_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            ReadOnlySpan<byte> items = new byte[] { 1, 2, 3 };
+
+            Span<byte> buffer = stackalloc byte[7];
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, buffer);
+
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, buffer);
+
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, buffer);
+        }
+
+        private static Random Create(bool derived, bool seeded) =>
             (derived, seeded) switch
             {
                 (false, false) => new Random(),

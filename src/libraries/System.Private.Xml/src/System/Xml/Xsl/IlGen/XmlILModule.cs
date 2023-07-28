@@ -3,16 +3,16 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Security;
 using System.Xml.Xsl.Runtime;
 using System.Runtime.Versioning;
+using DebuggingModes = System.Diagnostics.DebuggableAttribute.DebuggingModes;
 
 namespace System.Xml.Xsl.IlGen
 {
-    using DebuggingModes = DebuggableAttribute.DebuggingModes;
-
     internal enum XmlILMethodAttributes
     {
         None = 0,
@@ -20,6 +20,7 @@ namespace System.Xml.Xsl.IlGen
         Raw = 2,        // Raw method which should not add an implicit first argument of type XmlQueryRuntime
     }
 
+    [RequiresDynamicCode("Creates DynamicMethods")]
     internal sealed class XmlILModule
     {
         private static long s_assemblyId;                                     // Unique identifier used to ensure that assembly names are unique within AppDomain
@@ -159,7 +160,7 @@ namespace System.Xml.Xsl.IlGen
 
                 for (int i = 0; i < paramNames.Length; i++)
                 {
-                    if (paramNames[i] != null && paramNames[i]!.Length != 0)
+                    if (!string.IsNullOrEmpty(paramNames[i]))
                         methBldr.DefineParameter(i + (isRaw ? 1 : 2), ParameterAttributes.None, paramNames[i]);
                 }
 
@@ -240,7 +241,7 @@ namespace System.Xml.Xsl.IlGen
 
             if (!_useLRE)
             {
-                typBaked = _typeBldr!.CreateTypeInfo()!.AsType();
+                typBaked = _typeBldr!.CreateType();
 
                 // Replace all MethodInfos in this.methods
                 methodsBaked = new Hashtable(_methods.Count);

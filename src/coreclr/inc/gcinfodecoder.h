@@ -10,7 +10,7 @@
 // ******************************************************************************
 // WARNING!!!: These values are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcinfodecoder.h
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcinfodecoder.h
 // ******************************************************************************
 
 #ifndef _GC_INFO_DECODER_
@@ -157,7 +157,7 @@ inline BOOL IS_ALIGNED( void* val, size_t alignment )
 
 typedef void (*GCEnumCallback)(
     void *          hCallback,      // callback data
-    OBJECTREF*      pObject,        // address of obect-reference we are reporting
+    OBJECTREF*      pObject,        // address of object-reference we are reporting
     uint32_t        flags           // is this a pinned and/or interior pointer
 );
 
@@ -216,7 +216,7 @@ enum GcInfoDecoderFlags
     DECODE_EDIT_AND_CONTINUE     = 0x800,
     DECODE_REVERSE_PINVOKE_VAR   = 0x1000,
     DECODE_RETURN_KIND           = 0x2000,
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     DECODE_HAS_TAILCALLS         = 0x4000,
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 };
@@ -224,7 +224,7 @@ enum GcInfoDecoderFlags
 enum GcInfoHeaderFlags
 {
     GC_INFO_IS_VARARG                   = 0x1,
-    GC_INFO_HAS_SECURITY_OBJECT         = 0x2,
+    // unused                           = 0x2, // was GC_INFO_HAS_SECURITY_OBJECT
     GC_INFO_HAS_GS_COOKIE               = 0x4,
     GC_INFO_HAS_PSP_SYM                 = 0x8,
     GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK   = 0x30,
@@ -235,7 +235,7 @@ enum GcInfoHeaderFlags
     GC_INFO_HAS_STACK_BASE_REGISTER     = 0x40,
 #ifdef TARGET_AMD64
     GC_INFO_WANTS_REPORT_ONLY_LEAF      = 0x80,
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GC_INFO_HAS_TAILCALLS               = 0x80,
 #endif // TARGET_AMD64
     GC_INFO_HAS_EDIT_AND_CONTINUE_INFO = 0x100,
@@ -528,7 +528,6 @@ public:
     // Miscellaneous method information
     //------------------------------------------------------------------------
 
-    INT32   GetSecurityObjectStackSlot();
     INT32   GetGSCookieStackSlot();
     UINT32  GetGSCookieValidRangeStart();
     UINT32  GetGSCookieValidRangeEnd();
@@ -540,9 +539,9 @@ public:
     bool    HasMethodTableGenericsInstContext();
     bool    GetIsVarArg();
     bool    WantsReportOnlyLeaf();
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool    HasTailCalls();
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
     ReturnKind GetReturnKind();
     UINT32  GetCodeLength();
     UINT32  GetStackBaseRegister();
@@ -568,10 +567,9 @@ private:
     bool    m_GenericSecretParamIsMT;
 #ifdef TARGET_AMD64
     bool    m_WantsReportOnlyLeaf;
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool    m_HasTailCalls;
 #endif // TARGET_AMD64
-    INT32   m_SecurityObjectStackSlot;
     INT32   m_GSCookieStackSlot;
     INT32   m_ReversePInvokeFrameStackSlot;
     UINT32  m_ValidRangeStart;

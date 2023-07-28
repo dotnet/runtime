@@ -171,7 +171,7 @@ namespace System.IO.Ports.Tests
                 char[] charsToWrite = new char[numberOfBytesToRead];
                 byte[] bytesToWrite = new byte[numberOfBytesToRead];
 
-                //Genrate random chars to send
+                // Generate random chars to send
                 for (int i = 0; i < bytesToWrite.Length; i++)
                 {
                     char randChar = (char)rndGen.Next(0, ushort.MaxValue);

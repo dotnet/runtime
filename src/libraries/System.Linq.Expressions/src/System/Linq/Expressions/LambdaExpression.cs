@@ -26,7 +26,7 @@ namespace System.Linq.Expressions
         private readonly Expression _body;
 
         // This can be flipped to false using feature switches at publishing time
-        public static bool CanCompileToIL => true;
+        public static bool CanCompileToIL => RuntimeFeature.IsDynamicCodeSupported;
 
         // This could be flipped to false using feature switches at publishing time
         public static bool CanInterpret => true;
@@ -154,7 +154,7 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile(bool preferInterpretation)
         {
-            if (CanCompileToIL && CanInterpret && preferInterpretation)
+            if (CanInterpret && preferInterpretation)
             {
                 return new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
             }
@@ -234,7 +234,7 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile(bool preferInterpretation)
         {
-            if (CanCompileToIL && CanInterpret && preferInterpretation)
+            if (CanInterpret && preferInterpretation)
             {
                 return (TDelegate)(object)new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
             }
@@ -370,7 +370,7 @@ namespace System.Linq.Expressions
             throw Error.ArgumentOutOfRange(nameof(index));
         }
 
-        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => EmptyReadOnlyCollection<ParameterExpression>.Instance;
+        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ReadOnlyCollection<ParameterExpression>.Empty;
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
@@ -613,11 +613,8 @@ namespace System.Linq.Expressions
             // method and call that will be used for creating instances of this
             // delegate type
             Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>? fastPath;
-            CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? factories = s_lambdaFactories;
-            if (factories == null)
-            {
-                s_lambdaFactories = factories = new CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>(50);
-            }
+            CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? factories =
+                s_lambdaFactories ??= new CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>(50);
 
             if (!factories.TryGetValue(delegateType, out fastPath))
             {

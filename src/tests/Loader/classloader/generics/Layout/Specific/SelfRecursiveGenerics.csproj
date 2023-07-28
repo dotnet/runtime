@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SelfRecursiveGenerics.cs" />
+  </ItemGroup>
+</Project>

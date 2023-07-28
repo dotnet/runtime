@@ -414,7 +414,7 @@ mono_seq_point_data_read (SeqPointData *data, char *path)
 		fclose(f);
 		return FALSE;
 	}
-	g_assert (len == fsize || (len < fsize && feof(f)));
+	g_assert (len == fsize || (len < GLONG_TO_ULONG(fsize) && feof(f)));
 
 	fclose(f);
 

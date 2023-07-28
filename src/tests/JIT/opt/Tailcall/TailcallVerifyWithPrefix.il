@@ -4,7 +4,6 @@
 
 
 // Metadata version: v2.0.50727
-.module extern libc
 
 .assembly extern mscorlib { }
 .assembly extern xunit.core {}
@@ -13,11 +12,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly extern System.Runtime
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:2:1:0
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.Extensions
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -30,29 +25,29 @@
 }
 .assembly extern System.Linq
 {
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                     
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 .assembly TailcallVerifyWithPrefix
 {
-  .custom instance void [mscorlib]System.Reflection.AssemblyDescriptionAttribute::.ctor(string) = ( 01 00 00 00 00 ) 
-  .custom instance void [mscorlib]System.Reflection.AssemblyConfigurationAttribute::.ctor(string) = ( 01 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Reflection.AssemblyDescriptionAttribute::.ctor(string) = ( 01 00 00 00 00 )
+  .custom instance void [mscorlib]System.Reflection.AssemblyConfigurationAttribute::.ctor(string) = ( 01 00 00 00 00 )
   .custom instance void [mscorlib]System.Reflection.AssemblyCompanyAttribute::.ctor(string) = ( 01 00 09 4D 69 63 72 6F 73 6F 66 74 00 00 )       // ...Microsoft..
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
-  .custom instance void [mscorlib]System.Reflection.AssemblyCopyrightAttribute::.ctor(string) = ( 01 00 1B 43 6F 70 79 72 69 67 68 74 20 C2 A9 20   // ...Copyright .. 
+  .custom instance void [mscorlib]System.Reflection.AssemblyCopyrightAttribute::.ctor(string) = ( 01 00 1B 43 6F 70 79 72 69 67 68 74 20 C2 A9 20   // ...Copyright ..
                                                                                                   4D 69 63 72 6F 73 6F 66 74 20 32 30 30 38 00 00 ) // Microsoft 2008..
   .custom instance void [mscorlib]System.Reflection.AssemblyTitleAttribute::.ctor(string) = ( 01 00 0E 54 61 69 6C 63 61 6C 6C 56 65 72 69 66   // ...TailcallVerif
                                                                                               79 00 00 )                                        // y..
-  .custom instance void [mscorlib]System.Reflection.AssemblyTrademarkAttribute::.ctor(string) = ( 01 00 00 00 00 ) 
-  .custom instance void [mscorlib]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool) = ( 01 00 00 00 00 ) 
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Reflection.AssemblyTrademarkAttribute::.ctor(string) = ( 01 00 00 00 00 )
+  .custom instance void [mscorlib]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool) = ( 01 00 00 00 00 )
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [mscorlib]System.Runtime.InteropServices.GuidAttribute::.ctor(string) = ( 01 00 24 66 36 39 30 66 65 61 66 2D 38 65 36 34   // ..$f690feaf-8e64
                                                                                                   2D 34 33 34 31 2D 39 38 32 66 2D 35 32 39 62 65   // -4341-982f-529be
                                                                                                   32 35 63 64 30 64 34 00 00 )                      // 25cd0d4..
 
   // --- The following custom attribute is added automatically, do not uncomment -------
-  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 02 00 00 00 00 00 ) 
+  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 02 00 00 00 00 00 )
 
   .custom instance void [mscorlib]System.Reflection.AssemblyProductAttribute::.ctor(string) = ( 01 00 0E 54 61 69 6C 63 61 6C 6C 56 65 72 69 66   // ...TailcallVerif
                                                                                                 79 00 00 )                                        // y..
@@ -60,9 +55,8 @@
     .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module TailcallVerifyWithPrefix.exe
 // MVID: {D1242658-CA16-4D11-A740-6635F112F4B5}
-.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
+.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -96,7 +90,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -143,7 +137,7 @@
     IL_0099:  ret
   } // end of method Condition18::Test1
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           Caller1() cil managed
   {
     // Code size       52 (0x34)
@@ -165,7 +159,7 @@
     IL_0033:  ret
   } // end of method Condition18::Caller1
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           Callee1() cil managed noinlining
   {
     // Code size       27 (0x1b)
@@ -202,7 +196,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -249,7 +243,7 @@
     IL_0099:  ret
   } // end of method Condition18::Test3
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           Caller3() cil managed
   {
     // Code size       65 (0x41)
@@ -277,7 +271,7 @@
     IL_0040:  ret
   } // end of method Condition18::Caller3
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           Callee3() cil managed noinlining
   {
     // Code size       27 (0x1b)
@@ -296,7 +290,7 @@
     IL_001a:  ret
   } // end of method Condition18::Callee3
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -306,7 +300,7 @@
     IL_0006:  ret
   } // end of method Condition18::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       16 (0x10)
@@ -329,20 +323,20 @@
   {
     .pack 0
     .size 3
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.UnsafeValueTypeAttribute::.ctor() = ( 01 00 00 00 ) 
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [mscorlib]System.Runtime.CompilerServices.UnsafeValueTypeAttribute::.ctor() = ( 01 00 00 00 )
+    .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 )
     .field public uint8 FixedElementField
   } // end of class '<data>e__FixedBuffer0'
 
   .field public valuetype TailcallVerify.Unsafe/'<data>e__FixedBuffer0' data
   .custom instance void [mscorlib]System.Runtime.CompilerServices.FixedBufferAttribute::.ctor(class [mscorlib]System.Type,
-                                                                                              int32) = ( 01 00 58 53 79 73 74 65 6D 2E 42 79 74 65 2C 20   // ..XSystem.Byte, 
+                                                                                              int32) = ( 01 00 58 53 79 73 74 65 6D 2E 42 79 74 65 2C 20   // ..XSystem.Byte,
                                                                                                          6D 73 63 6F 72 6C 69 62 2C 20 56 65 72 73 69 6F   // mscorlib, Versio
                                                                                                          6E 3D 32 2E 30 2E 30 2E 30 2C 20 43 75 6C 74 75   // n=2.0.0.0, Cultu
                                                                                                          72 65 3D 6E 65 75 74 72 61 6C 2C 20 50 75 62 6C   // re=neutral, Publ
                                                                                                          69 63 4B 65 79 54 6F 6B 65 6E 3D 62 37 37 61 35   // icKeyToken=b77a5
                                                                                                          63 35 36 31 39 33 34 65 30 38 39 03 00 00 00 00   // c561934e089.....
-                                                                                                         00 ) 
+                                                                                                         00 )
 } // end of class TailcallVerify.Unsafe
 
 .class private auto ansi beforefieldinit TailcallVerify.Condition17
@@ -371,7 +365,7 @@
       IL_001f:  leave.s    IL_0078
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0021:  stloc.1
       IL_0022:  ldloc.1
@@ -460,7 +454,7 @@
     IL_000a:  ret
   } // end of method Condition17::Callee1
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -470,7 +464,7 @@
     IL_0006:  ret
   } // end of method Condition17::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       16 (0x10)
@@ -492,9 +486,9 @@
   .field private static int32 Result
   .field public object syncObj
   .field private static class [mscorlib]System.Threading.ParameterizedThreadStart 'CS$<>9__CachedAnonymousMethodDelegate1'
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 )
   .field private static class [mscorlib]System.Threading.ParameterizedThreadStart 'CS$<>9__CachedAnonymousMethodDelegate3'
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 )
   .method public hidebysig static int32  Test1() cil managed nooptimization
   {
     // Code size       211 (0xd3)
@@ -516,7 +510,7 @@
       IL_001d:  leave      IL_00a9
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0022:  stloc.1
       IL_0023:  ldloc.1
@@ -579,7 +573,7 @@
     IL_00d2:  ret
   } // end of method Condition16::Test1
 
-  .method private hidebysig instance void 
+  .method private hidebysig instance void
           Caller1() cil managed synchronized
   {
     // Code size       53 (0x35)
@@ -602,7 +596,7 @@
     IL_0034:  ret
   } // end of method Condition16::Caller1
 
-  .method private hidebysig instance void 
+  .method private hidebysig instance void
           Callee1() cil managed noinlining
   {
     // Code size       59 (0x3b)
@@ -632,7 +626,7 @@
     IL_003a:  ret
   } // end of method Condition16::Callee1
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       18 (0x12)
@@ -647,7 +641,7 @@
 
   .method private hidebysig static void  '<Test1>b__0'(object o) cil managed
   {
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 )
     // Code size       48 (0x30)
     .maxstack  8
     IL_0000:  ldarg.0
@@ -671,7 +665,7 @@
 
   .method private hidebysig static void  '<Callee1>b__2'(object o) cil managed
   {
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 )
     // Code size       42 (0x2a)
     .maxstack  8
     IL_0000:  ldarg.0
@@ -691,7 +685,7 @@
     IL_0029:  ret
   } // end of method Condition16::'<Callee1>b__2'
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       16 (0x10)
@@ -729,7 +723,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -776,7 +770,7 @@
     IL_0099:  ret
   } // end of method Condition13::Test1
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           Caller1() cil managed nooptimization
   {
     // Code size       52 (0x34)
@@ -798,7 +792,7 @@
     IL_0033:  ret
   } // end of method Condition13::Caller1
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           Callee1() cil managed noinlining
   {
     // Code size       27 (0x1b)
@@ -817,7 +811,7 @@
     IL_001a:  ret
   } // end of method Condition13::Callee1
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -827,7 +821,7 @@
     IL_0006:  ret
   } // end of method Condition13::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       16 (0x10)
@@ -875,7 +869,7 @@
       IL_001c:  leave.s    IL_0064
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_001e:  stloc.0
       IL_001f:  ldloc.0
@@ -970,7 +964,7 @@
     IL_000f:  ret
   } // end of method Condition12::Callee1
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -980,7 +974,7 @@
     IL_0006:  ret
   } // end of method Condition12::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       16 (0x10)
@@ -997,7 +991,7 @@
 
 .class interface private abstract auto ansi TailcallVerify.ICondition9
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance void  Callee1() cil managed
   {
   } // end of method ICondition9::Callee1
@@ -1027,7 +1021,7 @@
       IL_0016:  leave.s    IL_006f
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0018:  stloc.0
       IL_0019:  ldloc.0
@@ -1099,7 +1093,7 @@
     IL_003a:  ret
   } // end of method Condition9::Caller1
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Callee1() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -1112,7 +1106,7 @@
     IL_000a:  ret
   } // end of method Condition9::Callee1
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -1122,7 +1116,7 @@
     IL_0006:  ret
   } // end of method Condition9::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       16 (0x10)
@@ -1159,7 +1153,7 @@
       IL_0016:  leave.s    IL_006f
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0018:  stloc.0
       IL_0019:  ldloc.0
@@ -1231,7 +1225,7 @@
     IL_003a:  ret
   } // end of method Condition11::Caller1
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance void  Callee1() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -1265,7 +1259,7 @@
       IL_001d:  leave.s    IL_0076
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_001f:  stloc.1
       IL_0020:  ldloc.1
@@ -1312,7 +1306,7 @@
     IL_009f:  ret
   } // end of method Condition11::Test2
 
-  .method family hidebysig newslot virtual 
+  .method family hidebysig newslot virtual
           instance int32  Callee2() cil managed noinlining
   {
     // Code size       12 (0xc)
@@ -1327,7 +1321,7 @@
     IL_000b:  ret
   } // end of method Condition11::Callee2
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -1337,7 +1331,7 @@
     IL_0006:  ret
   } // end of method Condition11::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       16 (0x10)
@@ -1356,7 +1350,7 @@
        extends [mscorlib]System.Object
        implements class [mscorlib]System.Collections.Generic.IComparer`1<string>
 {
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance int32  Compare(string x,
                                   string y) cil managed
   {
@@ -1400,7 +1394,7 @@
     IL_006b:  ret
   } // end of method MyCompare::Compare
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -1412,7 +1406,7 @@
 
 } // end of class TailcallVerify.MyCompare
 
-.class private auto ansi beforefieldinit TailcallVerify.Program
+.class public auto ansi beforefieldinit TailcallVerify.Program
        extends [mscorlib]System.Object
 {
   .field private static int32 result
@@ -1420,7 +1414,7 @@
   {
     // Code size       948 (0x3b4)
     .maxstack  4
-    .locals init ([0] class [mscorlib]System.Collections.Generic.List`1<string> exludeCollection,
+    .locals init ([0] class [mscorlib]System.Collections.Generic.List`1<string> excludeCollection,
              [1] class [mscorlib]System.Collections.Generic.List`1<string> foo,
              [2] class [mscorlib]System.Type t,
              [3] class [mscorlib]System.Reflection.MethodInfo m,
@@ -1727,7 +1721,7 @@
     IL_03b3:  ret
   } // end of method Program::PrintOutRunTestsFile
 
-  .method public hidebysig specialname static 
+  .method public hidebysig specialname static
           int32  get_Result() cil managed
   {
     // Code size       6 (0x6)
@@ -1736,7 +1730,7 @@
     IL_0005:  ret
   } // end of method Program::get_Result
 
-  .method public hidebysig specialname static 
+  .method public hidebysig specialname static
           void  set_Result(int32 'value') cil managed
   {
     // Code size       16 (0x10)
@@ -1750,7 +1744,7 @@
     IL_000f:  ret
   } // end of method Program::set_Result
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Run(string arg) cil managed
   {
     // Code size       1964 (0x7ac)
@@ -2250,7 +2244,7 @@
     IL_07ab:  ret
   } // end of method Program::Run
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -2272,32 +2266,32 @@
     call       int32 TailcallVerify.Program::Run(string)
     pop
     ldstr      "Condition5.Test1"
-    call       int32 TailcallVerify.Program::Run(string)      
-    pop	
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
     ldstr      "Condition5.Test2"
-    call       int32 TailcallVerify.Program::Run(string)     
-    pop	
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
     ldstr      "Condition5.Test3"
-    call       int32 TailcallVerify.Program::Run(string)      
-    pop	
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
     ldstr      "Condition5.Test4"
-    call       int32 TailcallVerify.Program::Run(string)    
-    pop	
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
     ldstr      "Condition5.Test5"
-    call       int32 TailcallVerify.Program::Run(string)    
-    pop	
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
     ldstr      "Condition5.Test6"
-    call       int32 TailcallVerify.Program::Run(string)      
-    pop		
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
     ldstr      "Condition5.Test7"
-    call       int32 TailcallVerify.Program::Run(string)      
-    pop	
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
     ldstr      "Condition5.Test8"
-    call       int32 TailcallVerify.Program::Run(string)      
-    pop	
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
     ldstr      "Condition5.Test9"
-    call       int32 TailcallVerify.Program::Run(string)    
-    pop	
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
     ldstr      "Condition9.Test1"
     call       int32 TailcallVerify.Program::Run(string)
     pop
@@ -2360,9 +2354,9 @@
     pop
     ldstr      "Condition22.Test4"
     call       int32 TailcallVerify.Program::Run(string)
-    ret    
+    ret
   } // end of method Program::Main
-    
+
   .method private hidebysig static void  Usage() cil managed
   {
     // Code size       71 (0x47)
@@ -2390,7 +2384,7 @@
     IL_0046:  ret
   } // end of method Program::Usage
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -2400,7 +2394,7 @@
     IL_0006:  ret
   } // end of method Program::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       8 (0x8)
@@ -2466,7 +2460,7 @@
       IL_0043:  leave.s    IL_009c
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0045:  stloc.1
       IL_0046:  ldloc.1
@@ -2631,7 +2625,7 @@
       IL_0043:  leave.s    IL_0048
 
     }  // end .try
-    catch [mscorlib]System.DivideByZeroException 
+    catch [mscorlib]System.DivideByZeroException
     {
       IL_0045:  pop
       IL_0046:  leave.s    IL_0048
@@ -2640,7 +2634,7 @@
     IL_0048:  ret
   } // end of method Condition21::Caller3
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           CallerIsOdd3(int32 i,
                        int32 i2,
                        int32 i3,
@@ -2665,7 +2659,7 @@
     IL_000d:  ret
   } // end of method Condition21::CallerIsOdd3
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           CalleeIsOdd3(int32 i,
                        int32 i2,
                        int32 i3,
@@ -2731,7 +2725,7 @@
     IL_006c:  ret
   } // end of method Condition21::CalleeIsOdd3
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           CalleeIsEven3(int32 i,
                         int32 i2,
                         int32 i3,
@@ -2813,7 +2807,7 @@
       IL_0016:  leave.s    IL_006f
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0018:  stloc.0
       IL_0019:  ldloc.0
@@ -2912,7 +2906,7 @@
       IL_0018:  leave.s    IL_0071
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_001a:  stloc.0
       IL_001b:  ldloc.0
@@ -2959,7 +2953,7 @@
     IL_009a:  ret
   } // end of method Condition21::Test7
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Caller7(int32 i1) cil managed
   {
     // Code size       53 (0x35)
@@ -2983,7 +2977,7 @@
     IL_0034:  ret
   } // end of method Condition21::Caller7
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Callee7(int32 i1) cil managed noinlining
   {
     // Code size       12 (0xc)
@@ -2997,7 +2991,7 @@
     IL_000b:  ret
   } // end of method Condition21::Callee7
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       32 (0x20)
@@ -3016,7 +3010,7 @@
     IL_001f:  ret
   } // end of method Condition21::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       48 (0x30)
@@ -3046,7 +3040,7 @@
          extends [mscorlib]System.Object
   {
     .field private int32 zero
-    .method public hidebysig instance void 
+    .method public hidebysig instance void
             Test1() cil managed nooptimization
     {
       // Code size       91 (0x5b)
@@ -3059,7 +3053,7 @@
         IL_0006:  leave.s    IL_005a
 
       }  // end .try
-      catch [mscorlib]System.Exception 
+      catch [mscorlib]System.Exception
       {
         IL_0008:  stloc.0
         IL_0009:  ldloc.0
@@ -3092,7 +3086,7 @@
       IL_005a:  ret
     } // end of method Foo1`2::Test1
 
-    .method public hidebysig instance void 
+    .method public hidebysig instance void
             Test1Recursive() cil managed nooptimization
     {
       // Code size       91 (0x5b)
@@ -3105,7 +3099,7 @@
         IL_0006:  leave.s    IL_005a
 
       }  // end .try
-      catch [mscorlib]System.Exception 
+      catch [mscorlib]System.Exception
       {
         IL_0008:  stloc.0
         IL_0009:  ldloc.0
@@ -3138,7 +3132,7 @@
       IL_005a:  ret
     } // end of method Foo1`2::Test1Recursive
 
-    .method public hidebysig instance void 
+    .method public hidebysig instance void
             Caller1() cil managed
     {
       // This method depends on JIT compiler doing automatic tail call, which isn't supported by Ready-to-Run.
@@ -3164,7 +3158,7 @@
       IL_0034:  ret
     } // end of method Foo1`2::Caller1
 
-    .method public hidebysig instance void 
+    .method public hidebysig instance void
             Caller1Recursive() cil managed
     {
       // This method depends on JIT compiler doing automatic tail call, which isn't supported by Ready-to-Run.
@@ -3187,11 +3181,12 @@
       IL_0029:  stsfld     int32 TailcallVerify.Condition10::Result
       IL_002e:  ldarg.0
       IL_002f:  ldc.i4.s   20
-      IL_0031:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
-      IL_0036:  ret
+                tail.
+      IL_0032:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
+      IL_0037:  ret
     } // end of method Foo1`2::Caller1Recursive
 
-    .method private hidebysig instance void 
+    .method private hidebysig instance void
             Callee1() cil managed noinlining
     {
       // Code size       10 (0xa)
@@ -3204,7 +3199,7 @@
       IL_0009:  ret
     } // end of method Foo1`2::Callee1
 
-    .method private hidebysig instance void 
+    .method private hidebysig instance void
             Callee1Recursive(int32 i) cil managed
     {
       // This method depends on JIT compiler doing automatic tail call, which isn't supported by Ready-to-Run.
@@ -3266,11 +3261,12 @@
       IL_0054:  ldarg.1
       IL_0055:  ldc.i4.1
       IL_0056:  sub
-      IL_0057:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
-      IL_005c:  ret
+                tail.
+      IL_0058:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
+      IL_005d:  ret
     } // end of method Foo1`2::Callee1Recursive
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       // Code size       7 (0x7)
@@ -3286,7 +3282,7 @@
          extends [mscorlib]System.Object
   {
     .field private int32 zero
-    .method public hidebysig instance void 
+    .method public hidebysig instance void
             Test1() cil managed nooptimization
     {
       // Code size       109 (0x6d)
@@ -3308,7 +3304,7 @@
         IL_0018:  leave.s    IL_006c
 
       }  // end .try
-      catch [mscorlib]System.Exception 
+      catch [mscorlib]System.Exception
       {
         IL_001a:  stloc.2
         IL_001b:  ldloc.2
@@ -3341,7 +3337,7 @@
       IL_006c:  ret
     } // end of method Foo2`2::Test1
 
-    .method public hidebysig instance void 
+    .method public hidebysig instance void
             Caller1(!V arg1,
                     !K arg2) cil managed
     {
@@ -3369,7 +3365,7 @@
       IL_0035:  ret
     } // end of method Foo2`2::Caller1
 
-    .method private hidebysig instance void 
+    .method private hidebysig instance void
             Callee1(!V arg1) cil managed noinlining
     {
       // Code size       10 (0xa)
@@ -3382,7 +3378,7 @@
       IL_0009:  ret
     } // end of method Foo2`2::Callee1
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       // Code size       7 (0x7)
@@ -3413,7 +3409,7 @@
       IL_0016:  leave.s    IL_006f
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0018:  stloc.0
       IL_0019:  ldloc.0
@@ -3510,7 +3506,7 @@
       IL_0016:  leave.s    IL_006f
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0018:  stloc.0
       IL_0019:  ldloc.0
@@ -3641,7 +3637,7 @@
       IL_005f:  leave.s    IL_0080
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0061:  stloc.s    e
       IL_0063:  ldloc.s    e
@@ -3720,7 +3716,7 @@
       IL_005f:  leave.s    IL_0077
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0061:  stloc.s    e
       IL_0063:  ldc.i4.s   101
@@ -3785,7 +3781,7 @@
       IL_0041:  leave.s    IL_009e
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0043:  stloc.s    e
       IL_0045:  ldloc.s    e
@@ -3832,7 +3828,7 @@
     IL_00c7:  ret
   } // end of method Condition10::Test5
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -3842,7 +3838,7 @@
     IL_0006:  ret
   } // end of method Condition10::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       16 (0x10)
@@ -3878,7 +3874,7 @@
       IL_001b:  leave.s    IL_0074
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_001d:  stloc.0
       IL_001e:  ldloc.0
@@ -4001,7 +3997,7 @@
       IL_0017:  leave.s    IL_003e
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -4038,7 +4034,7 @@
     IL_0067:  ret
   } // end of method Condition5::Test1
 
-  .method private hidebysig static int16 
+  .method private hidebysig static int16
           Caller1() cil managed
   {
     // Code size       53 (0x35)
@@ -4061,7 +4057,7 @@
     IL_0034:  ret
   } // end of method Condition5::Caller1
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Callee1() cil managed noinlining
   {
     // Code size       12 (0xc)
@@ -4093,7 +4089,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -4140,7 +4136,7 @@
     IL_0099:  ret
   } // end of method Condition5::Test2
 
-  .method private hidebysig static uint8 
+  .method private hidebysig static uint8
           Caller2() cil managed
   {
     // Code size       52 (0x34)
@@ -4162,7 +4158,7 @@
     IL_0033:  ret
   } // end of method Condition5::Caller2
 
-  .method private hidebysig static uint8 
+  .method private hidebysig static uint8
           Callee2() cil managed noinlining
   {
     // Code size       17 (0x11)
@@ -4193,7 +4189,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -4240,7 +4236,7 @@
     IL_0099:  ret
   } // end of method Condition5::Test3
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Caller3() cil managed
   {
     // Code size       52 (0x34)
@@ -4262,7 +4258,7 @@
     IL_0033:  ret
   } // end of method Condition5::Caller3
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Callee3() cil managed noinlining
   {
     // Code size       16 (0x10)
@@ -4292,7 +4288,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -4339,7 +4335,7 @@
     IL_0099:  ret
   } // end of method Condition5::Test4
 
-  .method private hidebysig static uint32 
+  .method private hidebysig static uint32
           Caller4() cil managed
   {
     // Code size       52 (0x34)
@@ -4361,7 +4357,7 @@
     IL_0033:  ret
   } // end of method Condition5::Caller4
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Callee4() cil managed noinlining
   {
     // Code size       16 (0x10)
@@ -4391,7 +4387,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -4438,7 +4434,7 @@
     IL_0099:  ret
   } // end of method Condition5::Test5
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Caller5() cil managed
   {
     // Code size       52 (0x34)
@@ -4460,7 +4456,7 @@
     IL_0033:  ret
   } // end of method Condition5::Caller5
 
-  .method private hidebysig static uint32 
+  .method private hidebysig static uint32
           Callee5() cil managed noinlining
   {
     // Code size       16 (0x10)
@@ -4490,7 +4486,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -4537,7 +4533,7 @@
     IL_0099:  ret
   } // end of method Condition5::Test6
 
-  .method private hidebysig static int64 
+  .method private hidebysig static int64
           Caller6() cil managed
   {
     // Code size       52 (0x34)
@@ -4559,7 +4555,7 @@
     IL_0033:  ret
   } // end of method Condition5::Caller6
 
-  .method private hidebysig static uint64 
+  .method private hidebysig static uint64
           Callee6() cil managed noinlining
   {
     // Code size       17 (0x11)
@@ -4590,7 +4586,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -4637,7 +4633,7 @@
     IL_0099:  ret
   } // end of method Condition5::Test7
 
-  .method private hidebysig static int64 
+  .method private hidebysig static int64
           Caller7() cil managed
   {
     // Code size       52 (0x34)
@@ -4659,7 +4655,7 @@
     IL_0033:  ret
   } // end of method Condition5::Caller7
 
-  .method private hidebysig static uint64 
+  .method private hidebysig static uint64
           Callee7() cil managed noinlining
   {
     // Code size       17 (0x11)
@@ -4691,7 +4687,7 @@
       IL_0017:  leave.s    IL_003e
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -4728,7 +4724,7 @@
     IL_0067:  ret
   } // end of method Condition5::Test8
 
-  .method private hidebysig static int64 
+  .method private hidebysig static int64
           Caller8() cil managed
   {
     // Code size       57 (0x39)
@@ -4751,7 +4747,7 @@
     IL_0038:  ret
   } // end of method Condition5::Caller8
 
-  .method private hidebysig static valuetype TailcallVerify.ValueTypeSingleInt64 
+  .method private hidebysig static valuetype TailcallVerify.ValueTypeSingleInt64
           Callee8() cil managed noinlining
   {
     // Code size       33 (0x21)
@@ -4789,7 +4785,7 @@
       IL_0017:  leave.s    IL_003e
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -4826,7 +4822,7 @@
     IL_0067:  ret
   } // end of method Condition5::Test9
 
-  .method private hidebysig static uint32 
+  .method private hidebysig static uint32
           Caller9() cil managed
   {
     // Code size       53 (0x35)
@@ -4849,7 +4845,7 @@
     IL_0034:  ret
   } // end of method Condition5::Caller9
 
-  .method private hidebysig static uint64 
+  .method private hidebysig static uint64
           Callee9() cil managed noinlining
   {
     // Code size       17 (0x11)
@@ -4863,7 +4859,7 @@
     IL_0010:  ret
   } // end of method Condition5::Callee9
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -4873,7 +4869,7 @@
     IL_0006:  ret
   } // end of method Condition5::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       24 (0x18)
@@ -4914,7 +4910,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -4961,7 +4957,7 @@
     IL_0099:  ret
   } // end of method Condition4::Test1
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           Caller1() cil managed
   {
     // Code size       52 (0x34)
@@ -4983,7 +4979,7 @@
     IL_0033:  ret
   } // end of method Condition4::Caller1
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           Callee1() cil managed noinlining
   {
     // Code size       27 (0x1b)
@@ -5048,7 +5044,7 @@
       IL_0061:  leave.s    IL_0082
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0063:  stloc.1
       IL_0064:  ldc.i4.s   101
@@ -5078,7 +5074,7 @@
     IL_00ab:  ret
   } // end of method Condition4::Test2
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           Caller2() cil managed
   {
     // Code size       52 (0x34)
@@ -5100,7 +5096,7 @@
     IL_0033:  ret
   } // end of method Condition4::Caller2
 
-  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
+  .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes
           Callee2() cil managed noinlining
   {
     // Code size       30 (0x1e)
@@ -5118,7 +5114,7 @@
     IL_001d:  ret
   } // end of method Condition4::Callee2
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -5128,7 +5124,7 @@
     IL_0006:  ret
   } // end of method Condition4::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       16 (0x10)
@@ -5166,7 +5162,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -5213,7 +5209,7 @@
     IL_0099:  ret
   } // end of method Condition3::Test1
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Caller1() cil managed
   {
     // Code size       52 (0x34)
@@ -5235,7 +5231,7 @@
     IL_0033:  ret
   } // end of method Condition3::Caller1
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Callee1() cil managed noinlining
   {
     // Code size       12 (0xc)
@@ -5267,7 +5263,7 @@
       IL_0017:  leave.s    IL_0070
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0019:  stloc.0
       IL_001a:  ldloc.0
@@ -5314,7 +5310,7 @@
     IL_0099:  ret
   } // end of method Condition3::Test2
 
-  .method private hidebysig static string 
+  .method private hidebysig static string
           Caller2() cil managed
   {
     // Code size       52 (0x34)
@@ -5336,7 +5332,7 @@
     IL_0033:  ret
   } // end of method Condition3::Caller2
 
-  .method private hidebysig static string 
+  .method private hidebysig static string
           Callee2() cil managed noinlining
   {
     // Code size       29 (0x1d)
@@ -5353,7 +5349,7 @@
     IL_001c:  ret
   } // end of method Condition3::Callee2
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -5363,7 +5359,7 @@
     IL_0006:  ret
   } // end of method Condition3::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       24 (0x18)
@@ -5411,15 +5407,15 @@
 .class private auto ansi beforefieldinit TailcallVerify.Win32Interop
        extends [mscorlib]System.Object
 {
-  .method public hidebysig static pinvokeimpl("kernel32" as "Sleep" winapi) 
+  .method public hidebysig static pinvokeimpl("kernel32" as "Sleep" winapi)
           void  Callee(int32 duration) cil managed preservesig
   {
   }
-  .method public hidebysig static pinvokeimpl("kernel32" lasterr winapi) 
+  .method public hidebysig static pinvokeimpl("kernel32" lasterr winapi)
           void  Sleep(int32 duration) cil managed preservesig
   {
   }
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -5434,15 +5430,15 @@
 .class private auto ansi beforefieldinit TailcallVerify.UnixInterop
        extends [System.Runtime]System.Object
 {
-  .method public hidebysig static pinvokeimpl("libc" as "printf" winapi) 
+  .method public hidebysig static pinvokeimpl("libc" as "printf" winapi)
           void  Callee(string format) cil managed preservesig
   {
   }
-  .method public hidebysig static pinvokeimpl("libc" winapi) 
+  .method public hidebysig static pinvokeimpl("libc" winapi)
           void  printf(string format) cil managed preservesig
   {
   }
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -5476,7 +5472,7 @@
       IL_0016:  leave.s    IL_006f
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0018:  stloc.0
       IL_0019:  ldloc.0
@@ -5591,7 +5587,7 @@
       IL_0016:  leave.s    IL_006f
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0018:  stloc.0
       IL_0019:  ldloc.0
@@ -5676,7 +5672,7 @@
               ret
   } // end of method Condition19::Caller2
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -5686,7 +5682,7 @@
     IL_0006:  ret
   } // end of method Condition19::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       16 (0x10)
@@ -5704,7 +5700,7 @@
 .class private auto ansi '<PrivateImplementationDetails>{D1242658-CA16-4D11-A740-6635F112F4B5}'
        extends [mscorlib]System.Object
 {
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 )
   .class explicit ansi sealed nested private '__StaticArrayInitTypeSize=20'
          extends [mscorlib]System.ValueType
   {
@@ -5718,7 +5714,7 @@
 .class private auto ansi sealed beforefieldinit System.Runtime.BypassReadyToRunAttribute
        extends [mscorlib]System.Attribute
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -5735,6 +5731,6 @@
 
 .data cil I_00005C00 = bytearray (
                  01 00 00 00 02 00 00 00 03 00 00 00 04 00 00 00
-                 05 00 00 00) 
+                 05 00 00 00)
 // *********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file TailcallVerifyWithPrefix.res

@@ -86,8 +86,7 @@ namespace System.Security.Cryptography
             get { return _iterations; }
             set
             {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedPosNum);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 if (_baseValue != null)
                     throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_ValuesFixed, nameof(IterationCount));
 

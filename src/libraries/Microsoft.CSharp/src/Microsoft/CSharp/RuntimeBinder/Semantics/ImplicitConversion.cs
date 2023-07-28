@@ -246,7 +246,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                   qs.HasValue ? (T?)(qs.Value) : default(T?)
                 * If imp/exp S => T then imp/exp S => T? implemented as new T?((T)s)
 
-                This method also handles calling bindUserDefinedConverion. This method does NOT handle
+                This method also handles calling bindUserDefinedConversion. This method does NOT handle
                 the following conversions:
 
                 * Implicit boxing conversion from S? to { object, ValueType, Enum, ifaces implemented by S }. (Handled by BindImplicitConversion.)

@@ -7,8 +7,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class GetExceptionPointersTests
     {
-        [Fact]
-        [SkipOnMono("Marshal.GetExceptionPointers will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMarshalGetExceptionPointersSupported))]
         public void GetExceptionPointers_ReturnsExpected()
         {
             Assert.Equal(IntPtr.Zero, Marshal.GetExceptionPointers());

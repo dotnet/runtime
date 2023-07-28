@@ -35,10 +35,10 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
 #ifdef WIN32
     const char* szSeparator = "\\";
 #else
-    const char* szSeparator = "//";
+    const char* szSeparator = "/";
 #endif
 
-    const char* szDotDot   = "..\\";
+    const char* szDotDot   = "../";
     const char* szFileName = "testing.tmp";
 
     DWORD   dwRc = 0;
@@ -112,6 +112,7 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
      * in the middle of the path.
      */
     strcat(szFullFileName, szCreatedDir);
+    strcat(szFullFileName, szSeparator);
     strcat(szFullFileName, szDotDot);
     strcat(szFullFileName, szFileName);
 

@@ -58,7 +58,7 @@ PEImageLayout* PEImageLayout::CreateFromHMODULE(HMODULE hModule, PEImage* pOwner
 }
 #endif
 
-PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
+PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping)
 {
     STANDARD_VM_CONTRACT;
 
@@ -85,21 +85,25 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
     // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
     // that is suspicious, one or another might have a bug.
-    _ASSERTE(!pFlat->HasReadyToRunHeader());
+    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || disableMapping);
 #endif
 
-    if (!pFlat->HasReadyToRunHeader() && !pFlat->HasWriteableSections())
+    // ignore R2R if the image is not a file.
+    if ((pFlat->HasReadyToRunHeader() && pOwner->IsFile()) ||
+        pFlat->HasWriteableSections())
     {
-        // we can use flat layout for this
-        return pFlat.Extract();
+        return new ConvertedImageLayout(pFlat, disableMapping);
     }
 
-    return new ConvertedImageLayout(pFlat);
+    // we can use flat layout for this
+    return pFlat.Extract();
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
 {
     STANDARD_VM_CONTRACT;
+
+    bool disableMapping = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PELoader_DisableMapping);
 
     if (pOwner->IsFile())
     {
@@ -109,19 +113,26 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
 #endif
             )
         {
-            PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
-            if (pAlloc->GetBase() != NULL)
-                return pAlloc.Extract();
+#if defined(TARGET_UNIX)
+            if (!disableMapping)
+#endif
+            {
+
+                PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
+                if (pAlloc->GetBase() != NULL)
+                    return pAlloc.Extract();
 
 #if TARGET_WINDOWS
-            // OS loader is always right. If a file cannot be loaded, do not try any further.
-            // Even if we may be able to load it, we do not want to support such files.
-            return NULL;
+                // For regular PE files always use OS loader on Windows.
+                // If a file cannot be loaded, do not try any further.
+                // Even if we may be able to load it, we do not want to support such files.
+                return NULL;
 #endif
+            }
         }
     }
 
-    return PEImageLayout::LoadConverted(pOwner);
+    return PEImageLayout::LoadConverted(pOwner, disableMapping);
 }
 
 PEImageLayout* PEImageLayout::LoadFlat(PEImage* pOwner)
@@ -409,7 +420,7 @@ void ConvertedImageLayout::FreeImageParts()
     }
 }
 
-ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
+ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disableMapping)
 {
     CONTRACTL
     {
@@ -430,14 +441,17 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
 
 #ifdef TARGET_WINDOWS
-    loadedImage = source->LoadImageByMappingParts(this->m_imageParts);
-    if (loadedImage == NULL)
+    if (!disableMapping)
     {
-        FreeImageParts();
-    }
-    else
-    {
-        relocationMustWriteCopy = true;
+        loadedImage = source->LoadImageByMappingParts(this->m_imageParts);
+        if (loadedImage == NULL)
+        {
+            FreeImageParts();
+        }
+        else
+        {
+            relocationMustWriteCopy = true;
+        }
     }
 #endif //TARGET_WINDOWS
 
@@ -448,7 +462,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
 
     IfFailThrow(Init(loadedImage));
 
-    if (IsNativeMachineFormat() && g_fAllowNativeImages)
+    if (m_pOwner->IsFile() && IsNativeMachineFormat() && g_fAllowNativeImages)
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
@@ -519,7 +533,8 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
     }
 
     IfFailThrow(Init(m_Module, true));
-    LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %S\n", (LPCWSTR)pOwner->GetPath()));
+
+    LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %s\n", pOwner->GetPath().GetUTF8()));
 
 #else
     HANDLE hFile = pOwner->GetFileHandle();
@@ -533,8 +548,8 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         return;
     }
 
-    LOG((LF_LOADER, LL_INFO1000, "PEImage: image %S (hFile %p) mapped @ %p\n",
-        (LPCWSTR)pOwner->GetPath(), hFile, (void*)m_LoadedFile));
+    LOG((LF_LOADER, LL_INFO1000, "PEImage: image %s (hFile %p) mapped @ %p\n",
+        pOwner->GetPath().GetUTF8(), hFile, (void*)m_LoadedFile));
 
     IfFailThrow(Init((void*)m_LoadedFile));
 
@@ -601,7 +616,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     INT64 offset = pOwner->GetOffset();
     INT64 size = pOwner->GetSize();
 
-    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %S\n", (LPCWSTR) pOwner->GetPath()));
+    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", pOwner->GetPath().GetUTF8()));
 
     // If a size is not specified, load the whole file
     if (size == 0)
@@ -773,10 +788,18 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
+    DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
+#ifdef HOST_UNIX
+    // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
+    // This is required on MacOS and otherwise will allow us to place native R2R code close to the
+    // coreclr library and thus improve performance by avoiding jump stubs in managed code.
+    allocationType |= MEM_RESERVE_EXECUTABLE;
+#endif
+
     COUNT_T allocSize = ALIGN_UP(this->GetVirtualSize(), g_SystemInfo.dwAllocationGranularity);
-    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, allocationType, PAGE_READWRITE);
     if (base == NULL && preferredBase != NULL)
-        base = ClrVirtualAlloc(NULL, allocSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+        base = ClrVirtualAlloc(NULL, allocSize, allocationType, PAGE_READWRITE);
 
     if (base == NULL)
         ThrowLastError();
@@ -817,9 +840,13 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     // Finally, apply proper protection to copied sections
     for (section = sectionStart; section < sectionEnd; section++)
     {
+        DWORD executableProtection = PAGE_EXECUTE_READ;
+#if defined(__APPLE__) && defined(HOST_ARM64)
+        executableProtection = PAGE_EXECUTE_READWRITE;
+#endif
         // Add appropriate page protection.
         DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            PAGE_EXECUTE_READ :
+            executableProtection :
             section->Characteristics & IMAGE_SCN_MEM_WRITE ?
             PAGE_READWRITE :
             PAGE_READONLY;

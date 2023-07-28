@@ -5,15 +5,6 @@
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
 // ===================================================================================================
 
-/*============================================================
-**
-**
-**
-** Purpose: Some floating-point math operations
-**
-**
-===========================================================*/
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -25,6 +16,9 @@ using System.Runtime.Versioning;
 
 namespace System
 {
+    /// <summary>
+    /// Provides constants and static methods for trigonometric, logarithmic, and other common mathematical functions.
+    /// </summary>
     public static partial class Math
     {
         public const double E = 2.7182818284590452354;
@@ -38,7 +32,7 @@ namespace System
         private const double doubleRoundLimit = 1e16d;
 
         // This table is required for the Round function which can specify the number of digits to round to
-        private static readonly double[] roundPower10Double = new double[] {
+        private static ReadOnlySpan<double> RoundPower10Double => new double[] {
           1E0, 1E1, 1E2, 1E3, 1E4, 1E5, 1E6, 1E7, 1E8,
           1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15
         };
@@ -97,7 +91,7 @@ namespace System
 
         /// <summary>Returns the absolute value of a native signed integer.</summary>
         /// <param name="value">A number that is greater than <see cref="IntPtr.MinValue" />, but less than or equal to <see cref="IntPtr.MaxValue" />.</param>
-        /// <returns>A native signed integer, x, such that 0 ≤ x ≤ <see cref="IntPtr.MaxValue" />.</returns>
+        /// <returns>A native signed integer, x, such that 0 \u2264 x \u2264 <see cref="IntPtr.MaxValue" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint Abs(nint value)
         {
@@ -168,8 +162,8 @@ namespace System
         /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
-        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
-        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        /// <param name="low">The low 64-bit of the product of the specified numbers.</param>
+        /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
@@ -216,8 +210,8 @@ namespace System
         /// <summary>Produces the full product of two 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
-        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
-        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        /// <param name="low">The low 64-bit of the product of the specified numbers.</param>
+        /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
             if (ArmBase.Arm64.IsSupported)
@@ -585,7 +579,7 @@ namespace System
         /// <param name="min">The lower bound of the result.</param>
         /// <param name="max">The upper bound of the result.</param>
         /// <returns>
-        ///   <paramref name="value" /> if <paramref name="min" /> ≤ <paramref name="value" /> ≤ <paramref name="max" />.
+        ///   <paramref name="value" /> if <paramref name="min" /> \u2264 <paramref name="value" /> \u2264 <paramref name="max" />.
         ///
         ///   -or-
         ///
@@ -724,7 +718,7 @@ namespace System
         /// <param name="min">The lower bound of the result.</param>
         /// <param name="max">The upper bound of the result.</param>
         /// <returns>
-        ///   <paramref name="value" /> if <paramref name="min" /> ≤ <paramref name="value" /> ≤ <paramref name="max" />.
+        ///   <paramref name="value" /> if <paramref name="min" /> \u2264 <paramref name="value" /> \u2264 <paramref name="max" />.
         ///
         ///   -or-
         ///
@@ -888,8 +882,8 @@ namespace System
             // This matches the IEEE 754:2019 `maximum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the greater of the inputs. It
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -946,8 +940,8 @@ namespace System
             // This matches the IEEE 754:2019 `maximum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the greater of the inputs. It
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -994,13 +988,14 @@ namespace System
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         public static double MaxMagnitude(double x, double y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitude` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // otherwise returns the input with a greater magnitude.
+            // It treats +0 as greater than -0 as per the specification.
 
             double ax = Abs(x);
             double ay = Abs(y);
@@ -1037,12 +1032,17 @@ namespace System
             // This matches the IEEE 754:2019 `minimum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the lesser of the inputs. It
+            // treats +0 as lesser than -0 as per the specification.
 
-            if (val1 != val2 && !double.IsNaN(val1))
+            if (val1 != val2)
             {
-                return val1 < val2 ? val1 : val2;
+                if (!double.IsNaN(val1))
+                {
+                    return val1 < val2 ? val1 : val2;
+                }
+
+                return val1;
             }
 
             return double.IsNegative(val1) ? val1 : val2;
@@ -1090,12 +1090,17 @@ namespace System
             // This matches the IEEE 754:2019 `minimum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the lesser of the inputs. It
+            // treats +0 as lesser than -0 as per the specification.
 
-            if (val1 != val2 && !float.IsNaN(val1))
+            if (val1 != val2)
             {
-                return val1 < val2 ? val1 : val2;
+                if (!float.IsNaN(val1))
+                {
+                    return val1 < val2 ? val1 : val2;
+                }
+
+                return val1;
             }
 
             return float.IsNegative(val1) ? val1 : val2;
@@ -1133,13 +1138,14 @@ namespace System
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         public static double MinMagnitude(double x, double y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitude` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // otherwise returns the input with a lesser magnitude.
+            // It treats +0 as lesser than -0 as per the specification.
 
             double ax = Abs(x);
             double ay = Abs(y);
@@ -1310,9 +1316,14 @@ namespace System
                     return Round(value);
 
                 // For ARM/ARM64 we can lower it down to a single instruction FRINTA
-                // For XARCH we have to use the common path
-                if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
-                    return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+                // For other platforms we use a fast managed implementation
+                if (mode == MidpointRounding.AwayFromZero)
+                {
+                    if (AdvSimd.IsSupported)
+                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+                    // manually fold BitDecrement(0.5)
+                    return Truncate(value + CopySign(0.49999999999999994, value));
+                }
             }
 
             return Round(value, 0, mode);
@@ -1332,7 +1343,7 @@ namespace System
 
             if (Abs(value) < doubleRoundLimit)
             {
-                double power10 = roundPower10Double[digits];
+                double power10 = RoundPower10Double[digits];
 
                 value *= power10;
 
@@ -1349,13 +1360,8 @@ namespace System
                     // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
                     case MidpointRounding.AwayFromZero:
                     {
-                        double fraction = ModF(value, &value);
-
-                        if (Abs(fraction) >= 0.5)
-                        {
-                            value += Sign(fraction);
-                        }
-
+                        // manually fold BitDecrement(0.5)
+                        value = Truncate(value + CopySign(0.49999999999999994, value));
                         break;
                     }
                     // Directed rounding: Round to the nearest value, toward to zero

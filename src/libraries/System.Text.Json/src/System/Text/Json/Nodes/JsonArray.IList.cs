@@ -21,10 +21,7 @@ namespace System.Text.Json.Nodes
         /// </param>
         public void Add(JsonNode? item)
         {
-            if (item != null)
-            {
-                item.AssignParent(this);
-            }
+            item?.AssignParent(this);
 
             List.Add(item);
         }
@@ -34,12 +31,21 @@ namespace System.Text.Json.Nodes
         /// </summary>
         public void Clear()
         {
-            for (int i = 0; i < List.Count; i++)
-            {
-                DetachParent(List[i]);
-            }
+            List<JsonNode?>? list = _list;
 
-            List.Clear();
+            if (list is null)
+            {
+                _jsonElement = null;
+            }
+            else
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    DetachParent(list[i]);
+                }
+
+                list.Clear();
+            }
         }
 
         /// <summary>

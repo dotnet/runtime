@@ -6,19 +6,18 @@
 #pragma warning disable CA1066 // IEquatable<T> implementations aren't used
 
 using System;
+#pragma warning disable IDE0005 // Using directive is unnecessary.
 using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+#pragma warning restore IDE0005 // Using directive is unnecessary.
 using Internal.NativeFormat;
 
 namespace Internal.Metadata.NativeFormat
 {
     // This Enum matches CorMethodSemanticsAttr defined in CorHdr.h
     [Flags]
-#if SYSTEM_PRIVATE_CORELIB
-    [ReflectionBlocked]
-#endif
     public enum MethodSemanticsAttributes
     {
         Setter = 0x0001,
@@ -31,9 +30,6 @@ namespace Internal.Metadata.NativeFormat
 
     // This Enum matches CorPInvokeMap defined in CorHdr.h
     [Flags]
-#if SYSTEM_PRIVATE_CORELIB
-    [ReflectionBlocked]
-#endif
     public enum PInvokeAttributes
     {
         NoMangle = 0x0001,
@@ -156,7 +152,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public static class NativeFormatReaderExtensions
     {
@@ -248,7 +243,7 @@ namespace Internal.Metadata.NativeFormat
         }
     }
 
-    internal partial class MetadataHeader
+    internal sealed partial class MetadataHeader
     {
         /// <todo>
         /// Signature should be updated every time the metadata schema changes.

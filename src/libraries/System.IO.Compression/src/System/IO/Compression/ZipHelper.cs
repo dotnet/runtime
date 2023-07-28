@@ -22,16 +22,14 @@ namespace System.IO.Compression
 
         internal static Encoding GetEncoding(string text)
         {
-            foreach (char c in text)
+            if (text.AsSpan().ContainsAnyExceptInRange((char)32, (char)126))
             {
                 // The Zip Format uses code page 437 when the Unicode bit is not set. This format
                 // is the same as ASCII for characters 32-126 but differs otherwise. If we can fit
                 // the string into CP437 then we treat ASCII as acceptable.
-                if (c > 126 || c < 32)
-                {
-                    return Encoding.UTF8;
-                }
+                return Encoding.UTF8;
             }
+
             return Encoding.ASCII;
         }
 
@@ -213,7 +211,7 @@ namespace System.IO.Compression
             }
 
             byte[] bytes;
-            if (isUTF8)
+            if (isUTF8 && encoding.GetMaxByteCount(text.Length) > maxBytes)
             {
                 int totalCodePoints = 0;
                 foreach (Rune rune in text.EnumerateRunes())

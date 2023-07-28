@@ -12,8 +12,7 @@ namespace System.Net.WebSockets
         internal static async Task<HttpListenerWebSocketContext> AcceptWebSocketAsyncCore(HttpListenerContext context,
             string? subProtocol,
             int receiveBufferSize,
-            TimeSpan keepAliveInterval,
-            ArraySegment<byte>? internalBuffer = null)
+            TimeSpan keepAliveInterval)
         {
             ValidateOptions(subProtocol, receiveBufferSize, MinSendBufferSize, keepAliveInterval);
 

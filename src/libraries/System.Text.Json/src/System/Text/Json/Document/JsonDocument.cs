@@ -27,8 +27,6 @@ namespace System.Text.Json
         private byte[]? _extraRentedArrayPoolBytes;
         private PooledByteBufferWriter? _extraPooledByteBufferWriter;
 
-        private (int, string?) _lastIndexAndString = (-1, null);
-
         internal bool IsDisposable { get; }
 
         /// <summary>
@@ -202,7 +200,7 @@ namespace System.Text.Json
 
         internal ReadOnlyMemory<byte> GetRootRawValue()
         {
-            return GetRawValue(0, includeQuotes : true);
+            return GetRawValue(0, includeQuotes: true);
         }
 
         internal ReadOnlyMemory<byte> GetRawValue(int index, bool includeQuotes)
@@ -266,14 +264,6 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            (int lastIdx, string? lastString) = _lastIndexAndString;
-
-            if (lastIdx == index)
-            {
-                Debug.Assert(lastString != null);
-                return lastString;
-            }
-
             DbRow row = _parsedData.Get(index);
 
             JsonTokenType tokenType = row.TokenType;
@@ -288,32 +278,14 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (row.HasComplexChildren)
-            {
-                lastString = JsonReaderHelper.GetUnescapedString(segment);
-            }
-            else
-            {
-                lastString = JsonReaderHelper.TranscodeHelper(segment);
-            }
-
-            Debug.Assert(lastString != null);
-            _lastIndexAndString = (index, lastString);
-            return lastString;
+            return row.HasComplexChildren
+                ? JsonReaderHelper.GetUnescapedString(segment)
+                : JsonReaderHelper.TranscodeHelper(segment);
         }
 
         internal bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
         {
             CheckNotDisposed();
-
-            int matchIndex = isPropertyName ? index - DbRow.Size : index;
-
-            (int lastIdx, string? lastString) = _lastIndexAndString;
-
-            if (lastIdx == matchIndex)
-            {
-                return otherText.SequenceEqual(lastString.AsSpan());
-            }
 
             byte[]? otherUtf8TextArray = null;
 
@@ -322,19 +294,16 @@ namespace System.Text.Json
                 stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (otherUtf8TextArray = ArrayPool<byte>.Shared.Rent(length));
 
-            ReadOnlySpan<byte> utf16Text = MemoryMarshal.AsBytes(otherText);
-            OperationStatus status = JsonWriterHelper.ToUtf8(utf16Text, otherUtf8Text, out int consumed, out int written);
+            OperationStatus status = JsonWriterHelper.ToUtf8(otherText, otherUtf8Text, out int written);
             Debug.Assert(status != OperationStatus.DestinationTooSmall);
             bool result;
-            if (status > OperationStatus.DestinationTooSmall)   // Equivalent to: (status == NeedMoreData || status == InvalidData)
+            if (status == OperationStatus.InvalidData)
             {
                 result = false;
             }
             else
             {
                 Debug.Assert(status == OperationStatus.Done);
-                Debug.Assert(consumed == utf16Text.Length);
-
                 result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName, shouldUnescape: true);
             }
 
@@ -1090,7 +1059,7 @@ namespace System.Text.Json
         {
             if (_utf8Json.IsEmpty)
             {
-                throw new ObjectDisposedException(nameof(JsonDocument));
+                ThrowHelper.ThrowObjectDisposedException_JsonDocument();
             }
         }
 

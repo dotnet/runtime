@@ -430,10 +430,7 @@ namespace System.Xml.Linq
                 if (a != null)
                 {
                     notify = true;
-                    if (a.changed != null)
-                    {
-                        a.changed(sender, e);
-                    }
+                    a.changed?.Invoke(sender, e);
                 }
                 o = o.parent;
             }
@@ -455,10 +452,7 @@ namespace System.Xml.Linq
                 if (a != null)
                 {
                     notify = true;
-                    if (a.changing != null)
-                    {
-                        a.changing(sender, e);
-                    }
+                    a.changing?.Invoke(sender, e);
                 }
                 o = o.parent;
             }

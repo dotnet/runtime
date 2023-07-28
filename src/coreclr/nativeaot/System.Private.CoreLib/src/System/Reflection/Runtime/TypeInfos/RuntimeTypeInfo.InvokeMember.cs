@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
             #endregion
 
-            #region Check that any named paramters are not null
+            #region Check that any named parameters are not null
             if (namedParams != null && Array.IndexOf(namedParams, null) != -1)
                 // "Named parameter value must not be null."
                 throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
@@ -72,8 +72,7 @@ namespace System.Reflection.Runtime.TypeInfos
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
 
             #region Get a Binder
-            if (binder == null)
-                binder = DefaultBinder;
+            binder ??= DefaultBinder;
 
             #endregion
 
@@ -93,8 +92,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 bindingFlags |= BindingFlags.SetProperty;
 
             #region Name
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0 || name.Equals(@"[DISPID=0]"))
             {
@@ -124,8 +122,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 {
                     Debug.Assert(IsSetField);
 
-                    if (providedArgs == null)
-                        throw new ArgumentNullException(nameof(providedArgs));
+                    ArgumentNullException.ThrowIfNull(providedArgs);
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
                         // "Can not specify both SetField and GetProperty."
@@ -375,11 +372,9 @@ namespace System.Reflection.Runtime.TypeInfos
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
                 }
 
-                if (finalists == null)
-                    finalists = new MethodInfo[] { finalist };
+                finalists ??= new MethodInfo[] { finalist };
 
-                if (providedArgs == null)
-                    providedArgs = Array.Empty<object>();
+                providedArgs ??= Array.Empty<object>();
 
                 object? state = null;
 

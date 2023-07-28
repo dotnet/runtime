@@ -104,6 +104,30 @@ hot_reload_stub_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *it
 static uint32_t
 hot_reload_get_num_fields_added (MonoClass *klass);
 
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass);
+
+static const char *
+hot_reload_get_capabilities (void);
+
+static uint32_t
+hot_reload_stub_get_method_params (MonoImage *base_image, uint32_t methoddef_token, uint32_t *out_param_count_opt);
+
+static gpointer
+hot_reload_stub_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error);
+
+static MonoProperty *
+hot_reload_stub_added_properties_iter (MonoClass *klass, gpointer *iter);
+
+static uint32_t
+hot_reload_stub_get_property_idx (MonoProperty *prop);
+
+static MonoEvent *
+hot_reload_stub_added_events_iter (MonoClass *klass, gpointer *iter);
+
+static uint32_t
+hot_reload_stub_get_event_idx (MonoEvent *evt);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_set_fastpath_data,
@@ -134,7 +158,15 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_typedef_skeleton_events,
 	&hot_reload_stub_added_methods_iter,
 	&hot_reload_stub_added_fields_iter,
-	&hot_reload_get_num_fields_added
+	&hot_reload_get_num_fields_added,
+	&hot_reload_get_num_methods_added,
+	&hot_reload_get_capabilities,
+	&hot_reload_stub_get_method_params,
+	&hot_reload_stub_added_field_ldflda,
+	&hot_reload_stub_added_properties_iter,
+	&hot_reload_stub_get_property_idx,
+	&hot_reload_stub_added_events_iter,
+	&hot_reload_stub_get_event_idx,
 };
 
 static bool
@@ -323,6 +355,53 @@ hot_reload_get_num_fields_added (MonoClass *klass)
 	return 0;
 }
 
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass)
+{
+	return 0;
+}
+
+static const char *
+hot_reload_get_capabilities (void)
+{
+	return "";
+}
+
+static uint32_t
+hot_reload_stub_get_method_params (MonoImage *base_image, uint32_t methoddef_token, uint32_t *out_param_count_opt)
+{
+	return 0;
+}
+
+static gpointer
+hot_reload_stub_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error)
+{
+	return NULL;
+}
+
+static MonoProperty *
+hot_reload_stub_added_properties_iter (MonoClass *klass, gpointer *iter)
+{
+	return NULL;
+}
+
+static uint32_t
+hot_reload_stub_get_property_idx (MonoProperty *prop)
+{
+	return 0;
+}
+
+MonoEvent *
+hot_reload_stub_added_events_iter (MonoClass *klass, gpointer *iter)
+{
+	return NULL;
+}
+
+static uint32_t
+hot_reload_stub_get_event_idx (MonoEvent *evt)
+{
+	return 0;
+}
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentHotReload *
@@ -330,3 +409,5 @@ mono_component_hot_reload_init (void)
 {
 	return component_hot_reload_stub_init ();
 }
+
+

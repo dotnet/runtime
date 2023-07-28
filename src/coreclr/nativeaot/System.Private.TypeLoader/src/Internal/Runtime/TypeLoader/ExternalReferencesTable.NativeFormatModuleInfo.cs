@@ -54,12 +54,5 @@ namespace Internal.Runtime.TypeLoader
         {
             return Initialize(module, ReflectionMapBlob.CommonFixupsTable);
         }
-
-        public unsafe uint GetRvaFromIndex(uint index)
-        {
-            // The usage of this API will need to go away since this is not fully portable
-            // and we'll not be able to support this for CppCodegen.
-            throw new PlatformNotSupportedException();
-        }
     }
 }

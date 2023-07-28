@@ -29,7 +29,7 @@ namespace System.Net.Sockets
         // BytesTransferred property variables.
         private int _bytesTransferred;
 
-        // DisconnectReuseSocket propery variables.
+        // DisconnectReuseSocket property variables.
         private bool _disconnectReuseSocket;
 
         // LastOperation property variables.
@@ -309,14 +309,8 @@ namespace System.Net.Sockets
             {
                 if (!_buffer.Equals(default))
                 {
-                    if ((uint)offset > _buffer.Length)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(offset));
-                    }
-                    if ((uint)count > (_buffer.Length - offset))
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(count));
-                    }
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)offset, (uint)_buffer.Length, nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)count, (long)(_buffer.Length - offset), nameof(count));
                     if (!_bufferIsExplicitArray)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_BufferNotExplicitArray);
@@ -371,14 +365,8 @@ namespace System.Net.Sockets
 
                     // Offset and count can't be negative and the
                     // combination must be in bounds of the array.
-                    if ((uint)offset > buffer.Length)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(offset));
-                    }
-                    if ((uint)count > (buffer.Length - offset))
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(count));
-                    }
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)offset, (uint)buffer.Length, nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)count, (long)(buffer.Length - offset), nameof(count));
 
                     _buffer = buffer;
                     _offset = offset;
@@ -518,9 +506,8 @@ namespace System.Net.Sockets
         private void ThrowForNonFreeStatus(int status)
         {
             Debug.Assert(status == InProgress || status == Configuring || status == Disposed, $"Unexpected status: {status}");
-            throw status == Disposed ?
-                new ObjectDisposedException(GetType().FullName) :
-                new InvalidOperationException(SR.net_socketopinprogress);
+            ObjectDisposedException.ThrowIf(status == Disposed, this);
+            throw new InvalidOperationException(SR.net_socketopinprogress);
         }
 
         // Prepares for a native async socket call.
@@ -633,7 +620,7 @@ namespace System.Net.Sockets
                     break;
             }
 
-            // Don't log transfered byte count in case of a failure.
+            // Don't log transferred byte count in case of a failure.
 
             Complete();
         }
@@ -941,7 +928,14 @@ namespace System.Net.Sockets
                     {
                         try
                         {
-                            _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
+                            if (_remoteEndPoint!.AddressFamily == _socketAddress.Family)
+                            {
+                                _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
+                            }
+                            else if (_remoteEndPoint!.AddressFamily == AddressFamily.InterNetworkV6 && _socketAddress.Family == AddressFamily.InterNetwork)
+                            {
+                                _remoteEndPoint = new IPEndPoint(_socketAddress.GetIPAddress().MapToIPv6(), _socketAddress.GetPort());
+                            }
                         }
                         catch
                         {

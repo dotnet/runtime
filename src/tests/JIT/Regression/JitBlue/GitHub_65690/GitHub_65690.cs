@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 // Note: In below test case, there are two backedges to a loop that is marked for align.
@@ -9,6 +9,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class TestClass_65690
 {
     public struct S1
@@ -60,7 +61,7 @@ public class TestClass_65690
         }
     }
 
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {
@@ -112,7 +113,8 @@ public class TestClass_65690
             return;
         }
     }
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         new TestClass_65690().Method0();
         return 100;

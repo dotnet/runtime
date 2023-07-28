@@ -365,7 +365,7 @@ namespace System.Data.ProviderBase
         internal unsafe float ReadSingle(int offset)
         {
             int value = ReadInt32(offset);
-            return *(float*)&value;
+            return BitConverter.Int32BitsToSingle(value);
         }
 
         protected override bool ReleaseHandle()
@@ -636,7 +636,7 @@ namespace System.Data.ProviderBase
 
         internal unsafe void WriteSingle(int offset, float value)
         {
-            WriteInt32(offset, *(int*)&value);
+            WriteInt32(offset, BitConverter.SingleToInt32Bits(value));
         }
 
         internal void ZeroMemory()

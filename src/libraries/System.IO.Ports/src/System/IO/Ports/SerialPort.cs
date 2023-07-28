@@ -1024,11 +1024,8 @@ namespace System.IO.Ports
 
             _readLen += _internalSerialStream.Read(_inBuffer, _readLen, bytesInStream);
 
-            if (_singleCharBuffer == null)
-            {
-                // This is somewhat of an approximate guesstimate to get the max char[] size needed to encode a single character
-                _singleCharBuffer = new char[_maxByteCountForSingleChar];
-            }
+            // This is somewhat of an approximate guesstimate to get the max char[] size needed to encode a single character
+            _singleCharBuffer ??= new char[_maxByteCountForSingleChar];
 
             try
             {

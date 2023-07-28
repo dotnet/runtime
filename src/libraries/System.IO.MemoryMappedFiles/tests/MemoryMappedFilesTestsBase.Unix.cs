@@ -20,12 +20,14 @@ namespace System.IO.MemoryMappedFiles.Tests
             int pageSize;
             const int _SC_PAGESIZE_FreeBSD = 47;
             const int _SC_PAGESIZE_Linux = 30;
+            const int _SC_PAGESIZE_Android = 39;
             const int _SC_PAGESIZE_NetBSD = 28;
             const int _SC_PAGESIZE_OSX = 29;
             pageSize = sysconf(
                 OperatingSystem.IsMacOS() ? _SC_PAGESIZE_OSX :
                 OperatingSystem.IsFreeBSD() ? _SC_PAGESIZE_FreeBSD :
                 RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")) ? _SC_PAGESIZE_NetBSD :
+                OperatingSystem.IsAndroid() ? _SC_PAGESIZE_Android :
                 _SC_PAGESIZE_Linux);
             Assert.InRange(pageSize, 1, int.MaxValue);
             return pageSize;

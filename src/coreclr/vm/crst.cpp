@@ -18,7 +18,7 @@
 #include "threadsuspend.h"
 
 #define __IN_CRST_CPP
-#include <crsttypes.h>
+#include <crsttypes_generated.h>
 #undef __IN_CRST_CPP
 
 #if defined(DACCESS_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
@@ -92,7 +92,7 @@ void CrstBase::Destroy()
         DeleteCriticalSection(&m_criticalsection);
     }
 
-    LOG((LF_SYNC, INFO3, "Deleting 0x%x\n", this));
+    LOG((LF_SYNC, INFO3, "CrstBase::Destroy %p\n", this));
 #ifdef _DEBUG
     DebugDestroy();
 #endif
@@ -327,9 +327,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 
     if (fToggle)
     {
-        
         pThread->DisablePreemptiveGC();
-        
     }
 }
 
@@ -419,14 +417,17 @@ void CrstBase::PreEnter()
     }
 
     // If a thread suspends another thread, it cannot acquire locks.
-    if ((pThread != NULL) &&
-        (pThread->Debug_GetUnsafeSuspendeeCount() != 0))
+    if ((pThread != NULL)
+        && (pThread->Debug_GetUnsafeSuspendeeCount() != 0))
     {
         CONSISTENCY_CHECK_MSGF(false, ("Suspender thread taking non-suspender lock:'%s'", m_tag));
     }
 
-    if (ThreadStore::s_pThreadStore->IsCrstForThreadStore(this))
+    if ((ThreadStore::s_pThreadStore != NULL)
+        && ThreadStore::s_pThreadStore->IsCrstForThreadStore(this))
+    {
         return;
+    }
 
     if (m_dwFlags & CRST_UNSAFE_COOPGC)
     {
@@ -492,8 +493,11 @@ void CrstBase::PostEnter()
         }
     }
 
-    if (ThreadStore::s_pThreadStore->IsCrstForThreadStore(this))
+    if ((ThreadStore::s_pThreadStore != NULL)
+        && ThreadStore::s_pThreadStore->IsCrstForThreadStore(this))
+    {
         return;
+    }
 
     if (m_dwFlags & (CRST_UNSAFE_ANYMODE | CRST_UNSAFE_COOPGC | CRST_GC_NOTRIGGER_WHEN_TAKEN))
     {
@@ -612,7 +616,7 @@ void CrstBase::DebugInit(CrstType crstType, CrstFlags flags)
 
     // @todo - Any Crst w/ CRST_DEBUGGER_THREAD must be on a special blessed list. Check that here.
 
-    LOG((LF_SYNC, INFO3, "ConstructCrst with this:0x%x\n", this));
+    LOG((LF_SYNC, INFO3, "CrstBase::DebugInit %p\n", this));
 
     for (int i = 0; i < crstDebugInfoCount; i++)
     {
@@ -700,15 +704,13 @@ BOOL CrstBase::IsSafeToTake()
     // which case it must always be taken in this mode.
     // If there is no thread object, we ignore the check since this thread isn't
     // coordinated with the GC.
-    Thread * pThread;
-    
-    pThread = GetThreadNULLOk();
+    Thread * pThread = GetThreadNULLOk();
 
     _ASSERTE(pThread == NULL ||
              (pThread->PreemptiveGCDisabled() == ((m_dwFlags & CRST_UNSAFE_COOPGC) != 0)) ||
              ((m_dwFlags & (CRST_UNSAFE_ANYMODE | CRST_GC_NOTRIGGER_WHEN_TAKEN)) != 0) ||
              (GCHeapUtilities::IsGCInProgress() && pThread == ThreadSuspend::GetSuspensionThread()));
-    
+
 
     if (m_holderthreadid.IsCurrentThread())
     {

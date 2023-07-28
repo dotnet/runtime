@@ -1,12 +1,15 @@
 <Project>
+  <PropertyGroup>
+     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+     <LibrariesConfiguration>$(RuntimeConfiguration)</LibrariesConfiguration>
+  </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
   <Import Project="$(MSBuildThisFileDirectory)..\..\build\WasmApp.InTree.props" />
   <PropertyGroup>
-    <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
-    <IsWasmProject>true</IsWasmProject>
+    <IsBrowserWasmProject>true</IsBrowserWasmProject>
     <Configuration>Debug</Configuration>
-    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)'==''">Release</RuntimeConfiguration>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>219</NoWarn>

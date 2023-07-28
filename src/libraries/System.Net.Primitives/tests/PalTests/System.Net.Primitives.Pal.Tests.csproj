@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <PropertyGroup>
@@ -37,6 +37,8 @@
              Link="ProductionCode\Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HostInformationPalTest.cs" />
@@ -79,15 +81,13 @@
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs"
              Link="ProductionCode\Common\Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="..\..\src\System\Net\SocketException.Unix.cs"
              Link="ProductionCode\System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
              Link="Common\System\Net\SocketAddressPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
              Link="Common\System\Net\Sockets\SocketErrorPal.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Interop.CheckedAccess.cs"
-             Link="ProductionCode\Common\Interop\Interop.CheckedAccess.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="ProductionCode\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -97,7 +97,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
              Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs"
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs"
@@ -113,7 +113,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs"
              Link="Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Browser.cs"
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Browser.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs"

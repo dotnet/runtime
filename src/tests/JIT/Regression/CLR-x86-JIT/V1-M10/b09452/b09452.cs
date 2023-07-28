@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
     //@ENDRENAME; Verify this renames
     using System;
 
-    class X
+    public class X
     {
-        public static int Main(String[] argv)
+        [Fact]
+        public static int TestEntryPoint()
         {
             Object[,] obj = new Object[1, 1];
             //			IL_0000:  ldc.i4.1

@@ -30,7 +30,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void Modules_Get_ContainsHostFileName()
         {
@@ -38,7 +38,8 @@ namespace System.Diagnostics.Tests
             Assert.Contains(modules.Cast<ProcessModule>(), m => m.FileName.Contains(RemoteExecutor.HostRunnerName));
         }
 
-        [Fact]
+        // Single-file executables don't have libcoreclr or libSystem.Native
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [PlatformSpecific(TestPlatforms.Linux)] // OSX only includes the main module
         public void TestModulesContainsUnixNativeLibs()
         {

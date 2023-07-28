@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AssemblyResolveTest
 {
-	// This is a testing program for debuging one problem with name of resolving assembly
+	// This is a testing program for debugging one problem with name of resolving assembly
 	class Program
 	{
 		public static Dictionary<int, string> Original = new Dictionary<int, string>()
@@ -102,7 +102,7 @@ namespace AssemblyResolveTest
 
 			Console.WriteLine("Test is OK");
 			if (ExcCount>0)
-				  throw new Exception("Resolving assembly parametrs and original parametrs are not equal in AssemblyResolveTest7");
+				  throw new Exception("Resolving assembly parameters and original parameters are not equal in AssemblyResolveTest7");
 			return 0;
 		}
 
@@ -122,7 +122,7 @@ namespace AssemblyResolveTest
 			ExcCount++;
 			return null;
 			//bug: An exception is not raised!
-			//throw new Exception("Resolving assembly parametrs and original parametrs are not equal");
+			//throw new Exception("Resolving assembly parameters and original parameters are not equal");
 		}
 	}
 }

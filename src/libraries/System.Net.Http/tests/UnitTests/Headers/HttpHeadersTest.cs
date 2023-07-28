@@ -71,6 +71,16 @@ namespace System.Net.Http.Tests
             Assert.Equal(expectedValues, headers.NonValidated["Accept"]);
         }
 
+        [Fact]
+        public void TryAddWithoutValidation_AddInvalidViaHeaderValue_ValuePassed()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.TryAddWithoutValidation("Via", "1.1 foo.bar, foo");
+
+            Assert.Equal(1, headers.First().Value.Count());
+            Assert.Equal("1.1 foo.bar, foo", headers.First().Value.ElementAt(0));
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -226,7 +236,7 @@ namespace System.Net.Http.Tests
             Assert.Equal(2, headers.First().Value.Count());
 
             Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(0));
-            Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(1));            
+            Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(1));
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
 
             string expected = headers.Descriptor.Name + ": " + invalidHeaderValue + ", " + parsedPrefix + Environment.NewLine;
@@ -433,8 +443,17 @@ namespace System.Net.Http.Tests
 
         [Theory]
         [InlineData(null)]
+        public void Add_SingleUseNullHeaderName_Throw(string headerName)
+        {
+            MockHeaders headers = new MockHeaders();
+
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Add(headerName, "value"); });
+        }
+
+        [Theory]
         [InlineData("")]
-        public void Add_SingleUseEmptyHeaderName_Throw(string headerName)
+        [InlineData(" \t\r\n ")]
+        public void Add_SingleUseWhiteSpaceHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
 
@@ -1054,8 +1073,17 @@ namespace System.Net.Http.Tests
 
         [Theory]
         [InlineData(null)]
+        public void Remove_UseNullHeaderName_Throw(string headerName)
+        {
+            MockHeaders headers = new MockHeaders();
+
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Remove(headerName); });
+        }
+
+        [Theory]
         [InlineData("")]
-        public void Remove_UseEmptyHeaderName_Throw(string headerName)
+        [InlineData(" \t\r\n ")]
+        public void Remove_UseWhiteSpaceHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
 
@@ -1201,8 +1229,17 @@ namespace System.Net.Http.Tests
 
         [Theory]
         [InlineData(null)]
+        public void GetValues_UseNullHeaderName_Throw(string headerName)
+        {
+            MockHeaders headers = new MockHeaders();
+
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.GetValues(headerName); });
+        }
+
+        [Theory]
         [InlineData("")]
-        public void GetValues_UseEmptyHeaderName_Throw(string headerName)
+        [InlineData(" \t\r\n ")]
+        public void GetValues_UseWhiteSpaceHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
 
@@ -1566,7 +1603,16 @@ namespace System.Net.Http.Tests
 
         [Theory]
         [InlineData(null)]
+        public void Contains_UseNullHeaderName_Throw(string headerName)
+        {
+            MockHeaders headers = new MockHeaders();
+
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Contains(headerName); });
+        }
+
+        [Theory]
         [InlineData("")]
+        [InlineData(" \t\r\n ")]
         public void Contains_UseEmptyHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
@@ -2492,7 +2538,7 @@ namespace System.Net.Http.Tests
 
             Assert.True(headers.TryGetValues(Name, out IEnumerable<string> values));
 
-            // The entry shoud still exist as the parsing during the validating access should not remove the invalid value.
+            // The entry should still exist as the parsing during the validating access should not remove the invalid value.
             Assert.Equal(1, headers.NonValidated.Count);
             Assert.Equal(1, values.Count());
             Assert.Equal(value, values.Single());

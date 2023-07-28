@@ -35,6 +35,10 @@ namespace System.Data.OleDb
             this.oledbErrors = errors;
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(si);

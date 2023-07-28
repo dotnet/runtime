@@ -1,11 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.MathBenchmarks
 {
     public partial class MathTests
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             var result = 100;
 

@@ -41,11 +41,7 @@ namespace System.Net
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{cred.Domain}],[{cred.UserName}]");
 
-            if (_cache == null)
-            {
-                _cache = new Dictionary<CredentialKey, NetworkCredential>();
-            }
-
+            _cache ??= new Dictionary<CredentialKey, NetworkCredential>();
             _cache.Add(key, cred);
         }
 
@@ -54,10 +50,7 @@ namespace System.Net
             ArgumentException.ThrowIfNullOrEmpty(host);
             ArgumentNullException.ThrowIfNull(authenticationType);
 
-            if (port < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(port);
 
             if ((credential is SystemNetworkCredential)
                 && !((string.Equals(authenticationType, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase))
@@ -74,11 +67,7 @@ namespace System.Net
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{credential.Domain}],[{credential.UserName}]");
 
-            if (_cacheForHosts == null)
-            {
-                _cacheForHosts = new Dictionary<CredentialHostKey, NetworkCredential>();
-            }
-
+            _cacheForHosts ??= new Dictionary<CredentialHostKey, NetworkCredential>();
             _cacheForHosts.Add(key, credential);
         }
 
@@ -178,10 +167,7 @@ namespace System.Net
         {
             ArgumentException.ThrowIfNullOrEmpty(host);
             ArgumentNullException.ThrowIfNull(authenticationType);
-            if (port < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(port);
 
             if (_cacheForHosts == null)
             {

@@ -93,8 +93,7 @@ namespace System.Collections
         //
         public SortedList(int initialCapacity)
         {
-            if (initialCapacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(initialCapacity);
 
             keys = new object[initialCapacity];
             values = new object[initialCapacity];
@@ -337,8 +336,7 @@ namespace System.Collections
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-            if (arrayIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
             if (array.Length - arrayIndex < Count)
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
 
@@ -426,11 +424,7 @@ namespace System.Collections
         // Remove and RemoveRange methods or through an enumerator).
         // Null is an invalid key value.
         //
-        public virtual IList GetKeyList()
-        {
-            if (keyList == null) keyList = new KeyList(this);
-            return keyList;
-        }
+        public virtual IList GetKeyList() => keyList ??= new KeyList(this);
 
         // Returns an IList representing the values of this sorted list. The
         // returned list is an alias for the values of this sorted list, so
@@ -443,11 +437,7 @@ namespace System.Collections
         // elements (through the Remove, RemoveRange, Set and
         // SetRange methods or through an enumerator).
         //
-        public virtual IList GetValueList()
-        {
-            if (valueList == null) valueList = new ValueList(this);
-            return valueList;
-        }
+        public virtual IList GetValueList() => valueList ??= new ValueList(this);
 
         // Returns the value associated with the given key. If an entry with the
         // given key is not found, the returned value is null.

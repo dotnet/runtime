@@ -22,7 +22,7 @@
         cbnz    w9, %bt1
 
 2   ;; exit
-        ArmInterlockedOperationBarrier
+        InterlockedOperationBarrier
         ret
     LEAF_END RhpLockCmpXchg32
 
@@ -43,7 +43,7 @@
         cbnz    w9, %bt1
 
 2   ;; exit
-        ArmInterlockedOperationBarrier
+        InterlockedOperationBarrier
         ret
     LEAF_END RhpLockCmpXchg64
 

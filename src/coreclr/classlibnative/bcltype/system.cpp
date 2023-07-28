@@ -30,7 +30,7 @@
 #include "array.h"
 #include "eepolicy.h"
 
-
+#include <minipal/cpuid.h>
 
 
 FCIMPL0(UINT32, SystemNative::GetTickCount)
@@ -48,8 +48,6 @@ FCIMPL0(UINT64, SystemNative::GetTickCount64)
     return ::GetTickCount64();
 }
 FCIMPLEND;
-
-
 
 
 extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)
@@ -87,43 +85,6 @@ FCIMPL0(INT32, SystemNative::GetExitCode)
 
     // Return whatever has been latched so far.  This is uninitialized to 0.
     return GetLatchedExitCode();
-}
-FCIMPLEND
-
-FCIMPL0(Object*, SystemNative::GetCommandLineArgs)
-{
-    FCALL_CONTRACT;
-
-    PTRARRAYREF strArray = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(strArray);
-
-    LPWSTR commandLine;
-
-    commandLine = WszGetCommandLine();
-    if (commandLine==NULL)
-        COMPlusThrowOM();
-
-    DWORD numArgs = 0;
-    LPWSTR* argv = SegmentCommandLine(commandLine, &numArgs);
-    if (!argv)
-        COMPlusThrowOM();
-
-    _ASSERTE(numArgs > 0);
-
-    strArray = (PTRARRAYREF) AllocateObjectArray(numArgs, g_pStringClass);
-    // Copy each argument into new Strings.
-    for(unsigned int i=0; i<numArgs; i++)
-    {
-        STRINGREF str = StringObject::NewString(argv[i]);
-        STRINGREF * destData = ((STRINGREF*)(strArray->GetDataPtr())) + i;
-        SetObjectReference((OBJECTREF*)destData, (OBJECTREF)str);
-    }
-    delete [] argv;
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(strArray);
 }
 FCIMPLEND
 
@@ -199,13 +160,11 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
         EXCEPTIONREF refExceptionForWatsonBucketing;
         STRINGREF refErrorSourceString;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCPROTECT_BEGIN(gc);
-
     gc.refMesgString = refMesgString;
     gc.refExceptionForWatsonBucketing = refExceptionForWatsonBucketing;
     gc.refErrorSourceString = refErrorSourceString;
+
+    GCPROTECT_BEGIN(gc);
 
     // Managed code injected FailFast maps onto the unmanaged version
     // (EEPolicy::HandleFatalError) in the following manner: the exit code is
@@ -275,7 +234,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     else
     {
         pszMessage = W("There is not enough memory to print the supplied FailFast message.");
-        cchMessage = (DWORD)wcslen(pszMessage);
+        cchMessage = (DWORD)u16_strlen(pszMessage);
     }
 
     if (cchMessage == 0) {

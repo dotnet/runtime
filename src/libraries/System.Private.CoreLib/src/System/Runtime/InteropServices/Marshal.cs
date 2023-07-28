@@ -43,10 +43,7 @@ namespace System.Runtime.InteropServices
         public static unsafe string PtrToStringAnsi(IntPtr ptr, int len)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len), len, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
 
             return new string((sbyte*)ptr, 0, len);
         }
@@ -64,10 +61,7 @@ namespace System.Runtime.InteropServices
         public static unsafe string PtrToStringUni(IntPtr ptr, int len)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len), len, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
 
             return new string((char*)ptr, 0, len);
         }
@@ -86,10 +80,7 @@ namespace System.Runtime.InteropServices
         public static unsafe string PtrToStringUTF8(IntPtr ptr, int byteLen)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            if (byteLen < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(byteLen), byteLen, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(byteLen);
 
             return string.CreateStringFromEncoding((byte*)ptr, byteLen, Encoding.UTF8);
         }
@@ -183,7 +174,9 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(arr);
 
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
-            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
+#pragma warning disable 8500 // sizeof of managed types
+            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)sizeof(T));
+#pragma warning restore 8500
         }
 
         public static IntPtr OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
@@ -283,10 +276,8 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(destination);
 
             ArgumentNullException.ThrowIfNull(source);
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             // The rest of the argument validation is done by CopyTo
 
@@ -363,18 +354,18 @@ namespace System.Runtime.InteropServices
         public static IntPtr ReadIntPtr(object ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
@@ -482,19 +473,23 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
+#pragma warning restore CA2020
 #endif
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
-        [EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteIntPtr(Object, Int32, IntPtr) may be unavailable in future releases.")]
         public static void WriteIntPtr(object ptr, int ofs, IntPtr val)
         {
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
+#pragma warning restore CA2020
 #endif
         }
 
@@ -625,6 +620,8 @@ namespace System.Runtime.InteropServices
 
         // CoreCLR has a different implementation for Windows only
 #if !CORECLR || !TARGET_WINDOWS
+        [RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. " +
+            "This API will return -1 for modules without a file on disk.")]
         public static IntPtr GetHINSTANCE(Module m)
         {
             ArgumentNullException.ThrowIfNull(m);
@@ -741,8 +738,6 @@ namespace System.Runtime.InteropServices
                     return new System.NotSupportedException();
                 case HResults.E_POINTER:
                     return new System.NullReferenceException();
-                case HResults.COR_E_OBJECTDISPOSED:
-                    return new System.ObjectDisposedException("");
                 case HResults.COR_E_OPERATIONCANCELED:
                     return new System.OperationCanceledException();
                 case HResults.COR_E_OUTOFMEMORY:
@@ -786,7 +781,7 @@ namespace System.Runtime.InteropServices
                 case HResults.COR_E_TYPEACCESS:
                     return new System.TypeAccessException();
                 case HResults.COR_E_TYPEINITIALIZATION:
-                    return new System.TypeInitializationException("");
+                    return new System.TypeInitializationException(null);
                 case HResults.COR_E_TYPELOAD:
                     return new System.TypeLoadException();
                 case HResults.COR_E_TYPEUNLOADED:
@@ -801,33 +796,8 @@ namespace System.Runtime.InteropServices
                     return new System.NotImplementedException();
                 //case HResults.E_POINTER:
                 case HResults.RO_E_CLOSED:
-                    return new System.ObjectDisposedException("");
-                case HResults.COR_E_ABANDONEDMUTEX:
-                case HResults.COR_E_AMBIGUOUSIMPLEMENTATION:
-                case HResults.COR_E_CANNOTUNLOADAPPDOMAIN:
-                case HResults.COR_E_CONTEXTMARSHAL:
-                //case HResults.COR_E_HOSTPROTECTION:
-                case HResults.COR_E_INSUFFICIENTMEMORY:
-                case HResults.COR_E_INVALIDCOMOBJECT:
-                case HResults.COR_E_KEYNOTFOUND:
-                case HResults.COR_E_MISSINGSATELLITEASSEMBLY:
-                case HResults.COR_E_SAFEARRAYRANKMISMATCH:
-                case HResults.COR_E_SAFEARRAYTYPEMISMATCH:
-                //case HResults.COR_E_SAFEHANDLEMISSINGATTRIBUTE:
-                //case HResults.COR_E_SEMAPHOREFULL:
-                //case HResults.COR_E_THREADSTOP:
-                case HResults.COR_E_TIMEOUT:
-                case HResults.COR_E_WAITHANDLECANNOTBEOPENED:
-                case HResults.DISP_E_OVERFLOW:
-                case HResults.E_BOUNDS:
-                case HResults.E_CHANGED_STATE:
-                case HResults.E_FAIL:
-                case HResults.E_HANDLE:
-                case HResults.ERROR_MRM_MAP_NOT_FOUND:
-                case HResults.TYPE_E_TYPEMISMATCH:
-                case HResults.CO_E_NOTINITIALIZED:
-                case HResults.RPC_E_CHANGED_MODE:
-                    return new COMException("", errorCode);
+                case HResults.COR_E_OBJECTDISPOSED:
+                    return new System.ObjectDisposedException(null);
 
                 case HResults.STG_E_PATHNOTFOUND:
                 case HResults.CTL_E_PATHNOTFOUND:
@@ -837,7 +807,6 @@ namespace System.Runtime.InteropServices
                             HResult = errorCode
                         };
                     }
-                case HResults.FUSION_E_CACHEFILE_FAILED:
                 case HResults.FUSION_E_INVALID_NAME:
                 case HResults.FUSION_E_PRIVATE_ASM_DISALLOWED:
                 case HResults.FUSION_E_REF_DEF_MISMATCH:
@@ -864,7 +833,7 @@ namespace System.Runtime.InteropServices
                         };
                     }
                 default:
-                    return new COMException("", errorCode);
+                    return new COMException(null, errorCode);
             }
         }
 #pragma warning restore IDE0060
@@ -995,14 +964,8 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocHGlobal(checked(nb + 1));
 
-            int nbWritten;
             byte* pbMem = (byte*)ptr;
-
-            fixed (char* firstChar = s)
-            {
-                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
-            }
-
+            int nbWritten = Encoding.UTF8.GetBytes(s, new Span<byte>(pbMem, nb));
             pbMem[nbWritten] = 0;
 
             return ptr;
@@ -1042,14 +1005,8 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocCoTaskMem(checked(nb + 1));
 
-            int nbWritten;
             byte* pbMem = (byte*)ptr;
-
-            fixed (char* firstChar = s)
-            {
-                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
-            }
-
+            int nbWritten = Encoding.UTF8.GetBytes(s, new Span<byte>(pbMem, nb));
             pbMem[nbWritten] = 0;
 
             return ptr;
@@ -1284,8 +1241,8 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Initializes the underlying handle of a newly created <see cref="SafeHandle" /> to the provided value.
         /// </summary>
-        /// <param name="safeHandle"><see cref="SafeHandle"/> instance to update</param>
-        /// <param name="handle">Pre-existing handle</param>
+        /// <param name="safeHandle">The <see cref="SafeHandle"/> instance to update.</param>
+        /// <param name="handle">The pre-existing handle.</param>
         public static void InitHandle(SafeHandle safeHandle, IntPtr handle)
         {
             // To help maximize performance of P/Invokes, don't check if safeHandle is null.
@@ -1295,6 +1252,15 @@ namespace System.Runtime.InteropServices
         public static int GetLastWin32Error()
         {
             return GetLastPInvokeError();
+        }
+
+        /// <summary>
+        /// Gets the system error message for the last PInvoke error code.
+        /// </summary>
+        /// <returns>The error message associated with the last PInvoke error code.</returns>
+        public static string GetLastPInvokeErrorMessage()
+        {
+            return GetPInvokeErrorMessage(GetLastPInvokeError());
         }
     }
 }

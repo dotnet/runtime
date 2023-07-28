@@ -81,10 +81,7 @@ namespace System.Net.Mail
         {
             try
             {
-                if (port < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(port));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(port);
 
                 _host = host;
                 _port = port;
@@ -104,7 +101,7 @@ namespace System.Net.Mail
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _transport);
             _onSendCompletedDelegate = new SendOrPostCallback(SendCompletedWaitCallback);
 
-            if (_host != null && _host.Length != 0)
+            if (!string.IsNullOrEmpty(_host))
             {
                 _host = _host.Trim();
             }
@@ -114,8 +111,7 @@ namespace System.Net.Mail
                 _port = DefaultPort;
             }
 
-            if (_targetName == null)
-                _targetName = "SMTPSVC/" + _host;
+            _targetName ??= "SMTPSVC/" + _host;
 
             if (_clientDomain == null)
             {
@@ -144,7 +140,7 @@ namespace System.Net.Mail
                 for (int i = 0; i < clientDomainRaw.Length; i++)
                 {
                     ch = clientDomainRaw[i];
-                    if ((ushort)ch <= 0x7F)
+                    if (Ascii.IsValid(ch))
                         sb.Append(ch);
                 }
                 if (sb.Length > 0)
@@ -193,10 +189,7 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
 
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 if (value != _port)
                 {
@@ -260,10 +253,7 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
 
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 _timeout = value;
             }
@@ -282,7 +272,7 @@ namespace System.Net.Mail
                 // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
                 // protocols that do not use URI."
 #pragma warning disable SYSLIB0014
-                return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
+                return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri($"mailto:{_host}:{_port}"));
 #pragma warning restore SYSLIB0014
             }
         }
@@ -543,10 +533,7 @@ namespace System.Net.Mail
             finally
             {
                 InCall = false;
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                }
+                _timer?.Dispose();
             }
         }
 
@@ -634,8 +621,7 @@ namespace System.Net.Mail
                             ValidateUnicodeRequirement(message, _recipients, allowUnicode);
                             message.Send(_writer, true, allowUnicode);
 
-                            if (_writer != null)
-                                _writer.Close();
+                            _writer?.Close();
 
                             AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(null, false, _asyncOp.UserSuppliedState);
                             InCall = false;
@@ -648,8 +634,23 @@ namespace System.Net.Mail
                         _operationCompletedResult = new ContextAwareResult(_transport.IdentityRequired, true, null, this, s_contextSafeCompleteCallback);
                         lock (_operationCompletedResult.StartPostingAsyncOp())
                         {
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Calling BeginConnect. Transport: {_transport}");
-                            _transport.BeginGetConnection(_operationCompletedResult, ConnectCallback, _operationCompletedResult, Host!, Port);
+                            if (_transport.IsConnected)
+                            {
+                                try
+                                {
+                                    SendMailAsync(_operationCompletedResult);
+                                }
+                                catch (Exception e)
+                                {
+                                    Complete(e, _operationCompletedResult);
+                                }
+                            }
+                            else
+                            {
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Calling BeginConnect. Transport: {_transport}");
+                                _transport.BeginGetConnection(_operationCompletedResult, ConnectCallback, _operationCompletedResult, Host!, Port);
+                            }
+
                             _operationCompletedResult.FinishPostingAsyncOp();
                         }
                         break;
@@ -810,7 +811,7 @@ namespace System.Net.Mail
 
         private void CheckHostAndPort()
         {
-            if (_host == null || _host.Length == 0)
+            if (string.IsNullOrEmpty(_host))
             {
                 throw new InvalidOperationException(SR.UnspecifiedHost);
             }
@@ -829,9 +830,9 @@ namespace System.Net.Mail
             }
         }
 
-        private void Complete(Exception? exception, IAsyncResult result)
+        private void Complete(Exception? exception, object result)
         {
-            ContextAwareResult operationCompletedResult = (ContextAwareResult)result.AsyncState!;
+            ContextAwareResult operationCompletedResult = (ContextAwareResult)result;
             try
             {
                 if (_cancelled)
@@ -893,11 +894,11 @@ namespace System.Net.Mail
             {
                 _message!.EndSend(result);
                 // If some recipients failed but not others, throw AFTER sending the message.
-                Complete(_failedRecipientException, result);
+                Complete(_failedRecipientException, result.AsyncState!);
             }
             catch (Exception e)
             {
-                Complete(e, result);
+                Complete(e, result.AsyncState!);
             }
         }
 
@@ -916,7 +917,7 @@ namespace System.Net.Mail
             }
             catch (Exception e)
             {
-                Complete(e, result);
+                Complete(e, result.AsyncState!);
                 return;
             }
 
@@ -924,17 +925,17 @@ namespace System.Net.Mail
             {
                 if (_cancelled)
                 {
-                    Complete(null, result);
+                    Complete(null, result.AsyncState!);
                 }
                 else
                 {
-                    _message!.BeginSend(_writer, DeliveryMethod != SmtpDeliveryMethod.Network,
+                    _message!.BeginSend(_writer,
                         IsUnicodeSupported(), new AsyncCallback(SendMessageCallback), result.AsyncState!);
                 }
             }
             catch (Exception e)
             {
-                Complete(e, result);
+                Complete(e, result.AsyncState!);
             }
         }
 
@@ -945,27 +946,32 @@ namespace System.Net.Mail
                 SmtpTransport.EndGetConnection(result);
                 if (_cancelled)
                 {
-                    Complete(null, result);
+                    Complete(null, result.AsyncState!);
                 }
                 else
                 {
-                    // Detected during Begin/EndGetConnection, restrictable using DeliveryFormat
-                    bool allowUnicode = IsUnicodeSupported();
-                    ValidateUnicodeRequirement(_message!, _recipients!, allowUnicode);
-                    _transport.BeginSendMail(_message!.Sender ?? _message.From!, _recipients!,
-                        _message.BuildDeliveryStatusNotificationString(), allowUnicode,
-                        new AsyncCallback(SendMailCallback), result.AsyncState!);
+                    SendMailAsync(result.AsyncState!);
                 }
             }
             catch (Exception e)
             {
-                Complete(e, result);
+                Complete(e, result.AsyncState!);
             }
         }
 
-        // After we've estabilished a connection and initilized ServerSupportsEai,
+        private void SendMailAsync(object state)
+        {
+            // Detected during Begin/EndGetConnection, restrictable using DeliveryFormat
+            bool allowUnicode = IsUnicodeSupported();
+            ValidateUnicodeRequirement(_message!, _recipients!, allowUnicode);
+            _transport.BeginSendMail(_message!.Sender ?? _message.From!, _recipients!,
+                _message.BuildDeliveryStatusNotificationString(), allowUnicode,
+                new AsyncCallback(SendMailCallback), state);
+        }
+
+        // After we've estabilished a connection and initialized ServerSupportsEai,
         // check all the addresses for one that contains unicode in the username/localpart.
-        // The localpart is the only thing we cannot succesfully downgrade.
+        // The localpart is the only thing we cannot successfully downgrade.
         private static void ValidateUnicodeRequirement(MailMessage message, MailAddressCollection recipients, bool allowUnicode)
         {
             // Check all recipients, to, from, sender, bcc, cc, etc...

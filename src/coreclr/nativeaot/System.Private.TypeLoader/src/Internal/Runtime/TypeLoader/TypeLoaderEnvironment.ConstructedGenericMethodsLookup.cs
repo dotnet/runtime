@@ -3,14 +3,9 @@
 
 
 using System;
-using System.Runtime;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 
-using Internal.Runtime;
-using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 using Internal.NativeFormat;
@@ -153,9 +148,7 @@ namespace Internal.Runtime.TypeLoader
                 RuntimeTypeHandle parsedDeclaringTypeHandle = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
                 // Hash table names / sigs are indirected through to the native layout info
-                MethodNameAndSignature nameAndSignature;
-                if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(moduleHandle, entryParser.GetUnsigned(), out nameAndSignature))
-                    return false;
+                MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignatureFromNativeLayoutOffset(moduleHandle, entryParser.GetUnsigned());
 
                 RuntimeTypeHandle[] parsedArgsHandles = GetTypeSequence(ref externalReferencesLookup, ref entryParser);
 
@@ -177,135 +170,51 @@ namespace Internal.Runtime.TypeLoader
                 return parsedGenericMethod == _methodToLookup;
             }
         }
-        internal class HandleBasedGenericMethodLookup : MethodDescBasedGenericMethodLookup
-        {
-            private RuntimeTypeHandle _declaringType;
-            private MethodNameAndSignature _nameAndSignature;
-            private RuntimeTypeHandle[] _genericMethodArgumentHandles;
-
-            internal HandleBasedGenericMethodLookup(InstantiatedMethod methodToLookup) : base(methodToLookup)
-            {
-                Debug.Assert(methodToLookup != null);
-                _declaringType = _methodToLookup.OwningType.RuntimeTypeHandle;
-                _nameAndSignature = _methodToLookup.NameAndSignature;
-                // _genericMethodArgumentHandles not initialized here to avoid allocation of a new array (and it's not used if we initialize _typeToLookup).
-            }
-
-            internal HandleBasedGenericMethodLookup(RuntimeTypeHandle declaringType, MethodNameAndSignature nameAndSignature, RuntimeTypeHandle[] genericMethodArgumentHandles) : base(null)
-            {
-                Debug.Assert(!declaringType.IsNull() && nameAndSignature != null && genericMethodArgumentHandles != null);
-                _declaringType = declaringType;
-                _nameAndSignature = nameAndSignature;
-                _genericMethodArgumentHandles = genericMethodArgumentHandles;
-            }
-
-            internal override int LookupHashCode()
-            {
-                // Todo: Signatures in the hash code.
-                return _methodToLookup != null ? _methodToLookup.GetHashCode() : (_declaringType.GetHashCode() ^ TypeHashingAlgorithms.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(_nameAndSignature.Name), _genericMethodArgumentHandles));
-            }
-
-            internal override bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, TypeManagerHandle moduleHandle)
-            {
-                // Compare entry with inputs as we parse it. If we get a mismatch, stop parsing and move to the next entry...
-                RuntimeTypeHandle parsedDeclaringTypeHandle = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                if (!parsedDeclaringTypeHandle.Equals(_declaringType))
-                    return false;
-
-                // Hash table names / sigs are indirected through to the native layout info
-                MethodNameAndSignature nameAndSignature;
-                if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(moduleHandle, entryParser.GetUnsigned(), out nameAndSignature))
-                    return false;
-
-                if (!nameAndSignature.Equals(_nameAndSignature))
-                    return false;
-
-                int parsedArity = (int)entryParser.GetSequenceCount();
-                int lookupArity = (_methodToLookup != null ? _methodToLookup.Instantiation.Length : _genericMethodArgumentHandles.Length);
-                if (parsedArity != lookupArity)
-                    return false;
-
-                for (int i = 0; i < parsedArity; i++)
-                {
-                    RuntimeTypeHandle parsedArg = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                    RuntimeTypeHandle lookupArg = (_methodToLookup != null ? _methodToLookup.Instantiation[i].RuntimeTypeHandle : _genericMethodArgumentHandles[i]);
-                    if (!parsedArg.Equals(lookupArg))
-                        return false;
-                }
-
-                return true;
-            }
-
-            internal override bool MatchGenericMethodEntry(GenericMethodEntry entry)
-            {
-                if (!entry._declaringTypeHandle.Equals(_declaringType))
-                    return false;
-
-                if (!entry._methodNameAndSignature.Equals(_nameAndSignature))
-                    return false;
-
-                if (entry._genericMethodArgumentHandles == null)
-                    return false;
-
-                if (_methodToLookup != null)
-                {
-                    int expectedArity = _methodToLookup.Instantiation.Length;
-
-                    if (entry._genericMethodArgumentHandles.Length != expectedArity)
-                        return false;
-
-                    for (int i = 0; i < expectedArity; i++)
-                        if (!entry._genericMethodArgumentHandles[i].Equals(_methodToLookup.Instantiation[i].RuntimeTypeHandle))
-                            return false;
-                }
-                else
-                {
-                    if (entry._genericMethodArgumentHandles.Length != _genericMethodArgumentHandles.Length)
-                        return false;
-
-                    for (int i = 0; i < _genericMethodArgumentHandles.Length; i++)
-                        if (!entry._genericMethodArgumentHandles[i].Equals(_genericMethodArgumentHandles[i]))
-                            return false;
-                }
-
-                return true;
-            }
-        }
 
         private DynamicGenericMethodsHashtable _dynamicGenericMethods = new DynamicGenericMethodsHashtable();
         private DynamicGenericMethodComponentsHashtable _dynamicGenericMethodComponents = new DynamicGenericMethodComponentsHashtable();
 
-        internal bool TryLookupGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
+        internal bool TryLookupGenericMethodDictionary(GenericMethodLookupData lookupData, out IntPtr result)
         {
-            if (!TryGetStaticGenericMethodDictionaryForComponents(lookupData, out result))
-                if (!TryGetDynamicGenericMethodDictionaryForComponents(lookupData, out result))
+            if (!TryGetStaticGenericMethodDictionary(lookupData, out result))
+                if (!TryGetDynamicGenericMethodDictionary(lookupData, out result))
                     return false;
 
             return true;
-        }
-
-        public bool TryLookupGenericMethodDictionaryForComponents(RuntimeTypeHandle declaringType, MethodNameAndSignature nameAndSignature, RuntimeTypeHandle[] genericMethodArgumentHandles, out IntPtr result)
-        {
-            return TryLookupGenericMethodDictionaryForComponents(new HandleBasedGenericMethodLookup(declaringType, nameAndSignature, genericMethodArgumentHandles), out result);
         }
 
         public bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles)
         {
             if (!TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out nameAndSignature, out genericMethodArgumentHandles))
-                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out nameAndSignature, out genericMethodArgumentHandles))
+            {
+                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out TypeManagerHandle typeManager, out uint nameAndSigOffset, out genericMethodArgumentHandles))
+                    return false;
+
+                nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignatureFromNativeLayoutOffset(typeManager, nameAndSigOffset);
+            }
+
+            return true;
+        }
+
+        public static bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out RuntimeTypeHandle[] genericMethodArgumentHandles)
+        {
+            TypeLoaderEnvironment instance = TypeLoaderEnvironment.InstanceOrNull;
+            if (instance == null || !instance.TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles))
+                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out _, out _, out genericMethodArgumentHandles))
                     return false;
 
             return true;
         }
 
-        public bool TryLookupExactMethodPointerForComponents(RuntimeTypeHandle declaringType, MethodNameAndSignature nameAndSignature, RuntimeTypeHandle[] genericMethodArgumentHandles, out IntPtr result)
+
+        public bool TryLookupExactMethodPointer(InstantiatedMethod method, out IntPtr result)
         {
-            int lookupHashcode = declaringType.GetHashCode();
+            int lookupHashcode = method.OwningType.GetHashCode();
 
             NativeHashtable hashtable;
             ExternalReferencesTable externalReferencesLookup;
 
-            HandleBasedGenericMethodLookup lookupData = new HandleBasedGenericMethodLookup(declaringType, nameAndSignature, genericMethodArgumentHandles);
+            MethodDescBasedGenericMethodLookup lookupData = new MethodDescBasedGenericMethodLookup(method);
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
@@ -332,103 +241,59 @@ namespace Internal.Runtime.TypeLoader
 
         // This method computes the method pointer and dictionary pointer for a GVM.
         // Inputs:
-        //      - targetTypeHanlde: target type on which the GVM is implemented
-        //      - nameAndSignature: name and signature of the GVM method
-        //      - genericMethodArgumentHandles: GVM instantiation arguments
+        //      - method: the GVM whose pointer and dictionary to retrieve
         // Outputs:
         //      - methodPointer: pointer to the GVM's implementation
         //      - dictionaryPointer: (if applicable) pointer to the dictionary to be used with the GVM call
-        public bool TryGetGenericVirtualMethodPointer(RuntimeTypeHandle targetTypeHandle, MethodNameAndSignature nameAndSignature, RuntimeTypeHandle[] genericMethodArgumentHandles, out IntPtr methodPointer, out IntPtr dictionaryPointer)
+        public bool TryGetGenericVirtualMethodPointer(InstantiatedMethod method, out IntPtr methodPointer, out IntPtr dictionaryPointer)
         {
-            methodPointer = dictionaryPointer = IntPtr.Zero;
-
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
-            Instantiation methodInstantiation = context.ResolveRuntimeTypeHandles(genericMethodArgumentHandles);
-            InstantiatedMethod method = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, targetType, nameAndSignature, methodInstantiation, IntPtr.Zero, false);
-
             if (!method.CanShareNormalGenericCode())
             {
                 // First see if we can find an exact method implementation for the GVM (avoid using USG implementations if we can,
                 // because USG code is much slower).
-                if (TryLookupExactMethodPointerForComponents(targetTypeHandle, nameAndSignature, genericMethodArgumentHandles, out methodPointer))
+                if (TryLookupExactMethodPointer(method, out methodPointer))
                 {
                     Debug.Assert(methodPointer != IntPtr.Zero);
-                    TypeSystemContextFactory.Recycle(context);
+                    dictionaryPointer = IntPtr.Zero;
                     return true;
                 }
             }
 
-            // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictinoary
-            NativeLayoutInfo nativeLayoutInfo = new NativeLayoutInfo();
-            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(method, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
+            // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictionary
+            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(method, out _, out _);
             if (templateMethod == null)
+            {
+                methodPointer = default;
+                dictionaryPointer = default;
                 return false;
+            }
 
             methodPointer = templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal) ?
                 templateMethod.UsgFunctionPointer :
                 templateMethod.FunctionPointer;
 
-            if (!TryLookupGenericMethodDictionaryForComponents(targetTypeHandle, nameAndSignature, genericMethodArgumentHandles, out dictionaryPointer))
+            if (!TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out dictionaryPointer))
             {
                 using (LockHolder.Hold(_typeLoaderLock))
                 {
                     // Now that we hold the lock, we may find that existing types can now find
                     // their associated RuntimeTypeHandle. Flush the type builder states as a way
                     // to force the reresolution of RuntimeTypeHandles which couldn't be found before.
-                    context.FlushTypeBuilderStates();
+                    method.Context.FlushTypeBuilderStates();
 
                     if (!TypeBuilder.TryBuildGenericMethod(method, out dictionaryPointer))
+                    {
                         return false;
+                    }
                 }
             }
 
             Debug.Assert(methodPointer != IntPtr.Zero && dictionaryPointer != IntPtr.Zero);
-
-#if FEATURE_UNIVERSAL_GENERICS
-            if (templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
-            {
-                // Check if we need to wrap the method pointer into a calling convention converter thunk
-                if (!TypeLoaderEnvironment.Instance.MethodSignatureHasVarsNeedingCallingConventionConverter(context, nameAndSignature.Signature))
-                {
-                    TypeSystemContextFactory.Recycle(context);
-                    return true;
-                }
-
-                RuntimeTypeHandle[] typeArgs = Array.Empty<RuntimeTypeHandle>();
-
-                if (RuntimeAugments.IsGenericType(targetTypeHandle))
-                {
-                    RuntimeAugments.GetGenericInstantiation(targetTypeHandle, out typeArgs);
-                }
-
-                // Create a CallingConventionConverter to call the method correctly
-                IntPtr thunkPtr = CallConverterThunk.MakeThunk(
-                    CallConverterThunk.ThunkKind.StandardToGenericInstantiating,
-                    methodPointer,
-                    nameAndSignature.Signature,
-                    dictionaryPointer,
-                    typeArgs,
-                    genericMethodArgumentHandles);
-
-                Debug.Assert(thunkPtr != IntPtr.Zero);
-
-                methodPointer = thunkPtr;
-                // Set dictionaryPointer to null so we don't make a fat function pointer around the whole thing.
-                dictionaryPointer = IntPtr.Zero;
-
-                // TODO! add a new call converter thunk that will pass the instantiating arg through and use a fat function pointer.
-                // should allow us to make fewer thunks.
-            }
-#endif
-
-            TypeSystemContextFactory.Recycle(context);
             return true;
         }
 
 #region Privates
-        private bool TryGetDynamicGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
+        private bool TryGetDynamicGenericMethodDictionary(GenericMethodLookupData lookupData, out IntPtr result)
         {
             result = IntPtr.Zero;
 
@@ -445,7 +310,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
         }
-        private static bool TryGetStaticGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
+        private static bool TryGetStaticGenericMethodDictionary(GenericMethodLookupData lookupData, out IntPtr result)
         {
             // Search the hashtable for a generic instantiation match
 
@@ -499,7 +364,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
         }
-        private unsafe bool TryGetStaticGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature methodNameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles)
+        private static unsafe bool TryGetStaticGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out TypeManagerHandle typeManager, out uint nameAndSigOffset, out RuntimeTypeHandle[] genericMethodArgumentHandles)
         {
             // Generic method dictionaries have a header that has the hash code in it. Locate the header
             IntPtr dictionaryHeader = IntPtr.Subtract(methodDictionary, IntPtr.Size);
@@ -527,9 +392,8 @@ namespace Internal.Runtime.TypeLoader
                     // We have a match - fill in the results
                     declaringType = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
-                    // Hash table names / sigs are indirected through to the native layout info
-                    if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(module.Handle, entryParser.GetUnsigned(), out methodNameAndSignature))
-                        continue;
+                    typeManager = module.Handle;
+                    nameAndSigOffset = entryParser.GetUnsigned();
 
                     uint arity = entryParser.GetSequenceCount();
                     genericMethodArgumentHandles = new RuntimeTypeHandle[arity];
@@ -544,7 +408,8 @@ namespace Internal.Runtime.TypeLoader
             }
 
             declaringType = default(RuntimeTypeHandle);
-            methodNameAndSignature = null;
+            typeManager = default;
+            nameAndSigOffset = 0;
             genericMethodArgumentHandles = null;
             return false;
         }

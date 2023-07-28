@@ -34,9 +34,9 @@ namespace System.Reflection.TypeLoading
 
         public sealed override int GetArrayRank() => _rank;
 
-        protected sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => Loader.GetCoreType(CoreType.Array);
+        internal sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => Loader.GetCoreType(CoreType.Array);
 
-        protected sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces()
+        internal sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces()
         {
             if (_multiDim)
                 yield break;
@@ -66,7 +66,9 @@ namespace System.Reflection.TypeLoading
             CoreType.IReadOnlyListT,
         };
 
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serialized flag is obsolete
         protected sealed override TypeAttributes ComputeAttributeFlags() => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+#pragma warning restore SYSLIB0050
 
         internal sealed override IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter? filter)
         {

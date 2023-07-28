@@ -6,7 +6,7 @@ using System.Text;
 public static class TestData
 {
     public const char InvalidChar = (char)0x2216;
-    public const char UnmappableChar = '火';
+    public const char UnmappableChar = '\u706B';
     public const char ValidChar = 'c';
 
     public static readonly string InvalidString = new string(new char[]
@@ -17,7 +17,7 @@ public static class TestData
             (char)0x0589,
             (char)0x2236
         });
-    public static readonly string UnmappableString = new string(new char[] { '乀', 'Ω', '火' });
+    public static readonly string UnmappableString = new string(new char[] { '\u4E40', '\u2126', '\u706B' });
     public static readonly string ValidString = "This is the initial test string.";
 
     public static readonly StringBuilder InvalidStringBuilder = new StringBuilder(InvalidString);

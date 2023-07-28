@@ -7,7 +7,7 @@ namespace System.Diagnostics.Tracing
     {
         private static Interop.Sys.ProcessCpuInformation s_cpuInfo;
 
-        internal static int GetCpuUsage() =>
+        internal static double GetCpuUsage() =>
             Interop.Sys.GetCpuUtilization(ref s_cpuInfo) / Environment.ProcessorCount;
     }
 }

@@ -12,7 +12,7 @@ There are several components that consume the JIT outside of the runtime. Since 
 
 The JitInterface is versioned by a GUID. Any change to JitInterface is required to update the JitInterface GUID located in jiteeversionguid.h (look for `JITEEVersionIdentifier`). Not doing so has consequences that are sometimes hard to debug.
 
-If a method was added or modified in ICorStaticInfo or ICorDynamicInfo, port the change to src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt. Functions must be in the same order in ThunkInput.txt as they exist in corinfo.h and corjit.h. Run gen.bat or gen.sh to regenerate CorInfoBase.cs, jitinterface.h, ICorJitInfo_API_names.h, ICorJitInfo_API_wrapper.hpp, superpmi-shared\icorjitinfoimpl.h, superpmi-shim-counter\icorjitinfo.cpp, and superpmi-shim-simple\icorjitinfo.cpp from ThunkInput.txt. Provide a managed implementation of the method in CorInfoImpl.cs.
+If a method was added or modified in ICorStaticInfo or ICorDynamicInfo, port the change to src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt. Functions must be in the same order in ThunkInput.txt as they exist in corinfo.h and corjit.h. Run gen.bat or gen.sh to regenerate all \*_generated.\* files from ThunkInput.txt. Provide a managed implementation of the method in CorInfoImpl.cs.
 
 ## Porting JitInterface changes to crossgen2
 

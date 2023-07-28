@@ -6,10 +6,10 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-partial class Program
+public class punning
 {
     [Fact]
-    static void Via_GetFunctionPointer()
+    public static void Via_GetFunctionPointer()
     {
         Console.WriteLine($"Running {nameof(Via_GetFunctionPointer)}...");
 
@@ -24,7 +24,7 @@ partial class Program
     }
 
     [Fact]
-    static void Via_GetFunctionPointer_Generics()
+    public static void Via_GetFunctionPointer_Generics()
     {
         Console.WriteLine($"Running {nameof(Via_GetFunctionPointer_Generics)}...");
 
@@ -39,7 +39,7 @@ partial class Program
     }
 
     [Fact]
-    static void Via_Ldftn()
+    public static void Via_Ldftn()
     {
         Console.WriteLine($"Running {nameof(Via_Ldftn)}...");
 
@@ -54,7 +54,7 @@ partial class Program
     }
 
     [Fact]
-    static void Via_Ldftn_Generics()
+    public static void Via_Ldftn_Generics()
     {
         Console.WriteLine($"Running {nameof(Via_Ldftn_Generics)}...");
 
@@ -69,7 +69,7 @@ partial class Program
     }
 
     [Fact]
-    static void Via_Ldftn_Generics_Virtual()
+    public static void Via_Ldftn_Generics_Virtual()
     {
         Console.WriteLine($"Running {nameof(Via_Ldftn_Generics_Virtual)}...");
 
@@ -85,7 +85,7 @@ partial class Program
     }
 
     [Fact]
-    static void Via_Ldftn_Generics_EarlyLoad()
+    public static void Via_Ldftn_Generics_EarlyLoad()
     {
         Console.WriteLine($"Running {nameof(Via_Ldftn_Generics_EarlyLoad)}...");
 
@@ -100,7 +100,7 @@ partial class Program
     }
 
     [Fact]
-    static void Via_Ldftn_Generics_Virtual_EarlyLoad()
+    public static void Via_Ldftn_Generics_Virtual_EarlyLoad()
     {
         Console.WriteLine($"Running {nameof(Via_Ldftn_Generics_Virtual_EarlyLoad)}...");
 
@@ -116,7 +116,7 @@ partial class Program
     }
 
     [Fact]
-    static void Via_Ldvirtftn()
+    public static void Via_Ldvirtftn()
     {
         Console.WriteLine($"Running {nameof(Via_Ldvirtftn)}...");
 
@@ -132,7 +132,7 @@ partial class Program
     }
 
     [Fact]
-    static void Via_Ldvirtftn_Generics()
+    public static void Via_Ldvirtftn_Generics()
     {
         Console.WriteLine($"Running {nameof(Via_Ldvirtftn_Generics)}...");
 
@@ -148,7 +148,7 @@ partial class Program
     }
 
     [Fact]
-    static void Via_Ldvirtftn_Generics_EarlyLoad()
+    public static void Via_Ldvirtftn_Generics_EarlyLoad()
     {
         Console.WriteLine($"Running {nameof(Via_Ldvirtftn_Generics_EarlyLoad)}...");
 

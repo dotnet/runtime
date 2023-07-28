@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="Rfc3161Accuracy"
-  namespace="System.Security.Cryptography.Pkcs.Asn1">
+  namespace="System.Security.Cryptography.Pkcs.Asn1"
+  rebind="false">
 
   <!--
     https://tools.ietf.org/html/rfc3161#section-2.4.2

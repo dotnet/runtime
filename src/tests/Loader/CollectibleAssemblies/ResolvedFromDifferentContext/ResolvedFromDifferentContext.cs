@@ -31,7 +31,7 @@ class TestAssemblyLoadContext : AssemblyLoadContext
         {
             AssemblyLoadContext alc1 = new AssemblyLoadContext("Dependencies", true);
             Console.WriteLine($"Loading TestInterface by alc {alc1} for {(IsCollectible ? "collectible" : "non-collectible")} alc {this}");
-            Assembly a = alc1.LoadFromAssemblyPath(Test.GetTestAssemblyPath(@"..\TestInterface\TestInterface.dll"));
+            Assembly a = alc1.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("..", "TestInterface", "TestInterface.dll")));
             interfaceAssemblyRef = new WeakReference(a);
             return a;
         }
@@ -56,7 +56,7 @@ class Test
         alc1 = new AssemblyLoadContext("Dependencies", true);
         AssemblyLoadContext alc2 = new AssemblyLoadContext("Test1", collectibleParent);
         alc2.Resolving += Alc2_Resolving;
-        Assembly assembly = alc2.LoadFromAssemblyPath(Test.GetTestAssemblyPath(@"..\TestClass\TestClass.dll"));
+        Assembly assembly = alc2.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("..", "TestClass", "TestClass.dll")));
 
         Type t = assembly.GetType("TestClass.Class");
         Console.WriteLine($"Type {t} obtained");
@@ -76,7 +76,7 @@ class Test
         if (alc1 != null && arg2.Name == "TestInterface")
         {
             Console.WriteLine($"Loading TestInterface by alc {alc1} for {(arg1.IsCollectible ? "collectible" : "non-collectible")} alc {arg1}");
-            Assembly a = alc1.LoadFromAssemblyPath(Test.GetTestAssemblyPath(@"..\TestInterface\TestInterface.dll"));
+            Assembly a = alc1.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("..", "TestInterface", "TestInterface.dll")));
             interfaceAssemblyRef = new WeakReference(a);
             return a;
         }
@@ -88,7 +88,7 @@ class Test
     private static Assembly LoadUsingLoadOverride(bool collectibleParent)
     {
         TestAssemblyLoadContext alc2 = new TestAssemblyLoadContext("Test2", collectibleParent);
-        Assembly assembly = alc2.LoadFromAssemblyPath(Test.GetTestAssemblyPath(@"..\TestClass\TestClass.dll"));
+        Assembly assembly = alc2.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("..", "TestClass", "TestClass.dll")));
 
         Type t = assembly.GetType("TestClass.Class");
         
@@ -206,7 +206,7 @@ class Test
         return 100;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int status = 100;
         foreach (TestCase testCase in Enum.GetValues(typeof(TestCase)))

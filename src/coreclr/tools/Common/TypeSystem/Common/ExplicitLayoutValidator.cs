@@ -58,7 +58,7 @@ namespace Internal.TypeSystem
 
         private readonly MetadataType _typeBeingValidated;
 
-        private ExplicitLayoutValidator(MetadataType type, int typeSizeInBytes)
+        private ExplicitLayoutValidator(MetadataType type)
         {
             _typeBeingValidated = type;
             _pointerSize = type.Context.Target.PointerSize;
@@ -67,8 +67,7 @@ namespace Internal.TypeSystem
 
         public static void Validate(MetadataType type, ComputedInstanceFieldLayout layout)
         {
-            int typeSizeInBytes = layout.ByteCountUnaligned.AsInt;
-            ExplicitLayoutValidator validator = new ExplicitLayoutValidator(type, typeSizeInBytes);
+            ExplicitLayoutValidator validator = new ExplicitLayoutValidator(type);
 
             foreach (FieldAndOffset fieldAndOffset in layout.Offsets)
             {
@@ -157,7 +156,7 @@ namespace Internal.TypeSystem
                     {
                         SetFieldLayout(refMap, offset, _pointerSize, FieldLayoutTag.ORef);
                     }
-                    else if (field.FieldType.IsByRef || field.FieldType.IsByReferenceOfT)
+                    else if (field.FieldType.IsByRef)
                     {
                         SetFieldLayout(refMap, offset, _pointerSize, FieldLayoutTag.ByRef);
                     }
@@ -233,7 +232,7 @@ namespace Internal.TypeSystem
                         previousInterval.EndSentinel = newInterval.EndSentinel;
 
                         fieldLayoutInterval[newIntervalLocation - 1] = previousInterval;
-                        newIntervalLocation = newIntervalLocation - 1;
+                        newIntervalLocation--;
                     }
                     else
                     {

@@ -19,6 +19,7 @@ internal static partial class Interop
             NSDocumentDirectory = 9,
             NSDesktopDirectory = 12,
             NSCachesDirectory = 13,
+            NSApplicationSupportDirectory = 14,
             NSMoviesDirectory = 17,
             NSMusicDirectory = 18,
             NSPicturesDirectory = 19

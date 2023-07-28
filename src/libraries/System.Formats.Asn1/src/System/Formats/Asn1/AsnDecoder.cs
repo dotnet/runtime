@@ -466,6 +466,19 @@ namespace System.Formats.Asn1
             }
         }
 
+        private static int GetPrimitiveIntegerSize(Type primitiveType)
+        {
+            if (primitiveType == typeof(byte) || primitiveType == typeof(sbyte))
+                return 1;
+            if (primitiveType == typeof(short) || primitiveType == typeof(ushort))
+                return 2;
+            if (primitiveType == typeof(int) || primitiveType == typeof(uint))
+                return 4;
+            if (primitiveType == typeof(long) || primitiveType == typeof(ulong))
+                return 8;
+            return 0;
+        }
+
         /// <summary>
         /// Get the number of bytes between the start of <paramref name="source" /> and
         /// the End-of-Contents marker
@@ -793,6 +806,15 @@ namespace System.Formats.Asn1
             _data = _data.Slice(encodedValue.Length);
             return encodedValue;
         }
+
+        /// <summary>
+        /// Clones the current reader.
+        /// </summary>
+        /// <returns>A clone of the current reader.</returns>
+        /// <remarks>
+        /// This does not create a clone of the ASN.1 data, only the reader's state is cloned.
+        /// </remarks>
+        public AsnReader Clone() => new AsnReader(_data, RuleSet, _options);
 
         private AsnReader CloneAtSlice(int start, int length)
         {

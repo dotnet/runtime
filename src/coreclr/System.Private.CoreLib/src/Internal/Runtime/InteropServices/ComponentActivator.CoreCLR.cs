@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.InteropServices
 {
-    public static partial class ComponentActivator
+    internal static partial class ComponentActivator
     {
         // This hook for when GetFunctionPointer is called when the feature is disabled allows us to
         // provide error messages for known hosting scenarios such as C++/CLI.

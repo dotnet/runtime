@@ -206,7 +206,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 		vmv = (MonoMethodVar *)l->data;
 
 		if (vmv->reg >= 0)  {
-			if ((gains [vmv->reg] > mono_arch_regalloc_cost (cfg, vmv)) && (cfg->varinfo [vmv->idx]->opcode != OP_REGVAR)) {
+			if ((GINT_TO_UINT32(gains [vmv->reg]) > mono_arch_regalloc_cost (cfg, vmv)) && (cfg->varinfo [vmv->idx]->opcode != OP_REGVAR)) {
 				if (cfg->verbose_level > 2) {
 					printf ("ALLOCATED R%d(%d) TO HREG %d COST %d\n", cfg->varinfo [vmv->idx]->dreg, vmv->idx, vmv->reg, vmv->spill_costs);
 				}
@@ -482,7 +482,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 			/* During allocation, vmv->reg is an index into the regs list */
 			vmv->reg = GPOINTER_TO_INT (g_list_nth_data (regs, vmv->reg));
 
-			if ((gains [reg_index] > regalloc_cost (cfg, vmv)) && (cfg->varinfo [vmv->idx]->opcode != OP_REGVAR)) {
+			if ((GINT_TO_UINT32(gains [reg_index]) > regalloc_cost (cfg, vmv)) && (cfg->varinfo [vmv->idx]->opcode != OP_REGVAR)) {
 				if (cfg->verbose_level > 2)
 					printf ("REGVAR R%d G%d C%d %s\n", cfg->varinfo [vmv->idx]->dreg, gains [reg_index], regalloc_cost (cfg, vmv), mono_arch_regname (vmv->reg));
 				cfg->varinfo [vmv->idx]->opcode = OP_REGVAR;

@@ -7,6 +7,9 @@ using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Hosting.Systemd
 {
+    /// <summary>
+    /// Provides support to notify systemd about the service status.
+    /// </summary>
     [UnsupportedOSPlatform("browser")]
     public class SystemdNotifier : ISystemdNotifier
     {
@@ -14,6 +17,9 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
         private readonly string? _socketPath;
 
+        /// <summary>
+        /// Instantiates a new <see cref="SystemdNotifier"/> and sets the notify socket path.
+        /// </summary>
         public SystemdNotifier() :
             this(GetNotifySocketPath())
         { }

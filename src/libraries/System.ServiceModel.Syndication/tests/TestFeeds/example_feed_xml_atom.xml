@@ -2,8 +2,8 @@
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:g="http://base.google.com/ns/1.0">
 	<title>Example - Online Store</title>
 	<link rel="self" href="http://www.example.com"/>
-	<updated>2011-07-11T12:00:00Z</updated> 
-		
+	<updated>2011-07-11T12:00:00Z</updated>
+
 	<!-- First example shows what attributes are required and recommended for items that are not in the apparel category -->
 	<entry>
 		<!-- The following attributes are always required -->
@@ -20,17 +20,17 @@
 			<g:service>Standard</g:service>
 			<g:price>14.95 USD</g:price>
 		</g:shipping>
-			
+
 		<!-- 2 of the following 3 attributes are required fot this item according to the Unique Product Identifier Rules -->
 		<g:gtin>71919219405200</g:gtin>
 		<g:brand>LG</g:brand>
 		<g:mpn>22LB4510/US</g:mpn>
-			
+
 		<!-- The following attributes are not required for this item, but supplying them is recommended -->
 		<g:google_product_category>Electronics > Video > Televisions > Flat Panel Televisions</g:google_product_category>
 		<g:product_type>Consumer Electronics &gt; TVs &gt; Flat Panel TVs</g:product_type>
 	</entry>
-		
+
 	<!-- Second example demonstrates the use of CDATA sections instead of entities to deal with special characters. Note that CDATA sections can be used for any attribute -->
 	<entry>
 		<!-- The following attributes are always required -->
@@ -47,18 +47,18 @@
 			<g:service>Express Mail</g:service>
 			<g:price>3.80 USD</g:price>
 		</g:shipping>
-			
-		<!-- 2 out of the 3 unique product identifer attributes are required for this item -->
+
+		<!-- 2 out of the 3 unique product identifier attributes are required for this item -->
 		<g:gtin>88392916560500</g:gtin>
 		<g:brand>BBC</g:brand>
-			
+
 		<!-- The following attribute is required because this item is in the 'Media' category -->
 		<g:google_product_category><![CDATA[Media > DVDs & Videos]]></g:google_product_category>
-			
+
 		<!-- The following attributes are not required for this item, but supplying them is recommended if applicable -->
 		<g:product_type><![CDATA[DVDs & Movies > TV Series > Fantasy Drama]]></g:product_type>
 	</entry>
-		
+
 	<!-- Third example shows how to include multiple images and shipping types-->
 	<entry>
 		<!-- The following attributes are always required -->
@@ -80,18 +80,18 @@
 			<g:service>Next Day</g:service>
 			<g:price>8.50 USD</g:price>
 		</g:shipping>
-			
-		<!-- 2 out of the 3 unique product identifer attributes are required for this item  -->
+
+		<!-- 2 out of the 3 unique product identifier attributes are required for this item  -->
 		<g:gtin>3348901056069</g:gtin>
 		<g:brand>Dior</g:brand>
-			
+
 		<!-- The following attributes are not required for this item, but supplying them is recommended if applicable -->
 		<g:product_type>Health &amp; Beauty &gt; Personal Care &gt; Cosmetics &gt; Skin Care &gt; Lotion</g:product_type>
 		<g:google_product_category>Health &amp; Beauty &gt; Personal Care &gt; Cosmetics &gt; Skin Care &gt; Anti-Aging Skin Care Kits</g:google_product_category>
 		<g:additional_image_link>http://images.example.com/PFM654321_2.jpg</g:additional_image_link>
 		<g:additional_image_link>http://images.example.com/PFM654321_3.jpg</g:additional_image_link>
 	</entry>
-		
+
 	<!-- Fourth example shows what attributes are required and recommended for items that are in the apparel category -->
 	<entry>
 		<!-- The following attributes are always required -->
@@ -101,9 +101,9 @@
 		<g:link>http://www.example.com/clothing/women/Roma-Cotton-Bootcut-Jeans/?extid=CLO-29473856</g:link>
 		<g:image_link>http://images.example.com/CLO-29473856-front.jpg</g:image_link>
 		<g:condition>new</g:condition>
-		<g:availability>out of stock</g:availability>	
+		<g:availability>out of stock</g:availability>
 		<g:price>29.50 USD</g:price>
-					
+
 		<!-- The following attributes are required because this item is apparel -->
 		<g:google_product_category>Apparel &amp; Accessories &gt; Clothing &gt; Pants &gt; Jeans</g:google_product_category>
 		<g:brand>M&amp;S</g:brand>
@@ -111,17 +111,17 @@
 		<g:age_group>Adult</g:age_group>
 		<g:color>Navy</g:color>
 		<g:size>8 Standard</g:size>
-			
+
 		<!-- The following attribute is required because this item has variants -->
 		<g:item_group_id>CLO-29473856</g:item_group_id>
-			
+
 		<!-- The following attributes are not required for this item, but supplying them is recommended if applicable -->
 		<g:mpn>B003J5F5EY</g:mpn>
 		<g:product_type>Women's Clothing &gt; Jeans &gt; Bootcut Jeans</g:product_type>
 		<g:additional_image_link>http://images.example.com/CLO-29473856-side.jpg</g:additional_image_link>
 		<g:additional_image_link>http://images.example.com/CLO-29473856-back.jpg</g:additional_image_link>
 	</entry>
-	
+
 	<!-- This is a variant of the last item (same 'item group id'). In this case the variant is only by size, but the item could be repeated in the same way for other variants -->
 	<entry>
 		<!-- The following attributes are always required -->
@@ -133,7 +133,7 @@
 		<g:condition>new</g:condition>
 		<g:availability>in stock</g:availability>
 		<g:price>29.50 USD</g:price>
-						
+
 		<!-- The following attributes are required because this item is apparel -->
 		<g:google_product_category>Apparel &amp; Accessories &gt; Clothing &gt; Pants &gt; Jeans</g:google_product_category>
 		<g:brand>M&amp;S</g:brand>
@@ -141,17 +141,17 @@
 		<g:age_group>Adult</g:age_group>
 		<g:color>Navy</g:color>
 		<g:size>8 Tall</g:size>
-			
+
 		<!-- The following attribute is required because this item has variants -->
 		<g:item_group_id>CLO-29473856</g:item_group_id>
-			
+
 		<!-- The following attributes are not required for this item, but supplying them is recommended if applicable -->
 		<g:mpn>B003J5F5EY</g:mpn>
 		<g:product_type>Women's Clothing &gt; Jeans &gt; Bootcut Jeans</g:product_type>
 		<g:additional_image_link>http://images.example.com/CLO-29473856-side.jpg</g:additional_image_link>
 		<g:additional_image_link>http://images.example.com/CLO-29473856-back.jpg</g:additional_image_link>
 	</entry>
-		
+
 	<!-- Fifth example demonstrates the use of the sale price attributes  -->
 	<entry>
 		<!-- The following attributes are always required -->
@@ -168,7 +168,7 @@
 			<g:service>Standard Free Shipping</g:service>
 			<g:price>0 USD</g:price>
 		</g:shipping>
-			
+
 		<!-- The following attributes are required because this item is apparel -->
 		<g:brand>Tenn Cool</g:brand>
 		<g:google_product_category>Apparel &amp; Accessories &gt; Clothing &gt; Activewear &gt; Bicycle Activewear &gt; Bicycle Jerseys</g:google_product_category>
@@ -176,12 +176,12 @@
 		<g:age_group>Adult</g:age_group>
 		<g:color>Black/Red/White</g:color> <!-- Indicates all the colours found on the garment in order of dominance -->
 		<g:size>M</g:size>
-			
+
 		<!-- The following demonstrate the use of the 'sale price' and 'sale price effective date' and attributes -->
 		<g:sale_price>25.49 USD</g:sale_price>
 		<g:sale_price_effective_date>2011-09-01T16:00-08:00/2011-09-03T16:00-08:00</g:sale_price_effective_date>
-			
+
 		<!-- The following attributes are not required for this item, but supplying them is recommended if applicable -->
-		<g:gtin>5060155240282</g:gtin>			
+		<g:gtin>5060155240282</g:gtin>
 	</entry>
 </feed>

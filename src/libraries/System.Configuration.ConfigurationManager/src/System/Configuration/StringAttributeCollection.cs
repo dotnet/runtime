@@ -66,7 +66,7 @@ namespace System.Configuration
                 sb.Append(',');
             }
 
-            if (sb.Length > 0) sb.Length = sb.Length - 1;
+            if (sb.Length > 0) sb.Length--;
             return sb.Length == 0 ? null : sb.ToString();
         }
 

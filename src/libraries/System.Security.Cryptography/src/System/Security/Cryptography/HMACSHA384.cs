@@ -202,7 +202,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA384, HashSizeInBytes, key, source, destination);
+            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA384, key, source, destination);
         }
 
         /// <summary>
@@ -269,7 +269,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA384, HashSizeInBytes, key.Span, source, cancellationToken);
+            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA384, key.Span, source, cancellationToken);
         }
 
         /// <summary>
@@ -335,7 +335,6 @@ namespace System.Security.Cryptography
 
             return LiteHashProvider.HmacStreamAsync(
                 HashAlgorithmNames.SHA384,
-                HashSizeInBytes,
                 key.Span,
                 source,
                 destination,

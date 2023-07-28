@@ -18,7 +18,7 @@ namespace System.Threading.RateLimiting
         /// <param name="partitionKey">The specific key for this partition. This will be used to check for an existing cached limiter before calling the <paramref name="factory"/>.</param>
         /// <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This should be a new instance of a rate limiter every time it is called.</param>
         /// <returns></returns>
-        public static RateLimitPartition<TKey> Create<TKey>(
+        public static RateLimitPartition<TKey> Get<TKey>(
             TKey partitionKey,
             Func<TKey, RateLimiter> factory)
         {
@@ -32,23 +32,23 @@ namespace System.Threading.RateLimiting
         /// <param name="partitionKey">The specific key for this partition. This will be used to check for an existing cached limiter before calling the <paramref name="factory"/>.</param>
         /// <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This can return the same instance of <see cref="ConcurrencyLimiterOptions"/> across different calls.</param>
         /// <returns></returns>
-        public static RateLimitPartition<TKey> CreateConcurrencyLimiter<TKey>(
+        public static RateLimitPartition<TKey> GetConcurrencyLimiter<TKey>(
             TKey partitionKey,
             Func<TKey, ConcurrencyLimiterOptions> factory)
         {
-            return Create(partitionKey, key => new ConcurrencyLimiter(factory(key)));
+            return Get(partitionKey, key => new ConcurrencyLimiter(factory(key)));
         }
 
         /// <summary>
         /// Defines a partition that will not have a rate limiter.
-        /// This means any calls to <see cref="PartitionedRateLimiter{TResource}.Acquire(TResource, int)"/> or <see cref="PartitionedRateLimiter{TResource}.WaitAsync(TResource, int, CancellationToken)"/> will always succeed for the given <paramref name="partitionKey"/>.
+        /// This means any calls to <see cref="PartitionedRateLimiter{TResource}.AttemptAcquire(TResource, int)"/> or <see cref="PartitionedRateLimiter{TResource}.AcquireAsync(TResource, int, CancellationToken)"/> will always succeed for the given <paramref name="partitionKey"/>.
         /// </summary>
         /// <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
         /// <param name="partitionKey">The specific key for this partition.</param>
         /// <returns></returns>
-        public static RateLimitPartition<TKey> CreateNoLimiter<TKey>(TKey partitionKey)
+        public static RateLimitPartition<TKey> GetNoLimiter<TKey>(TKey partitionKey)
         {
-            return Create(partitionKey, _ => NoopLimiter.Instance);
+            return Get(partitionKey, _ => new NoopLimiter());
         }
 
         /// <summary>
@@ -61,18 +61,25 @@ namespace System.Threading.RateLimiting
         /// <param name="partitionKey">The specific key for this partition.</param>
         /// <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This can return the same instance of <see cref="TokenBucketRateLimiterOptions"/> across different calls.</param>
         /// <returns></returns>
-        public static RateLimitPartition<TKey> CreateTokenBucketLimiter<TKey>(
+        public static RateLimitPartition<TKey> GetTokenBucketLimiter<TKey>(
             TKey partitionKey,
             Func<TKey, TokenBucketRateLimiterOptions> factory)
         {
-            return Create(partitionKey, key =>
+            return Get(partitionKey, key =>
             {
                 TokenBucketRateLimiterOptions options = factory(key);
                 // We don't want individual TokenBucketRateLimiters to have timers. We will instead have our own internal Timer handling all of them
                 if (options.AutoReplenishment is true)
                 {
-                    options = new TokenBucketRateLimiterOptions(options.TokenLimit, options.QueueProcessingOrder, options.QueueLimit,
-                        options.ReplenishmentPeriod, options.TokensPerPeriod, autoReplenishment: false);
+                    options = new TokenBucketRateLimiterOptions
+                    {
+                        TokenLimit = options.TokenLimit,
+                        QueueProcessingOrder = options.QueueProcessingOrder,
+                        QueueLimit = options.QueueLimit,
+                        ReplenishmentPeriod = options.ReplenishmentPeriod,
+                        TokensPerPeriod = options.TokensPerPeriod,
+                        AutoReplenishment = false
+                    };
                 }
                 return new TokenBucketRateLimiter(options);
             });
@@ -88,18 +95,25 @@ namespace System.Threading.RateLimiting
         /// <param name="partitionKey">The specific key for this partition.</param>
         /// <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This can return the same instance of <see cref="SlidingWindowRateLimiterOptions"/> across different calls.</param>
         /// <returns></returns>
-        public static RateLimitPartition<TKey> CreateSlidingWindowLimiter<TKey>(
+        public static RateLimitPartition<TKey> GetSlidingWindowLimiter<TKey>(
             TKey partitionKey,
             Func<TKey, SlidingWindowRateLimiterOptions> factory)
         {
-            return Create(partitionKey, key =>
+            return Get(partitionKey, key =>
             {
                 SlidingWindowRateLimiterOptions options = factory(key);
                 // We don't want individual SlidingWindowRateLimiters to have timers. We will instead have our own internal Timer handling all of them
                 if (options.AutoReplenishment is true)
                 {
-                    options = new SlidingWindowRateLimiterOptions(options.PermitLimit, options.QueueProcessingOrder, options.QueueLimit,
-                        options.Window, options.SegmentsPerWindow, autoReplenishment: false);
+                    options = new SlidingWindowRateLimiterOptions
+                    {
+                        PermitLimit = options.PermitLimit,
+                        QueueProcessingOrder = options.QueueProcessingOrder,
+                        QueueLimit = options.QueueLimit,
+                        Window = options.Window,
+                        SegmentsPerWindow = options.SegmentsPerWindow,
+                        AutoReplenishment = false
+                    };
                 }
                 return new SlidingWindowRateLimiter(options);
             });
@@ -115,18 +129,24 @@ namespace System.Threading.RateLimiting
         /// <param name="partitionKey">The specific key for this partition.</param>
         /// <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This can return the same instance of <see cref="FixedWindowRateLimiterOptions"/> across different calls.</param>
         /// <returns></returns>
-        public static RateLimitPartition<TKey> CreateFixedWindowLimiter<TKey>(
+        public static RateLimitPartition<TKey> GetFixedWindowLimiter<TKey>(
             TKey partitionKey,
             Func<TKey, FixedWindowRateLimiterOptions> factory)
         {
-            return Create(partitionKey, key =>
+            return Get(partitionKey, key =>
             {
                 FixedWindowRateLimiterOptions options = factory(key);
                 // We don't want individual FixedWindowRateLimiters to have timers. We will instead have our own internal Timer handling all of them
                 if (options.AutoReplenishment is true)
                 {
-                    options = new FixedWindowRateLimiterOptions(options.PermitLimit, options.QueueProcessingOrder, options.QueueLimit,
-                        options.Window, autoReplenishment: false);
+                    options = new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = options.PermitLimit,
+                        QueueProcessingOrder = options.QueueProcessingOrder,
+                        QueueLimit = options.QueueLimit,
+                        Window = options.Window,
+                        AutoReplenishment = false
+                    };
                 }
                 return new FixedWindowRateLimiter(options);
             });

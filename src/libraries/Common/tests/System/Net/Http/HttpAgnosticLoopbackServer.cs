@@ -109,15 +109,18 @@ namespace System.Net.Test.Common
                 {
                     return connection = await Http2LoopbackServerFactory.Singleton.CreateConnectionAsync(new SocketWrapper(socket), stream, options).ConfigureAwait(false);
                 }
-                else 
+                else
                 {
                     throw new Exception($"Invalid ClearTextVersion={_options.ClearTextVersion} specified");
                 }
             }
             catch
-            {            
-                connection?.Dispose();
-                connection = null;
+            {
+                if (connection is not null)
+                {
+                    await connection.DisposeAsync();
+                    connection = null;
+                }
                 stream.Dispose();
                 throw;
             }
@@ -132,7 +135,7 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            using (GenericLoopbackConnection connection = await EstablishGenericConnectionAsync().ConfigureAwait(false))
+            await using (GenericLoopbackConnection connection = await EstablishGenericConnectionAsync().ConfigureAwait(false))
             {
                 return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
             }
@@ -140,25 +143,25 @@ namespace System.Net.Test.Common
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
         {
-            using (GenericLoopbackConnection connection = await EstablishGenericConnectionAsync().ConfigureAwait(false))
+            await using (GenericLoopbackConnection connection = await EstablishGenericConnectionAsync().ConfigureAwait(false))
             {
                 await funcAsync(connection).ConfigureAwait(false);
             }
         }
 
-        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int timeout = 60_000)
+        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds)
         {
-            return CreateClientAndServerAsync(clientFunc, serverFunc, null, timeout);
+            return CreateClientAndServerAsync(clientFunc, serverFunc, null, millisecondsTimeout);
         }
 
-        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, HttpAgnosticOptions httpOptions, int timeout = 60_000)
+        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, HttpAgnosticOptions httpOptions, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds)
         {
             using (var server = HttpAgnosticLoopbackServer.CreateServer(httpOptions ?? new HttpAgnosticOptions()))
             {
                 Task clientTask = clientFunc(server.Address);
                 Task serverTask = serverFunc(server);
 
-                await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(timeout).ConfigureAwait(false);
+                await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(millisecondsTimeout).ConfigureAwait(false);
             }
         }
     }
@@ -174,7 +177,7 @@ namespace System.Net.Test.Common
     {
         public static readonly HttpAgnosticLoopbackServerFactory Singleton = new HttpAgnosticLoopbackServerFactory();
 
-        public static async Task CreateServerAsync(Func<HttpAgnosticLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000)
+        public static async Task CreateServerAsync(Func<HttpAgnosticLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds)
         {
             using (var server = HttpAgnosticLoopbackServer.CreateServer())
             {
@@ -199,6 +202,7 @@ namespace System.Net.Test.Common
             if (options != null)
             {
                 httpOptions.Address = options.Address;
+                httpOptions.Certificate = options.Certificate;
                 httpOptions.UseSsl = options.UseSsl;
                 httpOptions.SslProtocols = options.SslProtocols;
                 httpOptions.ListenBacklog = options.ListenBacklog;
@@ -206,7 +210,7 @@ namespace System.Net.Test.Common
             return httpOptions;
         }
 
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds, GenericLoopbackOptions options = null)
         {
             using (var server = CreateServer(options))
             {

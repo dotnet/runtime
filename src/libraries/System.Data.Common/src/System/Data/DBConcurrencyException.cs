@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
@@ -31,10 +32,13 @@ namespace System.Data
             _dataRows = dataRows;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private DBConcurrencyException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -70,11 +74,7 @@ namespace System.Data
 
         public void CopyToRows(DataRow[] array, int arrayIndex)
         {
-            DataRow[]? dataRows = _dataRows;
-            if (null != dataRows)
-            {
-                dataRows.CopyTo(array, arrayIndex);
-            }
+            _dataRows?.CopyTo(array, arrayIndex);
         }
     }
 }

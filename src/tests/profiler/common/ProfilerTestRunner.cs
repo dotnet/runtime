@@ -76,9 +76,9 @@ namespace Profiler.Tests
             if (profileeOptions.HasFlag(ProfileeOptions.OptimizationSensitive))
             {
                 Console.WriteLine("Disabling tiered compilation, jitstress, and minopts.");
-                envVars.Add("COMPlus_TieredCompilation", "0");
-                envVars.Add("COMPlus_JitStress", "0");
-                envVars.Add("COMPlus_JITMinOpts", "0");
+                envVars.Add("DOTNET_TieredCompilation", "0");
+                envVars.Add("DOTNET_JitStress", "0");
+                envVars.Add("DOTNET_JITMinOpts", "0");
             }
 
             if (profileeOptions.HasFlag(ProfileeOptions.ReverseDiagnosticsMode))

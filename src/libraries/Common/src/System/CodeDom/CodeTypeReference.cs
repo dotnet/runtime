@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
-#nullable enable
-
 #if CODEDOM
 namespace System.CodeDom
 #else
@@ -44,10 +42,14 @@ namespace System.Runtime.Serialization
 
         public CodeTypeReference(Type type)
         {
+#if NET5_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(type);
+#else
             if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
+#endif
 
             if (type.IsArray)
             {
@@ -70,7 +72,7 @@ namespace System.Runtime.Serialization
             Options = codeTypeReferenceOption;
         }
 
-        public CodeTypeReference(string typeName, CodeTypeReferenceOptions codeTypeReferenceOption)
+        public CodeTypeReference(string? typeName, CodeTypeReferenceOptions codeTypeReferenceOption)
         {
             Initialize(typeName, codeTypeReferenceOption);
         }
@@ -348,12 +350,7 @@ namespace System.Runtime.Serialization
                     return ArrayElementType.TypeArguments;
                 }
 
-                if (_typeArguments == null)
-                {
-                    _typeArguments = new CodeTypeReferenceCollection();
-                }
-
-                return _typeArguments;
+                return _typeArguments ??= new CodeTypeReferenceCollection();
             }
         }
 

@@ -1,6 +1,15 @@
+include(CheckCXXSourceCompiles)
+include(CheckCXXSourceRuns)
+include(CheckCXXSymbolExists)
+include(CheckFunctionExists)
+include(CheckPrototypeDefinition)
+include(CheckIncludeFiles)
+include(CheckStructHasMember)
+include(CheckTypeSize)
+include(CheckLibraryExists)
+
 check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(sys/mman.h HAVE_SYS_MMAN_H)
-check_include_files(numa.h HAVE_NUMA_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
@@ -78,6 +87,20 @@ check_symbol_exists(
     clock_gettime_nsec_np
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
+
+check_cxx_source_runs("
+#include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
+
+int main()
+{
+  int ret;
+  struct timespec ts;
+  ret = clock_gettime(CLOCK_MONOTONIC, &ts);
+
+  exit(ret);
+}" HAVE_CLOCK_MONOTONIC)
 
 check_symbol_exists(
     posix_madvise

@@ -7,45 +7,6 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public struct CallingConventionConverterKey : IEquatable<CallingConventionConverterKey>
-    {
-        public CallingConventionConverterKey(Internal.NativeFormat.CallingConventionConverterKind converterKind,
-                                             MethodSignature signature)
-        {
-            ConverterKind = converterKind;
-            Signature = signature;
-        }
-
-        public Internal.NativeFormat.CallingConventionConverterKind ConverterKind { get; }
-        public MethodSignature Signature { get; }
-
-        public override bool Equals(object obj)
-        {
-            return obj is CallingConventionConverterKey && Equals((CallingConventionConverterKey)obj);
-        }
-
-        public bool Equals(CallingConventionConverterKey other)
-        {
-            if (ConverterKind != other.ConverterKind)
-                return false;
-
-            if (!Signature.Equals(other.Signature))
-                return false;
-
-            return true;
-        }
-
-        public override int GetHashCode()
-        {
-            return Signature.GetHashCode() ^ (int)ConverterKind;
-        }
-
-        public string GetName()
-        {
-            return ConverterKind.ToString() + Signature.GetName();
-        }
-    }
-
     public static class MethodSignatureExtensions
     {
         public static void AppendName(this MethodSignature signature, StringBuilder nameBuilder, UniqueTypeNameFormatter typeNameFormatter)
@@ -98,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
         {
-            sb.Append("!");
+            sb.Append('!');
             sb.Append(type.Index.ToStringInvariant());
         }
 
@@ -177,7 +138,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void AppendAssemblyName(StringBuilder sb, IAssemblyDesc assembly)
+        private static void AppendAssemblyName(StringBuilder sb, IAssemblyDesc assembly)
         {
             if (assembly == null)
                 return;
@@ -201,18 +162,18 @@ namespace ILCompiler.DependencyAnalysis
             AppendEscapedIdentifier(sb, GetTypeName(nestedType));
         }
 
-        private string GetTypeName(DefType type)
+        private static string GetTypeName(DefType type)
         {
             return type.Name;
         }
 
-        private string GetTypeNamespace(DefType type)
+        private static string GetTypeNamespace(DefType type)
         {
             return type.Namespace;
         }
 
         private static char[] s_escapedChars = new char[] { ',', '=', '"', ']', '[', '*', '&', '+', '\\' };
-        private void AppendEscapedIdentifier(StringBuilder sb, string identifier)
+        private static void AppendEscapedIdentifier(StringBuilder sb, string identifier)
         {
             if (identifier.IndexOfAny(s_escapedChars) < 0)
             {

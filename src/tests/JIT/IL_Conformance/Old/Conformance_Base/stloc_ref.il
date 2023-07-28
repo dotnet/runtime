@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace stloc_ref
+{
 .class public _stloc {
 
 .method public	void _stloc() {
@@ -11,11 +14,14 @@
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-.locals	(class _stloc)
-	newobj	instance	void _stloc::_stloc()
+.locals	(class stloc_ref._stloc)
+	newobj	instance	void stloc_ref._stloc::_stloc()
 	dup
 	stloc		0
 
@@ -30,3 +36,4 @@ FAIL:
 }
 }
 .assembly stloc_ref{}
+}

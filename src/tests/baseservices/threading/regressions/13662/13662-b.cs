@@ -3,11 +3,13 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 
 public class Test_13662_b {
 
-	public static int Main(){
+	[Fact]
+	public static int TestEntryPoint(){
 
 		int rValue = 100;
 		Timer[] tArray = new Timer[1000];

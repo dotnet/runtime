@@ -8,6 +8,7 @@
  */
 #include <glib.h>
 #include <stdio.h>
+#include "config.h"
 #include "mintops.h"
 
 // This, instead of an array of pointers, to optimize away a pointer and a relocation per string.

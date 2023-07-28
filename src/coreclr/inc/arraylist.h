@@ -226,14 +226,16 @@ class ArrayListBase
             return m_block != NULL;
         }
 
+#ifndef DACCESS_COMPILE
         void ClearUnusedMemory()
         {
             if (m_remaining < m_block->m_blockSize)
-                ZeroMemory(&(m_block->m_array[m_remaining]), (m_block->m_blockSize - m_remaining) * sizeof(void*));
+                ZeroMemory(m_block->m_array + m_remaining, (m_block->m_blockSize - m_remaining) * sizeof(void*));
 #ifdef HOST_64BIT
             m_block->m_padding = 0;
-#endif
+#endif // HOST_64BIT
         }
+#endif // DACCESS_COMPILE
 
         void **GetNextPtr()
         {

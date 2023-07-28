@@ -756,21 +756,6 @@ CSharedMemoryObject::~CSharedMemoryObject()
     LOGEXIT("CSharedMemoryObject::~CSharedMemoryObject\n");
 }
 
-//
-// C++ standard, 18.1.5 - offsetof requires a POD (plain old data) struct or
-// union. Since offsetof is a macro, gcc doesn't actually check for improper
-// use of offsetof, it keys off of the -> from NULL (which is also invalid for
-// non-POD types by 18.1.5)
-//
-// As we have numerous examples of this behavior in our codebase,
-// making an offsetof which doesn't use 0.
-//
-// PAL_safe_offsetof is a version of offsetof that protects against an
-// overridden operator&
-//
-
-#define PAL_safe_offsetof(s,m) ((size_t)((ptrdiff_t)&(char&)(((s *)64)->m))-64)
-
 /*++
 Function:
   CSharedMemoryObject::GetObjectFromListLink
@@ -798,7 +783,7 @@ CSharedMemoryObject::GetObjectFromListLink(PLIST_ENTRY ple)
     //
 
     pshmo = reinterpret_cast<CSharedMemoryObject*>(
-        reinterpret_cast<size_t>(ple) - PAL_safe_offsetof(CSharedMemoryObject, m_le)
+        reinterpret_cast<size_t>(ple) - offsetof(CSharedMemoryObject, m_le)
         );
 
     _ASSERTE(ple == &pshmo->m_le);

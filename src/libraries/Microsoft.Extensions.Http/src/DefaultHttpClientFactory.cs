@@ -168,6 +168,12 @@ namespace Microsoft.Extensions.Http
                     {
                         options.HttpMessageHandlerBuilderActions[i](b);
                     }
+
+                    // Logging is added separately in the end. But for now it should be still possible to override it via filters...
+                    foreach (Action<HttpMessageHandlerBuilder> action in options.LoggingBuilderActions)
+                    {
+                        action(b);
+                    }
                 }
             }
             catch
@@ -214,10 +220,7 @@ namespace Microsoft.Extensions.Http
         {
             lock (_cleanupTimerLock)
             {
-                if (_cleanupTimer == null)
-                {
-                    _cleanupTimer = NonCapturingTimer.Create(_cleanupCallback, this, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
-                }
+                _cleanupTimer ??= NonCapturingTimer.Create(_cleanupCallback, this, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
             }
         }
 

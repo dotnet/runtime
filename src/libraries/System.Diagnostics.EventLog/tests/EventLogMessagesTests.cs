@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
             Assert.Empty(messageAssembly.GetTypes());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(65535)]
@@ -50,7 +50,10 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        public static bool HasAssemblyFilesIsElevatedAndSupportsEventLogs => PlatformDetection.HasAssemblyFiles && Helpers.IsElevatedAndSupportsEventLogs;
+
+        [ConditionalFact(nameof(HasAssemblyFilesIsElevatedAndSupportsEventLogs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88224", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version22000OrGreater))]
         public void CanReadAndWriteMessages()
         {
             string messageDllPath = Path.Combine(Path.GetDirectoryName(typeof(EventLog).Assembly.Location), "System.Diagnostics.EventLog.Messages.dll");

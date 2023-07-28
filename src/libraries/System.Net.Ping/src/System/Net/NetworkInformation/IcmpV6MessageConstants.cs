@@ -27,7 +27,7 @@ namespace System.Net.NetworkInformation
         AddressUnreachable = 3,
         PortUnreachable = 4,
         SourceAddressFailedPolicy = 5,
-        RejectRouteToDesitnation = 6,
+        RejectRouteToDestination = 6,
         SourceRoutingHeaderError = 7
     }
 

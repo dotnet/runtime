@@ -239,6 +239,20 @@ def generateClrEventPipeWriteEventsImpl(
 
 
 def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
+    def winTypeToFixedWidthType(t):
+        return {'win:Int8': 'int8_t',
+                'win:UInt8': 'uint8_t',
+                'win:Int16': 'int16_t',
+                'win:UInt16': 'uint16_t',
+                'win:Int32': 'int32_t',
+                'win:UInt32': 'uint32_t',
+                'win:Int64': 'int64_t',
+                'win:UInt64': 'uint64_t',
+                'win:Pointer': 'uintptr_t',
+                'win:AnsiString': 'UTF8String',
+                'win:UnicodeString': 'UTF16String'
+                }[t]
+
     fnSig = template.signature
     pack_list = []
 
@@ -304,13 +318,13 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
             emittedWriteToBuffer = True
         elif parameter.winType == "win:AnsiString" and runtimeFlavor.mono:
             pack_list.append(
-                    "    success &= write_buffer_string_utf8_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
-                    (parameter.name,))
+                    "    success &= write_buffer_string_utf8_t(%s, strlen((const char *)%s), &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name, parameter.name))
             emittedWriteToBuffer = True
         elif parameter.winType == "win:UnicodeString" and runtimeFlavor.mono:
             pack_list.append(
-                    "    success &= write_buffer_string_utf8_to_utf16_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
-                    (parameter.name,))
+                    "    success &= write_buffer_string_utf8_to_utf16_t(%s, strlen((const char *)%s), &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name, parameter.name))
             emittedWriteToBuffer = True
         elif parameter.winType == "win:UInt8" and runtimeFlavor.mono:
             pack_list.append(
@@ -496,7 +510,7 @@ bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, s
 bool WriteToBuffer(PCWSTR str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
     if (!str) return true;
-    size_t byteCount = (wcslen(str) + 1) * sizeof(*str);
+    size_t byteCount = (u16_strlen(str) + 1) * sizeof(*str);
 
     if (offset + byteCount > size)
     {
@@ -558,6 +572,7 @@ write_buffer (
 bool
 write_buffer_string_utf8_to_utf16_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
@@ -566,6 +581,7 @@ write_buffer_string_utf8_to_utf16_t (
 bool
 write_buffer_string_utf8_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
@@ -640,25 +656,34 @@ ep_on_error:
 bool
 write_buffer_string_utf8_to_utf16_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
     bool *fixed_buffer)
 {
-    if (!value)
+    if (!value || value_len == 0) {
+        value_len = sizeof (ep_char16_t);
+        if ((value_len + *offset) > *size)
+            ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + value_len, fixed_buffer));
+        (*buffer) [*offset] = 0;
+        (*offset)++;
+        (*buffer) [*offset] = 0;
+        (*offset)++;
         return true;
+    }
 
     GFixedBufferCustomAllocatorData custom_alloc_data;
     custom_alloc_data.buffer = *buffer + *offset;
     custom_alloc_data.buffer_size = *size - *offset;
     custom_alloc_data.req_buffer_size = 0;
 
-    if (!g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL)) {
+    if (!g_utf8_to_utf16le_custom_alloc (value, (glong)value_len, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL)) {
         ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + custom_alloc_data.req_buffer_size, fixed_buffer));
         custom_alloc_data.buffer = *buffer + *offset;
         custom_alloc_data.buffer_size = *size - *offset;
         custom_alloc_data.req_buffer_size = 0;
-        ep_raise_error_if_nok (g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL) != NULL);
+        ep_raise_error_if_nok (g_utf8_to_utf16le_custom_alloc (value, (glong)value_len, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL) != NULL);
     }
 
     *offset += custom_alloc_data.req_buffer_size;
@@ -671,19 +696,30 @@ ep_on_error:
 bool
 write_buffer_string_utf8_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
     bool *fixed_buffer)
 {
     if (!value)
-        return true;
+        value_len = 0;
 
-    size_t value_len = 0;
-    while (value [value_len])
-        value_len++;
+    if ((value_len + 1 + *offset) > *size)
+        ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + value_len + 1, fixed_buffer));
 
-    return write_buffer ((const uint8_t *)value, (value_len + 1) * sizeof(*value), buffer, offset, size, fixed_buffer);
+    if (value_len != 0) {
+        memcpy (*buffer + *offset, value, value_len);
+        *offset += value_len;
+    }
+
+    (*buffer) [*offset] = 0;
+    (*offset)++;
+
+    return true;
+
+ep_on_error:
+    return false;
 }
 
 """
@@ -744,10 +780,6 @@ def getCoreCLREventPipeImplFilePrefix():
     return """#include <common.h>
 #include "eventpipeadapter.h"
 
-#if defined(TARGET_UNIX)
-#define wcslen PAL_wcslen
-#endif
-
 bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
 bool WriteToBuffer(PCWSTR str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
 bool WriteToBuffer(const char *str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
@@ -802,6 +834,7 @@ write_buffer (
 bool
 write_buffer_string_utf8_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
@@ -810,6 +843,7 @@ write_buffer_string_utf8_t (
 bool
 write_buffer_string_utf8_to_utf16_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
@@ -851,6 +885,7 @@ write_buffer_uint16_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_uint16_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (uint16_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -864,6 +899,7 @@ write_buffer_uint32_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_uint32_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (uint32_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -877,6 +913,7 @@ write_buffer_int32_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_int32_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (int32_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -890,6 +927,7 @@ write_buffer_uint64_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_uint64_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (uint64_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -903,6 +941,7 @@ write_buffer_int64_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_int64_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (int64_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -916,6 +955,12 @@ write_buffer_double_t (
     size_t *size,
     bool *fixed_buffer)
 {
+#if BIGENDIAN
+    uint64_t value_as_uint64_t;
+    memcpy (&value_as_uint64_t, &value, sizeof (uint64_t));
+    value_as_uint64_t = ep_rt_val_uint64_t (value_as_uint64_t);
+    memcpy (&value, &value_as_uint64_t, sizeof (uint64_t));
+#endif
     return write_buffer ((const uint8_t *)&value, sizeof (double), buffer, offset, size, fixed_buffer);
 }
 
@@ -942,6 +987,7 @@ write_buffer_uintptr_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_uintptr_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (uintptr_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -976,7 +1022,7 @@ create_provider (
 
     ep_return_null_if_nok (provider_name_utf8 != NULL);
 
-    EventPipeProvider *provider = ep_create_provider (provider_name_utf8, callback_func, NULL, NULL);
+    EventPipeProvider *provider = ep_create_provider (provider_name_utf8, callback_func, NULL);
 
     g_free (provider_name_utf8);
     return provider;
@@ -1103,7 +1149,7 @@ def main(argv):
 
     required = parser.add_argument_group('required arguments')
     required.add_argument('--man', type=str, required=True,
-                          help='full path to manifest containig the description of events')
+                          help='full path to manifest containing the description of events')
     required.add_argument('--exc',  type=str, required=True,
                                     help='full path to exclusion list')
     required.add_argument('--inc',  type=str,default="",

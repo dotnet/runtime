@@ -38,6 +38,7 @@
     <Compile Include="System\ComponentModel\ReadOnlyAttribute.cs" />
     <Compile Include="System\ComponentModel\RefreshProperties.cs" />
     <Compile Include="System\ComponentModel\RefreshPropertiesAttribute.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.NonGeneric" />

@@ -28,7 +28,8 @@
 
 static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. This will cause runtime failures.");
 
-#define THUNKS_MAP_SIZE 0x8000     // 32 K
+// 32 K or OS page
+#define THUNKS_MAP_SIZE (max(0x8000, OS_PAGE_SIZE))
 
 #ifdef TARGET_ARM
 //*****************************************************************************
@@ -56,7 +57,7 @@ void EncodeThumb2Mov32(uint16_t * pCode, uint32_t value, uint8_t rDestination)
 
 COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ())
 {
-    static_assert((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
+    ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
     return THUNKS_MAP_SIZE / OS_PAGE_SIZE;
 }
@@ -121,6 +122,15 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         return NULL;
     }
 
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
+#if defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)
+    RhFailFast(); // we don't expect to get here on these platforms
+#elif defined(HOST_OSX)
+    pthread_jit_write_protect_np(0);
+#else
+    #error "Unknown OS"
+#endif
+#endif
 #endif
 
     int numBlocksPerMap = RhpGetNumThunkBlocksPerMapping();
@@ -223,11 +233,23 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         }
     }
 
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
+#if defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)
+    RhFailFast(); // we don't expect to get here on these platforms
+#elif defined(HOST_OSX)
+    pthread_jit_write_protect_np(1);
+#else
+    #error "Unknown OS"
+#endif
+#else
     if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
         PalVirtualFree(pNewMapping, 0, MEM_RELEASE);
         return NULL;
     }
+#endif
+
+    PalFlushInstructionCache(pThunksSection, THUNKS_MAP_SIZE);
 
     return pThunksSection;
 }

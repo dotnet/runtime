@@ -65,21 +65,37 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationFileName);
 
-            // Rely on FileStream's ctor for further checking destinationFileName parameter
-            FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
+            FileStreamOptions fileStreamOptions = new()
+            {
+                Access = FileAccess.Write,
+                Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
+                Share = FileShare.None,
+                BufferSize = 0x1000
+            };
 
-            using (FileStream fs = new FileStream(destinationFileName, fMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, useAsync: false))
+            const UnixFileMode OwnershipPermissions =
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite |  UnixFileMode.OtherExecute;
+
+            // Restore Unix permissions.
+            // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
+            // We don't apply UnixFileMode.None because .zip files created on Windows and .zip files created
+            // with previous versions of .NET don't include permissions.
+            UnixFileMode mode = (UnixFileMode)(source.ExternalAttributes >> 16) & OwnershipPermissions;
+            if (mode != UnixFileMode.None && !OperatingSystem.IsWindows())
+            {
+                fileStreamOptions.UnixCreateMode = mode;
+            }
+
+            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
             {
                 using (Stream es = source.Open())
                     es.CopyTo(fs);
-
-                ExtractExternalAttributes(fs, source);
             }
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, source.LastWriteTime);
         }
-
-        static partial void ExtractExternalAttributes(FileStream fs, ZipArchiveEntry entry);
 
         internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) =>
             ExtractRelativeToDirectory(source, destinationDirectoryName, overwrite: false);
@@ -93,7 +109,10 @@ namespace System.IO.Compression
             DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
             string destinationDirectoryFullPath = di.FullName;
             if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
-                destinationDirectoryFullPath += Path.DirectorySeparatorChar;
+            {
+                char sep = Path.DirectorySeparatorChar;
+                destinationDirectoryFullPath = string.Concat(destinationDirectoryFullPath, new ReadOnlySpan<char>(in sep));
+            }
 
             string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
 

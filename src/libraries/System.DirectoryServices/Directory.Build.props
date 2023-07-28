@@ -1,13 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <!-- this assembly is inbox in desktop, do not version it unless you
-         plan on shipping a new desktop version out of band. Instead add API
-         to a different assembly. -->
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <!-- Since this assembly version is pinned, we don't want to validate that it matches
-    the expected assembly version on the targeting pack. -->
-    <SkipValidateAssemblyVersion>true</SkipValidateAssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>

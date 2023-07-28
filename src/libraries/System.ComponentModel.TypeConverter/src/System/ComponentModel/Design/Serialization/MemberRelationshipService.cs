@@ -120,16 +120,8 @@ namespace System.ComponentModel.Design.Serialization
             Justification = "GetComponentName is only used to create a nice exception message, and has a fallback when null is returned.")]
         private static void ThrowRelationshipNotSupported(MemberRelationship source, MemberRelationship relationship)
         {
-            string? sourceName = TypeDescriptor.GetComponentName(source.Owner!);
-            string? relName = TypeDescriptor.GetComponentName(relationship.Owner!);
-            if (sourceName == null)
-            {
-                sourceName = source.Owner!.ToString();
-            }
-            if (relName == null)
-            {
-                relName = relationship.Owner!.ToString();
-            }
+            string? sourceName = TypeDescriptor.GetComponentName(source.Owner!) ?? source.Owner!.ToString();
+            string? relName = TypeDescriptor.GetComponentName(relationship.Owner!) ?? relationship.Owner!.ToString();
             throw new ArgumentException(SR.Format(SR.MemberRelationshipService_RelationshipNotSupported, sourceName, source.Member.Name, relName, relationship.Member.Name));
         }
 

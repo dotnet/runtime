@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace strswitch
 {
-    internal class Class1
+    public class Class1
     {
-        private static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };
             for (int i = 0; i < s.Length; i++)

@@ -214,10 +214,10 @@ int
 mono_llvm_check_cpu_features (const CpuFeatureAliasFlag *features, int length);
 
 LLVMValueRef
-mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id);
+mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *out_type);
 
 LLVMValueRef
-mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *types, int ntypes);
+mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *types, int ntypes, LLVMTypeRef *out_type);
 
 unsigned int
 mono_llvm_get_prim_size_bits (LLVMTypeRef type);

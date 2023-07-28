@@ -18,12 +18,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public bool IgnoreSubstitutions;
 		public bool IgnoreLinkAttributes;
 		public string KeepTypeForwarderOnlyAssemblies;
-		public string KeepDebugMembers;
 		public string LinkSymbols;
 		public bool SkipUnresolved;
 		public bool StripDescriptors;
 		public bool StripSubstitutions;
 		public bool StripLinkAttributes;
+
+		public bool IlcFrameworkCompilation;
 
 		public List<KeyValuePair<string, string[]>> AdditionalArguments = new List<KeyValuePair<string, string[]>> ();
 

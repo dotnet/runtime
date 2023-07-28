@@ -18,6 +18,13 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 #endif
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#define TARGET_XARCH
+#endif
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#define TARGET_ARMARCH
+#endif
 
 // Ensure that both UNICODE and _UNICODE are set.
 #ifndef _UNICODE

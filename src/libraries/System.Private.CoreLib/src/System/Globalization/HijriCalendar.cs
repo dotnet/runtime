@@ -48,7 +48,7 @@ namespace System.Globalization
         private const int MinAdvancedHijri = -2;
         private const int MaxAdvancedHijri = 2;
 
-        private static readonly int[] s_hijriMonthDays = { 0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355 };
+        private static ReadOnlySpan<int> HijriMonthDays => new int[] { 0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355 };
 
         private int _hijriAdvance = int.MinValue;
 
@@ -80,7 +80,7 @@ namespace System.Globalization
 
         private long GetAbsoluteDateHijri(int y, int m, int d)
         {
-            return (long)(DaysUpToHijriYear(y) + s_hijriMonthDays[m - 1] + d - 1 - HijriAdjustment);
+            return (long)(DaysUpToHijriYear(y) + HijriMonthDays[m - 1] + d - 1 - HijriAdjustment);
         }
 
         private long DaysUpToHijriYear(int HijriYear)
@@ -198,7 +198,7 @@ namespace System.Globalization
 
             // Get the absolute date. The absolute date is the number of days from January 1st, 1 A.D.
             // 1/1/0001 is absolute date 1.
-            long numDays = ticks / GregorianCalendar.TicksPerDay + 1;
+            long numDays = ticks / TicksPerDay + 1;
 
             // See how much we need to backup or advance
             numDays += HijriAdjustment;
@@ -241,7 +241,7 @@ namespace System.Globalization
                 return (int)numDays;
             }
 
-            while ((hijriMonth <= 12) && (numDays > s_hijriMonthDays[hijriMonth - 1]))
+            while ((hijriMonth <= 12) && (numDays > HijriMonthDays[hijriMonth - 1]))
             {
                 hijriMonth++;
             }
@@ -253,7 +253,7 @@ namespace System.Globalization
             }
 
             // Calculate the Hijri Day.
-            int hijriDay = (int)(numDays - s_hijriMonthDays[hijriMonth - 1]);
+            int hijriDay = (int)(numDays - HijriMonthDays[hijriMonth - 1]);
 
             if (part == DatePartDay)
             {
@@ -297,7 +297,7 @@ namespace System.Globalization
             }
 
             long ticks = GetAbsoluteDateHijri(y, m, d) * TicksPerDay + (time.Ticks % TicksPerDay);
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
 
@@ -413,7 +413,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
             }
 
-            return new DateTime(lDate * GregorianCalendar.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
+            return new DateTime(lDate * TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
         }
 
         private const int DefaultTwoDigitYearMax = 1451;
@@ -446,10 +446,7 @@ namespace System.Globalization
 
         public override int ToFourDigitYear(int year)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
 
             if (year < 100)
             {

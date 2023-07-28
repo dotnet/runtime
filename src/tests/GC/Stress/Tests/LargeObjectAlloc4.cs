@@ -8,7 +8,7 @@
 using System;
 public class Test
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         Int32 basesize;
         Int32[] largeobjarr;

@@ -57,7 +57,7 @@ public class RethrowException {
 	}
 		
 	
-	public static int Main(String[] args) {
+	public static int Main() {
 	  String s = "Done";
 	    System.IO.TextWriter t = Console.Out;
 	    Console.SetOut(t);

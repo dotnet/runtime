@@ -93,7 +93,7 @@ namespace System.Runtime.CompilerServices
                 // "work" but in a degraded mode, as we don't know the TStateMachine type here, and thus we use a box around
                 // the interface instead.
 
-                PoolingAsyncValueTaskMethodBuilder<TResult>.StateMachineBox? box = m_task ??= CreateWeaklyTypedStateMachineBox();
+                StateMachineBox? box = m_task ??= CreateWeaklyTypedStateMachineBox();
                 return new ValueTask<TResult>(box, box.Version);
             }
         }
@@ -119,7 +119,7 @@ namespace System.Runtime.CompilerServices
             }
             catch (Exception e)
             {
-                System.Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
+                Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
             }
         }
 
@@ -204,7 +204,7 @@ namespace System.Runtime.CompilerServices
 
             // At this point, m_task should really be null, in which case we want to create the box.
             // However, in a variety of debugger-related (erroneous) situations, it might be non-null,
-            // e.g. if the Task property is examined in a Watch window, forcing it to be lazily-intialized
+            // e.g. if the Task property is examined in a Watch window, forcing it to be lazily-initialized
             // as a Task<TResult> rather than as an ValueTaskStateMachineBox.  The worst that happens in such
             // cases is we lose the ability to properly step in the debugger, as the debugger uses that
             // object's identity to track this specific builder/state machine.  As such, we proceed to

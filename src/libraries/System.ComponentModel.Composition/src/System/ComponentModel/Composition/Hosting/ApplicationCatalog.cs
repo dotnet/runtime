@@ -110,17 +110,14 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (!_isDisposed)
                 {
-                    IDisposable? innerCatalog = null;
+                    AggregateCatalog? innerCatalog = null;
                     lock (_thisLock)
                     {
-                        innerCatalog = _innerCatalog as IDisposable;
+                        innerCatalog = _innerCatalog;
                         _innerCatalog = null;
                         _isDisposed = true;
                     }
-                    if (innerCatalog != null)
-                    {
-                        innerCatalog.Dispose();
-                    }
+                    innerCatalog?.Dispose();
                 }
             }
             finally

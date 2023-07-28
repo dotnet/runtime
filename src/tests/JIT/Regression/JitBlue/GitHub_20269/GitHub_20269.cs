@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 namespace GitHub_20269
 {
@@ -14,10 +15,11 @@ namespace GitHub_20269
     // 3) The tail call is rejected late in morph.
     // 
 
-    class Program
+    public class Program
     {
         static int i;
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             i = 1;
             return (int)new Program().GetVector()[0] + 99;
@@ -59,7 +61,7 @@ namespace GitHub_20269
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void DoNothing(ref int i)
+        internal static void DoNothing(ref int i)
         {
         }
     }

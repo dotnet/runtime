@@ -1,0 +1,10 @@
+<Project>
+  <!-- This is for use with projects that don't need to be built with artifacts. And
+       need to be loadable by xharness. For example, aspnetcore middleware -->
+  <PropertyGroup>
+    <RepositoryRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, global.json))/</RepositoryRoot>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(RepositoryRoot), 'artifacts', 'obj', $(MSBuildProjectName)))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), $(Configuration)))</IntermediateOutputPath>
+    <OutputPath>$([MSBuild]::NormalizeDirectory($(RepositoryRoot), 'artifacts', 'bin', $(MSBuildProjectName), $(Configuration)))</OutputPath>
+  </PropertyGroup>
+</Project>

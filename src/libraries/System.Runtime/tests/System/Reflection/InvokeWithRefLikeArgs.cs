@@ -17,7 +17,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void MethodTakesRefStructAsArg_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.TakesRefStructAsArg));
@@ -27,7 +26,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void MethodTakesRefStructAsArgWithDefaultValue_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.TakesRefStructAsArgWithDefaultValue));
@@ -76,7 +74,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void PropertyIndexerWithRefStructArg_ThrowsNSE()
         {
             PropertyInfo pi = typeof(TestClassWithIndexerWithRefStructArg).GetProperty("Item");

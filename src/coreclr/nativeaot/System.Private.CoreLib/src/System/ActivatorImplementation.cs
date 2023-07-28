@@ -19,8 +19,7 @@ namespace System
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type, bool nonPublic)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             type = type.UnderlyingSystemType;
             CreateInstanceCheckType(type);
@@ -32,9 +31,16 @@ namespace System
             if (constructor == null)
             {
                 if (type.IsValueType)
-                    return RuntimeAugments.NewObject(type.TypeHandle);
+                {
+                    RuntimeTypeHandle typeHandle = type.TypeHandle;
 
-                throw new MissingMethodException(SR.Arg_NoDefCTor);
+                    if (RuntimeAugments.IsNullable(typeHandle))
+                        return null;
+
+                    return RuntimeAugments.RawNewObject(typeHandle);
+                }
+
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
             }
             object result = constructor.Invoke(Array.Empty<object>());
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
@@ -46,8 +52,7 @@ namespace System
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type, BindingFlags bindingAttr, Binder binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             // If they didn't specify a lookup, then we will provide the default lookup.
             const BindingFlags LookupMask = (BindingFlags)0x000000FF;
@@ -60,8 +65,7 @@ namespace System
             type = type.UnderlyingSystemType;
             CreateInstanceCheckType(type);
 
-            if (args == null)
-                args = Array.Empty<object>();
+            args ??= Array.Empty<object>();
             int numArgs = args.Length;
 
             Type?[] argTypes = new Type[numArgs];
@@ -80,13 +84,19 @@ namespace System
             if (matches.Count == 0)
             {
                 if (numArgs == 0 && type.IsValueType)
-                    return RuntimeAugments.NewObject(type.TypeHandle);
+                {
+                    RuntimeTypeHandle typeHandle = type.TypeHandle;
 
-                throw new MissingMethodException(SR.Arg_NoDefCTor);
+                    if (RuntimeAugments.IsNullable(typeHandle))
+                        return null;
+
+                    return RuntimeAugments.RawNewObject(typeHandle);
+                }
+
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
             }
 
-            if (binder == null)
-                binder = Type.DefaultBinder;
+            binder ??= Type.DefaultBinder;
 
             MethodBase invokeMethod = binder.BindToMethod(bindingAttr, matches.ToArray(), ref args, null, culture, null, out object? state);
             if (invokeMethod.GetParametersNoCopy().Length == 0)

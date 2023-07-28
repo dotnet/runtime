@@ -16,7 +16,7 @@ namespace System.Security.AccessControl.Tests
             GenericAce gAce = null;
             RawAcl rAcl = null;
 
-            // collection has one ACE. By code review, this properties always return false. So no addtional cases are needed
+            // collection has one ACE. By code review, this properties always return false. So no additional cases are needed
             rAcl = new RawAcl(0, 1);
             gAce = new CommonAce(AceFlags.SuccessfulAccess, AceQualifier.SystemAudit, 1, new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid("BA")), false, null);
             rAcl.InsertAce(0, gAce);

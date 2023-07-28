@@ -22,9 +22,10 @@ namespace System.Security.Cryptography
         public static HashAlgorithm Create() =>
             CryptoConfigForwarder.CreateDefaultHashAlgorithm();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static HashAlgorithm? Create(string hashName) =>
-            (HashAlgorithm?)CryptoConfigForwarder.CreateFromName(hashName);
+            CryptoConfigForwarder.CreateFromName<HashAlgorithm>(hashName);
 
         public virtual int HashSize => HashSizeValue;
 
@@ -32,8 +33,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (_disposed)
-                    throw new ObjectDisposedException(null);
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 if (State != 0)
                     throw new CryptographicUnexpectedOperationException(SR.Cryptography_HashNotYetFinalized);
 
@@ -43,8 +43,7 @@ namespace System.Security.Cryptography
 
         public byte[] ComputeHash(byte[] buffer)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             ArgumentNullException.ThrowIfNull(buffer);
 
             HashCore(buffer, 0, buffer.Length);
@@ -53,10 +52,7 @@ namespace System.Security.Cryptography
 
         public bool TryComputeHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(null);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (destination.Length < HashSizeValue / 8)
             {
@@ -81,15 +77,13 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (count < 0 || (count > buffer.Length))
                 throw new ArgumentException(SR.Argument_InvalidValue);
             if ((buffer.Length - count) < offset)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            if (_disposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             HashCore(buffer, offset, count);
             return CaptureHashCodeAndReinitialize();
@@ -97,8 +91,7 @@ namespace System.Security.Cryptography
 
         public byte[] ComputeHash(Stream inputStream)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
@@ -127,8 +120,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(inputStream);
 
-            if (_disposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             return ComputeHashAsyncCore(inputStream, cancellationToken);
         }
@@ -243,15 +235,13 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(inputBuffer);
 
-            if (inputOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(inputOffset);
             if (inputCount < 0 || inputCount > inputBuffer.Length)
                 throw new ArgumentException(SR.Argument_InvalidValue);
             if ((inputBuffer.Length - inputCount) < inputOffset)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            if (_disposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         protected abstract void HashCore(byte[] array, int ibStart, int cbSize);

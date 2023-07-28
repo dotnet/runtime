@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public static int[] m_anStatic4 = new int[7];
 
-        public static void Static1(object[] param1, ref bool param2)
+        internal static void Static1(object[] param1, ref bool param2)
         {
             float local8 = 0.0f;
             AA[] local9 = new AA[7];
@@ -30,7 +31,8 @@ namespace Test
                 } while ((uint)param1[2] < 0);
             }
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool b = false;
             Static1(null, ref b);

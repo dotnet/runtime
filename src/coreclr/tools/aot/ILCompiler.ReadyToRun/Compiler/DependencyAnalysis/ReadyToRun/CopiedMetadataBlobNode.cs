@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _sourceModule = sourceModule;
         }
 
-        public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
 
         public override bool IsShareable => false;
 

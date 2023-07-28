@@ -18,7 +18,7 @@ unsafe class A<T1>
 	[MethodImpl (NoInlining)]
 	static void check (long stack1, long stack2)
 	{
-// NOTE: This is wierd in order to feed into the edited IL.
+// NOTE: This is weird in order to feed into the edited IL.
 		if (stack1 != 0)
 			return;
 		if (stack1 == stack2)

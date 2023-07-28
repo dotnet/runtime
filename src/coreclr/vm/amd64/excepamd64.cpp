@@ -432,7 +432,7 @@ RtlVirtualUnwind_Worker (
         // It is of note that we are significantly pruning the funtion here in making the fake
         // code buffer, all that we are making room for is 1 byte for the prologue, 1 byte for
         // function code and what is left of the epilogue to be executed. This is _very_ closely
-        // tied to the implmentation of RtlVirtualUnwind and the knowledge that by passing the
+        // tied to the implementation of RtlVirtualUnwind and the knowledge that by passing the
         // the test above and having InEpilogue==TRUE then the code path which will be followed
         // through RtlVirtualUnwind is known.
         //
@@ -516,7 +516,7 @@ RtlVirtualUnwind_Worker (
 
         // The buffer cleaning implementation here just runs through the buffer byte by byte trying
         // to get a real opcode from the patch table for any 0xCC that it finds. There is the
-        // possiblity that the epilogue will contain a 0xCC in an immediate value for which a
+        // possibility that the epilogue will contain a 0xCC in an immediate value for which a
         // patch won't be found and this will report a false positive for HasUnmanagedBreakpoint.
         BYTE* pCleanCodePc = pCodeBuffer + FAKE_PROLOG_SIZE + FAKE_FUNCTION_CODE_SIZE;
         BYTE* pRealCodePc = (BYTE*)ControlPc;
@@ -600,10 +600,9 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    VirtualCallStubManager::StubKind sk;
-    VirtualCallStubManager::FindStubManager(f_IP, &sk);
+    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
         if ((*PTR_DWORD(f_IP) & 0xffffff) != X64_INSTR_CMP_IND_THIS_REG_RAX) // cmp [THIS_REG], rax
         {
@@ -612,14 +611,13 @@ AdjustContextForVirtualStub(
         }
     }
     else
-    if (sk == VirtualCallStubManager::SK_RESOLVE)
+    if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
     {
         if ((*PTR_DWORD(f_IP) & 0xffffff) != X64_INSTR_MOV_RAX_IND_THIS_REG) // mov rax, [THIS_REG]
         {
             _ASSERTE(!"AV in ResolveStub at unknown instruction");
             return FALSE;
         }
-        SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*))); // rollback push rdx
     }
     else
     {
@@ -633,6 +631,14 @@ AdjustContextForVirtualStub(
     }
     SetIP(pContext, callsite);
     SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*))); // Move SP to where it was at the call site
+
+#if defined(TARGET_WINDOWS)
+    DWORD64 ssp = GetSSP(pContext);
+    if (ssp != 0)
+    {
+        SetSSP(pContext, ssp + sizeof(void*));
+    }
+#endif // TARGET_WINDOWS
 
     return TRUE;
 }

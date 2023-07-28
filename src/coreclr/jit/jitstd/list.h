@@ -59,7 +59,6 @@ public:
         bool operator==(const const_iterator& it) const;
         bool operator!=(const const_iterator& it) const;
         const T& operator*() const;
-        const T* operator&() const;
         const T* operator->() const;
         operator const T*() const;
 
@@ -85,7 +84,6 @@ public:
         bool operator==(const iterator& it);
         bool operator!=(const iterator& it);
         T& operator*();
-        T* operator&();
         T* operator->();
         operator T*();
 
@@ -115,7 +113,6 @@ public:
         bool operator==(const const_reverse_iterator& it) const;
         bool operator!=(const const_reverse_iterator& it) const;
         const T& operator*() const;
-        const T* operator&() const;
         const T* operator->() const;
         operator const T*() const;
 
@@ -142,7 +139,6 @@ public:
         bool operator==(const reverse_iterator& it);
         bool operator!=(const reverse_iterator& it);
         T& operator*();
-        T* operator&();
         T* operator->();
         operator T*();
         friend class list<T, Allocator>::const_reverse_iterator;
@@ -971,12 +967,6 @@ T& list<T, Allocator>::iterator::operator*()
 }
 
 template <typename T, typename Allocator>
-T* list<T, Allocator>::iterator::operator&()
-{
-    return &(m_pNode->m_value);
-}
-
-template <typename T, typename Allocator>
 T* list<T, Allocator>::iterator::operator->()
 {
     return &(m_pNode->m_value);
@@ -1063,12 +1053,6 @@ const T& list<T, Allocator>::const_iterator::operator*() const
 }
 
 template <typename T, typename Allocator>
-const T* list<T, Allocator>::const_iterator::operator&() const
-{
-    return &(m_pNode->m_value);
-}
-
-template <typename T, typename Allocator>
 const T* list<T, Allocator>::const_iterator::operator->() const
 {
     return &(m_pNode->m_value);
@@ -1145,12 +1129,6 @@ template <typename T, typename Allocator>
 T& list<T, Allocator>::reverse_iterator::operator*()
 {
     return m_pNode->m_value;
-}
-
-template <typename T, typename Allocator>
-T* list<T, Allocator>::reverse_iterator::operator&()
-{
-    return &(m_pNode->m_value);
 }
 
 template <typename T, typename Allocator>
@@ -1234,12 +1212,6 @@ template <typename T, typename Allocator>
 const T& list<T, Allocator>::const_reverse_iterator::operator*() const
 {
     return m_pNode->m_value;
-}
-
-template <typename T, typename Allocator>
-const T* list<T, Allocator>::const_reverse_iterator::operator&() const
-{
-    return &(m_pNode->m_value);
 }
 
 template <typename T, typename Allocator>

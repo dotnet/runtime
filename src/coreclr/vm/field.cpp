@@ -69,7 +69,6 @@ VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttr
     _ASSERTE(fIsStatic || (!fIsRVA && !fIsThreadLocal));
     _ASSERTE(fIsRVA + fIsThreadLocal <= 1);
 
-    m_requiresFullMbValue = 0;
     SetMemberDef(mb);
 
     // A TypedByRef should be treated like a regular value type.
@@ -103,30 +102,6 @@ BOOL FieldDesc::IsByRef()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
     return CorTypeInfo::IsByRef_NoThrow(GetFieldType());
-}
-
-BOOL FieldDesc::MightHaveName(ULONG nameHashValue)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // We only have space for a name hash when we are using the packed mb layout
-    if (m_requiresFullMbValue)
-    {
-        return TRUE;
-    }
-
-    ULONG thisHashValue = m_mb & enum_packedMbLayout_NameHashMask;
-
-    // A zero value might mean no hash has ever been set
-    // (checking this way is better than dedicating a bit to tell us)
-    if (thisHashValue == 0)
-    {
-        return TRUE;
-    }
-
-    ULONG testHashValue = nameHashValue & enum_packedMbLayout_NameHashMask;
-
-    return (thisHashValue == testHashValue);
 }
 
 #ifndef DACCESS_COMPILE //we don't require DAC to special case simple types
@@ -206,7 +181,7 @@ void* FieldDesc::GetStaticAddress(void *base)
     void* ret = GetStaticAddressHandle(base);       // Get the handle
 
         // For value classes, the handle points at an OBJECTREF
-        // which holds the boxed value class, so derefernce and unbox.
+        // which holds the boxed value class, so dereference and unbox.
     if (GetFieldType() == ELEMENT_TYPE_VALUETYPE && !IsRVA())
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**) ret);
@@ -249,7 +224,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         MODE_ANY;
         FORBID_FAULT;
         PRECONDITION(IsStatic());
-        PRECONDITION(GetEnclosingMethodTable()->IsRestored_NoLogging());
+        PRECONDITION(GetEnclosingMethodTable()->IsRestored());
     }
     CONTRACTL_END
 
@@ -367,7 +342,7 @@ void    FieldDesc::SetInstanceField(OBJECTREF o, const VOID * pInVal)
     //
     // assert that o is derived from MT of enclosing class
     //
-    // walk up o's inheritence chain to make sure m_pMTOfEnclosingClass is along it
+    // walk up o's inheritance chain to make sure m_pMTOfEnclosingClass is along it
     //
     MethodTable* pCursor = o->GetMethodTable();
 
@@ -692,6 +667,32 @@ UINT FieldDesc::LoadSize()
         //        LOG((LF_CLASSLOADER, LL_INFO10000, "FieldDesc::LoadSize %s::%s\n", GetApproxEnclosingMethodTable()->GetDebugClassName(), m_debugName));
         CONSISTENCY_CHECK(GetFieldType() == ELEMENT_TYPE_VALUETYPE);
         size = GetApproxFieldTypeHandleThrowing().GetMethodTable()->GetNumInstanceFieldBytes();
+    }
+
+    return size;
+}
+
+UINT FieldDesc::GetSize(MethodTable *pMTOfValueTypeField)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END
+
+    CorElementType type = GetFieldType();
+    UINT size = GetSizeForCorElementType(type);
+    if (size == (UINT) -1)
+    {
+        LOG((LF_CLASSLOADER, LL_INFO10000, "FieldDesc::GetSize %s::%s\n", GetApproxEnclosingMethodTable()->GetDebugClassName(), m_debugName));
+        CONSISTENCY_CHECK(GetFieldType() == ELEMENT_TYPE_VALUETYPE);
+        TypeHandle t = (pMTOfValueTypeField != NULL) ? TypeHandle(pMTOfValueTypeField) : LookupApproxFieldTypeHandle();
+        _ASSERTE(!t.IsNull());
+        size = t.GetMethodTable()->GetNumInstanceFieldBytes();
     }
 
     return size;

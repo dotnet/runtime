@@ -28,7 +28,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             return CreateInvalidMessageTypeException();
         }
 
-        private static Exception CreateInvalidMessageTypeException()
+        private static CryptographicException CreateInvalidMessageTypeException()
         {
             // Windows CRYPT_E_INVALID_MSG_TYPE
             return new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);

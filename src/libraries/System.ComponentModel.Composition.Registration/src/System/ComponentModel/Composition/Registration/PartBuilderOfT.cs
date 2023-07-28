@@ -29,12 +29,12 @@ namespace System.ComponentModel.Composition.Registration
                 return pi == _propertyInfo;
             }
 
-            public void ConfigureImport(PropertyInfo propertyInfo, ImportBuilder importBuilder)
+            public void ConfigureImport(PropertyInfo _, ImportBuilder importBuilder)
             {
                 _configureImport?.Invoke(importBuilder);
             }
 
-            public void ConfigureExport(PropertyInfo propertyInfo, ExportBuilder exportBuilder)
+            public void ConfigureExport(PropertyInfo _, ExportBuilder exportBuilder)
             {
                 _configureExport?.Invoke(exportBuilder);
             }
@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition.Registration
                 ParseSelectConstructor(selectConstructor);
             }
 
-            public ConstructorInfo SelectConstructor(ConstructorInfo[] constructorInfos)
+            public ConstructorInfo SelectConstructor(ConstructorInfo[] _)
             {
                 return _constructorInfo;
             }
@@ -126,10 +126,7 @@ namespace System.ComponentModel.Composition.Registration
                                 var lambdaExpression = (LambdaExpression)parameter;
                                 Delegate importDelegate = lambdaExpression.Compile();
 
-                                if (_importBuilders == null)
-                                {
-                                    _importBuilders = new Dictionary<ParameterInfo, Action<ImportBuilder>>();
-                                }
+                                _importBuilders ??= new Dictionary<ParameterInfo, Action<ImportBuilder>>();
 
                                 _importBuilders.Add(parameterInfos[index], (Action<ImportBuilder>)importDelegate);
                                 ++index;

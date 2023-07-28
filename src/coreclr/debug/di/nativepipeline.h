@@ -5,8 +5,7 @@
 //
 
 //
-// defines native pipeline abstraction, which includes debug-support
-// for event redirection.
+// defines native pipeline abstraction
 //*****************************************************************************
 
 
@@ -191,16 +190,6 @@ BOOL IsExceptionEvent(const DEBUG_EVENT * pEvent, BOOL * pfFirstChance, const EX
 // Returns:
 //    newly allocated pipeline object. Caller must call Dispose() on it.
 INativeEventPipeline * NewPipelineForThisPlatform();
-
-//-----------------------------------------------------------------------------
-// Allocate and return a pipeline object for this platform
-// Has debug checks (such as for event redirection)
-//
-// Returns:
-//    newly allocated pipeline object. Caller must call Dispose() on it.
-INativeEventPipeline * NewPipelineWithDebugChecks();
-
-
 
 #endif // _NATIVE_PIPELINE_H
 

@@ -11,6 +11,9 @@ namespace System.Reflection.PortableExecutable.Tests
 {
     internal static class SigningUtilities
     {
+        public static bool SupportsSigning { get; } =
+            System.Security.Cryptography.Tests.SignatureSupport.CanProduceSha1Signature(RSA.Create());
+
         public static byte[] CalculateRsaSignature(IEnumerable<Blob> content, byte[] privateKey)
         {
             var hash = CalculateSha1(content);
@@ -26,20 +29,19 @@ namespace System.Reflection.PortableExecutable.Tests
 
         public static byte[] CalculateSha1(IEnumerable<Blob> content)
         {
-            using (var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
+            MemoryStream stream = new();
+
+            foreach (Blob blob in content)
             {
-                var stream = new MemoryStream();
+                var segment = blob.GetBytes();
+                stream.Write(segment.Array, segment.Offset, segment.Count);
+            }
 
-                foreach (var blob in content)
-                {
-                    var segment = blob.GetBytes();
+            stream.Position = 0;
 
-                    stream.Write(segment.Array, segment.Offset, segment.Count);
-
-                    hash.AppendData(segment.Array, segment.Offset, segment.Count);
-                }
-
-                return hash.GetHashAndReset();
+            using (SHA1 sha1 = SHA1.Create())
+            {
+                return sha1.ComputeHash(stream);
             }
         }
 

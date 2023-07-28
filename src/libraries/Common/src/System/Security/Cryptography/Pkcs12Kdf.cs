@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Pkcs
 
             // 4.  Set I=S||P to be the concatenation of S and P.
             int ILen = checked(SLen + PLen);
-            Span<byte> I = stackalloc byte[0];
+            scoped Span<byte> I;
             byte[]? IRented = null;
 
             if (ILen <= 1024)
@@ -147,6 +147,7 @@ namespace System.Security.Cryptography.Pkcs
                 I = IRented.AsSpan(0, ILen);
             }
 
+            KdfWorkLimiter.RecordIterations(iterationCount);
             IncrementalHash hash = IncrementalHash.CreateHash(hashAlgorithm);
 
             try

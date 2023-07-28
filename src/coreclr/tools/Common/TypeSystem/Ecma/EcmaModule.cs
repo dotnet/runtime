@@ -8,12 +8,14 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.TypeSystem.Ecma
 {
     public partial class EcmaModule : ModuleDesc
     {
-        private PEReader _peReader;
-        protected MetadataReader _metadataReader;
+        private readonly PEReader _peReader;
+        protected readonly MetadataReader _metadataReader;
 
         internal interface IEntityHandleObject
         {
@@ -25,8 +27,8 @@ namespace Internal.TypeSystem.Ecma
 
         private sealed class EcmaObjectLookupWrapper : IEntityHandleObject
         {
-            private EntityHandle _handle;
-            private object _obj;
+            private readonly EntityHandle _handle;
+            private readonly object _obj;
 
             public EcmaObjectLookupWrapper(EntityHandle handle, object obj)
             {
@@ -51,9 +53,9 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        internal class EcmaObjectLookupHashtable : LockFreeReaderHashtable<EntityHandle, IEntityHandleObject>
+        internal sealed class EcmaObjectLookupHashtable : LockFreeReaderHashtable<EntityHandle, IEntityHandleObject>
         {
-            private EcmaModule _module;
+            private readonly EcmaModule _module;
 
             public EcmaObjectLookupHashtable(EcmaModule module)
             {
@@ -77,7 +79,7 @@ namespace Internal.TypeSystem.Ecma
 
             protected override bool CompareValueToValue(IEntityHandleObject value1, IEntityHandleObject value2)
             {
-                if (Object.ReferenceEquals(value1, value2))
+                if (ReferenceEquals(value1, value2))
                     return true;
                 else
                     return value1.Handle.Equals(value2.Handle);
@@ -168,7 +170,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private object ResolveModuleReference(ModuleReferenceHandle handle)
+        private ModuleDesc ResolveModuleReference(ModuleReferenceHandle handle)
         {
             ModuleReference moduleReference = _metadataReader.GetModuleReference(handle);
             string fileName = _metadataReader.GetString(moduleReference.Name);
@@ -176,8 +178,8 @@ namespace Internal.TypeSystem.Ecma
             return _moduleResolver.ResolveModule(this.Assembly, fileName);
         }
 
-        private LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
-        IModuleResolver _moduleResolver;
+        private readonly LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
+        private readonly IModuleResolver _moduleResolver;
 
         internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, IAssemblyDesc containingAssembly, IModuleResolver customModuleResolver)
             : base(context, containingAssembly)
@@ -185,7 +187,7 @@ namespace Internal.TypeSystem.Ecma
             _peReader = peReader;
             _metadataReader = metadataReader;
             _resolvedTokens = new EcmaObjectLookupHashtable(this);
-            _moduleResolver = customModuleResolver != null ? customModuleResolver : context;
+            _moduleResolver = customModuleResolver ?? context;
         }
 
         public static EcmaModule Create(TypeSystemContext context, PEReader peReader, IAssemblyDesc containingAssembly, IModuleResolver customModuleResolver = null)
@@ -208,7 +210,7 @@ namespace Internal.TypeSystem.Ecma
             var stringDecoderProvider = context as IMetadataStringDecoderProvider;
 
             MetadataReader metadataReader = peReader.GetMetadataReader(MetadataReaderOptions.None /* MetadataReaderOptions.ApplyWindowsRuntimeProjections */,
-                (stringDecoderProvider != null) ? stringDecoderProvider.GetMetadataStringDecoder() : null);
+                stringDecoderProvider?.GetMetadataStringDecoder());
 
             return metadataReader;
         }
@@ -280,57 +282,80 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        private Dictionary<(string Name, string Namespace), EntityHandle> _nameLookupCache;
+
+        private Dictionary<(string Name, string Namespace), EntityHandle> CreateNameLookupCache()
+        {
+            // TODO: it's not particularly efficient to materialize strings just to hash them and hold
+            // onto them forever. We could instead hash the UTF-8 bytes and hold the TypeDefinitionHandle
+            // so we can obtain the bytes again when needed.
+            // E.g. see the scheme explored in the first commit of https://github.com/dotnet/runtime/pull/84285.
+
+            var result = new Dictionary<(string Name, string Namespace), EntityHandle>();
+
+            MetadataReader metadataReader = _metadataReader;
+            foreach (TypeDefinitionHandle typeDefHandle in metadataReader.TypeDefinitions)
+            {
+                TypeDefinition typeDefinition = metadataReader.GetTypeDefinition(typeDefHandle);
+                if (typeDefinition.Attributes.IsNested())
+                    continue;
+
+                result.Add((metadataReader.GetString(typeDefinition.Name), metadataReader.GetString(typeDefinition.Namespace)), typeDefHandle);
+            }
+
+            foreach (ExportedTypeHandle exportedTypeHandle in metadataReader.ExportedTypes)
+            {
+                ExportedType exportedType = metadataReader.GetExportedType(exportedTypeHandle);
+                if (exportedType.Implementation.Kind == HandleKind.ExportedType)
+                    continue;
+
+                result.Add((metadataReader.GetString(exportedType.Name), metadataReader.GetString(exportedType.Namespace)), exportedTypeHandle);
+            }
+
+            return _nameLookupCache = result;
+        }
+
         public sealed override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
         {
             var currentModule = this;
             // src/coreclr/vm/clsload.cpp use the same restriction to detect a loop in the type forwarding.
             for (int typeForwardingChainSize = 0; typeForwardingChainSize <= 1024; typeForwardingChainSize++)
             {
-                var metadataReader = currentModule._metadataReader;
-                var stringComparer = metadataReader.StringComparer;
-                // TODO: More efficient implementation?
-                foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
+                if ((currentModule._nameLookupCache ?? currentModule.CreateNameLookupCache()).TryGetValue((name, nameSpace), out EntityHandle foundHandle))
                 {
-                    var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
-                    if (stringComparer.Equals(typeDefinition.Name, name) &&
-                        stringComparer.Equals(typeDefinition.Namespace, nameSpace))
-                    {
-                        return currentModule.GetType(typeDefinitionHandle);
-                    }
-                }
+                    if (foundHandle.Kind == HandleKind.TypeDefinition)
+                        return currentModule.GetType((TypeDefinitionHandle)foundHandle);
 
-                foreach (var exportedTypeHandle in metadataReader.ExportedTypes)
-                {
-                    var exportedType = metadataReader.GetExportedType(exportedTypeHandle);
-                    if (stringComparer.Equals(exportedType.Name, name) &&
-                        stringComparer.Equals(exportedType.Namespace, nameSpace))
+                    ExportedType exportedType = currentModule._metadataReader.GetExportedType((ExportedTypeHandle)foundHandle);
+                    if (exportedType.IsForwarder)
                     {
-                        if (exportedType.IsForwarder)
+                        object implementation = currentModule.GetObject(exportedType.Implementation, notFoundBehavior);
+
+                        if (implementation == null)
                         {
-                            object implementation = currentModule.GetObject(exportedType.Implementation, notFoundBehavior);
-
-                            if (implementation == null)
-                            {
-                                return null;
-                            }
-                            if (implementation is EcmaModule ecmaModule)
-                            {
-                                currentModule = ecmaModule;
-                                break;
-                            }
-                            if (implementation is ModuleDesc moduleDesc)
-                            {
-                                return moduleDesc.GetType(nameSpace, name, notFoundBehavior);
-                            }
-                            if (implementation is ResolutionFailure failure)
-                            {
-                                // No need to check notFoundBehavior - the callee already handled ReturnNull and Throw
-                                return implementation;
-                            }
+                            return null;
+                        }
+                        else if (implementation is EcmaModule ecmaModule)
+                        {
+                            currentModule = ecmaModule;
+                        }
+                        else if (implementation is ModuleDesc moduleDesc)
+                        {
+                            return moduleDesc.GetType(nameSpace, name, notFoundBehavior);
+                        }
+                        else if (implementation is ResolutionFailure)
+                        {
+                            // No need to check notFoundBehavior - the callee already handled ReturnNull and Throw
+                            return implementation;
+                        }
+                        else
+                        {
                             // TODO
                             throw new NotImplementedException();
                         }
-
+                    }
+                    else
+                    {
                         // TODO:
                         throw new NotImplementedException();
                     }
@@ -353,7 +378,7 @@ namespace Internal.TypeSystem.Ecma
         {
             TypeDesc type = GetObject(handle, NotFoundBehavior.Throw) as TypeDesc;
             if (type == null)
-                ThrowHelper.ThrowBadImageFormatException($"type expected for handle {handle.ToString()}");
+                ThrowHelper.ThrowBadImageFormatException($"type expected for handle {handle}");
             return type;
         }
 
@@ -361,7 +386,7 @@ namespace Internal.TypeSystem.Ecma
         {
             MethodDesc method = GetObject(handle, NotFoundBehavior.Throw) as MethodDesc;
             if (method == null)
-                ThrowHelper.ThrowBadImageFormatException($"method expected for handle {handle.ToString()}");
+                ThrowHelper.ThrowBadImageFormatException($"method expected for handle {handle}");
             return method;
         }
 
@@ -369,11 +394,31 @@ namespace Internal.TypeSystem.Ecma
         {
             FieldDesc field = GetObject(handle, NotFoundBehavior.Throw) as FieldDesc;
             if (field == null)
-                ThrowHelper.ThrowBadImageFormatException($"field expected for handle {handle.ToString()}");
+                ThrowHelper.ThrowBadImageFormatException($"field expected for handle {handle}");
             return field;
         }
 
-        public Object GetObject(EntityHandle handle, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)
+        internal EcmaField GetField(FieldDefinitionHandle handle, EcmaType owningType)
+        {
+            if (!_resolvedTokens.TryGetValue(handle, out IEntityHandleObject result))
+            {
+                Debug.Assert(_metadataReader.GetFieldDefinition(handle).GetDeclaringType() == owningType.Handle);
+                result = _resolvedTokens.AddOrGetExisting(new EcmaField(owningType, handle));
+            }
+            return (EcmaField)result;
+        }
+
+        internal EcmaMethod GetMethod(MethodDefinitionHandle handle, EcmaType owningType)
+        {
+            if (!_resolvedTokens.TryGetValue(handle, out IEntityHandleObject result))
+            {
+                Debug.Assert(_metadataReader.GetMethodDefinition(handle).GetDeclaringType() == owningType.Handle);
+                result = _resolvedTokens.AddOrGetExisting(new EcmaMethod(owningType, handle));
+            }
+            return (EcmaMethod)result;
+        }
+
+        public object GetObject(EntityHandle handle, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)
         {
             IEntityHandleObject obj = _resolvedTokens.GetOrCreateValue(handle);
             if (obj is EcmaObjectLookupWrapper)
@@ -394,7 +439,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private Object ResolveMethodSpecification(MethodSpecificationHandle handle)
+        private object ResolveMethodSpecification(MethodSpecificationHandle handle)
         {
             MethodSpecification methodSpecification = _metadataReader.GetMethodSpecification(handle);
 
@@ -404,7 +449,7 @@ namespace Internal.TypeSystem.Ecma
 
             MethodDesc methodDef = resolvedMethod as MethodDesc;
             if (methodDef == null)
-                ThrowHelper.ThrowBadImageFormatException($"method expected for handle {handle.ToString()}");
+                ThrowHelper.ThrowBadImageFormatException($"method expected for handle {handle}");
 
             BlobReader signatureReader = _metadataReader.GetBlobReader(methodSpecification.Signature);
             EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader, NotFoundBehavior.ReturnResolutionFailure);
@@ -417,7 +462,7 @@ namespace Internal.TypeSystem.Ecma
             return Context.GetInstantiatedMethod(methodDef, new Instantiation(instantiation));
         }
 
-        private Object ResolveStandaloneSignature(StandaloneSignatureHandle handle)
+        private object ResolveStandaloneSignature(StandaloneSignatureHandle handle)
         {
             StandaloneSignature signature = _metadataReader.GetStandaloneSignature(handle);
             BlobReader signatureReader = _metadataReader.GetBlobReader(signature.Signature);
@@ -429,7 +474,7 @@ namespace Internal.TypeSystem.Ecma
             return methodSig;
         }
 
-        private Object ResolveTypeSpecification(TypeSpecificationHandle handle)
+        private object ResolveTypeSpecification(TypeSpecificationHandle handle)
         {
             TypeSpecification typeSpecification = _metadataReader.GetTypeSpecification(handle);
 
@@ -443,11 +488,11 @@ namespace Internal.TypeSystem.Ecma
                 return parsedType;
         }
 
-        private Object ResolveMemberReference(MemberReferenceHandle handle)
+        private object ResolveMemberReference(MemberReferenceHandle handle)
         {
             MemberReference memberReference = _metadataReader.GetMemberReference(handle);
 
-            Object parent = GetObject(memberReference.Parent, NotFoundBehavior.ReturnResolutionFailure);
+            object parent = GetObject(memberReference.Parent, NotFoundBehavior.ReturnResolutionFailure);
 
             if (parent is ResolutionFailure)
                 return parent;
@@ -481,6 +526,8 @@ namespace Internal.TypeSystem.Ecma
                     do
                     {
                         MethodDesc method = typeDescToInspect.GetMethod(name, sig, substitution);
+                        if (method == null && Context.SupportsTypeEquivalence)
+                            method = typeDescToInspect.GetMethodWithEquivalentSignature(name, sig, substitution);
                         if (method != null)
                         {
                             // If this resolved to one of the base types, make sure it's not a constructor.
@@ -533,11 +580,11 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        private Object ResolveTypeReference(TypeReferenceHandle handle)
+        private object ResolveTypeReference(TypeReferenceHandle handle)
         {
             TypeReference typeReference = _metadataReader.GetTypeReference(handle);
 
-            Object resolutionScope = GetObject(typeReference.ResolutionScope, NotFoundBehavior.ReturnResolutionFailure);
+            object resolutionScope = GetObject(typeReference.ResolutionScope, NotFoundBehavior.ReturnResolutionFailure);
             if (resolutionScope is ResolutionFailure)
             {
                 return resolutionScope;
@@ -564,7 +611,7 @@ namespace Internal.TypeSystem.Ecma
             throw new NotImplementedException();
         }
 
-        private Object ResolveAssemblyReference(AssemblyReferenceHandle handle)
+        private object ResolveAssemblyReference(AssemblyReferenceHandle handle)
         {
             AssemblyReference assemblyReference = _metadataReader.GetAssemblyReference(handle);
 
@@ -592,22 +639,20 @@ namespace Internal.TypeSystem.Ecma
                 return assembly;
         }
 
-        private Object ResolveExportedType(ExportedTypeHandle handle)
+        private object ResolveExportedType(ExportedTypeHandle handle)
         {
             ExportedType exportedType = _metadataReader.GetExportedType(handle);
 
             var implementation = GetObject(exportedType.Implementation, NotFoundBehavior.ReturnResolutionFailure);
-            if (implementation is ModuleDesc)
+            if (implementation is ModuleDesc module)
             {
-                var module = (ModuleDesc)implementation;
                 string nameSpace = _metadataReader.GetString(exportedType.Namespace);
                 string name = _metadataReader.GetString(exportedType.Name);
                 return module.GetType(nameSpace, name, NotFoundBehavior.ReturnResolutionFailure);
             }
             else
-            if (implementation is MetadataType)
+            if (implementation is MetadataType type)
             {
-                var type = (MetadataType)implementation;
                 string name = _metadataReader.GetString(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
                 if (nestedType == null)

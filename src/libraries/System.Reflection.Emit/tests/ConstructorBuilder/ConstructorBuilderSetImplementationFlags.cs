@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
             constructor.GetILGenerator().Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Throws<InvalidOperationException>(() => constructor.SetImplementationFlags(MethodImplAttributes.Runtime));
         }
     }

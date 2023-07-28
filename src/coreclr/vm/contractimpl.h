@@ -394,7 +394,7 @@ public:
 
     //------------------------------------------------------------------------
     // Returns the next available ID
-    inline UINT32 GetNextID()
+    inline UINT32 GetNextID(bool useFatPointerDispatch)
     {
         CONTRACTL {
             THROWS;
@@ -406,7 +406,7 @@ public:
         UINT32 id = m_nextID;
 
 #ifdef FAT_DISPATCH_TOKENS
-        if (id > DispatchToken::MAX_TYPE_ID_SMALL)
+        if (useFatPointerDispatch && (id > DispatchToken::MAX_TYPE_ID_SMALL))
         {
             return GetNextFatID();
         }
@@ -455,11 +455,11 @@ protected:
 
     //------------------------------------------------------------------------
     // Returns the next available ID
-    inline UINT32 GetNextID()
+    inline UINT32 GetNextID(bool useFatPointerDispatch)
     {
         WRAPPER_NO_CONTRACT;
         CONSISTENCY_CHECK(m_lock.OwnedByCurrentThread());
-        UINT32 id = m_idProvider.GetNextID();
+        UINT32 id = m_idProvider.GetNextID(useFatPointerDispatch);
         CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
         return id;
     }
@@ -493,7 +493,7 @@ public:
     //------------------------------------------------------------------------
     // Returns the ID of the type if found. If not found, assigns the ID and
     // returns the new ID.
-    UINT32 GetTypeID(PTR_MethodTable pMT);
+    UINT32 GetTypeID(PTR_MethodTable pMT, bool useFatPointerDispatch);
 
 #ifndef DACCESS_COMPILE
     //------------------------------------------------------------------------

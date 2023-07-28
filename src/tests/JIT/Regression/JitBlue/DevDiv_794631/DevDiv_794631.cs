@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 
-class Repro
+public class Repro
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //This testcase ensures that we correctly generate one ReadUInt16() call
         //instead of two due to a bug in fgmorph which transformed a call result 

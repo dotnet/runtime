@@ -158,7 +158,7 @@ namespace System.IO
                 continueExecuting = Interop.Kernel32.ReadDirectoryChangesW(
                     state.DirectoryHandle,
                     state.Buffer, // the buffer is kept pinned for the duration of the sync and async operation by the PreAllocatedOverlapped
-                    _internalBufferSize,
+                    (uint)state.Buffer.Length,
                     _includeSubdirectories,
                     (uint)_notifyFilters,
                     null,
@@ -218,8 +218,8 @@ namespace System.IO
                     const int ERROR_OPERATION_ABORTED = 995;
                     if (errorCode != ERROR_OPERATION_ABORTED)
                     {
-                        OnError(new ErrorEventArgs(new Win32Exception((int)errorCode)));
                         EnableRaisingEvents = false;
+                        OnError(new ErrorEventArgs(new Win32Exception((int)errorCode)));
                     }
                     return;
                 }

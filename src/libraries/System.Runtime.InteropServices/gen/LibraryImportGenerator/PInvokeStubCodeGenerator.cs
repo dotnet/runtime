@@ -4,9 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -49,10 +46,11 @@ namespace Microsoft.Interop
         private readonly ManagedToNativeStubCodeContext _context;
 
         public PInvokeStubCodeGenerator(
-            StubEnvironment environment,
+            TargetFramework targetFramework,
+            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
-            Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
+            GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorFactory generatorFactory)
         {
             _setLastError = setLastError;
@@ -61,30 +59,32 @@ namespace Microsoft.Interop
             // supports target framework value with this value.
             if (_setLastError)
             {
-                SupportsTargetFramework = environment.TargetFramework == TargetFramework.Net
-                    && environment.TargetFrameworkVersion.Major >= 6;
+                SupportsTargetFramework = targetFramework == TargetFramework.Net
+                    && targetFrameworkVersion.Major >= 6;
             }
             else
             {
                 SupportsTargetFramework = true;
             }
 
-            _context = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator);
+            _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
+            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingDiagnostics);
+
+            diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
             }
 
             bool noMarshallingNeeded = true;
 
-            foreach (BoundGenerator generator in _marshallers.AllMarshallers)
+            foreach (BoundGenerator generator in _marshallers.SignatureMarshallers)
             {
                 // Check if marshalling info and generator support the current target framework.
                 SupportsTargetFramework &= generator.TypeInfo.MarshallingAttributeInfo is not MissingSupportMarshallingInfo
-                    && generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
+                    && generator.Generator.IsSupported(targetFramework, targetFrameworkVersion);
 
                 // Check if generator is either blittable or just a forwarder.
                 noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo.IsByRef: false }
@@ -94,19 +94,6 @@ namespace Microsoft.Interop
             StubIsBasicForwarder = !setLastError
                 && _marshallers.ManagedNativeSameReturn // If the managed return has native return position, then it's the return for both.
                 && noMarshallingNeeded;
-
-            IMarshallingGenerator CreateGenerator(TypePositionInfo p)
-            {
-                try
-                {
-                    return generatorFactory.Create(p, _context);
-                }
-                catch (MarshallingNotSupportedException e)
-                {
-                    marshallingNotSupportedCallback(p, e);
-                    return new Forwarder();
-                }
-            }
         }
 
         /// <summary>
@@ -121,7 +108,7 @@ namespace Microsoft.Interop
         {
             GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context, IdentifierName(dllImportName));
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
-            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
+            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
             var setupStatements = new List<StatementSyntax>();
 
@@ -146,18 +133,20 @@ namespace Microsoft.Interop
             var tryStatements = new List<StatementSyntax>();
             tryStatements.AddRange(statements.Marshal);
 
-            var invokeStatement = statements.InvokeStatement;
+            BlockSyntax fixedBlock = Block(statements.PinnedMarshal);
             if (_setLastError)
             {
                 StatementSyntax clearLastError = MarshallerHelpers.CreateClearLastSystemErrorStatement(SuccessErrorCode);
 
                 StatementSyntax getLastError = MarshallerHelpers.CreateGetLastSystemErrorStatement(LastErrorIdentifier);
 
-                invokeStatement = Block(clearLastError, invokeStatement, getLastError);
+                fixedBlock = fixedBlock.AddStatements(clearLastError, statements.InvokeStatement, getLastError);
             }
-            invokeStatement = statements.Pin.NestFixedStatements(invokeStatement);
-
-            tryStatements.Add(invokeStatement);
+            else
+            {
+                fixedBlock = fixedBlock.AddStatements(statements.InvokeStatement);
+            }
+            tryStatements.Add(statements.Pin.NestFixedStatements(fixedBlock));
             // <invokeSucceeded> = true;
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
@@ -166,7 +155,7 @@ namespace Microsoft.Interop
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))));
             }
 
-            tryStatements.AddRange(statements.KeepAlive);
+            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
@@ -203,7 +192,7 @@ namespace Microsoft.Interop
 
         public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData()
         {
-            return _marshallers.GenerateTargetMethodSignatureData();
+            return _marshallers.GenerateTargetMethodSignatureData(_context);
         }
     }
 }

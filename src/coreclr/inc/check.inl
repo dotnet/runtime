@@ -220,6 +220,14 @@ inline CHECK CheckOverflow(const void *address, UINT64 offset)
     CHECK_OK;
 }
 
+#ifdef __APPLE__
+inline CHECK CheckOverflow(const void *address, SIZE_T offset)
+{
+    CHECK((UINT64) address + offset >= (UINT64) address);
+
+    CHECK_OK;
+}
+#endif // __APPLE__
 
 inline CHECK CheckUnderflow(UINT value1, UINT value2)
 {

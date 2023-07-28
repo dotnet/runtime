@@ -16,12 +16,12 @@ namespace System.Globalization.Tests
         public void ToFourDigitYear(int year)
         {
             ThaiBuddhistCalendar calendar = new ThaiBuddhistCalendar();
-            calendar.TwoDigitYearMax = 2029;
+            calendar.TwoDigitYearMax = 2049;
             if (year > 99)
             {
                 Assert.Equal(year, calendar.ToFourDigitYear(year));
             }
-            else if (year > 29)
+            else if (year > 49)
             {
                 Assert.Equal(year + 1900, calendar.ToFourDigitYear(year));
             }

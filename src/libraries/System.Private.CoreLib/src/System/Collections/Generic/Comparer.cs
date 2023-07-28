@@ -52,7 +52,7 @@ namespace System.Collections.Generic
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
-    public sealed partial class GenericComparer<T> : Comparer<T> where T : IComparable<T>
+    public sealed partial class GenericComparer<T> : Comparer<T> where T : IComparable<T>?
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int Compare(T? x, T? y)
@@ -116,7 +116,7 @@ namespace System.Collections.Generic
     {
         public override int Compare(T? x, T? y)
         {
-            return System.Collections.Comparer.Default.Compare(x, y);
+            return Comparer.Default.Compare(x, y);
         }
 
         // Equals method for the comparer itself.

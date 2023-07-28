@@ -12,7 +12,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -30,6 +29,8 @@ namespace Microsoft.Interop
 
         public ImmutableArray<TypePositionInfo> ElementTypeInformation { get; init; }
 
+        public IEnumerable<TypePositionInfo> ManagedParameters => ElementTypeInformation.Where(tpi => !TypePositionInfo.IsSpecialIndex(tpi.ManagedIndex));
+
         public TypeSyntax StubReturnType { get; init; }
 
         public IEnumerable<ParameterSyntax> StubParameters
@@ -41,9 +42,24 @@ namespace Microsoft.Interop
                     if (typeInfo.ManagedIndex != TypePositionInfo.UnsetIndex
                         && typeInfo.ManagedIndex != TypePositionInfo.ReturnIndex)
                     {
+                        SyntaxTokenList tokens = TokenList();
+
+                        // "out" parameters are implicitly scoped, so we can't put the "scoped" keyword on them.
+                        // All other cases of explicit parameters are only scoped when the "scoped" keyword is present.
+                        // When the "scoped" keyword is present, it must be present on all declarations.
+                        if (typeInfo.ScopedKind != ScopedKind.None && typeInfo.RefKind != RefKind.Out)
+                        {
+                            tokens = tokens.Add(Token(SyntaxKind.ScopedKeyword));
+                        }
+
+                        if (typeInfo.IsByRef)
+                        {
+                            tokens = tokens.Add(Token(typeInfo.RefKindSyntax));
+                        }
+
                         yield return Parameter(Identifier(typeInfo.InstanceIdentifier))
                             .WithType(typeInfo.ManagedType.Syntax)
-                            .WithModifiers(TokenList(Token(typeInfo.RefKindSyntax)));
+                            .WithModifiers(tokens);
                     }
                 }
             }
@@ -53,12 +69,11 @@ namespace Microsoft.Interop
 
         public static SignatureContext Create(
             IMethodSymbol method,
-            InteropAttributeData interopAttributeData,
+            MarshallingInfoParser marshallingInfoParser,
             StubEnvironment env,
-            IGeneratorDiagnostics diagnostics,
             Assembly generatorInfoAssembly)
         {
-            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, interopAttributeData, diagnostics, env);
+            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env);
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
@@ -70,7 +85,8 @@ namespace Microsoft.Interop
                 additionalAttrs.Add(
                     AttributeList(
                         SingletonSeparatedList(
-                            Attribute(ParseName(TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute),
+                            Attribute(
+                                ParseName(TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute_WithGlobal),
                                 AttributeArgumentList(
                                     SeparatedList(
                                         new[]
@@ -88,7 +104,7 @@ namespace Microsoft.Interop
                             // Adding the skip locals init indiscriminately since the source generator is
                             // targeted at non-blittable method signatures which typically will contain locals
                             // in the generated code.
-                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute)))));
+                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_WithGlobal)))));
             }
 
             return new SignatureContext()
@@ -99,35 +115,18 @@ namespace Microsoft.Interop
             };
         }
 
-        private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(IMethodSymbol method, InteropAttributeData interopAttributeData, IGeneratorDiagnostics diagnostics, StubEnvironment env)
+        private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(
+            IMethodSymbol method,
+            MarshallingInfoParser marshallingInfoParser,
+            StubEnvironment env)
         {
-            // Compute the current default string encoding value.
-            CharEncoding defaultEncoding = CharEncoding.Undefined;
-            if (interopAttributeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
-            {
-                defaultEncoding = interopAttributeData.StringMarshalling switch
-                {
-                    StringMarshalling.Utf16 => CharEncoding.Utf16,
-                    StringMarshalling.Utf8 => CharEncoding.Utf8,
-                    StringMarshalling.Custom => CharEncoding.Custom,
-                    _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value
-                };
-            }
-            else if (interopAttributeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
-            {
-                defaultEncoding = CharEncoding.Custom;
-            }
-
-            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, interopAttributeData.StringMarshallingCustomType);
-
-            var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
 
             // Determine parameter and return types
             ImmutableArray<TypePositionInfo>.Builder typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 IParameterSymbol param = method.Parameters[i];
-                MarshallingInfo marshallingInfo = marshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
+                MarshallingInfo marshallingInfo = marshallingInfoParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
                 var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
                 typeInfo = typeInfo with
                 {
@@ -137,11 +136,11 @@ namespace Microsoft.Interop
                 typeInfos.Add(typeInfo);
             }
 
-            TypePositionInfo retTypeInfo = new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), marshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes()));
+            TypePositionInfo retTypeInfo = new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), marshallingInfoParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes()));
             retTypeInfo = retTypeInfo with
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,
-                NativeIndex = TypePositionInfo.ReturnIndex
+                NativeIndex = TypePositionInfo.ReturnIndex,
             };
 
             typeInfos.Add(retTypeInfo);
@@ -188,7 +187,7 @@ namespace Microsoft.Interop
             return false;
 
             static bool IsSkipLocalsInitAttribute(AttributeData a)
-                => a.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute;
+                => a.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata;
         }
     }
 }

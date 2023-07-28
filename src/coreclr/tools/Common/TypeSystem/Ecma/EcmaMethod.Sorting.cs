@@ -6,7 +6,7 @@ using System.Reflection.Metadata.Ecma335;
 namespace Internal.TypeSystem.Ecma
 {
     // Functionality related to deterministic ordering of types
-    partial class EcmaMethod
+    public partial class EcmaMethod
     {
         protected internal override int ClassCode => 1419431046;
 

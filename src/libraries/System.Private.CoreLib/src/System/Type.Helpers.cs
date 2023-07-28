@@ -10,6 +10,7 @@ namespace System
     // This file collects the longer methods of Type to make the main Type class more readable.
     public abstract partial class Type : MemberInfo, IReflect
     {
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual bool IsSerializable
         {
             get
@@ -373,17 +374,19 @@ namespace System
             Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
                 "But this method only compares the result against the passed in ifaceType." +
                 "So if ifaceType exists, then trimming should have kept it implemented on any type.")]
-        // IL2075 is produced due to the BaseType not returning annotated value and used in effectively this.BaseType.GetInterfaces()
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
-                "But this method only compares the result against the passed in ifaceType." +
-                "So if ifaceType exists, then trimming should have kept it implemented on any type.")]
         internal bool ImplementInterface(Type ifaceType)
         {
             Type? t = this;
             while (t != null)
             {
+                // IL2075 is produced due to the BaseType not returning annotated value and used in effectively this.BaseType.GetInterfaces()
+                // The GetInterfaces technically requires all interfaces to be preserved
+                // But this method only compares the result against the passed in ifaceType.
+                // So if ifaceType exists, then trimming should have kept it implemented on any type.
+                // The warning is currently analyzer only.
+#pragma warning disable IL2075
                 Type[] interfaces = t.GetInterfaces();
+#pragma warning restore IL2075
                 if (interfaces != null)
                 {
                     for (int i = 0; i < interfaces.Length; i++)
@@ -470,8 +473,10 @@ namespace System
                             return false;
                         if (((criteria & FieldAttributes.Literal) != 0) && (attr & FieldAttributes.Literal) == 0)
                             return false;
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
                         if (((criteria & FieldAttributes.NotSerialized) != 0) && (attr & FieldAttributes.NotSerialized) == 0)
                             return false;
+#pragma warning restore SYSLIB0050
                         if (((criteria & FieldAttributes.PinvokeImpl) != 0) && (attr & FieldAttributes.PinvokeImpl) == 0)
                             return false;
                         return true;

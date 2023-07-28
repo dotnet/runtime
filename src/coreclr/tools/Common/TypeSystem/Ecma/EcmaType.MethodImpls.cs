@@ -1,14 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Reflection.Metadata;
-using System.Threading;
 using Debug = System.Diagnostics.Debug;
-
-using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -21,7 +16,7 @@ namespace Internal.TypeSystem.Ecma
         {
             MetadataReader metadataReader = _module.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
-            ArrayBuilder<MethodImplRecord> foundRecords = new ArrayBuilder<MethodImplRecord>();
+            ArrayBuilder<MethodImplRecord> foundRecords = default(ArrayBuilder<MethodImplRecord>);
 
             foreach (var methodImplHandle in _typeDefinition.GetMethodImplementations())
             {
@@ -79,7 +74,7 @@ namespace Internal.TypeSystem.Ecma
 
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType()
         {
-            ArrayBuilder<MethodImplRecord> records = new ArrayBuilder<MethodImplRecord>();
+            ArrayBuilder<MethodImplRecord> records = default(ArrayBuilder<MethodImplRecord>);
 
             MetadataReader metadataReader = _module.MetadataReader;
 
@@ -90,8 +85,8 @@ namespace Internal.TypeSystem.Ecma
                 EntityHandle methodDeclCheckHandle = methodImpl.MethodDeclaration;
                 HandleKind methodDeclHandleKind = methodDeclCheckHandle.Kind;
 
-                // We want to check that the type is not an interface matches before actually getting the MethodDesc. 
-                // For MethodSpecifications we need to dereference that handle to the underlying member reference to 
+                // We want to check that the type is not an interface matches before actually getting the MethodDesc.
+                // For MethodSpecifications we need to dereference that handle to the underlying member reference to
                 // look at the owning type.
                 if (methodDeclHandleKind == HandleKind.MethodSpecification)
                 {

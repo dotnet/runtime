@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -13,9 +15,11 @@ namespace System.Formats.Tar
         private readonly Dictionary<uint, string> _userIdentifiers = new Dictionary<uint, string>();
         private readonly Dictionary<uint, string> _groupIdentifiers = new Dictionary<uint, string>();
 
-        // Unix specific implementation of the method that reads an entry from disk and writes it into the archive stream.
-        partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
+        // Creates an entry for writing using the specified path and entryName. If this is being called from an async method, FileOptions should contain Asynchronous.
+        private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
         {
+            Debug.Assert(!string.IsNullOrEmpty(fullPath));
+
             Interop.Sys.FileStatus status = default;
             status.Mode = default;
             status.Dev = default;
@@ -31,7 +35,7 @@ namespace System.Formats.Tar
                 Interop.Sys.FileTypes.S_IFLNK => TarEntryType.SymbolicLink,
                 Interop.Sys.FileTypes.S_IFREG => Format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile,
                 Interop.Sys.FileTypes.S_IFDIR => TarEntryType.Directory,
-                _ => throw new IOException(string.Format(SR.TarUnsupportedFile, fullPath)),
+                _ => throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath)),
             };
 
             FileSystemInfo info = entryType is TarEntryType.Directory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
@@ -42,7 +46,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
             };
 
             if (entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
@@ -58,11 +62,12 @@ namespace System.Formats.Tar
                 entry._header._devMinor = (int)minor;
             }
 
-            entry._header._mTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.MTime);
-            entry._header._aTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.ATime);
-            entry._header._cTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.CTime);
+            entry._header._mTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.MTime);
+            entry._header._aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.ATime);
+            entry._header._cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.CTime);
 
-            entry._header._mode = (status.Mode & 4095); // First 12 bits
+            // This mask only keeps the least significant 12 bits valid for UnixFileModes
+            entry._header._mode = status.Mode & (int)TarHelpers.ValidUnixFileModes;
 
             // Uid and UName
             entry._header._uid = (int)status.Uid;
@@ -77,8 +82,10 @@ namespace System.Formats.Tar
             entry._header._gid = (int)status.Gid;
             if (!_groupIdentifiers.TryGetValue(status.Gid, out string? gName))
             {
-                gName = Interop.Sys.GetGroupName(status.Gid);
-                _groupIdentifiers.Add(status.Gid, gName);
+                if (Interop.Sys.TryGetGroupName(status.Gid, out gName))
+                {
+                    _groupIdentifiers.Add(status.Gid, gName);
+                }
             }
             entry._header._gName = gName;
 
@@ -90,14 +97,10 @@ namespace System.Formats.Tar
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
                 Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = File.OpenRead(fullPath);
+                entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, fileOptions);
             }
 
-            WriteEntry(entry);
-            if (entry._header._dataStream != null)
-            {
-                entry._header._dataStream.Dispose();
-            }
+            return entry;
         }
     }
 }

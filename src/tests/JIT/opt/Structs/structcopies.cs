@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// The program tests different cases that could cause issues with aggresive 
+// The program tests different cases that could cause issues with aggressive
 // struct optimizations with existing retyping or missing field sequences.
 
 using System;
@@ -10,11 +10,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Numerics;
+using Xunit;
 
 
 namespace TestStructFields
 {
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void blockPromotion<T>(ref T s)
@@ -1713,7 +1714,8 @@ namespace TestStructFields
             return 100;
         }
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test();
         }

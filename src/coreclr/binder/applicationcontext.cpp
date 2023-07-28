@@ -12,8 +12,8 @@
 // ============================================================
 
 #include "applicationcontext.hpp"
+#include "assemblyhashtraits.hpp"
 #include "stringarraylist.h"
-#include "loadcontext.hpp"
 #include "failurecache.hpp"
 #include "utils.hpp"
 #include "ex.h"

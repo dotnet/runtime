@@ -297,11 +297,11 @@ void (*CallCountingStub::CallCountingStubCode)();
 void CallCountingStub::StaticInitialize()
 {
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    int pageSize = GetOsPageSize();
+    int pageSize = GetStubCodePageSize();
     #define ENUM_PAGE_SIZE(size) \
         case size: \
             CallCountingStubCode = CallCountingStubCode##size; \
-            _ASSERTE(((BYTE*)CallCountingStubCode##size##_End - (BYTE*)CallCountingStubCode##size) <= CallCountingStub::CodeSize); \
+            _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode##size##_End - (BYTE*)CallCountingStubCode##size) <= CallCountingStub::CodeSize); \
             break;
 
     switch (pageSize)
@@ -312,16 +312,14 @@ void CallCountingStub::StaticInitialize()
     }
     #undef ENUM_PAGE_SIZE
 #else
-    _ASSERTE(((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);
+    _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);
 #endif
 }
 
 #endif // DACCESS_COMPILE
 
-void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX)
+void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
-    int pageSize = GetOsPageSize();
-
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / CallCountingStub::CodeSize) * CallCountingStub::CodeSize;
 
@@ -574,7 +572,7 @@ bool CallCountingManager::SetCodeEntryPoint(
             // For a default code version that is not tier 0, call counting will have been disabled by this time (checked
             // below). Avoid the redundant and not-insignificant expense of GetOptimizationTier() on a default code version.
             !activeCodeVersion.IsDefaultVersion() &&
-            activeCodeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTier0
+            activeCodeVersion.IsFinalTier()
         ) ||
         !g_pConfig->TieredCompilation_CallCounting())
     {
@@ -602,7 +600,7 @@ bool CallCountingManager::SetCodeEntryPoint(
                 return true;
             }
 
-            _ASSERTE(activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+            _ASSERTE(!activeCodeVersion.IsFinalTier());
 
             // If the tiering delay is active, postpone further work
             if (GetAppDomain()
@@ -649,7 +647,7 @@ bool CallCountingManager::SetCodeEntryPoint(
         }
         else
         {
-            _ASSERTE(activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+            _ASSERTE(!activeCodeVersion.IsFinalTier());
 
             // If the tiering delay is active, postpone further work
             if (GetAppDomain()
@@ -659,7 +657,7 @@ bool CallCountingManager::SetCodeEntryPoint(
                 return true;
             }
 
-            CallCount callCountThreshold = (CallCount)g_pConfig->TieredCompilation_CallCountThreshold();
+            CallCount callCountThreshold = g_pConfig->TieredCompilation_CallCountThreshold();
             _ASSERTE(callCountThreshold != 0);
 
             NewHolder<CallCountingInfo> callCountingInfoHolder = new CallCountingInfo(activeCodeVersion, callCountThreshold);
@@ -704,7 +702,7 @@ bool CallCountingManager::SetCodeEntryPoint(
         //   may cause many methods that are currently fully interruptible to have to be partially interruptible and record
         //   extra GC info instead. This would be nontrivial and there would be tradeoffs.
         // - For any method that may have an entry point slot that would be backpatched with the call counting stub's entry
-        //   point, a small forwarder stub (precode) is created. The forwarder stub has loader allocator lifetime and fowards to
+        //   point, a small forwarder stub (precode) is created. The forwarder stub has loader allocator lifetime and forwards to
         //   the larger call counting stub. This is a simple solution for now and seems to have negligible impact.
         // - Reusing FuncPtrStubs was considered. FuncPtrStubs are currently not used as a code entry point for a virtual or
         //   interface method and may be bypassed. For example, a call may call through the vtable slot, or a devirtualized call
@@ -780,7 +778,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     // used going forward under appropriate locking to synchronize further with deletion.
     GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
 
-    _ASSERTE(codeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+    _ASSERTE(!codeVersion.IsFinalTier());
 
     codeEntryPoint = codeVersion.GetNativeCode();
     do

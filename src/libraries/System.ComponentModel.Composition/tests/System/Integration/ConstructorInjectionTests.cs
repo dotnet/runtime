@@ -52,7 +52,7 @@ namespace Tests.Integration
             var container = GetContainerWithCatalog();
             var a = container.GetExportedValue<AWithOptionalParameter>();
 
-            // A should verify that it receieved optional arugments properly
+            // A should verify that it receieved optional arguments properly
             Assert.NotNull(a);
         }
 

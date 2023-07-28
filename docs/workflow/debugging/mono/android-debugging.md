@@ -60,7 +60,7 @@ Since you're debugging an optimized release build, it is likely the debugger wil
 Build the runtime for your android architecture: `ANDROID_NDK_ROOT=<path_to_android_ndk> ./build.sh --os android --arch x86 -c Debug`. See the instructions for [Testing Android](../../testing/libraries/testing-android.md) for details.
 
 
-In the source code for the C# project, add the following to the .csproj (replacing `<RUNTIME_GIT_ROOT>` by the apropriate location):
+In the source code for the C# project, add the following to the .csproj (replacing `<RUNTIME_GIT_ROOT>` by the appropriate location):
 
 ```
   <Target Name="UpdateRuntimePack"

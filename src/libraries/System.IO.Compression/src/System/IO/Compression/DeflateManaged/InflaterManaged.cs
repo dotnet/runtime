@@ -18,7 +18,7 @@ namespace System.IO.Compression
 
         // The base length for length code 257 - 285.
         // The formula to get the real length for a length code is lengthBase[code - 257] + (value stored in extraBits)
-        private static readonly int[] s_lengthBase =
+        private static ReadOnlySpan<byte> LengthBase => new byte[]
         {
             3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51,
             59, 67, 83, 99, 115, 131, 163, 195, 227, 3
@@ -26,7 +26,7 @@ namespace System.IO.Compression
 
         // The base distance for distance code 0 - 31
         // The real distance for a distance code is  distanceBasePosition[code] + (value stored in extraBits)
-        private static readonly int[] s_distanceBasePosition =
+        private static ReadOnlySpan<ushort> DistanceBasePosition => new ushort[]
         {
             1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513,
             769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577, 32769, 49153
@@ -410,11 +410,11 @@ namespace System.IO.Compression
                                 return false;
                             }
 
-                            if (_length < 0 || _length >= s_lengthBase.Length)
+                            if (_length < 0 || _length >= LengthBase.Length)
                             {
                                 throw new InvalidDataException(SR.GenericInvalidData);
                             }
-                            _length = s_lengthBase[_length] + bits;
+                            _length = LengthBase[_length] + bits;
                         }
                         _state = InflaterState.HaveFullLength;
                         goto case InflaterState.HaveFullLength;
@@ -456,7 +456,7 @@ namespace System.IO.Compression
                             {
                                 return false;
                             }
-                            offset = s_distanceBasePosition[_distanceCode] + bits;
+                            offset = DistanceBasePosition[_distanceCode] + bits;
                         }
                         else
                         {

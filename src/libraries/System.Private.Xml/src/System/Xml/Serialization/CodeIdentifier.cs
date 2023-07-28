@@ -26,6 +26,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public static string MakePascal(string identifier)
         {
+            ArgumentNullException.ThrowIfNull(identifier);
             identifier = MakeValid(identifier);
             if (identifier.Length <= 2)
             {
@@ -50,6 +51,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public static string MakeCamel(string identifier)
         {
+            ArgumentNullException.ThrowIfNull(identifier);
             identifier = MakeValid(identifier);
             if (identifier.Length <= 2)
             {
@@ -74,6 +76,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public static string MakeValid(string identifier)
         {
+            ArgumentNullException.ThrowIfNull(identifier);
             var builder = new ValueStringBuilder(stackalloc char[MaxIdentifierLength]);
             for (int i = 0; i < identifier.Length && builder.Length < MaxIdentifierLength; i++)
             {
@@ -251,7 +254,7 @@ namespace System.Xml.Serialization
 
         private static void EscapeKeywords(string identifier, StringBuilder sb)
         {
-            if (identifier == null || identifier.Length == 0)
+            if (string.IsNullOrEmpty(identifier))
                 return;
             int arrayCount = 0;
             while (identifier.EndsWith("[]", StringComparison.Ordinal))
@@ -273,10 +276,10 @@ namespace System.Xml.Serialization
 
         private static readonly char[] s_identifierSeparators = new char[] { '.', ',', '<', '>' };
 
-        [return: NotNullIfNotNull("identifier")]
+        [return: NotNullIfNotNull(nameof(identifier))]
         private static string? EscapeKeywords(string? identifier)
         {
-            if (identifier == null || identifier.Length == 0) return identifier;
+            if (string.IsNullOrEmpty(identifier)) return identifier;
             string originalIdentifier = identifier;
             string[] names = identifier.Split(s_identifierSeparators);
             StringBuilder sb = new StringBuilder();

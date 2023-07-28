@@ -5,11 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: This is the implementation of the DataCollector
@@ -147,10 +143,7 @@ namespace System.Diagnostics.Tracing
         internal void AddNullTerminatedString(string? value)
         {
             // Treat null strings as empty strings.
-            if (value == null)
-            {
-                value = string.Empty;
-            }
+            value ??= string.Empty;
 
             // Calculate the size of the string including the trailing NULL char.
             // Don't use value.Length here because string allows for embedded NULL characters.

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,7 +14,7 @@ namespace System.Xml.Xsl.Runtime
     [EditorBrowsable(EditorBrowsableState.Never)]
     public struct XmlSortKeyAccumulator
     {
-        private XmlSortKey[] _keys;
+        private XmlSortKey?[] _keys;
         private int _pos;
 
 #if DEBUG
@@ -29,8 +28,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void Create()
         {
-            if (_keys == null)
-                _keys = new XmlSortKey[DefaultSortKeyCount];
+            _keys ??= new XmlSortKey[DefaultSortKeyCount];
 
             _pos = 0;
             _keys[0] = null;
@@ -100,7 +98,7 @@ namespace System.Xml.Xsl.Runtime
             if (_keys[_pos] == null)
                 _keys[_pos] = key;
             else
-                _keys[_pos].AddSortKey(key);
+                _keys[_pos]!.AddSortKey(key);
         }
 
         /// <summary>

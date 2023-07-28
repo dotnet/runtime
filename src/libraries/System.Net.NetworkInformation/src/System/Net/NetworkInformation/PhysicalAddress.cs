@@ -57,34 +57,11 @@ namespace System.Net.NetworkInformation
             return _hash;
         }
 
-        public override bool Equals([NotNullWhen(true)] object? comparand)
-        {
-            PhysicalAddress? address = comparand as PhysicalAddress;
-            if (address == null)
-            {
-                return false;
-            }
-
-            if (_address.Length != address._address.Length)
-            {
-                return false;
-            }
-
-            if (GetHashCode() != address.GetHashCode())
-            {
-                return false;
-            }
-
-            for (int i = 0; i < address._address.Length; i++)
-            {
-                if (_address[i] != address._address[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        public override bool Equals([NotNullWhen(true)] object? comparand) =>
+            comparand is PhysicalAddress other &&
+            _address.Length == other._address.Length &&
+            GetHashCode() == other.GetHashCode() &&
+            _address.AsSpan().SequenceEqual(other._address);
 
         public override string ToString()
         {
@@ -238,7 +215,7 @@ namespace System.Net.NetworkInformation
                     }
                     else if ((i - (segments - 1)) % validSegmentLength != 0)
                     {
-                        // segments - 1 = num of delimeters. Return false if new segment isn't the validSegmentLength
+                        // segments - 1 = num of delimiters. Return false if new segment isn't the validSegmentLength
                         return false;
                     }
 

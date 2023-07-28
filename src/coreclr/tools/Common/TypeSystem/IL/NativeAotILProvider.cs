@@ -14,7 +14,7 @@ namespace Internal.IL
 {
     public sealed class NativeAotILProvider : ILProvider
     {
-        private MethodIL TryGetRuntimeImplementedMethodIL(MethodDesc method)
+        private static MethodIL TryGetRuntimeImplementedMethodIL(MethodDesc method)
         {
             // Provides method bodies for runtime implemented methods. It can return null for
             // methods that are treated specially by the codegen.
@@ -36,7 +36,7 @@ namespace Internal.IL
         /// It can return null if it's not an intrinsic recognized by the compiler,
         /// but an intrinsic e.g. recognized by codegen.
         /// </summary>
-        private MethodIL TryGetIntrinsicMethodIL(MethodDesc method)
+        private static MethodIL TryGetIntrinsicMethodIL(MethodDesc method)
         {
             Debug.Assert(method.IsIntrinsic);
 
@@ -56,18 +56,6 @@ namespace Internal.IL
                     {
                         if (owningType.Namespace == "System.Runtime.CompilerServices")
                             return UnsafeIntrinsics.EmitIL(method);
-                    }
-                    break;
-                case "MemoryMarshal":
-                    {
-                        if (owningType.Namespace == "System.Runtime.InteropServices")
-                            return MemoryMarshalIntrinsics.EmitIL(method);
-                    }
-                    break;
-                case "Volatile":
-                    {
-                        if (owningType.Namespace == "System.Threading")
-                            return VolatileIntrinsics.EmitIL(method);
                     }
                     break;
                 case "Debug":
@@ -92,6 +80,12 @@ namespace Internal.IL
                         }
                     }
                     break;
+                case "Stream":
+                    {
+                        if (owningType.Namespace == "System.IO")
+                            return StreamIntrinsics.EmitIL(method);
+                    }
+                    break;
             }
 
             return null;
@@ -102,7 +96,7 @@ namespace Internal.IL
         /// are specialized per instantiation. It can return null if the intrinsic
         /// is not recognized.
         /// </summary>
-        private MethodIL TryGetPerInstantiationIntrinsicMethodIL(MethodDesc method)
+        private static MethodIL TryGetPerInstantiationIntrinsicMethodIL(MethodDesc method)
         {
             Debug.Assert(method.IsIntrinsic);
 
@@ -308,6 +302,10 @@ namespace Internal.IL
                 }
 
                 MethodIL methodIL = EcmaMethodIL.Create(ecmaMethod);
+                if (methodIL != null)
+                    return methodIL;
+
+                methodIL = UnsafeAccessors.TryGetIL(ecmaMethod);
                 if (methodIL != null)
                     return methodIL;
 

@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
-using System.IO;
-using System.Xml.Schema;
-using System.Collections.Generic;
-using System.Text;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlSchemaTests
 {
     //[TestCase(Name = "TC_SchemaSet_Compile", Desc = "", Priority = 0)]
     public class TC_SchemaSet_Compile : TC_SchemaSetBase
@@ -152,7 +152,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void FractionDigitsMismatch_Throws()
         {
             string schema = @"<?xml version='1.0' encoding='utf-8' ?>
@@ -180,7 +179,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void FractionDigitsFacetBaseFixed_Throws()
         {
             string schema = @"<?xml version='1.0' encoding='utf-8' ?>
@@ -649,7 +647,6 @@ namespace System.Xml.Tests
         #region Complex Restricton tests
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void SequenceRestrictsChoiceValid()
         {
             string schema = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' 
@@ -687,7 +684,6 @@ namespace System.Xml.Tests
 
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void SequenceRestrictsChoiceComplexButValid()
         {
             string schema = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:ns1='urn:gba:sqg'
@@ -1250,7 +1246,6 @@ namespace System.Xml.Tests
         #endregion
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void TotalDigitsParseValue_Succeeds()
         {
             string schema = @"<?xml version='1.0' encoding='utf-8' ?>

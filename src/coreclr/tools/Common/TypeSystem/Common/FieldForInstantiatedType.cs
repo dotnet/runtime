@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -47,13 +45,21 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return _fieldDef.FieldType.InstantiateSignature(_instantiatedType.Instantiation, new Instantiation());
+                return _fieldDef.FieldType.InstantiateSignature(_instantiatedType.Instantiation, default(Instantiation));
             }
         }
 
         public override EmbeddedSignatureData[] GetEmbeddedSignatureData()
         {
             return _fieldDef.GetEmbeddedSignatureData();
+        }
+
+        public override bool HasEmbeddedSignatureData
+        {
+            get
+            {
+                return _fieldDef.HasEmbeddedSignatureData;
+            }
         }
 
         public override bool IsStatic

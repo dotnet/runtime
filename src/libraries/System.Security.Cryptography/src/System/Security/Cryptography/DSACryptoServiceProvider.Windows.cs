@@ -68,8 +68,7 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public DSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
         {
-            if (dwKeySize < 0)
-                throw new ArgumentOutOfRangeException(nameof(dwKeySize), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(dwKeySize);
 
             _parameters = CapiHelper.SaveCspParameters(
                 CapiHelper.CspAlgorithmType.Dss,
@@ -335,7 +334,7 @@ namespace System.Security.Cryptography
         /// <param name="keyBlob">A byte array that represents a DSA key blob.</param>
         public void ImportCspBlob(byte[] keyBlob)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SafeCapiKeyHandle safeKeyHandle;
 
@@ -367,7 +366,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
         }
 
@@ -376,7 +375,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
         }
 
@@ -492,7 +491,6 @@ namespace System.Security.Cryptography
 
             return CapiHelper.SignValue(
                 SafeProvHandle,
-                SafeKeyHandle,
                 _parameters.KeyNumber,
                 CapiHelper.CALG_DSS_SIGN,
                 calgHash,
@@ -546,14 +544,6 @@ namespace System.Security.Cryptography
             }
 
             return true;
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(DSACryptoServiceProvider));
-            }
         }
     }
 }

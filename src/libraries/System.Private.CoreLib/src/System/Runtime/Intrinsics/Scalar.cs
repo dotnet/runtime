@@ -3,10 +3,15 @@
 
 using System.Runtime.CompilerServices;
 
+// We disable the below warnings since all boxing/unboxing happens
+// under a value type based type check and they are impossible to hit
+
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type
+#pragma warning disable CS8605 // Unboxing a possibly null value
+
 namespace System.Runtime.Intrinsics
 {
     internal static class Scalar<T>
-        where T : struct
     {
         public static T AllBitsSet
         {
@@ -63,7 +68,8 @@ namespace System.Runtime.Intrinsics
                 }
                 else
                 {
-                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                    ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                    return default!;
                 }
             }
         }
@@ -123,7 +129,8 @@ namespace System.Runtime.Intrinsics
                 }
                 else
                 {
-                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                    ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                    return default!;
                 }
             }
         }
@@ -163,7 +170,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -220,7 +228,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -237,7 +246,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -294,7 +304,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -351,7 +362,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -430,7 +442,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -447,7 +460,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -504,7 +518,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -561,7 +576,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -618,7 +634,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -675,7 +692,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -732,7 +750,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -788,7 +807,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -798,6 +818,12 @@ namespace System.Runtime.Intrinsics
             if (typeof(T) == typeof(byte))
             {
                 return (T)(object)(byte)((byte)(object)value << (shiftCount & 7));
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                long bits = BitConverter.DoubleToInt64Bits((double)(object)value);
+                double result = BitConverter.Int64BitsToDouble(bits << shiftCount);
+                return (T)(object)(double)result;
             }
             else if (typeof(T) == typeof(short))
             {
@@ -823,6 +849,12 @@ namespace System.Runtime.Intrinsics
             {
                 return (T)(object)(sbyte)((sbyte)(object)value << (shiftCount & 7));
             }
+            else if (typeof(T) == typeof(float))
+            {
+                int bits = BitConverter.SingleToInt32Bits((float)(object)value);
+                float result = BitConverter.Int32BitsToSingle(bits << shiftCount);
+                return (T)(object)(float)result;
+            }
             else if (typeof(T) == typeof(ushort))
             {
                 return (T)(object)(ushort)((ushort)(object)value << (shiftCount & 15));
@@ -837,14 +869,25 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ShiftRightArithmetic(T value, int shiftCount)
         {
-            if (typeof(T) == typeof(short))
+            if (typeof(T) == typeof(byte))
+            {
+                return (T)(object)(byte)((byte)(object)value >> (shiftCount & 7));
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                long bits = BitConverter.DoubleToInt64Bits((double)(object)value);
+                double result = BitConverter.Int64BitsToDouble(bits >> shiftCount);
+                return (T)(object)(double)result;
+            }
+            else if (typeof(T) == typeof(short))
             {
                 return (T)(object)(short)((short)(object)value >> (shiftCount & 15));
             }
@@ -860,46 +903,19 @@ namespace System.Runtime.Intrinsics
             {
                 return (T)(object)(nint)((nint)(object)value >> shiftCount);
             }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)(sbyte)((sbyte)(object)value >> (shiftCount & 7));
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T ShiftRightLogical(T value, int shiftCount)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (T)(object)(byte)((byte)(object)value >> (shiftCount & 7));
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)(short)((ushort)(short)(object)value >> (shiftCount & 15));
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)(int)((uint)(int)(object)value >> shiftCount);
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)(long)((ulong)(long)(object)value >> shiftCount);
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)(nint)((nuint)(nint)(object)value >> shiftCount);
-            }
             else if (typeof(T) == typeof(nuint))
             {
                 return (T)(object)(nuint)((nuint)(object)value >> shiftCount);
             }
             else if (typeof(T) == typeof(sbyte))
             {
-                return (T)(object)(sbyte)((byte)(sbyte)(object)value >> (shiftCount & 7));
+                return (T)(object)(sbyte)((sbyte)(object)value >> (shiftCount & 7));
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                int bits = BitConverter.SingleToInt32Bits((float)(object)value);
+                float result = BitConverter.Int32BitsToSingle(bits >> shiftCount);
+                return (T)(object)(float)result;
             }
             else if (typeof(T) == typeof(ushort))
             {
@@ -915,7 +931,70 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ShiftRightLogical(T value, int shiftCount)
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return (T)(object)(byte)((byte)(object)value >>> (shiftCount & 7));
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                long bits = BitConverter.DoubleToInt64Bits((double)(object)value);
+                double result = BitConverter.Int64BitsToDouble(bits >>> shiftCount);
+                return (T)(object)(double)result;
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return (T)(object)(short)((ushort)(short)(object)value >>> (shiftCount & 15));
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return (T)(object)(int)((uint)(int)(object)value >>> shiftCount);
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return (T)(object)(long)((ulong)(long)(object)value >>> shiftCount);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nuint)(nint)(object)value >>> shiftCount);
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)value >>> shiftCount);
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return (T)(object)(sbyte)((byte)(sbyte)(object)value >>> (shiftCount & 7));
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                int bits = BitConverter.SingleToInt32Bits((float)(object)value);
+                float result = BitConverter.Int32BitsToSingle(bits >>> shiftCount);
+                return (T)(object)(float)result;
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return (T)(object)(ushort)((ushort)(object)value >>> (shiftCount & 15));
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                return (T)(object)(uint)((uint)(object)value >>> shiftCount);
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                return (T)(object)(ulong)((ulong)(object)value >>> shiftCount);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -972,7 +1051,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -1029,8 +1109,12 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
     }
 }
+
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type
+#pragma warning restore CS8605 // Unboxing a possibly null value

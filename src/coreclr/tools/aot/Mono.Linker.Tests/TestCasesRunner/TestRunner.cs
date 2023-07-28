@@ -1,10 +1,9 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Mono.Linker.Tests.TestCasesRunner;
 using Mono.Cecil;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
@@ -75,8 +74,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var expectationsCommonReferences = metadataProvider.GetCommonReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 			var expectationsMainAssemblyReferences = metadataProvider.GetReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 
-			var inputTask = Task.Run (() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName!, sourceFiles, commonReferences, mainAssemblyReferences, null, resources, additionalArguments));
-			var expectationsTask = Task.Run (() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName!, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] { "INCLUDE_EXPECTATIONS" }, resources, additionalArguments));
+			var inputTask = Task.Run (() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName!, sourceFiles, commonReferences, mainAssemblyReferences, new string[] { "NATIVEAOT" }, resources, additionalArguments));
+			var expectationsTask = Task.Run (() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName!, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] { "INCLUDE_EXPECTATIONS", "NATIVEAOT" }, resources, additionalArguments));
 
 			NPath? inputAssemblyPath = null;
 			NPath? expectationsAssemblyPath = null;
@@ -113,9 +112,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			AddLinkOptions (sandbox, compilationResult, builder, metadataProvider);
 
 			var logWriter = new TestLogWriter ();
-			trimmer.Trim (builder.Options, logWriter);
+			var trimmingResults = trimmer.Trim (builder.Options, logWriter);
 
-			return new ILCompilerTestCaseResult (testCase, compilationResult.InputAssemblyPath, compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, logWriter);
+			return new ILCompilerTestCaseResult (testCase, compilationResult.InputAssemblyPath, compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, trimmingResults, logWriter);
 		}
 
 		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, ILCompilerOptionsBuilder builder, TestCaseMetadataProvider metadataProvider)
@@ -130,11 +129,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var inputReference in sandbox.InputDirectory.Files ()) {
 				var ext = inputReference.ExtensionWithDot;
 				if (ext == ".dll" || ext == ".exe") {
-					if (caseDefinedOptions.AssembliesAction.Contains (("link", inputReference.FileNameWithoutExtension))) {
-						builder.AddLinkAssembly (inputReference);
-					} else {
-						builder.AddReference (inputReference);
-					}
+					// It's important to add all assemblies as "link" assemblies since the default configuration
+					// is to run the compiler in multi-file mode which will not process anything which is just in the reference set.
+					builder.AddLinkAssembly (inputReference);
+					builder.AddReference (inputReference);
 				}
 			}
 			var coreAction = caseDefinedOptions.TrimMode ?? "skip";
@@ -148,7 +146,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
 		}
 
-		private T GetResultOfTaskThatMakesXUnitAssertions<T> (Task<T> task)
+		private static T GetResultOfTaskThatMakesXUnitAssertions<T> (Task<T> task)
 		{
 			try {
 				return task.Result;

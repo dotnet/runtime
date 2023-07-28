@@ -14,10 +14,12 @@
 
 // <Code> 
 using System;
+using Xunit;
 
 public class MyClass
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         float f1 = float.Epsilon;

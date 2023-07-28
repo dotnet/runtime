@@ -63,7 +63,7 @@ namespace System.Net
 
             lock (this)
             {
-                if (_closing == true)
+                if (_closing)
                     return;
                 _closing = true;
                 _writeable = false;

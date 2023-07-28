@@ -150,6 +150,7 @@ namespace System.Net.Security.Tests
 
                     Assert.Equal(expectedAuthenticationType, auth.RemoteIdentity.AuthenticationType);
                     Assert.Equal(serverSPN, auth.RemoteIdentity.Name);
+                    (auth.RemoteIdentity as IDisposable)?.Dispose();
 
                     Assert.True(auth.IsAuthenticated);
                     Assert.True(auth.IsEncrypted);
@@ -195,6 +196,7 @@ namespace System.Net.Security.Tests
 
                     Assert.Equal(expectedAuthenticationType, serverAuth.RemoteIdentity.AuthenticationType);
                     Assert.Equal(expectedUser, serverAuth.RemoteIdentity.Name);
+                    (serverAuth.RemoteIdentity as IDisposable)?.Dispose();
 
                     // Receive a message from the client.
                     var message = "Hello from the client.";

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -125,6 +126,8 @@ namespace System.Collections.Generic
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected SortedSet(SerializationInfo info, StreamingContext context) => siInfo = info;
 
         #endregion
@@ -511,15 +514,9 @@ namespace System.Collections.Generic
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (count > array.Length - index)
             {
@@ -554,10 +551,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Length - index < Count)
             {
@@ -574,7 +568,7 @@ namespace System.Collections.Generic
                 object?[]? objects = array as object[];
                 if (objects == null)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
 
                 try
@@ -587,7 +581,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
             }
         }
@@ -600,7 +594,7 @@ namespace System.Collections.Generic
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         #endregion
 

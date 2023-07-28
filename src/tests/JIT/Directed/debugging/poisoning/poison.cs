@@ -1,10 +1,12 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
     [SkipLocalsInit]
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         bool result = true;
 

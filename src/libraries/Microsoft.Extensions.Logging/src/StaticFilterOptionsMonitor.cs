@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Logging
     {
         public StaticFilterOptionsMonitor(LoggerFilterOptions currentValue)
         {
-            CurrentValue = currentValue;
+            CurrentValue = currentValue ?? throw new ArgumentNullException(nameof(currentValue));
         }
 
         public IDisposable? OnChange(Action<LoggerFilterOptions, string> listener) => null;

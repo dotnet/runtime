@@ -19,7 +19,7 @@
  DbgTransportSession was originally designed around cross-machine debugging via sockets and it is supposed to
  handle network interruptions. Right now we use pipes (see TwoWaypipe) and don't expect to have connection issues.
  But there seem to be no good reason to try hard to get rid of existing working protocol even if it's a bit
- cautious about connection quality. So please KEEP IN MIND THAT SOME COMMENTS REFERING TO NETWORK AND SOCKETS
+ cautious about connection quality. So please KEEP IN MIND THAT SOME COMMENTS REFERRING TO NETWORK AND SOCKETS
  CAN BE OUTDATED.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -53,14 +53,14 @@
 struct DebuggerIPCEvent;
 struct DbgEventBufferEntry;
 
-// Some simple ad-hoc debug only transport logging. This output is too chatty for an exisitng CLR logging
+// Some simple ad-hoc debug only transport logging. This output is too chatty for an existng CLR logging
 // channel (and we've run out of bits for an additional channel) and is likely to be of limited use to anyone
 // besides the transport developer (and even then only occasionally).
 //
-// To enable use 'set|export COMPlus_DbgTransportLog=X' where X is 1 for RS logging, 2 for LS logging and 3
-// for both (default is disabled). Use 'set|export COMPlus_DbgTransportLogClass=X' where X is the hex
+// To enable use 'set|export DOTNET_DbgTransportLog=X' where X is 1 for RS logging, 2 for LS logging and 3
+// for both (default is disabled). Use 'set|export DOTNET_DbgTransportLogClass=X' where X is the hex
 // representation of one or more DbgTransportLogClass flags defined below (default is all classes enabled).
-// For instance, 'set COMPlus_DbgTransportLogClass=f' will enable only message send and receive logging (for
+// For instance, 'set DOTNET_DbgTransportLogClass=f' will enable only message send and receive logging (for
 // all message types).
 enum DbgTransportLogEnable
 {
@@ -172,7 +172,7 @@ inline void DbgTransportLog(DbgTransportLogClass eClass, const char *szFormat, .
 #ifdef _DEBUG
 //
 // Debug-only network fault injection (in order to help test the robust session code). Control is via a single
-// DWORD read from the environment (COMPlus_DbgTransportFaultInject). This DWORD is treated as a set of bit
+// DWORD read from the environment (DOTNET_DbgTransportFaultInject). This DWORD is treated as a set of bit
 // fields as follows:
 //
 //    +-------+-------+-------+----------------+-----------+
@@ -196,10 +196,10 @@ inline void DbgTransportLog(DbgTransportLogClass eClass, const char *szFormat, .
 //
 // For example:
 //
-//  export COMPlus_DbgTransportFaultInject=1ff00001
+//  export DOTNET_DbgTransportFaultInject=1ff00001
 //  --> Fail all network operations on the left side 1% of the time
 //
-//  export COMPlus_DbgTransportFaultInject=34200063
+//  export DOTNET_DbgTransportFaultInject=34200063
 //  --> Fail Send() calls on both sides while the session is Open 99% of the time
 //
 
@@ -212,7 +212,7 @@ enum DbgTransportFaultSide
     FS_Right    = 0x20000000,
 };
 
-// Network operations which are candiates for fault injection.
+// Network operations which are candidates for fault injection.
 enum DbgTransportFaultOp
 {
     FO_Connect  = 0x01000000,
@@ -305,7 +305,7 @@ class DbgTransportSession
 {
 public:
     // No real work done in the constructor. Use Init() instead.
-    DbgTransportSession();
+    DbgTransportSession() = default;
 
     // Cleanup what is allocated/created in Init()
     ~DbgTransportSession();
@@ -422,7 +422,7 @@ private:
     // error is raised) and which incoming messages are valid.
     enum SessionState
     {
-        SS_Closed,      // No session and no attempt is being made to form one
+        SS_Closed = 0,  // No session and no attempt is being made to form one
         SS_Opening_NC,  // Session is being formed but no connection is established yet
         SS_Opening,     // Session is being formed, the low level connection is in place
         SS_Open,        // Session is fully formed and normal transport messages can be sent and received
@@ -747,7 +747,7 @@ private:
 
 #ifndef RIGHT_SIDE_COMPILE
     // The LS requires the addresses of a couple of runtime data structures in order to service MT_GetDCB etc.
-    // These are provided by the runtime at intialization time.
+    // These are provided by the runtime at initialization time.
     DebuggerIPCControlBlock *m_pDCB;
     AppDomainEnumerationIPCBlock *m_pADB;
 #endif // !RIGHT_SIDE_COMPILE

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -30,23 +31,28 @@ namespace System
             public NumberBufferKind Kind;
             public Span<byte> Digits;
 
-            public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength)
+            public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength) : this(kind, new Span<byte>(digits, digitsLength))
             {
                 Debug.Assert(digits != null);
-                Debug.Assert(digitsLength > 0);
+            }
+
+            /// <summary>Initializes the NumberBuffer.</summary>
+            /// <param name="kind">The kind of the buffer.</param>
+            /// <param name="digits">The digits scratch space. The referenced memory must not be moveable, e.g. stack memory, pinned array, etc.</param>
+            public NumberBuffer(NumberBufferKind kind, Span<byte> digits)
+            {
+                Debug.Assert(!digits.IsEmpty);
 
                 DigitsCount = 0;
                 Scale = 0;
                 IsNegative = false;
                 HasNonZeroTail = false;
                 Kind = kind;
-                Digits = new Span<byte>(digits, digitsLength);
-
+                Digits = digits;
 #if DEBUG
                 Digits.Fill(0xCC);
 #endif
-
-                Digits[0] = (byte)('\0');
+                Digits[0] = (byte)'\0';
                 CheckConsistency();
             }
 
@@ -73,15 +79,15 @@ namespace System
 
                 Debug.Assert(numDigits == DigitsCount, "Null terminator found in unexpected location in Number");
                 Debug.Assert(numDigits < Digits.Length, "Null terminator not found in Number");
-
 #endif // DEBUG
             }
 #pragma warning restore CA1822
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public byte* GetDigitsPointer()
             {
                 // This is safe to do since we are a ref struct
-                return (byte*)(Unsafe.AsPointer(ref Digits[0]));
+                return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits));
             }
 
             //

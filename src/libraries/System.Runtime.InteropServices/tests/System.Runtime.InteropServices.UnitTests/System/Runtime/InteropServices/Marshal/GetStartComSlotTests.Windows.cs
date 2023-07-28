@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(ComImportObject), -1 };
             yield return new object[] { typeof(SubComImportObject), -1 };
             yield return new object[] { typeof(InterfaceComImportObject), -1 };
-            yield return new object[] { typeof(InterfaceAndComImportObject), 7 };
+            yield return new object[] { typeof(InterfaceOnComImportObject), 7 };
             yield return new object[] { typeof(IComImportObject), 7 };
 
             yield return new object[] { typeof(DualInterface), 7};
@@ -39,15 +39,15 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(ManagedAutoDualClass), 7 };
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetStartComSlot_TestData))]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetStartComSlot_Windows_ReturnsExpected(Type type, int expected)
         {
             Assert.Equal(expected, Marshal.GetStartComSlot(type));
         }
 
 
-        [ConditionalFact(typeof(PlatformDetection), nameof (PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetStartComSlot_ManagedIInspectableObject_Fail()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetStartComSlot(typeof(IInspectableInterface)));

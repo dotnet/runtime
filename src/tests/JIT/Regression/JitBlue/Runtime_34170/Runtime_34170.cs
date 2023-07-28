@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Explicit)]
 internal struct FloatNonAlignedFieldWithSmallOffset
@@ -21,7 +22,7 @@ internal struct FloatNonAlignedFieldWithSmallOffset
 [StructLayout(LayoutKind.Explicit)]
 internal struct FloatNonAlignedFieldWithLargeOffset
 {
-    [FieldOffset(1021)]
+    [FieldOffset(0x10001)]
     public float field;
 
     public FloatNonAlignedFieldWithLargeOffset(float a)
@@ -45,7 +46,7 @@ internal struct DoubleNonAlignedFieldWithSmallOffset
 [StructLayout(LayoutKind.Explicit)]
 internal struct DoubleNonAlignedFieldWithLargeOffset
 {
-    [FieldOffset(1021)]
+    [FieldOffset(0x10001)]
     public double field;
 
     public DoubleNonAlignedFieldWithLargeOffset(float a)
@@ -73,9 +74,10 @@ internal struct StructNonAlignedField
     }
 }
 
-class Test_Runtime_34170
+public class Test_Runtime_34170
 {
-    private static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         
         var a = new FloatNonAlignedFieldWithSmallOffset(1);

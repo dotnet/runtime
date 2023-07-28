@@ -3,13 +3,12 @@
         "perHostConfig": [
             {
                 "name": "node",
-                "js-path": "main.cjs",
-                "Host": "nodejs"
-            },
-            {
-                "name": "v8",
-                "js-path": "main.cjs",
-                "Host": "v8"
+                "js-path": "main.mjs",
+                "Host": "nodejs",
+                "host-args": [
+                    "--experimental-wasm-simd",
+                    "--experimental-wasm-eh"
+                ]
             }
         ]
     }

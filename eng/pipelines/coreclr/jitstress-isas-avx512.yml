@@ -1,0 +1,66 @@
+# This pipeline only runs on GitHub PRs, not on merges.
+trigger: none
+
+# Only run on specific changes to the JIT directory that are likely to affect AVX-512.
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/coreclr/jit/hwintrinsiccodegenxarch.cpp
+    - src/coreclr/jit/hwintrinsiclistxarch.h
+    - src/coreclr/jit/hwintrinsicxarch.cpp
+    - src/coreclr/jit/instrsxarch.h
+    - src/coreclr/jit/emitxarch.cpp
+    - src/coreclr/jit/emitxarch.h
+
+schedules:
+- cron: "30 19 * * 6"
+  displayName: Sat at 11:30 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          jobParameters:
+            testGroup: jitstress-isas-avx512
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+          buildConfig: checked
+          platforms:
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          jobParameters:
+            testGroup: jitstress-isas-avx512
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: jitstress-isas-avx512
+            liveLibrariesBuildConfig: Release

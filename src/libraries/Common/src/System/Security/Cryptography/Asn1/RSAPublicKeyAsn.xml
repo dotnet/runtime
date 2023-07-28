@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="RSAPublicKeyAsn"
-  namespace="System.Security.Cryptography.Asn1">
+  namespace="System.Security.Cryptography.Asn1"
+  rebind="false">
 
   <!--
     https://tools.ietf.org/html/rfc3447#appendix-C

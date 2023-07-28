@@ -31,8 +31,8 @@ internal static partial class Interop
             // wrong endianness here), DER encode it, then use the DER reader to skip past the tag
             // and length.
             byte[] derEncoded = OpenSslEncode(
-                handle => GetAsn1IntegerDerSize(handle),
-                (handle, buf) => EncodeAsn1Integer(handle, buf),
+                GetAsn1IntegerDerSize,
+                EncodeAsn1Integer,
                 asn1Integer);
 
             try

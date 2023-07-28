@@ -17,10 +17,10 @@ namespace System.Reflection.TypeLoading
             MemberInfo[] members = attributeType.GetMember(name, MemberTypes.Field | MemberTypes.Property, BindingFlags.Public | BindingFlags.Instance);
             if (members.Length == 0)
                 throw new MissingMemberException(attributeType.FullName, name);
+            MemberInfo match = members[0];
             if (members.Length > 1)
-                throw new AmbiguousMatchException();
-
-            return new CustomAttributeNamedArgument(members[0], new CustomAttributeTypedArgument(argumentType!, value));
+                throw ThrowHelper.GetAmbiguousMatchException(match);
+            return new CustomAttributeNamedArgument(match, new CustomAttributeTypedArgument(argumentType!, value));
         }
 
         /// <summary>
@@ -29,12 +29,12 @@ namespace System.Reflection.TypeLoading
         public static ReadOnlyCollection<CustomAttributeTypedArgument> CloneForApiReturn(this IList<CustomAttributeTypedArgument> cats)
         {
             int count = cats.Count;
-            CustomAttributeTypedArgument[] clones = new CustomAttributeTypedArgument[count];
+            CustomAttributeTypedArgument[] clones = count != 0 ? new CustomAttributeTypedArgument[count] : Array.Empty<CustomAttributeTypedArgument>();
             for (int i = 0; i < count; i++)
             {
                 clones[i] = cats[i].CloneForApiReturn();
             }
-            return clones.ToReadOnlyCollection();
+            return Array.AsReadOnly(clones);
         }
 
         /// <summary>
@@ -43,12 +43,12 @@ namespace System.Reflection.TypeLoading
         public static ReadOnlyCollection<CustomAttributeNamedArgument> CloneForApiReturn(this IList<CustomAttributeNamedArgument> cans)
         {
             int count = cans.Count;
-            CustomAttributeNamedArgument[] clones = new CustomAttributeNamedArgument[count];
+            CustomAttributeNamedArgument[] clones = count != 0 ? new CustomAttributeNamedArgument[count] : Array.Empty<CustomAttributeNamedArgument>();
             for (int i = 0; i < count; i++)
             {
                 clones[i] = cans[i].CloneForApiReturn();
             }
-            return clones.ToReadOnlyCollection();
+            return Array.AsReadOnly(clones);
         }
 
         /// <summary>
@@ -63,12 +63,12 @@ namespace System.Reflection.TypeLoading
                 return cat;
 
             int count = cats.Count;
-            CustomAttributeTypedArgument[] cads = new CustomAttributeTypedArgument[count];
+            CustomAttributeTypedArgument[] cads = count != 0 ? new CustomAttributeTypedArgument[count] : Array.Empty<CustomAttributeTypedArgument>();
             for (int i = 0; i < count; i++)
             {
                 cads[i] = cats[i].CloneForApiReturn();
             }
-            return new CustomAttributeTypedArgument(type, cads.ToReadOnlyCollection());
+            return new CustomAttributeTypedArgument(type, Array.AsReadOnly(cads));
         }
 
         /// <summary>

@@ -29,7 +29,7 @@ namespace System.Web.Util
                 || c == '\u2028'
                 || c == '\u2029';
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? HtmlAttributeEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -38,14 +38,14 @@ namespace System.Web.Util
             }
 
             // Don't create string writer if we don't have nothing to encode
-            int pos = IndexOfHtmlAttributeEncodingChars(value, 0);
-            if (pos == -1)
+            int pos = IndexOfHtmlAttributeEncodingChars(value);
+            if (pos < 0)
             {
                 return value;
             }
 
             StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
-            HtmlAttributeEncode(value, writer);
+            HtmlAttributeEncodeInternal(value, pos, writer);
             return writer.ToString();
         }
 
@@ -58,54 +58,53 @@ namespace System.Web.Util
 
             ArgumentNullException.ThrowIfNull(output);
 
-            HtmlAttributeEncodeInternal(value, output);
+            int pos = IndexOfHtmlAttributeEncodingChars(value);
+            if (pos < 0)
+            {
+                output.Write(value);
+                return;
+            }
+
+            HtmlAttributeEncodeInternal(value, pos, output);
         }
 
-        private static void HtmlAttributeEncodeInternal(string s, TextWriter output)
+        private static void HtmlAttributeEncodeInternal(string s, int index, TextWriter output)
         {
-            int index = IndexOfHtmlAttributeEncodingChars(s, 0);
-            if (index == -1)
-            {
-                output.Write(s);
-            }
-            else
-            {
-                output.Write(s.AsSpan(0, index));
+            output.Write(s.AsSpan(0, index));
 
-                ReadOnlySpan<char> remaining = s.AsSpan(index);
-                for (int i = 0; i < remaining.Length; i++)
+            ReadOnlySpan<char> remaining = s.AsSpan(index);
+            for (int i = 0; i < remaining.Length; i++)
+            {
+                char ch = remaining[i];
+                if (ch <= '<')
                 {
-                    char ch = remaining[i];
-                    if (ch <= '<')
+                    switch (ch)
                     {
-                        switch (ch)
-                        {
-                            case '<':
-                                output.Write("&lt;");
-                                break;
-                            case '"':
-                                output.Write("&quot;");
-                                break;
-                            case '\'':
-                                output.Write("&#39;");
-                                break;
-                            case '&':
-                                output.Write("&amp;");
-                                break;
-                            default:
-                                output.Write(ch);
-                                break;
-                        }
+                        case '<':
+                            output.Write("&lt;");
+                            break;
+                        case '"':
+                            output.Write("&quot;");
+                            break;
+                        case '\'':
+                            output.Write("&#39;");
+                            break;
+                        case '&':
+                            output.Write("&amp;");
+                            break;
+                        default:
+                            output.Write(ch);
+                            break;
                     }
-                    else
-                    {
-                        output.Write(ch);
-                    }
+                }
+                else
+                {
+                    output.Write(ch);
                 }
             }
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? HtmlDecode(string? value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlDecode(value);
 
         internal static void HtmlDecode(string? value, TextWriter output)
@@ -115,7 +114,7 @@ namespace System.Web.Util
             output.Write(WebUtility.HtmlDecode(value));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? HtmlEncode(string? value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlEncode(value);
 
         internal static void HtmlEncode(string? value, TextWriter output)
@@ -125,29 +124,8 @@ namespace System.Web.Util
             output.Write(WebUtility.HtmlEncode(value));
         }
 
-        private static int IndexOfHtmlAttributeEncodingChars(string s, int startPos)
-        {
-            Debug.Assert(0 <= startPos && startPos <= s.Length, "0 <= startPos && startPos <= s.Length");
-
-            ReadOnlySpan<char> span = s.AsSpan(startPos);
-            for (int i = 0; i < span.Length; i++)
-            {
-                char ch = span[i];
-                if (ch <= '<')
-                {
-                    switch (ch)
-                    {
-                        case '<':
-                        case '"':
-                        case '\'':
-                        case '&':
-                            return startPos + i;
-                    }
-                }
-            }
-
-            return -1;
-        }
+        private static int IndexOfHtmlAttributeEncodingChars(string s) =>
+            s.AsSpan().IndexOfAny("<\"'&");
 
         private static bool IsNonAsciiByte(byte b) => b >= 0x7F || b < 0x20;
 
@@ -169,10 +147,7 @@ namespace System.Web.Util
                 // to the string builder when special characters are detected.
                 if (CharRequiresJavaScriptEncoding(c))
                 {
-                    if (b == null)
-                    {
-                        b = new StringBuilder(value.Length + 5);
-                    }
+                    b ??= new StringBuilder(value.Length + 5);
 
                     if (count > 0)
                     {
@@ -229,7 +204,7 @@ namespace System.Web.Util
             return b.ToString();
         }
 
-        [return: NotNullIfNotNull("bytes")]
+        [return: NotNullIfNotNull(nameof(bytes))]
         internal static byte[]? UrlDecode(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
@@ -275,7 +250,7 @@ namespace System.Web.Util
             return decodedBytes;
         }
 
-        [return: NotNullIfNotNull("bytes")]
+        [return: NotNullIfNotNull(nameof(bytes))]
         internal static string? UrlDecode(byte[]? bytes, int offset, int count, Encoding encoding)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
@@ -338,7 +313,7 @@ namespace System.Web.Util
             return Utf16StringValidator.ValidateString(helper.GetString());
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? UrlDecode(string? value, Encoding encoding)
         {
             if (value == null)
@@ -410,7 +385,7 @@ namespace System.Web.Util
             return Utf16StringValidator.ValidateString(helper.GetString());
         }
 
-        [return: NotNullIfNotNull("bytes")]
+        [return: NotNullIfNotNull(nameof(bytes))]
         internal static byte[]? UrlEncode(byte[]? bytes, int offset, int count, bool alwaysCreateNewReturnValue)
         {
             byte[]? encoded = UrlEncode(bytes, offset, count);
@@ -420,7 +395,7 @@ namespace System.Web.Util
                 : encoded;
         }
 
-        [return: NotNullIfNotNull("bytes")]
+        [return: NotNullIfNotNull(nameof(bytes))]
         private static byte[]? UrlEncode(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
@@ -543,7 +518,7 @@ namespace System.Web.Util
         }
 
         [Obsolete("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(*).")]
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? UrlEncodeUnicode(string? value)
         {
             if (value == null)
@@ -588,7 +563,7 @@ namespace System.Web.Util
             return sb.ToString();
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? UrlPathEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -640,14 +615,12 @@ namespace System.Web.Util
             }
 
             ArgumentNullException.ThrowIfNull(bytes);
-            if (offset < 0 || offset > bytes.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (count < 0 || offset + count > bytes.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, bytes.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, bytes.Length - offset);
 
             return true;
         }
@@ -708,10 +681,7 @@ namespace System.Web.Util
                                 else
                 */
                 {
-                    if (_byteBuffer == null)
-                    {
-                        _byteBuffer = new byte[_bufferSize];
-                    }
+                    _byteBuffer ??= new byte[_bufferSize];
 
                     _byteBuffer[_numBytes++] = b;
                 }

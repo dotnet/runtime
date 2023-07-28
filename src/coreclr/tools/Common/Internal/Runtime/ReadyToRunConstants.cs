@@ -12,11 +12,13 @@ namespace Internal.ReadyToRunConstants
     public enum ReadyToRunFlags
     {
         READYTORUN_FLAG_PlatformNeutralSource = 0x00000001,     // Set if the original IL assembly was platform-neutral
-        READYTORUN_FLAG_SkipTypeValidation = 0x00000002,        // Set of methods with native code was determined using profile data
-        READYTORUN_FLAG_Partial = 0x00000004,
+        READYTORUN_FLAG_SkipTypeValidation = 0x00000002,        // Runtime should trust that the metadata for the types defined in this module is correct
+        READYTORUN_FLAG_Partial = 0x00000004,                   // Set of methods with native code was determined using profile data
         READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008,     // PInvoke stubs compiled into image are non-shareable (no secret parameter)
         READYTORUN_FLAG_EmbeddedMSIL = 0x00000010,              // MSIL is embedded in the composite R2R executable
         READYTORUN_FLAG_Component = 0x00000020,                 // This is the header describing a component assembly of composite R2R
+        READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,   // This R2R module has multiple modules within its version bubble
+        READYTORUN_FLAG_UnrelatedR2RCode = 0x00000080,          // This R2R module has generic code in it that would not be naturally encoded into this module
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -24,6 +26,7 @@ namespace Internal.ReadyToRunConstants
         Unknown      = 0,
         StubDispatch = 2,
         StringHandle = 3,
+        ILBodyFixups = 7,
     }
 
     [Flags]
@@ -73,7 +76,38 @@ namespace Internal.ReadyToRunConstants
     public enum ReadyToRunVirtualFunctionOverrideFlags : uint
     {
         None = 0x00,
-        VirtualFunctionOverriden = 0x01,
+        VirtualFunctionOverridden = 0x01,
+    }
+
+    [Flags]
+    internal enum ReadyToRunCrossModuleInlineFlags : uint
+    {
+        CrossModuleInlinee  = 0x1,
+        HasCrossModuleInliners = 0x2,
+        CrossModuleInlinerIndexShift = 2,
+        InlinerRidHasModule = 0x1,
+        InlinerRidShift = 1,
+    };
+
+    [Flags]
+    public enum ReadyToRunTypeGenericInfo : byte
+    {
+        GenericCountMask = 0x3,
+        HasConstraints = 0x4,
+        HasVariance = 0x8,
+    }
+
+    public enum ReadyToRunGenericInfoGenericCount : uint
+    {
+        Zero = 0,
+        One = 1,
+        Two = 2,
+        MoreThanTwo = 3
+    }
+
+    public enum ReadyToRunEnclosingTypeMap : uint
+    {
+        MaxTypeCount = 0xFFFE
     }
 
     public enum DictionaryEntryKind
@@ -149,6 +183,9 @@ namespace Internal.ReadyToRunConstants
         Check_VirtualFunctionOverride = 0x33, // Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used
         Verify_VirtualFunctionOverride = 0x34, // Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure.
 
+        Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
+        Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
+
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
         // table of the MSIL metadata of the master context module for the signature or
@@ -158,7 +195,7 @@ namespace Internal.ReadyToRunConstants
 
     //
     // Intrinsics and helpers
-    // Keep in sync with https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
+    // Keep in sync with https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
     //
 
     [Flags]
@@ -239,6 +276,9 @@ namespace Internal.ReadyToRunConstants
         GenericGcTlsBase            = 0x66,
         GenericNonGcTlsBase         = 0x67,
         VirtualFuncPtr              = 0x68,
+        IsInstanceOfException       = 0x69,
+        NewMaybeFrozenArray         = 0x6A,
+        NewMaybeFrozenObject        = 0x6B,
 
         // Long mul/div/shift ops
         LMul                        = 0xC0,
@@ -276,7 +316,7 @@ namespace Internal.ReadyToRunConstants
         DblRound                    = 0xE2,
         FltRound                    = 0xE3,
 
-        // Personality rountines
+        // Personality routines
         PersonalityRoutine          = 0xF0,
         PersonalityRoutineFilterFunclet = 0xF1,
 
@@ -323,9 +363,8 @@ namespace Internal.ReadyToRunConstants
 
         GetRuntimeType,
 
-        AreTypesEquivalent,
-
         CheckCastClass,
+        CheckCastClassSpecial,
         CheckInstanceClass,
         CheckCastArray,
         CheckInstanceArray,
@@ -334,6 +373,8 @@ namespace Internal.ReadyToRunConstants
 
         MonitorEnterStatic,
         MonitorExitStatic,
+
+        NewMultiDimArrRare,
 
         // GVM lookup helper
         GVMLookupForSlot,

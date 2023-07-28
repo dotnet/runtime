@@ -2203,7 +2203,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     if (dwTestOnlyAllowedEventMask != 0)
     {
         // Remove from the immutable flag list those flags that a test-only profiler may
-        // need to set post-startup (specified via COMPlus_TestOnlyAllowedEventMask)
+        // need to set post-startup (specified via DOTNET_TestOnlyAllowedEventMask)
         dwImmutableEventFlags &= ~dwTestOnlyAllowedEventMask;
 
         // And add to the "allowable after attach" list the same test-only flags.

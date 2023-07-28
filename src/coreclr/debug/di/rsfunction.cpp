@@ -136,6 +136,10 @@ HRESULT CordbFunction::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugFunction4*>(this);
     }
+    else if (id == IID_ICorDebugFunction5)
+    {
+        *pInterface = static_cast<ICorDebugFunction5*>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugFunction*>(this));
@@ -295,7 +299,7 @@ HRESULT CordbFunction::GetILCode(ICorDebugCode ** ppCode)
 // Use EnumerateNativeCode instead in that case.
 //
 // Parameters:
-//   ppCode - out parameter yeilding the native code object.
+//   ppCode - out parameter yielding the native code object.
 //
 // Returns:
 //   S_OK iff *ppCode is set.
@@ -604,6 +608,92 @@ HRESULT CordbFunction::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBr
     }
 
     return hr;
+}
+
+//-----------------------------------------------------------------------------
+// CordbFunction::DisableOptimizations
+//  Public method for ICorDebugFunction5::DisableOptimizations.
+//   Triggers a new JIT so the next time the function is called, it will be unoptimized.
+//
+// Parameters
+//   
+//
+// Returns:
+//   S_OK on success.
+//-----------------------------------------------------------------------------
+HRESULT CordbFunction::DisableOptimizations()
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    HRESULT hr = S_OK;
+
+    CordbProcess * pProcess = GetProcess();
+    RSLockHolder lockHolder(pProcess->GetProcessLock());
+
+    DebuggerIPCEvent event;
+    CordbAppDomain * pAppDomain = GetAppDomain();
+    _ASSERTE (pAppDomain != NULL);
+
+    pProcess->InitIPCEvent(&event, DB_IPCE_DISABLE_OPTS, true, pAppDomain->GetADToken());
+    event.DisableOptData.funcMetadataToken = m_MDToken;
+    event.DisableOptData.pModule = m_pModule->GetRuntimeModule();
+
+    lockHolder.Release();
+    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+    lockHolder.Acquire();
+
+    _ASSERTE(event.type == DB_IPCE_DISABLE_OPTS_RESULT);
+
+    return event.hr;
+}
+
+//-----------------------------------------------------------------------------
+// CordbFunction::AreOptimizationsDisabled
+//  Public method for ICorDebugFunction5::AreOptimizationsDisabled.
+//   Indicates whether this method had optimizations disabled already.
+//
+// Parameters:
+//   BOOL *pOptimizationsDisabled
+//   
+//
+// Returns:
+//   S_OK on success.
+//-----------------------------------------------------------------------------
+HRESULT CordbFunction::AreOptimizationsDisabled(BOOL *pOptimizationsDisabled)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    HRESULT hr = S_OK;
+
+    if (pOptimizationsDisabled == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    CordbProcess * pProcess = GetProcess();
+    RSLockHolder lockHolder(pProcess->GetProcessLock());
+
+    DebuggerIPCEvent event;
+    CordbAppDomain * pAppDomain = GetAppDomain();
+    _ASSERTE (pAppDomain != NULL);
+
+    pProcess->InitIPCEvent(&event, DB_IPCE_IS_OPTS_DISABLED, true, pAppDomain->GetADToken());
+    event.DisableOptData.funcMetadataToken = m_MDToken;
+    event.DisableOptData.pModule = m_pModule->GetRuntimeModule();
+
+    lockHolder.Release();
+    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+    lockHolder.Acquire();
+
+    _ASSERTE(event.type == DB_IPCE_IS_OPTS_DISABLED_RESULT);
+    
+    *pOptimizationsDisabled = event.IsOptsDisabledData.value;
+
+    return event.hr;;
 }
 
 // determine whether we have a native-only implementation
@@ -1169,10 +1259,10 @@ HRESULT CordbFunction::GetArgumentType(DWORD dwIndex,
 // that they will return when asked for native code. The 1:1 mapping between
 // function and code was invalidated by generics but debuggers continue to use
 // the old API. When they do we need to have some code to hand them back even
-// though it is an arbitrary instantiation. Note that the cannonical code
+// though it is an arbitrary instantiation. Note that the canonical code
 // here is merely the first one that a user inspects... it is not guaranteed to
 // be the same in each debugging session but once set it will never change. It is
-// also definately NOT guaranteed to be the instantation over the runtime type
+// also definately NOT guaranteed to be the instantiation over the runtime type
 // __Canon.
 //
 // Parameters:
@@ -1208,7 +1298,7 @@ HRESULT CordbFunction::LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCod
 
     CordbReJitILCode * pILCode = m_reJitILCodes.GetBase(VmPtrToCookie(vmILCodeVersionNode));
 
-    // special case non-existance as need to add to the hash table too
+    // special case non-existence as need to add to the hash table too
     if (pILCode == NULL)
     {
         // we don't yet support ENC and ReJIT together, so the version should be 1

@@ -224,7 +224,7 @@ namespace System.Security.Cryptography.Tests
                 "-----BEGIN PUBLIC KEY-----\n" +
                 "cGVubnk=\n" +
                 "-----END PUBLIC KEY-----";
-            
+
             using (StubAsymmetricAlgorithm alg = new StubAsymmetricAlgorithm())
             {
                 alg.ExportSubjectPublicKeyInfoImpl = static () => new byte[] { 0x70, 0x65, 0x6e, 0x6e, 0x79 };
@@ -344,7 +344,7 @@ namespace System.Security.Cryptography.Tests
                 "-----END PRIVATE KEY-----";
 
             byte[] exportedBytes = new byte[] { 0x70, 0x65, 0x6e, 0x6e, 0x79 };
-            
+
             using (StubAsymmetricAlgorithm alg = new StubAsymmetricAlgorithm())
             {
                 alg.ExportPkcs8PrivateKeyPemImpl = () => exportedBytes;
@@ -358,7 +358,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ExportPem_ExportEncryptedPkcs8PrivateKeyPem()
+        public static void ExportPem_CharPassword_ExportEncryptedPkcs8PrivateKeyPem()
         {
             string expectedPem =
                 "-----BEGIN ENCRYPTED PRIVATE KEY-----\n" +
@@ -370,7 +370,7 @@ namespace System.Security.Cryptography.Tests
             PbeParameters expectedPbeParameters = new PbeParameters(
                 PbeEncryptionAlgorithm.Aes256Cbc,
                 HashAlgorithmName.SHA384,
-                RandomNumberGenerator.GetInt32(0, 100_000));
+                RandomNumberGenerator.GetInt32(1, 100_000));
 
             byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
             {
@@ -381,10 +381,10 @@ namespace System.Security.Cryptography.Tests
 
                 return exportedBytes;
             }
-            
+
             using (StubAsymmetricAlgorithm alg = new StubAsymmetricAlgorithm())
             {
-                alg.ExportEncryptedPkcs8PrivateKeyImpl = ExportEncryptedPkcs8PrivateKey;
+                alg.ExportEncryptedPkcs8PrivateKeyCharImpl = ExportEncryptedPkcs8PrivateKey;
                 string pem = alg.ExportEncryptedPkcs8PrivateKeyPem(expectedPassword, expectedPbeParameters);
                 Assert.Equal(expectedPem, pem);
 
@@ -395,7 +395,44 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ExportPem_TryExportEncryptedPkcs8PrivateKeyPem()
+        public static void ExportPem_BytePassword_ExportEncryptedPkcs8PrivateKeyPem()
+        {
+            string expectedPem =
+                "-----BEGIN ENCRYPTED PRIVATE KEY-----\n" +
+                "cGVubnk=\n" +
+                "-----END ENCRYPTED PRIVATE KEY-----";
+
+            byte[] exportedBytes = new byte[] { 0x70, 0x65, 0x6e, 0x6e, 0x79 };
+            byte[] expectedPassword = new byte[] { 0x01, 0x02, 0x0FF };
+            PbeParameters expectedPbeParameters = new PbeParameters(
+                PbeEncryptionAlgorithm.Aes256Cbc,
+                HashAlgorithmName.SHA384,
+                RandomNumberGenerator.GetInt32(1, 100_000));
+
+            byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
+            {
+                Assert.Equal(expectedPbeParameters.EncryptionAlgorithm, pbeParameters.EncryptionAlgorithm);
+                Assert.Equal(expectedPbeParameters.HashAlgorithm, pbeParameters.HashAlgorithm);
+                Assert.Equal(expectedPbeParameters.IterationCount, pbeParameters.IterationCount);
+                AssertExtensions.SequenceEqual(expectedPassword, passwordBytes);
+
+                return exportedBytes;
+            }
+
+            using (StubAsymmetricAlgorithm alg = new StubAsymmetricAlgorithm())
+            {
+                alg.ExportEncryptedPkcs8PrivateKeyByteImpl = ExportEncryptedPkcs8PrivateKey;
+                string pem = alg.ExportEncryptedPkcs8PrivateKeyPem(expectedPassword, expectedPbeParameters);
+                Assert.Equal(expectedPem, pem);
+
+                // Test that the PEM export cleared the PKCS8 bytes from memory
+                // that were returned from ExportEncryptedPkcs8PrivateKey.
+                AssertExtensions.FilledWith((byte)0, exportedBytes);
+            }
+        }
+
+        [Fact]
+        public static void ExportPem_CharPassword_TryExportEncryptedPkcs8PrivateKeyPem()
         {
             string expectedPem =
                 "-----BEGIN ENCRYPTED PRIVATE KEY-----\n" +
@@ -407,7 +444,7 @@ namespace System.Security.Cryptography.Tests
             PbeParameters expectedPbeParameters = new PbeParameters(
                 PbeEncryptionAlgorithm.Aes256Cbc,
                 HashAlgorithmName.SHA384,
-                RandomNumberGenerator.GetInt32(0, 100_000));
+                RandomNumberGenerator.GetInt32(1, 100_000));
 
             bool TryExportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<char> password,
@@ -427,7 +464,73 @@ namespace System.Security.Cryptography.Tests
 
             using (StubAsymmetricAlgorithm alg = new StubAsymmetricAlgorithm())
             {
-                alg.TryExportEncryptedPkcs8PrivateKeyImpl = TryExportEncryptedPkcs8PrivateKey;
+                alg.TryExportEncryptedPkcs8PrivateKeyCharImpl = TryExportEncryptedPkcs8PrivateKey;
+                int written;
+                bool result;
+                char[] buffer;
+
+                // buffer not enough
+                buffer = new char[expectedPem.Length - 1];
+                result = alg.TryExportEncryptedPkcs8PrivateKeyPem(expectedPassword, expectedPbeParameters, buffer, out written);
+                Assert.False(result, nameof(alg.TryExportEncryptedPkcs8PrivateKeyPem));
+                Assert.Equal(0, written);
+
+                // buffer just enough
+                buffer = new char[expectedPem.Length];
+                result = alg.TryExportEncryptedPkcs8PrivateKeyPem(expectedPassword, expectedPbeParameters, buffer, out written);
+                Assert.True(result, nameof(alg.TryExportEncryptedPkcs8PrivateKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(buffer));
+
+                // buffer more than enough
+                buffer = new char[expectedPem.Length + 20];
+                buffer.AsSpan().Fill('!');
+                Span<char> bufferSpan = buffer.AsSpan(10);
+                result = alg.TryExportEncryptedPkcs8PrivateKeyPem(expectedPassword, expectedPbeParameters, bufferSpan, out written);
+                Assert.True(result, nameof(alg.TryExportEncryptedPkcs8PrivateKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(bufferSpan.Slice(0, written)));
+
+                // Ensure padding has not been touched.
+                AssertExtensions.FilledWith('!', buffer[0..10]);
+                AssertExtensions.FilledWith('!', buffer[^10..]);
+            }
+        }
+
+        [Fact]
+        public static void ExportPem_BytePassword_TryExportEncryptedPkcs8PrivateKeyPem()
+        {
+            string expectedPem =
+                "-----BEGIN ENCRYPTED PRIVATE KEY-----\n" +
+                "cGVubnk=\n" +
+                "-----END ENCRYPTED PRIVATE KEY-----";
+
+            byte[] exportedBytes = new byte[] { 0x70, 0x65, 0x6e, 0x6e, 0x79 };
+            byte[] expectedPassword = new byte[] { 0x01, 0x02, 0x03 };
+            PbeParameters expectedPbeParameters = new PbeParameters(
+                PbeEncryptionAlgorithm.Aes256Cbc,
+                HashAlgorithmName.SHA384,
+                RandomNumberGenerator.GetInt32(1, 100_000));
+
+            bool TryExportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<byte> passwordBytes,
+                PbeParameters pbeParameters,
+                Span<byte> destination,
+                out int bytesWritten)
+            {
+                Assert.Equal(expectedPbeParameters.EncryptionAlgorithm, pbeParameters.EncryptionAlgorithm);
+                Assert.Equal(expectedPbeParameters.HashAlgorithm, pbeParameters.HashAlgorithm);
+                Assert.Equal(expectedPbeParameters.IterationCount, pbeParameters.IterationCount);
+                AssertExtensions.SequenceEqual(expectedPassword, passwordBytes);
+
+                exportedBytes.AsSpan().CopyTo(destination);
+                bytesWritten = exportedBytes.Length;
+                return true;
+            }
+
+            using (StubAsymmetricAlgorithm alg = new StubAsymmetricAlgorithm())
+            {
+                alg.TryExportEncryptedPkcs8PrivateKeyByteImpl = TryExportEncryptedPkcs8PrivateKey;
                 int written;
                 bool result;
                 char[] buffer;
@@ -464,7 +567,7 @@ namespace System.Security.Cryptography.Tests
         {
             public delegate byte[] ExportSubjectPublicKeyInfoFunc();
             public delegate byte[] ExportPkcs8PrivateKeyPemFunc();
-            public delegate byte[] ExportEncryptedPkcs8PrivateKeyFunc(ReadOnlySpan<char> password, PbeParameters pbeParameters);
+            public delegate byte[] ExportEncryptedPkcs8PrivateKeyFunc<TPass>(ReadOnlySpan<TPass> password, PbeParameters pbeParameters);
             public delegate bool TryExportSubjectPublicKeyInfoFunc(Span<byte> destination, out int bytesWritten);
             public delegate bool TryExportPkcs8PrivateKeyFunc(Span<byte> destination, out int bytesWritten);
             public delegate void ImportSubjectPublicKeyInfoFunc(ReadOnlySpan<byte> source, out int bytesRead);
@@ -473,8 +576,8 @@ namespace System.Security.Cryptography.Tests
                 ReadOnlySpan<TPass> password,
                 ReadOnlySpan<byte> source,
                 out int bytesRead);
-            public delegate bool TryExportEncryptedPkcs8PrivateKeyFunc(
-                ReadOnlySpan<char> password,
+            public delegate bool TryExportEncryptedPkcs8PrivateKeyFunc<TPass>(
+                ReadOnlySpan<TPass> password,
                 PbeParameters pbeParameters,
                 Span<byte> destination,
                 out int bytesWritten);
@@ -487,8 +590,10 @@ namespace System.Security.Cryptography.Tests
             public TryExportSubjectPublicKeyInfoFunc TryExportSubjectPublicKeyInfoImpl { get; set; }
             public ExportPkcs8PrivateKeyPemFunc ExportPkcs8PrivateKeyPemImpl { get; set; }
             public TryExportPkcs8PrivateKeyFunc TryExportPkcs8PrivateKeyImpl { get; set; }
-            public ExportEncryptedPkcs8PrivateKeyFunc ExportEncryptedPkcs8PrivateKeyImpl { get; set; }
-            public TryExportEncryptedPkcs8PrivateKeyFunc TryExportEncryptedPkcs8PrivateKeyImpl { get; set; }
+            public ExportEncryptedPkcs8PrivateKeyFunc<char> ExportEncryptedPkcs8PrivateKeyCharImpl { get; set; }
+            public TryExportEncryptedPkcs8PrivateKeyFunc<char> TryExportEncryptedPkcs8PrivateKeyCharImpl { get; set; }
+            public ExportEncryptedPkcs8PrivateKeyFunc<byte> ExportEncryptedPkcs8PrivateKeyByteImpl { get; set; }
+            public TryExportEncryptedPkcs8PrivateKeyFunc<byte> TryExportEncryptedPkcs8PrivateKeyByteImpl { get; set; }
 
             public override void ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead) =>
                 ImportSubjectPublicKeyInfoImpl(source, out bytesRead);
@@ -501,7 +606,12 @@ namespace System.Security.Cryptography.Tests
 
             public override byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
             {
-                return ExportEncryptedPkcs8PrivateKeyImpl(password, pbeParameters);
+                return ExportEncryptedPkcs8PrivateKeyCharImpl(password, pbeParameters);
+            }
+
+            public override byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
+            {
+                return ExportEncryptedPkcs8PrivateKeyByteImpl(passwordBytes, pbeParameters);
             }
 
             public override void ImportEncryptedPkcs8PrivateKey(
@@ -536,7 +646,16 @@ namespace System.Security.Cryptography.Tests
                 Span<byte> destination,
                 out int bytesWritten)
             {
-                return TryExportEncryptedPkcs8PrivateKeyImpl(password, pbeParameters, destination, out bytesWritten);
+                return TryExportEncryptedPkcs8PrivateKeyCharImpl(password, pbeParameters, destination, out bytesWritten);
+            }
+
+            public override bool TryExportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<byte> passwordBytes,
+                PbeParameters pbeParameters,
+                Span<byte> destination,
+                out int bytesWritten)
+            {
+                return TryExportEncryptedPkcs8PrivateKeyByteImpl(passwordBytes, pbeParameters, destination, out bytesWritten);
             }
         }
     }

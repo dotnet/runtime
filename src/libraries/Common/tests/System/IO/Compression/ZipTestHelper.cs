@@ -64,7 +64,6 @@ namespace System.IO.Compression.Tests
                 bytesLeftToRead -= bytesRead;
             }
         }
-
         public static async Task<int> ReadAllBytesAsync(Stream stream, byte[] buffer, int offset, int count)
         {
             int bytesRead;
@@ -138,8 +137,8 @@ namespace System.IO.Compression.Tests
                 if (blocksToRead != -1 && blocksRead >= blocksToRead)
                     break;
 
-                ac = ReadAllBytes(ast, ad, 0, bufSize);
-                bc = ReadAllBytes(bst, bd, 0, bufSize);
+                ac = ReadAllBytes(ast, ad, 0, 4096);
+                bc = ReadAllBytes(bst, bd, 0, 4096);
 
                 if (ac != bc)
                 {
@@ -174,15 +173,15 @@ namespace System.IO.Compression.Tests
                 if (blocksToRead != -1 && blocksRead >= blocksToRead)
                     break;
 
-                ac = await ReadAllBytesAsync(ast, ad, 0, bufSize);
-                bc = await ReadAllBytesAsync(bst, bd, 0, bufSize);
+                ac = await ast.ReadAtLeastAsync(ad, 4096, throwOnEndOfStream: false);
+                bc = await bst.ReadAtLeastAsync(bd, 4096, throwOnEndOfStream: false);
 
                 if (ac != bc)
                 {
                     bd = NormalizeLineEndings(bd);
                 }
 
-                Assert.True(ArraysEqual<byte>(ad, bd, ac), "Stream contents not equal: " + ast.ToString() + ", " + bst.ToString());
+                AssertExtensions.SequenceEqual(ad.AsSpan(0, ac), bd.AsSpan(0, bc));
 
                 blocksRead++;
             } while (ac == bufSize);
@@ -267,16 +266,16 @@ namespace System.IO.Compression.Tests
                         if (entry == null) //entry not found
                         {
                             string entryNameOtherSlash = FlipSlashes(entryName);
-                            bool isEmtpy = !files.Any(
+                            bool isEmpty = !files.Any(
                                 f => f.IsFile &&
                                      (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) ||
                                       f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
-                            if (requireExplicit || isEmtpy)
+                            if (requireExplicit || isEmpty)
                             {
                                 Assert.Contains("emptydir", entryName);
                             }
 
-                            if ((!requireExplicit && !isEmtpy) || entryName.Contains("emptydir"))
+                            if ((!requireExplicit && !isEmpty) || entryName.Contains("emptydir"))
                                 count--; //discount this entry
                         }
                         else
@@ -330,9 +329,9 @@ namespace System.IO.Compression.Tests
 
         public static void DirFileNamesEqual(string actual, string expected)
         {
-            IEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories);
-            IEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories);
-            Assert.True(Enumerable.SequenceEqual(expectedEntries.Select(i => Path.GetFileName(i)), actualEntries.Select(i => Path.GetFileName(i))));
+            IOrderedEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories).Order();
+            IOrderedEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories).Order();
+            AssertExtensions.SequenceEqual(expectedEntries.Select(Path.GetFileName).ToArray(), actualEntries.Select(Path.GetFileName).ToArray());
         }
 
         private static void ItemEqual(string[] actualList, List<FileData> expectedList, bool isFile)

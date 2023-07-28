@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -114,8 +115,7 @@ namespace System.Management
 
         internal void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
-                IdentifierChanged(this, null);
+            IdentifierChanged?.Invoke(this, null);
         }
 
         internal bool PutButNotGot
@@ -462,6 +462,10 @@ namespace System.Management
         /// </summary>
         /// <param name='info'>The <see cref='System.Runtime.Serialization.SerializationInfo'/> to populate with data.</param>
         /// <param name='context'>The destination (see <see cref='System.Runtime.Serialization.StreamingContext'/> ) for this serialization.</param>
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected ManagementObject(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             ManagementObjectCTOR(null, null, null);
@@ -503,10 +507,7 @@ namespace System.Management
         {
             get
             {
-                if (scope == null)
-                    return scope = ManagementScope._Clone(null);
-                else
-                    return scope;
+                return scope ??= ManagementScope._Clone(null);
             }
             set
             {
@@ -558,10 +559,7 @@ namespace System.Management
         {
             get
             {
-                if (path == null)
-                    return path = ManagementPath._Clone(null);
-                else
-                    return path;
+                return path ??= ManagementPath._Clone(null);
             }
             set
             {
@@ -625,10 +623,7 @@ namespace System.Management
         {
             get
             {
-                if (options == null)
-                    return options = ObjectGetOptions._Clone(null);
-                else
-                    return options;
+                return options ??= ObjectGetOptions._Clone(null);
             }
             set
             {
@@ -805,8 +800,7 @@ namespace System.Management
                 }
                 finally
                 {
-                    if (securityHandler != null)
-                        securityHandler.Reset();
+                    securityHandler?.Reset();
                 }
             }
         }
@@ -925,8 +919,7 @@ namespace System.Management
                                             sink.Stub);
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1076,8 +1069,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             //Create collection object
@@ -1309,8 +1301,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             //Create collection object
@@ -1416,8 +1407,7 @@ namespace System.Management
                                                         sink.Stub);
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1524,8 +1514,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (ppwbemCallResult != IntPtr.Zero)                    // Cleanup from allocations above.
                     Marshal.FreeHGlobal(ppwbemCallResult);
@@ -1598,10 +1587,7 @@ namespace System.Management
             {
             }
 
-            if (newPath == null)
-                newPath = new ManagementPath();
-
-            return newPath;
+            return newPath ?? new ManagementPath();
         }
 
         /// <summary>
@@ -1667,8 +1653,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1827,8 +1812,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (ppwbemCallResult != IntPtr.Zero)                    // Cleanup from allocations above.
                     Marshal.FreeHGlobal(ppwbemCallResult);
@@ -1926,8 +1910,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -2002,8 +1985,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
         }
 
@@ -2061,8 +2043,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -2309,7 +2290,7 @@ namespace System.Management
                 {
                     securityHandler = scope.GetSecurityHandler();
 
-                    IWbemClassObjectFreeThreaded inParams = (null == inParameters) ? null : inParameters.wbemObject;
+                    IWbemClassObjectFreeThreaded inParams = inParameters?.wbemObject;
                     IWbemClassObjectFreeThreaded outParams = null;
 
                     status = scope.GetSecuredIWbemServicesHandler(scope.GetIWbemServices()).ExecMethod_(
@@ -2335,8 +2316,7 @@ namespace System.Management
                 }
                 finally
                 {
-                    if (securityHandler != null)
-                        securityHandler.Reset();
+                    securityHandler?.Reset();
                 }
             }
 
@@ -2396,8 +2376,7 @@ namespace System.Management
                     inParams,
                     sink.Stub);
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -2574,7 +2553,7 @@ namespace System.Management
                 }
 
                 //Have we already got this object
-                if (!IsBound && (getObject == true))
+                if (!IsBound && getObject)
                     needToGetObject = true;
 
                 if (null == scope)
@@ -2614,7 +2593,7 @@ namespace System.Management
                         scope.Initialize();
 
                         // If we have just connected, make sure we get the object
-                        if (getObject == true)
+                        if (getObject)
                         {
                             needToGetObject = true;
                         }
@@ -2683,8 +2662,7 @@ namespace System.Management
                         }
                         finally
                         {
-                            if (securityHandler != null)
-                                securityHandler.Reset();
+                            securityHandler?.Reset();
                         }
                     }
                 }

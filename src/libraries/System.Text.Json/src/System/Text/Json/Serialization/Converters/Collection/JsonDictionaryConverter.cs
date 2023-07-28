@@ -12,7 +12,8 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class JsonDictionaryConverter<TDictionary> : JsonResumableConverter<TDictionary>
     {
-        internal sealed override ConverterStrategy ConverterStrategy => ConverterStrategy.Dictionary;
+        internal override bool SupportsCreateObjectDelegate => true;
+        private protected sealed override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Dictionary;
 
         protected internal abstract bool OnWriteResume(Utf8JsonWriter writer, TDictionary dictionary, JsonSerializerOptions options, ref WriteStack state);
     }
@@ -37,8 +38,13 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// When overridden, create the collection. It may be a temporary collection or the final collection.
         /// </summary>
-        protected virtual void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
+        protected virtual void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
+            if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+            {
+                return;
+            }
+
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (typeInfo.CreateObject is null)
@@ -46,13 +52,13 @@ namespace System.Text.Json.Serialization
                 // The contract model was not able to produce a default constructor for two possible reasons:
                 // 1. Either the declared collection type is abstract and cannot be instantiated.
                 // 2. The collection type does not specify a default constructor.
-                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
+                if (Type.IsAbstract || Type.IsInterface)
                 {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
                 }
                 else
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
+                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(Type, ref reader, ref state);
                 }
             }
 
@@ -70,17 +76,14 @@ namespace System.Text.Json.Serialization
 
         protected static JsonConverter<T> GetConverter<T>(JsonTypeInfo typeInfo)
         {
-            JsonConverter<T> converter = (JsonConverter<T>)typeInfo.PropertyInfoForTypeInfo.ConverterBase;
-            Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
-
-            return converter;
+            return ((JsonTypeInfo<T>)typeInfo).EffectiveConverter;
         }
 
         internal sealed override bool OnTryRead(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options,
-            ref ReadStack state,
+            scoped ref ReadStack state,
             [MaybeNullWhen(false)] out TDictionary value)
         {
             JsonTypeInfo keyTypeInfo = state.Current.JsonTypeInfo.KeyTypeInfo!;
@@ -92,7 +95,7 @@ namespace System.Text.Json.Serialization
 
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                 }
 
                 CreateCollection(ref reader, ref state);
@@ -148,7 +151,7 @@ namespace System.Text.Json.Serialization
 
                         // Get the value from the converter and add it.
                         state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
-                        _valueConverter.TryRead(ref reader, ElementType, options, ref state, out TValue? element);
+                        _valueConverter.TryRead(ref reader, ElementType, options, ref state, out TValue? element, out _);
                         Add(key, element!, options, ref state);
                     }
                 }
@@ -162,7 +165,7 @@ namespace System.Text.Json.Serialization
                 {
                     if (reader.TokenType != JsonTokenType.StartObject)
                     {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.StartToken;
@@ -187,12 +190,12 @@ namespace System.Text.Json.Serialization
                 }
 
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
-                if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type) &&
+                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
-                    ResolvePolymorphicConverter(jsonTypeInfo, options, ref state) is JsonConverter polymorphicConverter)
+                    ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
                     Debug.Assert(!IsValueType);
-                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, options, ref state, out object? objectResult);
+                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, polymorphicConverter.Type!, options, ref state, out object? objectResult);
                     value = (TDictionary)objectResult!;
                     state.ExitPolymorphicConverter(success);
                     return success;
@@ -203,12 +206,12 @@ namespace System.Text.Json.Serialization
                 {
                     if (state.Current.CanContainMetadata)
                     {
-                        JsonSerializer.ValidateMetadataForObjectConverter(this, ref reader, ref state);
+                        JsonSerializer.ValidateMetadataForObjectConverter(ref state);
                     }
 
                     CreateCollection(ref reader, ref state);
 
-                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Id))
+                    if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
                         Debug.Assert(state.ReferenceId != null);
                         Debug.Assert(options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve);
@@ -285,7 +288,7 @@ namespace System.Text.Json.Serialization
                     {
                         // Get the value from the converter and add it.
                         state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
-                        bool success = _valueConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue? element);
+                        bool success = _valueConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue? element, out _);
                         if (!success)
                         {
                             state.Current.DictionaryKey = key;
@@ -303,20 +306,20 @@ namespace System.Text.Json.Serialization
             value = (TDictionary)state.Current.ReturnValue!;
             return true;
 
-            static TKey ReadDictionaryKey(JsonConverter<TKey> keyConverter, ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+            static TKey ReadDictionaryKey(JsonConverter<TKey> keyConverter, ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
             {
                 TKey key;
                 string unescapedPropertyNameAsString = reader.GetString()!;
                 state.Current.JsonPropertyNameAsString = unescapedPropertyNameAsString; // Copy key name for JSON Path support in case of error.
 
                 // Special case string to avoid calling GetString twice and save one allocation.
-                if (keyConverter.IsInternalConverter && keyConverter.TypeToConvert == typeof(string))
+                if (keyConverter.IsInternalConverter && keyConverter.Type == typeof(string))
                 {
                     key = (TKey)(object)unescapedPropertyNameAsString;
                 }
                 else
                 {
-                    key = keyConverter.ReadAsPropertyNameCore(ref reader, keyConverter.TypeToConvert, options);
+                    key = keyConverter.ReadAsPropertyNameCore(ref reader, keyConverter.Type, options);
                 }
 
                 return key;

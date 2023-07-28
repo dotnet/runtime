@@ -1,47 +1,63 @@
-import { ExitStatus, INTERNAL, Module, quit, runtimeHelpers } from "./imports";
-import { mono_call_assembly_entry_point } from "./method-calls";
-import { mono_wasm_wait_for_debugger } from "./debug";
-import { mono_wasm_set_main_args, runtime_is_initialized_reject } from "./startup";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-export async function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void> {
+import { loaderHelpers, runtimeHelpers } from "./globals";
+import { mono_wasm_wait_for_debugger } from "./debug";
+import { mono_wasm_set_main_args } from "./startup";
+import cwraps from "./cwraps";
+import { assembly_load } from "./class-loader";
+import { mono_log_info } from "./logging";
+import { assert_bindings } from "./invoke-js";
+
+/**
+ * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
+ */
+export async function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<number> {
     try {
         const result = await mono_run_main(main_assembly_name, args);
-        set_exit_code(result);
-    } catch (error) {
-        if (error instanceof ExitStatus) {
-            return;
+        loaderHelpers.mono_exit(result);
+        return result;
+    } catch (error: any) {
+        try {
+            loaderHelpers.mono_exit(1, error);
         }
-        set_exit_code(1, error);
+        catch (e) {
+            // ignore
+        }
+        if (error && typeof error.status === "number") {
+            return error.status;
+        }
+        return 1;
     }
 }
 
- 
+/**
+ * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
+ */
 export async function mono_run_main(main_assembly_name: string, args: string[]): Promise<number> {
     mono_wasm_set_main_args(main_assembly_name, args);
-    if (runtimeHelpers.wait_for_debugger == -1) {
-        console.log("waiting for debugger...");
-        return await mono_wasm_wait_for_debugger().then(() => mono_call_assembly_entry_point(main_assembly_name, [args], "m"));
+    if (runtimeHelpers.waitForDebugger == -1) {
+        mono_log_info("waiting for debugger...");
+        await mono_wasm_wait_for_debugger();
     }
-    return mono_call_assembly_entry_point(main_assembly_name, [args], "m");
+    const method = find_entry_point(main_assembly_name);
+    return runtimeHelpers.javaScriptExports.call_entry_point(method, args);
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function mono_on_abort(error: any): void {
-    runtime_is_initialized_reject(error);
-    set_exit_code(1, error);
+export function find_entry_point(assembly: string) {
+    loaderHelpers.assert_runtime_running();
+    assert_bindings();
+    const asm = assembly_load(assembly);
+    if (!asm)
+        throw new Error("Could not find assembly: " + assembly);
+
+    let auto_set_breakpoint = 0;
+    if (runtimeHelpers.waitForDebugger == 1)
+        auto_set_breakpoint = 1;
+
+    const method = cwraps.mono_wasm_assembly_get_entry_point(asm, auto_set_breakpoint);
+    if (!method)
+        throw new Error("Could not find entry point for assembly: " + assembly);
+    return method;
 }
 
-function set_exit_code(exit_code: number, reason?: any) {
-    if (reason && !(reason instanceof ExitStatus)) {
-        if (reason instanceof Error)
-            Module.printErr(INTERNAL.mono_wasm_stringify_as_error_with_stack(reason));
-        else if (typeof reason == "string")
-            Module.printErr(reason);
-        else
-            Module.printErr(JSON.stringify(reason));
-    }
-    else {
-        reason = new ExitStatus(exit_code);
-    }
-    quit(exit_code, reason);
-}

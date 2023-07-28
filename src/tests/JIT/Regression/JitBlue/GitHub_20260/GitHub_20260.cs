@@ -4,12 +4,14 @@
 using System;
 using System.Globalization;
 using System.Numerics;
+using Xunit;
 
 namespace GitHub_20260
 {
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {         
             // The jit will devirtualize the call to ToString and then undo the box.
             // Make sure that happens properly for vectors.

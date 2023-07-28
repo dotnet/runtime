@@ -316,7 +316,7 @@ namespace System.IO.Tests
         public static void GetFullPath_Windows_83Paths()
         {
             // Create a temporary file name with a name longer than 8.3 such that it'll need to be shortened.
-            string tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
+            string tempFilePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.txt");
             File.Create(tempFilePath).Dispose();
             try
             {

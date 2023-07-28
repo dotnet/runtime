@@ -11,7 +11,7 @@ using ConstantTypeCode = System.Reflection.Metadata.ConstantTypeCode;
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         private MetadataRecord HandleConstant(Cts.Ecma.EcmaModule module, Ecma.ConstantHandle constantHandle)
         {

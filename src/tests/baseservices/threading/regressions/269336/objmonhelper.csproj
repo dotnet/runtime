@@ -1,20 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_FastGCStress=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_FastGCStress=1
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="objmonhelper.cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_FastGCStress" Value="1" />
   </ItemGroup>
 </Project>

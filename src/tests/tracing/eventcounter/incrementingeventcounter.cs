@@ -101,7 +101,7 @@ namespace BasicEventSourceTests
             }
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             int iter = 100;
 

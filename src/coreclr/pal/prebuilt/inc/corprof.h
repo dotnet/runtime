@@ -3,9 +3,9 @@
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.01.0622 */
+ /* File created by MIDL compiler version 8.01.0628 */
 /* Compiler settings for corprof.idl:
-    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0622 
+    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0628 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
@@ -39,6 +39,14 @@
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
+#endif
+
+#ifndef DECLSPEC_XFGVIRT
+#if defined(_CONTROL_FLOW_GUARD_XFG)
+#define DECLSPEC_XFGVIRT(base, func) __declspec(xfg_virtual(base, func))
+#else
+#define DECLSPEC_XFGVIRT(base, func)
+#endif
 #endif
 
 /* Forward Declarations */ 
@@ -237,6 +245,20 @@ typedef interface ICorProfilerInfo11 ICorProfilerInfo11;
 typedef interface ICorProfilerInfo12 ICorProfilerInfo12;
 
 #endif  /* __ICorProfilerInfo12_FWD_DEFINED__ */
+
+
+#ifndef __ICorProfilerInfo13_FWD_DEFINED__
+#define __ICorProfilerInfo13_FWD_DEFINED__
+typedef interface ICorProfilerInfo13 ICorProfilerInfo13;
+
+#endif  /* __ICorProfilerInfo13_FWD_DEFINED__ */
+
+
+#ifndef __ICorProfilerInfo14_FWD_DEFINED__
+#define __ICorProfilerInfo14_FWD_DEFINED__
+typedef interface ICorProfilerInfo14 ICorProfilerInfo14;
+
+#endif  /* __ICorProfilerInfo14_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerMethodEnum_FWD_DEFINED__
@@ -690,6 +712,32 @@ typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0017
     UINT32 reserved;
     }   COR_PRF_EVENT_DATA;
 
+typedef /* [public][public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0018
+    {
+    UINT64 Ptr;
+    UINT32 Size;
+    UINT32 Type;
+    }   COR_PRF_FILTER_DATA;
+
+typedef void EventPipeProviderCallback( 
+    const UINT8 *source_id,
+    UINT32 is_enabled,
+    UINT8 level,
+    UINT64 match_any_keywords,
+    UINT64 match_all_keywords,
+    COR_PRF_FILTER_DATA *filter_data,
+    void *callback_data);
+
+typedef 
+enum _COR_PRF_HANDLE_TYPE
+    {
+        COR_PRF_HANDLE_TYPE_WEAK    = 0x1,
+        COR_PRF_HANDLE_TYPE_STRONG  = 0x2,
+        COR_PRF_HANDLE_TYPE_PINNED  = 0x3
+    }   COR_PRF_HANDLE_TYPE;
+
+typedef void **ObjectHandleID;
+
 
 
 
@@ -965,216 +1013,266 @@ EXTERN_C const IID IID_ICorProfilerCallback;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -1182,17 +1280,20 @@ EXTERN_C const IID IID_ICorProfilerCallback;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback * This,
             /* [in] */ ObjectID objectId,
@@ -1200,63 +1301,79 @@ EXTERN_C const IID IID_ICorProfilerCallback;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback * This,
             /* [in] */ ClassID wrappedClassId,
@@ -1264,15 +1381,18 @@ EXTERN_C const IID IID_ICorProfilerCallback;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback * This);
         
@@ -1562,6 +1682,13 @@ typedef struct COR_PRF_GC_GENERATION_RANGE
     UINT_PTR rangeLengthReserved;
     }   COR_PRF_GC_GENERATION_RANGE;
 
+typedef struct COR_PRF_NONGC_HEAP_RANGE
+    {
+    ObjectID rangeStart;
+    UINT_PTR rangeLength;
+    UINT_PTR rangeLengthReserved;
+    }   COR_PRF_NONGC_HEAP_RANGE;
+
 typedef /* [public][public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0001_0005
     {
@@ -1663,216 +1790,266 @@ EXTERN_C const IID IID_ICorProfilerCallback2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback2 * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback2 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback2 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback2 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback2 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback2 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback2 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback2 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback2 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -1880,17 +2057,20 @@ EXTERN_C const IID IID_ICorProfilerCallback2;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ObjectID objectId,
@@ -1898,63 +2078,79 @@ EXTERN_C const IID IID_ICorProfilerCallback2;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback2 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback2 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback2 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ClassID wrappedClassId,
@@ -1962,18 +2158,22 @@ EXTERN_C const IID IID_ICorProfilerCallback2;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, ThreadNameChanged)
         HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ThreadID threadId,
@@ -1981,26 +2181,31 @@ EXTERN_C const IID IID_ICorProfilerCallback2;
             /* [annotation][in] */ 
             _In_reads_opt_(cchName)  WCHAR name[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionStarted)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
             ICorProfilerCallback2 * This,
             /* [in] */ int cGenerations,
             /* [size_is][in] */ BOOL generationCollected[  ],
             /* [in] */ COR_PRF_GC_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, SurvivingReferences)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionFinished)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
             ICorProfilerCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, FinalizeableObjectQueued)
         HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
             ICorProfilerCallback2 * This,
             /* [in] */ DWORD finalizerFlags,
             /* [in] */ ObjectID objectID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, RootReferences2)
         HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
             ICorProfilerCallback2 * This,
             /* [in] */ ULONG cRootRefs,
@@ -2009,11 +2214,13 @@ EXTERN_C const IID IID_ICorProfilerCallback2;
             /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
             /* [size_is][in] */ UINT_PTR rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleCreated)
         HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
             ICorProfilerCallback2 * This,
             /* [in] */ GCHandleID handleId,
             /* [in] */ ObjectID initialObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleDestroyed)
         HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
             ICorProfilerCallback2 * This,
             /* [in] */ GCHandleID handleId);
@@ -2317,216 +2524,266 @@ EXTERN_C const IID IID_ICorProfilerCallback3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback3 * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback3 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback3 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback3 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback3 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback3 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback3 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback3 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback3 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -2534,17 +2791,20 @@ EXTERN_C const IID IID_ICorProfilerCallback3;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ObjectID objectId,
@@ -2552,63 +2812,79 @@ EXTERN_C const IID IID_ICorProfilerCallback3;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback3 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback3 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback3 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ClassID wrappedClassId,
@@ -2616,18 +2892,22 @@ EXTERN_C const IID IID_ICorProfilerCallback3;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, ThreadNameChanged)
         HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ThreadID threadId,
@@ -2635,26 +2915,31 @@ EXTERN_C const IID IID_ICorProfilerCallback3;
             /* [annotation][in] */ 
             _In_reads_opt_(cchName)  WCHAR name[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionStarted)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
             ICorProfilerCallback3 * This,
             /* [in] */ int cGenerations,
             /* [size_is][in] */ BOOL generationCollected[  ],
             /* [in] */ COR_PRF_GC_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, SurvivingReferences)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionFinished)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, FinalizeableObjectQueued)
         HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
             ICorProfilerCallback3 * This,
             /* [in] */ DWORD finalizerFlags,
             /* [in] */ ObjectID objectID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, RootReferences2)
         HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
             ICorProfilerCallback3 * This,
             /* [in] */ ULONG cRootRefs,
@@ -2663,24 +2948,29 @@ EXTERN_C const IID IID_ICorProfilerCallback3;
             /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
             /* [size_is][in] */ UINT_PTR rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleCreated)
         HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
             ICorProfilerCallback3 * This,
             /* [in] */ GCHandleID handleId,
             /* [in] */ ObjectID initialObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleDestroyed)
         HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
             ICorProfilerCallback3 * This,
             /* [in] */ GCHandleID handleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, InitializeForAttach)
         HRESULT ( STDMETHODCALLTYPE *InitializeForAttach )( 
             ICorProfilerCallback3 * This,
             /* [in] */ IUnknown *pCorProfilerInfoUnk,
             /* [in] */ void *pvClientData,
             /* [in] */ UINT cbClientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerAttachComplete)
         HRESULT ( STDMETHODCALLTYPE *ProfilerAttachComplete )( 
             ICorProfilerCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerDetachSucceeded)
         HRESULT ( STDMETHODCALLTYPE *ProfilerDetachSucceeded )( 
             ICorProfilerCallback3 * This);
         
@@ -3017,216 +3307,266 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback4 * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback4 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback4 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback4 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback4 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -3234,17 +3574,20 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ObjectID objectId,
@@ -3252,63 +3595,79 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback4 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback4 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ClassID wrappedClassId,
@@ -3316,18 +3675,22 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, ThreadNameChanged)
         HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ThreadID threadId,
@@ -3335,26 +3698,31 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
             /* [annotation][in] */ 
             _In_reads_opt_(cchName)  WCHAR name[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionStarted)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ int cGenerations,
             /* [size_is][in] */ BOOL generationCollected[  ],
             /* [in] */ COR_PRF_GC_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, SurvivingReferences)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionFinished)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, FinalizeableObjectQueued)
         HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
             ICorProfilerCallback4 * This,
             /* [in] */ DWORD finalizerFlags,
             /* [in] */ ObjectID objectID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, RootReferences2)
         HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ULONG cRootRefs,
@@ -3363,39 +3731,47 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
             /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
             /* [size_is][in] */ UINT_PTR rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleCreated)
         HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
             ICorProfilerCallback4 * This,
             /* [in] */ GCHandleID handleId,
             /* [in] */ ObjectID initialObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleDestroyed)
         HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
             ICorProfilerCallback4 * This,
             /* [in] */ GCHandleID handleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, InitializeForAttach)
         HRESULT ( STDMETHODCALLTYPE *InitializeForAttach )( 
             ICorProfilerCallback4 * This,
             /* [in] */ IUnknown *pCorProfilerInfoUnk,
             /* [in] */ void *pvClientData,
             /* [in] */ UINT cbClientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerAttachComplete)
         HRESULT ( STDMETHODCALLTYPE *ProfilerAttachComplete )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerDetachSucceeded)
         HRESULT ( STDMETHODCALLTYPE *ProfilerDetachSucceeded )( 
             ICorProfilerCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationStarted )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ReJITID rejitId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, GetReJITParameters)
         HRESULT ( STDMETHODCALLTYPE *GetReJITParameters )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodId,
             /* [in] */ ICorProfilerFunctionControl *pFunctionControl);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationFinished )( 
             ICorProfilerCallback4 * This,
             /* [in] */ FunctionID functionId,
@@ -3403,6 +3779,7 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITError)
         HRESULT ( STDMETHODCALLTYPE *ReJITError )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ModuleID moduleId,
@@ -3410,6 +3787,7 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, MovedReferences2)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences2 )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -3417,6 +3795,7 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, SurvivingReferences2)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences2 )( 
             ICorProfilerCallback4 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
@@ -3748,216 +4127,266 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback5 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback5 * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback5 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback5 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback5 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback5 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -3965,17 +4394,20 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ObjectID objectId,
@@ -3983,63 +4415,79 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback5 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback5 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ClassID wrappedClassId,
@@ -4047,18 +4495,22 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, ThreadNameChanged)
         HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ThreadID threadId,
@@ -4066,26 +4518,31 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
             /* [annotation][in] */ 
             _In_reads_opt_(cchName)  WCHAR name[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionStarted)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ int cGenerations,
             /* [size_is][in] */ BOOL generationCollected[  ],
             /* [in] */ COR_PRF_GC_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, SurvivingReferences)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionFinished)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, FinalizeableObjectQueued)
         HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
             ICorProfilerCallback5 * This,
             /* [in] */ DWORD finalizerFlags,
             /* [in] */ ObjectID objectID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, RootReferences2)
         HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ULONG cRootRefs,
@@ -4094,39 +4551,47 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
             /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
             /* [size_is][in] */ UINT_PTR rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleCreated)
         HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
             ICorProfilerCallback5 * This,
             /* [in] */ GCHandleID handleId,
             /* [in] */ ObjectID initialObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleDestroyed)
         HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
             ICorProfilerCallback5 * This,
             /* [in] */ GCHandleID handleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, InitializeForAttach)
         HRESULT ( STDMETHODCALLTYPE *InitializeForAttach )( 
             ICorProfilerCallback5 * This,
             /* [in] */ IUnknown *pCorProfilerInfoUnk,
             /* [in] */ void *pvClientData,
             /* [in] */ UINT cbClientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerAttachComplete)
         HRESULT ( STDMETHODCALLTYPE *ProfilerAttachComplete )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerDetachSucceeded)
         HRESULT ( STDMETHODCALLTYPE *ProfilerDetachSucceeded )( 
             ICorProfilerCallback5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationStarted )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ReJITID rejitId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, GetReJITParameters)
         HRESULT ( STDMETHODCALLTYPE *GetReJITParameters )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodId,
             /* [in] */ ICorProfilerFunctionControl *pFunctionControl);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationFinished )( 
             ICorProfilerCallback5 * This,
             /* [in] */ FunctionID functionId,
@@ -4134,6 +4599,7 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITError)
         HRESULT ( STDMETHODCALLTYPE *ReJITError )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ModuleID moduleId,
@@ -4141,6 +4607,7 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, MovedReferences2)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences2 )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -4148,12 +4615,14 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, SurvivingReferences2)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences2 )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback5, ConditionalWeakTableElementReferences)
         HRESULT ( STDMETHODCALLTYPE *ConditionalWeakTableElementReferences )( 
             ICorProfilerCallback5 * This,
             /* [in] */ ULONG cRootRefs,
@@ -4488,216 +4957,266 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback6 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback6 * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback6 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback6 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback6 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback6 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -4705,17 +5224,20 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ObjectID objectId,
@@ -4723,63 +5245,79 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback6 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback6 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ClassID wrappedClassId,
@@ -4787,18 +5325,22 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, ThreadNameChanged)
         HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ThreadID threadId,
@@ -4806,26 +5348,31 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
             /* [annotation][in] */ 
             _In_reads_opt_(cchName)  WCHAR name[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionStarted)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ int cGenerations,
             /* [size_is][in] */ BOOL generationCollected[  ],
             /* [in] */ COR_PRF_GC_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, SurvivingReferences)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionFinished)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, FinalizeableObjectQueued)
         HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
             ICorProfilerCallback6 * This,
             /* [in] */ DWORD finalizerFlags,
             /* [in] */ ObjectID objectID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, RootReferences2)
         HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ULONG cRootRefs,
@@ -4834,39 +5381,47 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
             /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
             /* [size_is][in] */ UINT_PTR rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleCreated)
         HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
             ICorProfilerCallback6 * This,
             /* [in] */ GCHandleID handleId,
             /* [in] */ ObjectID initialObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleDestroyed)
         HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
             ICorProfilerCallback6 * This,
             /* [in] */ GCHandleID handleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, InitializeForAttach)
         HRESULT ( STDMETHODCALLTYPE *InitializeForAttach )( 
             ICorProfilerCallback6 * This,
             /* [in] */ IUnknown *pCorProfilerInfoUnk,
             /* [in] */ void *pvClientData,
             /* [in] */ UINT cbClientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerAttachComplete)
         HRESULT ( STDMETHODCALLTYPE *ProfilerAttachComplete )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerDetachSucceeded)
         HRESULT ( STDMETHODCALLTYPE *ProfilerDetachSucceeded )( 
             ICorProfilerCallback6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationStarted )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ReJITID rejitId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, GetReJITParameters)
         HRESULT ( STDMETHODCALLTYPE *GetReJITParameters )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodId,
             /* [in] */ ICorProfilerFunctionControl *pFunctionControl);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationFinished )( 
             ICorProfilerCallback6 * This,
             /* [in] */ FunctionID functionId,
@@ -4874,6 +5429,7 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITError)
         HRESULT ( STDMETHODCALLTYPE *ReJITError )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ModuleID moduleId,
@@ -4881,6 +5437,7 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, MovedReferences2)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences2 )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -4888,12 +5445,14 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, SurvivingReferences2)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences2 )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback5, ConditionalWeakTableElementReferences)
         HRESULT ( STDMETHODCALLTYPE *ConditionalWeakTableElementReferences )( 
             ICorProfilerCallback6 * This,
             /* [in] */ ULONG cRootRefs,
@@ -4901,6 +5460,7 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
             /* [size_is][in] */ ObjectID valueRefIds[  ],
             /* [size_is][in] */ GCHandleID rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback6, GetAssemblyReferences)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyReferences )( 
             ICorProfilerCallback6 * This,
             /* [string][in] */ const WCHAR *wszAssemblyPath,
@@ -5236,216 +5796,266 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback7 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback7 * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback7 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback7 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback7 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback7 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -5453,17 +6063,20 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ObjectID objectId,
@@ -5471,63 +6084,79 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback7 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback7 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ClassID wrappedClassId,
@@ -5535,18 +6164,22 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, ThreadNameChanged)
         HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ThreadID threadId,
@@ -5554,26 +6187,31 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
             /* [annotation][in] */ 
             _In_reads_opt_(cchName)  WCHAR name[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionStarted)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ int cGenerations,
             /* [size_is][in] */ BOOL generationCollected[  ],
             /* [in] */ COR_PRF_GC_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, SurvivingReferences)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionFinished)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, FinalizeableObjectQueued)
         HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
             ICorProfilerCallback7 * This,
             /* [in] */ DWORD finalizerFlags,
             /* [in] */ ObjectID objectID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, RootReferences2)
         HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ULONG cRootRefs,
@@ -5582,39 +6220,47 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
             /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
             /* [size_is][in] */ UINT_PTR rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleCreated)
         HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
             ICorProfilerCallback7 * This,
             /* [in] */ GCHandleID handleId,
             /* [in] */ ObjectID initialObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleDestroyed)
         HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
             ICorProfilerCallback7 * This,
             /* [in] */ GCHandleID handleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, InitializeForAttach)
         HRESULT ( STDMETHODCALLTYPE *InitializeForAttach )( 
             ICorProfilerCallback7 * This,
             /* [in] */ IUnknown *pCorProfilerInfoUnk,
             /* [in] */ void *pvClientData,
             /* [in] */ UINT cbClientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerAttachComplete)
         HRESULT ( STDMETHODCALLTYPE *ProfilerAttachComplete )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerDetachSucceeded)
         HRESULT ( STDMETHODCALLTYPE *ProfilerDetachSucceeded )( 
             ICorProfilerCallback7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationStarted )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ReJITID rejitId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, GetReJITParameters)
         HRESULT ( STDMETHODCALLTYPE *GetReJITParameters )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodId,
             /* [in] */ ICorProfilerFunctionControl *pFunctionControl);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationFinished )( 
             ICorProfilerCallback7 * This,
             /* [in] */ FunctionID functionId,
@@ -5622,6 +6268,7 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITError)
         HRESULT ( STDMETHODCALLTYPE *ReJITError )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ModuleID moduleId,
@@ -5629,6 +6276,7 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, MovedReferences2)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences2 )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -5636,12 +6284,14 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, SurvivingReferences2)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences2 )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback5, ConditionalWeakTableElementReferences)
         HRESULT ( STDMETHODCALLTYPE *ConditionalWeakTableElementReferences )( 
             ICorProfilerCallback7 * This,
             /* [in] */ ULONG cRootRefs,
@@ -5649,11 +6299,13 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
             /* [size_is][in] */ ObjectID valueRefIds[  ],
             /* [size_is][in] */ GCHandleID rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback6, GetAssemblyReferences)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyReferences )( 
             ICorProfilerCallback7 * This,
             /* [string][in] */ const WCHAR *wszAssemblyPath,
             /* [in] */ ICorProfilerAssemblyReferenceProvider *pAsmRefProvider);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback7, ModuleInMemorySymbolsUpdated)
         HRESULT ( STDMETHODCALLTYPE *ModuleInMemorySymbolsUpdated )( 
             ICorProfilerCallback7 * This,
             ModuleID moduleId);
@@ -6000,216 +6652,266 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback8 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback8 * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback8 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback8 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback8 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback8 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -6217,17 +6919,20 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ObjectID objectId,
@@ -6235,63 +6940,79 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback8 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback8 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ClassID wrappedClassId,
@@ -6299,18 +7020,22 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, ThreadNameChanged)
         HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ThreadID threadId,
@@ -6318,26 +7043,31 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
             /* [annotation][in] */ 
             _In_reads_opt_(cchName)  WCHAR name[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionStarted)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ int cGenerations,
             /* [size_is][in] */ BOOL generationCollected[  ],
             /* [in] */ COR_PRF_GC_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, SurvivingReferences)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionFinished)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, FinalizeableObjectQueued)
         HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
             ICorProfilerCallback8 * This,
             /* [in] */ DWORD finalizerFlags,
             /* [in] */ ObjectID objectID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, RootReferences2)
         HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ULONG cRootRefs,
@@ -6346,39 +7076,47 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
             /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
             /* [size_is][in] */ UINT_PTR rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleCreated)
         HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
             ICorProfilerCallback8 * This,
             /* [in] */ GCHandleID handleId,
             /* [in] */ ObjectID initialObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleDestroyed)
         HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
             ICorProfilerCallback8 * This,
             /* [in] */ GCHandleID handleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, InitializeForAttach)
         HRESULT ( STDMETHODCALLTYPE *InitializeForAttach )( 
             ICorProfilerCallback8 * This,
             /* [in] */ IUnknown *pCorProfilerInfoUnk,
             /* [in] */ void *pvClientData,
             /* [in] */ UINT cbClientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerAttachComplete)
         HRESULT ( STDMETHODCALLTYPE *ProfilerAttachComplete )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerDetachSucceeded)
         HRESULT ( STDMETHODCALLTYPE *ProfilerDetachSucceeded )( 
             ICorProfilerCallback8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ReJITID rejitId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, GetReJITParameters)
         HRESULT ( STDMETHODCALLTYPE *GetReJITParameters )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodId,
             /* [in] */ ICorProfilerFunctionControl *pFunctionControl);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
@@ -6386,6 +7124,7 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITError)
         HRESULT ( STDMETHODCALLTYPE *ReJITError )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ModuleID moduleId,
@@ -6393,6 +7132,7 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, MovedReferences2)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences2 )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -6400,12 +7140,14 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, SurvivingReferences2)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences2 )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback5, ConditionalWeakTableElementReferences)
         HRESULT ( STDMETHODCALLTYPE *ConditionalWeakTableElementReferences )( 
             ICorProfilerCallback8 * This,
             /* [in] */ ULONG cRootRefs,
@@ -6413,15 +7155,18 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
             /* [size_is][in] */ ObjectID valueRefIds[  ],
             /* [size_is][in] */ GCHandleID rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback6, GetAssemblyReferences)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyReferences )( 
             ICorProfilerCallback8 * This,
             /* [string][in] */ const WCHAR *wszAssemblyPath,
             /* [in] */ ICorProfilerAssemblyReferenceProvider *pAsmRefProvider);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback7, ModuleInMemorySymbolsUpdated)
         HRESULT ( STDMETHODCALLTYPE *ModuleInMemorySymbolsUpdated )( 
             ICorProfilerCallback8 * This,
             ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback8, DynamicMethodJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationStarted )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
@@ -6429,6 +7174,7 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
             /* [in] */ LPCBYTE pILHeader,
             /* [in] */ ULONG cbILHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback8, DynamicMethodJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationFinished )( 
             ICorProfilerCallback8 * This,
             /* [in] */ FunctionID functionId,
@@ -6776,216 +7522,266 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback9 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback9 * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback9 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback9 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback9 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback9 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -6993,17 +7789,20 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ObjectID objectId,
@@ -7011,63 +7810,79 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback9 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback9 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ClassID wrappedClassId,
@@ -7075,18 +7890,22 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, ThreadNameChanged)
         HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ThreadID threadId,
@@ -7094,26 +7913,31 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             /* [annotation][in] */ 
             _In_reads_opt_(cchName)  WCHAR name[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionStarted)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ int cGenerations,
             /* [size_is][in] */ BOOL generationCollected[  ],
             /* [in] */ COR_PRF_GC_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, SurvivingReferences)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionFinished)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, FinalizeableObjectQueued)
         HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
             ICorProfilerCallback9 * This,
             /* [in] */ DWORD finalizerFlags,
             /* [in] */ ObjectID objectID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, RootReferences2)
         HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ULONG cRootRefs,
@@ -7122,39 +7946,47 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
             /* [size_is][in] */ UINT_PTR rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleCreated)
         HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
             ICorProfilerCallback9 * This,
             /* [in] */ GCHandleID handleId,
             /* [in] */ ObjectID initialObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleDestroyed)
         HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
             ICorProfilerCallback9 * This,
             /* [in] */ GCHandleID handleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, InitializeForAttach)
         HRESULT ( STDMETHODCALLTYPE *InitializeForAttach )( 
             ICorProfilerCallback9 * This,
             /* [in] */ IUnknown *pCorProfilerInfoUnk,
             /* [in] */ void *pvClientData,
             /* [in] */ UINT cbClientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerAttachComplete)
         HRESULT ( STDMETHODCALLTYPE *ProfilerAttachComplete )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerDetachSucceeded)
         HRESULT ( STDMETHODCALLTYPE *ProfilerDetachSucceeded )( 
             ICorProfilerCallback9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ReJITID rejitId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, GetReJITParameters)
         HRESULT ( STDMETHODCALLTYPE *GetReJITParameters )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodId,
             /* [in] */ ICorProfilerFunctionControl *pFunctionControl);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
@@ -7162,6 +7994,7 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITError)
         HRESULT ( STDMETHODCALLTYPE *ReJITError )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ModuleID moduleId,
@@ -7169,6 +8002,7 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, MovedReferences2)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences2 )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -7176,12 +8010,14 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, SurvivingReferences2)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences2 )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback5, ConditionalWeakTableElementReferences)
         HRESULT ( STDMETHODCALLTYPE *ConditionalWeakTableElementReferences )( 
             ICorProfilerCallback9 * This,
             /* [in] */ ULONG cRootRefs,
@@ -7189,15 +8025,18 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             /* [size_is][in] */ ObjectID valueRefIds[  ],
             /* [size_is][in] */ GCHandleID rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback6, GetAssemblyReferences)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyReferences )( 
             ICorProfilerCallback9 * This,
             /* [string][in] */ const WCHAR *wszAssemblyPath,
             /* [in] */ ICorProfilerAssemblyReferenceProvider *pAsmRefProvider);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback7, ModuleInMemorySymbolsUpdated)
         HRESULT ( STDMETHODCALLTYPE *ModuleInMemorySymbolsUpdated )( 
             ICorProfilerCallback9 * This,
             ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback8, DynamicMethodJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationStarted )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
@@ -7205,12 +8044,14 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             /* [in] */ LPCBYTE pILHeader,
             /* [in] */ ULONG cbILHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback8, DynamicMethodJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationFinished )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback9, DynamicMethodUnloaded)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodUnloaded )( 
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId);
@@ -7574,216 +8415,266 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback10 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback10 * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback10 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback10 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback10 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback10 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -7791,17 +8682,20 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ObjectID objectId,
@@ -7809,63 +8703,79 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback10 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback10 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ClassID wrappedClassId,
@@ -7873,18 +8783,22 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, ThreadNameChanged)
         HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ThreadID threadId,
@@ -7892,26 +8806,31 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [annotation][in] */ 
             _In_reads_opt_(cchName)  WCHAR name[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionStarted)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ int cGenerations,
             /* [size_is][in] */ BOOL generationCollected[  ],
             /* [in] */ COR_PRF_GC_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, SurvivingReferences)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionFinished)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, FinalizeableObjectQueued)
         HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
             ICorProfilerCallback10 * This,
             /* [in] */ DWORD finalizerFlags,
             /* [in] */ ObjectID objectID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, RootReferences2)
         HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ULONG cRootRefs,
@@ -7920,39 +8839,47 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
             /* [size_is][in] */ UINT_PTR rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleCreated)
         HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
             ICorProfilerCallback10 * This,
             /* [in] */ GCHandleID handleId,
             /* [in] */ ObjectID initialObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleDestroyed)
         HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
             ICorProfilerCallback10 * This,
             /* [in] */ GCHandleID handleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, InitializeForAttach)
         HRESULT ( STDMETHODCALLTYPE *InitializeForAttach )( 
             ICorProfilerCallback10 * This,
             /* [in] */ IUnknown *pCorProfilerInfoUnk,
             /* [in] */ void *pvClientData,
             /* [in] */ UINT cbClientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerAttachComplete)
         HRESULT ( STDMETHODCALLTYPE *ProfilerAttachComplete )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerDetachSucceeded)
         HRESULT ( STDMETHODCALLTYPE *ProfilerDetachSucceeded )( 
             ICorProfilerCallback10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ReJITID rejitId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, GetReJITParameters)
         HRESULT ( STDMETHODCALLTYPE *GetReJITParameters )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodId,
             /* [in] */ ICorProfilerFunctionControl *pFunctionControl);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
@@ -7960,6 +8887,7 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITError)
         HRESULT ( STDMETHODCALLTYPE *ReJITError )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ModuleID moduleId,
@@ -7967,6 +8895,7 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, MovedReferences2)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences2 )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -7974,12 +8903,14 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, SurvivingReferences2)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences2 )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback5, ConditionalWeakTableElementReferences)
         HRESULT ( STDMETHODCALLTYPE *ConditionalWeakTableElementReferences )( 
             ICorProfilerCallback10 * This,
             /* [in] */ ULONG cRootRefs,
@@ -7987,15 +8918,18 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [size_is][in] */ ObjectID valueRefIds[  ],
             /* [size_is][in] */ GCHandleID rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback6, GetAssemblyReferences)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyReferences )( 
             ICorProfilerCallback10 * This,
             /* [string][in] */ const WCHAR *wszAssemblyPath,
             /* [in] */ ICorProfilerAssemblyReferenceProvider *pAsmRefProvider);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback7, ModuleInMemorySymbolsUpdated)
         HRESULT ( STDMETHODCALLTYPE *ModuleInMemorySymbolsUpdated )( 
             ICorProfilerCallback10 * This,
             ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback8, DynamicMethodJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationStarted )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
@@ -8003,16 +8937,19 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [in] */ LPCBYTE pILHeader,
             /* [in] */ ULONG cbILHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback8, DynamicMethodJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationFinished )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback9, DynamicMethodUnloaded)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodUnloaded )( 
             ICorProfilerCallback10 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback10, EventPipeEventDelivered)
         HRESULT ( STDMETHODCALLTYPE *EventPipeEventDelivered )( 
             ICorProfilerCallback10 * This,
             /* [in] */ EVENTPIPE_PROVIDER provider,
@@ -8028,6 +8965,7 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [in] */ ULONG numStackFrames,
             /* [length_is][in] */ UINT_PTR stackFrames[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback10, EventPipeProviderCreated)
         HRESULT ( STDMETHODCALLTYPE *EventPipeProviderCreated )( 
             ICorProfilerCallback10 * This,
             /* [in] */ EVENTPIPE_PROVIDER provider);
@@ -8384,216 +9322,266 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerCallback11 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorProfilerCallback11 * This,
             /* [in] */ IUnknown *pICorProfilerInfoUnk);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, Shutdown)
         HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainCreationFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownStarted)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ AppDomainID appDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AppDomainShutdownFinished)
         HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ AppDomainID appDomainId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ AssemblyID assemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, AssemblyUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ AssemblyID assemblyId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ModuleAttachedToAssembly)
         HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ AssemblyID AssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassLoadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ClassUnloadFinished)
         HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ClassID classId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, FunctionUnloadStarted)
         HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchStarted)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *pbUseCachedFunction);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITCachedFunctionSearchFinished)
         HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_JIT_CACHE result);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITFunctionPitched)
         HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, JITInlining)
         HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID callerId,
             /* [in] */ FunctionID calleeId,
             /* [out] */ BOOL *pfShouldInline);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadCreated)
         HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadDestroyed)
         HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ThreadAssignedToOSThread)
         HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ThreadID managedThreadId,
             /* [in] */ DWORD osThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientSendingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
             ICorProfilerCallback11 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientReceivingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
             ICorProfilerCallback11 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingClientInvocationFinished)
         HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerReceivingMessage)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
             ICorProfilerCallback11 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationStarted)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerInvocationReturned)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RemotingServerSendingReply)
         HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
             ICorProfilerCallback11 * This,
             /* [in] */ GUID *pCookie,
             /* [in] */ BOOL fIsAsync);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, UnmanagedToManagedTransition)
         HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ManagedToUnmanagedTransition)
         HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_TRANSITION_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeSuspendAborted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeStarted)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeResumeFinished)
         HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadSuspended)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RuntimeThreadResumed)
         HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ThreadID threadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, MovedReferences)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -8601,17 +9589,20 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectAllocated)
         HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ObjectID objectId,
             /* [in] */ ClassID classId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectsAllocatedByClass)
         HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ULONG cClassCount,
             /* [size_is][in] */ ClassID classIds[  ],
             /* [size_is][in] */ ULONG cObjects[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ObjectID objectId,
@@ -8619,63 +9610,79 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [in] */ ULONG cObjectRefs,
             /* [size_is][in] */ ObjectID objectRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, RootReferences)
         HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ULONG cRootRefs,
             /* [size_is][in] */ ObjectID rootRefIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionThrown)
         HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ObjectID thrownObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchFilterLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionSearchCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
             ICorProfilerCallback11 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionOSHandlerLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
             ICorProfilerCallback11 * This,
             /* [in] */ UINT_PTR __unused);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFunctionLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionUnwindFinallyLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherEnter)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ObjectID objectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCatcherLeave)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableCreated)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ClassID wrappedClassId,
@@ -8683,18 +9690,22 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [in] */ void *pVTable,
             /* [in] */ ULONG cSlots);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, COMClassicVTableDestroyed)
         HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ClassID wrappedClassId,
             /* [in] */ REFGUID implementedIID,
             /* [in] */ void *pVTable);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherFound)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback, ExceptionCLRCatcherExecute)
         HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, ThreadNameChanged)
         HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ThreadID threadId,
@@ -8702,26 +9713,31 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [annotation][in] */ 
             _In_reads_opt_(cchName)  WCHAR name[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionStarted)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ int cGenerations,
             /* [size_is][in] */ BOOL generationCollected[  ],
             /* [in] */ COR_PRF_GC_REASON reason);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, SurvivingReferences)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, GarbageCollectionFinished)
         HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, FinalizeableObjectQueued)
         HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
             ICorProfilerCallback11 * This,
             /* [in] */ DWORD finalizerFlags,
             /* [in] */ ObjectID objectID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, RootReferences2)
         HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ULONG cRootRefs,
@@ -8730,39 +9746,47 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
             /* [size_is][in] */ UINT_PTR rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleCreated)
         HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
             ICorProfilerCallback11 * This,
             /* [in] */ GCHandleID handleId,
             /* [in] */ ObjectID initialObjectId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback2, HandleDestroyed)
         HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
             ICorProfilerCallback11 * This,
             /* [in] */ GCHandleID handleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, InitializeForAttach)
         HRESULT ( STDMETHODCALLTYPE *InitializeForAttach )( 
             ICorProfilerCallback11 * This,
             /* [in] */ IUnknown *pCorProfilerInfoUnk,
             /* [in] */ void *pvClientData,
             /* [in] */ UINT cbClientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerAttachComplete)
         HRESULT ( STDMETHODCALLTYPE *ProfilerAttachComplete )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback3, ProfilerDetachSucceeded)
         HRESULT ( STDMETHODCALLTYPE *ProfilerDetachSucceeded )( 
             ICorProfilerCallback11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ ReJITID rejitId,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, GetReJITParameters)
         HRESULT ( STDMETHODCALLTYPE *GetReJITParameters )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodId,
             /* [in] */ ICorProfilerFunctionControl *pFunctionControl);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *ReJITCompilationFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
@@ -8770,6 +9794,7 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, ReJITError)
         HRESULT ( STDMETHODCALLTYPE *ReJITError )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ModuleID moduleId,
@@ -8777,6 +9802,7 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, MovedReferences2)
         HRESULT ( STDMETHODCALLTYPE *MovedReferences2 )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ULONG cMovedObjectIDRanges,
@@ -8784,12 +9810,14 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback4, SurvivingReferences2)
         HRESULT ( STDMETHODCALLTYPE *SurvivingReferences2 )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ULONG cSurvivingObjectIDRanges,
             /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
             /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback5, ConditionalWeakTableElementReferences)
         HRESULT ( STDMETHODCALLTYPE *ConditionalWeakTableElementReferences )( 
             ICorProfilerCallback11 * This,
             /* [in] */ ULONG cRootRefs,
@@ -8797,15 +9825,18 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [size_is][in] */ ObjectID valueRefIds[  ],
             /* [size_is][in] */ GCHandleID rootIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback6, GetAssemblyReferences)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyReferences )( 
             ICorProfilerCallback11 * This,
             /* [string][in] */ const WCHAR *wszAssemblyPath,
             /* [in] */ ICorProfilerAssemblyReferenceProvider *pAsmRefProvider);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback7, ModuleInMemorySymbolsUpdated)
         HRESULT ( STDMETHODCALLTYPE *ModuleInMemorySymbolsUpdated )( 
             ICorProfilerCallback11 * This,
             ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback8, DynamicMethodJITCompilationStarted)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationStarted )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
@@ -8813,16 +9844,19 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [in] */ LPCBYTE pILHeader,
             /* [in] */ ULONG cbILHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback8, DynamicMethodJITCompilationFinished)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationFinished )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ HRESULT hrStatus,
             /* [in] */ BOOL fIsSafeToBlock);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback9, DynamicMethodUnloaded)
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodUnloaded )( 
             ICorProfilerCallback11 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback10, EventPipeEventDelivered)
         HRESULT ( STDMETHODCALLTYPE *EventPipeEventDelivered )( 
             ICorProfilerCallback11 * This,
             /* [in] */ EVENTPIPE_PROVIDER provider,
@@ -8838,10 +9872,12 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             /* [in] */ ULONG numStackFrames,
             /* [length_is][in] */ UINT_PTR stackFrames[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback10, EventPipeProviderCreated)
         HRESULT ( STDMETHODCALLTYPE *EventPipeProviderCreated )( 
             ICorProfilerCallback11 * This,
             /* [in] */ EVENTPIPE_PROVIDER provider);
         
+        DECLSPEC_XFGVIRT(ICorProfilerCallback11, LoadAsNotificationOnly)
         HRESULT ( STDMETHODCALLTYPE *LoadAsNotificationOnly )( 
             ICorProfilerCallback11 * This,
             BOOL *pbNotificationOnly);
@@ -9182,7 +10218,8 @@ typedef /* [public] */
 enum __MIDL___MIDL_itf_corprof_0000_0011_0001
     {
         COR_PRF_CODEGEN_DISABLE_INLINING    = 0x1,
-        COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS   = 0x2
+        COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS   = 0x2,
+        COR_PRF_CODEGEN_DEBUG_INFO  = 0x3
     }   COR_PRF_CODEGEN_FLAGS;
 
 
@@ -9370,60 +10407,72 @@ EXTERN_C const IID IID_ICorProfilerInfo;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo * This,
             /* [in] */ ClassID classId,
@@ -9431,21 +10480,25 @@ EXTERN_C const IID IID_ICorProfilerInfo;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo * This,
             /* [in] */ FunctionID functionId,
@@ -9453,20 +10506,24 @@ EXTERN_C const IID IID_ICorProfilerInfo;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo * This,
             /* [in] */ FunctionID functionId,
@@ -9474,6 +10531,7 @@ EXTERN_C const IID IID_ICorProfilerInfo;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo * This,
             /* [in] */ ModuleID moduleId,
@@ -9484,6 +10542,7 @@ EXTERN_C const IID IID_ICorProfilerInfo;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo * This,
             /* [in] */ ModuleID moduleId,
@@ -9491,6 +10550,7 @@ EXTERN_C const IID IID_ICorProfilerInfo;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo * This,
             /* [in] */ ModuleID moduleId,
@@ -9498,17 +10558,20 @@ EXTERN_C const IID IID_ICorProfilerInfo;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo * This,
             /* [in] */ AppDomainID appDomainId,
@@ -9518,6 +10581,7 @@ EXTERN_C const IID IID_ICorProfilerInfo;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo * This,
             /* [in] */ AssemblyID assemblyId,
@@ -9528,13 +10592,16 @@ EXTERN_C const IID IID_ICorProfilerInfo;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo * This,
             /* [in] */ FunctionID functionId,
@@ -9542,28 +10609,34 @@ EXTERN_C const IID IID_ICorProfilerInfo;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo * This,
             /* [in] */ FunctionID functionId,
@@ -9852,60 +10925,72 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo2 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo2 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ClassID classId,
@@ -9913,21 +10998,25 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo2 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionID functionId,
@@ -9935,20 +11024,24 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo2 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionID functionId,
@@ -9956,6 +11049,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ModuleID moduleId,
@@ -9966,6 +11060,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ModuleID moduleId,
@@ -9973,6 +11068,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ModuleID moduleId,
@@ -9980,17 +11076,20 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo2 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -10000,6 +11099,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo2 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -10010,13 +11110,16 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo2 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionID functionId,
@@ -10024,28 +11127,34 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo2 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo2 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo2 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo2 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionID functionId,
@@ -10053,6 +11162,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ThreadID thread,
@@ -10062,12 +11172,14 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionID funcId,
@@ -10079,12 +11191,14 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo2 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ClassID classID,
@@ -10093,6 +11207,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ClassID classId,
@@ -10103,6 +11218,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo2 * This,
             /* [in] */ FunctionID functionID,
@@ -10110,6 +11226,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ModuleID moduleID,
@@ -10118,6 +11235,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ModuleID moduleID,
@@ -10127,11 +11245,13 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ObjectID objectId,
@@ -10140,22 +11260,26 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ClassID classId,
@@ -10163,6 +11287,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ClassID classId,
@@ -10170,6 +11295,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ClassID classId,
@@ -10177,23 +11303,27 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo2 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo2 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
@@ -10499,60 +11629,72 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo3 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo3 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classId,
@@ -10560,21 +11702,25 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo3 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID functionId,
@@ -10582,20 +11728,24 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo3 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID functionId,
@@ -10603,6 +11753,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleId,
@@ -10613,6 +11764,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleId,
@@ -10620,6 +11772,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleId,
@@ -10627,17 +11780,20 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo3 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -10647,6 +11803,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo3 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -10657,13 +11814,16 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo3 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID functionId,
@@ -10671,28 +11831,34 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo3 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo3 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo3 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo3 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID functionId,
@@ -10700,6 +11866,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ThreadID thread,
@@ -10709,12 +11876,14 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID funcId,
@@ -10726,12 +11895,14 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo3 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classID,
@@ -10740,6 +11911,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classId,
@@ -10750,6 +11922,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID functionID,
@@ -10757,6 +11930,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleID,
@@ -10765,6 +11939,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleID,
@@ -10774,11 +11949,13 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ObjectID objectId,
@@ -10787,22 +11964,26 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classId,
@@ -10810,6 +11991,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classId,
@@ -10817,6 +11999,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classId,
@@ -10824,57 +12007,68 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo3 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
             ICorProfilerInfo3 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
         HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
             ICorProfilerInfo3 * This,
             /* [in] */ DWORD dwExpectedCompletionMilliseconds);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionIDMapper2 *pFunc,
             /* [in] */ void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
             ICorProfilerInfo3 * This,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionEnter3 *pFuncEnter3,
             /* [in] */ FunctionLeave3 *pFuncLeave3,
             /* [in] */ FunctionTailcall3 *pFuncTailcall3);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
             /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
             /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID functionId,
@@ -10883,6 +12077,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out][in] */ ULONG *pcbArgumentInfo,
             /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID functionId,
@@ -10890,16 +12085,19 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
             /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
             ICorProfilerInfo3 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_ELT_INFO eltInfo,
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
         HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
             ICorProfilerInfo3 * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
             ICorProfilerInfo3 * This,
             /* [out] */ USHORT *pClrInstanceId,
@@ -10913,6 +12111,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [annotation][out] */ 
             _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ClassID classId,
@@ -10921,6 +12120,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleId,
@@ -10928,6 +12128,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
             /* [out] */ ULONG32 *pcAppDomainIds,
             /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
             ICorProfilerInfo3 * This,
             /* [in] */ ModuleID moduleId,
@@ -11219,33 +12420,41 @@ EXTERN_C const IID IID_ICorProfilerObjectEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerObjectEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerObjectEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerObjectEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerObjectEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorProfilerObjectEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorProfilerObjectEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorProfilerObjectEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerObjectEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorProfilerObjectEnum * This,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerObjectEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorProfilerObjectEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorProfilerObjectEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorProfilerObjectEnum * This,
             /* [in] */ ULONG celt,
@@ -11341,33 +12550,41 @@ EXTERN_C const IID IID_ICorProfilerFunctionEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerFunctionEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerFunctionEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerFunctionEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerFunctionEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorProfilerFunctionEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorProfilerFunctionEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorProfilerFunctionEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerFunctionEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorProfilerFunctionEnum * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerFunctionEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorProfilerFunctionEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorProfilerFunctionEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorProfilerFunctionEnum * This,
             /* [in] */ ULONG celt,
@@ -11463,33 +12680,41 @@ EXTERN_C const IID IID_ICorProfilerModuleEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerModuleEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerModuleEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerModuleEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerModuleEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorProfilerModuleEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorProfilerModuleEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorProfilerModuleEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerModuleEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorProfilerModuleEnum * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerModuleEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorProfilerModuleEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorProfilerModuleEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorProfilerModuleEnum * This,
             /* [in] */ ULONG celt,
@@ -11572,18 +12797,22 @@ EXTERN_C const IID IID_IMethodMalloc;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             IMethodMalloc * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             IMethodMalloc * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             IMethodMalloc * This);
         
+        DECLSPEC_XFGVIRT(IMethodMalloc, Alloc)
         PVOID ( STDMETHODCALLTYPE *Alloc )( 
             IMethodMalloc * This,
             /* [in] */ ULONG cb);
@@ -11660,27 +12889,33 @@ EXTERN_C const IID IID_ICorProfilerFunctionControl;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerFunctionControl * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerFunctionControl * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerFunctionControl * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerFunctionControl, SetCodegenFlags)
         HRESULT ( STDMETHODCALLTYPE *SetCodegenFlags )( 
             ICorProfilerFunctionControl * This,
             /* [in] */ DWORD flags);
         
+        DECLSPEC_XFGVIRT(ICorProfilerFunctionControl, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerFunctionControl * This,
             /* [in] */ ULONG cbNewILMethodHeader,
             /* [size_is][in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerFunctionControl, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerFunctionControl * This,
             /* [in] */ ULONG cILMapEntries,
@@ -11801,60 +13036,72 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo4 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo4 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classId,
@@ -11862,21 +13109,25 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo4 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId,
@@ -11884,20 +13135,24 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo4 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId,
@@ -11905,6 +13160,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleId,
@@ -11915,6 +13171,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleId,
@@ -11922,6 +13179,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleId,
@@ -11929,17 +13187,20 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo4 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -11949,6 +13210,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo4 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -11959,13 +13221,16 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId,
@@ -11973,28 +13238,34 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo4 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo4 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo4 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo4 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId,
@@ -12002,6 +13273,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ThreadID thread,
@@ -12011,12 +13283,14 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID funcId,
@@ -12028,12 +13302,14 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo4 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classID,
@@ -12042,6 +13318,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classId,
@@ -12052,6 +13329,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionID,
@@ -12059,6 +13337,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleID,
@@ -12067,6 +13346,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleID,
@@ -12076,11 +13356,13 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ObjectID objectId,
@@ -12089,22 +13371,26 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classId,
@@ -12112,6 +13398,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classId,
@@ -12119,6 +13406,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classId,
@@ -12126,57 +13414,68 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo4 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
             ICorProfilerInfo4 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
         HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
             ICorProfilerInfo4 * This,
             /* [in] */ DWORD dwExpectedCompletionMilliseconds);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionIDMapper2 *pFunc,
             /* [in] */ void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
             ICorProfilerInfo4 * This,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionEnter3 *pFuncEnter3,
             /* [in] */ FunctionLeave3 *pFuncLeave3,
             /* [in] */ FunctionTailcall3 *pFuncTailcall3);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
             /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
             /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId,
@@ -12185,6 +13484,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out][in] */ ULONG *pcbArgumentInfo,
             /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId,
@@ -12192,16 +13492,19 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
             /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_ELT_INFO eltInfo,
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
         HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
             ICorProfilerInfo4 * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
             ICorProfilerInfo4 * This,
             /* [out] */ USHORT *pClrInstanceId,
@@ -12215,6 +13518,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [annotation][out] */ 
             _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ClassID classId,
@@ -12223,6 +13527,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleId,
@@ -12230,6 +13535,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ULONG32 *pcAppDomainIds,
             /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ModuleID moduleId,
@@ -12241,19 +13547,23 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ AssemblyID *pAssemblyId,
             /* [out] */ DWORD *pdwModuleFlags);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
             ICorProfilerInfo4 * This,
             /* [out] */ ICorProfilerThreadEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
         HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
             ICorProfilerInfo4 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
         HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ULONG cFunctions,
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
         HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ULONG cFunctions,
@@ -12261,6 +13571,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [size_is][in] */ mdMethodDef methodIds[  ],
             /* [size_is][out] */ HRESULT status[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionID,
@@ -12269,12 +13580,14 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
         HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId,
@@ -12282,6 +13595,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ULONG *pcReJitIds,
             /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ FunctionID functionId,
@@ -12290,10 +13604,12 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
             ICorProfilerInfo4 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
             ICorProfilerInfo4 * This,
             /* [in] */ ObjectID objectId,
@@ -12602,60 +13918,72 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo5 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo5 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo5 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo5 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classId,
@@ -12663,21 +13991,25 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo5 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId,
@@ -12685,20 +14017,24 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo5 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId,
@@ -12706,6 +14042,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleId,
@@ -12716,6 +14053,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleId,
@@ -12723,6 +14061,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleId,
@@ -12730,17 +14069,20 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo5 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -12750,6 +14092,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo5 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -12760,13 +14103,16 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId,
@@ -12774,28 +14120,34 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo5 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo5 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo5 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo5 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId,
@@ -12803,6 +14155,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ThreadID thread,
@@ -12812,12 +14165,14 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID funcId,
@@ -12829,12 +14184,14 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo5 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classID,
@@ -12843,6 +14200,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classId,
@@ -12853,6 +14211,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionID,
@@ -12860,6 +14219,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleID,
@@ -12868,6 +14228,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleID,
@@ -12877,11 +14238,13 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ObjectID objectId,
@@ -12890,22 +14253,26 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classId,
@@ -12913,6 +14280,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classId,
@@ -12920,6 +14288,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classId,
@@ -12927,57 +14296,68 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo5 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
             ICorProfilerInfo5 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
         HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
             ICorProfilerInfo5 * This,
             /* [in] */ DWORD dwExpectedCompletionMilliseconds);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionIDMapper2 *pFunc,
             /* [in] */ void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
             ICorProfilerInfo5 * This,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionEnter3 *pFuncEnter3,
             /* [in] */ FunctionLeave3 *pFuncLeave3,
             /* [in] */ FunctionTailcall3 *pFuncTailcall3);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
             /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
             /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId,
@@ -12986,6 +14366,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out][in] */ ULONG *pcbArgumentInfo,
             /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId,
@@ -12993,16 +14374,19 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
             /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_ELT_INFO eltInfo,
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
         HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
             ICorProfilerInfo5 * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
             ICorProfilerInfo5 * This,
             /* [out] */ USHORT *pClrInstanceId,
@@ -13016,6 +14400,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [annotation][out] */ 
             _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ClassID classId,
@@ -13024,6 +14409,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleId,
@@ -13031,6 +14417,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ULONG32 *pcAppDomainIds,
             /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ModuleID moduleId,
@@ -13042,19 +14429,23 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ AssemblyID *pAssemblyId,
             /* [out] */ DWORD *pdwModuleFlags);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
             ICorProfilerInfo5 * This,
             /* [out] */ ICorProfilerThreadEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
         HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
             ICorProfilerInfo5 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
         HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ULONG cFunctions,
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
         HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ULONG cFunctions,
@@ -13062,6 +14453,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [size_is][in] */ mdMethodDef methodIds[  ],
             /* [size_is][out] */ HRESULT status[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionID,
@@ -13070,12 +14462,14 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
         HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId,
@@ -13083,6 +14477,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ULONG *pcReJitIds,
             /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ FunctionID functionId,
@@ -13091,20 +14486,24 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
             ICorProfilerInfo5 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ SIZE_T *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, GetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask2 )( 
             ICorProfilerInfo5 * This,
             /* [out] */ DWORD *pdwEventsLow,
             /* [out] */ DWORD *pdwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, SetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask2 )( 
             ICorProfilerInfo5 * This,
             /* [in] */ DWORD dwEventsLow,
@@ -13419,60 +14818,72 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo6 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo6 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo6 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo6 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classId,
@@ -13480,21 +14891,25 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo6 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId,
@@ -13502,20 +14917,24 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo6 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId,
@@ -13523,6 +14942,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleId,
@@ -13533,6 +14953,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleId,
@@ -13540,6 +14961,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleId,
@@ -13547,17 +14969,20 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo6 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -13567,6 +14992,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo6 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -13577,13 +15003,16 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId,
@@ -13591,28 +15020,34 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo6 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo6 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo6 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo6 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId,
@@ -13620,6 +15055,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ThreadID thread,
@@ -13629,12 +15065,14 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID funcId,
@@ -13646,12 +15084,14 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo6 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classID,
@@ -13660,6 +15100,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classId,
@@ -13670,6 +15111,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionID,
@@ -13677,6 +15119,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleID,
@@ -13685,6 +15128,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleID,
@@ -13694,11 +15138,13 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ObjectID objectId,
@@ -13707,22 +15153,26 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classId,
@@ -13730,6 +15180,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classId,
@@ -13737,6 +15188,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classId,
@@ -13744,57 +15196,68 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo6 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
             ICorProfilerInfo6 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
         HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
             ICorProfilerInfo6 * This,
             /* [in] */ DWORD dwExpectedCompletionMilliseconds);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionIDMapper2 *pFunc,
             /* [in] */ void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
             ICorProfilerInfo6 * This,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionEnter3 *pFuncEnter3,
             /* [in] */ FunctionLeave3 *pFuncLeave3,
             /* [in] */ FunctionTailcall3 *pFuncTailcall3);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
             /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
             /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId,
@@ -13803,6 +15266,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out][in] */ ULONG *pcbArgumentInfo,
             /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId,
@@ -13810,16 +15274,19 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
             /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_ELT_INFO eltInfo,
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
         HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
             ICorProfilerInfo6 * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
             ICorProfilerInfo6 * This,
             /* [out] */ USHORT *pClrInstanceId,
@@ -13833,6 +15300,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [annotation][out] */ 
             _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ClassID classId,
@@ -13841,6 +15309,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleId,
@@ -13848,6 +15317,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ULONG32 *pcAppDomainIds,
             /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID moduleId,
@@ -13859,19 +15329,23 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ AssemblyID *pAssemblyId,
             /* [out] */ DWORD *pdwModuleFlags);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
             ICorProfilerInfo6 * This,
             /* [out] */ ICorProfilerThreadEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
         HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
             ICorProfilerInfo6 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
         HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ULONG cFunctions,
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
         HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ULONG cFunctions,
@@ -13879,6 +15353,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [size_is][in] */ mdMethodDef methodIds[  ],
             /* [size_is][out] */ HRESULT status[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionID,
@@ -13887,12 +15362,14 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
         HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId,
@@ -13900,6 +15377,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ULONG *pcReJitIds,
             /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ FunctionID functionId,
@@ -13908,25 +15386,30 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
             ICorProfilerInfo6 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ SIZE_T *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, GetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask2 )( 
             ICorProfilerInfo6 * This,
             /* [out] */ DWORD *pdwEventsLow,
             /* [out] */ DWORD *pdwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, SetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask2 )( 
             ICorProfilerInfo6 * This,
             /* [in] */ DWORD dwEventsLow,
             /* [in] */ DWORD dwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo6, EnumNgenModuleMethodsInliningThisMethod)
         HRESULT ( STDMETHODCALLTYPE *EnumNgenModuleMethodsInliningThisMethod )( 
             ICorProfilerInfo6 * This,
             /* [in] */ ModuleID inlinersModuleId,
@@ -14255,60 +15738,72 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo7 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo7 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo7 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo7 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classId,
@@ -14316,21 +15811,25 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo7 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId,
@@ -14338,20 +15837,24 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo7 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId,
@@ -14359,6 +15862,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
@@ -14369,6 +15873,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
@@ -14376,6 +15881,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
@@ -14383,17 +15889,20 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo7 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -14403,6 +15912,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo7 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -14413,13 +15923,16 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId,
@@ -14427,28 +15940,34 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo7 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo7 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo7 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo7 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId,
@@ -14456,6 +15975,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ThreadID thread,
@@ -14465,12 +15985,14 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID funcId,
@@ -14482,12 +16004,14 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo7 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classID,
@@ -14496,6 +16020,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classId,
@@ -14506,6 +16031,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionID,
@@ -14513,6 +16039,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleID,
@@ -14521,6 +16048,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleID,
@@ -14530,11 +16058,13 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ObjectID objectId,
@@ -14543,22 +16073,26 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classId,
@@ -14566,6 +16100,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classId,
@@ -14573,6 +16108,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classId,
@@ -14580,57 +16116,68 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo7 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
             ICorProfilerInfo7 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
         HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
             ICorProfilerInfo7 * This,
             /* [in] */ DWORD dwExpectedCompletionMilliseconds);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionIDMapper2 *pFunc,
             /* [in] */ void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
             ICorProfilerInfo7 * This,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionEnter3 *pFuncEnter3,
             /* [in] */ FunctionLeave3 *pFuncLeave3,
             /* [in] */ FunctionTailcall3 *pFuncTailcall3);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
             /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
             /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId,
@@ -14639,6 +16186,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out][in] */ ULONG *pcbArgumentInfo,
             /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId,
@@ -14646,16 +16194,19 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
             /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_ELT_INFO eltInfo,
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
         HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
             ICorProfilerInfo7 * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
             ICorProfilerInfo7 * This,
             /* [out] */ USHORT *pClrInstanceId,
@@ -14669,6 +16220,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [annotation][out] */ 
             _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ClassID classId,
@@ -14677,6 +16229,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
@@ -14684,6 +16237,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ULONG32 *pcAppDomainIds,
             /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
@@ -14695,19 +16249,23 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ AssemblyID *pAssemblyId,
             /* [out] */ DWORD *pdwModuleFlags);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
             ICorProfilerInfo7 * This,
             /* [out] */ ICorProfilerThreadEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
         HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
             ICorProfilerInfo7 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
         HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ULONG cFunctions,
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
         HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ULONG cFunctions,
@@ -14715,6 +16273,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [size_is][in] */ mdMethodDef methodIds[  ],
             /* [size_is][out] */ HRESULT status[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionID,
@@ -14723,12 +16282,14 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
         HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId,
@@ -14736,6 +16297,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ULONG *pcReJitIds,
             /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ FunctionID functionId,
@@ -14744,25 +16306,30 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
             ICorProfilerInfo7 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ SIZE_T *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, GetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask2 )( 
             ICorProfilerInfo7 * This,
             /* [out] */ DWORD *pdwEventsLow,
             /* [out] */ DWORD *pdwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, SetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask2 )( 
             ICorProfilerInfo7 * This,
             /* [in] */ DWORD dwEventsLow,
             /* [in] */ DWORD dwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo6, EnumNgenModuleMethodsInliningThisMethod)
         HRESULT ( STDMETHODCALLTYPE *EnumNgenModuleMethodsInliningThisMethod )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID inlinersModuleId,
@@ -14771,15 +16338,18 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
             /* [out] */ BOOL *incompleteData,
             /* [out] */ ICorProfilerMethodEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ApplyMetaData)
         HRESULT ( STDMETHODCALLTYPE *ApplyMetaData )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, GetInMemorySymbolsLength)
         HRESULT ( STDMETHODCALLTYPE *GetInMemorySymbolsLength )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ DWORD *pCountSymbolBytes);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ReadInMemorySymbols)
         HRESULT ( STDMETHODCALLTYPE *ReadInMemorySymbols )( 
             ICorProfilerInfo7 * This,
             /* [in] */ ModuleID moduleId,
@@ -15122,60 +16692,72 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo8 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo8 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo8 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo8 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classId,
@@ -15183,21 +16765,25 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo8 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
@@ -15205,20 +16791,24 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo8 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
@@ -15226,6 +16816,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
@@ -15236,6 +16827,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
@@ -15243,6 +16835,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
@@ -15250,17 +16843,20 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -15270,6 +16866,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -15280,13 +16877,16 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
@@ -15294,28 +16894,34 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo8 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo8 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo8 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo8 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
@@ -15323,6 +16929,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ThreadID thread,
@@ -15332,12 +16939,14 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID funcId,
@@ -15349,12 +16958,14 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo8 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classID,
@@ -15363,6 +16974,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classId,
@@ -15373,6 +16985,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionID,
@@ -15380,6 +16993,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleID,
@@ -15388,6 +17002,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleID,
@@ -15397,11 +17012,13 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ObjectID objectId,
@@ -15410,22 +17027,26 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classId,
@@ -15433,6 +17054,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classId,
@@ -15440,6 +17062,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classId,
@@ -15447,57 +17070,68 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo8 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
             ICorProfilerInfo8 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
         HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
             ICorProfilerInfo8 * This,
             /* [in] */ DWORD dwExpectedCompletionMilliseconds);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionIDMapper2 *pFunc,
             /* [in] */ void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
             ICorProfilerInfo8 * This,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionEnter3 *pFuncEnter3,
             /* [in] */ FunctionLeave3 *pFuncLeave3,
             /* [in] */ FunctionTailcall3 *pFuncTailcall3);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
             /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
             /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
@@ -15506,6 +17140,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out][in] */ ULONG *pcbArgumentInfo,
             /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
@@ -15513,16 +17148,19 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
             /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_ELT_INFO eltInfo,
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
         HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
             ICorProfilerInfo8 * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
             ICorProfilerInfo8 * This,
             /* [out] */ USHORT *pClrInstanceId,
@@ -15536,6 +17174,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [annotation][out] */ 
             _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ClassID classId,
@@ -15544,6 +17183,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
@@ -15551,6 +17191,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ULONG32 *pcAppDomainIds,
             /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
@@ -15562,19 +17203,23 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ AssemblyID *pAssemblyId,
             /* [out] */ DWORD *pdwModuleFlags);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
             ICorProfilerInfo8 * This,
             /* [out] */ ICorProfilerThreadEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
         HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
             ICorProfilerInfo8 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
         HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ULONG cFunctions,
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
         HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ULONG cFunctions,
@@ -15582,6 +17227,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [size_is][in] */ mdMethodDef methodIds[  ],
             /* [size_is][out] */ HRESULT status[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionID,
@@ -15590,12 +17236,14 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
         HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
@@ -15603,6 +17251,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ULONG *pcReJitIds,
             /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
@@ -15611,25 +17260,30 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
             ICorProfilerInfo8 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ SIZE_T *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, GetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask2 )( 
             ICorProfilerInfo8 * This,
             /* [out] */ DWORD *pdwEventsLow,
             /* [out] */ DWORD *pdwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, SetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask2 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ DWORD dwEventsLow,
             /* [in] */ DWORD dwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo6, EnumNgenModuleMethodsInliningThisMethod)
         HRESULT ( STDMETHODCALLTYPE *EnumNgenModuleMethodsInliningThisMethod )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID inlinersModuleId,
@@ -15638,15 +17292,18 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [out] */ BOOL *incompleteData,
             /* [out] */ ICorProfilerMethodEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ApplyMetaData)
         HRESULT ( STDMETHODCALLTYPE *ApplyMetaData )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, GetInMemorySymbolsLength)
         HRESULT ( STDMETHODCALLTYPE *GetInMemorySymbolsLength )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ DWORD *pCountSymbolBytes);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ReadInMemorySymbols)
         HRESULT ( STDMETHODCALLTYPE *ReadInMemorySymbols )( 
             ICorProfilerInfo8 * This,
             /* [in] */ ModuleID moduleId,
@@ -15655,17 +17312,20 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
             /* [in] */ DWORD countSymbolBytes,
             /* [out] */ DWORD *pCountSymbolBytesRead);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, IsFunctionDynamic)
         HRESULT ( STDMETHODCALLTYPE *IsFunctionDynamic )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *isDynamic);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetFunctionFromIP3)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP3 )( 
             ICorProfilerInfo8 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *functionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetDynamicFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetDynamicFunctionInfo )( 
             ICorProfilerInfo8 * This,
             /* [in] */ FunctionID functionId,
@@ -16021,60 +17681,72 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo9 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo9 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo9 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo9 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classId,
@@ -16082,21 +17754,25 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo9 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
@@ -16104,20 +17780,24 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo9 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
@@ -16125,6 +17805,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
@@ -16135,6 +17816,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
@@ -16142,6 +17824,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
@@ -16149,17 +17832,20 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -16169,6 +17855,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -16179,13 +17866,16 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
@@ -16193,28 +17883,34 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo9 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo9 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo9 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo9 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
@@ -16222,6 +17918,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ThreadID thread,
@@ -16231,12 +17928,14 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID funcId,
@@ -16248,12 +17947,14 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo9 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classID,
@@ -16262,6 +17963,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classId,
@@ -16272,6 +17974,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionID,
@@ -16279,6 +17982,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleID,
@@ -16287,6 +17991,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleID,
@@ -16296,11 +18001,13 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ObjectID objectId,
@@ -16309,22 +18016,26 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classId,
@@ -16332,6 +18043,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classId,
@@ -16339,6 +18051,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classId,
@@ -16346,57 +18059,68 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo9 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
             ICorProfilerInfo9 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
         HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
             ICorProfilerInfo9 * This,
             /* [in] */ DWORD dwExpectedCompletionMilliseconds);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionIDMapper2 *pFunc,
             /* [in] */ void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
             ICorProfilerInfo9 * This,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionEnter3 *pFuncEnter3,
             /* [in] */ FunctionLeave3 *pFuncLeave3,
             /* [in] */ FunctionTailcall3 *pFuncTailcall3);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
             /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
             /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
@@ -16405,6 +18129,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out][in] */ ULONG *pcbArgumentInfo,
             /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
@@ -16412,16 +18137,19 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
             /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_ELT_INFO eltInfo,
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
         HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
             ICorProfilerInfo9 * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
             ICorProfilerInfo9 * This,
             /* [out] */ USHORT *pClrInstanceId,
@@ -16435,6 +18163,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [annotation][out] */ 
             _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ClassID classId,
@@ -16443,6 +18172,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
@@ -16450,6 +18180,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ULONG32 *pcAppDomainIds,
             /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
@@ -16461,19 +18192,23 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ AssemblyID *pAssemblyId,
             /* [out] */ DWORD *pdwModuleFlags);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
             ICorProfilerInfo9 * This,
             /* [out] */ ICorProfilerThreadEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
         HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
             ICorProfilerInfo9 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
         HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ULONG cFunctions,
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
         HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ULONG cFunctions,
@@ -16481,6 +18216,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [size_is][in] */ mdMethodDef methodIds[  ],
             /* [size_is][out] */ HRESULT status[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionID,
@@ -16489,12 +18225,14 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
         HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
@@ -16502,6 +18240,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ULONG *pcReJitIds,
             /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
@@ -16510,25 +18249,30 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
             ICorProfilerInfo9 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ SIZE_T *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, GetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask2 )( 
             ICorProfilerInfo9 * This,
             /* [out] */ DWORD *pdwEventsLow,
             /* [out] */ DWORD *pdwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, SetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask2 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ DWORD dwEventsLow,
             /* [in] */ DWORD dwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo6, EnumNgenModuleMethodsInliningThisMethod)
         HRESULT ( STDMETHODCALLTYPE *EnumNgenModuleMethodsInliningThisMethod )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID inlinersModuleId,
@@ -16537,15 +18281,18 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ BOOL *incompleteData,
             /* [out] */ ICorProfilerMethodEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ApplyMetaData)
         HRESULT ( STDMETHODCALLTYPE *ApplyMetaData )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, GetInMemorySymbolsLength)
         HRESULT ( STDMETHODCALLTYPE *GetInMemorySymbolsLength )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ DWORD *pCountSymbolBytes);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ReadInMemorySymbols)
         HRESULT ( STDMETHODCALLTYPE *ReadInMemorySymbols )( 
             ICorProfilerInfo9 * This,
             /* [in] */ ModuleID moduleId,
@@ -16554,17 +18301,20 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [in] */ DWORD countSymbolBytes,
             /* [out] */ DWORD *pCountSymbolBytesRead);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, IsFunctionDynamic)
         HRESULT ( STDMETHODCALLTYPE *IsFunctionDynamic )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *isDynamic);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetFunctionFromIP3)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP3 )( 
             ICorProfilerInfo9 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *functionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetDynamicFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetDynamicFunctionInfo )( 
             ICorProfilerInfo9 * This,
             /* [in] */ FunctionID functionId,
@@ -16575,6 +18325,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             /* [out] */ ULONG *pcchName,
             /* [out] */ WCHAR wszName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetNativeCodeStartAddresses)
         HRESULT ( STDMETHODCALLTYPE *GetNativeCodeStartAddresses )( 
             ICorProfilerInfo9 * This,
             FunctionID functionID,
@@ -16583,6 +18334,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             ULONG32 *pcCodeStartAddresses,
             UINT_PTR codeStartAddresses[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetILToNativeMapping3)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping3 )( 
             ICorProfilerInfo9 * This,
             UINT_PTR pNativeCodeStartAddress,
@@ -16590,6 +18342,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
             ULONG32 *pcMap,
             COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetCodeInfo4)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo4 )( 
             ICorProfilerInfo9 * This,
             UINT_PTR pNativeCodeStartAddress,
@@ -16955,60 +18708,72 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo10 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo10 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo10 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo10 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classId,
@@ -17016,21 +18781,25 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo10 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
@@ -17038,20 +18807,24 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo10 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
@@ -17059,6 +18832,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
@@ -17069,6 +18843,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
@@ -17076,6 +18851,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
@@ -17083,17 +18859,20 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -17103,6 +18882,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -17113,13 +18893,16 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
@@ -17127,28 +18910,34 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo10 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo10 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo10 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo10 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
@@ -17156,6 +18945,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ThreadID thread,
@@ -17165,12 +18955,14 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID funcId,
@@ -17182,12 +18974,14 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo10 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classID,
@@ -17196,6 +18990,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classId,
@@ -17206,6 +19001,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionID,
@@ -17213,6 +19009,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleID,
@@ -17221,6 +19018,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleID,
@@ -17230,11 +19028,13 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ObjectID objectId,
@@ -17243,22 +19043,26 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classId,
@@ -17266,6 +19070,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classId,
@@ -17273,6 +19078,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classId,
@@ -17280,57 +19086,68 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo10 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
             ICorProfilerInfo10 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
         HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
             ICorProfilerInfo10 * This,
             /* [in] */ DWORD dwExpectedCompletionMilliseconds);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionIDMapper2 *pFunc,
             /* [in] */ void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
             ICorProfilerInfo10 * This,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionEnter3 *pFuncEnter3,
             /* [in] */ FunctionLeave3 *pFuncLeave3,
             /* [in] */ FunctionTailcall3 *pFuncTailcall3);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
             /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
             /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
@@ -17339,6 +19156,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out][in] */ ULONG *pcbArgumentInfo,
             /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
@@ -17346,16 +19164,19 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
             /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_ELT_INFO eltInfo,
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
         HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
             ICorProfilerInfo10 * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
             ICorProfilerInfo10 * This,
             /* [out] */ USHORT *pClrInstanceId,
@@ -17369,6 +19190,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [annotation][out] */ 
             _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ClassID classId,
@@ -17377,6 +19199,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
@@ -17384,6 +19207,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ULONG32 *pcAppDomainIds,
             /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
@@ -17395,19 +19219,23 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ AssemblyID *pAssemblyId,
             /* [out] */ DWORD *pdwModuleFlags);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
             ICorProfilerInfo10 * This,
             /* [out] */ ICorProfilerThreadEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
         HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
             ICorProfilerInfo10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
         HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ULONG cFunctions,
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
         HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ULONG cFunctions,
@@ -17415,6 +19243,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [size_is][in] */ mdMethodDef methodIds[  ],
             /* [size_is][out] */ HRESULT status[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionID,
@@ -17423,12 +19252,14 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
         HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
@@ -17436,6 +19267,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ULONG *pcReJitIds,
             /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
@@ -17444,25 +19276,30 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
             ICorProfilerInfo10 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ SIZE_T *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, GetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask2 )( 
             ICorProfilerInfo10 * This,
             /* [out] */ DWORD *pdwEventsLow,
             /* [out] */ DWORD *pdwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, SetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask2 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ DWORD dwEventsLow,
             /* [in] */ DWORD dwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo6, EnumNgenModuleMethodsInliningThisMethod)
         HRESULT ( STDMETHODCALLTYPE *EnumNgenModuleMethodsInliningThisMethod )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID inlinersModuleId,
@@ -17471,15 +19308,18 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ BOOL *incompleteData,
             /* [out] */ ICorProfilerMethodEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ApplyMetaData)
         HRESULT ( STDMETHODCALLTYPE *ApplyMetaData )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, GetInMemorySymbolsLength)
         HRESULT ( STDMETHODCALLTYPE *GetInMemorySymbolsLength )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ DWORD *pCountSymbolBytes);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ReadInMemorySymbols)
         HRESULT ( STDMETHODCALLTYPE *ReadInMemorySymbols )( 
             ICorProfilerInfo10 * This,
             /* [in] */ ModuleID moduleId,
@@ -17488,17 +19328,20 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [in] */ DWORD countSymbolBytes,
             /* [out] */ DWORD *pCountSymbolBytesRead);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, IsFunctionDynamic)
         HRESULT ( STDMETHODCALLTYPE *IsFunctionDynamic )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *isDynamic);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetFunctionFromIP3)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP3 )( 
             ICorProfilerInfo10 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *functionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetDynamicFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetDynamicFunctionInfo )( 
             ICorProfilerInfo10 * This,
             /* [in] */ FunctionID functionId,
@@ -17509,6 +19352,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [out] */ ULONG *pcchName,
             /* [out] */ WCHAR wszName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetNativeCodeStartAddresses)
         HRESULT ( STDMETHODCALLTYPE *GetNativeCodeStartAddresses )( 
             ICorProfilerInfo10 * This,
             FunctionID functionID,
@@ -17517,6 +19361,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             ULONG32 *pcCodeStartAddresses,
             UINT_PTR codeStartAddresses[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetILToNativeMapping3)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping3 )( 
             ICorProfilerInfo10 * This,
             UINT_PTR pNativeCodeStartAddress,
@@ -17524,6 +19369,7 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             ULONG32 *pcMap,
             COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetCodeInfo4)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo4 )( 
             ICorProfilerInfo10 * This,
             UINT_PTR pNativeCodeStartAddress,
@@ -17531,21 +19377,25 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             ULONG32 *pcCodeInfos,
             COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, EnumerateObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *EnumerateObjectReferences )( 
             ICorProfilerInfo10 * This,
             ObjectID objectId,
             ObjectReferenceCallback callback,
             void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, IsFrozenObject)
         HRESULT ( STDMETHODCALLTYPE *IsFrozenObject )( 
             ICorProfilerInfo10 * This,
             ObjectID objectId,
             BOOL *pbFrozen);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, GetLOHObjectSizeThreshold)
         HRESULT ( STDMETHODCALLTYPE *GetLOHObjectSizeThreshold )( 
             ICorProfilerInfo10 * This,
             DWORD *pThreshold);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, RequestReJITWithInliners)
         HRESULT ( STDMETHODCALLTYPE *RequestReJITWithInliners )( 
             ICorProfilerInfo10 * This,
             /* [in] */ DWORD dwRejitFlags,
@@ -17553,9 +19403,11 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, SuspendRuntime)
         HRESULT ( STDMETHODCALLTYPE *SuspendRuntime )( 
             ICorProfilerInfo10 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, ResumeRuntime)
         HRESULT ( STDMETHODCALLTYPE *ResumeRuntime )( 
             ICorProfilerInfo10 * This);
         
@@ -17925,60 +19777,72 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo11 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo11 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo11 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo11 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classId,
@@ -17986,21 +19850,25 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo11 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
@@ -18008,20 +19876,24 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo11 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
@@ -18029,6 +19901,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
@@ -18039,6 +19912,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
@@ -18046,6 +19920,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
@@ -18053,17 +19928,20 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -18073,6 +19951,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -18083,13 +19962,16 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
@@ -18097,28 +19979,34 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo11 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo11 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo11 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo11 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
@@ -18126,6 +20014,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ThreadID thread,
@@ -18135,12 +20024,14 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID funcId,
@@ -18152,12 +20043,14 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo11 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classID,
@@ -18166,6 +20059,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classId,
@@ -18176,6 +20070,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionID,
@@ -18183,6 +20078,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleID,
@@ -18191,6 +20087,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleID,
@@ -18200,11 +20097,13 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ObjectID objectId,
@@ -18213,22 +20112,26 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classId,
@@ -18236,6 +20139,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classId,
@@ -18243,6 +20147,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classId,
@@ -18250,57 +20155,68 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo11 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
             ICorProfilerInfo11 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
         HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
             ICorProfilerInfo11 * This,
             /* [in] */ DWORD dwExpectedCompletionMilliseconds);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionIDMapper2 *pFunc,
             /* [in] */ void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
             ICorProfilerInfo11 * This,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionEnter3 *pFuncEnter3,
             /* [in] */ FunctionLeave3 *pFuncLeave3,
             /* [in] */ FunctionTailcall3 *pFuncTailcall3);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
             /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
             /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
@@ -18309,6 +20225,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out][in] */ ULONG *pcbArgumentInfo,
             /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
@@ -18316,16 +20233,19 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
             /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_ELT_INFO eltInfo,
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
         HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
             ICorProfilerInfo11 * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
             ICorProfilerInfo11 * This,
             /* [out] */ USHORT *pClrInstanceId,
@@ -18339,6 +20259,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [annotation][out] */ 
             _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ClassID classId,
@@ -18347,6 +20268,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
@@ -18354,6 +20276,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ULONG32 *pcAppDomainIds,
             /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
@@ -18365,19 +20288,23 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ AssemblyID *pAssemblyId,
             /* [out] */ DWORD *pdwModuleFlags);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
             ICorProfilerInfo11 * This,
             /* [out] */ ICorProfilerThreadEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
         HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
             ICorProfilerInfo11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
         HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ULONG cFunctions,
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
         HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ULONG cFunctions,
@@ -18385,6 +20312,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [size_is][in] */ mdMethodDef methodIds[  ],
             /* [size_is][out] */ HRESULT status[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionID,
@@ -18393,12 +20321,14 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
         HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
@@ -18406,6 +20336,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ULONG *pcReJitIds,
             /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
@@ -18414,25 +20345,30 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
             ICorProfilerInfo11 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ SIZE_T *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, GetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask2 )( 
             ICorProfilerInfo11 * This,
             /* [out] */ DWORD *pdwEventsLow,
             /* [out] */ DWORD *pdwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, SetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask2 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ DWORD dwEventsLow,
             /* [in] */ DWORD dwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo6, EnumNgenModuleMethodsInliningThisMethod)
         HRESULT ( STDMETHODCALLTYPE *EnumNgenModuleMethodsInliningThisMethod )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID inlinersModuleId,
@@ -18441,15 +20377,18 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ BOOL *incompleteData,
             /* [out] */ ICorProfilerMethodEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ApplyMetaData)
         HRESULT ( STDMETHODCALLTYPE *ApplyMetaData )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, GetInMemorySymbolsLength)
         HRESULT ( STDMETHODCALLTYPE *GetInMemorySymbolsLength )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ DWORD *pCountSymbolBytes);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ReadInMemorySymbols)
         HRESULT ( STDMETHODCALLTYPE *ReadInMemorySymbols )( 
             ICorProfilerInfo11 * This,
             /* [in] */ ModuleID moduleId,
@@ -18458,17 +20397,20 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [in] */ DWORD countSymbolBytes,
             /* [out] */ DWORD *pCountSymbolBytesRead);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, IsFunctionDynamic)
         HRESULT ( STDMETHODCALLTYPE *IsFunctionDynamic )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *isDynamic);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetFunctionFromIP3)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP3 )( 
             ICorProfilerInfo11 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *functionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetDynamicFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetDynamicFunctionInfo )( 
             ICorProfilerInfo11 * This,
             /* [in] */ FunctionID functionId,
@@ -18479,6 +20421,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [out] */ ULONG *pcchName,
             /* [out] */ WCHAR wszName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetNativeCodeStartAddresses)
         HRESULT ( STDMETHODCALLTYPE *GetNativeCodeStartAddresses )( 
             ICorProfilerInfo11 * This,
             FunctionID functionID,
@@ -18487,6 +20430,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             ULONG32 *pcCodeStartAddresses,
             UINT_PTR codeStartAddresses[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetILToNativeMapping3)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping3 )( 
             ICorProfilerInfo11 * This,
             UINT_PTR pNativeCodeStartAddress,
@@ -18494,6 +20438,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             ULONG32 *pcMap,
             COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetCodeInfo4)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo4 )( 
             ICorProfilerInfo11 * This,
             UINT_PTR pNativeCodeStartAddress,
@@ -18501,21 +20446,25 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             ULONG32 *pcCodeInfos,
             COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, EnumerateObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *EnumerateObjectReferences )( 
             ICorProfilerInfo11 * This,
             ObjectID objectId,
             ObjectReferenceCallback callback,
             void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, IsFrozenObject)
         HRESULT ( STDMETHODCALLTYPE *IsFrozenObject )( 
             ICorProfilerInfo11 * This,
             ObjectID objectId,
             BOOL *pbFrozen);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, GetLOHObjectSizeThreshold)
         HRESULT ( STDMETHODCALLTYPE *GetLOHObjectSizeThreshold )( 
             ICorProfilerInfo11 * This,
             DWORD *pThreshold);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, RequestReJITWithInliners)
         HRESULT ( STDMETHODCALLTYPE *RequestReJITWithInliners )( 
             ICorProfilerInfo11 * This,
             /* [in] */ DWORD dwRejitFlags,
@@ -18523,12 +20472,15 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, SuspendRuntime)
         HRESULT ( STDMETHODCALLTYPE *SuspendRuntime )( 
             ICorProfilerInfo11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, ResumeRuntime)
         HRESULT ( STDMETHODCALLTYPE *ResumeRuntime )( 
             ICorProfilerInfo11 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo11, GetEnvironmentVariable)
         HRESULT ( STDMETHODCALLTYPE *GetEnvironmentVariable )( 
             ICorProfilerInfo11 * This,
             /* [string][in] */ const WCHAR *szName,
@@ -18537,6 +20489,7 @@ EXTERN_C const IID IID_ICorProfilerInfo11;
             /* [annotation][out] */ 
             _Out_writes_to_(cchValue, *pcchValue)  WCHAR szValue[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo11, SetEnvironmentVariable)
         HRESULT ( STDMETHODCALLTYPE *SetEnvironmentVariable )( 
             ICorProfilerInfo11 * This,
             /* [string][in] */ const WCHAR *szName,
@@ -18948,60 +20901,72 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerInfo12 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerInfo12 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerInfo12 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ClassID *pClassId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ LPCBYTE *pStart,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
             ICorProfilerInfo12 * This,
             /* [out] */ DWORD *pdwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
             ICorProfilerInfo12 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdToken token,
             /* [out] */ FunctionID *pFunctionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
         HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ HANDLE *phThread);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ ULONG *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
         HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classId,
@@ -19009,21 +20974,25 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ClassID *pBaseClassId,
             /* [out] */ ULONG *pcRank);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
         HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ DWORD *pdwWin32ThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICorProfilerInfo12 * This,
             /* [out] */ ThreadID *pThreadId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdTypeDef *pTypeDefToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
@@ -19031,20 +21000,24 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ModuleID *pModuleId,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
             ICorProfilerInfo12 * This,
             /* [in] */ DWORD dwEvents);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionEnter *pFuncEnter,
             /* [in] */ FunctionLeave *pFuncLeave,
             /* [in] */ FunctionTailcall *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionIDMapper *pFunc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
         HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
@@ -19052,6 +21025,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ IUnknown **ppImport,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
@@ -19062,6 +21036,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ AssemblyID *pAssemblyId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
@@ -19069,6 +21044,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppOut);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
@@ -19076,17 +21052,20 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ LPCBYTE *ppMethodHeader,
             /* [out] */ ULONG *pcbMethodSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
         HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ IMethodMalloc **ppMalloc);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
         HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
             /* [in] */ mdMethodDef methodid,
             /* [in] */ LPCBYTE pbNewILMethodHeader);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ AppDomainID appDomainId,
@@ -19096,6 +21075,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
             /* [out] */ ProcessID *pProcessId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ AssemblyID assemblyId,
@@ -19106,13 +21086,16 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ AppDomainID *pAppDomainId,
             /* [out] */ ModuleID *pModuleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
         HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
             ICorProfilerInfo12 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
         HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
@@ -19120,28 +21103,34 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ ULONG cILMapEntries,
             /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
             ICorProfilerInfo12 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
         HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
             ICorProfilerInfo12 * This,
             /* [out] */ IUnknown **ppicd);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ ContextID *pContextId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
             ICorProfilerInfo12 * This,
             /* [in] */ BOOL fThisThreadOnly,
             /* [out] */ DWORD *pdwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
         HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
             ICorProfilerInfo12 * This,
             /* [in] */ DWORD dwProfilerContext);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
@@ -19149,6 +21138,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
         HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ThreadID thread,
@@ -19158,12 +21148,14 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [size_is][in] */ BYTE context[  ],
             /* [in] */ ULONG32 contextSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionEnter2 *pFuncEnter,
             /* [in] */ FunctionLeave2 *pFuncLeave,
             /* [in] */ FunctionTailcall2 *pFuncTailcall);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID funcId,
@@ -19175,12 +21167,14 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ULONG32 *pcTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
             ICorProfilerInfo12 * This,
             /* [out] */ ULONG *pBufferLengthOffset,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classID,
@@ -19189,6 +21183,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ULONG *pcFieldOffset,
             /* [out] */ ULONG *pulClassSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classId,
@@ -19199,6 +21194,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ULONG32 *pcNumTypeArgs,
             /* [out] */ ClassID typeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionID,
@@ -19206,6 +21202,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleID,
@@ -19214,6 +21211,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ ClassID *pClassID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleID,
@@ -19223,11 +21221,13 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [size_is][in] */ ClassID typeArgs[  ],
             /* [out] */ FunctionID *pFunctionID);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleID,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
         HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ObjectID objectId,
@@ -19236,22 +21236,26 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [size_is][out] */ int pDimensionLowerBounds[  ],
             /* [out] */ BYTE **ppData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
         HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classId,
             /* [out] */ ULONG32 *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ThreadID threadId,
             /* [out] */ AppDomainID *pAppDomainId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classId,
@@ -19259,6 +21263,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ AppDomainID appDomainId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classId,
@@ -19266,6 +21271,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
         HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classId,
@@ -19273,57 +21279,68 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ ContextID contextId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classId,
             /* [in] */ mdFieldDef fieldToken,
             /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
         HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ULONG cObjectRanges,
             /* [out] */ ULONG *pcObjectRanges,
             /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
         HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
         HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
             ICorProfilerInfo12 * This,
             /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
             ICorProfilerInfo12 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
         HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
             ICorProfilerInfo12 * This,
             /* [in] */ DWORD dwExpectedCompletionMilliseconds);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
         HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionIDMapper2 *pFunc,
             /* [in] */ void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
         HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
             ICorProfilerInfo12 * This,
             /* [out] */ ULONG *pStringLengthOffset,
             /* [out] */ ULONG *pBufferOffset);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionEnter3 *pFuncEnter3,
             /* [in] */ FunctionLeave3 *pFuncLeave3,
             /* [in] */ FunctionTailcall3 *pFuncTailcall3);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
         HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
             /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
             /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
@@ -19332,6 +21349,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out][in] */ ULONG *pcbArgumentInfo,
             /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
@@ -19339,16 +21357,19 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
             /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
             /* [in] */ COR_PRF_ELT_INFO eltInfo,
             /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
         HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
             ICorProfilerInfo12 * This,
             /* [out] */ ICorProfilerModuleEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
             ICorProfilerInfo12 * This,
             /* [out] */ USHORT *pClrInstanceId,
@@ -19362,6 +21383,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [annotation][out] */ 
             _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ClassID classId,
@@ -19370,6 +21392,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ ThreadID threadId,
             /* [out] */ void **ppAddress);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
@@ -19377,6 +21400,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ULONG32 *pcAppDomainIds,
             /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
         HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
@@ -19388,19 +21412,23 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ AssemblyID *pAssemblyId,
             /* [out] */ DWORD *pdwModuleFlags);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
             ICorProfilerInfo12 * This,
             /* [out] */ ICorProfilerThreadEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
         HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
             ICorProfilerInfo12 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
         HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ULONG cFunctions,
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
         HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ULONG cFunctions,
@@ -19408,6 +21436,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [size_is][in] */ mdMethodDef methodIds[  ],
             /* [size_is][out] */ HRESULT status[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionID,
@@ -19416,12 +21445,14 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ULONG32 *pcCodeInfos,
             /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *pFunctionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
         HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
@@ -19429,6 +21460,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ULONG *pcReJitIds,
             /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
@@ -19437,25 +21469,30 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
         HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
             ICorProfilerInfo12 * This,
             /* [out] */ ICorProfilerFunctionEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ObjectID objectId,
             /* [out] */ SIZE_T *pcSize);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, GetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *GetEventMask2 )( 
             ICorProfilerInfo12 * This,
             /* [out] */ DWORD *pdwEventsLow,
             /* [out] */ DWORD *pdwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, SetEventMask2)
         HRESULT ( STDMETHODCALLTYPE *SetEventMask2 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ DWORD dwEventsLow,
             /* [in] */ DWORD dwEventsHigh);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo6, EnumNgenModuleMethodsInliningThisMethod)
         HRESULT ( STDMETHODCALLTYPE *EnumNgenModuleMethodsInliningThisMethod )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID inlinersModuleId,
@@ -19464,15 +21501,18 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ BOOL *incompleteData,
             /* [out] */ ICorProfilerMethodEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ApplyMetaData)
         HRESULT ( STDMETHODCALLTYPE *ApplyMetaData )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, GetInMemorySymbolsLength)
         HRESULT ( STDMETHODCALLTYPE *GetInMemorySymbolsLength )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
             /* [out] */ DWORD *pCountSymbolBytes);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ReadInMemorySymbols)
         HRESULT ( STDMETHODCALLTYPE *ReadInMemorySymbols )( 
             ICorProfilerInfo12 * This,
             /* [in] */ ModuleID moduleId,
@@ -19481,17 +21521,20 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ DWORD countSymbolBytes,
             /* [out] */ DWORD *pCountSymbolBytesRead);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, IsFunctionDynamic)
         HRESULT ( STDMETHODCALLTYPE *IsFunctionDynamic )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
             /* [out] */ BOOL *isDynamic);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetFunctionFromIP3)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP3 )( 
             ICorProfilerInfo12 * This,
             /* [in] */ LPCBYTE ip,
             /* [out] */ FunctionID *functionId,
             /* [out] */ ReJITID *pReJitId);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetDynamicFunctionInfo)
         HRESULT ( STDMETHODCALLTYPE *GetDynamicFunctionInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ FunctionID functionId,
@@ -19502,6 +21545,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [out] */ ULONG *pcchName,
             /* [out] */ WCHAR wszName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetNativeCodeStartAddresses)
         HRESULT ( STDMETHODCALLTYPE *GetNativeCodeStartAddresses )( 
             ICorProfilerInfo12 * This,
             FunctionID functionID,
@@ -19510,6 +21554,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             ULONG32 *pcCodeStartAddresses,
             UINT_PTR codeStartAddresses[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetILToNativeMapping3)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping3 )( 
             ICorProfilerInfo12 * This,
             UINT_PTR pNativeCodeStartAddress,
@@ -19517,6 +21562,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             ULONG32 *pcMap,
             COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetCodeInfo4)
         HRESULT ( STDMETHODCALLTYPE *GetCodeInfo4 )( 
             ICorProfilerInfo12 * This,
             UINT_PTR pNativeCodeStartAddress,
@@ -19524,21 +21570,25 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             ULONG32 *pcCodeInfos,
             COR_PRF_CODE_INFO codeInfos[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, EnumerateObjectReferences)
         HRESULT ( STDMETHODCALLTYPE *EnumerateObjectReferences )( 
             ICorProfilerInfo12 * This,
             ObjectID objectId,
             ObjectReferenceCallback callback,
             void *clientData);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, IsFrozenObject)
         HRESULT ( STDMETHODCALLTYPE *IsFrozenObject )( 
             ICorProfilerInfo12 * This,
             ObjectID objectId,
             BOOL *pbFrozen);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, GetLOHObjectSizeThreshold)
         HRESULT ( STDMETHODCALLTYPE *GetLOHObjectSizeThreshold )( 
             ICorProfilerInfo12 * This,
             DWORD *pThreshold);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, RequestReJITWithInliners)
         HRESULT ( STDMETHODCALLTYPE *RequestReJITWithInliners )( 
             ICorProfilerInfo12 * This,
             /* [in] */ DWORD dwRejitFlags,
@@ -19546,12 +21596,15 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, SuspendRuntime)
         HRESULT ( STDMETHODCALLTYPE *SuspendRuntime )( 
             ICorProfilerInfo12 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, ResumeRuntime)
         HRESULT ( STDMETHODCALLTYPE *ResumeRuntime )( 
             ICorProfilerInfo12 * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo11, GetEnvironmentVariable)
         HRESULT ( STDMETHODCALLTYPE *GetEnvironmentVariable )( 
             ICorProfilerInfo12 * This,
             /* [string][in] */ const WCHAR *szName,
@@ -19560,11 +21613,13 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [annotation][out] */ 
             _Out_writes_to_(cchValue, *pcchValue)  WCHAR szValue[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo11, SetEnvironmentVariable)
         HRESULT ( STDMETHODCALLTYPE *SetEnvironmentVariable )( 
             ICorProfilerInfo12 * This,
             /* [string][in] */ const WCHAR *szName,
             /* [string][in] */ const WCHAR *szValue);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeStartSession)
         HRESULT ( STDMETHODCALLTYPE *EventPipeStartSession )( 
             ICorProfilerInfo12 * This,
             /* [in] */ UINT32 cProviderConfigs,
@@ -19572,20 +21627,24 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ BOOL requestRundown,
             /* [out] */ EVENTPIPE_SESSION *pSession);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeAddProviderToSession)
         HRESULT ( STDMETHODCALLTYPE *EventPipeAddProviderToSession )( 
             ICorProfilerInfo12 * This,
             /* [in] */ EVENTPIPE_SESSION session,
             /* [in] */ COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeStopSession)
         HRESULT ( STDMETHODCALLTYPE *EventPipeStopSession )( 
             ICorProfilerInfo12 * This,
             /* [in] */ EVENTPIPE_SESSION session);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeCreateProvider)
         HRESULT ( STDMETHODCALLTYPE *EventPipeCreateProvider )( 
             ICorProfilerInfo12 * This,
             /* [string][in] */ const WCHAR *providerName,
             /* [out] */ EVENTPIPE_PROVIDER *pProvider);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeGetProviderInfo)
         HRESULT ( STDMETHODCALLTYPE *EventPipeGetProviderInfo )( 
             ICorProfilerInfo12 * This,
             /* [in] */ EVENTPIPE_PROVIDER provider,
@@ -19594,6 +21653,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [annotation][out] */ 
             _Out_writes_to_(cchName, *pcchName)  WCHAR providerName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeDefineEvent)
         HRESULT ( STDMETHODCALLTYPE *EventPipeDefineEvent )( 
             ICorProfilerInfo12 * This,
             /* [in] */ EVENTPIPE_PROVIDER provider,
@@ -19608,6 +21668,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [size_is][in] */ COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[  ],
             /* [out] */ EVENTPIPE_EVENT *pEvent);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeWriteEvent)
         HRESULT ( STDMETHODCALLTYPE *EventPipeWriteEvent )( 
             ICorProfilerInfo12 * This,
             /* [in] */ EVENTPIPE_EVENT event,
@@ -19976,6 +22037,2436 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
 #endif  /* __ICorProfilerInfo12_INTERFACE_DEFINED__ */
 
 
+#ifndef __ICorProfilerInfo13_INTERFACE_DEFINED__
+#define __ICorProfilerInfo13_INTERFACE_DEFINED__
+
+/* interface ICorProfilerInfo13 */
+/* [local][unique][uuid][object] */ 
+
+
+EXTERN_C const IID IID_ICorProfilerInfo13;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("6E6C7EE2-0701-4EC2-9D29-2E8733B66934")
+    ICorProfilerInfo13 : public ICorProfilerInfo12
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE CreateHandle( 
+            /* [in] */ ObjectID object,
+            /* [in] */ COR_PRF_HANDLE_TYPE type,
+            /* [out] */ ObjectHandleID *pHandle) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE DestroyHandle( 
+            /* [in] */ ObjectHandleID handle) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetObjectIDFromHandle( 
+            /* [in] */ ObjectHandleID handle,
+            /* [out] */ ObjectID *pObject) = 0;
+        
+    };
+    
+    
+#else   /* C style interface */
+
+    typedef struct ICorProfilerInfo13Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ICorProfilerInfo13 * This);
+        
+        DECLSPEC_XFGVIRT(IUnknown, Release)
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ICorProfilerInfo13 * This);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
+        HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ObjectID objectId,
+            /* [out] */ ClassID *pClassId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
+        HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ mdTypeDef typeDef,
+            /* [out] */ ClassID *pClassId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [out] */ LPCBYTE *pStart,
+            /* [out] */ ULONG *pcSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
+        HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ DWORD *pdwEvents);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ LPCBYTE ip,
+            /* [out] */ FunctionID *pFunctionId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ mdToken token,
+            /* [out] */ FunctionID *pFunctionId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
+        HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ HANDLE *phThread);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
+        HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ObjectID objectId,
+            /* [out] */ ULONG *pcSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
+        HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classId,
+            /* [out] */ CorElementType *pBaseElemType,
+            /* [out] */ ClassID *pBaseClassId,
+            /* [out] */ ULONG *pcRank);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ DWORD *pdwWin32ThreadId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
+        HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ ThreadID *pThreadId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classId,
+            /* [out] */ ModuleID *pModuleId,
+            /* [out] */ mdTypeDef *pTypeDefToken);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [out] */ ClassID *pClassId,
+            /* [out] */ ModuleID *pModuleId,
+            /* [out] */ mdToken *pToken);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
+        HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ DWORD dwEvents);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
+        HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionEnter *pFuncEnter,
+            /* [in] */ FunctionLeave *pFuncLeave,
+            /* [in] */ FunctionTailcall *pFuncTailcall);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
+        HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionIDMapper *pFunc);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
+        HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ REFIID riid,
+            /* [out] */ IUnknown **ppImport,
+            /* [out] */ mdToken *pToken);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [out] */ LPCBYTE *ppBaseLoadAddress,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
+            /* [out] */ AssemblyID *pAssemblyId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
+        HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ DWORD dwOpenFlags,
+            /* [in] */ REFIID riid,
+            /* [out] */ IUnknown **ppOut);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
+        HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ mdMethodDef methodId,
+            /* [out] */ LPCBYTE *ppMethodHeader,
+            /* [out] */ ULONG *pcbMethodSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
+        HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [out] */ IMethodMalloc **ppMalloc);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
+        HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ mdMethodDef methodid,
+            /* [in] */ LPCBYTE pbNewILMethodHeader);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ AppDomainID appDomainId,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
+            /* [out] */ ProcessID *pProcessId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ AssemblyID assemblyId,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
+            /* [out] */ AppDomainID *pAppDomainId,
+            /* [out] */ ModuleID *pModuleId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
+        HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
+        HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
+            ICorProfilerInfo13 * This);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
+        HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ BOOL fStartJit,
+            /* [in] */ ULONG cILMapEntries,
+            /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
+        HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ IUnknown **ppicd);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
+        HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ IUnknown **ppicd);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
+        HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ ContextID *pContextId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
+        HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ BOOL fThisThreadOnly,
+            /* [out] */ DWORD *pdwProfilerContext);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
+        HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ DWORD dwProfilerContext);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
+        HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ ULONG32 cMap,
+            /* [out] */ ULONG32 *pcMap,
+            /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
+        HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ThreadID thread,
+            /* [in] */ StackSnapshotCallback *callback,
+            /* [in] */ ULONG32 infoFlags,
+            /* [in] */ void *clientData,
+            /* [size_is][in] */ BYTE context[  ],
+            /* [in] */ ULONG32 contextSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
+        HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionEnter2 *pFuncEnter,
+            /* [in] */ FunctionLeave2 *pFuncLeave,
+            /* [in] */ FunctionTailcall2 *pFuncTailcall);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID funcId,
+            /* [in] */ COR_PRF_FRAME_INFO frameInfo,
+            /* [out] */ ClassID *pClassId,
+            /* [out] */ ModuleID *pModuleId,
+            /* [out] */ mdToken *pToken,
+            /* [in] */ ULONG32 cTypeArgs,
+            /* [out] */ ULONG32 *pcTypeArgs,
+            /* [out] */ ClassID typeArgs[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
+        HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ ULONG *pBufferLengthOffset,
+            /* [out] */ ULONG *pStringLengthOffset,
+            /* [out] */ ULONG *pBufferOffset);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
+        HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classID,
+            /* [out][in] */ COR_FIELD_OFFSET rFieldOffset[  ],
+            /* [in] */ ULONG cFieldOffset,
+            /* [out] */ ULONG *pcFieldOffset,
+            /* [out] */ ULONG *pulClassSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
+        HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classId,
+            /* [out] */ ModuleID *pModuleId,
+            /* [out] */ mdTypeDef *pTypeDefToken,
+            /* [out] */ ClassID *pParentClassId,
+            /* [in] */ ULONG32 cNumTypeArgs,
+            /* [out] */ ULONG32 *pcNumTypeArgs,
+            /* [out] */ ClassID typeArgs[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
+        HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionID,
+            /* [in] */ ULONG32 cCodeInfos,
+            /* [out] */ ULONG32 *pcCodeInfos,
+            /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
+        HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleID,
+            /* [in] */ mdTypeDef typeDef,
+            /* [in] */ ULONG32 cTypeArgs,
+            /* [size_is][in] */ ClassID typeArgs[  ],
+            /* [out] */ ClassID *pClassID);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleID,
+            /* [in] */ mdMethodDef funcDef,
+            /* [in] */ ClassID classId,
+            /* [in] */ ULONG32 cTypeArgs,
+            /* [size_is][in] */ ClassID typeArgs[  ],
+            /* [out] */ FunctionID *pFunctionID);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
+        HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleID,
+            /* [out] */ ICorProfilerObjectEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ObjectID objectId,
+            /* [in] */ ULONG32 cDimensions,
+            /* [size_is][out] */ ULONG32 pDimensionSizes[  ],
+            /* [size_is][out] */ int pDimensionLowerBounds[  ],
+            /* [out] */ BYTE **ppData);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
+        HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classId,
+            /* [out] */ ULONG32 *pBufferOffset);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
+        HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ AppDomainID *pAppDomainId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
+        HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [out] */ void **ppAddress);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
+        HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [in] */ AppDomainID appDomainId,
+            /* [out] */ void **ppAddress);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
+        HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ void **ppAddress);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
+        HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [in] */ ContextID contextId,
+            /* [out] */ void **ppAddress);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
+        HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ULONG cObjectRanges,
+            /* [out] */ ULONG *pcObjectRanges,
+            /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
+        HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ObjectID objectId,
+            /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
+        HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ ICorProfilerFunctionEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
+        HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ DWORD dwExpectedCompletionMilliseconds);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
+        HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionIDMapper2 *pFunc,
+            /* [in] */ void *clientData);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
+        HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ ULONG *pStringLengthOffset,
+            /* [out] */ ULONG *pBufferOffset);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
+        HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionEnter3 *pFuncEnter3,
+            /* [in] */ FunctionLeave3 *pFuncLeave3,
+            /* [in] */ FunctionTailcall3 *pFuncTailcall3);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
+        HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
+            /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
+            /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ COR_PRF_ELT_INFO eltInfo,
+            /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
+            /* [out][in] */ ULONG *pcbArgumentInfo,
+            /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ COR_PRF_ELT_INFO eltInfo,
+            /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
+            /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ COR_PRF_ELT_INFO eltInfo,
+            /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
+        HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ ICorProfilerModuleEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
+        HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ USHORT *pClrInstanceId,
+            /* [out] */ COR_PRF_RUNTIME_TYPE *pRuntimeType,
+            /* [out] */ USHORT *pMajorVersion,
+            /* [out] */ USHORT *pMinorVersion,
+            /* [out] */ USHORT *pBuildNumber,
+            /* [out] */ USHORT *pQFEVersion,
+            /* [in] */ ULONG cchVersionString,
+            /* [out] */ ULONG *pcchVersionString,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
+        HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [in] */ AppDomainID appDomainId,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ void **ppAddress);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
+        HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ ULONG32 cAppDomainIds,
+            /* [out] */ ULONG32 *pcAppDomainIds,
+            /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
+        HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [out] */ LPCBYTE *ppBaseLoadAddress,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
+            /* [out] */ AssemblyID *pAssemblyId,
+            /* [out] */ DWORD *pdwModuleFlags);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
+        HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ ICorProfilerThreadEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
+        HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
+            ICorProfilerInfo13 * This);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
+        HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ULONG cFunctions,
+            /* [size_is][in] */ ModuleID moduleIds[  ],
+            /* [size_is][in] */ mdMethodDef methodIds[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
+        HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ULONG cFunctions,
+            /* [size_is][in] */ ModuleID moduleIds[  ],
+            /* [size_is][in] */ mdMethodDef methodIds[  ],
+            /* [size_is][out] */ HRESULT status[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
+        HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionID,
+            /* [in] */ ReJITID reJitId,
+            /* [in] */ ULONG32 cCodeInfos,
+            /* [out] */ ULONG32 *pcCodeInfos,
+            /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ LPCBYTE ip,
+            /* [out] */ FunctionID *pFunctionId,
+            /* [out] */ ReJITID *pReJitId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
+        HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ ULONG cReJitIds,
+            /* [out] */ ULONG *pcReJitIds,
+            /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
+        HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ ReJITID reJitId,
+            /* [in] */ ULONG32 cMap,
+            /* [out] */ ULONG32 *pcMap,
+            /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
+        HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ ICorProfilerFunctionEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
+        HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ObjectID objectId,
+            /* [out] */ SIZE_T *pcSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, GetEventMask2)
+        HRESULT ( STDMETHODCALLTYPE *GetEventMask2 )( 
+            ICorProfilerInfo13 * This,
+            /* [out] */ DWORD *pdwEventsLow,
+            /* [out] */ DWORD *pdwEventsHigh);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, SetEventMask2)
+        HRESULT ( STDMETHODCALLTYPE *SetEventMask2 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ DWORD dwEventsLow,
+            /* [in] */ DWORD dwEventsHigh);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo6, EnumNgenModuleMethodsInliningThisMethod)
+        HRESULT ( STDMETHODCALLTYPE *EnumNgenModuleMethodsInliningThisMethod )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID inlinersModuleId,
+            /* [in] */ ModuleID inlineeModuleId,
+            /* [in] */ mdMethodDef inlineeMethodId,
+            /* [out] */ BOOL *incompleteData,
+            /* [out] */ ICorProfilerMethodEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ApplyMetaData)
+        HRESULT ( STDMETHODCALLTYPE *ApplyMetaData )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, GetInMemorySymbolsLength)
+        HRESULT ( STDMETHODCALLTYPE *GetInMemorySymbolsLength )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [out] */ DWORD *pCountSymbolBytes);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ReadInMemorySymbols)
+        HRESULT ( STDMETHODCALLTYPE *ReadInMemorySymbols )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ DWORD symbolsReadOffset,
+            /* [out] */ BYTE *pSymbolBytes,
+            /* [in] */ DWORD countSymbolBytes,
+            /* [out] */ DWORD *pCountSymbolBytesRead);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, IsFunctionDynamic)
+        HRESULT ( STDMETHODCALLTYPE *IsFunctionDynamic )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [out] */ BOOL *isDynamic);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetFunctionFromIP3)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP3 )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ LPCBYTE ip,
+            /* [out] */ FunctionID *functionId,
+            /* [out] */ ReJITID *pReJitId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetDynamicFunctionInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetDynamicFunctionInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ FunctionID functionId,
+            /* [out] */ ModuleID *moduleId,
+            /* [out] */ PCCOR_SIGNATURE *ppvSig,
+            /* [out] */ ULONG *pbSig,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [out] */ WCHAR wszName[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetNativeCodeStartAddresses)
+        HRESULT ( STDMETHODCALLTYPE *GetNativeCodeStartAddresses )( 
+            ICorProfilerInfo13 * This,
+            FunctionID functionID,
+            ReJITID reJitId,
+            ULONG32 cCodeStartAddresses,
+            ULONG32 *pcCodeStartAddresses,
+            UINT_PTR codeStartAddresses[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetILToNativeMapping3)
+        HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping3 )( 
+            ICorProfilerInfo13 * This,
+            UINT_PTR pNativeCodeStartAddress,
+            ULONG32 cMap,
+            ULONG32 *pcMap,
+            COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetCodeInfo4)
+        HRESULT ( STDMETHODCALLTYPE *GetCodeInfo4 )( 
+            ICorProfilerInfo13 * This,
+            UINT_PTR pNativeCodeStartAddress,
+            ULONG32 cCodeInfos,
+            ULONG32 *pcCodeInfos,
+            COR_PRF_CODE_INFO codeInfos[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, EnumerateObjectReferences)
+        HRESULT ( STDMETHODCALLTYPE *EnumerateObjectReferences )( 
+            ICorProfilerInfo13 * This,
+            ObjectID objectId,
+            ObjectReferenceCallback callback,
+            void *clientData);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, IsFrozenObject)
+        HRESULT ( STDMETHODCALLTYPE *IsFrozenObject )( 
+            ICorProfilerInfo13 * This,
+            ObjectID objectId,
+            BOOL *pbFrozen);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, GetLOHObjectSizeThreshold)
+        HRESULT ( STDMETHODCALLTYPE *GetLOHObjectSizeThreshold )( 
+            ICorProfilerInfo13 * This,
+            DWORD *pThreshold);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, RequestReJITWithInliners)
+        HRESULT ( STDMETHODCALLTYPE *RequestReJITWithInliners )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ DWORD dwRejitFlags,
+            /* [in] */ ULONG cFunctions,
+            /* [size_is][in] */ ModuleID moduleIds[  ],
+            /* [size_is][in] */ mdMethodDef methodIds[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, SuspendRuntime)
+        HRESULT ( STDMETHODCALLTYPE *SuspendRuntime )( 
+            ICorProfilerInfo13 * This);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, ResumeRuntime)
+        HRESULT ( STDMETHODCALLTYPE *ResumeRuntime )( 
+            ICorProfilerInfo13 * This);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo11, GetEnvironmentVariable)
+        HRESULT ( STDMETHODCALLTYPE *GetEnvironmentVariable )( 
+            ICorProfilerInfo13 * This,
+            /* [string][in] */ const WCHAR *szName,
+            /* [in] */ ULONG cchValue,
+            /* [out] */ ULONG *pcchValue,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchValue, *pcchValue)  WCHAR szValue[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo11, SetEnvironmentVariable)
+        HRESULT ( STDMETHODCALLTYPE *SetEnvironmentVariable )( 
+            ICorProfilerInfo13 * This,
+            /* [string][in] */ const WCHAR *szName,
+            /* [string][in] */ const WCHAR *szValue);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeStartSession)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeStartSession )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ UINT32 cProviderConfigs,
+            /* [size_is][in] */ COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[  ],
+            /* [in] */ BOOL requestRundown,
+            /* [out] */ EVENTPIPE_SESSION *pSession);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeAddProviderToSession)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeAddProviderToSession )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ EVENTPIPE_SESSION session,
+            /* [in] */ COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeStopSession)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeStopSession )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ EVENTPIPE_SESSION session);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeCreateProvider)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeCreateProvider )( 
+            ICorProfilerInfo13 * This,
+            /* [string][in] */ const WCHAR *providerName,
+            /* [out] */ EVENTPIPE_PROVIDER *pProvider);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeGetProviderInfo)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeGetProviderInfo )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ EVENTPIPE_PROVIDER provider,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchName, *pcchName)  WCHAR providerName[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeDefineEvent)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeDefineEvent )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ EVENTPIPE_PROVIDER provider,
+            /* [string][in] */ const WCHAR *eventName,
+            /* [in] */ UINT32 eventID,
+            /* [in] */ UINT64 keywords,
+            /* [in] */ UINT32 eventVersion,
+            /* [in] */ UINT32 level,
+            /* [in] */ UINT8 opcode,
+            /* [in] */ BOOL needStack,
+            /* [in] */ UINT32 cParamDescs,
+            /* [size_is][in] */ COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[  ],
+            /* [out] */ EVENTPIPE_EVENT *pEvent);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeWriteEvent)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeWriteEvent )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ EVENTPIPE_EVENT event,
+            /* [in] */ UINT32 cData,
+            /* [size_is][in] */ COR_PRF_EVENT_DATA data[  ],
+            /* [in] */ LPCGUID pActivityId,
+            /* [in] */ LPCGUID pRelatedActivityId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo13, CreateHandle)
+        HRESULT ( STDMETHODCALLTYPE *CreateHandle )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ObjectID object,
+            /* [in] */ COR_PRF_HANDLE_TYPE type,
+            /* [out] */ ObjectHandleID *pHandle);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo13, DestroyHandle)
+        HRESULT ( STDMETHODCALLTYPE *DestroyHandle )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ObjectHandleID handle);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo13, GetObjectIDFromHandle)
+        HRESULT ( STDMETHODCALLTYPE *GetObjectIDFromHandle )( 
+            ICorProfilerInfo13 * This,
+            /* [in] */ ObjectHandleID handle,
+            /* [out] */ ObjectID *pObject);
+        
+        END_INTERFACE
+    } ICorProfilerInfo13Vtbl;
+
+    interface ICorProfilerInfo13
+    {
+        CONST_VTBL struct ICorProfilerInfo13Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ICorProfilerInfo13_QueryInterface(This,riid,ppvObject)  \
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ICorProfilerInfo13_AddRef(This) \
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ICorProfilerInfo13_Release(This)    \
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ICorProfilerInfo13_GetClassFromObject(This,objectId,pClassId)   \
+    ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
+
+#define ICorProfilerInfo13_GetClassFromToken(This,moduleId,typeDef,pClassId)    \
+    ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
+
+#define ICorProfilerInfo13_GetCodeInfo(This,functionId,pStart,pcSize)   \
+    ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
+
+#define ICorProfilerInfo13_GetEventMask(This,pdwEvents) \
+    ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
+
+#define ICorProfilerInfo13_GetFunctionFromIP(This,ip,pFunctionId)   \
+    ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
+
+#define ICorProfilerInfo13_GetFunctionFromToken(This,moduleId,token,pFunctionId)    \
+    ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
+
+#define ICorProfilerInfo13_GetHandleFromThread(This,threadId,phThread)  \
+    ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
+
+#define ICorProfilerInfo13_GetObjectSize(This,objectId,pcSize)  \
+    ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
+
+#define ICorProfilerInfo13_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) \
+    ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
+
+#define ICorProfilerInfo13_GetThreadInfo(This,threadId,pdwWin32ThreadId)    \
+    ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
+
+#define ICorProfilerInfo13_GetCurrentThreadID(This,pThreadId)   \
+    ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
+
+#define ICorProfilerInfo13_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) \
+    ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
+
+#define ICorProfilerInfo13_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)   \
+    ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
+
+#define ICorProfilerInfo13_SetEventMask(This,dwEvents)  \
+    ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
+
+#define ICorProfilerInfo13_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
+    ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
+
+#define ICorProfilerInfo13_SetFunctionIDMapper(This,pFunc)  \
+    ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
+
+#define ICorProfilerInfo13_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)    \
+    ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
+
+#define ICorProfilerInfo13_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)   \
+    ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
+
+#define ICorProfilerInfo13_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)  \
+    ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
+
+#define ICorProfilerInfo13_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)   \
+    ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
+
+#define ICorProfilerInfo13_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)   \
+    ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
+
+#define ICorProfilerInfo13_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)    \
+    ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
+
+#define ICorProfilerInfo13_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)    \
+    ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
+
+#define ICorProfilerInfo13_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)  \
+    ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
+
+#define ICorProfilerInfo13_SetFunctionReJIT(This,functionId)    \
+    ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
+
+#define ICorProfilerInfo13_ForceGC(This)    \
+    ( (This)->lpVtbl -> ForceGC(This) ) 
+
+#define ICorProfilerInfo13_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) \
+    ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
+
+#define ICorProfilerInfo13_GetInprocInspectionInterface(This,ppicd) \
+    ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
+
+#define ICorProfilerInfo13_GetInprocInspectionIThisThread(This,ppicd)   \
+    ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
+
+#define ICorProfilerInfo13_GetThreadContext(This,threadId,pContextId)   \
+    ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
+
+#define ICorProfilerInfo13_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)    \
+    ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
+
+#define ICorProfilerInfo13_EndInprocDebugging(This,dwProfilerContext)   \
+    ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
+
+#define ICorProfilerInfo13_GetILToNativeMapping(This,functionId,cMap,pcMap,map) \
+    ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
+
+
+#define ICorProfilerInfo13_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)   \
+    ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
+
+#define ICorProfilerInfo13_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)    \
+    ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
+
+#define ICorProfilerInfo13_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)  \
+    ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
+
+#define ICorProfilerInfo13_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)  \
+    ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
+
+#define ICorProfilerInfo13_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)    \
+    ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
+
+#define ICorProfilerInfo13_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) \
+    ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
+
+#define ICorProfilerInfo13_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)   \
+    ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
+
+#define ICorProfilerInfo13_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)  \
+    ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
+
+#define ICorProfilerInfo13_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)    \
+    ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
+
+#define ICorProfilerInfo13_EnumModuleFrozenObjects(This,moduleID,ppEnum)    \
+    ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
+
+#define ICorProfilerInfo13_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)   \
+    ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
+
+#define ICorProfilerInfo13_GetBoxClassLayout(This,classId,pBufferOffset)    \
+    ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
+
+#define ICorProfilerInfo13_GetThreadAppDomain(This,threadId,pAppDomainId)   \
+    ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
+
+#define ICorProfilerInfo13_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)   \
+    ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
+
+#define ICorProfilerInfo13_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) \
+    ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
+
+#define ICorProfilerInfo13_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)   \
+    ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
+
+#define ICorProfilerInfo13_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) \
+    ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
+
+#define ICorProfilerInfo13_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)   \
+    ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
+
+#define ICorProfilerInfo13_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)    \
+    ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
+
+#define ICorProfilerInfo13_GetObjectGeneration(This,objectId,range) \
+    ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
+
+#define ICorProfilerInfo13_GetNotifiedExceptionClauseInfo(This,pinfo)   \
+    ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
+
+
+#define ICorProfilerInfo13_EnumJITedFunctions(This,ppEnum)  \
+    ( (This)->lpVtbl -> EnumJITedFunctions(This,ppEnum) ) 
+
+#define ICorProfilerInfo13_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) \
+    ( (This)->lpVtbl -> RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) ) 
+
+#define ICorProfilerInfo13_SetFunctionIDMapper2(This,pFunc,clientData)  \
+    ( (This)->lpVtbl -> SetFunctionIDMapper2(This,pFunc,clientData) ) 
+
+#define ICorProfilerInfo13_GetStringLayout2(This,pStringLengthOffset,pBufferOffset) \
+    ( (This)->lpVtbl -> GetStringLayout2(This,pStringLengthOffset,pBufferOffset) ) 
+
+#define ICorProfilerInfo13_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) \
+    ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) ) 
+
+#define ICorProfilerInfo13_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) \
+    ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) ) 
+
+#define ICorProfilerInfo13_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)  \
+    ( (This)->lpVtbl -> GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo) ) 
+
+#define ICorProfilerInfo13_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)   \
+    ( (This)->lpVtbl -> GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange) ) 
+
+#define ICorProfilerInfo13_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) \
+    ( (This)->lpVtbl -> GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) ) 
+
+#define ICorProfilerInfo13_EnumModules(This,ppEnum) \
+    ( (This)->lpVtbl -> EnumModules(This,ppEnum) ) 
+
+#define ICorProfilerInfo13_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)  \
+    ( (This)->lpVtbl -> GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString) ) 
+
+#define ICorProfilerInfo13_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)  \
+    ( (This)->lpVtbl -> GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress) ) 
+
+#define ICorProfilerInfo13_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)   \
+    ( (This)->lpVtbl -> GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds) ) 
+
+#define ICorProfilerInfo13_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)   \
+    ( (This)->lpVtbl -> GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags) ) 
+
+
+#define ICorProfilerInfo13_EnumThreads(This,ppEnum) \
+    ( (This)->lpVtbl -> EnumThreads(This,ppEnum) ) 
+
+#define ICorProfilerInfo13_InitializeCurrentThread(This)    \
+    ( (This)->lpVtbl -> InitializeCurrentThread(This) ) 
+
+#define ICorProfilerInfo13_RequestReJIT(This,cFunctions,moduleIds,methodIds)    \
+    ( (This)->lpVtbl -> RequestReJIT(This,cFunctions,moduleIds,methodIds) ) 
+
+#define ICorProfilerInfo13_RequestRevert(This,cFunctions,moduleIds,methodIds,status)    \
+    ( (This)->lpVtbl -> RequestRevert(This,cFunctions,moduleIds,methodIds,status) ) 
+
+#define ICorProfilerInfo13_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)   \
+    ( (This)->lpVtbl -> GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos) ) 
+
+#define ICorProfilerInfo13_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) \
+    ( (This)->lpVtbl -> GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) ) 
+
+#define ICorProfilerInfo13_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)   \
+    ( (This)->lpVtbl -> GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds) ) 
+
+#define ICorProfilerInfo13_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map)    \
+    ( (This)->lpVtbl -> GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) ) 
+
+#define ICorProfilerInfo13_EnumJITedFunctions2(This,ppEnum) \
+    ( (This)->lpVtbl -> EnumJITedFunctions2(This,ppEnum) ) 
+
+#define ICorProfilerInfo13_GetObjectSize2(This,objectId,pcSize) \
+    ( (This)->lpVtbl -> GetObjectSize2(This,objectId,pcSize) ) 
+
+
+#define ICorProfilerInfo13_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)   \
+    ( (This)->lpVtbl -> GetEventMask2(This,pdwEventsLow,pdwEventsHigh) ) 
+
+#define ICorProfilerInfo13_SetEventMask2(This,dwEventsLow,dwEventsHigh) \
+    ( (This)->lpVtbl -> SetEventMask2(This,dwEventsLow,dwEventsHigh) ) 
+
+
+#define ICorProfilerInfo13_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum) \
+    ( (This)->lpVtbl -> EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum) ) 
+
+
+#define ICorProfilerInfo13_ApplyMetaData(This,moduleId) \
+    ( (This)->lpVtbl -> ApplyMetaData(This,moduleId) ) 
+
+#define ICorProfilerInfo13_GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes)    \
+    ( (This)->lpVtbl -> GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes) ) 
+
+#define ICorProfilerInfo13_ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead) \
+    ( (This)->lpVtbl -> ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead) ) 
+
+
+#define ICorProfilerInfo13_IsFunctionDynamic(This,functionId,isDynamic) \
+    ( (This)->lpVtbl -> IsFunctionDynamic(This,functionId,isDynamic) ) 
+
+#define ICorProfilerInfo13_GetFunctionFromIP3(This,ip,functionId,pReJitId)  \
+    ( (This)->lpVtbl -> GetFunctionFromIP3(This,ip,functionId,pReJitId) ) 
+
+#define ICorProfilerInfo13_GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName)   \
+    ( (This)->lpVtbl -> GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName) ) 
+
+
+#define ICorProfilerInfo13_GetNativeCodeStartAddresses(This,functionID,reJitId,cCodeStartAddresses,pcCodeStartAddresses,codeStartAddresses) \
+    ( (This)->lpVtbl -> GetNativeCodeStartAddresses(This,functionID,reJitId,cCodeStartAddresses,pcCodeStartAddresses,codeStartAddresses) ) 
+
+#define ICorProfilerInfo13_GetILToNativeMapping3(This,pNativeCodeStartAddress,cMap,pcMap,map)   \
+    ( (This)->lpVtbl -> GetILToNativeMapping3(This,pNativeCodeStartAddress,cMap,pcMap,map) ) 
+
+#define ICorProfilerInfo13_GetCodeInfo4(This,pNativeCodeStartAddress,cCodeInfos,pcCodeInfos,codeInfos)  \
+    ( (This)->lpVtbl -> GetCodeInfo4(This,pNativeCodeStartAddress,cCodeInfos,pcCodeInfos,codeInfos) ) 
+
+
+#define ICorProfilerInfo13_EnumerateObjectReferences(This,objectId,callback,clientData) \
+    ( (This)->lpVtbl -> EnumerateObjectReferences(This,objectId,callback,clientData) ) 
+
+#define ICorProfilerInfo13_IsFrozenObject(This,objectId,pbFrozen)   \
+    ( (This)->lpVtbl -> IsFrozenObject(This,objectId,pbFrozen) ) 
+
+#define ICorProfilerInfo13_GetLOHObjectSizeThreshold(This,pThreshold)   \
+    ( (This)->lpVtbl -> GetLOHObjectSizeThreshold(This,pThreshold) ) 
+
+#define ICorProfilerInfo13_RequestReJITWithInliners(This,dwRejitFlags,cFunctions,moduleIds,methodIds)   \
+    ( (This)->lpVtbl -> RequestReJITWithInliners(This,dwRejitFlags,cFunctions,moduleIds,methodIds) ) 
+
+#define ICorProfilerInfo13_SuspendRuntime(This) \
+    ( (This)->lpVtbl -> SuspendRuntime(This) ) 
+
+#define ICorProfilerInfo13_ResumeRuntime(This)  \
+    ( (This)->lpVtbl -> ResumeRuntime(This) ) 
+
+
+#define ICorProfilerInfo13_GetEnvironmentVariable(This,szName,cchValue,pcchValue,szValue)   \
+    ( (This)->lpVtbl -> GetEnvironmentVariable(This,szName,cchValue,pcchValue,szValue) ) 
+
+#define ICorProfilerInfo13_SetEnvironmentVariable(This,szName,szValue)  \
+    ( (This)->lpVtbl -> SetEnvironmentVariable(This,szName,szValue) ) 
+
+
+#define ICorProfilerInfo13_EventPipeStartSession(This,cProviderConfigs,pProviderConfigs,requestRundown,pSession)    \
+    ( (This)->lpVtbl -> EventPipeStartSession(This,cProviderConfigs,pProviderConfigs,requestRundown,pSession) ) 
+
+#define ICorProfilerInfo13_EventPipeAddProviderToSession(This,session,providerConfig)   \
+    ( (This)->lpVtbl -> EventPipeAddProviderToSession(This,session,providerConfig) ) 
+
+#define ICorProfilerInfo13_EventPipeStopSession(This,session)   \
+    ( (This)->lpVtbl -> EventPipeStopSession(This,session) ) 
+
+#define ICorProfilerInfo13_EventPipeCreateProvider(This,providerName,pProvider) \
+    ( (This)->lpVtbl -> EventPipeCreateProvider(This,providerName,pProvider) ) 
+
+#define ICorProfilerInfo13_EventPipeGetProviderInfo(This,provider,cchName,pcchName,providerName)    \
+    ( (This)->lpVtbl -> EventPipeGetProviderInfo(This,provider,cchName,pcchName,providerName) ) 
+
+#define ICorProfilerInfo13_EventPipeDefineEvent(This,provider,eventName,eventID,keywords,eventVersion,level,opcode,needStack,cParamDescs,pParamDescs,pEvent)    \
+    ( (This)->lpVtbl -> EventPipeDefineEvent(This,provider,eventName,eventID,keywords,eventVersion,level,opcode,needStack,cParamDescs,pParamDescs,pEvent) ) 
+
+#define ICorProfilerInfo13_EventPipeWriteEvent(This,event,cData,data,pActivityId,pRelatedActivityId)    \
+    ( (This)->lpVtbl -> EventPipeWriteEvent(This,event,cData,data,pActivityId,pRelatedActivityId) ) 
+
+
+#define ICorProfilerInfo13_CreateHandle(This,object,type,pHandle)   \
+    ( (This)->lpVtbl -> CreateHandle(This,object,type,pHandle) ) 
+
+#define ICorProfilerInfo13_DestroyHandle(This,handle)   \
+    ( (This)->lpVtbl -> DestroyHandle(This,handle) ) 
+
+#define ICorProfilerInfo13_GetObjectIDFromHandle(This,handle,pObject)   \
+    ( (This)->lpVtbl -> GetObjectIDFromHandle(This,handle,pObject) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif  /* C style interface */
+
+
+
+
+#endif  /* __ICorProfilerInfo13_INTERFACE_DEFINED__ */
+
+
+#ifndef __ICorProfilerInfo14_INTERFACE_DEFINED__
+#define __ICorProfilerInfo14_INTERFACE_DEFINED__
+
+/* interface ICorProfilerInfo14 */
+/* [local][unique][uuid][object] */ 
+
+
+EXTERN_C const IID IID_ICorProfilerInfo14;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("F460E352-D76D-4FE9-835F-F6AF9D6E862D")
+    ICorProfilerInfo14 : public ICorProfilerInfo13
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE EnumerateNonGCObjects( 
+            /* [out] */ ICorProfilerObjectEnum **ppEnum) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetNonGCHeapBounds( 
+            /* [in] */ ULONG cObjectRanges,
+            /* [out] */ ULONG *pcObjectRanges,
+            /* [length_is][size_is][out] */ COR_PRF_NONGC_HEAP_RANGE ranges[  ]) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE EventPipeCreateProvider2( 
+            /* [string][in] */ const WCHAR *providerName,
+            /* [in] */ EventPipeProviderCallback *pCallback,
+            /* [out] */ EVENTPIPE_PROVIDER *pProvider) = 0;
+        
+    };
+    
+    
+#else   /* C style interface */
+
+    typedef struct ICorProfilerInfo14Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ICorProfilerInfo14 * This);
+        
+        DECLSPEC_XFGVIRT(IUnknown, Release)
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ICorProfilerInfo14 * This);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromObject)
+        HRESULT ( STDMETHODCALLTYPE *GetClassFromObject )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ObjectID objectId,
+            /* [out] */ ClassID *pClassId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassFromToken)
+        HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ mdTypeDef typeDef,
+            /* [out] */ ClassID *pClassId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCodeInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetCodeInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [out] */ LPCBYTE *pStart,
+            /* [out] */ ULONG *pcSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetEventMask)
+        HRESULT ( STDMETHODCALLTYPE *GetEventMask )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ DWORD *pdwEvents);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromIP)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ LPCBYTE ip,
+            /* [out] */ FunctionID *pFunctionId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionFromToken)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ mdToken token,
+            /* [out] */ FunctionID *pFunctionId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetHandleFromThread)
+        HRESULT ( STDMETHODCALLTYPE *GetHandleFromThread )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ HANDLE *phThread);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetObjectSize)
+        HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ObjectID objectId,
+            /* [out] */ ULONG *pcSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, IsArrayClass)
+        HRESULT ( STDMETHODCALLTYPE *IsArrayClass )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classId,
+            /* [out] */ CorElementType *pBaseElemType,
+            /* [out] */ ClassID *pBaseClassId,
+            /* [out] */ ULONG *pcRank);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetThreadInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ DWORD *pdwWin32ThreadId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetCurrentThreadID)
+        HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ ThreadID *pThreadId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetClassIDInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classId,
+            /* [out] */ ModuleID *pModuleId,
+            /* [out] */ mdTypeDef *pTypeDefToken);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetFunctionInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [out] */ ClassID *pClassId,
+            /* [out] */ ModuleID *pModuleId,
+            /* [out] */ mdToken *pToken);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEventMask)
+        HRESULT ( STDMETHODCALLTYPE *SetEventMask )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ DWORD dwEvents);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetEnterLeaveFunctionHooks)
+        HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionEnter *pFuncEnter,
+            /* [in] */ FunctionLeave *pFuncLeave,
+            /* [in] */ FunctionTailcall *pFuncTailcall);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionIDMapper)
+        HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionIDMapper *pFunc);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetTokenAndMetaDataFromFunction)
+        HRESULT ( STDMETHODCALLTYPE *GetTokenAndMetaDataFromFunction )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ REFIID riid,
+            /* [out] */ IUnknown **ppImport,
+            /* [out] */ mdToken *pToken);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetModuleInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [out] */ LPCBYTE *ppBaseLoadAddress,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
+            /* [out] */ AssemblyID *pAssemblyId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetModuleMetaData)
+        HRESULT ( STDMETHODCALLTYPE *GetModuleMetaData )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ DWORD dwOpenFlags,
+            /* [in] */ REFIID riid,
+            /* [out] */ IUnknown **ppOut);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBody)
+        HRESULT ( STDMETHODCALLTYPE *GetILFunctionBody )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ mdMethodDef methodId,
+            /* [out] */ LPCBYTE *ppMethodHeader,
+            /* [out] */ ULONG *pcbMethodSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILFunctionBodyAllocator)
+        HRESULT ( STDMETHODCALLTYPE *GetILFunctionBodyAllocator )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [out] */ IMethodMalloc **ppMalloc);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILFunctionBody)
+        HRESULT ( STDMETHODCALLTYPE *SetILFunctionBody )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ mdMethodDef methodid,
+            /* [in] */ LPCBYTE pbNewILMethodHeader);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAppDomainInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetAppDomainInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ AppDomainID appDomainId,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
+            /* [out] */ ProcessID *pProcessId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetAssemblyInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetAssemblyInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ AssemblyID assemblyId,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
+            /* [out] */ AppDomainID *pAppDomainId,
+            /* [out] */ ModuleID *pModuleId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetFunctionReJIT)
+        HRESULT ( STDMETHODCALLTYPE *SetFunctionReJIT )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, ForceGC)
+        HRESULT ( STDMETHODCALLTYPE *ForceGC )( 
+            ICorProfilerInfo14 * This);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, SetILInstrumentedCodeMap)
+        HRESULT ( STDMETHODCALLTYPE *SetILInstrumentedCodeMap )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ BOOL fStartJit,
+            /* [in] */ ULONG cILMapEntries,
+            /* [size_is][in] */ COR_IL_MAP rgILMapEntries[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionInterface)
+        HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionInterface )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ IUnknown **ppicd);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetInprocInspectionIThisThread)
+        HRESULT ( STDMETHODCALLTYPE *GetInprocInspectionIThisThread )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ IUnknown **ppicd);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetThreadContext)
+        HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ ContextID *pContextId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, BeginInprocDebugging)
+        HRESULT ( STDMETHODCALLTYPE *BeginInprocDebugging )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ BOOL fThisThreadOnly,
+            /* [out] */ DWORD *pdwProfilerContext);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, EndInprocDebugging)
+        HRESULT ( STDMETHODCALLTYPE *EndInprocDebugging )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ DWORD dwProfilerContext);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo, GetILToNativeMapping)
+        HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ ULONG32 cMap,
+            /* [out] */ ULONG32 *pcMap,
+            /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, DoStackSnapshot)
+        HRESULT ( STDMETHODCALLTYPE *DoStackSnapshot )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ThreadID thread,
+            /* [in] */ StackSnapshotCallback *callback,
+            /* [in] */ ULONG32 infoFlags,
+            /* [in] */ void *clientData,
+            /* [size_is][in] */ BYTE context[  ],
+            /* [in] */ ULONG32 contextSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, SetEnterLeaveFunctionHooks2)
+        HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionEnter2 *pFuncEnter,
+            /* [in] */ FunctionLeave2 *pFuncLeave,
+            /* [in] */ FunctionTailcall2 *pFuncTailcall);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionInfo2)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionInfo2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID funcId,
+            /* [in] */ COR_PRF_FRAME_INFO frameInfo,
+            /* [out] */ ClassID *pClassId,
+            /* [out] */ ModuleID *pModuleId,
+            /* [out] */ mdToken *pToken,
+            /* [in] */ ULONG32 cTypeArgs,
+            /* [out] */ ULONG32 *pcTypeArgs,
+            /* [out] */ ClassID typeArgs[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStringLayout)
+        HRESULT ( STDMETHODCALLTYPE *GetStringLayout )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ ULONG *pBufferLengthOffset,
+            /* [out] */ ULONG *pStringLengthOffset,
+            /* [out] */ ULONG *pBufferOffset);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassLayout)
+        HRESULT ( STDMETHODCALLTYPE *GetClassLayout )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classID,
+            /* [out][in] */ COR_FIELD_OFFSET rFieldOffset[  ],
+            /* [in] */ ULONG cFieldOffset,
+            /* [out] */ ULONG *pcFieldOffset,
+            /* [out] */ ULONG *pulClassSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassIDInfo2)
+        HRESULT ( STDMETHODCALLTYPE *GetClassIDInfo2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classId,
+            /* [out] */ ModuleID *pModuleId,
+            /* [out] */ mdTypeDef *pTypeDefToken,
+            /* [out] */ ClassID *pParentClassId,
+            /* [in] */ ULONG32 cNumTypeArgs,
+            /* [out] */ ULONG32 *pcNumTypeArgs,
+            /* [out] */ ClassID typeArgs[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetCodeInfo2)
+        HRESULT ( STDMETHODCALLTYPE *GetCodeInfo2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionID,
+            /* [in] */ ULONG32 cCodeInfos,
+            /* [out] */ ULONG32 *pcCodeInfos,
+            /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetClassFromTokenAndTypeArgs)
+        HRESULT ( STDMETHODCALLTYPE *GetClassFromTokenAndTypeArgs )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleID,
+            /* [in] */ mdTypeDef typeDef,
+            /* [in] */ ULONG32 cTypeArgs,
+            /* [size_is][in] */ ClassID typeArgs[  ],
+            /* [out] */ ClassID *pClassID);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetFunctionFromTokenAndTypeArgs)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionFromTokenAndTypeArgs )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleID,
+            /* [in] */ mdMethodDef funcDef,
+            /* [in] */ ClassID classId,
+            /* [in] */ ULONG32 cTypeArgs,
+            /* [size_is][in] */ ClassID typeArgs[  ],
+            /* [out] */ FunctionID *pFunctionID);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, EnumModuleFrozenObjects)
+        HRESULT ( STDMETHODCALLTYPE *EnumModuleFrozenObjects )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleID,
+            /* [out] */ ICorProfilerObjectEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetArrayObjectInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetArrayObjectInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ObjectID objectId,
+            /* [in] */ ULONG32 cDimensions,
+            /* [size_is][out] */ ULONG32 pDimensionSizes[  ],
+            /* [size_is][out] */ int pDimensionLowerBounds[  ],
+            /* [out] */ BYTE **ppData);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetBoxClassLayout)
+        HRESULT ( STDMETHODCALLTYPE *GetBoxClassLayout )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classId,
+            /* [out] */ ULONG32 *pBufferOffset);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadAppDomain)
+        HRESULT ( STDMETHODCALLTYPE *GetThreadAppDomain )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ AppDomainID *pAppDomainId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetRVAStaticAddress)
+        HRESULT ( STDMETHODCALLTYPE *GetRVAStaticAddress )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [out] */ void **ppAddress);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetAppDomainStaticAddress)
+        HRESULT ( STDMETHODCALLTYPE *GetAppDomainStaticAddress )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [in] */ AppDomainID appDomainId,
+            /* [out] */ void **ppAddress);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetThreadStaticAddress)
+        HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ void **ppAddress);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetContextStaticAddress)
+        HRESULT ( STDMETHODCALLTYPE *GetContextStaticAddress )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [in] */ ContextID contextId,
+            /* [out] */ void **ppAddress);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetStaticFieldInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetStaticFieldInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [out] */ COR_PRF_STATIC_TYPE *pFieldInfo);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetGenerationBounds)
+        HRESULT ( STDMETHODCALLTYPE *GetGenerationBounds )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ULONG cObjectRanges,
+            /* [out] */ ULONG *pcObjectRanges,
+            /* [length_is][size_is][out] */ COR_PRF_GC_GENERATION_RANGE ranges[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetObjectGeneration)
+        HRESULT ( STDMETHODCALLTYPE *GetObjectGeneration )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ObjectID objectId,
+            /* [out] */ COR_PRF_GC_GENERATION_RANGE *range);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo2, GetNotifiedExceptionClauseInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetNotifiedExceptionClauseInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ COR_PRF_EX_CLAUSE_INFO *pinfo);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumJITedFunctions)
+        HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ ICorProfilerFunctionEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, RequestProfilerDetach)
+        HRESULT ( STDMETHODCALLTYPE *RequestProfilerDetach )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ DWORD dwExpectedCompletionMilliseconds);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetFunctionIDMapper2)
+        HRESULT ( STDMETHODCALLTYPE *SetFunctionIDMapper2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionIDMapper2 *pFunc,
+            /* [in] */ void *clientData);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetStringLayout2)
+        HRESULT ( STDMETHODCALLTYPE *GetStringLayout2 )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ ULONG *pStringLengthOffset,
+            /* [out] */ ULONG *pBufferOffset);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3)
+        HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionEnter3 *pFuncEnter3,
+            /* [in] */ FunctionLeave3 *pFuncLeave3,
+            /* [in] */ FunctionTailcall3 *pFuncTailcall3);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, SetEnterLeaveFunctionHooks3WithInfo)
+        HRESULT ( STDMETHODCALLTYPE *SetEnterLeaveFunctionHooks3WithInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionEnter3WithInfo *pFuncEnter3WithInfo,
+            /* [in] */ FunctionLeave3WithInfo *pFuncLeave3WithInfo,
+            /* [in] */ FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionEnter3Info)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionEnter3Info )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ COR_PRF_ELT_INFO eltInfo,
+            /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
+            /* [out][in] */ ULONG *pcbArgumentInfo,
+            /* [size_is][out] */ COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionLeave3Info)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionLeave3Info )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ COR_PRF_ELT_INFO eltInfo,
+            /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo,
+            /* [out] */ COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetFunctionTailcall3Info)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionTailcall3Info )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ COR_PRF_ELT_INFO eltInfo,
+            /* [out] */ COR_PRF_FRAME_INFO *pFrameInfo);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, EnumModules)
+        HRESULT ( STDMETHODCALLTYPE *EnumModules )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ ICorProfilerModuleEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetRuntimeInformation)
+        HRESULT ( STDMETHODCALLTYPE *GetRuntimeInformation )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ USHORT *pClrInstanceId,
+            /* [out] */ COR_PRF_RUNTIME_TYPE *pRuntimeType,
+            /* [out] */ USHORT *pMajorVersion,
+            /* [out] */ USHORT *pMinorVersion,
+            /* [out] */ USHORT *pBuildNumber,
+            /* [out] */ USHORT *pQFEVersion,
+            /* [in] */ ULONG cchVersionString,
+            /* [out] */ ULONG *pcchVersionString,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchVersionString, *pcchVersionString)  WCHAR szVersionString[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetThreadStaticAddress2)
+        HRESULT ( STDMETHODCALLTYPE *GetThreadStaticAddress2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ mdFieldDef fieldToken,
+            /* [in] */ AppDomainID appDomainId,
+            /* [in] */ ThreadID threadId,
+            /* [out] */ void **ppAddress);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetAppDomainsContainingModule)
+        HRESULT ( STDMETHODCALLTYPE *GetAppDomainsContainingModule )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ ULONG32 cAppDomainIds,
+            /* [out] */ ULONG32 *pcAppDomainIds,
+            /* [length_is][size_is][out] */ AppDomainID appDomainIds[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo3, GetModuleInfo2)
+        HRESULT ( STDMETHODCALLTYPE *GetModuleInfo2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [out] */ LPCBYTE *ppBaseLoadAddress,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ],
+            /* [out] */ AssemblyID *pAssemblyId,
+            /* [out] */ DWORD *pdwModuleFlags);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumThreads)
+        HRESULT ( STDMETHODCALLTYPE *EnumThreads )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ ICorProfilerThreadEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, InitializeCurrentThread)
+        HRESULT ( STDMETHODCALLTYPE *InitializeCurrentThread )( 
+            ICorProfilerInfo14 * This);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestReJIT)
+        HRESULT ( STDMETHODCALLTYPE *RequestReJIT )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ULONG cFunctions,
+            /* [size_is][in] */ ModuleID moduleIds[  ],
+            /* [size_is][in] */ mdMethodDef methodIds[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, RequestRevert)
+        HRESULT ( STDMETHODCALLTYPE *RequestRevert )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ULONG cFunctions,
+            /* [size_is][in] */ ModuleID moduleIds[  ],
+            /* [size_is][in] */ mdMethodDef methodIds[  ],
+            /* [size_is][out] */ HRESULT status[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetCodeInfo3)
+        HRESULT ( STDMETHODCALLTYPE *GetCodeInfo3 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionID,
+            /* [in] */ ReJITID reJitId,
+            /* [in] */ ULONG32 cCodeInfos,
+            /* [out] */ ULONG32 *pcCodeInfos,
+            /* [length_is][size_is][out] */ COR_PRF_CODE_INFO codeInfos[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetFunctionFromIP2)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ LPCBYTE ip,
+            /* [out] */ FunctionID *pFunctionId,
+            /* [out] */ ReJITID *pReJitId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetReJITIDs)
+        HRESULT ( STDMETHODCALLTYPE *GetReJITIDs )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ ULONG cReJitIds,
+            /* [out] */ ULONG *pcReJitIds,
+            /* [length_is][size_is][out] */ ReJITID reJitIds[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetILToNativeMapping2)
+        HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ ReJITID reJitId,
+            /* [in] */ ULONG32 cMap,
+            /* [out] */ ULONG32 *pcMap,
+            /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, EnumJITedFunctions2)
+        HRESULT ( STDMETHODCALLTYPE *EnumJITedFunctions2 )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ ICorProfilerFunctionEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo4, GetObjectSize2)
+        HRESULT ( STDMETHODCALLTYPE *GetObjectSize2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ObjectID objectId,
+            /* [out] */ SIZE_T *pcSize);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, GetEventMask2)
+        HRESULT ( STDMETHODCALLTYPE *GetEventMask2 )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ DWORD *pdwEventsLow,
+            /* [out] */ DWORD *pdwEventsHigh);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo5, SetEventMask2)
+        HRESULT ( STDMETHODCALLTYPE *SetEventMask2 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ DWORD dwEventsLow,
+            /* [in] */ DWORD dwEventsHigh);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo6, EnumNgenModuleMethodsInliningThisMethod)
+        HRESULT ( STDMETHODCALLTYPE *EnumNgenModuleMethodsInliningThisMethod )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID inlinersModuleId,
+            /* [in] */ ModuleID inlineeModuleId,
+            /* [in] */ mdMethodDef inlineeMethodId,
+            /* [out] */ BOOL *incompleteData,
+            /* [out] */ ICorProfilerMethodEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ApplyMetaData)
+        HRESULT ( STDMETHODCALLTYPE *ApplyMetaData )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, GetInMemorySymbolsLength)
+        HRESULT ( STDMETHODCALLTYPE *GetInMemorySymbolsLength )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [out] */ DWORD *pCountSymbolBytes);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo7, ReadInMemorySymbols)
+        HRESULT ( STDMETHODCALLTYPE *ReadInMemorySymbols )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ DWORD symbolsReadOffset,
+            /* [out] */ BYTE *pSymbolBytes,
+            /* [in] */ DWORD countSymbolBytes,
+            /* [out] */ DWORD *pCountSymbolBytesRead);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, IsFunctionDynamic)
+        HRESULT ( STDMETHODCALLTYPE *IsFunctionDynamic )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [out] */ BOOL *isDynamic);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetFunctionFromIP3)
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionFromIP3 )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ LPCBYTE ip,
+            /* [out] */ FunctionID *functionId,
+            /* [out] */ ReJITID *pReJitId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo8, GetDynamicFunctionInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetDynamicFunctionInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ FunctionID functionId,
+            /* [out] */ ModuleID *moduleId,
+            /* [out] */ PCCOR_SIGNATURE *ppvSig,
+            /* [out] */ ULONG *pbSig,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [out] */ WCHAR wszName[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetNativeCodeStartAddresses)
+        HRESULT ( STDMETHODCALLTYPE *GetNativeCodeStartAddresses )( 
+            ICorProfilerInfo14 * This,
+            FunctionID functionID,
+            ReJITID reJitId,
+            ULONG32 cCodeStartAddresses,
+            ULONG32 *pcCodeStartAddresses,
+            UINT_PTR codeStartAddresses[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetILToNativeMapping3)
+        HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping3 )( 
+            ICorProfilerInfo14 * This,
+            UINT_PTR pNativeCodeStartAddress,
+            ULONG32 cMap,
+            ULONG32 *pcMap,
+            COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo9, GetCodeInfo4)
+        HRESULT ( STDMETHODCALLTYPE *GetCodeInfo4 )( 
+            ICorProfilerInfo14 * This,
+            UINT_PTR pNativeCodeStartAddress,
+            ULONG32 cCodeInfos,
+            ULONG32 *pcCodeInfos,
+            COR_PRF_CODE_INFO codeInfos[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, EnumerateObjectReferences)
+        HRESULT ( STDMETHODCALLTYPE *EnumerateObjectReferences )( 
+            ICorProfilerInfo14 * This,
+            ObjectID objectId,
+            ObjectReferenceCallback callback,
+            void *clientData);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, IsFrozenObject)
+        HRESULT ( STDMETHODCALLTYPE *IsFrozenObject )( 
+            ICorProfilerInfo14 * This,
+            ObjectID objectId,
+            BOOL *pbFrozen);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, GetLOHObjectSizeThreshold)
+        HRESULT ( STDMETHODCALLTYPE *GetLOHObjectSizeThreshold )( 
+            ICorProfilerInfo14 * This,
+            DWORD *pThreshold);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, RequestReJITWithInliners)
+        HRESULT ( STDMETHODCALLTYPE *RequestReJITWithInliners )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ DWORD dwRejitFlags,
+            /* [in] */ ULONG cFunctions,
+            /* [size_is][in] */ ModuleID moduleIds[  ],
+            /* [size_is][in] */ mdMethodDef methodIds[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, SuspendRuntime)
+        HRESULT ( STDMETHODCALLTYPE *SuspendRuntime )( 
+            ICorProfilerInfo14 * This);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo10, ResumeRuntime)
+        HRESULT ( STDMETHODCALLTYPE *ResumeRuntime )( 
+            ICorProfilerInfo14 * This);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo11, GetEnvironmentVariable)
+        HRESULT ( STDMETHODCALLTYPE *GetEnvironmentVariable )( 
+            ICorProfilerInfo14 * This,
+            /* [string][in] */ const WCHAR *szName,
+            /* [in] */ ULONG cchValue,
+            /* [out] */ ULONG *pcchValue,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchValue, *pcchValue)  WCHAR szValue[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo11, SetEnvironmentVariable)
+        HRESULT ( STDMETHODCALLTYPE *SetEnvironmentVariable )( 
+            ICorProfilerInfo14 * This,
+            /* [string][in] */ const WCHAR *szName,
+            /* [string][in] */ const WCHAR *szValue);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeStartSession)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeStartSession )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ UINT32 cProviderConfigs,
+            /* [size_is][in] */ COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[  ],
+            /* [in] */ BOOL requestRundown,
+            /* [out] */ EVENTPIPE_SESSION *pSession);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeAddProviderToSession)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeAddProviderToSession )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ EVENTPIPE_SESSION session,
+            /* [in] */ COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeStopSession)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeStopSession )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ EVENTPIPE_SESSION session);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeCreateProvider)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeCreateProvider )( 
+            ICorProfilerInfo14 * This,
+            /* [string][in] */ const WCHAR *providerName,
+            /* [out] */ EVENTPIPE_PROVIDER *pProvider);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeGetProviderInfo)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeGetProviderInfo )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ EVENTPIPE_PROVIDER provider,
+            /* [in] */ ULONG cchName,
+            /* [out] */ ULONG *pcchName,
+            /* [annotation][out] */ 
+            _Out_writes_to_(cchName, *pcchName)  WCHAR providerName[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeDefineEvent)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeDefineEvent )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ EVENTPIPE_PROVIDER provider,
+            /* [string][in] */ const WCHAR *eventName,
+            /* [in] */ UINT32 eventID,
+            /* [in] */ UINT64 keywords,
+            /* [in] */ UINT32 eventVersion,
+            /* [in] */ UINT32 level,
+            /* [in] */ UINT8 opcode,
+            /* [in] */ BOOL needStack,
+            /* [in] */ UINT32 cParamDescs,
+            /* [size_is][in] */ COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[  ],
+            /* [out] */ EVENTPIPE_EVENT *pEvent);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo12, EventPipeWriteEvent)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeWriteEvent )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ EVENTPIPE_EVENT event,
+            /* [in] */ UINT32 cData,
+            /* [size_is][in] */ COR_PRF_EVENT_DATA data[  ],
+            /* [in] */ LPCGUID pActivityId,
+            /* [in] */ LPCGUID pRelatedActivityId);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo13, CreateHandle)
+        HRESULT ( STDMETHODCALLTYPE *CreateHandle )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ObjectID object,
+            /* [in] */ COR_PRF_HANDLE_TYPE type,
+            /* [out] */ ObjectHandleID *pHandle);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo13, DestroyHandle)
+        HRESULT ( STDMETHODCALLTYPE *DestroyHandle )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ObjectHandleID handle);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo13, GetObjectIDFromHandle)
+        HRESULT ( STDMETHODCALLTYPE *GetObjectIDFromHandle )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ObjectHandleID handle,
+            /* [out] */ ObjectID *pObject);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo14, EnumerateNonGCObjects)
+        HRESULT ( STDMETHODCALLTYPE *EnumerateNonGCObjects )( 
+            ICorProfilerInfo14 * This,
+            /* [out] */ ICorProfilerObjectEnum **ppEnum);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo14, GetNonGCHeapBounds)
+        HRESULT ( STDMETHODCALLTYPE *GetNonGCHeapBounds )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ULONG cObjectRanges,
+            /* [out] */ ULONG *pcObjectRanges,
+            /* [length_is][size_is][out] */ COR_PRF_NONGC_HEAP_RANGE ranges[  ]);
+        
+        DECLSPEC_XFGVIRT(ICorProfilerInfo14, EventPipeCreateProvider2)
+        HRESULT ( STDMETHODCALLTYPE *EventPipeCreateProvider2 )( 
+            ICorProfilerInfo14 * This,
+            /* [string][in] */ const WCHAR *providerName,
+            /* [in] */ EventPipeProviderCallback *pCallback,
+            /* [out] */ EVENTPIPE_PROVIDER *pProvider);
+        
+        END_INTERFACE
+    } ICorProfilerInfo14Vtbl;
+
+    interface ICorProfilerInfo14
+    {
+        CONST_VTBL struct ICorProfilerInfo14Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ICorProfilerInfo14_QueryInterface(This,riid,ppvObject)  \
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ICorProfilerInfo14_AddRef(This) \
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ICorProfilerInfo14_Release(This)    \
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ICorProfilerInfo14_GetClassFromObject(This,objectId,pClassId)   \
+    ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
+
+#define ICorProfilerInfo14_GetClassFromToken(This,moduleId,typeDef,pClassId)    \
+    ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
+
+#define ICorProfilerInfo14_GetCodeInfo(This,functionId,pStart,pcSize)   \
+    ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
+
+#define ICorProfilerInfo14_GetEventMask(This,pdwEvents) \
+    ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
+
+#define ICorProfilerInfo14_GetFunctionFromIP(This,ip,pFunctionId)   \
+    ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
+
+#define ICorProfilerInfo14_GetFunctionFromToken(This,moduleId,token,pFunctionId)    \
+    ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
+
+#define ICorProfilerInfo14_GetHandleFromThread(This,threadId,phThread)  \
+    ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
+
+#define ICorProfilerInfo14_GetObjectSize(This,objectId,pcSize)  \
+    ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
+
+#define ICorProfilerInfo14_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) \
+    ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
+
+#define ICorProfilerInfo14_GetThreadInfo(This,threadId,pdwWin32ThreadId)    \
+    ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
+
+#define ICorProfilerInfo14_GetCurrentThreadID(This,pThreadId)   \
+    ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
+
+#define ICorProfilerInfo14_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) \
+    ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
+
+#define ICorProfilerInfo14_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)   \
+    ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
+
+#define ICorProfilerInfo14_SetEventMask(This,dwEvents)  \
+    ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
+
+#define ICorProfilerInfo14_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
+    ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
+
+#define ICorProfilerInfo14_SetFunctionIDMapper(This,pFunc)  \
+    ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
+
+#define ICorProfilerInfo14_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)    \
+    ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
+
+#define ICorProfilerInfo14_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)   \
+    ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
+
+#define ICorProfilerInfo14_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)  \
+    ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
+
+#define ICorProfilerInfo14_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)   \
+    ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
+
+#define ICorProfilerInfo14_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)   \
+    ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
+
+#define ICorProfilerInfo14_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)    \
+    ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
+
+#define ICorProfilerInfo14_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)    \
+    ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
+
+#define ICorProfilerInfo14_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)  \
+    ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
+
+#define ICorProfilerInfo14_SetFunctionReJIT(This,functionId)    \
+    ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
+
+#define ICorProfilerInfo14_ForceGC(This)    \
+    ( (This)->lpVtbl -> ForceGC(This) ) 
+
+#define ICorProfilerInfo14_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) \
+    ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
+
+#define ICorProfilerInfo14_GetInprocInspectionInterface(This,ppicd) \
+    ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
+
+#define ICorProfilerInfo14_GetInprocInspectionIThisThread(This,ppicd)   \
+    ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
+
+#define ICorProfilerInfo14_GetThreadContext(This,threadId,pContextId)   \
+    ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
+
+#define ICorProfilerInfo14_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)    \
+    ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
+
+#define ICorProfilerInfo14_EndInprocDebugging(This,dwProfilerContext)   \
+    ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
+
+#define ICorProfilerInfo14_GetILToNativeMapping(This,functionId,cMap,pcMap,map) \
+    ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
+
+
+#define ICorProfilerInfo14_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)   \
+    ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
+
+#define ICorProfilerInfo14_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)    \
+    ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
+
+#define ICorProfilerInfo14_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)  \
+    ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
+
+#define ICorProfilerInfo14_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)  \
+    ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
+
+#define ICorProfilerInfo14_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)    \
+    ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
+
+#define ICorProfilerInfo14_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) \
+    ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
+
+#define ICorProfilerInfo14_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)   \
+    ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
+
+#define ICorProfilerInfo14_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)  \
+    ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
+
+#define ICorProfilerInfo14_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)    \
+    ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
+
+#define ICorProfilerInfo14_EnumModuleFrozenObjects(This,moduleID,ppEnum)    \
+    ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
+
+#define ICorProfilerInfo14_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)   \
+    ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
+
+#define ICorProfilerInfo14_GetBoxClassLayout(This,classId,pBufferOffset)    \
+    ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
+
+#define ICorProfilerInfo14_GetThreadAppDomain(This,threadId,pAppDomainId)   \
+    ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
+
+#define ICorProfilerInfo14_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)   \
+    ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
+
+#define ICorProfilerInfo14_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) \
+    ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
+
+#define ICorProfilerInfo14_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)   \
+    ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
+
+#define ICorProfilerInfo14_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) \
+    ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
+
+#define ICorProfilerInfo14_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)   \
+    ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
+
+#define ICorProfilerInfo14_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)    \
+    ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
+
+#define ICorProfilerInfo14_GetObjectGeneration(This,objectId,range) \
+    ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
+
+#define ICorProfilerInfo14_GetNotifiedExceptionClauseInfo(This,pinfo)   \
+    ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
+
+
+#define ICorProfilerInfo14_EnumJITedFunctions(This,ppEnum)  \
+    ( (This)->lpVtbl -> EnumJITedFunctions(This,ppEnum) ) 
+
+#define ICorProfilerInfo14_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) \
+    ( (This)->lpVtbl -> RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) ) 
+
+#define ICorProfilerInfo14_SetFunctionIDMapper2(This,pFunc,clientData)  \
+    ( (This)->lpVtbl -> SetFunctionIDMapper2(This,pFunc,clientData) ) 
+
+#define ICorProfilerInfo14_GetStringLayout2(This,pStringLengthOffset,pBufferOffset) \
+    ( (This)->lpVtbl -> GetStringLayout2(This,pStringLengthOffset,pBufferOffset) ) 
+
+#define ICorProfilerInfo14_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) \
+    ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) ) 
+
+#define ICorProfilerInfo14_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) \
+    ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) ) 
+
+#define ICorProfilerInfo14_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)  \
+    ( (This)->lpVtbl -> GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo) ) 
+
+#define ICorProfilerInfo14_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)   \
+    ( (This)->lpVtbl -> GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange) ) 
+
+#define ICorProfilerInfo14_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) \
+    ( (This)->lpVtbl -> GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) ) 
+
+#define ICorProfilerInfo14_EnumModules(This,ppEnum) \
+    ( (This)->lpVtbl -> EnumModules(This,ppEnum) ) 
+
+#define ICorProfilerInfo14_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)  \
+    ( (This)->lpVtbl -> GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString) ) 
+
+#define ICorProfilerInfo14_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)  \
+    ( (This)->lpVtbl -> GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress) ) 
+
+#define ICorProfilerInfo14_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)   \
+    ( (This)->lpVtbl -> GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds) ) 
+
+#define ICorProfilerInfo14_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)   \
+    ( (This)->lpVtbl -> GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags) ) 
+
+
+#define ICorProfilerInfo14_EnumThreads(This,ppEnum) \
+    ( (This)->lpVtbl -> EnumThreads(This,ppEnum) ) 
+
+#define ICorProfilerInfo14_InitializeCurrentThread(This)    \
+    ( (This)->lpVtbl -> InitializeCurrentThread(This) ) 
+
+#define ICorProfilerInfo14_RequestReJIT(This,cFunctions,moduleIds,methodIds)    \
+    ( (This)->lpVtbl -> RequestReJIT(This,cFunctions,moduleIds,methodIds) ) 
+
+#define ICorProfilerInfo14_RequestRevert(This,cFunctions,moduleIds,methodIds,status)    \
+    ( (This)->lpVtbl -> RequestRevert(This,cFunctions,moduleIds,methodIds,status) ) 
+
+#define ICorProfilerInfo14_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)   \
+    ( (This)->lpVtbl -> GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos) ) 
+
+#define ICorProfilerInfo14_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) \
+    ( (This)->lpVtbl -> GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) ) 
+
+#define ICorProfilerInfo14_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)   \
+    ( (This)->lpVtbl -> GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds) ) 
+
+#define ICorProfilerInfo14_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map)    \
+    ( (This)->lpVtbl -> GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) ) 
+
+#define ICorProfilerInfo14_EnumJITedFunctions2(This,ppEnum) \
+    ( (This)->lpVtbl -> EnumJITedFunctions2(This,ppEnum) ) 
+
+#define ICorProfilerInfo14_GetObjectSize2(This,objectId,pcSize) \
+    ( (This)->lpVtbl -> GetObjectSize2(This,objectId,pcSize) ) 
+
+
+#define ICorProfilerInfo14_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)   \
+    ( (This)->lpVtbl -> GetEventMask2(This,pdwEventsLow,pdwEventsHigh) ) 
+
+#define ICorProfilerInfo14_SetEventMask2(This,dwEventsLow,dwEventsHigh) \
+    ( (This)->lpVtbl -> SetEventMask2(This,dwEventsLow,dwEventsHigh) ) 
+
+
+#define ICorProfilerInfo14_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum) \
+    ( (This)->lpVtbl -> EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum) ) 
+
+
+#define ICorProfilerInfo14_ApplyMetaData(This,moduleId) \
+    ( (This)->lpVtbl -> ApplyMetaData(This,moduleId) ) 
+
+#define ICorProfilerInfo14_GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes)    \
+    ( (This)->lpVtbl -> GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes) ) 
+
+#define ICorProfilerInfo14_ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead) \
+    ( (This)->lpVtbl -> ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead) ) 
+
+
+#define ICorProfilerInfo14_IsFunctionDynamic(This,functionId,isDynamic) \
+    ( (This)->lpVtbl -> IsFunctionDynamic(This,functionId,isDynamic) ) 
+
+#define ICorProfilerInfo14_GetFunctionFromIP3(This,ip,functionId,pReJitId)  \
+    ( (This)->lpVtbl -> GetFunctionFromIP3(This,ip,functionId,pReJitId) ) 
+
+#define ICorProfilerInfo14_GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName)   \
+    ( (This)->lpVtbl -> GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName) ) 
+
+
+#define ICorProfilerInfo14_GetNativeCodeStartAddresses(This,functionID,reJitId,cCodeStartAddresses,pcCodeStartAddresses,codeStartAddresses) \
+    ( (This)->lpVtbl -> GetNativeCodeStartAddresses(This,functionID,reJitId,cCodeStartAddresses,pcCodeStartAddresses,codeStartAddresses) ) 
+
+#define ICorProfilerInfo14_GetILToNativeMapping3(This,pNativeCodeStartAddress,cMap,pcMap,map)   \
+    ( (This)->lpVtbl -> GetILToNativeMapping3(This,pNativeCodeStartAddress,cMap,pcMap,map) ) 
+
+#define ICorProfilerInfo14_GetCodeInfo4(This,pNativeCodeStartAddress,cCodeInfos,pcCodeInfos,codeInfos)  \
+    ( (This)->lpVtbl -> GetCodeInfo4(This,pNativeCodeStartAddress,cCodeInfos,pcCodeInfos,codeInfos) ) 
+
+
+#define ICorProfilerInfo14_EnumerateObjectReferences(This,objectId,callback,clientData) \
+    ( (This)->lpVtbl -> EnumerateObjectReferences(This,objectId,callback,clientData) ) 
+
+#define ICorProfilerInfo14_IsFrozenObject(This,objectId,pbFrozen)   \
+    ( (This)->lpVtbl -> IsFrozenObject(This,objectId,pbFrozen) ) 
+
+#define ICorProfilerInfo14_GetLOHObjectSizeThreshold(This,pThreshold)   \
+    ( (This)->lpVtbl -> GetLOHObjectSizeThreshold(This,pThreshold) ) 
+
+#define ICorProfilerInfo14_RequestReJITWithInliners(This,dwRejitFlags,cFunctions,moduleIds,methodIds)   \
+    ( (This)->lpVtbl -> RequestReJITWithInliners(This,dwRejitFlags,cFunctions,moduleIds,methodIds) ) 
+
+#define ICorProfilerInfo14_SuspendRuntime(This) \
+    ( (This)->lpVtbl -> SuspendRuntime(This) ) 
+
+#define ICorProfilerInfo14_ResumeRuntime(This)  \
+    ( (This)->lpVtbl -> ResumeRuntime(This) ) 
+
+
+#define ICorProfilerInfo14_GetEnvironmentVariable(This,szName,cchValue,pcchValue,szValue)   \
+    ( (This)->lpVtbl -> GetEnvironmentVariable(This,szName,cchValue,pcchValue,szValue) ) 
+
+#define ICorProfilerInfo14_SetEnvironmentVariable(This,szName,szValue)  \
+    ( (This)->lpVtbl -> SetEnvironmentVariable(This,szName,szValue) ) 
+
+
+#define ICorProfilerInfo14_EventPipeStartSession(This,cProviderConfigs,pProviderConfigs,requestRundown,pSession)    \
+    ( (This)->lpVtbl -> EventPipeStartSession(This,cProviderConfigs,pProviderConfigs,requestRundown,pSession) ) 
+
+#define ICorProfilerInfo14_EventPipeAddProviderToSession(This,session,providerConfig)   \
+    ( (This)->lpVtbl -> EventPipeAddProviderToSession(This,session,providerConfig) ) 
+
+#define ICorProfilerInfo14_EventPipeStopSession(This,session)   \
+    ( (This)->lpVtbl -> EventPipeStopSession(This,session) ) 
+
+#define ICorProfilerInfo14_EventPipeCreateProvider(This,providerName,pProvider) \
+    ( (This)->lpVtbl -> EventPipeCreateProvider(This,providerName,pProvider) ) 
+
+#define ICorProfilerInfo14_EventPipeGetProviderInfo(This,provider,cchName,pcchName,providerName)    \
+    ( (This)->lpVtbl -> EventPipeGetProviderInfo(This,provider,cchName,pcchName,providerName) ) 
+
+#define ICorProfilerInfo14_EventPipeDefineEvent(This,provider,eventName,eventID,keywords,eventVersion,level,opcode,needStack,cParamDescs,pParamDescs,pEvent)    \
+    ( (This)->lpVtbl -> EventPipeDefineEvent(This,provider,eventName,eventID,keywords,eventVersion,level,opcode,needStack,cParamDescs,pParamDescs,pEvent) ) 
+
+#define ICorProfilerInfo14_EventPipeWriteEvent(This,event,cData,data,pActivityId,pRelatedActivityId)    \
+    ( (This)->lpVtbl -> EventPipeWriteEvent(This,event,cData,data,pActivityId,pRelatedActivityId) ) 
+
+
+#define ICorProfilerInfo14_CreateHandle(This,object,type,pHandle)   \
+    ( (This)->lpVtbl -> CreateHandle(This,object,type,pHandle) ) 
+
+#define ICorProfilerInfo14_DestroyHandle(This,handle)   \
+    ( (This)->lpVtbl -> DestroyHandle(This,handle) ) 
+
+#define ICorProfilerInfo14_GetObjectIDFromHandle(This,handle,pObject)   \
+    ( (This)->lpVtbl -> GetObjectIDFromHandle(This,handle,pObject) ) 
+
+
+#define ICorProfilerInfo14_EnumerateNonGCObjects(This,ppEnum)   \
+    ( (This)->lpVtbl -> EnumerateNonGCObjects(This,ppEnum) ) 
+
+#define ICorProfilerInfo14_GetNonGCHeapBounds(This,cObjectRanges,pcObjectRanges,ranges) \
+    ( (This)->lpVtbl -> GetNonGCHeapBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
+
+#define ICorProfilerInfo14_EventPipeCreateProvider2(This,providerName,pCallback,pProvider)  \
+    ( (This)->lpVtbl -> EventPipeCreateProvider2(This,providerName,pCallback,pProvider) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif  /* C style interface */
+
+
+
+
+#endif  /* __ICorProfilerInfo14_INTERFACE_DEFINED__ */
+
+
 #ifndef __ICorProfilerMethodEnum_INTERFACE_DEFINED__
 #define __ICorProfilerMethodEnum_INTERFACE_DEFINED__
 
@@ -20016,33 +24507,41 @@ EXTERN_C const IID IID_ICorProfilerMethodEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerMethodEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerMethodEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerMethodEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerMethodEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorProfilerMethodEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorProfilerMethodEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorProfilerMethodEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerMethodEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorProfilerMethodEnum * This,
             /* [out] */ ICorProfilerMethodEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerMethodEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorProfilerMethodEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorProfilerMethodEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorProfilerMethodEnum * This,
             /* [in] */ ULONG celt,
@@ -20138,33 +24637,41 @@ EXTERN_C const IID IID_ICorProfilerThreadEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerThreadEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerThreadEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerThreadEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerThreadEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorProfilerThreadEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorProfilerThreadEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorProfilerThreadEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerThreadEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorProfilerThreadEnum * This,
             /* [out] */ ICorProfilerThreadEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerThreadEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorProfilerThreadEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorProfilerThreadEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorProfilerThreadEnum * This,
             /* [in] */ ULONG celt,
@@ -20247,18 +24754,22 @@ EXTERN_C const IID IID_ICorProfilerAssemblyReferenceProvider;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorProfilerAssemblyReferenceProvider * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorProfilerAssemblyReferenceProvider * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorProfilerAssemblyReferenceProvider * This);
         
+        DECLSPEC_XFGVIRT(ICorProfilerAssemblyReferenceProvider, AddAssemblyReference)
         HRESULT ( STDMETHODCALLTYPE *AddAssemblyReference )( 
             ICorProfilerAssemblyReferenceProvider * This,
             const COR_PRF_ASSEMBLY_REFERENCE_INFO *pAssemblyRefInfo);

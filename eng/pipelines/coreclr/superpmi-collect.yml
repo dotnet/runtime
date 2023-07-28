@@ -23,156 +23,214 @@ schedules:
     - main
   always: true
 
-jobs:
-
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-    buildConfig: checked
-    platforms:
-    - OSX_arm64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    jobParameters:
-      testGroup: outerloop
-      # libraries test build platforms
-      testBuildPlatforms:
-      - Linux_x64
-      - windows_x64
+    stages:
+    - stage: Build
+      jobs:
 
-# superpmi-collect-job that targets macOS/arm64 depends on coreclr binaries produced by the macOS/x64 job
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: checked
-    platforms:
-    - OSX_x64
-    jobParameters:
-      testGroup: outerloop
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          jobParameters:
+            testGroup: outerloop
+            # libraries test build platforms
+            testBuildPlatforms:
+            - linux_x64
+            - windows_x64
+            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: checked
-    platforms:
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    jobParameters:
-      testGroup: outerloop
+      # superpmi-collect-job that targets macOS/arm64 depends on coreclr binaries produced by the macOS/x64 job
+      # We don't collect osx-x64 (it's essentially the same as linux-x64). If we did, we'd add osx_x64 in the
+      # build-coreclr-and-libraries-job.yml above, and remove this.
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_x64
+          jobParameters:
+            testGroup: outerloop
+            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-    buildConfig: checked
-    platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
-    - OSX_arm64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      collectionType: pmi
-      collectionName: libraries
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+          buildConfig: checked
+          platforms:
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          jobParameters:
+            testGroup: outerloop
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-    buildConfig: checked
-    platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
-    - OSX_arm64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      collectionType: pmi
-      collectionName: coreclr_tests
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: pmi
+            collectionName: libraries
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-    buildConfig: checked
-    platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
-    - OSX_arm64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      collectionType: pmi
-      collectionName: libraries_tests
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: pmi
+            collectionName: libraries_tests
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-    buildConfig: checked
-    platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
-    - OSX_arm64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      collectionType: crossgen2
-      collectionName: libraries
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: crossgen2
+            collectionName: libraries
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-    buildConfig: checked
-    platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
-    - OSX_arm64
-    #TODO: Need special handling of running "benchmark build" from inside TMP folder on helix machine.
-    # - Linux_arm
-    # - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      collectionType: run
-      collectionName: benchmarks
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: run
+            collectionName: realworld
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: run
+            collectionName: benchmarks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: run_tiered
+            collectionName: benchmarks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: run_pgo
+            collectionName: benchmarks
+
+      #
+      # Collection of coreclr test run
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: superpmi
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            SuperPmiCollect: true

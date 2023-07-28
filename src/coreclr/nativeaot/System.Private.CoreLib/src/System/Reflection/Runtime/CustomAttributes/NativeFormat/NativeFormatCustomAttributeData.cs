@@ -92,16 +92,8 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
             }
         }
 
-        internal sealed override string AttributeTypeString
-        {
-            get
-            {
-                return new QTypeDefRefOrSpec(_reader, _customAttribute.GetAttributeTypeHandle(_reader)).FormatTypeName(new TypeContext(null, null));
-            }
-        }
-
         //
-        // If throwIfMissingMetadata is false, returns null rather than throwing a MissingMetadataException.
+        // If throwIfMissingMetadata is false, returns null rather than throwing a missing metadata exception.
         //
         internal sealed override IList<CustomAttributeTypedArgument> GetConstructorArguments(bool throwIfMissingMetadata)
         {
@@ -128,7 +120,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
             {
                 Handle typeHandle = ctorTypeHandles[index];
                 Exception? exception = null;
-                RuntimeTypeInfo? argumentType = typeHandle.TryResolve(_reader, new TypeContext(null, null), ref exception);
+                RuntimeTypeInfo? argumentType = typeHandle.TryResolve(_reader, AttributeType.CastToRuntimeTypeInfo().TypeContext, ref exception);
                 if (argumentType == null)
                 {
                     if (throwIfMissingMetadata)
@@ -158,7 +150,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
         }
 
         //
-        // If throwIfMissingMetadata is false, returns null rather than throwing a MissingMetadataException.
+        // If throwIfMissingMetadata is false, returns null rather than throwing a missing metadata exception.
         //
         internal sealed override IList<CustomAttributeNamedArgument> GetNamedArguments(bool throwIfMissingMetadata)
         {
@@ -170,7 +162,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                 bool isField = (namedArgument.Flags == NamedArgumentMemberKind.Field);
 
                 Exception? exception = null;
-                RuntimeTypeInfo? argumentType = namedArgument.Type.TryResolve(_reader, new TypeContext(null, null), ref exception);
+                RuntimeTypeInfo? argumentType = namedArgument.Type.TryResolve(_reader, AttributeType.CastToRuntimeTypeInfo().TypeContext, ref exception);
                 if (argumentType == null)
                 {
                     if (throwIfMissingMetadata)

@@ -181,7 +181,7 @@ HRESULT CordbAssembly::EnumerateModules(ICorDebugModuleEnum **ppModules)
             IID_ICorDebugModuleEnum,
             pEnum.GetAddr());
 
-        // this will build up an auxillary list. Don't need pEnum after this.
+        // this will build up an auxiliary list. Don't need pEnum after this.
         hr = pModEnum->Init(pEnum, this);
         IfFailThrow(hr);
 

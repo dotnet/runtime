@@ -17,9 +17,15 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
 
         [Theory]
         [InlineData(null)]
+        public static void Ctor_String_NullName_ThrowsArgumentException(string name)
+        {
+            AssertExtensions.Throws<ArgumentNullException>("name", null, () => new ForeignKeyAttribute(name));
+        }
+
+        [Theory]
         [InlineData("")]
         [InlineData(" \t\r\n")]
-        public static void Ctor_String_NullOrWhitespaceName_ThrowsArgumentException(string name)
+        public static void Ctor_String_WhitespaceName_ThrowsArgumentException(string name)
         {
             AssertExtensions.Throws<ArgumentException>("name", null, () => new ForeignKeyAttribute(name));
         }

@@ -13,19 +13,6 @@ namespace System.Text
 {
     public class UTF7Encoding : Encoding
     {
-        private const string base64Chars =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        // 0123456789111111111122222222223333333333444444444455555555556666
-        //              012345678901234567890123456789012345678901234567890123
-
-        // These are the characters that can be directly encoded in UTF7.
-        private const string directChars =
-            "\t\n\r '(),-./0123456789:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-        // These are the characters that can be optionally directly encoded in UTF7.
-        private const string optionalChars =
-            "!\"#$%&*;<=>@[]^_`{|}";
-
 #pragma warning disable SYSLIB0001
         // Used by Encoding.UTF7 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
@@ -70,24 +57,30 @@ namespace System.Text
         private void MakeTables()
         {
             // Build our tables
-            _base64Bytes = new byte[64];
-            for (int i = 0; i < 64; i++) _base64Bytes[i] = (byte)base64Chars[i];
+
+            _base64Bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8.ToArray();
+            Debug.Assert(_base64Bytes.Length == 64);
+
             _base64Values = new sbyte[128];
             for (int i = 0; i < 128; i++) _base64Values[i] = -1;
             for (int i = 0; i < 64; i++) _base64Values[_base64Bytes[i]] = (sbyte)i;
+
+            // These are the characters that can be directly encoded in UTF7.
+            ReadOnlySpan<byte> directChars = "\t\n\r '(),-./0123456789:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8;
             _directEncode = new bool[128];
-            int count = directChars.Length;
-            for (int i = 0; i < count; i++)
+            foreach (byte c in directChars)
             {
-                _directEncode[directChars[i]] = true;
+                _directEncode[c] = true;
             }
 
             if (_allowOptionals)
             {
-                count = optionalChars.Length;
-                for (int i = 0; i < count; i++)
+                // These are the characters that can be optionally directly encoded in UTF7.
+                ReadOnlySpan<byte> optionalChars = "!\"#$%&*;<=>@[]^_`{|}"u8;
+
+                foreach (byte c in optionalChars)
                 {
-                    _directEncode[optionalChars[i]] = true;
+                    _directEncode[c] = true;
                 }
             }
         }
@@ -137,8 +130,8 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (chars.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -177,8 +170,7 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             // Call it with empty encoder
             return GetByteCount(chars, count, null);
@@ -195,8 +187,8 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(s);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(charIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             if (s.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(s), SR.ArgumentOutOfRange_IndexCount);
@@ -230,8 +222,8 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(charIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             if (chars.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -261,8 +253,8 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             return GetBytes(chars, charCount, bytes, byteCount, null);
         }
@@ -279,8 +271,8 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (bytes.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -303,8 +295,7 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             return GetCharCount(bytes, count, null);
         }
@@ -320,8 +311,8 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -351,8 +342,8 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             return GetChars(bytes, byteCount, chars, charCount, null);
         }
@@ -369,8 +360,8 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (bytes.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -403,14 +394,14 @@ namespace System.Text
             Debug.Assert(charCount >= 0, "[UTF7Encoding.GetBytes]charCount >=0");
 
             // Get encoder info
-            UTF7Encoding.Encoder? encoder = (UTF7Encoding.Encoder?)baseEncoder;
+            Encoder? encoder = (Encoder?)baseEncoder;
 
             // Default bits & count
             int bits = 0;
             int bitCount = -1;
 
             // prepare our helpers
-            Encoding.EncodingByteBuffer buffer = new Encoding.EncodingByteBuffer(
+            EncodingByteBuffer buffer = new EncodingByteBuffer(
                 this, encoder, bytes, byteCount, chars, charCount);
 
             if (encoder is not null)
@@ -552,10 +543,10 @@ namespace System.Text
             Debug.Assert(charCount >= 0, "[UTF7Encoding.GetChars]charCount >=0");
 
             // Might use a decoder
-            UTF7Encoding.Decoder? decoder = (UTF7Encoding.Decoder?)baseDecoder;
+            Decoder? decoder = (Decoder?)baseDecoder;
 
             // Get our output buffer info.
-            Encoding.EncodingCharBuffer buffer = new Encoding.EncodingCharBuffer(
+            EncodingCharBuffer buffer = new EncodingCharBuffer(
                 this, decoder, chars, charCount, bytes, byteCount);
 
             // Get decoder info
@@ -711,21 +702,19 @@ namespace System.Text
             return buffer.Count;
         }
 
-        public override System.Text.Decoder GetDecoder()
+        public override Text.Decoder GetDecoder()
         {
-            return new UTF7Encoding.Decoder(this);
+            return new Decoder(this);
         }
 
-        public override System.Text.Encoder GetEncoder()
+        public override Text.Encoder GetEncoder()
         {
-            return new UTF7Encoding.Encoder(this);
+            return new Encoder(this);
         }
 
         public override int GetMaxByteCount(int charCount)
         {
-            if (charCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(charCount),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             // Suppose that every char can not be direct-encoded, we know that
             // a byte can encode 6 bits of the Unicode character.  And we will
@@ -754,9 +743,7 @@ namespace System.Text
 
         public override int GetMaxCharCount(int byteCount)
         {
-            if (byteCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(byteCount),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             // Worst case is 1 char per byte.  Minimum 1 for left over bits in case decoder is being flushed
             // Also note that we ignore extra bits (per spec), so UTF7 doesn't have unknown in this direction.

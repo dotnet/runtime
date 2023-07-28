@@ -26,10 +26,20 @@ namespace System
 
         public static string UserName => Interop.Sys.GetUserNameFromPasswd(Interop.Sys.GetEUid());
 
+        private static bool IsPrivilegedProcessCore() => Interop.Sys.GetEUid() == 0;
+
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
         private static int GetProcessId() => Interop.Sys.GetPid();
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
         private static string? GetProcessPath() => Interop.Sys.GetProcessPath();
+
+        private static string[] GetCommandLineArgsNative()
+        {
+            // This is only used for delegate created from native host
+
+            // Consider to use /proc/self/cmdline to get command line
+            return Array.Empty<string>();
+        }
     }
 }

@@ -133,7 +133,6 @@ encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, SigB
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	int i;
 	MonoGenericInst *class_inst;
 	MonoClass *klass;
 
@@ -147,7 +146,7 @@ encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, SigB
 	sigbuffer_add_value (buf, mono_dynimage_encode_typedef_or_ref_full (assembly, m_class_get_byval_arg (klass), FALSE));
 
 	sigbuffer_add_value (buf, class_inst->type_argc);
-	for (i = 0; i < class_inst->type_argc; ++i)
+	for (guint i = 0; i < class_inst->type_argc; ++i)
 		encode_type (assembly, class_inst->type_argv [i], buf);
 
 }

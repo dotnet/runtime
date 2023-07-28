@@ -2,19 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly d083
+.assembly 'b48554b'
 {
 }
 
 
-.class ILGEN_1235399248 {
+.class public ILGEN_1235399248 {
  //(Nov 12 1999)15:27:27
-.method static int32 main() {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	11
  .locals ( float32, float32, float32, int32, int64, int32, int32, int32, float64, int32, int32, float32, float64, float32, int64, float32, int32, float64, float64, float64, int32, float64, int32, int32, int32, float64, int32, int64, int32, float32, int64, int32, int32, float32, int32, int32, float64, float64, int64, float32, int32, int32, float64, int32, int32, int32, float64, float32, int32, float32, float32, int32, int64, int32, int32, int32, float32, int32, int32, int32, int64, float64, int64, int32)

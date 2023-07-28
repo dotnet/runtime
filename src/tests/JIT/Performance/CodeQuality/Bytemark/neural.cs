@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 /*
 ** This program was translated to C# and adapted for xunit-performance.
-** New variants of several tests were added to compare class versus 
+** New variants of several tests were added to compare class versus
 ** struct and to compare jagged arrays vs multi-dimensional arrays.
 */
 
@@ -23,7 +23,7 @@
 ** are error-free.  Consequently, McGraw-HIll and BYTE Magazine make
 ** no claims in regard to the fitness of the source code, executable
 ** code, and documentation of the BYTEmark.
-** 
+**
 ** Furthermore, BYTE Magazine, McGraw-Hill, and all employees
 ** of McGraw-Hill cannot be held responsible for any damages resulting
 ** from the use of this code or the results obtained from using
@@ -780,7 +780,7 @@ public class Neural : NNetStruct
     /********************
     ** randomize_wts() **
     *********************
-    ** Intialize the weights in the middle and output layers to
+    ** Initialize the weights in the middle and output layers to
     ** random values between -0.25..+0.25
     ** Function rand() returns a value between 0 and 32767.
     **

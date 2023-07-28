@@ -61,6 +61,7 @@ libunwind_coredump_la_SOURCES = \
 	coredump/_UCD_find_proc_info.c \
 	coredump/_UCD_get_proc_name.c \
 	coredump/_UCD_corefile_elf.c \
+	coredump/ucd_file_table.c \
 	\
 	coredump/_UPT_elf.c \
 	coredump/_UPT_access_fpreg.c \
@@ -70,7 +71,9 @@ libunwind_coredump_la_SOURCES = \
 libunwind_coredump_la_LDFLAGS = $(COMMON_SO_LDFLAGS) \
 				-version-info $(COREDUMP_SO_VERSION)
 libunwind_coredump_la_LIBADD = $(LIBLZMA) $(LIBZ)
-noinst_HEADERS += coredump/_UCD_internal.h coredump/_UCD_lib.h
+noinst_HEADERS += coredump/_UCD_internal.h \
+                  coredump/_UCD_lib.h \
+                  coredump/ucd_file_table.h
 
 ### libunwind-setjmp:
 libunwind_setjmp_la_LDFLAGS		= $(COMMON_SO_LDFLAGS)		     \
@@ -162,13 +165,15 @@ libunwind_dwarf_common_la_SOURCES = dwarf/global.c
 libunwind_dwarf_local_la_SOURCES = \
 	dwarf/Lexpr.c dwarf/Lfde.c dwarf/Lparser.c dwarf/Lpe.c \
 	dwarf/Lfind_proc_info-lsb.c \
-	dwarf/Lfind_unwind_table.c
+	dwarf/Lfind_unwind_table.c \
+	dwarf/Lget_proc_info_in_range.c
 libunwind_dwarf_local_la_LIBADD = libunwind-dwarf-common.la
 
 libunwind_dwarf_generic_la_SOURCES = \
 	dwarf/Gexpr.c dwarf/Gfde.c dwarf/Gparser.c dwarf/Gpe.c \
 	dwarf/Gfind_proc_info-lsb.c \
-	dwarf/Gfind_unwind_table.c
+	dwarf/Gfind_unwind_table.c \
+	dwarf/Gget_proc_info_in_range.c
 libunwind_dwarf_generic_la_LIBADD = libunwind-dwarf-common.la
 
 if USE_DWARF

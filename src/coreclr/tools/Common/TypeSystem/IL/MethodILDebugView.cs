@@ -33,20 +33,20 @@ namespace Internal.IL
                 if (!owningMethod.Signature.IsStatic)
                     sb.Append("instance ");
                 disasm.AppendType(sb, owningMethod.Signature.ReturnType);
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(owningMethod.Name);
                 if (owningMethod.HasInstantiation)
                 {
-                    sb.Append("<");
+                    sb.Append('<');
                     for (int i = 0; i < owningMethod.Instantiation.Length; i++)
                     {
                         if (i != 0)
                             sb.Append(", ");
                         disasm.AppendType(sb, owningMethod.Instantiation[i]);
                     }
-                    sb.Append(">");
+                    sb.Append('>');
                 }
-                sb.Append("(");
+                sb.Append('(');
                 for (int i = 0; i < owningMethod.Signature.Length; i++)
                 {
                     if (i != 0)
@@ -71,7 +71,7 @@ namespace Internal.IL
                     if (_methodIL.IsInitLocals)
                         sb.Append("init ");
 
-                    sb.Append("(");
+                    sb.Append('(');
 
                     for (int i = 0; i < locals.Length; i++)
                     {
@@ -81,7 +81,7 @@ namespace Internal.IL
                             sb.Append(' ', 6);
                         }
                         disasm.AppendType(sb, locals[i].Type);
-                        sb.Append(" ");
+                        sb.Append(' ');
                         if (locals[i].IsPinned)
                             sb.Append("pinned ");
                         sb.Append("V_");
@@ -101,7 +101,7 @@ namespace Internal.IL
                     ILDisassembler.AppendOffset(sb, region.TryOffset);
                     sb.Append(" to ");
                     ILDisassembler.AppendOffset(sb, region.TryOffset + region.TryLength);
-                                        
+
                     switch (region.Kind)
                     {
                         case ILExceptionRegionKind.Catch:

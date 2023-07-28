@@ -1,16 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Collections;
+using System.Xml.Schema;
+using System.Runtime.Versioning;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Threading;
-    using System.Collections;
-    using System.Xml.Schema;
-    using System.Runtime.Versioning;
-
-
     /// <summary>
     /// The XmlSchemaCollection contains a set of namespace URI's.
     /// Each namespace also have an associated private data cache
@@ -96,7 +95,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? ns, [StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
-            if (uri == null || uri.Length == 0)
+            if (string.IsNullOrEmpty(uri))
                 throw new ArgumentNullException(nameof(uri));
             XmlTextReader reader = new XmlTextReader(uri, _nameTable);
             reader.XmlResolver = _xmlResolver;
@@ -196,7 +195,7 @@ namespace System.Xml.Schema
             get
             {
                 XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[ns ?? string.Empty];
-                return (node != null) ? node.Schema : null;
+                return node?.Schema;
             }
         }
 
@@ -228,15 +227,11 @@ namespace System.Xml.Schema
         void ICollection.CopyTo(Array array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index));
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
             {
-                if (index == array.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ArgumentOutOfRangeException.ThrowIfEqual(index, array.Length);
                 array.SetValue(e.Current, index++);
             }
         }
@@ -244,19 +239,14 @@ namespace System.Xml.Schema
         public void CopyTo(XmlSchema[] array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index));
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
             {
                 XmlSchema? schema = e.Current;
                 if (schema != null)
                 {
-                    if (index == array.Length)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(index));
-                    }
-
+                    ArgumentOutOfRangeException.ThrowIfEqual(index, array.Length);
                     array[index++] = e.Current!;
                 }
             }
@@ -280,7 +270,7 @@ namespace System.Xml.Schema
         internal SchemaInfo? GetSchemaInfo(string? ns)
         {
             XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[ns ?? string.Empty];
-            return (node != null) ? node.SchemaInfo : null;
+            return node?.SchemaInfo;
         }
 
         internal SchemaNames GetSchemaNames(XmlNameTable nt)
@@ -291,11 +281,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                if (_schemaNames == null)
-                {
-                    _schemaNames = new SchemaNames(_nameTable);
-                }
-                return _schemaNames;
+                return _schemaNames ??= new SchemaNames(_nameTable);
             }
         }
 

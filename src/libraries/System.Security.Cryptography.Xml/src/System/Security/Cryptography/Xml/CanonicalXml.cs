@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Xml
         // private static string defaultXPathWithComments = "(//. | //@* | //namespace::*)";
         // private static string defaultXPathWithComments = "(//. | //@* | //namespace::*)";
 
-        internal CanonicalXml(Stream inputStream, bool includeComments, XmlResolver resolver, string strBaseUri)
+        internal CanonicalXml(Stream inputStream, bool includeComments, XmlResolver? resolver, string strBaseUri)
         {
             if (inputStream is null)
             {
@@ -30,8 +30,8 @@ namespace System.Security.Cryptography.Xml
             _ancMgr = new C14NAncestralNamespaceContextManager();
         }
 
-        internal CanonicalXml(XmlDocument document, XmlResolver resolver) : this(document, resolver, false) { }
-        internal CanonicalXml(XmlDocument document, XmlResolver resolver, bool includeComments)
+        internal CanonicalXml(XmlDocument document, XmlResolver? resolver) : this(document, resolver, false) { }
+        internal CanonicalXml(XmlDocument document, XmlResolver? resolver, bool includeComments)
         {
             if (document is null)
             {
@@ -44,14 +44,14 @@ namespace System.Security.Cryptography.Xml
             _ancMgr = new C14NAncestralNamespaceContextManager();
         }
 
-        internal CanonicalXml(XmlNodeList nodeList, XmlResolver resolver, bool includeComments)
+        internal CanonicalXml(XmlNodeList nodeList, XmlResolver? resolver, bool includeComments)
         {
             if (nodeList is null)
             {
                 throw new ArgumentNullException(nameof(nodeList));
             }
 
-            XmlDocument doc = Utils.GetOwnerDocument(nodeList);
+            XmlDocument? doc = Utils.GetOwnerDocument(nodeList);
             if (doc == null)
                 throw new ArgumentException(nameof(nodeList));
 
@@ -79,8 +79,8 @@ namespace System.Security.Cryptography.Xml
 
             do
             {
-                XmlNode currentNode = (XmlNode)elementList[index];
-                XmlNode currentNodeCanonical = (XmlNode)elementListCanonical[index];
+                XmlNode currentNode = (XmlNode)elementList[index]!;
+                XmlNode currentNodeCanonical = (XmlNode)elementListCanonical[index]!;
                 XmlNodeList childNodes = currentNode.ChildNodes;
                 XmlNodeList childNodesCanonical = currentNodeCanonical.ChildNodes;
                 for (int i = 0; i < childNodes.Count; i++)
@@ -90,17 +90,17 @@ namespace System.Security.Cryptography.Xml
 
                     if (Utils.NodeInList(childNodes[i], nodeList))
                     {
-                        MarkNodeAsIncluded(childNodesCanonical[i]);
+                        MarkNodeAsIncluded(childNodesCanonical[i]!);
                     }
 
-                    XmlAttributeCollection attribNodes = childNodes[i].Attributes;
+                    XmlAttributeCollection? attribNodes = childNodes[i]!.Attributes;
                     if (attribNodes != null)
                     {
                         for (int j = 0; j < attribNodes.Count; j++)
                         {
                             if (Utils.NodeInList(attribNodes[j], nodeList))
                             {
-                                MarkNodeAsIncluded(childNodesCanonical[i].Attributes.Item(j));
+                                MarkNodeAsIncluded(childNodesCanonical[i]!.Attributes!.Item(j)!);
                             }
                         }
                     }
@@ -113,15 +113,14 @@ namespace System.Security.Cryptography.Xml
         {
             StringBuilder sb = new StringBuilder();
             _c14nDoc.Write(sb, DocPosition.BeforeRootElement, _ancMgr);
-            UTF8Encoding utf8 = new UTF8Encoding(false);
-            return utf8.GetBytes(sb.ToString());
+            return Encoding.UTF8.GetBytes(sb.ToString());
         }
 
         internal byte[] GetDigestedBytes(HashAlgorithm hash)
         {
             _c14nDoc.WriteHash(hash, DocPosition.BeforeRootElement, _ancMgr);
             hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[] res = (byte[])hash.Hash.Clone();
+            byte[] res = (byte[])hash.Hash!.Clone();
             // reinitialize the hash so it is still usable after the call
             hash.Initialize();
             return res;

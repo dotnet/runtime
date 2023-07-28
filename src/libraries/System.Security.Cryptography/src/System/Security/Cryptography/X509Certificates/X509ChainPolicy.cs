@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.X509Certificates
         private X509RevocationFlag _revocationFlag;
         private X509VerificationFlags _verificationFlags;
         private X509ChainTrustMode _trustMode;
+        private DateTime _verificationTime;
         internal OidCollection? _applicationPolicy;
         internal OidCollection? _certificatePolicy;
         internal X509Certificate2Collection? _extraStore;
@@ -29,6 +30,17 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The default is <see langword="false" />.
         /// </value>
         public bool DisableCertificateDownloads { get; set; }
+
+        /// <summary>
+        ///   Gets or sets a value that indicates whether the chain validation should use
+        ///   <see cref="VerificationTime" /> or the current system time when building
+        ///   an X.509 certificate chain.
+        /// </summary>
+        /// <value>
+        ///   <see langword="true" /> to ignore <see cref="VerificationTime"/> and use the current system time; otherwise <see langword="false"/>.
+        ///   The default is <see langword="true" />.
+        /// </value>
+        public bool VerificationTimeIgnored { get; set; }
 
         public OidCollection ApplicationPolicy => _applicationPolicy ??= new OidCollection();
 
@@ -94,7 +106,15 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public DateTime VerificationTime { get; set; }
+        public DateTime VerificationTime
+        {
+            get => _verificationTime;
+            set
+            {
+                _verificationTime = value;
+                VerificationTimeIgnored = false;
+            }
+        }
 
         public TimeSpan UrlRetrievalTimeout { get; set; }
 
@@ -109,8 +129,52 @@ namespace System.Security.Cryptography.X509Certificates
             _revocationFlag = X509RevocationFlag.ExcludeRoot;
             _verificationFlags = X509VerificationFlags.NoFlag;
             _trustMode = X509ChainTrustMode.System;
-            VerificationTime = DateTime.Now;
+            _verificationTime = DateTime.Now;
+            VerificationTimeIgnored = true;
             UrlRetrievalTimeout = TimeSpan.Zero; // default timeout
+        }
+
+        public X509ChainPolicy Clone()
+        {
+            X509ChainPolicy clone = new X509ChainPolicy
+            {
+                DisableCertificateDownloads = DisableCertificateDownloads,
+                _revocationMode = _revocationMode,
+                _revocationFlag = _revocationFlag,
+                _verificationFlags = _verificationFlags,
+                _trustMode = _trustMode,
+                _verificationTime = _verificationTime,
+                VerificationTimeIgnored = VerificationTimeIgnored,
+                UrlRetrievalTimeout = UrlRetrievalTimeout,
+            };
+
+            if (_applicationPolicy?.Count > 0)
+            {
+                foreach (Oid item in _applicationPolicy)
+                {
+                    clone.ApplicationPolicy.Add(item);
+                }
+            }
+
+            if (_certificatePolicy?.Count > 0)
+            {
+                foreach (Oid item in _certificatePolicy)
+                {
+                    clone.CertificatePolicy.Add(item);
+                }
+            }
+
+            if (_customTrustStore?.Count > 0)
+            {
+               clone.CustomTrustStore.AddRange(_customTrustStore);
+            }
+
+            if (_extraStore?.Count > 0)
+            {
+               clone.ExtraStore.AddRange(_extraStore);
+            }
+
+            return clone;
         }
     }
 }

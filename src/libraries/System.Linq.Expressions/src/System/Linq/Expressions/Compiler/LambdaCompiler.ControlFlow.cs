@@ -72,10 +72,7 @@ namespace System.Linq.Expressions.Compiler
                 Debug.Assert(label != null);
             }
 
-            if (label == null)
-            {
-                label = DefineLabel(node.Target);
-            }
+            label ??= DefineLabel(node.Target);
 
             if (node.DefaultValue != null)
             {

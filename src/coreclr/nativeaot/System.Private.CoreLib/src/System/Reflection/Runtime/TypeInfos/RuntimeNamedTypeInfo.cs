@@ -42,8 +42,10 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (0 != (attributes & TypeAttributes.Import))
                     yield return new RuntimePseudoCustomAttributeData(typeof(ComImportAttribute), null);
 
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
                 if (0 != (attributes & TypeAttributes.Serializable))
                     yield return new RuntimePseudoCustomAttributeData(typeof(SerializableAttribute), null);
+#pragma warning restore SYSLIB0050
             }
         }
 
@@ -56,7 +58,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         /// <summary>
         /// Override this function to read the Guid attribute from a type's metadata. If the attribute
-        /// is not present, or isn't parseable, return null. Should be overriden by metadata specific logic
+        /// is not present, or isn't parseable, return null. Should be overridden by metadata specific logic
         /// </summary>
         protected abstract Guid? ComputeGuidFromCustomAttributes();
 
@@ -106,10 +108,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 return ns + "." + name;
             }
         }
-
-#if DEBUG
-        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => base.HasSameMetadataDefinitionAs(other);
-#endif
 
         protected abstract void GetPackSizeAndSize(out int packSize, out int size);
 
@@ -176,8 +174,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 return this;
             }
         }
-
-        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => true;
 
         internal sealed override RuntimeTypeHandle InternalTypeHandleIfAvailable
         {

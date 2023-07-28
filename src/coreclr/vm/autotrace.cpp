@@ -7,11 +7,11 @@
  * EventPipe.  The feature itself is enabled via the feature flag FEATURE_AUTO_TRACE.
  *
  * Two environment variables dictate behavior:
- * - COMPlus_AutoTrace_N_Tracers: a number in [0,64] where 0 will disable the feature
- * - COMPlus_AutoTrace_Command: The path to an executable to be invoked.  Typically this will be a "run.sh|cmd".
- *  > (NB: you should `cd` into the directory you intend to execute `COMPlus_AutoTrace_Command` from as the first line of the script.)
+ * - DOTNET_AutoTrace_N_Tracers: a number in [0,64] where 0 will disable the feature
+ * - DOTNET_AutoTrace_Command: The path to an executable to be invoked.  Typically this will be a "run.sh|cmd".
+ *  > (NB: you should `cd` into the directory you intend to execute `DOTNET_AutoTrace_Command` from as the first line of the script.)
  *
- * Once turned on, AutoTrace will run the specified command `COMPlus_AutoTrace_N_Tracers` times.  There is an event that will pause execution
+ * Once turned on, AutoTrace will run the specified command `DOTNET_AutoTrace_N_Tracers` times.  There is an event that will pause execution
  * of the runtime until all the tracers have attached.  Once all the tracers are attached, execution will continue normally.
  *
  * This logic is easily modified to accommodate testing other mechanisms related to the Diagnostic Server.
@@ -50,7 +50,7 @@ void auto_trace_init()
 
         // Copy in the command - %s
         wcscpy_s(command, bufferLen, commandTextValue);
-        written += wcslen(commandTextValue);
+        written += u16_strlen(commandTextValue);
 
         // Append " -p "
         wcscat_s(command, bufferLen - written, flagFormat);
@@ -103,7 +103,7 @@ void auto_trace_launch_internal()
 
 void auto_trace_launch()
 {
-    for (int i = 0; i < g_n_tracers; ++i)
+    for (size_t i = 0; i < g_n_tracers; ++i)
     {
         auto_trace_launch_internal();
     }

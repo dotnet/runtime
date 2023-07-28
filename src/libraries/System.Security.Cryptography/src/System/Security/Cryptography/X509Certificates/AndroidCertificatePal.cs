@@ -25,7 +25,8 @@ namespace System.Security.Cryptography.X509Certificates
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
 
-            var newHandle = new SafeX509Handle(Interop.JObjectLifetime.NewGlobalReference(handle));
+            var newHandle = new SafeX509Handle();
+            Marshal.InitHandle(newHandle, Interop.JObjectLifetime.NewGlobalReference(handle));
             return new AndroidCertificatePal(newHandle);
         }
 
@@ -41,11 +42,12 @@ namespace System.Security.Cryptography.X509Certificates
                 return certPal.CopyWithPrivateKeyHandle(certPal.PrivateKeyHandle.DuplicateHandle());
             }
 
-            SafeX509Handle handle = new SafeX509Handle(Interop.JObjectLifetime.NewGlobalReference(certPal.Handle));
+            var handle = new SafeX509Handle();
+            Marshal.InitHandle(handle, Interop.JObjectLifetime.NewGlobalReference(certPal.Handle));
             return new AndroidCertificatePal(handle);
         }
 
-        public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool readingFromFile, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
@@ -65,6 +67,8 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
                     }
 
+                    X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
+
                     return ReadPkcs12(rawData, password, ephemeralSpecified);
                 case X509ContentType.Cert:
                 default:
@@ -83,10 +87,15 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException();
         }
 
+        public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             byte[] fileBytes = System.IO.File.ReadAllBytes(fileName);
-            return FromBlob(fileBytes, password, keyStorageFlags);
+            return FromBlob(fileBytes, password, readingFromFile: true, keyStorageFlags);
         }
 
         // Handles both DER and PEM
@@ -107,7 +116,7 @@ namespace System.Security.Cryptography.X509Certificates
             return true;
         }
 
-        private static ICertificatePal ReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool ephemeralSpecified)
+        private static AndroidCertificatePal ReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool ephemeralSpecified)
         {
             using (var reader = new AndroidPkcs12Reader(rawData))
             {
@@ -520,10 +529,11 @@ namespace System.Security.Cryptography.X509Certificates
             _certData = new CertificateData(RawData);
         }
 
-        private ICertificatePal CopyWithPrivateKeyHandle(SafeKeyHandle privateKey)
+        private AndroidCertificatePal CopyWithPrivateKeyHandle(SafeKeyHandle privateKey)
         {
             // Add a global reference to the underlying cert object.
-            SafeX509Handle handle = new SafeX509Handle(Interop.JObjectLifetime.NewGlobalReference(Handle));
+            var handle = new SafeX509Handle();
+            Marshal.InitHandle(handle, Interop.JObjectLifetime.NewGlobalReference(Handle));
             return new AndroidCertificatePal(handle, privateKey);
         }
     }

@@ -90,7 +90,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0033`__ | Rfc2898DeriveBytes.CryptDeriveKey is obsolete and is not supported. Use PasswordDeriveBytes.CryptDeriveKey instead. |
 |  __`SYSLIB0034`__ | CmsSigner(CspParameters) is obsolete and is not supported. Use an alternative constructor instead. |
 |  __`SYSLIB0035`__ | ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner. |
-|  __`SYSLIB0036`__ | Regex.CompileToAssembly is obsolete and not supported. Use RegexGeneratorAttribute with the regular expression source generator instead. |
+|  __`SYSLIB0036`__ | Regex.CompileToAssembly is obsolete and not supported. Use GeneratedRegexAttribute with the regular expression source generator instead. |
 |  __`SYSLIB0037`__ | AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported. |
 |  __`SYSLIB0038`__ | SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information. |
 |  __`SYSLIB0039`__ | TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults. |
@@ -98,6 +98,16 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0041`__ | The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations. |
 |  __`SYSLIB0042`__ | ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys. |
 |  __`SYSLIB0043`__ | ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead. |
+|  __`SYSLIB0044`__ | AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported. |
+|  __`SYSLIB0045`__ | Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead. |
+|  __`SYSLIB0046`__ | ControlledExecution.Run method may corrupt the process and should not be used in production code. |
+|  __`SYSLIB0047`__ | XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution. |
+|  __`SYSLIB0048`__ | RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead. |
+|  __`SYSLIB0049`__ | JsonSerializerOptions.AddContext is obsolete. To register a JsonSerializerContext, use either the TypeInfoResolver or TypeInfoResolverChain properties. |
+|  __`SYSLIB0050`__ | Formatter-based serialization is obsolete and should not be used. |
+|  __`SYSLIB0051`__ | This API supports obsolete formatter-based serialization. It should not be called or extended by application code. |
+|  __`SYSLIB0052`__ | This API supports obsolete mechanisms for Regex extensibility. It is not supported. |
+|  __`SYSLIB0053`__ | AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size. |
 
 ## Analyzer Warnings
 
@@ -128,46 +138,135 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1019`__ | Couldn't find a field of type Microsoft.Extensions.Logging.ILogger |
 |  __`SYSLIB1020`__ | Found multiple fields of type Microsoft.Extensions.Logging.ILogger |
 |  __`SYSLIB1021`__ | Can't have the same template with different casing |
-|  __`SYSLIB1022`__ | Can't have malformed format strings (like dangling {, etc)  |
+|  __`SYSLIB1022`__ | Logging method contains malformed format strings |
 |  __`SYSLIB1023`__ | Generating more than 6 arguments is not supported |
-|  __`SYSLIB1024`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1025`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1026`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1027`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1028`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1029`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1024`__ | Argument is using the unsupported out parameter modifier |
+|  __`SYSLIB1025`__ | Multiple logging methods cannot use the same event name within a class |
+|  __`SYSLIB1026`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1027`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1028`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1029`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
 |  __`SYSLIB1030`__ | JsonSourceGenerator did not generate serialization metadata for type |
 |  __`SYSLIB1031`__ | JsonSourceGenerator encountered a duplicate JsonTypeInfo property name |
 |  __`SYSLIB1032`__ | JsonSourceGenerator encountered a context class that is not partial |
 |  __`SYSLIB1033`__ | JsonSourceGenerator encountered a type that has multiple [JsonConstructor] annotations|
-|  __`SYSLIB1034`__ | *_`SYSLIB1034` reserved for System.Text.Json.SourceGeneration._* |
+|  __`SYSLIB1034`__ | JsonSourceGenerator encountered a [JsonStringEnumConverter] annotation |
 |  __`SYSLIB1035`__ | JsonSourceGenerator encountered a type that has multiple [JsonExtensionData] annotations |
 |  __`SYSLIB1036`__ | JsonSourceGenerator encountered an invalid [JsonExtensionData] annotation |
 |  __`SYSLIB1037`__ | JsonSourceGenerator encountered a type with init-only properties for which deserialization is not supported |
 |  __`SYSLIB1038`__ | JsonSourceGenerator encountered a property annotated with [JsonInclude] that has inaccessible accessors |
-|  __`SYSLIB1039`__ | *_`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1040`__ | Invalid RegexGenerator attribute |
-|  __`SYSLIB1041`__ | Multiple RegexGenerator attribute |
-|  __`SYSLIB1042`__ | Invalid RegexGenerator arguments |
-|  __`SYSLIB1043`__ | RegexGenerator method must have a valid signature |
-|  __`SYSLIB1044`__ | RegexGenerator only supports C# 10 and newer |
-|  __`SYSLIB1045`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
-|  __`SYSLIB1046`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
-|  __`SYSLIB1047`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
-|  __`SYSLIB1048`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
-|  __`SYSLIB1049`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1039`__ | JsonSourceGenerator encountered a [JsonDerivedTypeAttribute] annotation with [JsonSourceGenerationMode.Serialization] enabled |
+|  __`SYSLIB1040`__ | Invalid GeneratedRegex attribute |
+|  __`SYSLIB1041`__ | Multiple GeneratedRegex attribute |
+|  __`SYSLIB1042`__ | Invalid GeneratedRegex arguments |
+|  __`SYSLIB1043`__ | GeneratedRegex method must have a valid signature |
+|  __`SYSLIB1044`__ | GeneratedRegex only supports C# 11 and newer |
+|  __`SYSLIB1045`__ | Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time |
+|  __`SYSLIB1046`__ | _`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._ |
+|  __`SYSLIB1047`__ | _`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._ |
+|  __`SYSLIB1048`__ | _`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._ |
+|  __`SYSLIB1049`__ | _`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._ |
 |  __`SYSLIB1050`__ | Invalid LibraryImportAttribute usage |
 |  __`SYSLIB1051`__ | Specified type is not supported by source-generated P/Invokes |
 |  __`SYSLIB1052`__ | Specified configuration is not supported by source-generated P/Invokes |
 |  __`SYSLIB1053`__ | Specified LibraryImportAttribute arguments cannot be forwarded to DllImportAttribute |
 |  __`SYSLIB1054`__ | Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time |
-|  __`SYSLIB1055`__ | Invalid CustomTypeMarshallerAttribute usage |
+|  __`SYSLIB1055`__ | Invalid CustomMarshallerAttribute usage |
 |  __`SYSLIB1056`__ | Specified native type is invalid |
 |  __`SYSLIB1057`__ | Marshaller type does not have the required shape |
-|  __`SYSLIB1058`__ | Marshaller type defines a well-known method without specifying support for the corresponding feature |
+|  __`SYSLIB1058`__ | Invalid NativeMarshallingAttribute usage |
 |  __`SYSLIB1059`__ | Marshaller type does not support allocating constructor |
-|  __`SYSLIB1060`__ | BufferSize should be set on CustomTypeMarshallerAttribute |
+|  __`SYSLIB1060`__ | Specified marshaller type is invalid |
 |  __`SYSLIB1061`__ | Marshaller type has incompatible method signatures |
-|  __`SYSLIB1062`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1063`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1064`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1062`__ | Project must be updated with '<AllowUnsafeBlocks>true</AllowUnsafeBlocks>' |
+|  __`SYSLIB1063`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
+|  __`SYSLIB1064`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
+|  __`SYSLIB1065`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
+|  __`SYSLIB1066`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
+|  __`SYSLIB1067`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
+|  __`SYSLIB1068`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
+|  __`SYSLIB1069`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
+|  __`SYSLIB1070`__ | Invalid 'JSImportAttribute' usage |
+|  __`SYSLIB1071`__ | Invalid 'JSExportAttribute' usage |
+|  __`SYSLIB1072`__ | Specified type is not supported by source-generated JavaScript interop |
+|  __`SYSLIB1073`__ | Specified configuration is not supported by source-generated JavaScript interop |
+|  __`SYSLIB1074`__ | JSImportAttribute requires unsafe code |
+|  __`SYSLIB1075`__ | JSExportAttribute requires unsafe code |
+|  __`SYSLIB1076`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1077`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1078`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1079`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1080`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1081`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1082`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1083`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1084`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1085`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1086`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1087`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1088`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1089`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
+|  __`SYSLIB1090`__ | Invalid 'GeneratedComInterfaceAttribute' usage |
+|  __`SYSLIB1091`__ | Method is declared in different partial declaration than the 'GeneratedComInterface' attribute. |
+|  __`SYSLIB1092`__ | Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces. |
+|  __`SYSLIB1093`__ | Analysis for COM interface generation has failed |
+|  __`SYSLIB1094`__ | The base COM interface failed to generate source. Code will not be generated for this interface. |
+|  __`SYSLIB1095`__ | Invalid 'GeneratedComClassAttribute' usage |
+|  __`SYSLIB1096`__ | Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time |
+|  __`SYSLIB1097`__ | This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type. |
+|  __`SYSLIB1098`__ | .NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'. |
+|  __`SYSLIB1099`__ | COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime |
+|  __`SYSLIB1100`__ | Configuration binding generator: type is not supported. |
+|  __`SYSLIB1101`__ | Configuration binding generator: property on type is not supported. |
+|  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 11.|
+|  __`SYSLIB1103`__ | Configuration binding generator: value types are invalid inputs to configuration 'Bind' methods.* |
+|  __`SYSLIB1104`__ | Configuration binding generator: Generator cannot determine the target configuration type.* |
+|  __`SYSLIB1105`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1106`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1107`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1108`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1109`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1110`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1111`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1112`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1113`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1114`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1115`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1116`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1117`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1118`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1201`__ | Options validation generator: Can't use 'ValidateObjectMembersAttribute' or `ValidateEnumeratedItemsAttribute` on fields or properties with open generic types. |
+|  __`SYSLIB1202`__ | Options validation generator: A member type has no fields or properties to validate. |
+|  __`SYSLIB1203`__ | Options validation generator: A type has no fields or properties to validate. |
+|  __`SYSLIB1204`__ | Options validation generator: A type annotated with `OptionsValidatorAttribute` doesn't implement the necessary interface. |
+|  __`SYSLIB1205`__ | Options validation generator: A type already includes an implementation of the 'Validate' method. |
+|  __`SYSLIB1206`__ | Options validation generator: Can't validate private fields or properties. |
+|  __`SYSLIB1207`__ | Options validation generator: Member type is not enumerable. |
+|  __`SYSLIB1208`__ | Options validation generator: Validators used for transitive or enumerable validation must have a constructor with no parameters. |
+|  __`SYSLIB1209`__ | Options validation generator: `OptionsValidatorAttribute` can't be applied to a static class. |
+|  __`SYSLIB1210`__ | Options validation generator: Null validator type specified for the `ValidateObjectMembersAttribute` or 'ValidateEnumeratedItemsAttribute' attributes. |
+|  __`SYSLIB1211`__ | Options validation generator: Unsupported circular references in model types. |
+|  __`SYSLIB1212`__ | Options validation generator: Member potentially missing transitive validation. |
+|  __`SYSLIB1213`__ | Options validation generator: Member potentially missing enumerable validation. |
+|  __`SYSLIB1214`__ | Options validation generator: Can't validate constants, static fields or properties. |
+|  __`SYSLIB1215`__ | Options validation generator: Validation attribute on the member is inaccessible from the validator type. |
+|  __`SYSLIB1216`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1217`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1218`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1219`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1220`__ | JsonSourceGenerator encountered a [JsonConverterAttribute] with an invalid type argument. |
+|  __`SYSLIB1221`__ | JsonSourceGenerator does not support this C# language version. |
+|  __`SYSLIB1222`__ | Constructor annotated with JsonConstructorAttribute is inaccessible. |
+|  __`SYSLIB1223`__ | Attributes deriving from JsonConverterAttribute are not supported by the source generator. |
+|  __`SYSLIB1224`__ | Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext. |
+|  __`SYSLIB1225`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1226`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1227`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1228`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1229`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+
+### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
+
+| Suppression ID           | Suppressed Diagnostic ID | Description |
+| :----------------------- | :----------------------- | :---------- |
+| __`SYSLIBSUPPRESS0001`__ | CA1822                   | Do not offer to make methods static when the methods need to be instance methods for a custom marshaller shape. |

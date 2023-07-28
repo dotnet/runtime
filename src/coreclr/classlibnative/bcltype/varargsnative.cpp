@@ -580,7 +580,7 @@ TryAgain:
 #if BIGENDIAN
             // Adjust the pointer for small valuetypes
             if (origArgPtr == value->data) {
-                value->data = StackElemEndianessFixup(origArgPtr, cbRaw);
+                value->data = StackElemEndiannessFixup(origArgPtr, cbRaw);
             }
 #endif
 

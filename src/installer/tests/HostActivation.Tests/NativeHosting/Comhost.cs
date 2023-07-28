@@ -40,11 +40,52 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.HaveStdOutContaining("New instance of Server created");
+                .And.HaveStdOutContaining("New instance of Server created")
+                .And.ExecuteInIsolatedContext(sharedState.ComLibraryFixture.TestProject.AssemblyName);
 
             for (var i = 1; i <= count; ++i)
             {
                 result.Should().HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded. {i} of {count}");
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ActivateClass_ContextConfig(bool inDefaultContext)
+        {
+            using (var fixture = sharedState.ComLibraryFixture.Copy())
+            {
+                var comHost = Path.Combine(
+                    fixture.TestProject.BuiltApp.Location,
+                    $"{fixture.TestProject.AssemblyName}.comhost.dll");
+
+                RuntimeConfig.FromFile(fixture.TestProject.RuntimeConfigJson)
+                    .WithProperty("System.Runtime.InteropServices.COM.LoadComponentInDefaultContext", inDefaultContext.ToString())
+                    .Save();
+
+                string[] args = {
+                    "comhost",
+                    "synchronous",
+                    "1",
+                    comHost,
+                    sharedState.ClsidString
+                    };
+                CommandResult result = sharedState.CreateNativeHostCommand(args, fixture.BuiltDotnet.BinPath)
+                    .Execute();
+
+                result.Should().Pass()
+                    .And.HaveStdOutContaining("New instance of Server created")
+                    .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.");
+
+                if (inDefaultContext)
+                {
+                    result.Should().ExecuteInDefaultContext(sharedState.ComLibraryFixture.TestProject.AssemblyName);
+                }
+                else
+                {
+                    result.Should().ExecuteInIsolatedContext(sharedState.ComLibraryFixture.TestProject.AssemblyName);
+                }
             }
         }
 
@@ -173,8 +214,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 // Include the test type libraries in the ComHost tests.
                 TypeLibraries = new Dictionary<int, string>
                 {
-                    { 1, Path.Combine(RepoDirectories.Artifacts, "corehost_test", "Server.tlb") },
-                    { 2, Path.Combine(RepoDirectories.Artifacts, "corehost_test", "Nested.tlb") }
+                    { 1, Path.Combine(RepoDirectories.HostTestArtifacts, "Server.tlb") },
+                    { 2, Path.Combine(RepoDirectories.HostTestArtifacts, "Nested.tlb") }
                 };
 
                 ComHost.Create(

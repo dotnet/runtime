@@ -46,14 +46,8 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
-
     - ${{ each variable in parameters.variables }}:
-      - ${{ if ne(variable.name, '') }}:
-        - name: ${{ variable.name }}
-          value: ${{ variable.value }}
-      - ${{ if ne(variable.group, '') }}:
-        - group: ${{ variable.group }}
-
+      - ${{insert}}: ${{ variable }}
     - HelixApiAccessToken: ''
     - HelixPreCommand: ''
     - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
@@ -73,6 +67,8 @@ jobs:
         value: '$(Build.SourcesDirectory)\artifacts\spmi_collection\'
       - name: SpmiLogsLocation
         value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
+      - name: PayloadLocation
+        value: '$(Build.SourcesDirectory)\payload'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'python3'
@@ -86,18 +82,25 @@ jobs:
         value: '$(Build.SourcesDirectory)/artifacts/spmi_collection/'
       - name: SpmiLogsLocation
         value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
+      - name: PayloadLocation
+        value: '$(Build.SourcesDirectory)/payload'
+
     - ${{ if eq(parameters.collectionName, 'libraries') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'benchmarks') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
+    - ${{ if eq(parameters.collectionName, 'realworld') }}:
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'    
     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
       - name: InputDirectory
         value: '$(managedTestArtifactRootFolderPath)'
     - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
       - name: InputDirectory
         value: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
+
     workspace:
       clean: all
     pool:
@@ -105,8 +108,8 @@ jobs:
     container: ${{ parameters.container }}
     steps:
     - ${{ parameters.steps }}
-  
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 25 # size in MB
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 25 # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
     # Create required directories for merged mch collection and superpmi logs
@@ -144,7 +147,7 @@ jobs:
     # Always run merge step even if collection of some partition fails so we can store collection
     # of the partitions that succeeded. If all the partitions fail, merge-mch would fail and we won't
     # run future steps like uploading superpmi collection.
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch --ci -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
       displayName: ${{ format('Merge {0}-{1} SuperPMI collections', parameters.collectionName, parameters.collectionType) }}
       condition: always()
 
@@ -158,6 +161,13 @@ jobs:
         archiveExtension: $(archiveExtension)
         artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
         displayName: ${{ format('Upload artifacts SuperPMI {0}-{1} collection', parameters.collectionName, parameters.collectionType) }}
+
+    # Add authenticated pip feed
+    - task: PipAuthenticate@1
+      displayName: 'Pip Authenticate'
+      inputs:
+        artifactFeeds: public/dotnet-public-pypi
+        onlyAddExtraIndex: false
 
     # Ensure the Python azure-storage-blob package is installed before doing the upload.
     - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
@@ -181,12 +191,14 @@ jobs:
       displayName: Publish SuperPMI logs
       inputs:
         targetPath: $(SpmiLogsLocation)
-        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
+      continueOnError: true
 
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_BuildLogs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: 'SuperPMI_BuildLogs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
+      continueOnError: true

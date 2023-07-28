@@ -183,7 +183,7 @@ namespace System.ComponentModel.Composition
         {
             get
             {
-                if (AllowDefault == true)
+                if (AllowDefault)
                 {
                     return ImportCardinality.ZeroOrOne;
                 }

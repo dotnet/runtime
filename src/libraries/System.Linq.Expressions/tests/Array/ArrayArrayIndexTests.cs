@@ -1697,298 +1697,298 @@ namespace System.Linq.Expressions.Tests
             Assert.True(success);
         }
 
-        private static void CheckEnumArrayArrayIndex(E[][] array, bool useInterpeter)
+        private static void CheckEnumArrayArrayIndex(E[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckEnumArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckEnumArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckEnumLongArrayArrayIndex(El[][] array, bool useInterpeter)
+        private static void CheckEnumLongArrayArrayIndex(El[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckEnumLongArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckEnumLongArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckFloatArrayArrayIndex(float[][] array, bool useInterpeter)
+        private static void CheckFloatArrayArrayIndex(float[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckFloatArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckFloatArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckFuncArrayArrayIndex(Func<object>[][] array, bool useInterpeter)
+        private static void CheckFuncArrayArrayIndex(Func<object>[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckFuncArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckFuncArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckInterfaceArrayArrayIndex(I[][] array, bool useInterpeter)
+        private static void CheckInterfaceArrayArrayIndex(I[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckInterfaceArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckInterfaceArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckIEquatableArrayArrayIndex(IEquatable<C>[][] array, bool useInterpeter)
+        private static void CheckIEquatableArrayArrayIndex(IEquatable<C>[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckIEquatableArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckIEquatableArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckIEquatable2ArrayArrayIndex(IEquatable<D>[][] array, bool useInterpeter)
+        private static void CheckIEquatable2ArrayArrayIndex(IEquatable<D>[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckIEquatable2ArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckIEquatable2ArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckIntArrayArrayIndex(int[][] array, bool useInterpeter)
+        private static void CheckIntArrayArrayIndex(int[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckIntArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckIntArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckLongArrayArrayIndex(long[][] array, bool useInterpeter)
+        private static void CheckLongArrayArrayIndex(long[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckLongArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckLongArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckObjectArrayArrayIndex(object[][] array, bool useInterpeter)
+        private static void CheckObjectArrayArrayIndex(object[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckObjectArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckObjectArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStructArrayArrayIndex(S[][] array, bool useInterpeter)
+        private static void CheckStructArrayArrayIndex(S[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStructArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckStructArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckSByteArrayArrayIndex(sbyte[][] array, bool useInterpeter)
+        private static void CheckSByteArrayArrayIndex(sbyte[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckSByteArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckSByteArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStructWithStringArrayArrayIndex(Sc[][] array, bool useInterpeter)
+        private static void CheckStructWithStringArrayArrayIndex(Sc[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStructWithStringArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckStructWithStringArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStructWithStringAndStructArrayArrayIndex(Scs[][] array, bool useInterpeter)
+        private static void CheckStructWithStringAndStructArrayArrayIndex(Scs[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStructWithStringAndStructArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckStructWithStringAndStructArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckShortArrayArrayIndex(short[][] array, bool useInterpeter)
+        private static void CheckShortArrayArrayIndex(short[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckShortArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckShortArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStructWithTwoFieldsArrayArrayIndex(Sp[][] array, bool useInterpeter)
+        private static void CheckStructWithTwoFieldsArrayArrayIndex(Sp[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStructWithTwoFieldsArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckStructWithTwoFieldsArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStructWithValueArrayArrayIndex(Ss[][] array, bool useInterpeter)
+        private static void CheckStructWithValueArrayArrayIndex(Ss[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStructWithValueArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckStructWithValueArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStringArrayArrayIndex(string[][] array, bool useInterpeter)
+        private static void CheckStringArrayArrayIndex(string[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStringArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckStringArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckUIntArrayArrayIndex(uint[][] array, bool useInterpeter)
+        private static void CheckUIntArrayArrayIndex(uint[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckUIntArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckUIntArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckULongArrayArrayIndex(ulong[][] array, bool useInterpeter)
+        private static void CheckULongArrayArrayIndex(ulong[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckULongArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckULongArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckUShortArrayArrayIndex(ushort[][] array, bool useInterpeter)
+        private static void CheckUShortArrayArrayIndex(ushort[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckUShortArrayArrayIndexExpression(array, i, useInterpeter);
+                success &= CheckUShortArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericWithCustomArrayArrayIndex<T>(T[][] array, bool useInterpeter)
+        private static void CheckGenericWithCustomArrayArrayIndex<T>(T[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericWithCustomArrayArrayIndexExpression<T>(array, i, useInterpeter);
+                success &= CheckGenericWithCustomArrayArrayIndexExpression<T>(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericArrayArrayIndex<T>(T[][] array, bool useInterpeter)
+        private static void CheckGenericArrayArrayIndex<T>(T[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckArrayArrayIndexExpression<T>(array, i, useInterpeter);
+                success &= CheckArrayArrayIndexExpression<T>(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(Tc[][] array, bool useInterpeter) where Tc : class
+        private static void CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(Tc[][] array, bool useInterpreter) where Tc : class
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericWithClassRestrictionArrayArrayIndexExpression<Tc>(array, i, useInterpeter);
+                success &= CheckGenericWithClassRestrictionArrayArrayIndexExpression<Tc>(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(Tcn[][] array, bool useInterpeter) where Tcn : class, new()
+        private static void CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(Tcn[][] array, bool useInterpreter) where Tcn : class, new()
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericWithClassAndNewRestrictionArrayArrayIndexExpression<Tcn>(array, i, useInterpeter);
+                success &= CheckGenericWithClassAndNewRestrictionArrayArrayIndexExpression<Tcn>(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(TC[][] array, bool useInterpeter) where TC : C
+        private static void CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(TC[][] array, bool useInterpreter) where TC : C
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericWithSubClassRestrictionArrayArrayIndexExpression<TC>(array, i, useInterpeter);
+                success &= CheckGenericWithSubClassRestrictionArrayArrayIndexExpression<TC>(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(TCn[][] array, bool useInterpeter) where TCn : C, new()
+        private static void CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(TCn[][] array, bool useInterpreter) where TCn : C, new()
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexExpression<TCn>(array, i, useInterpeter);
+                success &= CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexExpression<TCn>(array, i, useInterpreter);
             }
 
             Assert.True(success);

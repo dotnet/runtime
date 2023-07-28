@@ -3,16 +3,17 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace mdarray
 {
-    class Runtime_60957
+    public class Runtime_60957
     {
         public static int access_count = 0;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         // Count the number of times this function gets called. It shouldn't change whether
-        // all the MD functions get implemented as intriniscs or not.
+        // all the MD functions get implemented as intrinsics or not.
         static int[,] GetArray(int[,] a)
         {
             ++access_count;
@@ -166,7 +167,7 @@ namespace mdarray
         }
 
         ///////////////////////////////////////////////////////////////////
-        // 
+        //
         // Struct that doesn't get promoted
         //
 
@@ -216,7 +217,7 @@ namespace mdarray
         }
 
         ///////////////////////////////////////////////////////////////////
-        // 
+        //
         // Struct that gets promoted
         //
 
@@ -263,7 +264,7 @@ namespace mdarray
         }
 
         ///////////////////////////////////////////////////////////////////
-        // 
+        //
         // Array element
         //
 
@@ -319,7 +320,8 @@ namespace mdarray
             }
         }
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             const int n = 10;
             int[,] a = new int[n,n];

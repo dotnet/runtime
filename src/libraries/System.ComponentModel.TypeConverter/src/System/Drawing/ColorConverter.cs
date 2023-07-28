@@ -69,10 +69,7 @@ namespace System.Drawing
                         return "'" + c.Name + "'";
                     }
 
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
 
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));

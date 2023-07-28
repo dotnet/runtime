@@ -36,7 +36,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
-        public void CreateGenerator_ReturnsOverridenGenerator()
+        public void CreateGenerator_ReturnsOverriddenGenerator()
         {
 #pragma warning disable 0618
             CustomProvider provider = new CustomProvider();

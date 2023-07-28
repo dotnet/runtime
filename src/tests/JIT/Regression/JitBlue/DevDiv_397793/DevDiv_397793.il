@@ -9,7 +9,7 @@
 // The arguments to and return value from `ILGEN_METHOD` are not meaningful; it is enough that this function
 // compiles successfully.
 
-.class ILGEN_CLASS
+.class public ILGEN_CLASS
 {
     .method static float32 ILGEN_METHOD(int16, char, char, native int)
     {

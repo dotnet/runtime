@@ -133,6 +133,15 @@ mono_threads_platform_exit (gsize exit_code)
 	pthread_exit ((gpointer) exit_code);
 }
 
+gboolean
+mono_thread_platform_external_eventloop_keepalive_check (void)
+{
+	/* vanilla POSIX thread creation doesn't support an external eventloop: when the thread main
+	   function returns, the thread is done.
+	*/
+	return FALSE;
+}
+
 #if HOST_FUCHSIA
 int
 mono_thread_info_get_system_max_stack_size (void)
@@ -363,16 +372,6 @@ mono_memory_barrier_process_wide (void)
 
 	status = pthread_mutex_unlock (&memory_barrier_process_wide_mutex);
 	g_assert (status == 0);
-}
-
-gint32
-mono_native_thread_processor_id_get (void)
-{
-#ifdef HAVE_SCHED_GETCPU
-	return sched_getcpu ();
-#else
-	return -1;
-#endif
 }
 
 #endif /* defined(_POSIX_VERSION) */

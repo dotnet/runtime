@@ -1,18 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: Wraps a stream and provides convenient read functionality
-** for strings and primitive types.
-**
-**
-============================================================*/
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -20,6 +8,9 @@ using System.Text;
 
 namespace System.IO
 {
+    /// <summary>
+    /// Reads primitive data types as binary values in a specific encoding.
+    /// </summary>
     public class BinaryReader : IDisposable
     {
         private const int MaxCharBytesSize = 128;
@@ -143,7 +134,7 @@ namespace System.IO
 
             _charBytes ??= new byte[MaxCharBytesSize];
 
-            Span<char> singleChar = stackalloc char[1];
+            char singleChar = '\0';
 
             while (charsRead == 0)
             {
@@ -178,7 +169,7 @@ namespace System.IO
 
                 try
                 {
-                    charsRead = _decoder.GetChars(new ReadOnlySpan<byte>(_charBytes, 0, numBytes), singleChar, flush: false);
+                    charsRead = _decoder.GetChars(new ReadOnlySpan<byte>(_charBytes, 0, numBytes), new Span<char>(ref singleChar), flush: false);
                 }
                 catch
                 {
@@ -196,7 +187,7 @@ namespace System.IO
                 Debug.Assert(charsRead < 2, "BinaryReader::ReadOneChar - assuming we only got 0 or 1 char, not 2!");
             }
             Debug.Assert(charsRead > 0);
-            return singleChar[0];
+            return singleChar;
         }
 
         public virtual byte ReadByte() => InternalReadByte();
@@ -240,9 +231,9 @@ namespace System.IO
         public virtual long ReadInt64() => BinaryPrimitives.ReadInt64LittleEndian(InternalRead(8));
         [CLSCompliant(false)]
         public virtual ulong ReadUInt64() => BinaryPrimitives.ReadUInt64LittleEndian(InternalRead(8));
-        public virtual Half ReadHalf() => BitConverter.Int16BitsToHalf(BinaryPrimitives.ReadInt16LittleEndian(InternalRead(2)));
-        public virtual unsafe float ReadSingle() => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(InternalRead(4)));
-        public virtual unsafe double ReadDouble() => BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(InternalRead(8)));
+        public virtual Half ReadHalf() => BinaryPrimitives.ReadHalfLittleEndian(InternalRead(2));
+        public virtual float ReadSingle() => BinaryPrimitives.ReadSingleLittleEndian(InternalRead(4));
+        public virtual double ReadDouble() => BinaryPrimitives.ReadDoubleLittleEndian(InternalRead(8));
 
         public virtual decimal ReadDecimal()
         {
@@ -316,14 +307,8 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -419,10 +404,7 @@ namespace System.IO
 
         public virtual char[] ReadChars(int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             ThrowIfDisposed();
 
             if (count == 0)
@@ -446,14 +428,8 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -471,10 +447,7 @@ namespace System.IO
 
         public virtual byte[] ReadBytes(int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             ThrowIfDisposed();
 
             if (count == 0)

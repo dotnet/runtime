@@ -9,94 +9,104 @@ namespace Internal.Runtime
     /// Represents the flags stored in the <c>_usFlags</c> field of a <c>System.Runtime.MethodTable</c>.
     /// </summary>
     [Flags]
-    internal enum EETypeFlags : ushort
+    internal enum EETypeFlags : uint
     {
         /// <summary>
         /// There are four kinds of EETypes, defined in <c>Kinds</c>.
         /// </summary>
-        EETypeKindMask = 0x0003,
+        EETypeKindMask = 0x00030000,
 
         /// <summary>
-        /// This flag is set when m_RelatedType is in a different module.  In that case, _pRelatedType
-        /// actually points to an IAT slot in this module, which then points to the desired MethodTable in the
-        /// other module.  In other words, there is an extra indirection through m_RelatedType to get to
-        /// the related type in the other module.  When this flag is set, it is expected that you use the
-        /// "_ppXxxxViaIAT" member of the RelatedTypeUnion for the particular related type you're
-        /// accessing.
+        /// Type has an associated dispatch map.
         /// </summary>
-        RelatedTypeViaIATFlag = 0x0004,
+        HasDispatchMap = 0x00040000,
 
         /// <summary>
         /// This type was dynamically allocated at runtime.
         /// </summary>
-        IsDynamicTypeFlag = 0x0008,
+        IsDynamicTypeFlag = 0x00080000,
 
         /// <summary>
         /// This MethodTable represents a type which requires finalization.
         /// </summary>
-        HasFinalizerFlag = 0x0010,
+        HasFinalizerFlag = 0x00100000,
 
         /// <summary>
         /// This type contain GC pointers.
         /// </summary>
-        HasPointersFlag = 0x0020,
+        HasPointersFlag = 0x00200000,
 
         /// <summary>
-        /// This type implements IDynamicInterfaceCastable to allow dynamic resolution of interface casts.
+        /// This MethodTable has sealed vtable entries
         /// </summary>
-        IDynamicInterfaceCastableFlag = 0x0040,
+        HasSealedVTableEntriesFlag = 0x00400000,
 
         /// <summary>
         /// This type is generic and one or more of its type parameters is co- or contra-variant. This
         /// only applies to interface and delegate types.
         /// </summary>
-        GenericVarianceFlag = 0x0080,
+        GenericVarianceFlag = 0x00800000,
 
         /// <summary>
         /// This type has optional fields present.
         /// </summary>
-        OptionalFieldsFlag = 0x0100,
-
-        // Unused = 0x0200,
+        OptionalFieldsFlag = 0x01000000,
 
         /// <summary>
         /// This type is generic.
         /// </summary>
-        IsGenericFlag = 0x0400,
+        IsGenericFlag = 0x02000000,
 
         /// <summary>
         /// We are storing a EETypeElementType in the upper bits for unboxing enums.
         /// </summary>
-        ElementTypeMask = 0xf800,
-        ElementTypeShift = 11,
+        ElementTypeMask = 0x7C000000,
+        ElementTypeShift = 26,
 
         /// <summary>
-        /// Single mark to check TypeKind and two flags. When non-zero, casting is more complicated.
+        /// The _usComponentSize is a number (not holding FlagsEx).
         /// </summary>
-        ComplexCastingMask = EETypeKindMask | RelatedTypeViaIATFlag | GenericVarianceFlag
+        HasComponentSizeFlag = 0x80000000,
     };
 
-    internal enum EETypeKind : ushort
+    /// <summary>
+    /// Represents the extra flags stored in the <c>_usComponentSize</c> field of a <c>System.Runtime.MethodTable</c>
+    /// when <c>_usComponentSize</c> does not represent ComponentSize. (i.e. when the type is not an array, string or typedef)
+    /// </summary>
+    [Flags]
+    internal enum EETypeFlagsEx : ushort
+    {
+        HasEagerFinalizerFlag = 0x0001,
+        HasCriticalFinalizerFlag = 0x0002,
+        IsTrackedReferenceWithFinalizerFlag = 0x0004,
+
+        /// <summary>
+        /// This type implements IDynamicInterfaceCastable to allow dynamic resolution of interface casts.
+        /// </summary>
+        IDynamicInterfaceCastableFlag = 0x0008,
+    }
+
+    internal enum EETypeKind : uint
     {
         /// <summary>
         /// Represents a standard ECMA type
         /// </summary>
-        CanonicalEEType = 0x0000,
+        CanonicalEEType = 0x00000000,
 
         /// <summary>
-        /// Represents a type cloned from another MethodTable
+        /// Represents a function pointer
         /// </summary>
-        ClonedEEType = 0x0001,
+        FunctionPointerEEType = 0x00010000,
 
         /// <summary>
         /// Represents a parameterized type. For example a single dimensional array or pointer type
         /// </summary>
-        ParameterizedEEType = 0x0002,
+        ParameterizedEEType = 0x00020000,
 
         /// <summary>
         /// Represents an uninstantiated generic type definition
         /// </summary>
-        GenericTypeDefEEType = 0x0003,
+        GenericTypeDefEEType = 0x00030000,
     }
 
     /// <summary>
@@ -126,21 +136,14 @@ namespace Internal.Runtime
 
         // UNUSED2 = 0x00000040,
 
-        /// <summary>
-        /// This MethodTable was constructed from a universal canonical template, and has
-        /// its own dynamically created DispatchMap (does not use the DispatchMap of its template type)
-        /// </summary>
-        HasDynamicallyAllocatedDispatchMapFlag = 0x00000080,
+        // UNUSED = 0x00000080,
 
         /// <summary>
         /// This MethodTable represents a structure that is an HFA
         /// </summary>
         IsHFAFlag = 0x00000100,
 
-        /// <summary>
-        /// This MethodTable has sealed vtable entries
-        /// </summary>
-        HasSealedVTableEntriesFlag = 0x00000200,
+        // Unused = 0x00000200,
 
         /// <summary>
         /// This dynamically created types has gc statics
@@ -157,15 +160,9 @@ namespace Internal.Runtime
         /// </summary>
         IsDynamicTypeWithThreadStatics = 0x00001000,
 
-        /// <summary>
-        /// This MethodTable contains a pointer to dynamic module information
-        /// </summary>
-        HasDynamicModuleFlag = 0x00002000,
+        // UNUSED = 0x00002000,
 
-        /// <summary>
-        /// This MethodTable is an abstract class (but not an interface).
-        /// </summary>
-        IsAbstractClassFlag = 0x00004000,
+        // UNUSED = 0x00004000,
 
         /// <summary>
         /// This MethodTable is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)
@@ -175,23 +172,22 @@ namespace Internal.Runtime
 
     internal enum EETypeField
     {
-        ETF_InterfaceMap,
         ETF_TypeManagerIndirection,
         ETF_WritableData,
+        ETF_DispatchMap,
         ETF_Finalizer,
         ETF_OptionalFieldsPtr,
         ETF_SealedVirtualSlots,
         ETF_DynamicTemplateType,
-        ETF_DynamicDispatchMap,
-        ETF_DynamicModule,
         ETF_GenericDefinition,
         ETF_GenericComposition,
+        ETF_FunctionPointerParameters,
         ETF_DynamicGcStatics,
         ETF_DynamicNonGcStatics,
         ETF_DynamicThreadStaticOffset,
     }
 
-    // Subset of the managed TypeFlags enum understood by Redhawk.
+    // Subset of the managed TypeFlags enum understood by the runtime.
     // This should match the values in the TypeFlags enum except for the special
     // entry that marks System.Array specifically.
     internal enum EETypeElementType
@@ -228,6 +224,7 @@ namespace Internal.Runtime
         SzArray = 0x18,
         ByRef = 0x19,
         Pointer = 0x1A,
+        FunctionPointer = 0x1B,
     }
 
     internal enum EETypeOptionalFieldTag : byte
@@ -236,11 +233,6 @@ namespace Internal.Runtime
         /// Extra <c>MethodTable</c> flags not commonly used such as HasClassConstructor
         /// </summary>
         RareFlags,
-
-        /// <summary>
-        /// Index of the dispatch map pointer in the DispathMap table
-        /// </summary>
-        DispatchMap,
 
         /// <summary>
         /// Padding added to a value type when allocated on the GC heap
@@ -274,6 +266,12 @@ namespace Internal.Runtime
         // size for an actual array.
         public const int Pointer = 0;
         public const int ByRef = 1;
+    }
+
+    internal static class FunctionPointerFlags
+    {
+        public const uint IsUnmanaged = 0x80000000;
+        public const uint FlagsMask = IsUnmanaged;
     }
 
     internal static class StringComponentSize

@@ -309,11 +309,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildCast(tree->AsCast());
             break;
 
-        case GT_JTRUE:
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);
@@ -336,11 +331,6 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(srcCount == 2);
-            break;
-
-        case GT_ASG:
-            noway_assert(!"We should never hit any assignment operator in lowering");
-            srcCount = 0;
             break;
 
         case GT_ADD_LO:
@@ -517,51 +507,10 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_ARR_ELEM:
-            // These must have been lowered to GT_ARR_INDEX
+            // These must have been lowered
             noway_assert(!"We should never see a GT_ARR_ELEM in lowering");
             srcCount = 0;
             assert(dstCount == 0);
-            break;
-
-        case GT_ARR_INDEX:
-        {
-            srcCount = 2;
-            assert(dstCount == 1);
-            buildInternalIntRegisterDefForNode(tree);
-            setInternalRegsDelayFree = true;
-
-            // For GT_ARR_INDEX, the lifetime of the arrObj must be extended because it is actually used multiple
-            // times while the result is being computed.
-            RefPosition* arrObjUse = BuildUse(tree->AsArrIndex()->ArrObj());
-            setDelayFree(arrObjUse);
-            BuildUse(tree->AsArrIndex()->IndexExpr());
-            buildInternalRegisterUses();
-            BuildDef(tree);
-        }
-        break;
-
-        case GT_ARR_OFFSET:
-
-            // This consumes the offset, if any, the arrObj and the effective index,
-            // and produces the flattened offset for this dimension.
-            assert(dstCount == 1);
-
-            if (tree->AsArrOffs()->gtOffset->isContained())
-            {
-                srcCount = 2;
-            }
-            else
-            {
-                // Here we simply need an internal register, which must be different
-                // from any of the operand's registers, but may be the same as targetReg.
-                buildInternalIntRegisterDefForNode(tree);
-                srcCount = 3;
-                BuildUse(tree->AsArrOffs()->gtOffset);
-            }
-            BuildUse(tree->AsArrOffs()->gtIndex);
-            BuildUse(tree->AsArrOffs()->gtArrObj);
-            buildInternalRegisterUses();
-            BuildDef(tree);
             break;
 
         case GT_LEA:
@@ -641,20 +590,7 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             break;
 
-        case GT_ADDR:
-        {
-            // For a GT_ADDR, the child node should not be evaluated into a register
-            GenTree* child = tree->gtGetOp1();
-            assert(!isCandidateLocalRef(child));
-            assert(child->isContained());
-            assert(dstCount == 1);
-            srcCount = 0;
-            BuildDef(tree);
-        }
-        break;
-
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
@@ -772,8 +708,7 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-        case GT_LCL_FLD_ADDR:
-        case GT_LCL_VAR_ADDR:
+        case GT_LCL_ADDR:
         case GT_PHYSREG:
         case GT_CLS_VAR_ADDR:
         case GT_IL_OFFSET:
@@ -782,8 +717,12 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_JCC:
         case GT_SETCC:
         case GT_MEMORYBARRIER:
-        case GT_OBJ:
             srcCount = BuildSimple(tree);
+            break;
+
+        case GT_JTRUE:
+            BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
+            srcCount = 1;
             break;
 
         case GT_INDEX_ADDR:
@@ -808,7 +747,7 @@ int LinearScan::BuildNode(GenTree* tree)
     // We need to be sure that we've set srcCount and dstCount appropriately
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
-    assert(!tree->IsUnusedValue() || (dstCount != 0));
+    assert(!tree->IsValue() || (dstCount != 0));
     assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }

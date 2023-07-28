@@ -18,15 +18,7 @@ namespace System.Collections
     {
         private Hashtable? _hashtable;
 
-        protected Hashtable InnerHashtable
-        {
-            get
-            {
-                if (_hashtable == null)
-                    _hashtable = new Hashtable();
-                return _hashtable;
-            }
-        }
+        protected Hashtable InnerHashtable => _hashtable ??= new Hashtable();
 
         protected IDictionary Dictionary
         {

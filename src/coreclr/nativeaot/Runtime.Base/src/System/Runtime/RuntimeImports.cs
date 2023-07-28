@@ -43,10 +43,14 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
         internal static extern object RhNewObject(EETypePtr pEEType);
 
+        // Move memory which may be on the heap which may have object references in it.
+        // In general, a memcpy on the heap is unsafe, but this is able to perform the
+        // correct write barrier such that the GC is not incorrectly impacted.
+        // NOTE: it is only ok to use this directly when copying small chunks of memory (like boxing a struct)
+        //       otherwise use helpers from System.Buffer to avoid running uninterruptible code for too long
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, uint size);
-
 
         // Allocate handle.
         [MethodImpl(MethodImplOptions.InternalCall)]

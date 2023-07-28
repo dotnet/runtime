@@ -12,10 +12,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
         public abstract class SharedTestStateBase : TestArtifact
         {
-            protected string BuiltDotnetPath { get; }
-
-            public RepoDirectoriesProvider RepoDirectories { get; }
-
             private static string GetBaseDir(string name)
             {
                 string baseDir = Path.Combine(TestArtifactsPath, name);
@@ -23,25 +19,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
 
             public SharedTestStateBase()
-                : base(GetBaseDir("dependencyResolution"), "dependencyResolution")
+                : base(GetBaseDir("dependencyResolution"))
             {
-                BuiltDotnetPath = Path.Combine(TestArtifactsPath, "sharedFrameworkPublish");
-                RepoDirectories = new RepoDirectoriesProvider(builtDotnet: BuiltDotnetPath);
             }
 
             public DotNetBuilder DotNet(string name)
             {
-                return new DotNetBuilder(Location, BuiltDotnetPath, name);
+                return new DotNetBuilder(Location, RepoDirectoriesProvider.Default.BuiltDotnet, name);
             }
 
-            public TestApp CreateFrameworkReferenceApp(string fxName, string fxVersion)
+            public TestApp CreateFrameworkReferenceApp(string fxName, string fxVersion, Action<NetCoreAppBuilder> customizer = null)
             {
                 // Prepare the app mock - we're not going to run anything really, so we just need the basic files
                 TestApp testApp = CreateTestApp(Location, "FrameworkReferenceApp");
-                RuntimeConfig.Path(testApp.RuntimeConfigJson)
-                    .WithFramework(fxName, fxVersion)
-                    .Save();
-
+                testApp.PopulateFrameworkDependent(fxName, fxVersion, customizer);
                 return testApp;
             }
 
@@ -55,7 +46,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 else
                 {
                     string path = Path.Combine(location, name);
-                    FileUtils.EnsureDirectoryExists(path);
                     testApp = new TestApp(path);
                 }
 
@@ -73,42 +63,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 return builder.Build(componentWithNoDependencies);
             }
 
-            public TestApp CreateSelfContainedAppWithMockCoreClr(string name, string version, Action<NetCoreAppBuilder> customizer = null, string location = null)
+            public TestApp CreateSelfContainedAppWithMockCoreClr(string name, Action<NetCoreAppBuilder> customizer = null)
             {
-                TestApp testApp = CreateTestApp(location, name);
-
-                string hostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr");
-                string hostPolicyFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
-                string coreclrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("coreclr");
-                string mockCoreclrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("mockcoreclr");
-
-                string currentRid = RepoDirectories.TargetRID;
-
-                NetCoreAppBuilder.ForNETCoreApp(name, currentRid)
-                    .WithProject(name, version, p => p
-                        .WithAssemblyGroup(null, g => g.WithMainAssembly()))
-                    .WithPackage("runtimePack.Microsoft.NETCore.App", "1.0.0", p => p
-                        .WithNativeLibraryGroup(null, g => g
-                            // ./coreclr.dll - this is a mock, will not actually run CoreClr
-                            .WithAsset((new NetCoreAppBuilder.RuntimeFileBuilder(coreclrFileName))
-                                .CopyFromFile(Path.Combine(RepoDirectories.Artifacts, "corehost_test", mockCoreclrFileName))
-                                .WithFileOnDiskPath(coreclrFileName))))
-                    .WithPackage("runtimePack.Microsoft.NETCore.DotNetHostResolver", "1.0.0", p => p
-                        .WithNativeLibraryGroup(null, g => g
-                            // ./hostfxr.dll - this is the real component and will load hostpolicy library
-                            .WithAsset((new NetCoreAppBuilder.RuntimeFileBuilder(hostFxrFileName))
-                                .CopyFromFile(Path.Combine(RepoDirectories.Artifacts, "corehost", hostFxrFileName))
-                                .WithFileOnDiskPath(hostFxrFileName))))
-                    .WithPackage("runtimePack.Microsoft.NETCore.DotNetHostPolicy", "1.0.0", p => p
-                        .WithNativeLibraryGroup(null, g => g
-                            // ./hostpolicy.dll - this is the real component and will load CoreClr library
-                            .WithAsset((new NetCoreAppBuilder.RuntimeFileBuilder(hostPolicyFileName))
-                                .CopyFromFile(Path.Combine(RepoDirectories.Artifacts, "corehost", hostPolicyFileName))
-                                .WithFileOnDiskPath(hostPolicyFileName))))
-                    .WithCustomizer(customizer)
-                    .WithRuntimeConfig(config => { })
-                    .Build(testApp);
-
+                TestApp testApp = CreateTestApp(null, name);
+                testApp.PopulateSelfContained(TestApp.MockedComponent.CoreClr, customizer);
                 return testApp;
             }
         }

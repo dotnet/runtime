@@ -7,15 +7,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Sse1
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void StoreAligned()
         {
             int testResult = Pass;
 
@@ -23,7 +22,7 @@ namespace IntelHardwareIntrinsicTest
             {
                 float* inArray = stackalloc float[4];
                 byte* outBuffer = stackalloc byte[32];
-                float* outArray = Align(outBuffer, 16);
+                float* outArray = (float*)Align(outBuffer, 16);
 
                 var vf = Unsafe.Read<Vector128<float>>(inArray);
                 Sse.StoreAligned(outArray, vf);
@@ -45,17 +44,7 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-            return testResult;
-        }
-
-        static unsafe float* Align(byte* buffer, byte expectedAlignment)
-        {
-            // Compute how bad the misalignment is, which is at most (expectedAlignment - 1).
-            // Then subtract that from the expectedAlignment and add it to the original address
-            // to compute the aligned address.
-
-            var misalignment = expectedAlignment - ((ulong)(buffer) % expectedAlignment);
-            return (float*)(buffer + misalignment);
+            Assert.Equal(Pass, testResult);
         }
     }
 }

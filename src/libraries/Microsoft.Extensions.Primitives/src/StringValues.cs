@@ -14,6 +14,8 @@ namespace Microsoft.Extensions.Primitives
     /// <summary>
     /// Represents zero/null, one, or many strings in an efficient way.
     /// </summary>
+    [DebuggerDisplay("{ToString()}")]
+    [DebuggerTypeProxy(typeof(StringValuesDebugView))]
     public readonly struct StringValues : IList<string?>, IReadOnlyList<string?>, IEquatable<StringValues>, IEquatable<string?>, IEquatable<string?[]?>
     {
         /// <summary>
@@ -727,7 +729,12 @@ namespace Microsoft.Extensions.Primitives
             return false;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
+        /// </returns>
         public override int GetHashCode()
         {
             object? value = _values;
@@ -774,6 +781,10 @@ namespace Microsoft.Extensions.Primitives
                 _index = 0;
             }
 
+            /// <summary>
+            /// Instantiates an <see cref="Enumerator"/> using a <see cref="StringValues"/>.
+            /// </summary>
+            /// <param name="values">The <see cref="StringValues"/> to enumerate.</param>
             public Enumerator(ref StringValues values) : this(values._values)
             { }
 
@@ -815,6 +826,12 @@ namespace Microsoft.Extensions.Primitives
             public void Dispose()
             {
             }
+        }
+
+        private sealed class StringValuesDebugView(StringValues values)
+        {
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public string?[] Items => values.ToArray();
         }
     }
 }

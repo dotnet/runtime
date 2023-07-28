@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 //
 //  Test case for a GC Stress 4 failure
 //
@@ -26,9 +27,9 @@ class Item
     public int GetValue() { return _value; }
 }
 
-class Program
+public class Program
 {
-    public Item[] itemArray;
+    Item[] itemArray;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     void Init()
@@ -73,7 +74,8 @@ class Program
             
     }
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         Program prog = new Program();
 

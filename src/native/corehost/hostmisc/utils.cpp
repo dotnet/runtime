@@ -203,6 +203,7 @@ namespace
         _X("armv6"),
         _X("loongarch64"),
         _X("ppc64le"),
+        _X("riscv64"),
         _X("s390x"),
         _X("x64"),
         _X("x86")
@@ -224,6 +225,8 @@ pal::architecture get_current_arch()
     return pal::architecture::arm64;
 #elif defined(TARGET_LOONGARCH64)
     return pal::architecture::loongarch64;
+#elif defined(TARGET_RISCV64)
+    return pal::architecture::riscv64;
 #elif defined(TARGET_S390X)
     return pal::architecture::s390X;
 #elif defined(TARGET_POWERPC64)
@@ -242,13 +245,14 @@ const pal::char_t* get_arch_name(pal::architecture arch)
 
 const pal::char_t* get_current_arch_name()
 {
-    return get_arch_name(get_current_arch());
+    assert(pal::strcmp(get_arch_name(get_current_arch()), _STRINGIFY(CURRENT_ARCH_NAME)) == 0);
+    return _STRINGIFY(CURRENT_ARCH_NAME);
 }
 
 pal::string_t get_current_runtime_id(bool use_fallback)
 {
     pal::string_t rid;
-    if (pal::getenv(_X("DOTNET_RUNTIME_ID"), &rid))
+    if (try_get_runtime_id_from_env(rid))
         return rid;
 
     rid = pal::get_current_os_rid_platform();
@@ -264,44 +268,9 @@ pal::string_t get_current_runtime_id(bool use_fallback)
     return rid;
 }
 
-bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm)
+bool try_get_runtime_id_from_env(pal::string_t& out_rid)
 {
-    pal::string_t path;
-    if (!pal::getenv(_X("DOTNET_SHARED_STORE"), &path))
-    {
-        return false;
-    }
-
-    pal::string_t tok;
-    pal::stringstream_t ss(path);
-    while (std::getline(ss, tok, PATH_SEPARATOR))
-    {
-        if (pal::realpath(&tok))
-        {
-            append_path(&tok, arch.c_str());
-            append_path(&tok, tfm.c_str());
-            dirs->push_back(tok);
-        }
-    }
-    return true;
-}
-
-bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm)
-{
-    std::vector<pal::string_t> global_dirs;
-    if (!pal::get_global_dotnet_dirs(&global_dirs))
-    {
-        return false;
-    }
-
-    for (pal::string_t dir : global_dirs)
-    {
-        append_path(&dir, RUNTIME_STORE_DIRECTORY_NAME);
-        append_path(&dir, arch.c_str());
-        append_path(&dir, tfm.c_str());
-        dirs->push_back(dir);
-    }
-    return true;
+    return pal::getenv(_X("DOTNET_RUNTIME_ID"), &out_rid);
 }
 
 /**
@@ -496,11 +465,18 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
         url.append(_X("missing_runtime=true"));
     }
 
+    const pal::char_t* arch = get_current_arch_name();
     url.append(_X("&arch="));
-    url.append(get_current_arch_name());
-    pal::string_t rid = get_current_runtime_id(true /*use_fallback*/);
-    url.append(_X("&rid="));
-    url.append(rid);
+    url.append(arch);
+    url.append(_X("&rid=") _STRINGIFY(HOST_RID_PLATFORM) _X("-"));
+    url.append(arch);
+
+    pal::string_t os = pal::get_current_os_rid_platform();
+    if (os.empty())
+        os = pal::get_current_os_fallback_rid();
+
+    url.append(_X("&os="));
+    url.append(os);
 
     return url;
 }
@@ -526,7 +502,7 @@ pal::string_t to_upper(const pal::char_t* in) {
 // with test-only marker.
 bool test_only_getenv(const pal::char_t* name, pal::string_t* recv)
 {
-    // This is a static variable which is embeded in the product binary (somewhere).
+    // This is a static variable which is embedded in the product binary (somewhere).
     // The marker values is a GUID so that it's unique and can be found by doing a simple search on the file
     // The first character is used as the decider:
     //  - Default value is 'd' (stands for disabled) - test only behavior is disabled

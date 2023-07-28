@@ -37,8 +37,8 @@ namespace System.Xml.Xsl.Qil
     /// </remarks>
     internal sealed class QilXmlWriter : QilScopedVisitor
     {
-        private XmlWriter writer;
-        private Options options;
+        private readonly XmlWriter writer;
+        private readonly Options options;
         private readonly NameGenerator _ngen;
 
         [Flags]
@@ -114,8 +114,8 @@ namespace System.Xml.Xsl.Qil
                 return;
             }
 
-            if (s != null && s.Length != 0)
-                this.writer.WriteComment(name != null && name.Length != 0 ? $"{name}: {s}" : s);
+            if (!string.IsNullOrEmpty(s))
+                this.writer.WriteComment(!string.IsNullOrEmpty(name) ? $"{name}: {s}" : s);
         }
 
         /// <summary>
@@ -153,10 +153,8 @@ namespace System.Xml.Xsl.Qil
                 this.writer.WriteValue(Convert.ToString(((QilLiteral)node).Value, CultureInfo.InvariantCulture));
                 return node;
             }
-            else if (node is QilReference)
+            else if (node is QilReference reference)
             {
-                QilReference reference = (QilReference)node;
-
                 // Write the generated identifier for this iterator
                 this.writer.WriteAttributeString("id", _ngen.NameOf(node));
 
@@ -185,9 +183,7 @@ namespace System.Xml.Xsl.Qil
         protected override QilNode VisitReference(QilNode node)
         {
             QilReference reference = (QilReference)node;
-            string name = _ngen.NameOf(node);
-            if (name == null)
-                name = "OUT-OF-SCOPE REFERENCE";
+            string name = _ngen.NameOf(node) ?? "OUT-OF-SCOPE REFERENCE";
 
             this.writer.WriteStartElement("RefTo");
             this.writer.WriteAttributeString("id", name);

@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Logging.Test
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        public static void Log_Shoud_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not(bool shouldFormatterBeNull)
+        public static void Log_Should_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not(bool shouldFormatterBeNull)
         {
             // Arrange
             Mock<TraceListener> traceListener = new Mock<TraceListener>();

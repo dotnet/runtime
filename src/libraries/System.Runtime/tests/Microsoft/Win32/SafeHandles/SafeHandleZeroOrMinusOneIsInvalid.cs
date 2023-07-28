@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -12,11 +13,14 @@ public static class SafeHandleZeroOrMinusOneIsInvalidTests
     {
         var sh = new TestSafeHandleMinusOneIsInvalid();
         Assert.True(sh.IsInvalid);
-        sh.SetHandle(new IntPtr(-2));
+
+        Marshal.InitHandle(sh, -2);
         Assert.False(sh.IsInvalid);
-        sh.SetHandle(new IntPtr(-1));
+
+        Marshal.InitHandle(sh, -1);
         Assert.True(sh.IsInvalid);
-        sh.SetHandle(IntPtr.Zero);
+
+        Marshal.InitHandle(sh, 0);
         Assert.False(sh.IsInvalid);
     }
 
@@ -25,13 +29,17 @@ public static class SafeHandleZeroOrMinusOneIsInvalidTests
     {
         var sh = new TestSafeHandleZeroOrMinusOneIsInvalid();
         Assert.True(sh.IsInvalid);
-        sh.SetHandle(new IntPtr(-2));
+
+        Marshal.InitHandle(sh, -2);
         Assert.False(sh.IsInvalid);
-        sh.SetHandle(new IntPtr(-1));
+
+        Marshal.InitHandle(sh, -1);
         Assert.True(sh.IsInvalid);
-        sh.SetHandle(IntPtr.Zero);
+
+        Marshal.InitHandle(sh, 0);
         Assert.True(sh.IsInvalid);
-        sh.SetHandle(new IntPtr(1));
+
+        Marshal.InitHandle(sh, 1);
         Assert.False(sh.IsInvalid);
     }
 
@@ -42,7 +50,6 @@ public static class SafeHandleZeroOrMinusOneIsInvalidTests
         }
 
         protected override bool ReleaseHandle() => true;
-        public new void SetHandle(IntPtr handle) => base.SetHandle(handle);
     }
 
     private class TestSafeHandleZeroOrMinusOneIsInvalid : SafeHandleZeroOrMinusOneIsInvalid
@@ -52,6 +59,5 @@ public static class SafeHandleZeroOrMinusOneIsInvalidTests
         }
 
         protected override bool ReleaseHandle() => true;
-        public new void SetHandle(IntPtr handle) => base.SetHandle(handle);
     }
 }

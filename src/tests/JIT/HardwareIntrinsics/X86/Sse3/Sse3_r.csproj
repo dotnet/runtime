@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Sse3_r</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -8,12 +8,6 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AddSubtract.Double.cs" />
-    <Compile Include="AddSubtract.Single.cs" />
-    <Compile Include="HorizontalAdd.Double.cs" />
-    <Compile Include="HorizontalAdd.Single.cs" />
-    <Compile Include="HorizontalSubtract.Double.cs" />
-    <Compile Include="HorizontalSubtract.Single.cs" />
     <Compile Include="Program.Sse3.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

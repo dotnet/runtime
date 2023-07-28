@@ -1,6 +1,6 @@
 # CLR ABI
 
-This document describes the .NET Common Language Runtime (CLR) software conventions (or ABI, "Application Binary Interface"). It focusses on the ABI for the x64 (aka, AMD64), ARM (aka, ARM32 or Thumb-2), and ARM64 processor architectures. Documentation for the x86 ABI is somewhat scant, but information on the basics of the calling convention is included at the bottom of this document.
+This document describes the .NET Common Language Runtime (CLR) software conventions (or ABI, "Application Binary Interface"). It focuses on the ABI for the x64 (aka, AMD64), ARM (aka, ARM32 or Thumb-2), and ARM64 processor architectures. Documentation for the x86 ABI is somewhat scant, but information on the basics of the calling convention is included at the bottom of this document.
 
 It describes requirements that the Just-In-Time (JIT) compiler imposes on the VM and vice-versa.
 
@@ -80,7 +80,7 @@ Managed varargs are not supported in .NET Core.
 
 ## Generics
 
-*Shared generics*. In cases where the code address does not uniquely identify a generic instantiation of a method, then a 'generic instantiation parameter' is required. Often the `this` pointer can serve dual-purpose as the instantiation parameter. When the `this` pointer is not the generic parameter, the generic parameter is passed as an additional argument. On ARM and AMD64, it is passed after the optional return buffer and the optional `this` pointer, but before any user arguments. On ARM64, the generic parameter is passed after the optional `this` pointer, but before any user arguments. On x86, if all arguments of the function including `this` pointer fit into argument registers (ECX and EDX) and we still have argument registers available, we store the hidden argument in the next available argument register. Otherwise it is passed as the last stack argument. For generic methods (where there is a type parameter directly on the method, as compared to the type), the generic parameter currently is a MethodDesc pointer (I believe an InstantiatedMethodDesc). For static methods (where there is no `this` pointer) the generic parameter is a MethodTable pointer/TypeHandle.
+*Shared generics*. In cases where the code address does not uniquely identify a generic instantiation of a method, then a 'generic instantiation parameter' is required. Often the `this` pointer can serve dual-purpose as the instantiation parameter. When the `this` pointer is not the generic parameter, the generic parameter is passed as an additional argument. On ARM and AMD64, it is passed after the optional return buffer and the optional `this` pointer, but before any user arguments. On ARM64 and RISC-V, the generic parameter is passed after the optional `this` pointer, but before any user arguments. On x86, if all arguments of the function including `this` pointer fit into argument registers (ECX and EDX) and we still have argument registers available, we store the hidden argument in the next available argument register. Otherwise it is passed as the last stack argument. For generic methods (where there is a type parameter directly on the method, as compared to the type), the generic parameter currently is a MethodDesc pointer (I believe an InstantiatedMethodDesc). For static methods (where there is no `this` pointer) the generic parameter is a MethodTable pointer/TypeHandle.
 
 Sometimes the VM asks the JIT to report and keep alive the generics parameter. In this case, it must be saved on the stack someplace and kept alive via normal GC reporting (if it was the `this` pointer, as compared to a MethodDesc or MethodTable) for the entire method except the prolog and epilog. Also note that the code to home it, must be in the range of code reported as the prolog in the GC info (which probably isn't the same as the range of code reported as the prolog in the unwind info).
 
@@ -153,7 +153,7 @@ The below is performed when the GC transition is not suppressed.
 2. For JIT64/AMD64 only: Next for non-IL stubs, the InlinedCallFrame is 'pushed' by setting `Thread->m_pFrame` to point to the InlinedCallFrame (recall that the per-frame initialization already set `InlinedCallFrame->m_pNext` to point to the previous top). For IL stubs this step is accomplished in the per-frame initialization.
 3. The Frame is made active by setting `InlinedCallFrame->m_pCallerReturnAddress`.
 4. The code then toggles the GC mode by setting `Thread->m_fPreemptiveGCDisabled = 0`.
-5. Starting now, no GC pointers may be live in registers. RyuJit LSRA meets this requirement by adding special refPositon `RefTypeKillGCRefs` before unmanaged calls and special helpers.
+5. Starting now, no GC pointers may be live in registers. RyuJit LSRA meets this requirement by adding special refPosition `RefTypeKillGCRefs` before unmanaged calls and special helpers.
 6. Then comes the actual call/PInvoke.
 7. The GC mode is set back by setting `Thread->m_fPreemptiveGCDisabled = 1`.
 8. Then we check to see if `g_TrapReturningThreads` is set (non-zero). If it is, we call `CORINFO_HELP_STOP_FOR_GC`.
@@ -585,6 +585,11 @@ The native EH clauses would be listed as follows:
 
 If the handlers were in a different order, then clause 6 might appear before clauses 4 and 5, but never in between.
 
+## Clauses covering the same try region
+
+Several consecutive clauses may cover the same `try` block. A clause covering the same region as the previous one is marked by the `COR_ILEXCEPTION_CLAUSE_SAMETRY` flag. When exception ex1 is thrown while running handler for another exception ex2 and the exception ex2 escapes the ex1's handler frame, this enables the runtime to skip clauses that cover the same `try` block as the clause that handled the ex1.
+This flag is used by the NativeAOT and also a new exception handling mechanism in CoreCLR. The NativeAOT doesn't store that flag in the encoded clause data, but rather injects a dummy clause between the clauses with same `try` block. CoreCLR keeps that flag as part of the runtime representation of the clause data. The current CoreCLR exception handling doesn't use it, but [a new exception handling mechanism](https://github.com/dotnet/runtime/issues/77568) that's being developed is taking advantage of it.
+
 ## GC Interruptibility and EH
 
 The VM assumes that anytime a thread is stopped, it must be at a GC safe point, or the current frame is non-resumable (i.e. a throw that will never be caught in the same frame). Thus effectively all methods with EH must be fully interruptible (or at a minimum all try bodies). Currently the GC info appears to support mixing of partially interruptible and fully-interruptible regions within the same method, but no JIT uses this, so use at your own risk.
@@ -696,7 +701,7 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 
 ## Generics
 
-EnC is not supported for generic methods and methods on generic types.
+EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
 
 # System V x86_64 support
 
@@ -711,34 +716,34 @@ The general rules outlined in the System V x86_64 ABI documentation are followed
 6. The following table describes register usage according to the System V x86_64 ABI
 
 ```
-| Register     | Usage                                   | Preserved across  |
-|              |                                         | function calls    |
-|--------------|-----------------------------------------|-------------------|
-| %rax         | temporary register; with variable argu- | No                |
-|              | ments passes information about the      |                   |
-|              | number of SSE registers used;           |                   |
-|              | 1st return argument                     |                   |
-| %rbx         | callee-saved register; optionally used  | Yes               |
-|              | as base pointer                         |                   |
-| %rcx         | used to pass 4st integer argument to    | No                |
-|              | to functions                            |                   |
-| %rdx         | used to pass 3rd argument to functions  | No                |
-|              | 2nd return register                     |                   |
-| %rsp         | stack pointer                           | Yes               |
-| %rbp         | callee-saved register; optionally used  | Yes               |
-|              | as frame pointer                        |                   |
-| %rsi         | used to pass 2nd argument to functions  | No                |
-| %rdi         | used to pass 1st argument to functions  | No                |
-| %r8          | used to pass 5th argument to functions  | No                |
-| %r9          | used to pass 6th argument to functions  | No                |
-| %r10         | temporary register, used for passing a  | No                |
-|              | function's static chain pointer         |                   |
-| %r11         | temporary register                      | No                |
-| %r12-%r15    | callee-saved registers                  | Yes               |
-| %xmm0-%xmm1  | used to pass and return floating point  | No                |
-|              | arguments                               |                   |
-| %xmm2-%xmm7  | used to pass floating point arguments   | No                |
-| %xmm8-%xmm15 | temporary registers                     | No                |
+| Register      | Usage                                   | Preserved across  |
+|               |                                         | function calls    |
+|---------------|-----------------------------------------|-------------------|
+| %rax          | temporary register; with variable argu- | No                |
+|               | ments passes information about the      |                   |
+|               | number of SSE registers used;           |                   |
+|               | 1st return argument                     |                   |
+| %rbx          | callee-saved register; optionally used  | Yes               |
+|               | as base pointer                         |                   |
+| %rcx          | used to pass 4st integer argument to    | No                |
+|               | to functions                            |                   |
+| %rdx          | used to pass 3rd argument to functions  | No                |
+|               | 2nd return register                     |                   |
+| %rsp          | stack pointer                           | Yes               |
+| %rbp          | callee-saved register; optionally used  | Yes               |
+|               | as frame pointer                        |                   |
+| %rsi          | used to pass 2nd argument to functions  | No                |
+| %rdi          | used to pass 1st argument to functions  | No                |
+| %r8           | used to pass 5th argument to functions  | No                |
+| %r9           | used to pass 6th argument to functions  | No                |
+| %r10          | temporary register, used for passing a  | No                |
+|               | function's static chain pointer         |                   |
+| %r11          | temporary register                      | No                |
+| %r12-%r15     | callee-saved registers                  | Yes               |
+| %xmm0-%xmm1   | used to pass and return floating point  | No                |
+|               | arguments                               |                   |
+| %xmm2-%xmm7   | used to pass floating point arguments   | No                |
+| %xmm8-%xmm31  | temporary registers                     | No                |
 ```
 
 # Calling convention specifics for x86

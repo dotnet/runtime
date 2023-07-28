@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 
@@ -94,8 +95,12 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding) =>
             _wrapped.VerifyHash(hash, signature, hashAlgorithm, padding);
 
+        [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] DecryptValue(byte[] rgb) => _wrapped.DecryptValue(rgb);
 
+        [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] EncryptValue(byte[] rgb) => _wrapped.EncryptValue(rgb);
 
         public override byte[] SignData(

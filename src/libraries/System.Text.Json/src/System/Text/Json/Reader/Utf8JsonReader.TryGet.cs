@@ -73,6 +73,14 @@ namespace System.Text.Json
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(_tokenType);
             }
 
+            return CopyValue(utf8Destination);
+        }
+
+        internal readonly int CopyValue(Span<byte> utf8Destination)
+        {
+            Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName or JsonTokenType.Number);
+            Debug.Assert(_tokenType != JsonTokenType.Number || !ValueIsEscaped, "Numbers can't contain escape characters.");
+
             int bytesWritten;
 
             if (ValueIsEscaped)
@@ -129,7 +137,15 @@ namespace System.Text.Json
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(_tokenType);
             }
 
-            ReadOnlySpan<byte> unescapedSource = stackalloc byte[0];
+            return CopyValue(destination);
+        }
+
+        internal readonly int CopyValue(Span<char> destination)
+        {
+            Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName or JsonTokenType.Number);
+            Debug.Assert(_tokenType != JsonTokenType.Number || !ValueIsEscaped, "Numbers can't contain escape characters.");
+
+            scoped ReadOnlySpan<byte> unescapedSource;
             byte[]? rentedBuffer = null;
             int valueLength;
 
@@ -182,7 +198,7 @@ namespace System.Text.Json
             Debug.Assert(ValueIsEscaped);
 
             byte[]? rentedBuffer = null;
-            ReadOnlySpan<byte> source = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> source;
 
             if (HasValueSequence)
             {
@@ -1227,7 +1243,7 @@ namespace System.Text.Json
 
         internal bool TryGetDateTimeCore(out DateTime value)
         {
-            ReadOnlySpan<byte> span = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> span;
 
             if (HasValueSequence)
             {
@@ -1292,7 +1308,7 @@ namespace System.Text.Json
 
         internal bool TryGetDateTimeOffsetCore(out DateTimeOffset value)
         {
-            ReadOnlySpan<byte> span = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> span;
 
             if (HasValueSequence)
             {
@@ -1358,7 +1374,7 @@ namespace System.Text.Json
 
         internal bool TryGetGuidCore(out Guid value)
         {
-            ReadOnlySpan<byte> span = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> span;
 
             if (HasValueSequence)
             {

@@ -27,6 +27,7 @@ namespace System.Security.Cryptography
 
         protected DSA() { }
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new DSA? Create(string algName)
         {
@@ -65,7 +66,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("tvos")]
         public static DSA Create(DSAParameters parameters)
         {
-            DSA dsa = CreateCore();
+            var dsa = CreateCore();
 
             try
             {
@@ -136,10 +137,12 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(data);
 
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             byte[] hash = HashData(data, offset, count, hashAlgorithm);
@@ -191,10 +194,12 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(data);
 
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
@@ -301,10 +306,13 @@ namespace System.Security.Cryptography
         public virtual bool VerifyData(byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentNullException.ThrowIfNull(signature);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
@@ -358,10 +366,13 @@ namespace System.Security.Cryptography
             DSASignatureFormat signatureFormat)
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentNullException.ThrowIfNull(signature);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
@@ -492,7 +503,7 @@ namespace System.Security.Cryptography
             DSASignatureFormat signatureFormat,
             out int bytesWritten)
         {
-            // This method is expected to be overriden with better implementation
+            // This method is expected to be overridden with better implementation
 
             // The only available implementation here is abstract method, use it
             byte[] sig = CreateSignature(hash.ToArray());
@@ -848,7 +859,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> signature,
             DSASignatureFormat signatureFormat)
         {
-            // This method is expected to be overriden with better implementation
+            // This method is expected to be overridden with better implementation
 
             byte[]? sig = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
 
@@ -904,7 +915,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static Exception DerivedClassMustOverride() =>
+        private static NotImplementedException DerivedClassMustOverride() =>
             new NotImplementedException(SR.NotSupported_SubclassOverride);
 
         public override bool TryExportEncryptedPkcs8PrivateKey(

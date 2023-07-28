@@ -44,8 +44,8 @@ void DumpIL_RemoveFullPath(SString &strTokenFormatting)
     {
         SString::Iterator lastSlash = strTokenFormatting.End() - 1;
 
-        // Find the last '\\' in the string.
-        while ((lastSlash != leftBracket) && (*lastSlash != '\\'))
+        // Find the last directory separator character ('\\' on Windows, '/' on Unix) in the string.
+        while ((lastSlash != leftBracket) && (*lastSlash != DIRECTORY_SEPARATOR_CHAR_A))
         {
             --lastSlash;
         }
@@ -106,10 +106,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
             SString typeName;
             TypeString::AppendType(typeName, TypeHandle(pFD->GetApproxEnclosingMethodTable()));
 
-            SString typeNameUtf8;
-            typeName.ConvertToUTF8(typeNameUtf8);
-            SString strFieldName(SString::Utf8, pFD->GetName());
-            strTokenFormatting.Printf("%s::%s", typeNameUtf8.GetUTF8NoConvert(), strFieldName.GetUTF8NoConvert());
+            strTokenFormatting.Printf("%s::%s", typeName.GetUTF8(), pFD->GetName());
         }
         else if (TypeFromToken(token) == mdtModule)
         {
@@ -550,13 +547,13 @@ ILStubLinker::LogILInstruction(
     //
     if (pDumpILStubCode)
     {
-        pDumpILStubCode->AppendPrintf("%s /*(%2d)*/ %s %s %s\n", strLabel.GetUTF8NoConvert(), iCurStack, strOpcode.GetUTF8NoConvert(),
-            strArgument.GetUTF8NoConvert(), strTokenName.GetUTF8NoConvert());
+        pDumpILStubCode->AppendPrintf("%s /*(%2d)*/ %s %s %s\n", strLabel.GetUTF8(), iCurStack, strOpcode.GetUTF8(),
+            strArgument.GetUTF8(), strTokenName.GetUTF8());
     }
     else
     {
-        LOG((LF_STUBS, LL_INFO1000, "%s (%2d) %s %s %s\n", strLabel.GetUTF8NoConvert(), iCurStack, \
-            strOpcode.GetUTF8NoConvert(), strArgument.GetUTF8NoConvert(), strTokenName.GetUTF8NoConvert()));
+        LOG((LF_STUBS, LL_INFO1000, "%s (%2d) %s %s %s\n", strLabel.GetUTF8(), iCurStack, \
+            strOpcode.GetUTF8(), strArgument.GetUTF8(), strTokenName.GetUTF8()));
     }
 } // ILStubLinker::LogILInstruction
 
@@ -1239,6 +1236,11 @@ void ILCodeStream::EmitCLT_UN()
 {
     WRAPPER_NO_CONTRACT;
     Emit(CEE_CLT_UN, -1, 0);
+}
+void ILCodeStream::EmitCONSTRAINED(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_CONSTRAINED, 0, token);
 }
 void ILCodeStream::EmitCONV_I()
 {
@@ -2590,7 +2592,7 @@ void ILStubLinker::GetStubReturnType(LocalDesc* pLoc, Module* pModule)
 
     IfFailThrow(ptr.GetData(&nArgs));
 
-    GetManagedTypeHelper(pLoc, pModule, ptr.GetPtr(), m_pTypeContext, m_pMD);
+    GetManagedTypeHelper(pLoc, pModule, ptr.GetPtr(), m_pTypeContext);
 }
 
 CorCallingConvention ILStubLinker::GetStubTargetCallingConv()
@@ -2900,7 +2902,7 @@ static size_t GetManagedTypeForMDArray(LocalDesc* pLoc, Module* pModule, PCCOR_S
 
 
 // static
-void ILStubLinker::GetManagedTypeHelper(LocalDesc* pLoc, Module* pModule, PCCOR_SIGNATURE psigManagedArg, SigTypeContext *pTypeContext, MethodDesc *pMD)
+void ILStubLinker::GetManagedTypeHelper(LocalDesc* pLoc, Module* pModule, PCCOR_SIGNATURE psigManagedArg, SigTypeContext *pTypeContext)
 {
     CONTRACTL
     {
@@ -3049,7 +3051,7 @@ void ILStubLinker::GetStubTargetReturnType(LocalDesc* pLoc, Module* pModule)
     }
     CONTRACTL_END;
 
-    GetManagedTypeHelper(pLoc, pModule, m_nativeFnSigBuilder.GetReturnSig(), m_pTypeContext, NULL);
+    GetManagedTypeHelper(pLoc, pModule, m_nativeFnSigBuilder.GetReturnSig(), m_pTypeContext);
 }
 
 void ILStubLinker::GetStubArgType(LocalDesc* pLoc)
@@ -3076,7 +3078,7 @@ void ILStubLinker::GetStubArgType(LocalDesc* pLoc, Module* pModule)
     }
     CONTRACTL_END;
 
-    GetManagedTypeHelper(pLoc, pModule, m_managedSigPtr.GetPtr(), m_pTypeContext, m_pMD);
+    GetManagedTypeHelper(pLoc, pModule, m_managedSigPtr.GetPtr(), m_pTypeContext);
 }
 
 //---------------------------------------------------------------------------------------

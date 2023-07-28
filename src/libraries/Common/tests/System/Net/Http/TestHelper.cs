@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Security;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -18,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
     public static class TestHelper
     {
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
-        public static int PassingTestTimeoutMilliseconds => 60 * 1000;
+        public const int PassingTestTimeoutMilliseconds = 60 * 1000;
 
         public static bool JsonMessageContainsKeyValue(string message, string key, string value)
         {
@@ -112,6 +110,7 @@ namespace System.Net.Http.Functional.Tests
                 .Where(i => !i.Description.StartsWith("PANGP Virtual Ethernet"))    // This is a VPN adapter, but is reported as a regular Ethernet interface with
                                                                                     // a valid link-local address, but the link-local address doesn't actually work.
                                                                                     // So just manually filter it out.
+                .Where(i => !i.Name.Contains("Tailscale"))                          // Same as PANGP above.
                 .SelectMany(i => i.GetIPProperties().UnicastAddresses)
                 .Select(a => a.Address)
                 .Where(a => a.IsIPv6LinkLocal)
@@ -157,11 +156,26 @@ namespace System.Net.Http.Functional.Tests
                 X509Certificate2 cert = req.CreateSelfSigned(start, end);
                 if (PlatformDetection.IsWindows)
                 {
-                    cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
+                    cert = new X509Certificate2(cert.Export(X509ContentType.Pfx), (string?)null);
                 }
 
                 return cert;
             }
         }
+
+#if NETCOREAPP
+        public static SocketsHttpHandler CreateSocketsHttpHandler(bool allowAllCertificates = false)
+        {
+            var handler = new SocketsHttpHandler();
+
+            // Browser doesn't support ServerCertificateCustomValidationCallback
+            if (allowAllCertificates && PlatformDetection.IsNotBrowser)
+            {
+                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+            }
+
+            return handler;
+        }
+#endif
     }
 }

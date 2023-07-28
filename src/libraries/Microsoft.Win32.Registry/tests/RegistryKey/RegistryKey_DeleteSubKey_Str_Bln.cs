@@ -24,7 +24,7 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw if subkey has child subkeys
             using (var rk = TestRegistryKey.CreateSubKey(name))
             {
-                rk.CreateSubKey(name);
+                using RegistryKey subkey = rk.CreateSubKey(name);
                 Assert.Throws<InvalidOperationException>(() => TestRegistryKey.DeleteSubKey(name, false));
             }
 
@@ -46,7 +46,9 @@ namespace Microsoft.Win32.RegistryTests
         public void DeleteSubKeyTest()
         {
             Assert.Equal(expected: 0, actual: TestRegistryKey.SubKeyCount);
-            Assert.NotNull(TestRegistryKey.CreateSubKey(TestRegistryKeyName));
+
+            using RegistryKey subkey = TestRegistryKey.CreateSubKey(TestRegistryKeyName);
+            Assert.NotNull(subkey);
             Assert.Equal(expected: 1, actual: TestRegistryKey.SubKeyCount);
 
             TestRegistryKey.DeleteSubKey(TestRegistryKeyName);
@@ -60,7 +62,7 @@ namespace Microsoft.Win32.RegistryTests
             string[] subKeyNames = Enumerable.Range(1, 9).Select(x => "BLAH_" + x.ToString()).ToArray();
             foreach (var subKeyName in subKeyNames)
             {
-                TestRegistryKey.CreateSubKey(subKeyName);
+                TestRegistryKey.CreateSubKey(subKeyName).Dispose();
             }
 
             Assert.Equal(subKeyNames, TestRegistryKey.GetSubKeyNames());

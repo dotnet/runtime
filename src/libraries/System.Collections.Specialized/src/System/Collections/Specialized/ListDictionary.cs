@@ -5,13 +5,10 @@ using System.Diagnostics;
 
 namespace System.Collections.Specialized
 {
-    /// <devdoc>
-    ///  <para>
-    ///    This is a simple implementation of IDictionary using a singly linked list. This
-    ///    will be smaller and faster than a Hashtable if the number of elements is 10 or less.
-    ///    This should not be used if performance is important for large numbers of elements.
-    ///  </para>
-    /// </devdoc>
+    /// <summary>
+    /// Implements <see cref="IDictionary"/> using a singly linked list.
+    /// Recommended for collections that typically include fewer than 10 items.
+    /// </summary>
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ListDictionary : IDictionary
@@ -208,8 +205,7 @@ namespace System.Collections.Specialized
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Arg_InsufficientSpace);
@@ -367,8 +363,7 @@ namespace System.Collections.Specialized
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 for (DictionaryNode? node = _list.head; node != null; node = node.next)
                 {

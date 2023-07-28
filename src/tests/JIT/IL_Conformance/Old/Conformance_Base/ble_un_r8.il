@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 #define NEG_INF    "float64(0xFFF0000000000000)"
 #define MIN        "float64(0xFF7FFFFFFFFFFFFF)"
@@ -13,6 +14,8 @@
 #define POS_INF    "float64(0x7FF0000000000000)"
 #define NAN        "float64(0x7FF8000000000000)"
 
+.namespace ble_un_r8
+{
 .class public ble_un {
 
 .field public static	float64 neg_inf
@@ -28,458 +31,461 @@
 .method public static	void initialize() {
 .maxstack	10
 	ldc.r8		NEG_INF
-	stsfld	float64 ble_un::neg_inf
+	stsfld	float64 ble_un_r8.ble_un::neg_inf
 	ldc.r8		MIN
-	stsfld	float64 ble_un::min
+	stsfld	float64 ble_un_r8.ble_un::min
 	ldc.r8		MINUS_ONE
-	stsfld	float64 ble_un::minus_one
+	stsfld	float64 ble_un_r8.ble_un::minus_one
 	ldc.r8		MINUS_ZERO
-	stsfld	float64 ble_un::minus_zero
+	stsfld	float64 ble_un_r8.ble_un::minus_zero
 	ldc.r8		ZERO
-	stsfld	float64 ble_un::zero
+	stsfld	float64 ble_un_r8.ble_un::zero
 	ldc.r8		ONE
-	stsfld	float64 ble_un::one
+	stsfld	float64 ble_un_r8.ble_un::one
 	ldc.r8		MAX
-	stsfld	float64 ble_un::max
+	stsfld	float64 ble_un_r8.ble_un::max
 	ldc.r8		POS_INF
-	stsfld	float64 ble_un::pos_inf
+	stsfld	float64 ble_un_r8.ble_un::pos_inf
 	ldc.r8		NAN
-	stsfld	float64 ble_un::NaN
+	stsfld	float64 ble_un_r8.ble_un::NaN
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	call	void ble_un::initialize()
+	call	void ble_un_r8.ble_un::initialize()
 
-	ldsfld	float64 ble_un::neg_inf
-	ldsfld	float64 ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
 	ble.un A
 	br FAIL
 
 A:
-	ldsfld	float64 ble_un::neg_inf
-	ldsfld	float64 ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::min
 	ble.un B
 	br FAIL
 
 B:
-	ldsfld	float64 ble_un::neg_inf
-	ldsfld	float64 ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
 	ble.un C
 	br FAIL
 
 C:
-	ldsfld	float64 ble_un::neg_inf
-	ldsfld	float64 ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
 	ble.un D
 	br FAIL
 
 D:
-	ldsfld	float64 ble_un::neg_inf
-	ldsfld	float64 ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::zero
 	ble.un E
 	br FAIL
 
 E:
-	ldsfld	float64 ble_un::neg_inf
-	ldsfld	float64 ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::one
 	ble.un F
 	br FAIL
 
 F:
-	ldsfld	float64 ble_un::neg_inf
-	ldsfld	float64 ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::max
 	ble.un G
 	br FAIL
 
 G:
-	ldsfld	float64 ble_un::neg_inf
-	ldsfld	float64 ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
 	ble.un H
 	br FAIL
 
 H:
-	ldsfld	float64 ble_un::neg_inf
-	ldsfld	float64 ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::NaN
 	ble.un K
 	br FAIL
 K:
-	ldsfld	float64 ble_un::min
-	ldsfld	float64 ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::min
-	ldsfld	float64 ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::min
 	ble.un L
 	br FAIL
 
 L:
-	ldsfld	float64 ble_un::min
-	ldsfld	float64 ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
 	ble.un M
 	br FAIL
 
 M:
-	ldsfld	float64 ble_un::min
-	ldsfld	float64 ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
 	ble.un N
 	br FAIL
 
 N:
-	ldsfld	float64 ble_un::min
-	ldsfld	float64 ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::zero
 	ble.un O
 	br FAIL
 
 O:
-	ldsfld	float64 ble_un::min
-	ldsfld	float64 ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::one
 	ble.un P
 	br FAIL
 
 P:
-	ldsfld	float64 ble_un::min
-	ldsfld	float64 ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::max
 	ble.un Q
 	br FAIL
 
 Q:
-	ldsfld	float64 ble_un::min
-	ldsfld	float64 ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
 	ble.un R
 	br FAIL
 
 R:
-	ldsfld	float64 ble_un::min
-	ldsfld	float64 ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::NaN
 	ble.un S
 	br FAIL
 
 
 S:
-	ldsfld	float64 ble_un::minus_one
-	ldsfld	float64 ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::minus_one
-	ldsfld	float64 ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::min
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::minus_one
-	ldsfld	float64 ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
 	ble.un T
 	br FAIL
 
 T:
-	ldsfld	float64 ble_un::minus_one
-	ldsfld	float64 ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
 	ble.un U
 	br FAIL
 
 U:
-	ldsfld	float64 ble_un::minus_one
-	ldsfld	float64 ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::zero
 	ble.un V
 	br FAIL
 
 V:
-	ldsfld	float64 ble_un::minus_one
-	ldsfld	float64 ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::one
 	ble.un W
 	br FAIL
 
 W:
-	ldsfld	float64 ble_un::minus_one
-	ldsfld	float64 ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::max
 	ble.un X
 	br FAIL
 
 X:
-	ldsfld	float64 ble_un::minus_one
-	ldsfld	float64 ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
 	ble.un Y
 	br FAIL
 
 Y:
-	ldsfld	float64 ble_un::minus_one
-	ldsfld	float64 ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::NaN
 	ble.un Z
 	br FAIL
 Z:
-	ldsfld	float64 ble_un::minus_zero
-	ldsfld	float64 ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::minus_zero
-	ldsfld	float64 ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::min
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::minus_zero
-	ldsfld	float64 ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::minus_zero
-	ldsfld	float64 ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
 	ble.un AA
 	br FAIL
 
 AA:
-	ldsfld	float64 ble_un::minus_zero
-	ldsfld	float64 ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::zero
 	ble.un BB
 	br FAIL
 
 BB:
-	ldsfld	float64 ble_un::minus_zero
-	ldsfld	float64 ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::one
 	ble.un CC
 	br FAIL
 
 CC:
-	ldsfld	float64 ble_un::minus_zero
-	ldsfld	float64 ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::max
 	ble.un DD
 	br FAIL
 
 DD:
-	ldsfld	float64 ble_un::minus_zero
-	ldsfld	float64 ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
 	ble.un EE
 	br FAIL
 
 EE:
-	ldsfld	float64 ble_un::minus_zero
-	ldsfld	float64 ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::NaN
 	ble.un FF
 	br FAIL
 
 FF:
-	ldsfld	float64 ble_un::zero
-	ldsfld	float64 ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::zero
-	ldsfld	float64 ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::min
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::zero
-	ldsfld	float64 ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::zero
-	ldsfld	float64 ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
 	ble.un GG
 	br FAIL
 
 GG:
-	ldsfld	float64 ble_un::zero
-	ldsfld	float64 ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::zero
 	ble.un HH
 	br FAIL
 
 HH:
-	ldsfld	float64 ble_un::zero
-	ldsfld	float64 ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::one
 	ble.un II
 	br FAIL
 
 II:
-	ldsfld	float64 ble_un::zero
-	ldsfld	float64 ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::max
 	ble.un JJ
 	br FAIL
 
 JJ:
-	ldsfld	float64 ble_un::zero
-	ldsfld	float64 ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
 	ble.un KK
 	br FAIL
 
 KK:
-	ldsfld	float64 ble_un::zero
-	ldsfld	float64 ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::NaN
 	ble.un LL
 	br FAIL
 
 LL:
-	ldsfld	float64 ble_un::one
-	ldsfld	float64 ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::one
-	ldsfld	float64 ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::min
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::one
-	ldsfld	float64 ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::one
-	ldsfld	float64 ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::one
-	ldsfld	float64 ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::zero
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::one
-	ldsfld	float64 ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::one
 	ble.un MM
 	br FAIL
 
 MM:
-	ldsfld	float64 ble_un::one
-	ldsfld	float64 ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::max
 	ble.un NN
 	br FAIL
 
 NN:
-	ldsfld	float64 ble_un::one
-	ldsfld	float64 ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
 	ble.un OO
 	br FAIL
 
 OO:
-	ldsfld	float64 ble_un::one
-	ldsfld	float64 ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::NaN
 	ble.un PP
 	br FAIL
 
 PP:
-	ldsfld	float64 ble_un::max
-	ldsfld	float64 ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::max
-	ldsfld	float64 ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::min
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::max
-	ldsfld	float64 ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::max
-	ldsfld	float64 ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::max
-	ldsfld	float64 ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::zero
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::max
-	ldsfld	float64 ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::one
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::max
-	ldsfld	float64 ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::max
 	ble.un QQ
 	br FAIL
 
 QQ:
-	ldsfld	float64 ble_un::max
-	ldsfld	float64 ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
 	ble.un RR
 	br FAIL
 
 RR:
-	ldsfld	float64 ble_un::max
-	ldsfld	float64 ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::NaN
 	ble.un SS
 	br FAIL
 
 SS:
-	ldsfld	float64 ble_un::pos_inf
-	ldsfld	float64 ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::pos_inf
-	ldsfld	float64 ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::min
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::pos_inf
-	ldsfld	float64 ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::pos_inf
-	ldsfld	float64 ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::pos_inf
-	ldsfld	float64 ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::zero
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::pos_inf
-	ldsfld	float64 ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::one
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::pos_inf
-	ldsfld	float64 ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::max
 	ble.un FAIL
 
-	ldsfld	float64 ble_un::pos_inf
-	ldsfld	float64 ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
 	ble.un TT
 	br FAIL
 
 TT:
-	ldsfld	float64 ble_un::pos_inf
-	ldsfld	float64 ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::NaN
 	ble.un UU
 	br FAIL
 
 UU:
-	ldsfld	float64 ble_un::NaN
-	ldsfld	float64 ble_un::neg_inf
+	ldsfld	float64 ble_un_r8.ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::neg_inf
 	ble.un VV
 	br FAIL
 
 VV:
-	ldsfld	float64 ble_un::NaN
-	ldsfld	float64 ble_un::min
+	ldsfld	float64 ble_un_r8.ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::min
 	ble.un WW
 	br FAIL
 
 WW:
-	ldsfld	float64 ble_un::NaN
-	ldsfld	float64 ble_un::minus_one
+	ldsfld	float64 ble_un_r8.ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::minus_one
 	ble.un XX
 	br FAIL
 
 XX:
-	ldsfld	float64 ble_un::NaN
-	ldsfld	float64 ble_un::minus_zero
+	ldsfld	float64 ble_un_r8.ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::minus_zero
 	ble.un YY
 	br FAIL
 
 YY:
-	ldsfld	float64 ble_un::NaN
-	ldsfld	float64 ble_un::zero
+	ldsfld	float64 ble_un_r8.ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::zero
 	ble.un ZZ
 	br FAIL
 
 ZZ:
-	ldsfld	float64 ble_un::NaN
-	ldsfld	float64 ble_un::one
+	ldsfld	float64 ble_un_r8.ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::one
 	ble.un AAA
 	br FAIL
 
 AAA:
-	ldsfld	float64 ble_un::NaN
-	ldsfld	float64 ble_un::max
+	ldsfld	float64 ble_un_r8.ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::max
 	ble.un BBB
 	br FAIL
 
 BBB:
-	ldsfld	float64 ble_un::NaN
-	ldsfld	float64 ble_un::pos_inf
+	ldsfld	float64 ble_un_r8.ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::pos_inf
 	ble.un CCC
 	br FAIL
 
 CCC:
-	ldsfld	float64 ble_un::NaN
-	ldsfld	float64 ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::NaN
+	ldsfld	float64 ble_un_r8.ble_un::NaN
 	ble.un  L0
 	br FAIL
 
@@ -935,3 +941,4 @@ FAIL:
 }
 }
 .assembly ble_un_r8{}
+}

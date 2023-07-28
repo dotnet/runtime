@@ -41,14 +41,14 @@ let first() =
 
 // F# Compiler will optimize the call away and treat this as a loop
 let second() =
-    let rec secondCallee(iteration, firstArg, secondArg, thirdArg) = 
+    let rec secondCallee(iteration, firstArg, secondArg, thirdArg) =
         if iteration = 0 then
             firstArg
         else
             let mutable retVal =
-                if firstArg = 10 then 
+                if firstArg = 10 then
                     firstArg * secondArg * thirdArg
-                else 
+                else
                     firstArg + secondArg + thirdArg
 
             secondCallee(iteration - 1, retVal, secondArg, thirdArg)
@@ -62,7 +62,7 @@ let second() =
         0
 
 // F# Compiler will optimize the call away and treat this as a loop
-let third() = 
+let third() =
     let rec thirdCallee(iteration, firstArg, secondArg, thirdArg, point: Point2D, secondPoint: Point2D, thirdPoint: Point2D) =
         if point.X <> 10.0 then -100
         else if point.Y <> 20.0 then -101
@@ -74,11 +74,11 @@ let third() =
             firstArg
         else
             let mutable retVal =
-                if firstArg = 10 then 
+                if firstArg = 10 then
                     firstArg * secondArg * thirdArg
-                else 
+                else
                     firstArg + secondArg + thirdArg
-                    
+
             if retVal > 5000 then
                 thirdCallee(iteration - 1, retVal, secondArg, thirdArg, point, secondPoint, thirdPoint)
             else
@@ -98,7 +98,7 @@ let third() =
 // Will create a tail il instruction and force a tail call. This is will become
 // a fast tail call on unix x64 as there is no stack usage
 let fourth() =
-    let rec fourthMethodFirstCallee(iterationCount, firstArg: Point2D, secondArg: Point2D, thirdArg: Point2D, fourthArg: Point2D) = 
+    let rec fourthMethodFirstCallee(iterationCount, firstArg: Point2D, secondArg: Point2D, thirdArg: Point2D, fourthArg: Point2D) =
         if firstArg.X <> 10.0 then -100
         else if firstArg.Y <> 20.0 then -101
         else if secondArg.X <> 30.0 then -102
@@ -129,7 +129,7 @@ let fourth() =
             fourthMethodSecondCallee(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg)
         else
             fourthMethodFirstCallee(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg)
-    
+
     let point = Point2D(10.0, 20.0)
     let secondPoint = Point2D(30.0, 40.0)
 
@@ -140,11 +140,11 @@ let fourth() =
         -4
     else
         0
-    
+
 // Will create a tail il instruction and force a tail call. This is will become
 // a fast tail call on unix x64 as the caller and callee have equal stack size
 let fifth() =
-    let rec fifthMethodFirstCallee(iterationCount, firstArg: Point2D, secondArg: Point2D, thirdArg: Point2D, fourthArg: Point2D, fifthArg: Point2D) = 
+    let rec fifthMethodFirstCallee(iterationCount, firstArg: Point2D, secondArg: Point2D, thirdArg: Point2D, fourthArg: Point2D, fifthArg: Point2D) =
         if firstArg.X <> 10.0 then -100
         else if firstArg.Y <> 20.0 then -101
         else if secondArg.X <> 30.0 then -102
@@ -195,7 +195,7 @@ let fifth() =
 // a tail call via helper on unix x64 as the caller has less available incoming
 // arg size than the callee
 let sixth() =
-    let rec sixthMethodFirstCallee(iterationCount, firstArg: Point2D, secondArg: Point2D, thirdArg: Point2D, fourthArg: Point2D, fifthArg: Point2D) = 
+    let rec sixthMethodFirstCallee(iterationCount, firstArg: Point2D, secondArg: Point2D, thirdArg: Point2D, fourthArg: Point2D, fifthArg: Point2D) =
         if firstArg.X <> 10.0 then -100
         else if firstArg.Y <> 20.0 then -101
         else if secondArg.X <> 30.0 then -102
@@ -244,7 +244,7 @@ let sixth() =
 // a tail call via helper on unix x64 as the caller has less available incoming
 // arg size than the callee
 let seventh() =
-    let rec seventhMethodFirstCallee(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninethArg, tenthArg) =
+    let rec seventhMethodFirstCallee(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninthArg, tenthArg) =
         if firstArg <> 1 then -100
         else if secondArg <> 2 then -101
         else if thirdArg <> 3 then -102
@@ -253,16 +253,16 @@ let seventh() =
         else if sixthArg <> 6 then -105
         else if seventhArg <> 7 then -106
         else if eighthArg <> 8 then -107
-        else if ninethArg <> 9 then -108
+        else if ninthArg <> 9 then -108
         else if tenthArg <> 10 then -109
         else if iterationCount = 0 then
             100
         else if iterationCount % 2 = 0 then
             seventhMethodSecondCallee(iterationCount)
         else
-            seventhMethodFirstCallee(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninethArg, tenthArg)
+            seventhMethodFirstCallee(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninthArg, tenthArg)
 
-    and seventhMethodSecondCallee(iterationCount) = 
+    and seventhMethodSecondCallee(iterationCount) =
         if iterationCount = 0 then
             101
         else if iterationCount % 2 = 0 then
@@ -281,7 +281,7 @@ let seventh() =
 // Will create a tail il instruction and force a tail call. This is will become
 // a fast tail call as the caller and callee have the incoming arg size
 let seventhFastTailCall() =
-    let rec seventhMethodFirstCalleeFastTailCall(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninethArg, tenthArg) =
+    let rec seventhMethodFirstCalleeFastTailCall(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninthArg, tenthArg) =
         if firstArg <> 1 then -100
         else if secondArg <> 2 then -101
         else if thirdArg <> 3 then -102
@@ -290,16 +290,16 @@ let seventhFastTailCall() =
         else if sixthArg <> 6 then -105
         else if seventhArg <> 7 then -106
         else if eighthArg <> 8 then -107
-        else if ninethArg <> 9 then -108
+        else if ninthArg <> 9 then -108
         else if tenthArg <> 10 then -109
         else if iterationCount = 0 then
             100
         else if iterationCount % 2 = 0 then
-            seventhMethodSecondCalleeFastTailCall(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninethArg, tenthArg)
+            seventhMethodSecondCalleeFastTailCall(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninthArg, tenthArg)
         else
-            seventhMethodFirstCalleeFastTailCall(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninethArg, tenthArg)
+            seventhMethodFirstCalleeFastTailCall(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninthArg, tenthArg)
 
-    and seventhMethodSecondCalleeFastTailCall(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninethArg, tenthArg) = 
+    and seventhMethodSecondCalleeFastTailCall(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninthArg, tenthArg) =
         if firstArg <> 1 then -110
         else if secondArg <> 2 then -111
         else if thirdArg <> 3 then -112
@@ -308,12 +308,12 @@ let seventhFastTailCall() =
         else if sixthArg <> 6 then -115
         else if seventhArg <> 7 then -116
         else if eighthArg <> 8 then -117
-        else if ninethArg <> 9 then -118
+        else if ninthArg <> 9 then -118
         else if tenthArg <> 10 then -119
         else if iterationCount = 0 then
             101
         else if iterationCount % 2 = 0 then
-            seventhMethodSecondCalleeFastTailCall(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninethArg, tenthArg)
+            seventhMethodSecondCalleeFastTailCall(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninthArg, tenthArg)
         else
             seventhMethodFirstCalleeFastTailCall(iterationCount - 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 
@@ -328,7 +328,7 @@ let seventhFastTailCall() =
 // Will create a tail il instruction and force a tail call. This is will become
 // a fast tail call as the caller and callee have the incoming arg size
 let seventhFastTailCallReversed() =
-    let rec seventhMethodFirstCalleeFastTailCallReversed(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninethArg, tenthArg) =
+    let rec seventhMethodFirstCalleeFastTailCallReversed(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninthArg, tenthArg) =
         if firstArg <> 1 then -100
         else if secondArg <> 2 then -101
         else if thirdArg <> 3 then -102
@@ -337,16 +337,16 @@ let seventhFastTailCallReversed() =
         else if sixthArg <> 6 then -105
         else if seventhArg <> 7 then -106
         else if eighthArg <> 8 then -107
-        else if ninethArg <> 9 then -108
+        else if ninthArg <> 9 then -108
         else if tenthArg <> 10 then -109
         else if iterationCount = 0 then
             100
         else if iterationCount % 2 = 0 then
-            seventhMethodSecondCalleeFastTailCallReversed(iterationCount - 1, tenthArg, ninethArg, eighthArg, seventhArg, sixthArg, fifthArg, fourthArg, thirdArg, secondArg, firstArg)
+            seventhMethodSecondCalleeFastTailCallReversed(iterationCount - 1, tenthArg, ninthArg, eighthArg, seventhArg, sixthArg, fifthArg, fourthArg, thirdArg, secondArg, firstArg)
         else
-            seventhMethodFirstCalleeFastTailCallReversed(iterationCount - 1, tenthArg, ninethArg, eighthArg, seventhArg, sixthArg, fifthArg, fourthArg, thirdArg, secondArg, firstArg)
+            seventhMethodFirstCalleeFastTailCallReversed(iterationCount - 1, tenthArg, ninthArg, eighthArg, seventhArg, sixthArg, fifthArg, fourthArg, thirdArg, secondArg, firstArg)
 
-    and seventhMethodSecondCalleeFastTailCallReversed(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninethArg, tenthArg) = 
+    and seventhMethodSecondCalleeFastTailCallReversed(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg, seventhArg, eighthArg, ninthArg, tenthArg) =
         if firstArg <> 10 then -110
         else if secondArg <> 9 then -111
         else if thirdArg <> 8 then -112
@@ -355,14 +355,14 @@ let seventhFastTailCallReversed() =
         else if sixthArg <> 5 then -115
         else if seventhArg <> 4 then -116
         else if eighthArg <> 3 then -117
-        else if ninethArg <> 2 then -118
+        else if ninthArg <> 2 then -118
         else if tenthArg <> 1 then -119
         else if iterationCount = 0 then
             101
         else if iterationCount % 2 = 0 then
-            seventhMethodSecondCalleeFastTailCallReversed(iterationCount - 1, tenthArg, ninethArg, eighthArg, seventhArg, sixthArg, fifthArg, fourthArg, thirdArg, secondArg, firstArg)
+            seventhMethodSecondCalleeFastTailCallReversed(iterationCount - 1, tenthArg, ninthArg, eighthArg, seventhArg, sixthArg, fifthArg, fourthArg, thirdArg, secondArg, firstArg)
         else
-            seventhMethodFirstCalleeFastTailCallReversed(iterationCount - 1, tenthArg, ninethArg, eighthArg, seventhArg, sixthArg, fifthArg, fourthArg, thirdArg, secondArg, firstArg)
+            seventhMethodFirstCalleeFastTailCallReversed(iterationCount - 1, tenthArg, ninthArg, eighthArg, seventhArg, sixthArg, fifthArg, fourthArg, thirdArg, secondArg, firstArg)
 
     let retVal = seventhMethodFirstCalleeFastTailCallReversed(1000000, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 
@@ -390,7 +390,7 @@ let eight() =
         else
             eightMethodFirstCallee(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg)
 
-    and eightMethodSecondCallee(iterationCount) = 
+    and eightMethodSecondCallee(iterationCount) =
         if iterationCount = 0 then
             101
         else if iterationCount % 2 = 0 then
@@ -424,7 +424,7 @@ let eightFastTailCall() =
         else
             eightMethodFirstCalleeFastTailCall(iterationCount - 1, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg)
 
-    and eightMethodSecondCalleeFastTailCall(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg) = 
+    and eightMethodSecondCalleeFastTailCall(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg) =
         if firstArg <> 1 then -100
         else if secondArg <> 2 then -101
         else if thirdArg <> 3 then -102
@@ -466,7 +466,7 @@ let eightFastTailCallReversed() =
         else
             eightMethodFirstCalleeFastTailCallReversed(iterationCount - 1, sixthArg, fifthArg, fourthArg, thirdArg, secondArg, firstArg)
 
-    and eightMethodSecondCalleeFastTailCallReversed(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg) = 
+    and eightMethodSecondCalleeFastTailCallReversed(iterationCount, firstArg, secondArg, thirdArg, fourthArg, fifthArg, sixthArg) =
         if firstArg <> 6 then -100
         else if secondArg <> 5 then -101
         else if thirdArg <> 4 then -102
@@ -491,13 +491,13 @@ let eightFastTailCallReversed() =
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-type Driver() = 
+type Driver() =
     // Notes:
     //
     // Drive all of the different methods that will be called and account for
     // timing.
     member _.Start() =
-        let rec runMethod(iterationCount: int, cb: _ -> int) = 
+        let rec runMethod(iterationCount: int, cb: _ -> int) =
             if iterationCount > 0 then
                 let retVal = cb()
 
@@ -508,7 +508,7 @@ type Driver() =
             else
                 0
 
-        let runMethodWithTiming(methodName: string, worksOnlyOnNetCore5: bool, iterationCount: int, cb: _ -> int) = 
+        let runMethodWithTiming(methodName: string, worksOnlyOnNetCore5: bool, iterationCount: int, cb: _ -> int) =
             let canRun = (worksOnlyOnNetCore5 && System.Environment.Version.Major > 3) || worksOnlyOnNetCore5 = false
 
             if canRun then
@@ -556,6 +556,6 @@ let main argv =
     let driver = Driver()
     driver.Start()
 
-    // If we have gotten to this point we have not StackOverflowed. Therefore 
+    // If we have gotten to this point we have not StackOverflowed. Therefore
     // consider this a passing test
     100

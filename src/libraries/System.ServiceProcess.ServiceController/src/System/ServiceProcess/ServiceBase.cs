@@ -31,6 +31,7 @@ namespace System.ServiceProcess
         private bool _commandPropsFrozen;  // set to true once we've use the Can... properties.
         private bool _disposed;
         private bool _initialized;
+        private object _stopLock = new object();
         private EventLog? _eventLog;
 
         /// <summary>
@@ -249,21 +250,11 @@ namespace System.ServiceProcess
         /// can be used to write notification of service command calls, such as Start and Stop, to the Application event log. This property is read-only.
         /// </summary>
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public virtual EventLog EventLog
-        {
-            get
+        public virtual EventLog EventLog =>
+            _eventLog ??= new EventLog("Application")
             {
-                if (_eventLog == null)
-                {
-                    _eventLog = new EventLog("Application")
-                    {
-                        Source = ServiceName
-                    };
-                }
-
-                return _eventLog;
-            }
-        }
+                Source = ServiceName
+            };
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         protected IntPtr ServiceHandle
@@ -297,24 +288,10 @@ namespace System.ServiceProcess
             }
         }
 
-        internal static bool ValidServiceName(string serviceName)
-        {
-            if (serviceName == null)
-                return false;
-
-            // not too long and check for empty name as well.
-            if (serviceName.Length > ServiceBase.MaxNameLength || serviceName.Length == 0)
-                return false;
-
-            // no slashes or backslash allowed
-            foreach (char c in serviceName)
-            {
-                if (c == '\\' || c == '/')
-                    return false;
-            }
-
-            return true;
-        }
+        internal static bool ValidServiceName(string serviceName) =>
+            !string.IsNullOrEmpty(serviceName) &&
+            serviceName.Length <= ServiceBase.MaxNameLength && // not too long
+            serviceName.AsSpan().IndexOfAny('\\', '/') < 0; // no slashes or backslash allowed
 
         /// <summary>
         ///    <para>Disposes of the resources (other than memory ) used by
@@ -482,7 +459,7 @@ namespace System.ServiceProcess
             }
         }
 
-        private void DeferredPowerEvent(int eventType, IntPtr eventData)
+        private void DeferredPowerEvent(int eventType)
         {
             // Note: The eventData pointer might point to an invalid location
             // This might happen because, between the time the eventData ptr was
@@ -525,27 +502,34 @@ namespace System.ServiceProcess
         // This is a problem when multiple services are hosted in a single process.
         private unsafe void DeferredStop()
         {
-            fixed (SERVICE_STATUS* pStatus = &_status)
+            lock(_stopLock)
             {
-                int previousState = _status.currentState;
+                // never call SetServiceStatus again after STATE_STOPPED is set.
+                if (_status.currentState != ServiceControlStatus.STATE_STOPPED)
+                {
+                    fixed (SERVICE_STATUS* pStatus = &_status)
+                    {
+                        int previousState = _status.currentState;
 
-                _status.checkPoint = 0;
-                _status.waitHint = 0;
-                _status.currentState = ServiceControlStatus.STATE_STOP_PENDING;
-                SetServiceStatus(_statusHandle, pStatus);
-                try
-                {
-                    OnStop();
-                    WriteLogEntry(SR.StopSuccessful);
-                    _status.currentState = ServiceControlStatus.STATE_STOPPED;
-                    SetServiceStatus(_statusHandle, pStatus);
-                }
-                catch (Exception e)
-                {
-                    _status.currentState = previousState;
-                    SetServiceStatus(_statusHandle, pStatus);
-                    WriteLogEntry(SR.Format(SR.StopFailed, e), EventLogEntryType.Error);
-                    throw;
+                        _status.checkPoint = 0;
+                        _status.waitHint = 0;
+                        _status.currentState = ServiceControlStatus.STATE_STOP_PENDING;
+                        SetServiceStatus(_statusHandle, pStatus);
+                        try
+                        {
+                            OnStop();
+                            WriteLogEntry(SR.StopSuccessful);
+                            _status.currentState = ServiceControlStatus.STATE_STOPPED;
+                            SetServiceStatus(_statusHandle, pStatus);
+                        }
+                        catch (Exception e)
+                        {
+                            _status.currentState = previousState;
+                            SetServiceStatus(_statusHandle, pStatus);
+                            WriteLogEntry(SR.Format(SR.StopFailed, e), EventLogEntryType.Error);
+                            throw;
+                        }
+                    }
                 }
             }
         }
@@ -557,14 +541,17 @@ namespace System.ServiceProcess
                 OnShutdown();
                 WriteLogEntry(SR.ShutdownOK);
 
-                if (_status.currentState == ServiceControlStatus.STATE_PAUSED || _status.currentState == ServiceControlStatus.STATE_RUNNING)
+                lock(_stopLock)
                 {
-                    fixed (SERVICE_STATUS* pStatus = &_status)
+                    if (_status.currentState == ServiceControlStatus.STATE_PAUSED || _status.currentState == ServiceControlStatus.STATE_RUNNING)
                     {
-                        _status.checkPoint = 0;
-                        _status.waitHint = 0;
-                        _status.currentState = ServiceControlStatus.STATE_STOPPED;
-                        SetServiceStatus(_statusHandle, pStatus);
+                        fixed (SERVICE_STATUS* pStatus = &_status)
+                        {
+                            _status.checkPoint = 0;
+                            _status.waitHint = 0;
+                            _status.currentState = ServiceControlStatus.STATE_STOPPED;
+                            SetServiceStatus(_statusHandle, pStatus);
+                        }
                     }
                 }
             }
@@ -678,7 +665,7 @@ namespace System.ServiceProcess
         {
             if (!_initialized)
             {
-                //Cannot register the service with NT service manatger if the object has been disposed, since finalization has been suppressed.
+                //Cannot register the service with NT service manager if the object has been disposed, since finalization has been suppressed.
                 if (_disposed)
                     throw new ObjectDisposedException(GetType().Name);
 
@@ -723,7 +710,7 @@ namespace System.ServiceProcess
             {
                 case ControlOptions.CONTROL_POWEREVENT:
                     {
-                        ThreadPool.QueueUserWorkItem(_ => DeferredPowerEvent(eventType, eventData));
+                        ThreadPool.QueueUserWorkItem(_ => DeferredPowerEvent(eventType));
                         break;
                     }
 
@@ -909,7 +896,7 @@ namespace System.ServiceProcess
                 _commandPropsFrozen = true;
                 if ((_status.controlsAccepted & AcceptOptions.ACCEPT_STOP) != 0)
                 {
-                    _status.controlsAccepted = _status.controlsAccepted | AcceptOptions.ACCEPT_SHUTDOWN;
+                    _status.controlsAccepted |= AcceptOptions.ACCEPT_SHUTDOWN;
                 }
 
                 _status.currentState = ServiceControlStatus.STATE_START_PENDING;
@@ -947,8 +934,14 @@ namespace System.ServiceProcess
                 {
                     string errorMessage = new Win32Exception().Message;
                     WriteLogEntry(SR.Format(SR.StartFailed, errorMessage), EventLogEntryType.Error);
-                    _status.currentState = ServiceControlStatus.STATE_STOPPED;
-                    SetServiceStatus(_statusHandle, pStatus);
+                    lock (_stopLock)
+                    {
+                        if (_status.currentState != ServiceControlStatus.STATE_STOPPED)
+                        {
+                            _status.currentState = ServiceControlStatus.STATE_STOPPED;
+                            SetServiceStatus(_statusHandle, pStatus);
+                        }
+                    }
                 }
             }
         }

@@ -1,3 +1,0 @@
-Compat issues with assembly System.Runtime.Extensions:
-MembersMustExist : Member 'public void System.Environment.FailFast(System.String, System.Exception, System.String)' does not exist in the reference but it does exist in the implementation.
-Total Issues: 1

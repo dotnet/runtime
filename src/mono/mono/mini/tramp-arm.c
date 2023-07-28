@@ -181,7 +181,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		/*
 		 * For page trampolines the data is in r1, so just move it, otherwise use the got slot as below.
 		 * The trampoline contains a pc-relative offset to the got slot
-		 * preceeding the got slot where the value is stored. The offset can be
+		 * preceding the got slot where the value is stored. The offset can be
 		 * found at [lr + 0].
 		 */
 		/* See if emit_trampolines () in aot-compiler.c for the '2' */

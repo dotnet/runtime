@@ -9,7 +9,7 @@ namespace System.Formats.Cbor
     /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
-        private readonly ReadOnlyMemory<byte> _data;
+        private ReadOnlyMemory<byte> _data;
         private int _offset;
 
         private Stack<StackFrame>? _nestedDataItems;
@@ -48,7 +48,7 @@ namespace System.Formats.Cbor
         public int BytesRemaining => _data.Length - _offset;
 
         /// <summary>Initializes a <see cref="CborReader" /> instance over the specified <paramref name="data" /> with the given configuration.</summary>
-        /// <param name="data">The CBOR encoded data to read.</param>
+        /// <param name="data">The CBOR-encoded data to read.</param>
         /// <param name="conformanceMode">One of the enumeration values to specify a conformance mode guiding the checks performed on the encoded data.
         /// Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.</param>
         /// <param name="allowMultipleRootLevelValues"><see langword="true" /> to indicate that multiple root-level values are supported by the reader; otherwise, <see langword="false" />.</param>
@@ -60,7 +60,7 @@ namespace System.Formats.Cbor
             _data = data;
             ConformanceMode = conformanceMode;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
-            _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
+            _definiteLength = allowMultipleRootLevelValues ? null : 1;
         }
 
         /// <summary>Reads the next CBOR data item, returning a <see cref="ReadOnlyMemory{T}" /> view of the encoded value. For indefinite length encodings this includes the break byte.</summary>
@@ -79,6 +79,34 @@ namespace System.Formats.Cbor
 
             // return the slice corresponding to the consumed value
             return _data.Slice(initialOffset, _offset - initialOffset);
+        }
+
+        /// <summary>
+        /// Resets the <see cref="CborReader"/> instance over the specified <paramref name="data"/> with unchanged configuration.
+        /// <see cref="ConformanceMode"/> and <see cref="AllowMultipleRootLevelValues"/> are unchanged.
+        /// </summary>
+        /// <param name="data">The CBOR-encoded data to read.</param>
+        public void Reset(ReadOnlyMemory<byte> data)
+        {
+            // ConformanceMode and AllowMultipleRootLevelValues are set in ctor, they remain unchanged.
+
+            _data = data;
+            _offset = 0;
+
+            _nestedDataItems?.Clear();
+            _currentMajorType = default;
+            _definiteLength = AllowMultipleRootLevelValues ? null : 1;
+            _itemsRead = default;
+            _frameOffset = default;
+            _isTagContext = default;
+            _currentKeyOffset = default;
+            _previousKeyEncodingRange = default;
+            _keyEncodingRanges?.Clear();
+            _isConformanceModeCheckEnabled = true;
+            _cachedState = CborReaderState.Undefined;
+
+            // We don't need to clear the reusable instances in _pooledKeyEncodingRangeAllocations
+            // or _indefiniteLengthStringRangeAllocation.
         }
 
         private CborInitialByte PeekInitialByte()

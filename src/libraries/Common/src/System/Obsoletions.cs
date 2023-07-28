@@ -118,7 +118,7 @@ namespace System
         internal const string SignerInfoCounterSigMessage = "ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner.";
         internal const string SignerInfoCounterSigDiagId = "SYSLIB0035";
 
-        internal const string RegexCompileToAssemblyMessage = "Regex.CompileToAssembly is obsolete and not supported. Use the RegexGeneratorAttribute with the regular expression source generator instead.";
+        internal const string RegexCompileToAssemblyMessage = "Regex.CompileToAssembly is obsolete and not supported. Use the GeneratedRegexAttribute with the regular expression source generator instead.";
         internal const string RegexCompileToAssemblyDiagId = "SYSLIB0036";
 
         internal const string AssemblyNameMembersMessage = "AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.";
@@ -144,5 +144,32 @@ namespace System
 
         internal const string AssemblyNameCodeBaseMessage = "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.";
         internal const string AssemblyNameCodeBaseDiagId = "SYSLIB0044";
+
+        internal const string CryptoStringFactoryMessage = "Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead.";
+        internal const string CryptoStringFactoryDiagId = "SYSLIB0045";
+
+        internal const string ControlledExecutionRunMessage = "ControlledExecution.Run method may corrupt the process and should not be used in production code.";
+        internal const string ControlledExecutionRunDiagId = "SYSLIB0046";
+
+        internal const string XmlSecureResolverMessage = "XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution.";
+        internal const string XmlSecureResolverDiagId = "SYSLIB0047";
+
+        internal const string RsaEncryptDecryptValueMessage = "RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.";
+        internal const string RsaEncryptDecryptDiagId = "SYSLIB0048";
+
+        internal const string JsonSerializerOptionsAddContextMessage = "JsonSerializerOptions.AddContext is obsolete. To register a JsonSerializerContext, use either the TypeInfoResolver or TypeInfoResolverChain properties.";
+        internal const string JsonSerializerOptionsAddContextDiagId = "SYSLIB0049";
+
+        internal const string LegacyFormatterMessage = "Formatter-based serialization is obsolete and should not be used.";
+        internal const string LegacyFormatterDiagId = "SYSLIB0050";
+
+        internal const string LegacyFormatterImplMessage = "This API supports obsolete formatter-based serialization. It should not be called or extended by application code.";
+        internal const string LegacyFormatterImplDiagId = "SYSLIB0051";
+
+        internal const string RegexExtensibilityImplMessage = "This API supports obsolete mechanisms for Regex extensibility. It is not supported.";
+        internal const string RegexExtensibilityDiagId = "SYSLIB0052";
+
+        internal const string AesGcmTagConstructorMessage = "AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.";
+        internal const string AesGcmTagConstructorDiagId = "SYSLIB0053";
     }
 }

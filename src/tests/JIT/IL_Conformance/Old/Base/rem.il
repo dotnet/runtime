@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 .assembly 'rem'{}
 
+.namespace rem_
+{
 .class public _rem {
 
 .method public static  int32 I4(int32,int32,int32) {
@@ -62,38 +65,41 @@
         ret
 }
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
 	ldc.i4	10
 	ldc.i4	4
 	ldc.i4	2
-	call	int32 _rem::I4(int32,int32,int32)
+	call	int32 rem_._rem::I4(int32,int32,int32)
 	brfalse	FAIL
         ldc.i4  10
         ldc.i4  4
         ldc.i4  2
-        call    int32 _rem::U4(int32,int32,int32)
+        call    int32 rem_._rem::U4(int32,int32,int32)
         brfalse FAIL
 	ldc.i8	10
 	ldc.i8	4
 	ldc.i8	2
-	call	int32 _rem::I8(int64,int64,int64)
+	call	int32 rem_._rem::I8(int64,int64,int64)
 	brfalse	FAIL
         ldc.i8  10
         ldc.i8  4
         ldc.i8  2
-        call    int32 _rem::U8(int64,int64,int64)
+        call    int32 rem_._rem::U8(int64,int64,int64)
         brfalse FAIL
 	ldc.r4	3.5
 	ldc.r4	1
 	ldc.r4	0.5
-	call	int32 _rem::R4(float32,float32,float32)
+	call	int32 rem_._rem::R4(float32,float32,float32)
 	brfalse	FAIL	
         ldc.r8  9.25
         ldc.r8  1.5
         ldc.r8  .25
-        call    int32 _rem::R8(float64,float64,float64)
+        call    int32 rem_._rem::R8(float64,float64,float64)
         brfalse FAIL
 
 PASS:
@@ -102,5 +108,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

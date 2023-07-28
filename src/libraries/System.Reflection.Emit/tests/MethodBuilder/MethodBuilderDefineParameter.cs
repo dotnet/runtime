@@ -28,7 +28,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ldc_I4, expectedReturn);
             ilGenerator.Emit(OpCodes.Ret);
 
-            Type resultType = type.CreateTypeInfo().AsType();
+            Type resultType = type.CreateType();
 
             ParameterInfo[] parameters = method.GetParameters();
             Assert.Equal("System.String Param1", parameters[0].ToString());
@@ -119,7 +119,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = method.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ret);
 
-            Type resultType = type.CreateTypeInfo().AsType();
+            Type resultType = type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => method.DefineParameter(1, ParameterAttributes.Retval, "param1"));
         }
@@ -130,7 +130,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder builder = type.DefineMethod("TestMethod", TestMethodAttributes, typeof(void), new Type[] { typeof(int) });
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => builder.DefineParameter(1, ParameterAttributes.HasDefault, "TestParam"));
         }

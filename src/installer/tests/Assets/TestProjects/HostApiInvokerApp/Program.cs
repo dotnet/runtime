@@ -31,16 +31,13 @@ namespace HostApiInvokerApp
             Console.WriteLine("Hello World!");
             Console.WriteLine(string.Join(Environment.NewLine, args));
 
-            // A small operation involving NewtonSoft.Json to ensure the assembly is loaded properly
-            var t = typeof(Newtonsoft.Json.JsonReader);
-
             // Enable tracing so that test assertion failures are easier to diagnose.
             Environment.SetEnvironmentVariable("COREHOST_TRACE", "1");
 
             // If requested, test multilevel lookup using fake Global SDK directories:
             //     1. using a fake ProgramFiles location
             //     2. using a fake SDK Self-Registered location
-            // Note that this has to be set here and not in the calling test process because 
+            // Note that this has to be set here and not in the calling test process because
             // %ProgramFiles% gets reset on process creation.
             string testMultilevelLookupProgramFiles = Environment.GetEnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES");
             string testMultilevelLookupSelfRegistered = Environment.GetEnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED");
@@ -65,17 +62,15 @@ namespace HostApiInvokerApp
 
             string apiToTest = args[0];
             if (HostFXR.RunTest(apiToTest, args))
-            {
                 return;
-            }
-            else if (HostPolicy.RunTest(apiToTest, args))
-            {
+
+            if (HostPolicy.RunTest(apiToTest, args))
                 return;
-            }
-            else
-            {
-                throw new ArgumentException($"Invalid API to test passed as args[0]): {apiToTest}");
-            }
+
+            if (HostRuntimeContract.RunTest(apiToTest, args))
+                return;
+
+            throw new ArgumentException($"Invalid API to test passed as args[0]): {apiToTest}");
         }
     }
 }

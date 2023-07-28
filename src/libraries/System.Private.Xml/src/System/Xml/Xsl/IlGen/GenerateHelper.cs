@@ -24,6 +24,7 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// List of all XmlIL runtime constructors.
     /// </summary>
+    [RequiresDynamicCode("Calls MakeGenericType on value types")]
     internal sealed class XmlILStorageMethods
     {
         // Aggregates
@@ -165,6 +166,7 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// List of all XmlIL runtime methods.
     /// </summary>
+    [RequiresDynamicCode("Calls MakeGenericType on value types")]
     internal static class XmlILMethods
     {
         // Iterators
@@ -305,7 +307,7 @@ namespace System.Xml.Xsl.IlGen
         public static readonly MethodInfo GetParam = typeof(XmlQueryContext).GetMethod("GetParameter")!;
         public static readonly MethodInfo InvokeXsltLate = GetInvokeXsltLateBoundFunction();
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since this code path " +
+            Justification = "Suppressing warning about not having the RequiresUnreferencedCode attribute since this code path " +
             "will only be emitting IL that will later be called by Transform() method which is already annotated as RequiresUnreferencedCode")]
         private static MethodInfo GetInvokeXsltLateBoundFunction() => typeof(XmlQueryContext).GetMethod("InvokeXsltLateBoundFunction")!;
 
@@ -471,6 +473,7 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// Contains helper methods used during the code generation phase.
     /// </summary>
+    [RequiresDynamicCode("Creates DynamicMethods")]
     internal sealed class GenerateHelper
     {
         private MethodBase? _methInfo;
@@ -605,8 +608,7 @@ namespace System.Xml.Xsl.IlGen
         public void CallSyncToNavigator()
         {
             // Get helper method from module
-            if (_methSyncToNav == null)
-                _methSyncToNav = _module.FindMethod("SyncToNavigator");
+            _methSyncToNav ??= _module.FindMethod("SyncToNavigator");
 
             Call(_methSyncToNav!);
         }

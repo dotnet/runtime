@@ -431,7 +431,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                         break;
 
                     default:
-                        throw new Exception("Unkonwn interface approach");
+                        throw new Exception("Unknown interface approach");
                 }
                 derivedType.Name = "Derived" + scenarioName + GenericTypeSuffix(scenario.DerivedTypeGenericParams);
                 derivedType.GenericParams = scenario.DerivedTypeGenericParams;

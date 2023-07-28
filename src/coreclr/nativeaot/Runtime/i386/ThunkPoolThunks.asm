@@ -60,14 +60,14 @@ endm
 
 LOAD_DATA_ADDRESS macro groupIndex, index
         ;; start                            : eax points to current instruction of the current thunk
-        ;; set eax to begining of data page : eax <- [eax - (size of the call instruction + (THUNK_CODESIZE * current thunk's index)) + PAGE_SIZE]
+        ;; set eax to beginning of data page : eax <- [eax - (size of the call instruction + (THUNK_CODESIZE * current thunk's index)) + PAGE_SIZE]
         ;; fix offset of the data           : eax <- eax + (THUNK_DATASIZE * current thunk's index)
         lea     eax,[eax - (5 + groupIndex * THUNK_CODESIZE * 10 + THUNK_CODESIZE * index) + PAGE_SIZE + (groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * index)]
 endm
 
 JUMP_TO_COMMON macro groupIndex, index
         ;; start                                   : eax points to current thunk's data block
-        ;; re-point eax to begining of data page   : eax <- [eax - (THUNK_DATASIZE * current thunk's index)]
+        ;; re-point eax to beginning of data page   : eax <- [eax - (THUNK_DATASIZE * current thunk's index)]
         ;; jump to the location pointed at by the last dword in the data page : jump [eax + PAGE_SIZE - POINTER_SIZE]
         jmp     dword ptr[eax - (groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * index) + PAGE_SIZE - POINTER_SIZE]
 endm

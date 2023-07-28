@@ -57,14 +57,14 @@ namespace System.Linq.Tests
         [Fact]
         public void SequenceEqual1()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().SequenceEqual(new int[] { 0, 2, 1 });
+            var val = new[] { 0, 2, 1 }.AsQueryable().SequenceEqual(new[] { 0, 2, 1 });
             Assert.True(val);
         }
 
         [Fact]
         public void SequenceEqual2()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().SequenceEqual(new int[] { 0, 2, 1 }, EqualityComparer<int>.Default);
+            var val = new[] { 0, 2, 1 }.AsQueryable().SequenceEqual(new[] { 0, 2, 1 }, EqualityComparer<int>.Default);
             Assert.True(val);
         }
     }

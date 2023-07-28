@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Hosting.Internal
     {
         private IServiceProviderFactory<TContainerBuilder>? _serviceProviderFactory;
         private readonly Func<HostBuilderContext>? _contextResolver;
-        private Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>>? _factoryResolver;
+        private readonly Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>>? _factoryResolver;
 
         public ServiceFactoryAdapter(IServiceProviderFactory<TContainerBuilder> serviceProviderFactory)
         {

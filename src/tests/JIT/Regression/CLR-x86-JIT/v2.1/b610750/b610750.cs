@@ -9,8 +9,9 @@
 // Well, and it runs fast. 
 
 using System;
+using Xunit;
 
-class Program
+public class Program
 {
     static bool failed = false;
 
@@ -2015,7 +2016,8 @@ class Program
 
     }
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestSHL();
 

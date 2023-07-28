@@ -11,7 +11,7 @@
 }
 
 
-.assembly extern CSharpPart {}
+.assembly extern CSharpPart_145295 {}
 
 
 .assembly ilpart {}
@@ -86,21 +86,21 @@
             endfinally
 
         RUN_CALLOUT_3:
-            call        void [CSharpPart]Test.Helpers::Callout3()
+            call        void [CSharpPart_145295]Test.Helpers::Callout3()
             endfinally
 
         RUN_CALLOUT_4:
             ldc.i4      4
             stloc       computedValue
-            call        void [CSharpPart]Test.Helpers::Callout4()
+            call        void [CSharpPart_145295]Test.Helpers::Callout4()
             endfinally
 
         RUN_CALLOUT_5:
-            call        void [CSharpPart]Test.Helpers::Callout5()
+            call        void [CSharpPart_145295]Test.Helpers::Callout5()
             endfinally
 
         RUN_CALLOUT_6:
-            call        void [CSharpPart]Test.Helpers::Callout6()
+            call        void [CSharpPart_145295]Test.Helpers::Callout6()
             endfinally
 
         }
@@ -135,7 +135,7 @@
         .try
         {
 
-            call        void [CSharpPart]Test.Helpers::Throw()
+            call        void [CSharpPart_145295]Test.Helpers::Throw()
             leave       END_OF_METHOD_BODY
 
         }
@@ -181,19 +181,19 @@
                 endfinally
 
             RUN_CALLOUT_3:
-                call        void [CSharpPart]Test.Helpers::Callout3()
+                call        void [CSharpPart_145295]Test.Helpers::Callout3()
                 endfinally
 
             RUN_CALLOUT_4:
-                call        void [CSharpPart]Test.Helpers::Callout4()
+                call        void [CSharpPart_145295]Test.Helpers::Callout4()
                 endfinally
 
             RUN_CALLOUT_5:
-                call        void [CSharpPart]Test.Helpers::Callout5()
+                call        void [CSharpPart_145295]Test.Helpers::Callout5()
                 endfinally
 
             RUN_CALLOUT_6:
-                call        void [CSharpPart]Test.Helpers::Callout6()
+                call        void [CSharpPart_145295]Test.Helpers::Callout6()
                 endfinally
 
             }

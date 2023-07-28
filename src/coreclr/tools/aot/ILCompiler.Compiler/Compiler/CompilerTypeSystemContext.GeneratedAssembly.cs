@@ -13,7 +13,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
         private ModuleDesc _generatedAssembly;
 
@@ -30,7 +30,7 @@ namespace ILCompiler
             }
         }
 
-        private class CompilerGeneratedAssembly : ModuleDesc, IAssemblyDesc
+        private sealed class CompilerGeneratedAssembly : ModuleDesc, IAssemblyDesc
         {
             private MetadataType _globalModuleType;
 
@@ -211,6 +211,12 @@ namespace ILCompiler
                 {
                     return false;
                 }
+            }
+
+            public override int GetInlineArrayLength()
+            {
+                Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
+                throw new InvalidOperationException();
             }
 
             public override bool IsBeforeFieldInit

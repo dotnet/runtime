@@ -18,10 +18,7 @@ namespace System.Reflection.Metadata
         [CLSCompliant(false)] // out byte* blob
         public static unsafe bool TryGetRawMetadata(this Assembly assembly, out byte* blob, out int length)
         {
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
+            ArgumentNullException.ThrowIfNull(assembly);
 
             blob = null;
             length = 0;

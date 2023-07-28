@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using Xunit;
 
@@ -132,9 +133,8 @@ namespace System.Text.Json.Serialization.Tests
             // - "Path:" is not repeated due to having two try\catch blocks (the second block does not append "Path:" again).
 
             ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<TopLevelPocoWithNoConverter>(Json, options));
-            Assert.Contains(typeof(int[,]).ToString(), ex.ToString());
-            Assert.Contains(typeof(ChildPocoWithNoConverterAndInvalidProperty).ToString(), ex.ToString());
-            Assert.Contains("Path: $.InvalidProperty | LineNumber: 0 | BytePositionInLine: 20.", ex.ToString());
+            Assert.Contains(typeof(int[,]).ToString(), ex.Message);
+            Assert.Contains("Path: $.InvalidProperty.NotSupported", ex.Message);
             Assert.Equal(2, ex.ToString().Split(new string[] { "Path:" }, StringSplitOptions.None).Length);
 
             var poco = new TopLevelPocoWithNoConverter()
@@ -152,10 +152,90 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(poco, options));
-            Assert.Contains(typeof(int[,]).ToString(), ex.ToString());
-            Assert.Contains(typeof(ChildPocoWithNoConverterAndInvalidProperty).ToString(), ex.ToString());
-            Assert.Contains("Path: $.InvalidProperty.", ex.ToString());
+            Assert.Contains(typeof(int[,]).ToString(), ex.Message);
+            Assert.Contains("Path: $.InvalidProperty.NotSupported.", ex.Message);
             Assert.Equal(2, ex.ToString().Split(new string[] { "Path:" }, StringSplitOptions.None).Length);
+        }
+
+        [Fact]
+        public static void UnsupportedPropertyWithCustomConverter()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/80914
+            var dto = new PocoWithConverterOnInvalidProperty { NotSupported = new int[,] { { 1, 0 }, { 0, 1 } } };
+
+            string expectedJson = """{"NotSupported":[[1,0],[0,1]]}""";
+            string json = JsonSerializer.Serialize(dto);
+            Assert.Equal(expectedJson, json);
+
+            dto = JsonSerializer.Deserialize<PocoWithConverterOnInvalidProperty>(json);
+            Assert.NotNull(dto.NotSupported);
+            Assert.Equal(2, dto.NotSupported.GetLength(0));
+            Assert.Equal(2, dto.NotSupported.GetLength(1));
+
+            Assert.Equal(1, dto.NotSupported[0,0]);
+            Assert.Equal(0, dto.NotSupported[0,1]);
+            Assert.Equal(0, dto.NotSupported[1,0]);
+            Assert.Equal(1, dto.NotSupported[1,1]);
+        }
+
+        private class PocoWithConverterOnInvalidProperty
+        {
+            [JsonConverter(typeof(MultiDimArrayConverter))]
+            public int[,] NotSupported { get; set; }
+
+            public class MultiDimArrayConverter : JsonConverter<int[,]>
+            {
+                public override int[,]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    Assert.Equal(JsonTokenType.StartArray, reader.TokenType);
+                    var chunks = new List<List<int>>();
+                    int maxChunkLength = 0;
+
+                    while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                    {
+                        Assert.Equal(JsonTokenType.StartArray, reader.TokenType);
+                        var chunk = new List<int>();
+
+                        while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                        {
+                            chunk.Add(reader.GetInt32());
+                        }
+
+                        maxChunkLength = Math.Max(maxChunkLength, chunk.Count);
+                        chunks.Add(chunk);
+                    }
+
+                    int[,] result = new int[chunks.Count, maxChunkLength];
+                    for (int i = 0; i < result.GetLength(0); i++)
+                    {
+                        for (int j = 0; j < chunks.Count; j++)
+                        {
+                            result[i, j] = chunks[i][j];
+                        }
+                    }
+
+                    return result;
+                }
+
+                public override void Write(Utf8JsonWriter writer, int[,] value, JsonSerializerOptions options)
+                {
+                    int n = value.GetLength(0);
+                    int m = value.GetLength(1);
+
+                    writer.WriteStartArray();
+                    for (int i  = 0; i < n; i++)
+                    {
+                        writer.WriteStartArray();
+                        for (int j = 0; j < m; j++)
+                        {
+                            writer.WriteNumberValue(value[i, j]);
+                        }
+
+                        writer.WriteEndArray();
+                    }
+                    writer.WriteEndArray();
+                }
+            }
         }
     }
 }

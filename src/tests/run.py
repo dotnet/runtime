@@ -75,6 +75,11 @@ into the Core_Root directory or the test's managed directory. The latter is
 prone to failure; however, copying into the Core_Root directory may create
 naming conflicts.""")
 
+parallel_help = """
+Specify the level of parallelism: none, collections, assemblies, all. Default: collections.
+`-parallel none` is a synonym for `--sequential`.
+"""
+
 parser = argparse.ArgumentParser(description=description)
 
 parser.add_argument("-os", dest="host_os", nargs='?', default=None)
@@ -84,6 +89,7 @@ parser.add_argument("-test_location", dest="test_location", nargs="?", default=N
 parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
 parser.add_argument("-runtime_repo_location", dest="runtime_repo_location", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 parser.add_argument("-test_env", dest="test_env", default=None)
+parser.add_argument("-parallel", dest="parallel", default=None, help=parallel_help)
 
 # Optional arguments which change execution.
 
@@ -93,6 +99,7 @@ parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", de
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
+parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 
@@ -220,8 +227,8 @@ class DebugEnv:
         dbg_type = "cppvsdbg" if self.host_os == "windows" else ""
 
         env = {
-            "COMPlus_AssertOnNYI": "1",
-            "COMPlus_ContinueOnAssert": "0"
+            "DOTNET_AssertOnNYI": "1",
+            "DOTNET_ContinueOnAssert": "0"
         }
 
         if self.env is not None:
@@ -394,7 +401,7 @@ def create_and_use_test_env(_os, env, func):
 
     Args:
         _os(str)                        : OS name
-        env(defaultdict(lambda: None))  : complus variables, key,value dict
+        env(defaultdict(lambda: None))  : DOTNET variables, key,value dict
         func(lambda)                    : lambda to call, after creating the
                                         : test_env
 
@@ -408,15 +415,15 @@ def create_and_use_test_env(_os, env, func):
 
     ret_code = 0
 
-    complus_vars = defaultdict(lambda: None)
+    dotnet_vars = defaultdict(lambda: None)
 
     for key in env:
         value = env[key]
-        if "complus" in key.lower() or "superpmi" in key.lower():
-            complus_vars[key] = value
+        if "dotnet" in key.lower() or "superpmi" in key.lower():
+            dotnet_vars[key] = value
 
-    if len(list(complus_vars.keys())) > 0:
-        print("Found COMPlus variables in the current environment")
+    if len(list(dotnet_vars.keys())) > 0:
+        print("Found DOTNET variables in the current environment")
         print("")
 
         contents = ""
@@ -451,15 +458,15 @@ def create_and_use_test_env(_os, env, func):
             test_env.write(file_header)
             contents += file_header
 
-            for key in complus_vars:
-                value = complus_vars[key]
+            for key in dotnet_vars:
+                value = dotnet_vars[key]
                 command = None
                 if _os == "windows":
                     command = "set"
                 else:
                     command = "export"
 
-                if key.lower() == "complus_gcstress":
+                if key.lower() == "dotnet_gcstress":
                     gc_stress = True
 
                 print("Unset %s" % key)
@@ -500,10 +507,10 @@ def create_and_use_test_env(_os, env, func):
     return ret_code
 
 def get_environment(test_env=None):
-    """ Get all the COMPlus_* Environment variables
+    """ Get all the DOTNET_* Environment variables
 
     Notes:
-        All COMPlus variables need to be captured as a test_env script to avoid
+        All DOTNET variables need to be captured as a test_env script to avoid
         influencing the test runner.
 
         On Windows, os.environ keys (the environment variable names) are all upper case,
@@ -511,14 +518,14 @@ def get_environment(test_env=None):
     """
     global gc_stress
 
-    complus_vars = defaultdict(lambda: "")
+    dotnet_vars = defaultdict(lambda: "")
 
     for key in os.environ:
-        if "complus" in key.lower():
-            complus_vars[key] = os.environ[key]
+        if "dotnet" in key.lower():
+            dotnet_vars[key] = os.environ[key]
             os.environ[key] = ''
         elif "superpmi" in key.lower():
-            complus_vars[key] = os.environ[key]
+            dotnet_vars[key] = os.environ[key]
             os.environ[key] = ''
 
     # Get the env from the test_env
@@ -541,15 +548,15 @@ def get_environment(test_env=None):
                 except:
                     pass
 
-                complus_vars[key] = value
+                dotnet_vars[key] = value
 
                 # Supoort looking up case insensitive.
-                complus_vars[key.lower()] = value
+                dotnet_vars[key.lower()] = value
 
-        if "complus_gcstress" in complus_vars:
+        if "dotnet_gcstress" in dotnet_vars:
             gc_stress = True
 
-    return complus_vars
+    return dotnet_vars
 
 def call_msbuild(args):
     """ Call msbuild to run the tests built.
@@ -565,6 +572,9 @@ def call_msbuild(args):
     global g_verbose
 
     common_msbuild_arguments = []
+
+    if args.parallel:
+        common_msbuild_arguments += ["/p:ParallelRun={}".format(args.parallel)]
 
     if args.sequential:
         common_msbuild_arguments += ["/p:ParallelRun=none"]
@@ -643,9 +653,9 @@ def setup_coredump_generation(host_os):
     """
     global coredump_pattern
 
-    if host_os == "OSX":
+    if host_os == "osx":
         coredump_pattern = subprocess.check_output("sysctl -n kern.corefile", shell=True).rstrip()
-    elif host_os == "Linux":
+    elif host_os == "linux":
         with open("/proc/sys/kernel/core_pattern", "r") as f:
             coredump_pattern = f.read().rstrip()
     else:
@@ -687,7 +697,7 @@ def setup_coredump_generation(host_os):
 
     print("CoreDump generation enabled")
 
-    if host_os == "Linux" and os.path.isfile("/proc/self/coredump_filter"):
+    if host_os == "linux" and os.path.isfile("/proc/self/coredump_filter"):
         # Include memory in private and shared file-backed mappings in the dump.
         # This ensures that we can see disassembly from our shared libraries when
         # inspecting the contents of the dump. See 'man core' for details.
@@ -719,9 +729,9 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
 
     command = ""
 
-    if host_os == "OSX":
+    if host_os == "osx":
         command = "lldb -c %s -b -o 'bt all' -o 'disassemble -b -p'" % coredump_name
-    elif host_os == "Linux":
+    elif host_os == "linux":
         command = "gdb --batch -ex \"thread apply all bt full\" -ex \"disassemble /r $pc\" -ex \"quit\" %s %s" % (executable_name, coredump_name)
     else:
         print("Not printing coredump due to unsupported OS: %s" % host_os)
@@ -807,7 +817,7 @@ def inspect_and_delete_coredump_files(host_os, arch, test_location):
 
     if "%P" in coredump_pattern:
         coredump_name_uses_pid=True
-    elif host_os == "Linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
+    elif host_os == "linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
         with open("/proc/sys/kernel/core_uses_pid", "r") as f:
             if f.read().rstrip() == "1":
                 coredump_name_uses_pid=True
@@ -867,12 +877,16 @@ def run_tests(args,
 
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
-        print("Setting RunCrossGen2=true")
-        os.environ["RunCrossGen2"] = "true"
+        print("Setting RunCrossGen2=1")
+        os.environ["RunCrossGen2"] = "1"
 
     if args.large_version_bubble:
         print("Large Version Bubble enabled")
-        os.environ["LargeVersionBubble"] = "true"
+        os.environ["LargeVersionBubble"] = "1"
+
+    if args.synthesize_pgo:
+        print("Synthesizing PGO")
+        os.environ["CrossGen2SynthesizePgo"] = "1"
 
     if args.limited_core_dumps:
         setup_coredump_generation(args.host_os)
@@ -880,7 +894,7 @@ def run_tests(args,
     if args.run_in_context:
         print("Running test in an unloadable AssemblyLoadContext")
         os.environ["CLRCustomTestLauncher"] = args.runincontext_script_path
-        os.environ["RunInUnloadableContext"] = "1";
+        os.environ["RunInUnloadableContext"] = "1"
         per_test_timeout = 40*60*1000
 
     if args.tiering_test:
@@ -925,7 +939,7 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
-    requires_coreroot = args.host_os != "Browser" and args.host_os != "Android"
+    requires_coreroot = args.host_os != "browser" and args.host_os != "android"
     coreclr_setup_args = CoreclrArguments(args,
                                           require_built_test_dir=True,
                                           require_built_core_root=requires_coreroot,
@@ -951,10 +965,18 @@ def setup_args(args):
         print("Error, msbuild currently expects tests in {} (got test_location {})".format(normal_location, coreclr_setup_args.test_location))
         raise Exception("Error, msbuild currently expects tests in artifacts/tests/...")
 
+    # valid_parallel_args is the same list as that allowed by the xunit.console.dll "-parallel" argument.
+    valid_parallel_args = ["none", "collections", "assemblies", "all"]
+
     coreclr_setup_args.verify(args,
                               "test_env",
                               lambda arg: True,
                               "Error setting test_env")
+
+    coreclr_setup_args.verify(args,
+                              "parallel",
+                              lambda arg: arg is None or arg in valid_parallel_args,
+                              "Parallel argument '{}' unknown".format)
 
     coreclr_setup_args.verify(args,
                               "analyze_results_only",
@@ -997,6 +1019,11 @@ def setup_args(args):
                               "Error setting run_crossgen2_tests")
 
     coreclr_setup_args.verify(args,
+                              "synthesize_pgo",
+                              lambda arg: True,
+                              "Error setting synthesize_pgo")
+
+    coreclr_setup_args.verify(args,
                               "skip_test_run",
                               lambda arg: True,
                               "Error setting skip_test_run")
@@ -1031,6 +1058,9 @@ def setup_args(args):
                               lambda arg: True,
                               "Error setting run_nativeaot_tests")
 
+    if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
+        print("Error: don't specify both --sequential and -parallel")
+        sys.exit(1)
 
     print("host_os                  : %s" % coreclr_setup_args.host_os)
     print("arch                     : %s" % coreclr_setup_args.arch)
@@ -1133,6 +1163,10 @@ def find_test_from_name(host_os, test_location, test_name):
     for index, item in enumerate(loc_split):
         if not append:
             test_path = os.path.join(starting_path, item)
+            # Ensure the joined path is correct. Avoid forming /Vector256/1/ for Vector256_1
+            # where both Vector256 and Vector256_1 are valid dirs.
+            if not os.path.isdir(os.path.dirname(test_path)):
+                test_path = starting_path + "_" + item
         else:
             append = False
             test_path, size_of_largest_name_file = match_filename(starting_path + "_" + item)
@@ -1195,7 +1229,7 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
     Args:
         xml_result_file      : results xml file to parse
         args                 : arguments
-        tests                : dictionary of individual test results
+        tests                : list of individual test results
         assemblies           : dictionary of per-assembly aggregations
     """
 
@@ -1242,14 +1276,13 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                     if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
                         test_location_on_filesystem = None
                     test_output = test.findtext("output")
-                    assert tests[test_name] == None
-                    tests[test_name] = defaultdict(lambda: None, {
+                    tests.append(defaultdict(lambda: None, {
                         "name": test_name,
                         "test_path": test_location_on_filesystem,
                         "result" : result,
                         "time": time,
                         "test_output": test_output
-                    })
+                    }))
                     if result == "Pass":
                         assembly_info["passed"] += 1
                     elif result == "Fail":
@@ -1273,7 +1306,6 @@ def print_summary(tests, assemblies):
     failed_tests = []
 
     for test in tests:
-        test = tests[test]
         if test["result"] == "Fail":
             print("Failed test: %s" % test["name"])
 
@@ -1340,7 +1372,7 @@ def create_repro(args, env, tests):
     """
     assert tests is not None
 
-    failed_tests = [tests[item] for item in tests if tests[item]["result"] == "Fail" and tests[item]["test_path"] is not None]
+    failed_tests = [test for test in tests if test["result"] == "Fail" and test["test_path"] is not None]
     if len(failed_tests) == 0:
         return
 
@@ -1385,7 +1417,7 @@ def main(args):
 
     if not args.skip_test_run:
         assemblies = defaultdict(lambda: None)
-        tests = defaultdict(lambda: None)
+        tests = []
         parse_test_results(args, tests, assemblies)
         print_summary(tests, assemblies)
         create_repro(args, env, tests)

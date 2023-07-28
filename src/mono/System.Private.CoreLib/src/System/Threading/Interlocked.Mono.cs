@@ -14,10 +14,10 @@ namespace System.Threading
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void CompareExchange(ref object? location1, ref object? value, ref object? comparand, [NotNullIfNotNull("location1")] ref object? result);
+        private static extern void CompareExchange(ref object? location1, ref object? value, ref object? comparand, [NotNullIfNotNull(nameof(location1))] ref object? result);
 
         [Intrinsic]
-        [return: NotNullIfNotNull("location1")]
+        [return: NotNullIfNotNull(nameof(location1))]
         public static object? CompareExchange(ref object? location1, object? value, object? comparand)
         {
             // This avoids coop handles, esp. on the output which would be particularly inefficient.
@@ -36,9 +36,6 @@ namespace System.Threading
             CompareExchange(ref location1, ref value, ref comparand, ref result);
             return result;
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern float CompareExchange(ref float location1, float value, float comparand);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -61,10 +58,10 @@ namespace System.Threading
         public static extern int Exchange(ref int location1, int value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void Exchange([NotNullIfNotNull("value")] ref object? location1, ref object? value, [NotNullIfNotNull("location1")] ref object? result);
+        private static extern void Exchange([NotNullIfNotNull(nameof(value))] ref object? location1, ref object? value, [NotNullIfNotNull(nameof(location1))] ref object? result);
 
-        [return: NotNullIfNotNull("location1")]
-        public static object? Exchange([NotNullIfNotNull("value")] ref object? location1, object? value)
+        [return: NotNullIfNotNull(nameof(location1))]
+        public static object? Exchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value)
         {
             // See CompareExchange(object) for comments.
             object? result = null;
@@ -72,17 +69,10 @@ namespace System.Threading
             return result;
         }
 
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern float Exchange(ref float location1, float value);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long CompareExchange(ref long location1, long value, long comparand);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern double CompareExchange(ref double location1, double value, double comparand);
-
-        [return: NotNullIfNotNull("location1")]
+        [return: NotNullIfNotNull(nameof(location1))]
         [Intrinsic]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class?
         {
@@ -110,13 +100,9 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long Exchange(ref long location1, long value);
 
+        [return: NotNullIfNotNull(nameof(location1))]
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern double Exchange(ref double location1, double value);
-
-        [return: NotNullIfNotNull("location1")]
-        [Intrinsic]
-        public static T Exchange<T>([NotNullIfNotNull("value")] ref T location1, T value) where T : class?
+        public static T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value) where T : class?
         {
             unsafe
             {
@@ -144,11 +130,6 @@ namespace System.Threading
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long Add(ref long location1, long value);
-
-        [Intrinsic]
-        public static void MemoryBarrier()
-        {
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void MemoryBarrierProcessWide();

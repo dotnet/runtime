@@ -42,7 +42,7 @@ public:
 public:
     void HandleCallCountingForFirstCall(MethodDesc* pMethodDesc);
     bool TrySetCodeEntryPointAndRecordMethodForCallCounting(MethodDesc* pMethodDesc, PCODE codeEntryPoint);
-    void AsyncPromoteToTier1(NativeCodeVersion tier0NativeCodeVersion, bool *createTieringBackgroundWorkerRef);
+    void AsyncPromoteToTier1(NativeCodeVersion currentNativeCodeVersion, bool *createTieringBackgroundWorkerRef);
     static CORJIT_FLAGS GetJitFlags(PrepareCodeConfig *config);
 
 #if !defined(DACCESS_COMPILE) && defined(_DEBUG)
@@ -75,9 +75,14 @@ private:
 
 private:
     void OptimizeMethod(NativeCodeVersion nativeCodeVersion);
+    HRESULT DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef);
+    
     NativeCodeVersion GetNextMethodToOptimize();
     BOOL CompileCodeVersion(NativeCodeVersion nativeCodeVersion);
     void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
+public:
+    HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
+    HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
 
 #ifndef DACCESS_COMPILE
 public:

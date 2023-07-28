@@ -1,18 +1,22 @@
-cmake_minimum_required(VERSION 3.14.5)
+cmake_minimum_required(VERSION 3.20)
 
 project(Profiler)
 
 set(SOURCES
+    assemblyprofiler/assemblyprofiler.cpp
     eltprofiler/slowpatheltprofiler.cpp
     eventpipeprofiler/eventpipereadingprofiler.cpp
     eventpipeprofiler/eventpipewritingprofiler.cpp
     eventpipeprofiler/eventpipemetadatareader.cpp
     gcallocateprofiler/gcallocateprofiler.cpp
+    nongcheap/nongcheap.cpp
     gcbasicprofiler/gcbasicprofiler.cpp
     gcprofiler/gcprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
+    handlesprofiler/handlesprofiler.cpp
     inlining/inlining.cpp
     metadatagetdispenser/metadatagetdispenser.cpp
+    moduleload/moduleload.cpp
     multiple/multiple.cpp
     nullprofiler/nullprofiler.cpp
     rejitprofiler/rejitprofiler.cpp

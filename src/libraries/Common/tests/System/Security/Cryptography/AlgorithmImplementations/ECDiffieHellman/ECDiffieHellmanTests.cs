@@ -168,6 +168,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                     key.KeySize = 384;
                     key.ExportParameters(false);
                 });
+
+            pubKey.Dispose();
         }
 
 #if NETCOREAPP

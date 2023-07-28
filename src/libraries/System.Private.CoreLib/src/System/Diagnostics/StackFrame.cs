@@ -59,7 +59,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a StackFrame corresponding to the active stack frame.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackFrame()
         {
             InitMembers();
@@ -69,7 +69,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a StackFrame corresponding to the active stack frame.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackFrame(bool needFileInfo)
         {
             InitMembers();
@@ -79,7 +79,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a StackFrame corresponding to a calling stack frame.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackFrame(int skipFrames)
         {
             InitMembers();
@@ -89,7 +89,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a StackFrame corresponding to a calling stack frame.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackFrame(int skipFrames, bool needFileInfo)
         {
             InitMembers();
@@ -101,7 +101,7 @@ namespace System.Diagnostics
         /// name and line number.  Use when you don't want to use the
         /// debugger's line mapping logic.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackFrame(string? fileName, int lineNumber)
         {
             InitMembers();
@@ -116,7 +116,7 @@ namespace System.Diagnostics
         /// name, line number and column number.  Use when you don't want to
         /// use the debugger's line mapping logic.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackFrame(string? fileName, int lineNumber, int colNumber)
         {
             InitMembers();
@@ -134,6 +134,7 @@ namespace System.Diagnostics
 
         internal bool IsLastFrameFromForeignExceptionStackTrace => _isLastFrameFromForeignExceptionStackTrace;
 
+#if !NATIVEAOT
         /// <summary>
         /// Returns the method the frame is executing
         /// </summary>
@@ -142,6 +143,7 @@ namespace System.Diagnostics
         {
             return _method;
         }
+#endif
 
         /// <summary>
         /// Returns the offset from the start of the native (jitted) code for the

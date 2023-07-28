@@ -46,7 +46,7 @@
   .field public static literal valuetype mynamespace.e_t three = int16(0x0002)
 } // end of class mynamespace.e_t
 
-.class private auto ansi beforefieldinit mynamespace.myclass
+.class public auto ansi beforefieldinit mynamespace.myclass
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int16  foo(int16& x) cil managed noinlining

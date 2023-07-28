@@ -221,6 +221,10 @@ namespace System.Data.Odbc
         internal OdbcException() { }
         public System.Data.Odbc.OdbcErrorCollection Errors { get { throw null; } }
         public override string Source { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class OdbcFactory : System.Data.Common.DbProviderFactory

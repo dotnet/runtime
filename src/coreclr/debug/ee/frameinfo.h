@@ -103,7 +103,7 @@ public:
 #endif // FEATURE_EH_FUNCLETS
 
 
-    // A ridiculous flag that is targetting a very narrow fix at issue 650903 (4.5.1/Blue).
+    // A ridiculous flag that is targeting a very narrow fix at issue 650903 (4.5.1/Blue).
     // This is set when the currently walked frame is a ComPlusMethodFrameGeneric. If the
     // dude doing the walking is trying to ignore such frames (see
     // code:ControllerStackInfo::m_suppressUMChainFromComPlusMethodFrameGeneric), AND

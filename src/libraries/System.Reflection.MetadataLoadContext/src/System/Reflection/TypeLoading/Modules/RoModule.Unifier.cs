@@ -12,7 +12,10 @@ namespace System.Reflection.TypeLoading
         //
         internal RoArrayType GetUniqueArrayType(RoType elementType)
         {
-            return _szArrayDict.GetOrAdd(elementType, s_szArrayTypeFactory);
+            // Modified types do not support Equals\GetHashCode.
+            return elementType is RoModifiedType ?
+                s_szArrayTypeFactory(elementType) :
+                _szArrayDict.GetOrAdd(elementType, s_szArrayTypeFactory);
         }
         private static readonly Func<RoType, RoArrayType> s_szArrayTypeFactory = (e) => new RoArrayType(e, multiDim: false, rank: 1);
         private readonly ConcurrentDictionary<RoType, RoArrayType> _szArrayDict = new ConcurrentDictionary<RoType, RoArrayType>();
@@ -22,7 +25,11 @@ namespace System.Reflection.TypeLoading
         //
         internal RoArrayType GetUniqueArrayType(RoType elementType, int rank)
         {
-            return _mdArrayDict.GetOrAdd(new RoArrayType.Key(elementType, rank: rank), s_mdArrayTypeFactory);
+            // Modified types do not support Equals\GetHashCode.
+            RoArrayType.Key key = new(elementType, rank: rank);
+            return elementType is RoModifiedType ?
+                s_mdArrayTypeFactory(key) :
+                _mdArrayDict.GetOrAdd(key, s_mdArrayTypeFactory);
         }
         private static readonly Func<RoArrayType.Key, RoArrayType> s_mdArrayTypeFactory = (k) => new RoArrayType(k.ElementType, multiDim: true, rank: k.Rank);
         private readonly ConcurrentDictionary<RoArrayType.Key, RoArrayType> _mdArrayDict = new ConcurrentDictionary<RoArrayType.Key, RoArrayType>();
@@ -32,7 +39,10 @@ namespace System.Reflection.TypeLoading
         //
         internal RoByRefType GetUniqueByRefType(RoType elementType)
         {
-            return _byRefDict.GetOrAdd(elementType, s_byrefTypeFactory);
+            // Modified types do not support Equals\GetHashCode.
+            return elementType is RoModifiedType ?
+                s_byrefTypeFactory(elementType) :
+                _byRefDict.GetOrAdd(elementType, s_byrefTypeFactory);
         }
         private static readonly Func<RoType, RoByRefType> s_byrefTypeFactory = (e) => new RoByRefType(e);
         private readonly ConcurrentDictionary<RoType, RoByRefType> _byRefDict = new ConcurrentDictionary<RoType, RoByRefType>();
@@ -42,7 +52,9 @@ namespace System.Reflection.TypeLoading
         //
         internal RoPointerType GetUniquePointerType(RoType elementType)
         {
-            return _pointerDict.GetOrAdd(elementType, (e) => new RoPointerType(e));
+            return elementType is RoModifiedType ?
+                new RoPointerType(elementType) :
+                _pointerDict.GetOrAdd(elementType, (e) => new RoPointerType(e));
         }
         private readonly ConcurrentDictionary<RoType, RoPointerType> _pointerDict = new ConcurrentDictionary<RoType, RoPointerType>();
 

@@ -284,6 +284,20 @@ namespace System.Web.Tests
             });
         }
 
+        [Fact]
+        public void HtmlEncode_IHtmlString_UseToHtmlString()
+        {
+            Assert.Equal(string.Empty, HttpUtility.HtmlEncode(new ActionHtmlString(() => null)));
+            Assert.Equal(string.Empty, HttpUtility.HtmlEncode(new ActionHtmlString(() => string.Empty)));
+            Assert.Equal("<", HttpUtility.HtmlEncode(new ActionHtmlString(() => "<")));
+            Assert.Throws<FormatException>(() => HttpUtility.HtmlEncode(new ActionHtmlString(() => throw new FormatException())));
+        }
+
+        private sealed class ActionHtmlString(Func<string> toHtmlString) : IHtmlString
+        {
+            public string ToHtmlString() => toHtmlString();
+        }
+
         #endregion HtmlEncode
 
         #region JavaScriptStringEncode
@@ -441,6 +455,16 @@ namespace System.Web.Tests
             var expected = "ReturnUrl=http%3a%2f%2flocalhost%2flogin%2fauthenticate%3fReturnUrl%3dhttp%3a%2f%2flocalhost%2fsecured_area%26__provider__%3dgoogle";
             Assert.Equal(expected, parsed.ToString());
             Assert.Equal(expected, HttpUtility.ParseQueryString(expected).ToString());
+        }
+
+
+        [Fact]
+        public void ParseQueryString_nullValue_ToString()
+        {
+            var nameValueCollection = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            nameValueCollection.Add("baz", null);
+            var s = nameValueCollection.ToString();
+            Assert.Equal(string.Empty, s);
         }
 
         #endregion ParseQueryString

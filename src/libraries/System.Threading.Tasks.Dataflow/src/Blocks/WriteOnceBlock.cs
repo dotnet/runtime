@@ -80,7 +80,7 @@ namespace System.Threading.Tasks.Dataflow
             // we need to initialize the completion task's TCS now.
             if (dataflowBlockOptions.CancellationToken.CanBeCanceled)
             {
-                _lazyCompletionTaskSource = new TaskCompletionSource<VoidResult>();
+                _lazyCompletionTaskSource = new TaskCompletionSource<VoidResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 // If we've already had cancellation requested, do as little work as we have to
                 // in order to be done.
@@ -89,13 +89,13 @@ namespace System.Threading.Tasks.Dataflow
                     _completionReserved = _decliningPermanently = true;
 
                     // Cancel the completion task's TCS
-                    _lazyCompletionTaskSource.SetCanceled();
+                    _lazyCompletionTaskSource.TrySetCanceled(dataflowBlockOptions.CancellationToken);
                 }
                 else
                 {
                     // Handle async cancellation requests by declining on the target
                     Common.WireCancellationToComplete(
-                        dataflowBlockOptions.CancellationToken, _lazyCompletionTaskSource.Task, state => ((WriteOnceBlock<T>)state!).Complete(), this);
+                        dataflowBlockOptions.CancellationToken, _lazyCompletionTaskSource.Task, static (state, _) => ((WriteOnceBlock<T>)state!).Complete(), this);
                 }
             }
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
@@ -120,7 +120,7 @@ namespace System.Threading.Tasks.Dataflow
             if (exceptions == null)
             {
                 // Offer the message to any linked targets and complete the block asynchronously to avoid blocking the caller
-                var taskForOutputProcessing = new Task(state => ((WriteOnceBlock<T>)state!).OfferToTargetsAndCompleteBlock(), this,
+                var taskForOutputProcessing = new Task(static state => ((WriteOnceBlock<T>)state!).OfferToTargetsAndCompleteBlock(), this,
                                                         Common.GetCreationOptionsForTask());
 
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
@@ -137,7 +137,7 @@ namespace System.Threading.Tasks.Dataflow
             else
             {
                 // Complete the block asynchronously to avoid blocking the caller
-                Task.Factory.StartNew(state =>
+                Task.Factory.StartNew(static state =>
                 {
                     Tuple<WriteOnceBlock<T>, IList<Exception>> blockAndList = (Tuple<WriteOnceBlock<T>, IList<Exception>>)state!;
                     blockAndList.Item1.CompleteBlock(blockAndList.Item2);
@@ -182,7 +182,7 @@ namespace System.Threading.Tasks.Dataflow
             }
             else if (_dataflowBlockOptions.CancellationToken.IsCancellationRequested)
             {
-                CompletionTaskSource.TrySetCanceled();
+                CompletionTaskSource.TrySetCanceled(_dataflowBlockOptions.CancellationToken);
             }
             else
             {
@@ -499,7 +499,7 @@ namespace System.Threading.Tasks.Dataflow
                 // it remains the block's completion task.
                 if (_lazyCompletionTaskSource == null)
                 {
-                    Interlocked.CompareExchange(ref _lazyCompletionTaskSource, new TaskCompletionSource<VoidResult>(), null);
+                    Interlocked.CompareExchange(ref _lazyCompletionTaskSource, new TaskCompletionSource<VoidResult>(TaskCreationOptions.RunContinuationsAsynchronously), null);
                 }
 
                 return _lazyCompletionTaskSource;

@@ -28,13 +28,15 @@ namespace Internal.Reflection.Execution
         private AssemblyBinderImplementation()
         {
             _scopeGroups = new KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[0];
-            ModuleList.AddModuleRegistrationCallback(RegisterModule);
+
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+                RegisterModule(module);
         }
 
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
 
         partial void BindEcmaFilePath(string assemblyPath, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
-        partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
+        partial void BindEcmaBytes(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
         partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, bool cacheMissedLookups, ref AssemblyBindResult result, ref Exception exception, ref Exception preferredException, ref bool resultBoolean);
         partial void InsertEcmaLoadedAssemblies(List<AssemblyBindResult> loadedAssemblies);
 
@@ -53,13 +55,13 @@ namespace Internal.Reflection.Execution
                 return result.Value;
         }
 
-        public sealed override bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
+        public sealed override bool Bind(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
         {
             bool? result = null;
             exception = null;
             bindResult = default(AssemblyBindResult);
 
-            BindEcmaByteArray(rawAssembly, rawSymbolStore, ref bindResult, ref exception, ref result);
+            BindEcmaBytes(rawAssembly, rawSymbolStore, ref bindResult, ref exception, ref result);
 
             // If the Ecma assembly binder isn't linked in, simply throw PlatformNotSupportedException
             if (!result.HasValue)
@@ -82,7 +84,7 @@ namespace Internal.Reflection.Execution
                 {
                     if (foundMatch)
                     {
-                        exception = new AmbiguousMatchException();
+                        exception = new AmbiguousMatchException(SR.Format(SR.AmbiguousMatchException_Assembly, refName.FullName));
                         return false;
                     }
 
@@ -194,16 +196,9 @@ namespace Internal.Reflection.Execution
         /// that this function may never be called concurrently so that we can assume that two threads
         /// never update the reader and scope list at the same time.
         /// </summary>
-        /// <param name="moduleInfo">Module to register</param>
-        private void RegisterModule(ModuleInfo moduleInfo)
+        /// <param name="nativeFormatModuleInfo">Module to register</param>
+        private void RegisterModule(NativeFormatModuleInfo nativeFormatModuleInfo)
         {
-            NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
-
-            if (nativeFormatModuleInfo == null)
-            {
-                return;
-            }
-
             LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> scopeGroups = new LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup>();
             foreach (KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup> oldGroup in _scopeGroups)
             {

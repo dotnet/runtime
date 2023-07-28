@@ -201,7 +201,11 @@ namespace System.ServiceModel.Syndication
 
         private static string AsString(DateTimeOffset dateTime)
         {
+#if NET8_0_OR_GREATER
+            if (dateTime.TotalOffsetMinutes == 0)
+#else
             if (dateTime.Offset == TimeSpan.Zero)
+#endif // NET8_0_OR_GREATER
             {
                 return dateTime.ToUniversalTime().ToString(Rfc822OutputUtcDateTimeFormat, CultureInfo.InvariantCulture);
             }
@@ -736,7 +740,7 @@ namespace System.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
                         {
-                            feedItems = feedItems ?? new NullNotAllowedCollection<SyndicationItem>();
+                            feedItems ??= new NullNotAllowedCollection<SyndicationItem>();
                             IEnumerable<SyndicationItem> items = ReadItems(reader, result, out areAllItemsRead);
                             foreach (SyndicationItem item in items)
                             {
@@ -1004,10 +1008,7 @@ namespace System.ServiceModel.Syndication
             {
                 if (item.Links[i].RelationshipType == Atom10Constants.AlternateTag)
                 {
-                    if (firstAlternateLink == null)
-                    {
-                        firstAlternateLink = item.Links[i];
-                    }
+                    firstAlternateLink ??= item.Links[i];
                     if (guid == FeedUtils.GetUriString(item.Links[i].Uri))
                     {
                         isPermalink = true;

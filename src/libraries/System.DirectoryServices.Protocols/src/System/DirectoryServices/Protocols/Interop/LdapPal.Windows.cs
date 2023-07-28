@@ -34,7 +34,7 @@ namespace System.DirectoryServices.Protocols
 
         internal static IntPtr GetDistinguishedName(ConnectionHandle ldapHandle, IntPtr result) => Interop.Ldap.ldap_get_dn(ldapHandle, result);
 
-        internal static int GetLastErrorFromConnection(ConnectionHandle ldapHandle) => Interop.Ldap.LdapGetLastError();
+        internal static int GetLastErrorFromConnection(ConnectionHandle _ /*ldapHandle*/) => Interop.Ldap.LdapGetLastError();
 
         internal static int GetIntOption(ConnectionHandle ldapHandle, LdapOption option, ref int outValue) => Interop.Ldap.ldap_get_option_int(ldapHandle, option, ref outValue);
 

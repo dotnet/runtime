@@ -28,8 +28,6 @@
     <Python>%HELIX_PYTHONPATH%</Python>
     <ProductDirectory>%HELIX_CORRELATION_PAYLOAD%</ProductDirectory>
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
-    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
     <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_asmdiffs_checked_release.py --diff_with_release -base_jit_directory $(ProductDirectory)\base -diff_jit_directory $(ProductDirectory)\diff -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
     <WorkItemTimeout>1:00</WorkItemTimeout>
   </PropertyGroup>
@@ -52,15 +50,15 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Architecture)' == 'x64'">
-    <SPMI_Partition Include="win-x64" Platform="windows" Architecture="x64" />
-    <SPMI_Partition Include="win-arm64" Platform="windows" Architecture="arm64" />
-    <SPMI_Partition Include="unix-x64" Platform="Linux" Architecture="x64" />
-    <SPMI_Partition Include="unix-arm64" Platform="Linux" Architecture="arm64" />
+    <SPMI_Partition Include="windows-x64" Platform="windows" Architecture="x64" />
+    <SPMI_Partition Include="windows-arm64" Platform="windows" Architecture="arm64" />
+    <SPMI_Partition Include="linux-x64" Platform="linux" Architecture="x64" />
+    <SPMI_Partition Include="linux-arm64" Platform="linux" Architecture="arm64" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Architecture)' == 'x86'">
-    <SPMI_Partition Include="win-x86" Platform="windows" Architecture="x86" />
-    <SPMI_Partition Include="unix-arm" Platform="Linux" Architecture="arm" />
+    <SPMI_Partition Include="windows-x86" Platform="windows" Architecture="x86" />
+    <SPMI_Partition Include="linux-arm" Platform="linux" Architecture="arm" />
   </ItemGroup>
 
   <ItemGroup>

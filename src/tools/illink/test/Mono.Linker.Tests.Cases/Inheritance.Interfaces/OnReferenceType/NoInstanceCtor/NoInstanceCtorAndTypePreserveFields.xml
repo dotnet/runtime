@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="library, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoInstanceCtor.Dependencies.NoInstanceCtorAndAssemblyPreserveAll_Lib/A" preserve="fields"/>
+    </assembly>
+</linker>

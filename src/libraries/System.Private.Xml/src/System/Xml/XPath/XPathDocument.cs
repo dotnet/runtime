@@ -78,6 +78,8 @@ namespace System.Xml.XPath
         /// </summary>
         public XPathDocument(TextReader textReader)
         {
+            ArgumentNullException.ThrowIfNull(textReader);
+
             XmlTextReaderImpl reader = SetupReader(new XmlTextReaderImpl(string.Empty, textReader));
 
             try
@@ -95,6 +97,8 @@ namespace System.Xml.XPath
         /// </summary>
         public XPathDocument(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             XmlTextReaderImpl reader = SetupReader(new XmlTextReaderImpl(string.Empty, stream));
 
             try
@@ -380,8 +384,7 @@ namespace System.Xml.XPath
         {
             Debug.Assert(pageElem[idxElem].NodeType == XPathNodeType.Element && pageNmsp[idxNmsp].NodeType == XPathNodeType.Namespace);
 
-            if (_mapNmsp == null)
-                _mapNmsp = new Dictionary<XPathNodeRef, XPathNodeRef>();
+            _mapNmsp ??= new Dictionary<XPathNodeRef, XPathNodeRef>();
 
             _mapNmsp.Add(new XPathNodeRef(pageElem, idxElem), new XPathNodeRef(pageNmsp, idxNmsp));
         }
@@ -395,15 +398,13 @@ namespace System.Xml.XPath
             Debug.Assert(pageElem[idxElem].NodeType == XPathNodeType.Element);
 
             // Check whether this element has any local namespaces
-            if (_mapNmsp == null || !_mapNmsp.ContainsKey(nodeRef))
+            if (_mapNmsp == null || !_mapNmsp.TryGetValue(nodeRef, out nodeRef))
             {
                 pageNmsp = null;
                 return 0;
             }
 
             // Yes, so return the page and index of the first local namespace node
-            nodeRef = _mapNmsp[nodeRef];
-
             pageNmsp = nodeRef.Page;
             return nodeRef.Index;
         }
@@ -413,8 +414,7 @@ namespace System.Xml.XPath
         /// </summary>
         internal void AddIdElement(string id, XPathNode[] pageElem, int idxElem)
         {
-            if (_idValueMap == null)
-                _idValueMap = new Dictionary<string, XPathNodeRef>();
+             _idValueMap ??= new Dictionary<string, XPathNodeRef>();
 
             if (!_idValueMap.ContainsKey(id))
                 _idValueMap.Add(id, new XPathNodeRef(pageElem, idxElem));
@@ -427,14 +427,13 @@ namespace System.Xml.XPath
         {
             XPathNodeRef nodeRef;
 
-            if (_idValueMap == null || !_idValueMap.ContainsKey(id))
+            if (_idValueMap == null || !_idValueMap.TryGetValue(id, out nodeRef))
             {
                 pageElem = null;
                 return 0;
             }
 
             // Extract page and index from XPathNodeRef
-            nodeRef = _idValueMap[id];
             pageElem = nodeRef.Page;
             return nodeRef.Index;
         }

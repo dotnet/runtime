@@ -1,41 +1,18 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Reflection
 {
-    internal partial class ConstructorInvoker
+    public partial class ConstructorInvoker
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe object? InterpretedInvoke(object? obj, Span<object?> args, BindingFlags invokeAttr)
+        internal unsafe ConstructorInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.ArgumentTypes)
         {
-            Exception exc;
-            object? o;
+            _invokeFunc_RefArgs = InterpretedInvoke;
+        }
 
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    o = _method.InternalInvoke(obj, args, out exc);
-                }
-                catch (MethodAccessException)
-                {
-                    throw;
-                }
-                catch (OverflowException)
-                {
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                o = _method.InternalInvoke(obj, args, out exc);
-            }
+        private unsafe object? InterpretedInvoke(object? obj, IntPtr *args)
+        {
+            object? o = _method.InternalInvoke(obj, args, out Exception? exc);
 
             if (exc != null)
                 throw exc;

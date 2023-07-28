@@ -5,12 +5,6 @@
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
 // ===================================================================================================
 
-/*============================================================
-**
-** Purpose: Some single-precision floating-point math operations
-**
-===========================================================*/
-
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -20,6 +14,9 @@ using System.Runtime.Intrinsics.Arm;
 
 namespace System
 {
+    /// <summary>
+    /// Provides constants and static methods for trigonometric, logarithmic, and other common mathematical functions.
+    /// </summary>
     public static partial class MathF
     {
         public const float E = 2.71828183f;
@@ -31,7 +28,7 @@ namespace System
         private const int maxRoundingDigits = 6;
 
         // This table is required for the Round function which can specify the number of digits to round to
-        private static readonly float[] roundPower10Single = new float[] {
+        private static ReadOnlySpan<float> RoundPower10Single => new float[] {
             1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f
         };
 
@@ -47,6 +44,7 @@ namespace System
 
         private const int ILogB_Zero = (-1 - 0x7fffffff);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
         {
@@ -241,19 +239,21 @@ namespace System
             return Log(x) / Log(y);
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Max(float x, float y)
         {
             return Math.Max(x, y);
         }
 
+        [Intrinsic]
         public static float MaxMagnitude(float x, float y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitude` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // otherwise returns the input with a greater magnitude.
+            // It treats +0 as greater than -0 as per the specification.
 
             float ax = Abs(x);
             float ay = Abs(y);
@@ -271,19 +271,21 @@ namespace System
             return y;
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Min(float x, float y)
         {
             return Math.Min(x, y);
         }
 
+        [Intrinsic]
         public static float MinMagnitude(float x, float y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitude` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // otherwise returns the input with a lesser magnitude.
+            // It treats +0 as lesser than -0 as per the specification.
 
             float ax = Abs(x);
             float ay = Abs(y);
@@ -436,9 +438,14 @@ namespace System
                     return Round(x);
 
                 // For ARM/ARM64 we can lower it down to a single instruction FRINTA
-                // For XARCH we have to use the common path
-                if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
-                    return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+                // For other platforms we use a fast managed implementation
+                if (mode == MidpointRounding.AwayFromZero)
+                {
+                    if (AdvSimd.IsSupported)
+                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+                    // manually fold BitDecrement(0.5f)
+                    return Truncate(x + CopySign(0.49999997f, x));
+                }
             }
 
             return Round(x, 0, mode);
@@ -458,7 +465,7 @@ namespace System
 
             if (Abs(x) < singleRoundLimit)
             {
-                float power10 = roundPower10Single[digits];
+                float power10 = RoundPower10Single[digits];
 
                 x *= power10;
 
@@ -475,13 +482,8 @@ namespace System
                     // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
                     case MidpointRounding.AwayFromZero:
                     {
-                        float fraction = ModF(x, &x);
-
-                        if (Abs(fraction) >= 0.5f)
-                        {
-                            x += Sign(fraction);
-                        }
-
+                        // manually fold BitDecrement(0.5f)
+                        x = Truncate(x + CopySign(0.49999997f, x));
                         break;
                     }
                     // Directed rounding: Round to the nearest value, toward to zero

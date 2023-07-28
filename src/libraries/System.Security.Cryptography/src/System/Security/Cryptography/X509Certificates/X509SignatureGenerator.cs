@@ -7,18 +7,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private PublicKey? _publicKey;
 
-        public PublicKey PublicKey
-        {
-            get
-            {
-                if (_publicKey == null)
-                {
-                    _publicKey = BuildPublicKey();
-                }
-
-                return _publicKey;
-            }
-        }
+        public PublicKey PublicKey => _publicKey ??= BuildPublicKey();
 
         public abstract byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm);
         public abstract byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm);

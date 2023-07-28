@@ -70,7 +70,11 @@ namespace System.ComponentModel
         // not merge them into the attribute set for a class.
         private static readonly Type[] s_skipInterfaceAttributeList = InitializeSkipInterfaceAttributeList();
 
-        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2045:AttributeRemoval",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2121:RedundantSuppression",
+            Justification = "Removal of the attributes depends on the System.Runtime.InteropServices.BuiltInComInterop.IsSupported feature switch." +
+            "Building with feature switch enabled will not trigger attribute removal making the suppression unnecessary." +
+            "When disabled, the attributes are removed and the suppression is necessary.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2045:AttributeRemoval",
             Justification = "The ComVisibleAttribute is marked for removal and it's referenced here. Since this array" +
                             "contains only attributes which are going to be ignored, removing such attribute" +
                             "will not break the functionality in any way.")]
@@ -153,10 +157,11 @@ namespace System.ComponentModel
             [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered.")]
             get
             {
-                return LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Dictionary<object, IntrinsicTypeConverterData>(27)
+                return LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Dictionary<object, IntrinsicTypeConverterData>(32)
                 {
                     // Add the intrinsics
                     //
+                    // When modifying this list, be sure to update the initial dictionary capacity above
                     [typeof(bool)] = new IntrinsicTypeConverterData((type) => new BooleanConverter()),
                     [typeof(byte)] = new IntrinsicTypeConverterData((type) => new ByteConverter()),
                     [typeof(sbyte)] = new IntrinsicTypeConverterData((type) => new SByteConverter()),
@@ -255,7 +260,7 @@ namespace System.ComponentModel
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
             Type[]? argTypes,
-            object[]? args)
+            object?[]? args)
         {
             Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
 
@@ -272,9 +277,9 @@ namespace System.ComponentModel
                     argTypes = new Type[args.Length];
                     for (int idx = 0; idx < args.Length; idx++)
                     {
-                        if (args[idx] != null)
+                        if (args[idx] is object arg)
                         {
-                            argTypes[idx] = args[idx].GetType();
+                            argTypes[idx] = arg.GetType();
                         }
                         else
                         {
@@ -346,7 +351,7 @@ namespace System.ComponentModel
         internal string? GetClassName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
-            return td.GetClassName(null);
+            return td.GetClassName();
         }
 
         /// <summary>
@@ -460,7 +465,7 @@ namespace System.ComponentModel
         /// Retrieves custom extender attributes. We don't support
         /// extender attributes, so we always return an empty collection.
         /// </summary>
-        internal static AttributeCollection GetExtendedAttributes(object instance)
+        internal static AttributeCollection GetExtendedAttributes()
         {
             return AttributeCollection.Empty;
         }
@@ -505,7 +510,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Return the default property.
         /// </summary>
-        internal static PropertyDescriptor? GetExtendedDefaultProperty(object instance)
+        internal static PropertyDescriptor? GetExtendedDefaultProperty()
         {
             return null; // extender properties are never the default.
         }
@@ -522,7 +527,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the events for this type.
         /// </summary>
-        internal static EventDescriptorCollection GetExtendedEvents(object instance)
+        internal static EventDescriptorCollection GetExtendedEvents()
         {
             return EventDescriptorCollection.Empty;
         }
@@ -578,10 +583,7 @@ namespace System.ComponentModel
             {
                 PropertyDescriptor[] propertyArray = ReflectGetExtendedProperties(extenders[idx]);
 
-                if (propertyList == null)
-                {
-                    propertyList = new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
-                }
+                propertyList ??= new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
 
                 for (int propIdx = 0; propIdx < propertyArray.Length; propIdx++)
                 {
@@ -788,9 +790,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the owner for a property.
         /// </summary>
-        internal static object GetExtendedPropertyOwner(object instance, PropertyDescriptor? pd)
+        internal static object GetExtendedPropertyOwner(object instance)
         {
-            return GetPropertyOwner(instance.GetType(), instance, pd);
+            return GetPropertyOwner(instance.GetType(), instance);
         }
 
         //////////////////////////////////////////////////////////
@@ -870,7 +872,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the owner for a property.
         /// </summary>
-        internal static object GetPropertyOwner(Type type, object instance, PropertyDescriptor? pd)
+        internal static object GetPropertyOwner(Type type, object instance)
         {
             return TypeDescriptor.GetAssociation(type, instance);
         }
@@ -916,10 +918,7 @@ namespace System.ComponentModel
                 if (td == null && createIfNeeded)
                 {
                     td = new ReflectedTypeData(type);
-                    if (_typeData == null)
-                    {
-                        _typeData = new Hashtable();
-                    }
+                    _typeData ??= new Hashtable();
                     _typeData[type] = td;
                 }
             }
@@ -1423,10 +1422,7 @@ namespace System.ComponentModel
                 // Interfaces do not derive from object, so we
                 // must handle the case of no hash entry here.
                 //
-                if (hashEntry == null)
-                {
-                    hashEntry = table[typeof(object)];
-                }
+                hashEntry ??= table[typeof(object)];
 
                 // If the entry is a type, create an instance of it and then
                 // replace the entry. This way we only need to create once.

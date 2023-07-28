@@ -149,14 +149,12 @@ AssemblySpecHash::~AssemblySpecHash()
 
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
-                                  DomainAssembly *pStaticParent,
-                                  BOOL fAllowAllocation)
+                                  DomainAssembly *pStaticParent)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        if (fAllowAllocation) {GC_TRIGGERS;} else {GC_NOTRIGGER;};
-        if (fAllowAllocation) {INJECT_FAULT(COMPlusThrowOM());} else {FORBID_FAULT;};
+        GC_NOTRIGGER;
         NOTHROW;
         MODE_ANY;
         PRECONDITION(pImport->IsValidToken(kAssemblyToken));
@@ -194,7 +192,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pFile));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -211,7 +209,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     if (pCurrentBinder == NULL)
     {
         AssemblyBinder* pExpectedBinder = pFile->GetAssemblyBinder();
-        // We should aways have the binding context in the PEAssembly.
+        // We should always have the binding context in the PEAssembly.
         _ASSERTE(pExpectedBinder != NULL);
         SetBinder(pExpectedBinder);
     }
@@ -275,13 +273,23 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     AssemblySpec spec;
     spec.InitializeWithAssemblyIdentity(assemblyName);
 
-    StackScratchBuffer nameBuffer;
-    spec.SetName(assemblyName->GetSimpleName().GetUTF8(nameBuffer));
+    StackSString nameBuffer;
+    nameBuffer.SetAndConvertToUTF8(assemblyName->GetSimpleName().GetUnicode());
+    spec.SetName(nameBuffer.GetUTF8());
 
-    StackScratchBuffer cultureBuffer;
+    StackSString cultureBuffer;
     if (assemblyName->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
     {
-        LPCSTR culture = assemblyName->IsNeutralCulture() ? "" : assemblyName->GetCulture().GetUTF8(cultureBuffer);
+        LPCSTR culture;
+        if (assemblyName->IsNeutralCulture())
+        {
+            culture = "";
+        }
+        else
+        {
+            cultureBuffer.SetAndConvertToUTF8(assemblyName->GetCulture().GetUnicode());
+            culture = cultureBuffer.GetUTF8();
+        }
         spec.SetCulture(culture);
     }
 
@@ -503,7 +511,7 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
     if (!pILImage->CheckILFormat())
         THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
 
-    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage);
+    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage, true /* excludeAppPaths */);
 }
 
 HRESULT AssemblySpec::CheckFriendAssemblyName()

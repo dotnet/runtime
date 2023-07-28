@@ -24,7 +24,9 @@ public:
     // These methods convert between an HR and and a managed exception.
     //====================================================================
     static FCDECL2(Object *, GetExceptionForHR, INT32 errorCode, LPVOID errorInfo);
+#ifdef FEATURE_COMINTEROP
     static FCDECL1(int, GetHRForException, Object* eUNSAFE);
+#endif // FEATURE_COMINTEROP
 
     static FCDECL2(UINT32, SizeOfClass, ReflectClassBaseObject* refClass, CLR_BOOL throwIfNotMarshalable);
 
@@ -131,10 +133,6 @@ private:
     static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
 #endif // FEATURE_COMINTEROP
 };
-
-// Check that the supplied object is valid to put in a pinned handle,
-// throwing an exception if not.
-void ValidatePinnedObject(OBJECTREF obj);
 
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
 extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();

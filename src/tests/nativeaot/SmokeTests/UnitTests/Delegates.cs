@@ -51,9 +51,11 @@ public class Delegates
             result = Fail;
         }
 
-#if !CODEGEN_CPP
-        TestLinqExpressions.Run();
-#endif
+        // ActiveIssue https://github.com/dotnet/runtime/issues/87924
+        if (!OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS() && !OperatingSystem.IsMacCatalyst())
+        {
+            TestLinqExpressions.Run();
+        }
 
         TestDefaultInterfaceMethods.Run();
 

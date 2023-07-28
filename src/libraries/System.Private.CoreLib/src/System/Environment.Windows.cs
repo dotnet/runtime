@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -82,6 +85,34 @@ namespace System
             return builder.ToString();
         }
 
+        private static unsafe bool IsPrivilegedProcessCore()
+        {
+            SafeTokenHandle? token = null;
+            try
+            {
+                if (Interop.Advapi32.OpenProcessToken(Interop.Kernel32.GetCurrentProcess(), (int)Interop.Advapi32.TOKEN_ACCESS_LEVELS.Read, out token))
+                {
+                    Interop.Advapi32.TOKEN_ELEVATION elevation = default;
+
+                    if (Interop.Advapi32.GetTokenInformation(
+                            token,
+                            Interop.Advapi32.TOKEN_INFORMATION_CLASS.TokenElevation,
+                            &elevation,
+                            (uint)sizeof(Interop.Advapi32.TOKEN_ELEVATION),
+                            out _))
+                    {
+                        return elevation.TokenIsElevated != Interop.BOOL.FALSE;
+                    }
+                }
+
+                throw Win32Marshal.GetExceptionForLastWin32Error();
+            }
+            finally
+            {
+                token?.Dispose();
+            }
+        }
+
         private static bool Is64BitOperatingSystemWhen32BitProcess =>
             Interop.Kernel32.IsWow64Process(Interop.Kernel32.GetCurrentProcess(), out bool isWow64) && isWow64;
 
@@ -89,7 +120,7 @@ namespace System
             Interop.Kernel32.GetComputerName() ??
             throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
+        [MethodImpl(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
         private static int GetProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
 
         private static string? GetProcessPath()
@@ -179,6 +210,153 @@ namespace System
                 }
                 return (long)memoryCounters.WorkingSetSize;
             }
+        }
+
+        private static unsafe string[] GetCommandLineArgsNative()
+        {
+            char* lpCmdLine = Interop.Kernel32.GetCommandLine();
+            Debug.Assert(lpCmdLine != null);
+
+            return SegmentCommandLine(lpCmdLine);
+        }
+
+        private static unsafe string[] SegmentCommandLine(char* cmdLine)
+        {
+            // Parse command line arguments using the rules documented at
+            // https://learn.microsoft.com/cpp/cpp/main-function-command-line-args#parsing-c-command-line-arguments
+
+            // CommandLineToArgvW API cannot be used here since
+            // it has slightly different behavior.
+
+            ArrayBuilder<string> arrayBuilder = default;
+
+            Span<char> stringBuffer = stackalloc char[260]; // Use MAX_PATH for a typical maximum
+            scoped ValueStringBuilder stringBuilder;
+
+            char c;
+
+            // First scan the program name, copy it, and count the bytes
+
+            char* p = cmdLine;
+
+            // A quoted program name is handled here. The handling is much
+            // simpler than for other arguments. Basically, whatever lies
+            // between the leading double-quote and next one, or a terminal null
+            // character is simply accepted. Fancier handling is not required
+            // because the program name must be a legal NTFS/HPFS file name.
+            // Note that the double-quote characters are not copied, nor do they
+            // contribyte to character_count.
+
+            bool inQuotes = false;
+            stringBuilder = new ValueStringBuilder(stringBuffer);
+
+            do
+            {
+                if (*p == '"')
+                {
+                    inQuotes = !inQuotes;
+                    c = *p++;
+                    continue;
+                }
+
+                c = *p++;
+                stringBuilder.Append(c);
+            }
+            while (c != '\0' && (inQuotes || (c is not (' ' or '\t'))));
+
+            if (c == '\0')
+            {
+                p--;
+            }
+
+            stringBuilder.Length--;
+            arrayBuilder.Add(stringBuilder.ToString());
+            inQuotes = false;
+
+            // loop on each argument
+            while (true)
+            {
+                if (*p != '\0')
+                {
+                    while (*p is ' ' or '\t')
+                    {
+                        ++p;
+                    }
+                }
+
+                if (*p == '\0')
+                {
+                    // end of args
+                    break;
+                }
+
+                // scan an argument
+                stringBuilder = new ValueStringBuilder(stringBuffer);
+
+                // loop through scanning one argument
+                while (true)
+                {
+                    bool copyChar = true;
+
+                    // Rules:
+                    // 2N   backslashes + " ==> N backslashes and begin/end quote
+                    // 2N+1 backslashes + " ==> N backslashes + literal "
+                    // N    backslashes     ==> N backslashes
+                    int numSlash = 0;
+
+                    while (*p == '\\')
+                    {
+                        // Count number of backslashes for use below
+                        ++p;
+                        ++numSlash;
+                    }
+
+                    if (*p == '"')
+                    {
+                        // if 2N backslashes before, start / end quote, otherwise
+                        // copy literally:
+                        if (numSlash % 2 == 0)
+                        {
+                            if (inQuotes && p[1] == '"')
+                            {
+                                p++; // Double quote inside quoted string
+                            }
+                            else
+                            {
+                                // Skip first quote char and copy second:
+                                copyChar = false;       // Don't copy quote
+                                inQuotes = !inQuotes;
+                            }
+                        }
+
+                        numSlash /= 2;
+                    }
+
+                    // Copy slashes:
+                    while (numSlash-- > 0)
+                    {
+                        stringBuilder.Append('\\');
+                    }
+
+                    // If at end of arg, break loop:
+                    if (*p == '\0' || (!inQuotes && *p is ' ' or '\t'))
+                    {
+                        break;
+                    }
+
+                    // Copy character into argument:
+                    if (copyChar)
+                    {
+                        stringBuilder.Append(*p);
+                    }
+
+                    ++p;
+                }
+
+                arrayBuilder.Add(stringBuilder.ToString());
+            }
+
+            return arrayBuilder.ToArray();
         }
     }
 }

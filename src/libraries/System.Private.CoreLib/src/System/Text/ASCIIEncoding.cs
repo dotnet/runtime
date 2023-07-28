@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -47,7 +48,7 @@ namespace System.Text
         // The initialization code will not be run until a static member of the class is referenced
         internal static readonly ASCIIEncodingSealed s_default = new ASCIIEncodingSealed();
 
-        public ASCIIEncoding() : base(Encoding.CodePageASCII)
+        public ASCIIEncoding() : base(CodePageASCII)
         {
         }
 
@@ -188,11 +189,11 @@ namespace System.Text
 
             if (!(fallback is EncoderReplacementFallback replacementFallback
                 && replacementFallback.MaxCharCount == 1
-                && replacementFallback.DefaultString[0] <= 0x7F))
+                && Ascii.IsValid(replacementFallback.DefaultString[0])))
             {
                 // Unrecognized fallback mechanism - count chars manually.
 
-                byteCount = (int)ASCIIUtility.GetIndexOfFirstNonAsciiChar(pChars, (uint)charsLength);
+                byteCount = (int)Ascii.GetIndexOfFirstNonAsciiChar(pChars, (uint)charsLength);
             }
 
             charsConsumed = byteCount;
@@ -321,8 +322,26 @@ namespace System.Text
             }
         }
 
+        /// <inheritdoc/>
+        public override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            {
+                int written = GetBytesCommon(charsPtr, chars.Length, bytesPtr, bytes.Length, throwForDestinationOverflow: false);
+                if (written >= 0)
+                {
+                    bytesWritten = written;
+                    return true;
+                }
+
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe int GetBytesCommon(char* pChars, int charCount, byte* pBytes, int byteCount)
+        private unsafe int GetBytesCommon(char* pChars, int charCount, byte* pBytes, int byteCount, bool throwForDestinationOverflow = true)
         {
             // Common helper method for all non-EncoderNLS entry points to GetBytes.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
@@ -346,20 +365,20 @@ namespace System.Text
             {
                 // Simple narrowing conversion couldn't operate on entire buffer - invoke fallback.
 
-                return GetBytesWithFallback(pChars, charCount, pBytes, byteCount, charsConsumed, bytesWritten);
+                return GetBytesWithFallback(pChars, charCount, pBytes, byteCount, charsConsumed, bytesWritten, throwForDestinationOverflow);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetBytesCommon
         private protected sealed override unsafe int GetBytesFast(char* pChars, int charsLength, byte* pBytes, int bytesLength, out int charsConsumed)
         {
-            int bytesWritten = (int)ASCIIUtility.NarrowUtf16ToAscii(pChars, pBytes, (uint)Math.Min(charsLength, bytesLength));
+            int bytesWritten = (int)Ascii.NarrowUtf16ToAscii(pChars, pBytes, (uint)Math.Min(charsLength, bytesLength));
 
             charsConsumed = bytesWritten;
             return bytesWritten;
         }
 
-        private protected sealed override unsafe int GetBytesWithFallback(ReadOnlySpan<char> chars, int originalCharsLength, Span<byte> bytes, int originalBytesLength, EncoderNLS? encoder)
+        private protected sealed override unsafe int GetBytesWithFallback(ReadOnlySpan<char> chars, int originalCharsLength, Span<byte> bytes, int originalBytesLength, EncoderNLS? encoder, bool throwForDestinationOverflow = true)
         {
             // We special-case EncoderReplacementFallback if it's telling us to write a single ASCII char,
             // since we believe this to be relatively common and we can handle it more efficiently than
@@ -367,29 +386,26 @@ namespace System.Text
 
             if (((encoder is null) ? this.EncoderFallback : encoder.Fallback) is EncoderReplacementFallback replacementFallback
                 && replacementFallback.MaxCharCount == 1
-                && replacementFallback.DefaultString[0] <= 0x7F)
+                && Ascii.IsValid(replacementFallback.DefaultString[0]))
             {
                 byte replacementByte = (byte)replacementFallback.DefaultString[0];
 
                 int numElementsToConvert = Math.Min(chars.Length, bytes.Length);
                 int idx = 0;
 
-                fixed (char* pChars = &MemoryMarshal.GetReference(chars))
-                fixed (byte* pBytes = &MemoryMarshal.GetReference(bytes))
+                // In a loop, replace the non-convertible data, then bulk-convert as much as we can.
+                while (idx < numElementsToConvert)
                 {
-                    // In a loop, replace the non-convertible data, then bulk-convert as much as we can.
+                    bytes[idx++] = replacementByte;
 
-                    while (idx < numElementsToConvert)
+                    if (idx < numElementsToConvert)
                     {
-                        pBytes[idx++] = replacementByte;
+                        Ascii.FromUtf16(chars.Slice(idx), bytes.Slice(idx), out int charsConsumed);
 
-                        if (idx < numElementsToConvert)
-                        {
-                            idx += (int)ASCIIUtility.NarrowUtf16ToAscii(&pChars[idx], &pBytes[idx], (uint)(numElementsToConvert - idx));
-                        }
-
-                        Debug.Assert(idx <= numElementsToConvert, "Somehow went beyond bounds of source or destination buffer?");
+                        idx += charsConsumed;
                     }
+
+                    Debug.Assert(idx <= numElementsToConvert, "Somehow went beyond bounds of source or destination buffer?");
                 }
 
                 // Slice off how much we consumed / wrote.
@@ -408,7 +424,7 @@ namespace System.Text
             }
             else
             {
-                return base.GetBytesWithFallback(chars, originalCharsLength, bytes, originalBytesLength, encoder);
+                return base.GetBytesWithFallback(chars, originalCharsLength, bytes, originalBytesLength, encoder, throwForDestinationOverflow);
             }
         }
 
@@ -516,7 +532,7 @@ namespace System.Text
             {
                 // Unrecognized fallback mechanism - count bytes manually.
 
-                charCount = (int)ASCIIUtility.GetIndexOfFirstNonAsciiByte(pBytes, (uint)bytesLength);
+                charCount = (int)Ascii.GetIndexOfFirstNonAsciiByte(pBytes, (uint)bytesLength);
             }
 
             bytesConsumed = charCount;
@@ -597,8 +613,26 @@ namespace System.Text
             }
         }
 
+        /// <inheritdoc/>
+        public override unsafe bool TryGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten)
+        {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+            {
+                int written = GetCharsCommon(bytesPtr, bytes.Length, charsPtr, chars.Length, throwForDestinationOverflow: false);
+                if (written >= 0)
+                {
+                    charsWritten = written;
+                    return true;
+                }
+
+                charsWritten = 0;
+                return false;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe int GetCharsCommon(byte* pBytes, int byteCount, char* pChars, int charCount)
+        private unsafe int GetCharsCommon(byte* pBytes, int byteCount, char* pChars, int charCount, bool throwForDestinationOverflow = true)
         {
             // Common helper method for all non-DecoderNLS entry points to GetChars.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
@@ -622,20 +656,18 @@ namespace System.Text
             {
                 // Simple narrowing conversion couldn't operate on entire buffer - invoke fallback.
 
-                return GetCharsWithFallback(pBytes, byteCount, pChars, charCount, bytesConsumed, charsWritten);
+                return GetCharsWithFallback(pBytes, byteCount, pChars, charCount, bytesConsumed, charsWritten, throwForDestinationOverflow);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetCharsCommon
         private protected sealed override unsafe int GetCharsFast(byte* pBytes, int bytesLength, char* pChars, int charsLength, out int bytesConsumed)
         {
-            int charsWritten = (int)ASCIIUtility.WidenAsciiToUtf16(pBytes, pChars, (uint)Math.Min(bytesLength, charsLength));
-
-            bytesConsumed = charsWritten;
-            return charsWritten;
+            bytesConsumed = (int)Ascii.WidenAsciiToUtf16(pBytes, pChars, (uint)Math.Min(charsLength, bytesLength));
+            return bytesConsumed;
         }
 
-        private protected sealed override unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder)
+        private protected sealed override unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder, bool throwForDestinationOverflow = true)
         {
             // We special-case DecoderReplacementFallback if it's telling us to write a single BMP char,
             // since we believe this to be relatively common and we can handle it more efficiently than
@@ -649,22 +681,19 @@ namespace System.Text
                 int numElementsToConvert = Math.Min(bytes.Length, chars.Length);
                 int idx = 0;
 
-                fixed (byte* pBytes = &MemoryMarshal.GetReference(bytes))
-                fixed (char* pChars = &MemoryMarshal.GetReference(chars))
+                // In a loop, replace the non-convertible data, then bulk-convert as much as we can.
+
+                while (idx < numElementsToConvert)
                 {
-                    // In a loop, replace the non-convertible data, then bulk-convert as much as we can.
+                    chars[idx++] = replacementChar;
 
-                    while (idx < numElementsToConvert)
+                    if (idx < numElementsToConvert)
                     {
-                        pChars[idx++] = replacementChar;
-
-                        if (idx < numElementsToConvert)
-                        {
-                            idx += (int)ASCIIUtility.WidenAsciiToUtf16(&pBytes[idx], &pChars[idx], (uint)(numElementsToConvert - idx));
-                        }
-
-                        Debug.Assert(idx <= numElementsToConvert, "Somehow went beyond bounds of source or destination buffer?");
+                        Ascii.ToUtf16(bytes.Slice(idx), chars.Slice(idx), out int bytesConsumed);
+                        idx += bytesConsumed;
                     }
+
+                    Debug.Assert(idx <= numElementsToConvert, "Somehow went beyond bounds of source or destination buffer?");
                 }
 
                 // Slice off how much we consumed / wrote.
@@ -683,7 +712,7 @@ namespace System.Text
             }
             else
             {
-                return base.GetCharsWithFallback(bytes, originalBytesLength, chars, originalCharsLength, decoder);
+                return base.GetCharsWithFallback(bytes, originalBytesLength, chars, originalCharsLength, decoder, throwForDestinationOverflow);
             }
         }
 
@@ -774,7 +803,7 @@ namespace System.Text
             if (!bytes.IsEmpty)
             {
                 byte b = bytes[0];
-                if (b <= 0x7F)
+                if (Ascii.IsValid(b))
                 {
                     // ASCII byte
 
@@ -807,9 +836,7 @@ namespace System.Text
 
         public override int GetMaxByteCount(int charCount)
         {
-            if (charCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(charCount),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             // Characters would be # of characters + 1 in case high surrogate is ? * max fallback
             long byteCount = (long)charCount + 1;
@@ -827,9 +854,7 @@ namespace System.Text
 
         public override int GetMaxCharCount(int byteCount)
         {
-            if (byteCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(byteCount),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             // Just return length, SBCS stay the same length because they don't map to surrogate
             long charCount = (long)byteCount;

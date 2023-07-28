@@ -59,7 +59,7 @@ namespace System.Reflection.Tests
             for (int i = 0; i < ps.Length; i++)
             {
                 ParameterInfo p = ps[i];
-                string paramterString = p.ToString();
+                string parameterString = p.ToString();
                 Assert.Equal(i, p.Position);
                 Assert.Equal(mb, p.Member);
             }

@@ -20,7 +20,7 @@ namespace System.Text.Json
         private const int UnseekableStreamInitialRentSize = 4096;
 
         /// <summary>
-        ///   Parse memory as UTF-8-encoded text representing a single JSON value into a JsonDocument.
+        ///   Parse memory as UTF-8 encoded text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <remarks>
         ///   <para>
@@ -50,7 +50,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse a sequence as UTF-8-encoded text representing a single JSON value into a JsonDocument.
+        ///   Parse a sequence as UTF-8 encoded text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <remarks>
         ///   <para>
@@ -101,7 +101,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse a <see cref="Stream"/> as UTF-8-encoded data representing a single JSON value into a
+        ///   Parse a <see cref="Stream"/> as UTF-8 encoded data representing a single JSON value into a
         ///   JsonDocument.  The Stream will be read to completion.
         /// </summary>
         /// <param name="utf8Json">JSON data to parse.</param>
@@ -180,7 +180,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse a <see cref="Stream"/> as UTF-8-encoded data representing a single JSON value into a
+        ///   Parse a <see cref="Stream"/> as UTF-8 encoded data representing a single JSON value into a
         ///   JsonDocument.  The Stream will be read to completion.
         /// </summary>
         /// <param name="utf8Json">JSON data to parse.</param>
@@ -673,7 +673,7 @@ namespace System.Text.Json
             {
                 MetadataDb database = MetadataDb.CreateLocked(utf8Json.Length);
                 database.Append(tokenType, startLocation: 0, utf8Json.Length);
-                return new JsonDocument(utf8Json, database);
+                return new JsonDocument(utf8Json, database, isDisposable: false);
             }
         }
 
@@ -739,7 +739,7 @@ namespace System.Text.Json
                 }
             }
 
-            return new JsonDocument(utf8Json, database);
+            return new JsonDocument(utf8Json, database, isDisposable: false);
         }
 
         private static ArraySegment<byte> ReadToEnd(Stream stream)
@@ -817,7 +817,7 @@ namespace System.Text.Json
         }
 
         private static async
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             ValueTask<ArraySegment<byte>>
 #else
             Task<ArraySegment<byte>>
@@ -855,7 +855,7 @@ namespace System.Text.Json
                     Debug.Assert(rented.Length >= JsonConstants.Utf8Bom.Length);
 
                     lastRead = await stream.ReadAsync(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                         rented.AsMemory(written, utf8BomLength - written),
 #else
                         rented,
@@ -886,7 +886,7 @@ namespace System.Text.Json
                     }
 
                     lastRead = await stream.ReadAsync(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                         rented.AsMemory(written),
 #else
                         rented,

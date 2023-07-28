@@ -17,8 +17,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public TraceSwitch(string displayName, string? description)
             : base(displayName, description)
-        {
-        }
+        { }
 
         public TraceSwitch(string displayName, string? description, string defaultSwitchValue)
             : base(displayName, description, defaultSwitchValue)
@@ -39,7 +38,7 @@ namespace System.Diagnostics
             {
                 if (value < TraceLevel.Off || value > TraceLevel.Verbose)
                     throw new ArgumentException(SR.TraceSwitchInvalidLevel);
-                SwitchSetting = (int)value;
+                SetSwitchValues((int)value, value.ToString());
             }
         }
 
@@ -49,52 +48,28 @@ namespace System.Diagnostics
         ///    <see langword='Error'/>, <see langword='Warning'/>, <see langword='Info'/>, or
         ///    <see langword='Verbose'/>.</para>
         /// </devdoc>
-        public bool TraceError
-        {
-            get
-            {
-                return (Level >= TraceLevel.Error);
-            }
-        }
+        public bool TraceError => Level >= TraceLevel.Error;
 
         /// <devdoc>
         ///    <para>Gets a value
         ///       indicating whether the <see cref='System.Diagnostics.TraceSwitch.Level'/> is set to
         ///    <see langword='Warning'/>, <see langword='Info'/>, or <see langword='Verbose'/>.</para>
         /// </devdoc>
-        public bool TraceWarning
-        {
-            get
-            {
-                return (Level >= TraceLevel.Warning);
-            }
-        }
+        public bool TraceWarning => Level >= TraceLevel.Warning;
 
         /// <devdoc>
         ///    <para>Gets a value
         ///       indicating whether the <see cref='System.Diagnostics.TraceSwitch.Level'/> is set to
         ///    <see langword='Info'/> or <see langword='Verbose'/>.</para>
         /// </devdoc>
-        public bool TraceInfo
-        {
-            get
-            {
-                return (Level >= TraceLevel.Info);
-            }
-        }
+        public bool TraceInfo => Level >= TraceLevel.Info;
 
         /// <devdoc>
         ///    <para>Gets a value
         ///       indicating whether the <see cref='System.Diagnostics.TraceSwitch.Level'/> is set to
         ///    <see langword='Verbose'/>.</para>
         /// </devdoc>
-        public bool TraceVerbose
-        {
-            get
-            {
-                return (Level == TraceLevel.Verbose);
-            }
-        }
+        public bool TraceVerbose => Level == TraceLevel.Verbose;
 
         /// <devdoc>
         ///    <para>
@@ -118,7 +93,21 @@ namespace System.Diagnostics
 
         protected override void OnValueChanged()
         {
-            SwitchSetting = (int)Enum.Parse<TraceLevel>(Value, true);
+            // Parse the new value and set the switch setting accordingly. Parse should throw an exception if the value is invalid.
+            TraceLevel level = Enum.Parse<TraceLevel>(Value, true);
+
+            if (level < TraceLevel.Off)
+            {
+                level = TraceLevel.Off;
+            }
+            else if (level > TraceLevel.Verbose)
+            {
+                level = TraceLevel.Verbose;
+            }
+
+
+            // Update the switch value string accordingly.
+            SetSwitchValues((int)level, level.ToString());
         }
     }
 }

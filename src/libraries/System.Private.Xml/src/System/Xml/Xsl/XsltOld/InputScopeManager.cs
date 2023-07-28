@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Xml.XPath;
-
     internal sealed class InputScopeManager
     {
         private InputScope? _scopeStack;
@@ -77,7 +77,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(nspace != null);
             _scopeStack.AddNamespace(prefix, nspace, _defaultNS);
 
-            if (prefix == null || prefix.Length == 0)
+            if (string.IsNullOrEmpty(prefix))
             {
                 _defaultNS = nspace;
             }

@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the DSA key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
-            SafeDsaHandle currentKey = _key.Value;
+            SafeDsaHandle currentKey = GetKey();
             SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 
             try
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography
         {
             if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
             {
-                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(DSAOpenSsl)));
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_CryptographyOpenSSLNotFound, nameof(DSAOpenSsl)));
             }
         }
     }

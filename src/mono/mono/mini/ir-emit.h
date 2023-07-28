@@ -307,6 +307,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_LDSTRCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDSTR, (image), (token), NULL, STACK_OBJ, mono_defaults.string_class)
 
+#define NEW_RVACONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_RVA, (image), (token), NULL, STACK_MP, NULL)
+
 #define NEW_LDSTRLITCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_LDSTR_LIT, (val))
 
 #define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token,generic_context) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), (generic_context), STACK_OBJ, mono_defaults.runtimetype_class)
@@ -666,7 +668,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 
 #define MONO_EMIT_NEW_VZERO(cfg,dr,kl) do { \
 		MonoInst *__inst; \
-		MONO_INST_NEW ((cfg), (__inst), MONO_CLASS_IS_SIMD (cfg, kl) ? OP_XZERO : OP_VZERO); \
+		MONO_INST_NEW ((cfg), (__inst), mini_class_is_simd (cfg, kl) ? OP_XZERO : OP_VZERO); \
 		__inst->dreg = dr; \
 		(__inst)->type = STACK_VTYPE; \
 		(__inst)->klass = (kl); \
@@ -880,6 +882,13 @@ static int ccount = 0;
 #define MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE(cfg) do { \
 	} while (0)
 
+#define MONO_EMIT_EXPLICIT_NULL_CHECK(cfg, reg) do { \
+		cfg->flags |= MONO_CFG_HAS_CHECK_THIS; \
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0);	\
+		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");		\
+		if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
+	} while (0)
+
 /* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */
 #define MONO_EMIT_NULL_CHECK(cfg, reg, out_of_page) do { \
 		if (cfg->explicit_null_checks || (out_of_page)) { \
@@ -888,7 +897,7 @@ static int ccount = 0;
 		} else { \
 			MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg); \
 		} \
-		MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
+		if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
 	} while (0)
 
 #define MONO_EMIT_NEW_CHECK_THIS(cfg, sreg) do { \
@@ -898,14 +907,14 @@ static int ccount = 0;
 		} else { \
 			MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, sreg); \
 			MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg); \
-			MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg); \
+			if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg); \
 		} \
 	} while (0)
 
 #define NEW_LOAD_MEMBASE_FLAGS(cfg,dest,op,dr,base,offset,ins_flags) do { \
 		guint8 __ins_flags = ins_flags; \
 		if (__ins_flags & MONO_INST_FAULT) { \
-			gboolean __out_of_page = offset > mono_target_pagesize (); \
+			gboolean __out_of_page = offset > GUINT_TO_INT(mono_target_pagesize ()); \
 			MONO_EMIT_NULL_CHECK ((cfg), (base), __out_of_page); \
 		} \
 		NEW_LOAD_MEMBASE ((cfg), (dest), (op), (dr), (base), (offset)); \
@@ -916,7 +925,7 @@ static int ccount = 0;
 		MonoInst *__inst; \
 		guint8 __ins_flags = ins_flags; \
 		if (__ins_flags & MONO_INST_FAULT) { \
-			int __out_of_page = offset > mono_target_pagesize (); \
+			int __out_of_page = offset > GUINT_TO_INT(mono_target_pagesize ()); \
 			MONO_EMIT_NULL_CHECK ((cfg), (base), __out_of_page); \
 		} \
 		NEW_LOAD_MEMBASE ((cfg), (__inst), (op), (dr), (base), (offset)); \
@@ -969,9 +978,9 @@ mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length
 		if (!(cfg->opt & MONO_OPT_ABCREM)) {
 			MONO_EMIT_NULL_CHECK (cfg, array_reg, FALSE);
 			if (COMPILE_LLVM (cfg))
-				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg), TRUE, ex_name);
+				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), GINT_TO_UINT(array_length_offset), (index_reg), TRUE, ex_name);
 			else
-				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg), ex_name);
+				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), GINT_TO_UINT(array_length_offset), (index_reg), ex_name);
 		} else {
 			MonoInst *ins;
 			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);

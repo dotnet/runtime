@@ -67,7 +67,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
                                     MethodDesc *pTemplateMD,
                                     DWORD classification,
                                     BOOL fNativeCodeSlot,
-                                    BOOL fComPlusCallInfo,
                                     AllocMemTracker *pamTracker)
 {
     CONTRACTL
@@ -78,7 +77,7 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(CheckPointer(pTemplateMD));
-        PRECONDITION(pMT->IsRestored_NoLogging());
+        PRECONDITION(pMT->IsRestored());
         PRECONDITION(pTemplateMD->GetMethodTable()->GetCanonicalMethodTable() == pMT->GetCanonicalMethodTable());
     }
     CONTRACTL_END
@@ -92,7 +91,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
                                      classification,
                                      TRUE /* fNonVtableSlot*/,
                                      fNativeCodeSlot,
-                                     fComPlusCallInfo,
                                      pMT,
                                      pamTracker);
 
@@ -120,11 +118,17 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
         pMD->SetIsIntrinsic();
     }
 
+#ifdef EnC_SUPPORTED
+    if (pTemplateMD->IsEnCAddedMethod())
+    {
+        pMD->SetIsEnCAddedMethod();
+    }
+#endif // EnC_SUPPORTED
+
     pMD->SetMemberDef(token);
     pMD->SetSlot(pTemplateMD->GetSlot());
 
 #ifdef _DEBUG
-    pMD->m_pszDebugMethodName = pTemplateMD->m_pszDebugMethodName;
     //<NICE> more info here</NICE>
     pMD->m_pszDebugMethodSignature = "<generic method signature>";
     pMD->m_pszDebugClassName  = "<generic method class name>";
@@ -382,8 +386,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
                     DWORD dictionarySlotSize;
                     DWORD dictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL, &dictionarySlotSize);
-                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %S\n",
-                        dictionarySlotSize, dictionaryAllocSize, name.GetUnicode()));
+                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %s\n",
+                        dictionarySlotSize, dictionaryAllocSize, name.GetUTF8()));
                 }
 #endif // _DEBUG
             }
@@ -407,8 +411,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             }
         }
 
-        BOOL forComInterop = FALSE;
-
         // Create a new singleton chunk for the new instantiated method descriptor
         // Notice that we've passed in the method table pointer; this gets
         // used in some of the subsequent setup methods for method descs.
@@ -418,7 +420,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                              pGenericMDescInRepMT,
                                                              mcInstantiated,
                                                              !pWrappedMD, // This is pesimistic estimate for fNativeCodeSlot
-                                                             forComInterop,
                                                              &amt));
 
         // Initialize the MD the way it needs to be
@@ -475,8 +476,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 #ifdef _DEBUG
                 SString name;
                 TypeString::AppendMethodDebug(name, pNewMD);
-                StackScratchBuffer buff;
-                const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                const char* pDebugNameUTF8 = name.GetUTF8();
                 const char* verb = "Created";
                 if (pWrappedMD)
                     LOG((LF_CLASSLOADER, LL_INFO1000,
@@ -731,7 +731,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         PRECONDITION(CheckPointer(pDefMD));
         PRECONDITION(CheckPointer(pExactMT));
-        PRECONDITION(pExactMT->IsRestored_NoLogging());
+        PRECONDITION(pExactMT->IsRestored());
 
         // If the method descriptor belongs to a generic type then
         // the input exact type must be an instantiation of that type.
@@ -900,7 +900,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                  pMDescInCanonMT,
                                                  mcInstantiated,
                                                  FALSE /* fNativeCodeSlot */,
-                                                 FALSE /* fComPlusCallInfo */,
                                                  &amt);
 
                     // Indicate that this is a stub method which takes a BOXed this pointer.
@@ -946,7 +945,22 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     RETURN(NULL);
                 }
 
-                // Enter the critical section *after* we've found or created the non-unboxing instantiating stub (else we'd have a race)
+                // Recursively get the non-unboxing instantiating stub.  Thus we chain an unboxing
+                // stub with an instantiating stub.
+                MethodDesc* pNonUnboxingStub=
+                    MethodDesc::FindOrCreateAssociatedMethodDesc(pDefMD,
+                                                                 pExactMT,
+                                                                 FALSE /* not Unboxing */,
+                                                                 methodInst,
+                                                                 FALSE);
+
+                _ASSERTE(pNonUnboxingStub->GetClassification() == mcInstantiated);
+                _ASSERTE(!pNonUnboxingStub->RequiresInstArg());
+                _ASSERTE(!pNonUnboxingStub->IsUnboxingStub());
+
+                // Enter the critical section *after* we've found or created the non-unboxing instantiating stub (else we'd have a race,
+                // and its possible that the non-unboxing instantiating stub may be in a different loader module than pLoaderModule
+                // which would cause a Crst lock level violation
                 CrstHolder ch(&pLoaderModule->m_InstMethodHashTableCrst);
 
                 // Check whether another thread beat us to it!
@@ -958,19 +972,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
                 if (pResultMD == NULL)
                 {
-                    // Recursively get the non-unboxing instantiating stub.  Thus we chain an unboxing
-                    // stub with an instantiating stub.
-                    MethodDesc* pNonUnboxingStub=
-                        MethodDesc::FindOrCreateAssociatedMethodDesc(pDefMD,
-                                                                     pExactMT,
-                                                                     FALSE /* not Unboxing */,
-                                                                     methodInst,
-                                                                     FALSE);
-
-                    _ASSERTE(pNonUnboxingStub->GetClassification() == mcInstantiated);
-                    _ASSERTE(!pNonUnboxingStub->RequiresInstArg());
-                    _ASSERTE(!pNonUnboxingStub->IsUnboxingStub());
-
                     AllocMemTracker amt;
 
                     _ASSERTE(pDefMD->GetClassification() == mcInstantiated);
@@ -980,7 +981,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                  pNonUnboxingStub,
                                                  mcInstantiated,
                                                  FALSE /* fNativeCodeSlot */,
-                                                 FALSE /* fComPlusCallInfo */,
                                                  &amt);
 
                     pResultMD->SetIsUnboxingStub();
@@ -1356,20 +1356,22 @@ MethodDesc * MethodDesc::FindOrCreateTypicalSharedInstantiation(BOOL allowCreate
                                                         allowCreate));
 }
 
-//@GENERICSVER: Set the typical (ie. formal) instantiation
-void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIMDII,
+//@GENERICSVER: Set up the typical instance (i.e., non-instantiated)
+void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport* pIMDII,
                                                           LoaderAllocator* pAllocator,
-                                                          AllocMemTracker *pamTracker,
-                                                          Module *pModule,
+                                                          AllocMemTracker* pamTracker,
+                                                          Module* pModule,
                                                           mdMethodDef tok)
 {
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pIMDII));
+        PRECONDITION(CheckPointer(pAllocator));
+        PRECONDITION(CheckPointer(pamTracker));
+        PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
 
@@ -1378,7 +1380,7 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
 
     //@GENERICSVER: allocate space for and initialize the typical instantiation
     //we share the typical instantiation among all instantiations by placing it in the generic method desc
-    LOG((LF_JIT, LL_INFO10000, "GENERICSVER: Initializing typical method instantiation with type handles\n"));
+    LOG((LF_JIT, LL_INFO10000, "IMD::SGMD: Initializing typical MethodDesc this:%p\n", this));
     mdGenericParam    tkTyPar;
     HENUMInternalHolder hEnumTyPars(pIMDII);
     hEnumTyPars.EnumInit(mdtGenericParam, tok);
@@ -1402,7 +1404,8 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
     // the memory allocated for m_pMethInst will be freed if the declaring type fails to load
     m_pPerInstInfo = (Dictionary *) pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize));
 
-    TypeHandle * pInstDest = (TypeHandle *) IMD_GetMethodDictionaryNonNull();
+    TypeHandle * pInstDest = (TypeHandle *) IMD_GetMethodDictionary();
+    _ASSERTE(pInstDest != NULL);
 
     {
         // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
@@ -1428,7 +1431,8 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
             pInstDest[i] = TypeHandle(pTypeVarTypeDesc);
         }
     }
-    LOG((LF_JIT, LL_INFO10000, "GENERICSVER: Initialized typical  method instantiation with %d type handles\n",numTyPars));
+    LOG((LF_JIT, LL_INFO10000, "IMD::SGMD: Initialized typical MethodDesc. type handles: %u\n",
+        numTyPars));
 }
 
 void InstantiatedMethodDesc::SetupWrapperStubWithInstantiations(MethodDesc* wrappedMD,DWORD numGenericArgs, TypeHandle *pInst)
@@ -1635,7 +1639,7 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
 
         tyvar->LoadConstraints(); //TODO: is this necessary for anything but the typical method?
 
-        // Pass in the InstatiationContext so contraints can be correctly evaluated
+        // Pass in the InstatiationContext so constraints can be correctly evaluated
         // if this is an instantiation where the type variable is in its open position
         if (!tyvar->SatisfiesConstraints(&typeContext,thArg, typicalInstMatchesMethodInst ? &instContext : NULL))
         {

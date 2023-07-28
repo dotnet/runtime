@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal unsafe class testout1
+using Xunit;
+public unsafe class testout1
 {
     public struct VT
     {
         public long a1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         VT vt = new VT();
         vt.a1 = 500L;

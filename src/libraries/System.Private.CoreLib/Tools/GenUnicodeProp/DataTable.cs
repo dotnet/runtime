@@ -46,7 +46,7 @@ namespace GenUnicodeProp
             }
         }
 
-        private (int Total, string[] Stats) GenerateTable(int level2bits, int level3bits, bool cutOff, string name = null, List<byte> level1Index = null, List<ushort> level2Index = null, List<byte> level3Data = null)
+        private (int Total, string[] Stats) GenerateTable(int level2bits, int level3bits, bool cutOff, string? name = null, List<byte>? level1Index = null, List<ushort>? level2Index = null, List<byte>? level3Data = null)
         {
             if (name != null)
                 Console.WriteLine($"Process {20 - level3bits - level2bits}:{level2bits}:{level3bits} table {name}.");
@@ -130,7 +130,7 @@ namespace GenUnicodeProp
                     Array.Fill(level2RowData, index);
                     if (level2Hash.TryGetValue(string.Join(";", level2RowData), out index))
                     {
-                        while (level1Index.Count > 0 && level1Index[level1Index.Count - 1] == index)
+                        while (level1Index!.Count > 0 && level1Index![level1Index.Count - 1] == index)
                         {
                             level1Index.RemoveAt(level1Index.Count - 1);
                             level1Count--;

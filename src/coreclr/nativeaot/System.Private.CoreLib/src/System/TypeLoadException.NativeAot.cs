@@ -14,8 +14,7 @@ namespace System
 
         private void SetMessageField()
         {
-            if (_message == null)
-                _message = SR.Arg_TypeLoadException;
+            _message ??= SR.Arg_TypeLoadException;
         }
     }
 }

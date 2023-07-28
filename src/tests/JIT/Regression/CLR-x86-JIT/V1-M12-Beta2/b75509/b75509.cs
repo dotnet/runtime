@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 
 public class Foo
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         Foo o = new Foo();
         Object a = 2.718281828458999;

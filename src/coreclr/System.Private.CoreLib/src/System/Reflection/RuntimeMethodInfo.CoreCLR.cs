@@ -16,18 +16,18 @@ namespace System.Reflection
     internal sealed partial class RuntimeMethodInfo : MethodInfo, IRuntimeMethodInfo
     {
         #region Private Data Members
-        private IntPtr m_handle;
-        private RuntimeTypeCache m_reflectedTypeCache;
+        private readonly IntPtr m_handle;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
         private string? m_name;
         private string? m_toString;
         private ParameterInfo[]? m_parameters;
         private ParameterInfo? m_returnParameter;
-        private BindingFlags m_bindingFlags;
-        private MethodAttributes m_methodAttributes;
+        private readonly BindingFlags m_bindingFlags;
+        private readonly MethodAttributes m_methodAttributes;
         private Signature? m_signature;
-        private RuntimeType m_declaringType;
-        private object? m_keepalive;
-        private MethodInvoker? m_invoker;
+        private readonly RuntimeType m_declaringType;
+        private readonly object? m_keepalive;
+        private MethodBaseInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
         {
@@ -35,20 +35,17 @@ namespace System.Reflection
             get
             {
                 InvocationFlags flags = Invoker._invocationFlags;
-                if ((flags & InvocationFlags.Initialized) == 0)
-                {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref Invoker._invocationFlags);
-                }
+                Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
         }
 
-        private MethodInvoker Invoker
+        private MethodBaseInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_invoker ??= new MethodInvoker(this, Signature);
+                m_invoker ??= new MethodBaseInvoker(this);
                 return m_invoker;
             }
         }
@@ -157,56 +154,18 @@ namespace System.Reflection
             return m_toString;
         }
 
-        public override int GetHashCode()
-        {
-            // See RuntimeMethodInfo.Equals() below.
-            if (IsGenericMethod)
-                return ValueType.GetHashCodeOfPtr(m_handle);
-            else
-                return base.GetHashCode();
-        }
+        // We cannot do simple object identity comparisons due to generic methods.
+        // Equals and GetHashCode will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
+        // retrieve items from and insert items into s_methodInstantiations.
 
-        public override bool Equals(object? obj)
-        {
-            if (!IsGenericMethod)
-                return obj == (object)this;
+        public override int GetHashCode() =>
+            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
 
-            // We cannot do simple object identity comparisons for generic methods.
-            // Equals will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
-            // retrieve items from and insert items into s_methodInstantiations which is a CerHashtable.
+        public override bool Equals(object? obj) =>
+            obj is RuntimeMethodInfo m && m_handle == m.m_handle &&
+            ReferenceEquals(m_declaringType, m.m_declaringType) &&
+            ReferenceEquals(m_reflectedTypeCache.GetRuntimeType(), m.m_reflectedTypeCache.GetRuntimeType());
 
-            RuntimeMethodInfo? mi = obj as RuntimeMethodInfo;
-
-            if (mi == null || !mi.IsGenericMethod)
-                return false;
-
-            // now we know that both operands are generic methods
-
-            IRuntimeMethodInfo handle1 = RuntimeMethodHandle.StripMethodInstantiation(this);
-            IRuntimeMethodInfo handle2 = RuntimeMethodHandle.StripMethodInstantiation(mi);
-            if (handle1.Value.Value != handle2.Value.Value)
-                return false;
-
-            Type[] lhs = GetGenericArguments();
-            Type[] rhs = mi.GetGenericArguments();
-
-            if (lhs.Length != rhs.Length)
-                return false;
-
-            for (int i = 0; i < lhs.Length; i++)
-            {
-                if (lhs[i] != rhs[i])
-                    return false;
-            }
-
-            if (DeclaringType != mi.DeclaringType)
-                return false;
-
-            if (ReflectedType != mi.ReflectedType)
-                return false;
-
-            return true;
-        }
         #endregion
 
         #region ICustomAttributeProvider
@@ -325,7 +284,7 @@ namespace System.Reflection
         #region Invocation Logic
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal object? InvokeOneParameter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
+        internal void InvokePropertySetter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
         {
             // ContainsStackPointers means that the struct (either the declaring type or the return type)
             // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
@@ -336,7 +295,10 @@ namespace System.Reflection
             }
 
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
-            ValidateInvokeTarget(obj);
+            if (!IsStatic)
+            {
+                MethodInvokerCommon.ValidateInvokeTarget(obj, this);
+            }
 
             Signature sig = Signature;
             if (sig.Arguments.Length != 1)
@@ -344,36 +306,7 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            object? retValue;
-
-            unsafe
-            {
-                StackAllocedArguments argStorage = default;
-                Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
-                ReadOnlySpan<object?> parameters = new(in parameter);
-                Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
-
-                StackAllocatedByRefs byrefStorage = default;
-                IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
-
-                CheckArguments(
-                    copyOfParameters,
-                    pByRefStorage,
-                    shouldCopyBackParameters,
-                    parameters,
-                    ArgumentTypes,
-                    binder,
-                    culture,
-                    invokeAttr);
-
-#if MONO // Temporary until Mono is updated.
-                retValue = Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
-#else
-                retValue = Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
-#endif
-            }
-
-            return retValue;
+            Invoker.InvokePropertySetter(obj, invokeAttr, binder, parameter, culture);
         }
 
         #endregion
@@ -490,7 +423,7 @@ namespace System.Reflection
                     for (int iCopy = 0; iCopy < methodInstantiation.Length; iCopy++)
                         methodInstantiationCopy[iCopy] = methodInstantiation[iCopy];
                     methodInstantiation = methodInstantiationCopy;
-                    return System.Reflection.Emit.MethodBuilderInstantiation.MakeGenericMethod(this, methodInstantiation);
+                    return Emit.MethodBuilderInstantiation.MakeGenericMethod(this, methodInstantiation);
                 }
 
                 methodInstantionRuntimeType[i] = rtMethodInstantiationElem;

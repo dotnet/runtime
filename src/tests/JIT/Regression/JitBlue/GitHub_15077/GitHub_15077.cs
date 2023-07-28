@@ -3,12 +3,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Codegen bug when propagating an int cast through
 // a long shift. Tests below have known and unknown
 // long shifts where shift amount is 31 or 32.
 
-class P
+public class P
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static UInt32 G32()
@@ -51,7 +52,8 @@ class P
         return (UInt32)((1UL << q) - 1);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         UInt32 r64 = G64();
         UInt32 r63 = G63();

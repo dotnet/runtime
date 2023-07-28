@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class C
+public class C
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static float L(float a)
@@ -18,7 +19,8 @@ class C
         return (float)Math.Pow(a, (float)Math.Pow(b, a));
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return L(0) == M(float.NegativeInfinity, 0) ? 100 : 0;
     }

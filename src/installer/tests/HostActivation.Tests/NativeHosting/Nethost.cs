@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
     {
         private const string GetHostFxrPath = "get_hostfxr_path";
 
-        private static readonly string HostFxrName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr");
+        private static readonly string HostFxrName = Binaries.HostFxr.FileName;
         private readonly SharedTestState sharedState;
 
         public Nethost(SharedTestState sharedTestState)
@@ -84,7 +84,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 result.Should().Fail()
                     .And.ExitWith(1)
                     .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                    .And.HaveStdErrContaining($"The folder [{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
+                    .And.HaveStdErrContaining($"[{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
             }
         }
 
@@ -348,7 +348,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             // This is to make sure that we're using the unmodified product binary. If some previous test
             // enabled test-only product behavior on the binary and didn't correctly cleanup, this test would fail.
             File.Copy(
-                Path.Combine(sharedState.RepoDirectories.HostArtifacts, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost")),
+                Binaries.NetHost.FilePath,
                 sharedState.NethostPath,
                 overwrite: true);
 

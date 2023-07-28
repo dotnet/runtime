@@ -977,9 +977,22 @@ RtlpGetFunctionEndAddress (
     ULONG64 FunctionLength;
 
     FunctionLength = FunctionEntry->UnwindData;
-    if ((FunctionLength & 3) != 0) {
-        FunctionLength = (FunctionLength >> 2) & 0x7ff;
-    } else {
+    if ((FunctionLength & 3) != 0)
+    {
+        // Compact form pdata.
+        if ((FunctionLength & 7) == 3)
+        {
+            // Long branch pdata, by standard this is 3 so size is 12.
+            FunctionLength = 3;
+        }
+        else
+        {
+            FunctionLength = (FunctionLength >> 2) & 0x7ff;
+        }
+    }
+    else
+    {
+        // Get from the xdata record.
         FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
@@ -1070,5 +1083,62 @@ RtlVirtualUnwind(
     );
 
 #endif // TARGET_LOONGARCH64
+
+#ifdef TARGET_RISCV64
+#include "daccess.h"
+
+#define UNW_FLAG_NHANDLER               0x0             /* any handler */
+#define UNW_FLAG_EHANDLER               0x1             /* filter handler */
+#define UNW_FLAG_UHANDLER               0x2             /* unwind handler */
+
+// This function returns the RVA of the end of the function (exclusive, so one byte after the actual end)
+// using the unwind info on ARM64. (see ExternalAPIs\Win9CoreSystem\inc\winnt.h)
+FORCEINLINE
+ULONG64
+RtlpGetFunctionEndAddress (
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ ULONG64 ImageBase
+    )
+{
+    ULONG64 FunctionLength;
+
+    FunctionLength = FunctionEntry->UnwindData;
+    if ((FunctionLength & 3) != 0) {
+        FunctionLength = (FunctionLength >> 2) & 0x7ff;
+    } else {
+        memcpy(&FunctionLength, (void*)(ImageBase + FunctionLength), sizeof(UINT32));
+        FunctionLength &= 0x3ffff;
+    }
+
+    return FunctionEntry->BeginAddress + 4 * FunctionLength;
+}
+
+#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
+#define RUNTIME_FUNCTION__SetBeginAddress(FunctionEntry,address)    ((FunctionEntry)->BeginAddress = (address))
+
+#define RUNTIME_FUNCTION__EndAddress(FunctionEntry, ImageBase)      (RtlpGetFunctionEndAddress(FunctionEntry, (ULONG64)(ImageBase)))
+
+#define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf,address)         do { (prf)->UnwindData = (address); } while (0)
+
+typedef struct _UNWIND_INFO {
+    // dummy
+} UNWIND_INFO, *PUNWIND_INFO;
+
+EXTERN_C
+NTSYSAPI
+PEXCEPTION_ROUTINE
+NTAPI
+RtlVirtualUnwind(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PRUNTIME_FUNCTION FunctionEntry,
+    IN OUT PCONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
+    );
+
+#endif // TARGET_RISCV64
 
 #endif  // CLRNT_H_

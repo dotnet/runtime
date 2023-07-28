@@ -35,7 +35,7 @@ namespace System.IO.Tests
                 string mountedDirName;
                 string dirName;
                 string dirNameWithoutRoot;
-                string dirNameReferedFromMountedDrive;
+                string dirNameReferredFromMountedDrive;
 
                 //Adding debug info since this test hangs sometime in RTS runs
                 string debugFileName = "Co7604Delete_MountVolume_Debug.txt";
@@ -68,8 +68,8 @@ namespace System.IO.Tests
                                 Eval(Directory.Exists(dirName), "Err_3974g! Directory {0} doesn't exist: {1}", dirName, Directory.Exists(dirName));
                                 //Lets refer to these via mounted drive and check
                                 dirNameWithoutRoot = dirName.Substring(3);
-                                dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
-                                Directory.Delete(dirNameReferedFromMountedDrive, true);
+                                dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
+                                Directory.Delete(dirNameReferredFromMountedDrive, true);
                                 Task.Delay(300).Wait();
                                 Eval(!Directory.Exists(dirName), "Err_20387g! Directory {0} still exist: {1}", dirName, Directory.Exists(dirName));
                             }
@@ -113,8 +113,8 @@ namespace System.IO.Tests
                                 Eval(Directory.Exists(dirName), "Err_239ufz! Directory {0} doesn't exist: {1}", dirName, Directory.Exists(dirName));
                                 //Lets refer to these via mounted drive and check
                                 dirNameWithoutRoot = dirName.Substring(3);
-                                dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
-                                Directory.Delete(dirNameReferedFromMountedDrive, true);
+                                dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
+                                Directory.Delete(dirNameReferredFromMountedDrive, true);
                                 Task.Delay(300).Wait();
                                 Eval(!Directory.Exists(dirName), "Err_794aiu! Directory {0} still exist: {1}", dirName, Directory.Exists(dirName));
                             }
@@ -155,8 +155,8 @@ namespace System.IO.Tests
                                 Eval(Directory.Exists(dirName), "Err_324eez! Directory {0} doesn't exist: {1}", dirName, Directory.Exists(dirName));
                                 //Lets refer to these via mounted drive and check
                                 dirNameWithoutRoot = dirName.Substring(3);
-                                dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
-                                Directory.Delete(dirNameReferedFromMountedDrive, true);
+                                dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
+                                Directory.Delete(dirNameReferredFromMountedDrive, true);
                                 Task.Delay(300).Wait();
                                 Eval(!Directory.Exists(dirName), "Err_195whv! Directory {0} still exist: {1}", dirName, Directory.Exists(dirName));
                             }
@@ -197,8 +197,8 @@ namespace System.IO.Tests
                                 Eval(Directory.Exists(dirName), "Err_951ipb! Directory {0} doesn't exist: {1}", dirName, Directory.Exists(dirName));
                                 //Lets refer to these via mounted drive and check
                                 dirNameWithoutRoot = dirName.Substring(3);
-                                dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
-                                Directory.Delete(dirNameReferedFromMountedDrive, true);
+                                dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
+                                Directory.Delete(dirNameReferredFromMountedDrive, true);
                                 Task.Delay(300).Wait();
                                 Eval(!Directory.Exists(dirName), "Err_493yin! Directory {0} still exist: {1}", dirName, Directory.Exists(dirName));
                             }

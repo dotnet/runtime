@@ -31,7 +31,7 @@ namespace System.Linq.Parallel.Tests
         {
             Assert.False(ParallelEnumerable.Range(0, count).Contains(count));
             Assert.False(ParallelEnumerable.Range(0, count).Contains(count, null));
-            Assert.False(ParallelEnumerable.Range(0, count).Contains(count, DelegatingComparer.Create<int>((l, r) => false, i => 0)));
+            Assert.False(ParallelEnumerable.Range(0, count).Contains(count, EqualityComparer<int>.Create((l, r) => false)));
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace System.Linq.Parallel.Tests
         [InlineData(16)]
         public static void Contains_MultipleMatching(int count)
         {
-            Assert.True(ParallelEnumerable.Range(0, count).Contains(count, DelegatingComparer.Create<int>((l, r) => (l % 2) == (r % 2), i => i % 2)));
+            Assert.True(ParallelEnumerable.Range(0, count).Contains(count, EqualityComparer<int>.Create((l, r) => (l % 2) == (r % 2))));
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace System.Linq.Parallel.Tests
         {
             Assert.True(ParallelEnumerable.Range(0, count).Contains(position));
             Assert.True(ParallelEnumerable.Range(0, count).Contains(position, null));
-            Assert.True(ParallelEnumerable.Range(0, count).Contains(position, DelegatingComparer.Create<int>((l, r) => l == position && r == position, i => i.GetHashCode())));
+            Assert.True(ParallelEnumerable.Range(0, count).Contains(position, EqualityComparer<int>.Create((l, r) => l == position && r == position)));
         }
 
         [Theory]

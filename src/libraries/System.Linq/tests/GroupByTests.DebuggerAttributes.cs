@@ -10,7 +10,7 @@ namespace System.Linq.Tests
 {
     public partial class GroupByTests : EnumerableTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [MemberData(nameof(DebuggerAttributesValid_Data))]
         public void DebuggerAttributesValid<TKey, TElement>(IGrouping<TKey, TElement> grouping, string keyString)
         {

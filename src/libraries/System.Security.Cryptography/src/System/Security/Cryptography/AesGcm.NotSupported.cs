@@ -8,8 +8,9 @@ namespace System.Security.Cryptography
     public partial class AesGcm
     {
         public static bool IsSupported => false;
+        public static KeySizes TagByteSizes { get; } = new KeySizes(12, 16, 1);
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822, IDE0060
         private void ImportKey(ReadOnlySpan<byte> key)
         {
             Debug.Fail("Instance ctor should fail before we reach this point.");
@@ -43,6 +44,6 @@ namespace System.Security.Cryptography
             Debug.Fail("Instance ctor should fail before we reach this point.");
             // no-op
         }
-#pragma warning restore CA1822
+#pragma warning restore CA1822, IDE0060
     }
 }

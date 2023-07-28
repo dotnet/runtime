@@ -20,6 +20,11 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.RsaPkcs1Sha256, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha256, HashAlgorithmName.SHA256));
             lookup.Add(Oids.RsaPkcs1Sha384, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha384, HashAlgorithmName.SHA384));
             lookup.Add(Oids.RsaPkcs1Sha512, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha512, HashAlgorithmName.SHA512));
+#if NET8_0_OR_GREATER
+            lookup.Add(Oids.RsaPkcs1Sha3_256, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_256, HashAlgorithmName.SHA3_256));
+            lookup.Add(Oids.RsaPkcs1Sha3_384, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_384, HashAlgorithmName.SHA3_384));
+            lookup.Add(Oids.RsaPkcs1Sha3_512, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_512, HashAlgorithmName.SHA3_512));
+#endif
             lookup.Add(Oids.RsaPss, new RSAPssCmsSignature());
         }
 
@@ -309,47 +314,8 @@ namespace System.Security.Cryptography.Pkcs
                             digestAlgorithmOid));
                 }
 
-                if (pssParams.TrailerField != 1)
-                {
-                    throw new CryptographicException(SR.Cryptography_Pkcs_InvalidSignatureParameters);
-                }
-
-                if (pssParams.SaltLength != digestValueLength)
-                {
-                    throw new CryptographicException(
-                        SR.Format(
-                            SR.Cryptography_Pkcs_PssParametersSaltMismatch,
-                            pssParams.SaltLength,
-                            digestAlgorithmName.Name));
-                }
-
-                if (pssParams.MaskGenAlgorithm.Algorithm != Oids.Mgf1)
-                {
-                    throw new CryptographicException(
-                        SR.Cryptography_Pkcs_PssParametersMgfNotSupported,
-                        pssParams.MaskGenAlgorithm.Algorithm);
-                }
-
-                if (pssParams.MaskGenAlgorithm.Parameters == null)
-                {
-                    throw new CryptographicException(SR.Cryptography_Pkcs_InvalidSignatureParameters);
-                }
-
-                AlgorithmIdentifierAsn mgfParams = AlgorithmIdentifierAsn.Decode(
-                    pssParams.MaskGenAlgorithm.Parameters.Value,
-                    AsnEncodingRules.DER);
-
-                if (mgfParams.Algorithm != digestAlgorithmOid)
-                {
-                    throw new CryptographicException(
-                        SR.Format(
-                            SR.Cryptography_Pkcs_PssParametersMgfHashMismatch,
-                            mgfParams.Algorithm,
-                            digestAlgorithmOid));
-                }
-
-                // When RSASignaturePadding supports custom salt sizes this return will look different.
-                return RSASignaturePadding.Pss;
+                RSASignaturePadding padding = pssParams.GetSignaturePadding(digestValueLength);
+                return padding;
             }
 
             protected override bool Sign(

@@ -15,9 +15,8 @@ CrashInfo::Initialize()
     if (result != KERN_SUCCESS)
     {
         // Regardless of the reason (invalid process id or invalid signing/entitlements) it always returns KERN_FAILURE (5)
-        printf_error("Invalid process id: task_for_pid(%d) FAILED %s (%x)\n"
-            "This failure may be because createdump or the application is not properly signed and entitled.\n",
-            m_pid, mach_error_string(result), result);
+        printf_error("Invalid process id: task_for_pid(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
+        printf_error("This failure may be because createdump or the application is not properly signed and entitled.\n");
         return false;
     }
     return true;
@@ -75,6 +74,12 @@ CrashInfo::EnumerateAndSuspendThreads()
         m_threads.push_back(thread);
     }
 
+    result = ::vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threadList), threadCount * sizeof(thread_act_t));
+    if (result != KERN_SUCCESS)
+    {
+        TRACE("vm_deallocate FAILED %x %s\n", result, mach_error_string(result));
+    }
+
     return true;
 }
 
@@ -100,6 +105,7 @@ CrashInfo::EnumerateMemoryRegions()
     vm_region_submap_info_data_64_t info;
     mach_vm_address_t address = 1;
     mach_vm_size_t size = 0;
+    uint64_t cbAllMemoryRegions = 0;
     uint32_t depth = 0;
 
     // First enumerate and add all the regions
@@ -113,15 +119,15 @@ CrashInfo::EnumerateMemoryRegions()
             TRACE("mach_vm_region_recurse for address %016llx %08llx FAILED %s (%x)\n", address, size, mach_error_string(result), result);
             break;
         }
-        TRACE_VERBOSE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
+        TRACE_VERBOSE("%016llx - %016llx (%06llx, %06llx) %08llx %s %d %d %c%c%c %02x\n",
             address,
             address + size,
             size / PAGE_SIZE,
+            info.pages_resident,
             info.offset,
             info.is_submap ? "sub" : "   ",
-            info.user_wired_count,
-            info.share_mode,
             depth,
+            info.share_mode,
             (info.protection & VM_PROT_READ) ? 'r' : '-',
             (info.protection & VM_PROT_WRITE) ? 'w' : '-',
             (info.protection & VM_PROT_EXECUTE) ? 'x' : '-',
@@ -132,42 +138,57 @@ CrashInfo::EnumerateMemoryRegions()
         }
         else
         {
-            if ((info.protection & (VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE)) != 0)
+            if (info.share_mode != SM_EMPTY && (info.protection & (VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE)) != 0)
             {
                 MemoryRegion memoryRegion(ConvertProtectionFlags(info.protection), address, address + size, info.offset);
                 m_allMemoryRegions.insert(memoryRegion);
+                cbAllMemoryRegions += memoryRegion.Size();
             }
             address += size;
         }
     }
 
-    // Now find all the modules and add them to the module list
-    for (const MemoryRegion& region : m_allMemoryRegions)
+    // Get the dylinker info and enumerate all the modules
+    struct task_dyld_info dyld_info;
+    mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
+    kern_return_t result = ::task_info(Task(), TASK_DYLD_INFO, (task_info_t)&dyld_info, &count);
+    if (result != KERN_SUCCESS)
     {
-        bool found;
-        if (!TryFindDyLinker(region.StartAddress(), region.Size(), &found)) {
-            return false;
-        }
-        if (found) {
-            break;
-        }
+        TRACE("EnumerateMemoryRegions: task_info(TASK_DYLD_INFO) FAILED %x %s\n", result, mach_error_string(result));
+        return false;
     }
 
-    // Filter out the module regions from the memory regions gathered
+    // Enumerate all the modules in dyld's image cache. VisitModule is called for every module found.
+    if (!EnumerateModules(dyld_info.all_image_info_addr))
+    {
+        return false;
+    }
+
+    TRACE("EnumerateMemoryRegions: cbAllMemoryRegions %06llx native cbModuleMappings %06llx\n", cbAllMemoryRegions / PAGE_SIZE, m_cbModuleMappings / PAGE_SIZE);
+    return true;
+}
+
+void
+CrashInfo::InitializeOtherMappings()
+{
+    uint64_t cbOtherMappings = 0;
+
+    // Filter out the module regions from the memory regions gathered. The m_moduleMappings list needs
+    // to include all the native and managed module regions.
     for (const MemoryRegion& region : m_allMemoryRegions)
     {
         std::set<MemoryRegion>::iterator found = m_moduleMappings.find(region);
         if (found == m_moduleMappings.end())
         {
             m_otherMappings.insert(region);
+            cbOtherMappings += region.Size();
         }
         else
         {
             // Skip any region that is fully contained in a module region
             if (!found->Contains(region))
             {
-                TRACE("Region:   ");
-                region.Trace();
+                region.Trace("Region:   ");
 
                 // Now add all the gaps in "region" left by the module regions
                 uint64_t previousEndAddress = region.StartAddress();
@@ -179,9 +200,9 @@ CrashInfo::EnumerateMemoryRegions()
                         MemoryRegion gap(region.Flags(), previousEndAddress, found->StartAddress(), region.Offset());
                         if (gap.Size() > 0)
                         {
-                            TRACE("     Gap: ");
-                            gap.Trace();
+                            gap.Trace("     Gap: ");
                             m_otherMappings.insert(gap);
+                            cbOtherMappings += gap.Size();
                         }
                         previousEndAddress = found->EndAddress();
                     }
@@ -190,54 +211,14 @@ CrashInfo::EnumerateMemoryRegions()
                 MemoryRegion endgap(region.Flags(), previousEndAddress, region.EndAddress(), region.Offset());
                 if (endgap.Size() > 0)
                 {
-                    TRACE("   EndGap:");
-                    endgap.Trace();
+                    endgap.Trace("  EndGap: ");
                     m_otherMappings.insert(endgap);
+                    cbOtherMappings += endgap.Size();
                 }
             }
         }
     }
-    return true;
-}
-
-bool
-CrashInfo::TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool* found)
-{
-    bool result = true;
-    *found = false;
-
-    if (size > sizeof(mach_header_64))
-    {
-        mach_header_64 header;
-        size_t read = 0;
-        if (ReadProcessMemory((void*)address, &header, sizeof(mach_header_64), &read))
-        { 
-            if (header.magic == MH_MAGIC_64)
-            {
-                TRACE("TryFindDyLinker: found module header at %016llx %08llx ncmds %d sizeofcmds %08x type %02x\n",
-                    address,
-                    size,
-                    header.ncmds,
-                    header.sizeofcmds,
-                    header.filetype);
-
-                if (header.filetype == MH_DYLINKER)
-                {
-                    TRACE("TryFindDyLinker: found dylinker\n");
-                    *found = true;
-
-                    // Enumerate all the modules in dyld's image cache. VisitModule is called for every module found.
-                    result = EnumerateModules(address, &header);
-                }
-            }
-        }
-        else 
-        {
-            TRACE("TryFindDyLinker: ReadProcessMemory header at %p %d FAILED\n", address, read);
-        }
-    }
-
-    return result;
+    TRACE("OtherMappings: %06llx\n", cbOtherMappings / PAGE_SIZE);
 }
 
 void CrashInfo::VisitModule(MachOModule& module)
@@ -264,7 +245,7 @@ void CrashInfo::VisitModule(MachOModule& module)
                 TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
             }
         }
-        else if (g_checkForSingleFile)
+        else if (m_appModel == AppModelType::SingleFile)
         {
             uint64_t symbolOffset;
             if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
@@ -307,31 +288,52 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
 
             // Round to page boundary
             start = start & PAGE_MASK;
-            _ASSERTE(start > 0);
+            assert(start > 0);
 
             // Round up to page boundary
             end = (end + (PAGE_SIZE - 1)) & PAGE_MASK;
-            _ASSERTE(end > 0);
+            assert(end > 0);
 
             // Add module memory region if not already on the list
-            MemoryRegion moduleRegion(regionFlags, start, end, offset);
-            const auto& found = m_moduleMappings.find(moduleRegion);
-            if (found == m_moduleMappings.end())
+            MemoryRegion newModule(regionFlags, start, end, offset, module.Name());
+            std::set<MemoryRegion>::iterator existingModule = m_moduleMappings.find(newModule);
+            if (existingModule == m_moduleMappings.end())
             {
                 if (g_diagnosticsVerbose)
                 {
-                    TRACE_VERBOSE("VisitSegment: ");
-                    moduleRegion.Trace();
+                    newModule.Trace("VisitSegment: ");
                 }
                 // Add this module segment to the module mappings list
-                m_moduleMappings.insert(moduleRegion);
+                m_moduleMappings.insert(newModule);
+                m_cbModuleMappings += newModule.Size();
             }
             else
             {
-                TRACE("VisitSegment: WARNING: ");
-                moduleRegion.Trace();
-                TRACE("       is overlapping: ");
-                found->Trace();
+                // Skip the new module region if it is fully contained in an existing module region
+                if (!existingModule->Contains(newModule))
+                {
+                    if (g_diagnosticsVerbose)
+                    {
+                        newModule.Trace("VisitSegment: ");
+                        existingModule->Trace(" overlapping: ");
+                    }
+                    uint64_t numberPages = newModule.SizeInPages();
+                    for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE, offset += PAGE_SIZE)
+                    {
+                        MemoryRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset, newModule.FileName());
+
+                        const auto& found = m_moduleMappings.find(gap);
+                        if (found != m_moduleMappings.end())
+                        {
+                            if (g_diagnosticsVerbose)
+                            {
+                                gap.Trace("VisitSegment: *");
+                            }
+                            m_moduleMappings.insert(gap);
+                            m_cbModuleMappings += gap.Size();
+                        }
+                    }
+                }
             }
         }
     }
@@ -426,6 +428,10 @@ ModuleInfo::LoadModule()
                 {
                     g_image_infos = (const struct dyld_all_image_infos*)dyld_info.all_image_info_addr;
                 }
+                else
+                {
+                    TRACE("LoadModule: task_info(self) FAILED %x %s\n", result, mach_error_string(result));
+                }
             }
             if (g_image_infos != nullptr)
             {
@@ -438,7 +444,15 @@ ModuleInfo::LoadModule()
                         break;
                     }
                 }
+                if (m_localBaseAddress == 0)
+                {
+                    TRACE("LoadModule: local base address not found for %s\n", m_moduleName.c_str());
+                }
             }
+        }
+        else
+        {
+            TRACE("LoadModule: dlopen(%s) FAILED %s\n", m_moduleName.c_str(), dlerror());
         }
     }
 }

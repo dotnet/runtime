@@ -6,11 +6,20 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Primitives
 {
+    /// <summary>
+    /// Compares two <see cref="StringSegment"/> objects.
+    /// </summary>
     public class StringSegmentComparer : IComparer<StringSegment>, IEqualityComparer<StringSegment>
     {
+        /// <summary>
+        /// Gets a <see cref="StringSegmentComparer"/> object that performs a case-sensitive ordinal <see cref="StringSegment"/> comparison.
+        /// </summary>
         public static StringSegmentComparer Ordinal { get; }
             = new StringSegmentComparer(StringComparison.Ordinal, StringComparer.Ordinal);
 
+        /// <summary>
+        /// Gets a <see cref="StringSegmentComparer"/> object that performs a case-insensitive ordinal <see cref="StringSegment"/> comparison.
+        /// </summary>
         public static StringSegmentComparer OrdinalIgnoreCase { get; }
             = new StringSegmentComparer(StringComparison.OrdinalIgnoreCase, StringComparer.OrdinalIgnoreCase);
 
@@ -33,6 +42,11 @@ namespace Microsoft.Extensions.Primitives
             return StringSegment.Equals(x, y, Comparison);
         }
 
+        /// <summary>
+        /// Returns a hash code for a <see cref="StringSegment"/> object.
+        /// </summary>
+        /// <param name="obj">The <see cref="StringSegment"/> to get a hash code for.</param>
+        /// <returns>A hash code for a <see cref="StringSegment"/>, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public int GetHashCode(StringSegment obj)
         {
 #if NETCOREAPP || NETSTANDARD2_1

@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);SYSLIB1045</NoWarn>
 
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -20,8 +21,8 @@
 
     <PackageReference Include="Mono.Cecil" Version="0.11.4" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="5.0.1" />
-    <ProjectReference Include="../Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj" />
-    <ProjectReference Include="../Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />
+    <ProjectReference Include="$(RepoRoot)/src/tools/illink/test/Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj" />
+    <ProjectReference Include="$(RepoRoot)/src/tools/illink/test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />
     <ProjectReference Include="../ILCompiler.Compiler/ILCompiler.Compiler.csproj" />
     <ProjectReference Include="../ILCompiler.RyuJit/ILCompiler.RyuJit.csproj" />
 
@@ -37,14 +38,14 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsDir">
       <Value>$(ArtifactsDir)</Value>
     </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILToolsDir">
+      <Value>$(CoreCLRArtifactsPath)</Value>
+    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsBinDir">
       <Value>$(ArtifactsBinDir)</Value>
     </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.NativeAotDir">
-      <Value>$(_DirectoryBuildPropsBasePath)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetArchitecture">
-      <Value>$(TargetArchitecture)</Value>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
+      <Value>$(RepoRoot)/src/tools/illink/test/</Value>
     </RuntimeHostConfigurationOption>
   </ItemGroup>
 

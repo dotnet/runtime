@@ -427,7 +427,7 @@ CorUnix::InternalCreateFileMapping(
         palError = ERROR_INVALID_PARAMETER;
         goto ExitInternalCreateFileMapping;
     }
-    
+
     maximumSize = ((off_t)dwMaximumSizeHigh << 32) | (off_t)dwMaximumSizeLow;
 
     palError = g_pObjectManager->AllocateObject(
@@ -739,50 +739,6 @@ ExitInternalCreateFileMapping:
     }
 
     return palError;
-}
-
-/*++
-Function:
-  OpenFileMappingW
-
-See MSDN doc.
---*/
-HANDLE
-PALAPI
-OpenFileMappingW(
-         IN DWORD dwDesiredAccess,
-         IN BOOL bInheritHandle,
-         IN LPCWSTR lpName)
-{
-    HANDLE hFileMapping = NULL;
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pThread = NULL;
-
-    PERF_ENTRY(OpenFileMappingW);
-    ENTRY("OpenFileMappingW(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%S)\n",
-          dwDesiredAccess, bInheritHandle, lpName?lpName:W16_NULLSTRING, lpName?lpName:W16_NULLSTRING);
-
-    pThread = InternalGetCurrentThread();
-
-    /* validate parameters */
-    if (lpName == nullptr)
-    {
-        ERROR("name is NULL\n");
-        palError = ERROR_INVALID_PARAMETER;
-    }
-    else
-    {
-        ASSERT("lpName: Cross-process named objects are not supported in PAL");
-        palError = ERROR_NOT_SUPPORTED;
-    }
-
-    if (NO_ERROR != palError)
-    {
-        pThread->SetLastError(palError);
-    }
-    LOGEXIT("OpenFileMappingW returning %p.\n", hFileMapping);
-    PERF_EXIT(OpenFileMappingW);
-    return hFileMapping;
 }
 
 /*++
@@ -1600,7 +1556,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
 
     /* ftruncate is a standard function, but the behavior of enlarging files is
     non-standard.  So I will try to enlarge a file, and if that fails try the
-    less efficent way.*/
+    less efficient way.*/
     TruncateRetVal = ftruncate( UnixFD, NewSize );
     fstat( UnixFD, &FileInfo );
 
@@ -1612,7 +1568,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         UINT x = 0;
         UINT CurrentPosition = 0;
 
-        TRACE( "Trying the less efficent way.\n" );
+        TRACE( "Trying the less efficient way.\n" );
 
         CurrentPosition = lseek( UnixFD, 0, SEEK_CUR );
         OrigSize = lseek( UnixFD, 0, SEEK_END );
@@ -2212,7 +2168,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //don't need more directories.
 
     //I now know how big the file is.  Reserve enough address space for the whole thing.  Try to get the
-    //preferred base.  Create the intial mapping as "no access".  We'll use that for the guard pages in the
+    //preferred base.  Create the initial mapping as "no access".  We'll use that for the guard pages in the
     //"holes" between sections.
     SIZE_T preferredBase, virtualSize;
     preferredBase = ntHeader.OptionalHeader.ImageBase;
@@ -2416,10 +2372,10 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         void* sectionBaseAligned = ALIGN_DOWN(sectionBase, GetVirtualPageSize());
 
         // Validate the section header
-        if (   (sectionBase < loadedHeader)                                                           // Did computing the section base overflow?
-            || ((char*)sectionBase + currentHeader.SizeOfRawData < (char*)sectionBase)              // Does the section overflow?
-            || ((char*)sectionBase + currentHeader.SizeOfRawData > (char*)loadedHeader + virtualSize) // Does the section extend past the end of the image as the header stated?
-            || (prevSectionEndAligned > sectionBase)                                                       // Does this section overlap the previous one?
+        if (   (sectionBase < loadedHeader)                                                             // Did computing the section base overflow?
+            || (currentHeader.SizeOfRawData > virtualSize)                                              // Does the section overflow?
+            || ((char*)sectionBase + currentHeader.SizeOfRawData > (char*)loadedHeader + virtualSize)   // Does the section extend past the end of the image as the header stated?
+            || (prevSectionEndAligned > sectionBase)                                                    // Does this section overlap the previous one?
             )
         {
             ERROR_(LOADER)( "section %d is corrupt\n", i );
@@ -2540,6 +2496,7 @@ done:
     }
     else
     {
+        SetLastError(palError);
         retval = NULL;
         LOGEXIT("MAPMapPEFile error: %d\n", palError);
 

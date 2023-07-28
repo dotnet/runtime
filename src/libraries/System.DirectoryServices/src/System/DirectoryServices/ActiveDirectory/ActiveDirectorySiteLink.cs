@@ -149,7 +149,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 ADSearcher adSearcher = new ADSearcher(de,
                                                       "(&(objectClass=siteLink)(objectCategory=SiteLink)(name=" + Utils.GetEscapedFilterValue(siteLinkName) + "))",
-                                                      new string[] { "distinguishedName" },
+                                                      ActiveDirectorySite.s_distinguishedName,
                                                       SearchScope.OneLevel,
                                                       false, /* don't need paged search */
                                                       false /* don't need to cache result */
@@ -376,7 +376,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     //NTDSSITELINK_OPT_TWOWAY_SYNC ( 1 << 1 )  force sync in opposite direction at end of sync
-                    if (value == true)
+                    if (value)
                     {
                         options |= 0x2;
                     }
@@ -654,8 +654,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (cachedEntry != null)
-                    cachedEntry.Dispose();
+                cachedEntry?.Dispose();
             }
 
             // free your own state (unmanaged objects)

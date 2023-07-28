@@ -6,7 +6,9 @@
     <OutputType>exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="*.cs" />
+    <Compile Include="Int128Test.cs" />
+    <Compile Include="UInt128Test.cs" />
+    <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />

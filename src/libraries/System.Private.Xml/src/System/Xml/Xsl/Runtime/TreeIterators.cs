@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Xml.XPath;
@@ -15,7 +14,7 @@ namespace System.Xml.Xsl.Runtime
     public struct DescendantIterator
     {
         private XmlNavigatorFilter _filter;
-        private XPathNavigator _navCurrent, _navEnd;
+        private XPathNavigator? _navCurrent, _navEnd;
         private bool _hasFirst;
 
         /// <summary>
@@ -53,7 +52,7 @@ namespace System.Xml.Xsl.Runtime
                 _hasFirst = false;
                 return true;
             }
-            return (_filter.MoveToFollowing(_navCurrent, _navEnd));
+            return (_filter.MoveToFollowing(_navCurrent!, _navEnd));
         }
 
         /// <summary>
@@ -61,7 +60,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XPathNavigator Current
         {
-            get { return _navCurrent; }
+            get { return _navCurrent!; }
         }
     }
 

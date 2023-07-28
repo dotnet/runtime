@@ -2,3 +2,4 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 
 add_subdirectory(standalone)
+add_subdirectory(staticlib)

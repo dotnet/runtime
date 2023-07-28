@@ -176,7 +176,7 @@ LEAF_END ThePreStubPatch, _TEXT
 
 
 //-----------------------------------------------------------------------------
-// The following Macros help in WRITE_BARRIER Implemetations
+// The following Macros help in WRITE_BARRIER Implementations
 // WRITE_BARRIER_ENTRY
 //
 // Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
@@ -213,7 +213,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     // x12 will be used for pointers
 
     mov x8, x0
-    mov x9, x1 
+    mov x9, x1
 
     PREPARE_EXTERNAL_VAR g_card_table, x12
     ldr  x0, [x12]
@@ -420,7 +420,7 @@ LOCAL_LABEL(CheckCardTable):
     // branch to exit is taken.
     ccmp x15, x12, #0x2, hs
 
-    bhi  LOCAL_LABEL(Exit)
+    bhs  LOCAL_LABEL(Exit)
 
 LOCAL_LABEL(SkipEphemeralCheck):
     // Check if we need to update the card table
@@ -754,10 +754,10 @@ LOCAL_LABEL(Success):
     blt     LOCAL_LABEL(Promote)
 
     ldr     x16, [x9, #ResolveCacheElem__target]    // get the ImplTarget
-    br      x16               // branch to interface implemenation target
+    br      x16               // branch to interface implementation target
 
 LOCAL_LABEL(Promote):
-                              // Move this entry to head postion of the chain
+                              // Move this entry to head position of the chain
     mov     x16, #256
     str     x16, [x13]         // be quick to reset the counter so we don't get a bunch of contending threads
     orr     x11, x11, #PROMOTE_CHAIN_FLAG   // set PROMOTE_CHAIN_FLAG
@@ -974,3 +974,39 @@ LEAF_END JIT_ValidateIndirectCall, _TEXT
 LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
     br x9
 LEAF_END JIT_DispatchIndirectCall, _TEXT
+
+#ifdef TARGET_OSX
+// ------------------------------------------------------------------
+// void* GetThreadVarsAddress()
+
+// Helper to calculate the address of relevant __thread_vars section that holds the address of symbol tlv_get_address for thread
+// local `t_ThreadStatics`. The address is updated by the linker, which we retrieve here. In JIT code, this address is called
+// to retrieve the address of the thread local.
+
+LEAF_ENTRY GetThreadVarsAddress, _TEXT
+        adrp    x0,     _t_ThreadStatics@TLVPPAGE
+        ldr     x0,     [x0, _t_ThreadStatics@TLVPPAGEOFF]
+        ret
+LEAF_END GetThreadVarsAddress, _TEXT
+// ------------------------------------------------------------------
+#endif // TARGET_OSX
+
+#ifndef TARGET_OSX
+// ------------------------------------------------------------------
+// size_t GetThreadStaticsVariableOffset()
+
+// Helper to calculate the offset of native thread local variable `t_ThreadStatics` in TCB. The offset has to be found at runtime
+// once linker does its relocation and fixup of thread locals. The offset, after calculation is returned in `x0` register.
+
+LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32
+        adrp    x0,     :tlsdesc:t_ThreadStatics
+        ldr     x1,     [x0, #:tlsdesc_lo12:t_ThreadStatics]
+        add     x0,     x0, :tlsdesc_lo12:t_ThreadStatics
+        .tlsdesccall    t_ThreadStatics
+        blr     x1
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+        EPILOG_RETURN
+LEAF_END GetThreadStaticsVariableOffset, _TEXT
+// ------------------------------------------------------------------
+#endif // !TARGET_OSX

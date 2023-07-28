@@ -9,6 +9,8 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 // Prevents compiler warnings/errors regarding the use of ref params in Interlocked methods
 
@@ -21,7 +23,7 @@ namespace System.Threading.Tasks
     [DebuggerDisplay("ShouldExitCurrentIteration = {ShouldExitCurrentIteration}")]
     public class ParallelLoopState
     {
-        // Derived classes will track a ParallelStateFlags32 or ParallelStateFlags64.
+        // Derived classes will track a ParallelLoopStateFlags<Int>.
         // So this is slightly redundant, but it enables us to implement some
         // methods in this base class.
         private readonly ParallelLoopStateFlags _flagsBase;
@@ -179,9 +181,10 @@ namespace System.Threading.Tasks
             InternalBreak();
         }
 
-        // Helper method to avoid repeating Break() logic between ParallelState32 and ParallelState32<TLocal>
-        internal static void Break(int iteration, ParallelLoopStateFlags32 pflags)
+        internal static void Break<TInt>(TInt iteration, ParallelLoopStateFlags<TInt> pflags) where TInt : struct, IBinaryInteger<TInt>, IMinMaxValue<TInt>
         {
+            Debug.Assert(typeof(TInt) == typeof(int) || typeof(TInt) == typeof(long));
+
             int oldValue = ParallelLoopStateFlags.ParallelLoopStateNone;
 
             // Attempt to change state from "not stopped or broken or canceled or exceptional" to "broken".
@@ -204,55 +207,13 @@ namespace System.Threading.Tasks
 
             // replace shared LowestBreakIteration with CurrentIteration, but only if CurrentIteration
             // is less than LowestBreakIteration.
-            int oldLBI = pflags._lowestBreakIteration;
+            TInt oldLBI = pflags.LowestBreakIteration;
             if (iteration < oldLBI)
             {
                 SpinWait wait = default;
-                while (Interlocked.CompareExchange(
-                    ref pflags._lowestBreakIteration,
-                        iteration,
-                        oldLBI) != oldLBI)
-                {
-                    wait.SpinOnce();
-                    oldLBI = pflags._lowestBreakIteration;
-                    if (iteration > oldLBI) break;
-                }
-            }
-        }
-
-        // Helper method to avoid repeating Break() logic between ParallelState64 and ParallelState64<TLocal>
-        internal static void Break(long iteration, ParallelLoopStateFlags64 pflags)
-        {
-            int oldValue = ParallelLoopStateFlags.ParallelLoopStateNone;
-
-            // Attempt to change state from "not stopped or broken or canceled or exceptional" to "broken".
-            if (!pflags.AtomicLoopStateUpdate(ParallelLoopStateFlags.ParallelLoopStateBroken,
-                                             ParallelLoopStateFlags.ParallelLoopStateStopped | ParallelLoopStateFlags.ParallelLoopStateExceptional | ParallelLoopStateFlags.ParallelLoopStateCanceled,
-                                             ref oldValue))
-            {
-                // If we were already stopped, we have a problem
-                if ((oldValue & ParallelLoopStateFlags.ParallelLoopStateStopped) != 0)
-                {
-                    throw new InvalidOperationException(
-                        SR.ParallelState_Break_InvalidOperationException_BreakAfterStop);
-                }
-                else
-                {
-                    // Apparently we previously got cancelled or became exceptional. No action necessary
-                    return;
-                }
-            }
-
-            // replace shared LowestBreakIteration with CurrentIteration, but only if CurrentIteration
-            // is less than LowestBreakIteration.
-            long oldLBI = pflags.LowestBreakIteration;
-            if (iteration < oldLBI)
-            {
-                SpinWait wait = default;
-                while (Interlocked.CompareExchange(
-                    ref pflags._lowestBreakIteration,
-                        iteration,
-                        oldLBI) != oldLBI)
+                while (typeof(TInt) == typeof(int) ?
+                    Interlocked.CompareExchange(ref Unsafe.As<TInt, int>(ref pflags._lowestBreakIteration), Unsafe.As<TInt, int>(ref iteration), Unsafe.As<TInt, int>(ref oldLBI)) != Unsafe.As<TInt, int>(ref oldLBI) :
+                    Interlocked.CompareExchange(ref Unsafe.As<TInt, long>(ref pflags._lowestBreakIteration), Unsafe.As<TInt, long>(ref iteration), Unsafe.As<TInt, long>(ref oldLBI)) != Unsafe.As<TInt, long>(ref oldLBI))
                 {
                     wait.SpinOnce();
                     oldLBI = pflags.LowestBreakIteration;
@@ -262,19 +223,20 @@ namespace System.Threading.Tasks
         }
     }
 
-    internal sealed class ParallelLoopState32 : ParallelLoopState
+    internal sealed class ParallelLoopState<TInt> : ParallelLoopState where TInt : struct, IBinaryInteger<TInt>, IMinMaxValue<TInt>
     {
-        private readonly ParallelLoopStateFlags32 _sharedParallelStateFlags;
-        private int _currentIteration;
+        private readonly ParallelLoopStateFlags<TInt> _sharedParallelStateFlags;
+        private TInt _currentIteration;
 
         /// <summary>
         /// Internal constructor to ensure an instance isn't created by users.
         /// </summary>
         /// <param name="sharedParallelStateFlags">A flag shared among all threads participating
         /// in the execution of a certain loop.</param>
-        internal ParallelLoopState32(ParallelLoopStateFlags32 sharedParallelStateFlags)
+        internal ParallelLoopState(ParallelLoopStateFlags<TInt> sharedParallelStateFlags)
             : base(sharedParallelStateFlags)
         {
+            Debug.Assert(typeof(TInt) == typeof(int) || typeof(TInt) == typeof(long));
             _sharedParallelStateFlags = sharedParallelStateFlags;
         }
 
@@ -283,7 +245,7 @@ namespace System.Threading.Tasks
         /// This is used to compute whether or not the task should
         /// terminate early due to a Break() call.
         /// </summary>
-        internal int CurrentIteration
+        internal TInt CurrentIteration
         {
             get { return _currentIteration; }
             set { _currentIteration = value; }
@@ -319,81 +281,12 @@ namespace System.Threading.Tasks
         /// </remarks>
         internal override void InternalBreak()
         {
-            ParallelLoopState.Break(CurrentIteration, _sharedParallelStateFlags);
+            Break(CurrentIteration, _sharedParallelStateFlags);
         }
     }
 
     /// <summary>
-    /// Allows independent iterations of a parallel loop to interact with other iterations.
-    /// </summary>
-    internal sealed class ParallelLoopState64 : ParallelLoopState
-    {
-        private readonly ParallelLoopStateFlags64 _sharedParallelStateFlags;
-        private long _currentIteration;
-
-        /// <summary>
-        /// Internal constructor to ensure an instance isn't created by users.
-        /// </summary>
-        /// <param name="sharedParallelStateFlags">A flag shared among all threads participating
-        /// in the execution of a certain loop.</param>
-        internal ParallelLoopState64(ParallelLoopStateFlags64 sharedParallelStateFlags)
-            : base(sharedParallelStateFlags)
-        {
-            _sharedParallelStateFlags = sharedParallelStateFlags;
-        }
-
-        /// <summary>
-        /// Tracks the current loop iteration for the owning task.
-        /// This is used to compute whether or not the task should
-        /// terminate early due to a Break() call.
-        /// </summary>
-        internal long CurrentIteration
-        {
-            // No interlocks needed, because this value is only accessed in a single thread.
-            get { return _currentIteration; }
-            set { _currentIteration = value; }
-        }
-
-        /// <summary>
-        /// Returns true if we should be exiting from the current iteration
-        /// due to Stop(), Break() or exception.
-        /// </summary>
-        internal override bool InternalShouldExitCurrentIteration
-        {
-            get { return _sharedParallelStateFlags.ShouldExitLoop(CurrentIteration); }
-        }
-
-        /// <summary>
-        /// Returns the lowest iteration at which Break() has been called, or
-        /// null if Break() has not yet been called.
-        /// </summary>
-        internal override long? InternalLowestBreakIteration
-        {
-            // We don't need to worry about torn read/write here because
-            // ParallelStateFlags64.LowestBreakIteration property is protected
-            // by an Interlocked.Read().
-            get { return _sharedParallelStateFlags.NullableLowestBreakIteration; }
-        }
-
-        /// <summary>
-        /// Communicates that parallel tasks should stop when they reach a specified iteration element.
-        /// (which is CurrentIteration of the caller).
-        /// </summary>
-        /// <exception cref="System.InvalidOperationException">Break() called after Stop().</exception>
-        /// <remarks>
-        /// Atomically sets shared StoppedBroken flag to BROKEN, then atomically sets shared
-        /// LowestBreakIteration to CurrentIteration, but only if CurrentIteration is less than
-        /// LowestBreakIteration.
-        /// </remarks>
-        internal override void InternalBreak()
-        {
-            ParallelLoopState.Break(CurrentIteration, _sharedParallelStateFlags);
-        }
-    }
-
-    /// <summary>
-    /// State information that is common between ParallelStateFlags class
-    /// and ParallelStateFlags64 class.
+    /// State information that is common between ParallelLoopStateFlags{TInt} types.
     /// </summary>
     internal class ParallelLoopStateFlags
     {
@@ -455,90 +348,24 @@ namespace System.Threading.Tasks
         }
     }
 
-    /// <summary>
-    /// An internal class used to share accounting information in 32-bit versions
-    /// of For()/ForEach() loops.
-    /// </summary>
-    internal sealed class ParallelLoopStateFlags32 : ParallelLoopStateFlags
+    internal sealed unsafe class ParallelLoopStateFlags<TInt> : ParallelLoopStateFlags
+        where TInt : struct, IBinaryInteger<TInt>, IMinMaxValue<TInt>
     {
         // Records the lowest iteration at which a Break() has been called,
-        // or Int32.MaxValue if no break has been called.  Used directly
-        // by Break().
-        internal volatile int _lowestBreakIteration = int.MaxValue;
+        // or TInt.MaxValue if no break has been called.
+        internal TInt _lowestBreakIteration = TInt.MaxValue;
 
-        // Not strictly necessary, but maintains consistency with ParallelStateFlags64
-        internal int LowestBreakIteration
-        {
-            get { return _lowestBreakIteration; }
-        }
-
-        // Does some processing to convert _lowestBreakIteration to a long?.
-        internal long? NullableLowestBreakIteration
+        internal TInt LowestBreakIteration
         {
             get
             {
-                if (_lowestBreakIteration == int.MaxValue) return null;
-                else
+                if (typeof(TInt) == typeof(int))
                 {
-                    // protect against torn read of 64-bit value
-                    long rval = _lowestBreakIteration;
-                    if (IntPtr.Size >= 8) return rval;
-                    else return Interlocked.Read(ref rval);
+                    return Unsafe.BitCast<int, TInt>(Volatile.Read(ref Unsafe.As<TInt, int>(ref _lowestBreakIteration)));
                 }
-            }
-        }
 
-
-        /// <summary>
-        /// Lets the caller know whether or not to prematurely exit the For/ForEach loop.
-        /// If this returns true, then exit the loop.  Otherwise, keep going.
-        /// </summary>
-        /// <param name="CallerIteration">The caller's current iteration point
-        /// in the loop.</param>
-        /// <remarks>
-        /// The loop should exit on any one of the following conditions:
-        ///   (1) Stop() has been called by one or more tasks.
-        ///   (2) An exception has been raised by one or more tasks.
-        ///   (3) Break() has been called by one or more tasks, and
-        ///       CallerIteration exceeds the (lowest) iteration at which
-        ///       Break() was called.
-        ///   (4) The loop was canceled.
-        /// </remarks>
-        internal bool ShouldExitLoop(int CallerIteration)
-        {
-            int flags = LoopStateFlags;
-            return (flags != ParallelLoopStateNone && (
-                            ((flags & (ParallelLoopStateExceptional | ParallelLoopStateStopped | ParallelLoopStateCanceled)) != 0) ||
-                            (((flags & ParallelLoopStateBroken) != 0) && (CallerIteration > LowestBreakIteration))));
-        }
-
-        // This lighter version of ShouldExitLoop will be used when the body type doesn't contain a state.
-        // Since simpler bodies cannot stop or break, we can safely skip checks for those flags here.
-        internal bool ShouldExitLoop()
-        {
-            int flags = LoopStateFlags;
-            return ((flags != ParallelLoopStateNone) && ((flags & (ParallelLoopStateExceptional | ParallelLoopStateCanceled)) != 0));
-        }
-    }
-
-    /// <summary>
-    /// An internal class used to share accounting information in 64-bit versions
-    /// of For()/ForEach() loops.
-    /// </summary>
-    internal sealed class ParallelLoopStateFlags64 : ParallelLoopStateFlags
-    {
-        // Records the lowest iteration at which a Break() has been called,
-        // or Int64.MaxValue if no break has been called.  Used directly
-        // by Break().
-        internal long _lowestBreakIteration = long.MaxValue;
-
-        // Performs a conditionally interlocked read of _lowestBreakIteration.
-        internal long LowestBreakIteration
-        {
-            get
-            {
-                if (IntPtr.Size >= 8) return _lowestBreakIteration;
-                else return Interlocked.Read(ref _lowestBreakIteration);
+                Debug.Assert(typeof(TInt) == typeof(long));
+                return Unsafe.BitCast<long, TInt>(Volatile.Read(ref Unsafe.As<TInt, long>(ref _lowestBreakIteration)));
             }
         }
 
@@ -547,12 +374,8 @@ namespace System.Threading.Tasks
         {
             get
             {
-                if (_lowestBreakIteration == long.MaxValue) return null;
-                else
-                {
-                    if (IntPtr.Size >= 8) return _lowestBreakIteration;
-                    else return Interlocked.Read(ref _lowestBreakIteration);
-                }
+                TInt lowestBreakIteration = LowestBreakIteration;
+                return lowestBreakIteration == TInt.MaxValue ? null : long.CreateTruncating(lowestBreakIteration);
             }
         }
 
@@ -571,7 +394,7 @@ namespace System.Threading.Tasks
         ///       Break() was called.
         ///   (4) The loop has been canceled.
         /// </remarks>
-        internal bool ShouldExitLoop(long CallerIteration)
+        internal bool ShouldExitLoop(TInt CallerIteration)
         {
             int flags = LoopStateFlags;
             return (flags != ParallelLoopStateNone && (

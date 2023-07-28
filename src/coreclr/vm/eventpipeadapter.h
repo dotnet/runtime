@@ -318,7 +318,7 @@ public:
 		ep_add_provider_to_session (provider, session);
 	}
 
-	static inline EventPipeProvider * CreateProvider(const SString &providerName, EventPipeCallback callback)
+	static inline EventPipeProvider * CreateProvider(const SString &providerName, EventPipeCallback callback, void* callbackContext = nullptr)
 	{
 		CONTRACTL
 		{
@@ -329,7 +329,7 @@ public:
 		CONTRACTL_END;
 
 		ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName.GetUnicode ()), -1);
-		EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, NULL, NULL);
+		EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, callbackContext);
 		ep_rt_utf8_string_free (providerNameUTF8);
 		return provider;
 	}
@@ -587,14 +587,14 @@ public:
 	static inline LPCGUID GetEventActivityID (EventPipeEventInstance *eventInstance)
 	{
 		STATIC_CONTRACT_NOTHROW;
-		static_assert(sizeof(GUID) == EP_ACTIVITY_ID_SIZE, "Size missmatch, sizeof(GUID) should be equal to EP_ACTIVITY_ID_SIZE");
+		static_assert(sizeof(GUID) == EP_ACTIVITY_ID_SIZE, "Size mismatch, sizeof(GUID) should be equal to EP_ACTIVITY_ID_SIZE");
 		return reinterpret_cast<LPCGUID>(ep_event_instance_get_activity_id_cref(eventInstance));
 	}
 
 	static inline LPCGUID GetEventRelativeActivityID (EventPipeEventInstance *eventInstance)
 	{
 		STATIC_CONTRACT_NOTHROW;
-		static_assert(sizeof(GUID) == EP_ACTIVITY_ID_SIZE, "Size missmatch, sizeof(GUID) should be equal to EP_ACTIVITY_ID_SIZE");
+		static_assert(sizeof(GUID) == EP_ACTIVITY_ID_SIZE, "Size mismatch, sizeof(GUID) should be equal to EP_ACTIVITY_ID_SIZE");
 		return reinterpret_cast<LPCGUID>(ep_event_instance_get_related_activity_id_cref(eventInstance));
 	}
 

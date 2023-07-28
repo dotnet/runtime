@@ -10,14 +10,14 @@ namespace System.Composition.Hosting.Core.Tests
 {
     public class ExportDescriptorPromiseTests
     {
-        public static IEnumerable<object[]> Ctor_Depedencies()
+        public static IEnumerable<object[]> Ctor_DependenciesData()
         {
             yield return new object[] { null, null, false, Enumerable.Empty<CompositionDependency>() };
             yield return new object[] { new CompositionContract(typeof(int)), "Origin", true, Enumerable.Empty<CompositionDependency>() };
         }
 
         [Theory]
-        [MemberData(nameof(Ctor_Depedencies))]
+        [MemberData(nameof(Ctor_DependenciesData))]
         public void Ctor_Dependencies(CompositionContract contract, string origin, bool isShared, IEnumerable<CompositionDependency> dependencies)
         {
             int calledDependencies = 0;
@@ -76,7 +76,7 @@ namespace System.Composition.Hosting.Core.Tests
         public void Dependencies_GetWhenReturnsNull_ThrowsArgumentNullException()
         {
             var descriptor = ExportDescriptor.Create(Activator, new Dictionary<string, object>());
-            var promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => null, depdendencies =>
+            var promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => null, dependencies =>
             {
                 return ExportDescriptor.Create(Activator, new Dictionary<string, object>());
             });
@@ -100,7 +100,7 @@ namespace System.Composition.Hosting.Core.Tests
         public void GetDescriptor_GetWhenReturnsNull_ThrowsArgumentNullException()
         {
             var descriptor = ExportDescriptor.Create(Activator, new Dictionary<string, object>());
-            var promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), depdendencies =>
+            var promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), dependencies =>
             {
                 return null;
             });
@@ -112,7 +112,7 @@ namespace System.Composition.Hosting.Core.Tests
         public void GetDescriptor_CycleMetadataNotCompleted_MethodsThrowNotImplementedException()
         {
             ExportDescriptorPromise promise = null;
-            promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), depdendencies =>
+            promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), dependencies =>
             {
                 ExportDescriptor cycleDescriptor = promise.GetDescriptor();
                 IDictionary<string, object> metadata = cycleDescriptor.Metadata;
@@ -148,7 +148,7 @@ namespace System.Composition.Hosting.Core.Tests
         {
             ExportDescriptorPromise promise = null;
             IDictionary<string, object> metadata = null;
-            promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), depdendencies =>
+            promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), dependencies =>
             {
                 ExportDescriptor cycleDescriptor = promise.GetDescriptor();
                 metadata = cycleDescriptor.Metadata;
@@ -204,7 +204,7 @@ namespace System.Composition.Hosting.Core.Tests
         public void GetDescriptor_CycleActivatorNotCompleted_ThrowsNotImplementedException()
         {
             ExportDescriptorPromise promise = null;
-            promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), depdendencies =>
+            promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), dependencies =>
             {
                 ExportDescriptor cycleDescriptor = promise.GetDescriptor();
                 CompositeActivator activator = cycleDescriptor.Activator;
@@ -222,7 +222,7 @@ namespace System.Composition.Hosting.Core.Tests
         {
             ExportDescriptorPromise promise = null;
             CompositeActivator activator = null;
-            promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), depdendencies =>
+            promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), dependencies =>
             {
                 ExportDescriptor cycleDescriptor = promise.GetDescriptor();
                 activator = cycleDescriptor.Activator;
@@ -240,7 +240,7 @@ namespace System.Composition.Hosting.Core.Tests
         {
             ExportDescriptorPromise promise = null;
             ExportDescriptor cycleDescriptor = null;
-            promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), depdendencies =>
+            promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), dependencies =>
             {
                 cycleDescriptor = promise.GetDescriptor();
                 return ExportDescriptor.Create(Activator, new Dictionary<string, object> { { "key", "value" } });
@@ -254,7 +254,7 @@ namespace System.Composition.Hosting.Core.Tests
         [Fact]
         public void ToString_Invoke_ReturnsExpected()
         {
-            var promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), depdendencies =>
+            var promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), dependencies =>
             {
                 return ExportDescriptor.Create(Activator, new Dictionary<string, object>());
             });

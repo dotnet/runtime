@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NullabilityInfoContextSupport>false</NullabilityInfoContextSupport>
+
+    <!-- We don't run the scanner in optimized builds -->
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Dataflow.cs" />
+    <Compile Include="DeadCodeElimination.cs" />
+    <Compile Include="DependencyInjectionPattern.cs" />
+    <Compile Include="ILLinkDescriptor.cs" />
+    <Compile Include="ILLinkLinkAttributes.cs" />
+    <Compile Include="FeatureSwitches.cs" />
+    <Compile Include="Main.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ILLink.LinkAttributes.xml">
+      <LogicalName>ILLink.LinkAttributes.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ILLink.Substitutions.xml">
+      <LogicalName>ILLink.Substitutions.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ILLink.Descriptors.xml">
+      <LogicalName>ILLink.Descriptors.xml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="NonEmbedded.ILLink.Descriptor.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--substitution:$(MSBuildThisFileDirectory)NonEmbedded.ILLink.Substitutions1.xml" />
+    <IlcArg Include="--substitution:$(MSBuildThisFileDirectory)NonEmbedded.ILLink.Substitutions2.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Dataflow.cs">
+      <LogicalName>RemovedResource1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DeadCodeElimination.cs">
+      <LogicalName>RemovedResource2</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FeatureSwitches.cs">
+      <LogicalName>RemovedResource3</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Main.cs">
+      <LogicalName>KeptResource</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

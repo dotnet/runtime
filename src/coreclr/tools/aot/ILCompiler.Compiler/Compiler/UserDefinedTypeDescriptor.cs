@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -17,14 +16,14 @@ namespace ILCompiler
 {
     public class UserDefinedTypeDescriptor
     {
-        object _lock = new object();
-        NodeFactory _nodeFactory;
+        private object _lock = new object();
+        private NodeFactory _nodeFactory;
 
-        NodeFactory NodeFactory => _nodeFactory;
+        private NodeFactory NodeFactory => _nodeFactory;
 
-        bool Is64Bit => NodeFactory.Target.PointerSize == 8;
+        private bool Is64Bit => NodeFactory.Target.PointerSize == 8;
 
-        TargetAbi Abi => NodeFactory.Target.Abi;
+        private TargetAbi Abi => NodeFactory.Target.Abi;
 
         public UserDefinedTypeDescriptor(ITypesDebugInfoWriter objectWriter, NodeFactory nodeFactory)
         {
@@ -66,7 +65,7 @@ namespace ILCompiler
                         InstanceSize = defType.InstanceByteCount.IsIndeterminate ? 0 : (ulong)defType.InstanceByteCount.AsInt,
                     };
 
-                    var fieldsDescs = new ArrayBuilder<DataFieldDescriptor>();
+                    var fieldsDescs = default(ArrayBuilder<DataFieldDescriptor>);
 
                     foreach (var fieldDesc in defType.GetFields())
                     {
@@ -166,7 +165,7 @@ namespace ILCompiler
                 if (_thisTypes.TryGetValue(type, out typeIndex))
                     return typeIndex;
 
-                PointerTypeDescriptor descriptor = new PointerTypeDescriptor();
+                PointerTypeDescriptor descriptor = default(PointerTypeDescriptor);
                 // Note the use of GetTypeIndex here instead of GetVariableTypeIndex (We need the type exactly, not a reference to the type (as would happen for arrays/classes), and not a primitive value (as would happen for primitives))
                 descriptor.ElementType = GetTypeIndex(type, true);
                 descriptor.Is64Bit = Is64Bit ? 1 : 0;
@@ -189,7 +188,7 @@ namespace ILCompiler
                 if (_methodIndices.TryGetValue(method, out typeIndex))
                     return typeIndex;
 
-                MemberFunctionTypeDescriptor descriptor = new MemberFunctionTypeDescriptor();
+                MemberFunctionTypeDescriptor descriptor = default(MemberFunctionTypeDescriptor);
                 MethodSignature signature = method.Signature;
 
                 descriptor.ReturnType = GetVariableTypeIndex(DebuggerCanonicalize(signature.ReturnType));
@@ -230,7 +229,7 @@ namespace ILCompiler
                 if (_methodIdIndices.TryGetValue(method, out typeIndex))
                     return typeIndex;
 
-                MemberFunctionIdTypeDescriptor descriptor = new MemberFunctionIdTypeDescriptor();
+                MemberFunctionIdTypeDescriptor descriptor = default(MemberFunctionIdTypeDescriptor);
 
                 descriptor.MemberFunction = GetMethodTypeIndex(method);
                 descriptor.ParentClass = GetTypeIndex(method.OwningType, true);
@@ -242,7 +241,7 @@ namespace ILCompiler
             }
         }
 
-        private TypeDesc DebuggerCanonicalize(TypeDesc type)
+        private static TypeDesc DebuggerCanonicalize(TypeDesc type)
         {
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 return type.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -252,7 +251,7 @@ namespace ILCompiler
 
         private uint GetVariableTypeIndex(TypeDesc type, bool needsCompleteIndex)
         {
-            uint variableTypeIndex = 0;
+            uint variableTypeIndex;
             if (type.IsPrimitive)
             {
                 variableTypeIndex = GetPrimitiveTypeIndex(type);
@@ -263,9 +262,8 @@ namespace ILCompiler
 
                 if ((type.IsDefType && !type.IsValueType) || type.IsArray)
                 {
-                    // The type index of a variable/field of a reference type is wrapped 
+                    // The type index of a variable/field of a reference type is wrapped
                     // in a pointer, as these fields are really pointer fields, and the data is on the heap
-                    variableTypeIndex = 0;
                     if (_knownReferenceWrappedTypes.TryGetValue(type, out variableTypeIndex))
                     {
                         return variableTypeIndex;
@@ -274,7 +272,7 @@ namespace ILCompiler
                     {
                         uint typeindex = GetTypeIndex(type, false);
 
-                        PointerTypeDescriptor descriptor = new PointerTypeDescriptor();
+                        PointerTypeDescriptor descriptor = default(PointerTypeDescriptor);
                         descriptor.ElementType = typeindex;
                         descriptor.Is64Bit = Is64Bit ? 1 : 0;
                         descriptor.IsConst = 0;
@@ -288,14 +286,12 @@ namespace ILCompiler
                 }
                 else if (type.IsEnum)
                 {
-                    // Enum's use the LF_ENUM record as the variable type index, but it is required to also emit a regular structure record for them.
+                    // Enum's use the LF_ENUM record as the variable type index.
 
                     if (_enumTypes.TryGetValue(type, out variableTypeIndex))
                         return variableTypeIndex;
 
                     variableTypeIndex = GetEnumTypeIndex(type);
-
-                    GetTypeIndex(type, false); // Ensure regular structure record created
 
                     _enumTypes[type] = variableTypeIndex;
 
@@ -315,7 +311,7 @@ namespace ILCompiler
         /// <returns></returns>
         public uint GetTypeIndex(TypeDesc type, bool needsCompleteType)
         {
-            uint typeIndex = 0;
+            uint typeIndex;
             if (needsCompleteType ?
                 _completeKnownTypes.TryGetValue(type, out typeIndex)
                 : _knownTypes.TryGetValue(type, out typeIndex))
@@ -362,7 +358,7 @@ namespace ILCompiler
             if (_pointerTypes.TryGetValue(pointeeType, out typeIndex))
                 return typeIndex;
 
-            PointerTypeDescriptor descriptor = new PointerTypeDescriptor();
+            PointerTypeDescriptor descriptor = default(PointerTypeDescriptor);
             descriptor.ElementType = GetVariableTypeIndex(pointeeType, false);
             descriptor.Is64Bit = Is64Bit ? 1 : 0;
             descriptor.IsConst = 0;
@@ -384,7 +380,7 @@ namespace ILCompiler
             if (_byRefTypes.TryGetValue(pointeeType, out typeIndex))
                 return typeIndex;
 
-            PointerTypeDescriptor descriptor = new PointerTypeDescriptor();
+            PointerTypeDescriptor descriptor = default(PointerTypeDescriptor);
             descriptor.ElementType = GetVariableTypeIndex(pointeeType, false);
             descriptor.Is64Bit = Is64Bit ? 1 : 0;
             descriptor.IsConst = 0;
@@ -401,9 +397,9 @@ namespace ILCompiler
 
         private uint GetEnumTypeIndex(TypeDesc type)
         {
-            System.Diagnostics.Debug.Assert(type.IsEnum, "GetEnumTypeIndex was called with wrong type");
+            Debug.Assert(type.IsEnum, "GetEnumTypeIndex was called with wrong type");
             DefType defType = type as DefType;
-            System.Diagnostics.Debug.Assert(defType != null, "GetEnumTypeIndex was called with non def type");
+            Debug.Assert(defType != null, "GetEnumTypeIndex was called with non def type");
             List<FieldDesc> fieldsDescriptors = new List<FieldDesc>();
             foreach (var field in defType.GetFields())
             {
@@ -433,7 +429,7 @@ namespace ILCompiler
 
         private uint GetArrayTypeIndex(TypeDesc type)
         {
-            System.Diagnostics.Debug.Assert(type.IsArray, "GetArrayTypeIndex was called with wrong type");
+            Debug.Assert(type.IsArray, "GetArrayTypeIndex was called with wrong type");
             ArrayType arrayType = (ArrayType)type;
 
             uint elementSize = (uint)type.Context.Target.PointerSize;
@@ -462,7 +458,7 @@ namespace ILCompiler
             return typeIndex;
         }
 
-        private ulong GetEnumRecordValue(FieldDesc field)
+        private static ulong GetEnumRecordValue(FieldDesc field)
         {
             var ecmaField = field as EcmaField;
             if (ecmaField != null)
@@ -478,7 +474,7 @@ namespace ILCompiler
             return 0;
         }
 
-        private ulong HandleConstant(EcmaModule module, ConstantHandle constantHandle)
+        private static ulong HandleConstant(EcmaModule module, ConstantHandle constantHandle)
         {
             MetadataReader reader = module.MetadataReader;
             Constant constant = reader.GetConstant(constantHandle);
@@ -502,39 +498,43 @@ namespace ILCompiler
                 case ConstantTypeCode.UInt64:
                     return (ulong)blob.ReadUInt64();
             }
-            System.Diagnostics.Debug.Assert(false);
+            Debug.Assert(false);
             return 0;
         }
 
-        bool ShouldUseCanonicalTypeRecord(TypeDesc type)
+        private bool ShouldUseCanonicalTypeRecord(TypeDesc type)
         {
             // TODO: check the type's generic complexity
-            return type.GetGenericDepth() > NodeFactory.TypeSystemContext.GenericsConfig.MaxGenericDepthOfDebugRecord;
+            return GetGenericDepth(type) > NodeFactory.TypeSystemContext.GenericsConfig.MaxGenericDepthOfDebugRecord;
+
+            static int GetGenericDepth(TypeDesc type)
+            {
+                if (type.HasInstantiation)
+                {
+                    int maxGenericDepthInInstantiation = 0;
+                    foreach (TypeDesc instantiationType in type.Instantiation)
+                    {
+                        maxGenericDepthInInstantiation = Math.Max(GetGenericDepth(instantiationType), maxGenericDepthInInstantiation);
+                    }
+
+                    return maxGenericDepthInInstantiation + 1;
+                }
+
+                if (type.IsParameterizedType)
+                    return 1 + GetGenericDepth(((ParameterizedType)type).ParameterType);
+
+                return 0;
+            }
         }
 
-        TypeDesc GetDebugType(TypeDesc type)
+        private TypeDesc GetDebugType(TypeDesc type)
         {
-            TypeDesc typeGenericComplexityInfo = type;
-
-            // Strip off pointer, array, and byref details.
-            while (typeGenericComplexityInfo is ParameterizedType paramType) {
-                typeGenericComplexityInfo = paramType.ParameterType;
-            }
-
-            // Types that have some canonical subtypes types should always be represented in normalized canonical form to the binder.
-            // Also, to avoid infinite generic recursion issues, attempt to use canonical form for fields with high generic complexity. 
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Specific) || (typeGenericComplexityInfo is DefType defType) && ShouldUseCanonicalTypeRecord(defType))
+            // To avoid infinite generic recursion issues, attempt to use canonical form for fields with high generic complexity.
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Specific) || ShouldUseCanonicalTypeRecord(type))
             {
                 type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                // Re-check if the canonical subtype has acceptable generic complexity
-                typeGenericComplexityInfo = type;
-
-                while (typeGenericComplexityInfo is ParameterizedType paramType) {
-                    typeGenericComplexityInfo = paramType.ParameterType;
-                }
-
-                if ((typeGenericComplexityInfo is DefType canonDefType) && ShouldUseCanonicalTypeRecord(canonDefType))
+                if (ShouldUseCanonicalTypeRecord(type))
                 {
                     type = type.ConvertToCanonForm(CanonicalFormKind.Universal);
                 }
@@ -543,7 +543,7 @@ namespace ILCompiler
             return type;
         }
 
-        TypeDesc GetFieldDebugType(FieldDesc field)
+        private TypeDesc GetFieldDebugType(FieldDesc field)
         {
             return GetDebugType(field.FieldType);
         }
@@ -552,7 +552,7 @@ namespace ILCompiler
         {
             TypeDesc debugType = GetDebugType(type);
             DefType defType = debugType as DefType;
-            System.Diagnostics.Debug.Assert(defType != null, "GetClassTypeIndex was called with non def type");
+            Debug.Assert(defType != null, "GetClassTypeIndex was called with non def type");
             ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
             {
                 IsStruct = type.IsValueType ? 1 : 0,
@@ -795,7 +795,7 @@ namespace ILCompiler
                 }
                 else if (staticDataInObject)// This means that access to this static region is done via indirection
                 {
-                    PointerTypeDescriptor pointerTypeDescriptor = new PointerTypeDescriptor();
+                    PointerTypeDescriptor pointerTypeDescriptor = default(PointerTypeDescriptor);
                     pointerTypeDescriptor.Is64Bit = Is64Bit ? 1 : 0;
                     pointerTypeDescriptor.IsConst = 0;
                     pointerTypeDescriptor.IsReference = 0;

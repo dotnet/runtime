@@ -34,7 +34,7 @@ namespace System.Reflection.Internal
         /// </remarks>
         public virtual unsafe ImmutableArray<byte> GetContentUnchecked(int start, int length)
         {
-            var result = BlobUtilities.ReadImmutableBytes(Pointer + start, length);
+            var result = new ReadOnlySpan<byte>(Pointer + start, length).ToImmutableArray();
             GC.KeepAlive(this);
             return result;
         }

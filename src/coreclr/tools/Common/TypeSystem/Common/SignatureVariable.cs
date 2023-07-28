@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.NativeFormat;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -70,6 +66,17 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.SignatureTypeVariable;
             }
 
+            // ******************************************************
+            // Do not add other flags here. If you're hitting asserts
+            // because a flag wasn't set, this is a bug in the
+            // calling code. The fix is not here.
+            //
+            // The calling code is asking questions that are not
+            // possible to answer for signature variables
+            // (like: is this ByRef-like? We won't know until
+            // a substitution happens. Any answer would be wrong.)
+            // ******************************************************
+
             return flags;
         }
 
@@ -106,6 +113,17 @@ namespace Internal.TypeSystem
             {
                 flags |= TypeFlags.SignatureMethodVariable;
             }
+
+            // ******************************************************
+            // Do not add other flags here. If you're hitting asserts
+            // because a flag wasn't set, this is a bug in the
+            // calling code. The fix is not here.
+            //
+            // The calling code is asking questions that are not
+            // possible to answer for signature variables
+            // (like: is this ByRef-like? We won't know until
+            // a substitution happens. Any answer would be wrong.)
+            // ******************************************************
 
             return flags;
         }

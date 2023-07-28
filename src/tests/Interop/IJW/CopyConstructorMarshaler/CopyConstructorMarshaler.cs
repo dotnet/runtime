@@ -11,7 +11,7 @@ namespace CopyConstructorMarshaler
 {
     class CopyConstructorMarshaler
     {
-        static int Main(string[] args)
+        static int Main()
         {
             if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7)
             {

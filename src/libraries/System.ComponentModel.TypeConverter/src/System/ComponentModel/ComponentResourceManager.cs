@@ -68,10 +68,7 @@ namespace System.ComponentModel
             ArgumentNullException.ThrowIfNull(value);
             ArgumentNullException.ThrowIfNull(objectName);
 
-            if (culture == null)
-            {
-                culture = CultureInfo.CurrentUICulture;
-            }
+            culture ??= CultureInfo.CurrentUICulture;
 
             // The general case here will be to always use the same culture, so optimize for
             // that. The resourceSets hashtable uses culture as a key. It's value is

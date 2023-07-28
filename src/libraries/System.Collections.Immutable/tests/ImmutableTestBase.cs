@@ -35,7 +35,7 @@ namespace System.Collections.Immutable.Tests
         internal static void CollectionAssertAreEquivalent<T>(ICollection<T> expected, ICollection<T> actual)
         {
             Assert.Equal(expected.Count, actual.Count);
-            foreach (var value in expected)
+            foreach (T value in expected)
             {
                 Assert.Contains(value, actual);
             }

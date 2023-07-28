@@ -71,6 +71,7 @@ namespace System.Diagnostics
         public long PrivateMemorySize64 { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         public string ProcessName { get { throw null; } }
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
@@ -214,6 +215,7 @@ namespace System.Diagnostics
         public ProcessStartInfo() { }
         public ProcessStartInfo(string fileName) { }
         public ProcessStartInfo(string fileName, string arguments) { }
+        public ProcessStartInfo(string fileName, System.Collections.Generic.IEnumerable<string> arguments) { }
         public System.Collections.ObjectModel.Collection<string> ArgumentList { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Arguments { get { throw null; } set { } }
@@ -231,6 +233,8 @@ namespace System.Diagnostics
         public string FileName { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool LoadUserProfile { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public bool UseCredentialsForNetworkingOnly { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Security.SecureString? Password { get { throw null; } set { } }

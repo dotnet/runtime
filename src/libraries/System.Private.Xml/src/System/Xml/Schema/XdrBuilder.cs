@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.ComponentModel;
+using System.Globalization;
+using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System.IO;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.CodeAnalysis;
-
     /*
      * The XdrBuilder class parses the XDR Schema and
      * builds internal validation information
@@ -517,7 +517,7 @@ namespace System.Xml.Schema
             }
             SchemaInfo? schemaInfo = null;
             Uri _baseUri = _xmlResolver.ResolveUri(null, _reader.BaseURI);
-            XmlReader? reader = null;
+            XmlTextReader? reader = null;
             try
             {
                 Uri ruri = _xmlResolver.ResolveUri(_baseUri, uri.Substring(x_schema.Length));
@@ -536,10 +536,7 @@ namespace System.Xml.Schema
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Close();
-                }
+                reader?.Close();
             }
             if (schemaInfo != null && schemaInfo.ErrorCount == 0)
             {
@@ -1054,11 +1051,7 @@ namespace System.Xml.Schema
                 // Global AttributeTypes are URN qualified so that we can look them up across schemas.
                 qname = new XmlQualifiedName(qname.Name, builder._TargetNamespace);
                 builder._AttributeDef._AttDef.Name = qname;
-                if (!builder._SchemaInfo.AttributeDecls.ContainsKey(qname))
-                {
-                    builder._SchemaInfo.AttributeDecls.Add(qname, builder._AttributeDef._AttDef);
-                }
-                else
+                if (!builder._SchemaInfo.AttributeDecls.TryAdd(qname, builder._AttributeDef._AttDef))
                 {
                     builder.SendValidationEvent(SR.Sch_DupAttribute, XmlQualifiedName.ToString(qname.Name, prefix));
                 }
@@ -1244,8 +1237,7 @@ namespace System.Xml.Schema
 
         private static void XDR_InitAttribute(XdrBuilder builder, object obj)
         {
-            if (builder._BaseDecl == null)
-                builder._BaseDecl = new DeclBaseInfo();
+            builder._BaseDecl ??= new DeclBaseInfo();
             builder._BaseDecl._MinOccurs = 0;
         }
 
@@ -1655,7 +1647,7 @@ namespace System.Xml.Schema
                 builder.SendValidationEvent(SR.Sch_DupDtMaxLength);
             }
 
-            if (!ParseInteger((string)obj, ref cVal) || cVal < 0)
+            if (!ParseInteger((string)obj, ref cVal))
             {
                 builder.SendValidationEvent(SR.Sch_DtMaxLengthInvalid, obj.ToString());
             }
@@ -1668,7 +1660,7 @@ namespace System.Xml.Schema
                 builder.SendValidationEvent(SR.Sch_DupDtMinLength);
             }
 
-            if (!ParseInteger((string)obj, ref cVal) || cVal < 0)
+            if (!ParseInteger((string)obj, ref cVal))
             {
                 builder.SendValidationEvent(SR.Sch_DtMinLengthInvalid, obj.ToString());
             }

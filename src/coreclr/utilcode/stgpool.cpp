@@ -765,7 +765,7 @@ StgStringPool::InitNew(
     HRESULT hr;
     UINT32  nEmptyStringOffset;
 
-    // Let base class intialize.
+    // Let base class initialize.
     IfFailRet(StgPool::InitNew());
 
     // Set initial table sizes, if specified.
@@ -792,7 +792,7 @@ StgStringPool::InitNew(
 //*****************************************************************************
 // Load a string heap from persisted memory.  If a copy of the data is made
 // (so that it may be updated), then a new hash table is generated which can
-// be used to elminate duplicates with new strings.
+// be used to eliminate duplicates with new strings.
 //*****************************************************************************
 __checkReturn
 HRESULT
@@ -1144,7 +1144,7 @@ StgGuidPool::InitNew(
 //*****************************************************************************
 // Load a Guid heap from persisted memory.  If a copy of the data is made
 // (so that it may be updated), then a new hash table is generated which can
-// be used to elminate duplicates with new Guids.
+// be used to eliminate duplicates with new Guids.
 //*****************************************************************************
 __checkReturn
 HRESULT
@@ -1399,7 +1399,7 @@ StgBlobPool::InitNew(
 
     HRESULT hr;
 
-    // Let base class intialize.
+    // Let base class initialize.
     IfFailRet(StgPool::InitNew());
 
     // Set initial table sizes, if specified.
@@ -2027,7 +2027,7 @@ CInMemoryStream::CreateStreamOnMemoryCopy(
 
 //---------------------------------------------------------------------------
 // CGrowableStream is a simple IStream implementation that grows as
-// its written to. All the memory is contigious, so read access is
+// its written to. All the memory is contiguous, so read access is
 // fast. A grow does a realloc, so be aware of that if you're going to
 // use this.
 //---------------------------------------------------------------------------

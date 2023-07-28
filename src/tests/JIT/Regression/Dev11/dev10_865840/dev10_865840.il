@@ -31,7 +31,7 @@
   .field public native int i
 } 
 
-.class private auto ansi beforefieldinit DifRepro.Program
+.class public auto ansi beforefieldinit DifRepro.Program
        extends [mscorlib]System.Object
 {
   .field private static class [mscorlib]System.Security.Permissions.SecurityPermission _unmanagedCodePermission

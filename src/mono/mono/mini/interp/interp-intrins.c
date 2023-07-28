@@ -12,7 +12,7 @@
 static guint32
 rotate_left (guint32 value, int offset)
 {
-        return (value << offset) | (value >> (32 - offset));
+	return (value << offset) | (value >> (32 - offset));
 }
 
 void
@@ -74,55 +74,12 @@ interp_intrins_64ordinal_ignore_case_ascii (guint64 valueA, guint64 valueB)
 	return (differentBits & indicator) == 0;
 }
 
-static int
-interp_intrins_count_digits (guint32 value)
-{
-	int digits = 1;
-	if (value >= 100000) {
-		value /= 100000;
-		digits += 5;
-	}
-	if (value < 10) {
-		// no-op
-	} else if (value < 100) {
-		digits++;
-	} else if (value < 1000) {
-		digits += 2;
-	} else if (value < 10000) {
-		digits += 3;
-	} else {
-		digits += 4;
-	}
-	return digits;
-}
-
 static guint32
 interp_intrins_math_divrem (guint32 a, guint32 b, guint32 *result)
 {
 	guint32 div = a / b;
 	*result = a - (div * b);
 	return div;
-}
-
-MonoString*
-interp_intrins_u32_to_decstr (guint32 value, MonoArray *cache, MonoVTable *vtable)
-{
-	// Number.UInt32ToDecStr
-	int bufferLength = interp_intrins_count_digits (value);
-
-	if (bufferLength == 1)
-		return mono_array_get_fast (cache, MonoString*, value);
-
-	int size = (G_STRUCT_OFFSET (MonoString, chars) + (((size_t)bufferLength + 1) * 2));
-	MonoString* result = mono_gc_alloc_string (vtable, size, bufferLength);
-	mono_unichar2 *buffer = &result->chars [0];
-	mono_unichar2 *p = buffer + bufferLength;
-	do {
-		guint32 remainder;
-		value = interp_intrins_math_divrem (value, 10, &remainder);
-		*(--p) = (mono_unichar2)(remainder + '0');
-	} while (value != 0);
-	return result;
 }
 
 mono_u

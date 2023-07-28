@@ -11,6 +11,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-conc-hash.h>
 #include <mono/metadata/mono-hash.h>
+#include <mono/metadata/weak-hash.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/utils/mono-codeman.h>
 #include <mono/utils/mono-coop-mutex.h>
@@ -51,20 +52,21 @@ struct _MonoDllMap {
 #endif
 
 typedef struct {
+	GHashTable *delegate_invoke_cache;
+	GHashTable *delegate_invoke_virtual_cache;
 	/*
 	 * indexed by MonoMethodSignature
 	 * Protected by the marshal lock
 	 */
-	GHashTable *delegate_invoke_cache;
 	GHashTable *delegate_begin_invoke_cache;
 	GHashTable *delegate_end_invoke_cache;
 	GHashTable *runtime_invoke_signature_cache;
 	GHashTable *runtime_invoke_sig_cache;
+	GHashTable *delegate_abstract_invoke_cache;
 
 	/*
 	 * indexed by SignaturePointerPair
 	 */
-	GHashTable *delegate_abstract_invoke_cache;
 	GHashTable *delegate_bound_static_invoke_cache;
 
 	/*
@@ -86,6 +88,7 @@ typedef struct {
 	GHashTable *cominterop_invoke_cache;
 	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
 	GHashTable *thunk_invoke_cache;
+	GHashTable *unsafe_accessor_cache;
 } MonoWrapperCaches;
 
 /* Lock-free allocator */
@@ -125,10 +128,8 @@ struct _MonoAssemblyLoadContext {
 };
 
 struct _MonoMemoryManager {
-	// Whether the MemoryManager can be unloaded on netcore; should only be set at creation
+	// Whether the MemoryManager can be unloaded; should only be set at creation
 	gboolean collectible;
-	// Whether this is a singleton or generic MemoryManager
-	gboolean is_generic;
 	// Whether the MemoryManager is in the process of being freed
 	gboolean freeing;
 
@@ -156,6 +157,10 @@ struct _MonoMemoryManager {
 	/* Information maintained by the execution engine */
 	gpointer runtime_info;
 
+	// Handles pointing to the corresponding LoaderAllocator object
+	MonoGCHandle loader_allocator_handle;
+	MonoGCHandle loader_allocator_weak_handle;
+
 	// Hashtables for Reflection handles
 	MonoGHashTable *type_hash;
 	MonoConcGHashTable *refobject_hash;
@@ -163,6 +168,11 @@ struct _MonoMemoryManager {
 	MonoGHashTable *type_init_exception_hash;
 	// Maps delegate trampoline addr -> delegate object
 	//MonoGHashTable *delegate_hash_table;
+
+	/* Same hashes for collectible mem managers */
+	MonoWeakHashTable *weak_type_hash;
+	MonoWeakHashTable *weak_refobject_hash;
+	MonoWeakHashTable *weak_type_init_exception_hash;
 
 	/*
 	 * Generic instances and aggregated custom modifiers depend on many alcs, and they need to be deleted if one
@@ -297,8 +307,8 @@ mono_alc_find_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 MONO_COMPONENT_API GPtrArray*
 mono_alc_get_all_loaded_assemblies (void);
 
-MONO_API void
-mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
+GPtrArray*
+mono_alc_get_all (void);
 
 MonoMemoryManager *
 mono_mem_manager_new (MonoAssemblyLoadContext **alcs, int nalcs, gboolean collectible);
@@ -367,6 +377,15 @@ g_slist_prepend_mem_manager (MonoMemoryManager *memory_manager, GSList *list, gp
 
 	return new_list;
 }
+
+MonoGCHandle
+mono_mem_manager_get_loader_alloc (MonoMemoryManager *mem_manager);
+
+void
+mono_mem_manager_init_reflection_hashes (MonoMemoryManager *mem_manager);
+
+void
+mono_mem_manager_start_unload (MonoMemoryManager *mem_manager);
 
 G_END_DECLS
 

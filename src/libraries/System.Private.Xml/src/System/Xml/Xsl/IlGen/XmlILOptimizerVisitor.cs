@@ -123,10 +123,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         protected override QilNode VisitReference(QilNode oldNode)
         {
-            QilNode? newNode = _subs.FindReplacement(oldNode);
-
-            if (newNode == null)
-                newNode = oldNode;
+            QilNode? newNode = _subs.FindReplacement(oldNode) ?? oldNode;
 
             // Fold reference to constant value
             // This is done here because "p" currently cannot match references
@@ -168,7 +165,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Called when all replacements have already been made and all annotations are complete.
         /// </summary>
-        [return: NotNullIfNotNull("node")]
+        [return: NotNullIfNotNull(nameof(node))]
         protected override QilNode? NoReplace(QilNode? node)
         {
             // Calculate MaybeSideEffects pattern.  This is done here rather than using P because every node needs
@@ -5410,7 +5407,7 @@ namespace System.Xml.Xsl.IlGen
                     else if (typTarget == XmlQueryTypeFactory.IntegerX)
                         return this.f.LiteralInt64(value.ValueAsLong);
                     else if (typTarget == XmlQueryTypeFactory.DecimalX)
-                        return this.f.LiteralDecimal((decimal)value.ValueAs(XsltConvert.DecimalType));
+                        return this.f.LiteralDecimal((decimal)value.ValueAs(typeof(decimal)));
                     else if (typTarget == XmlQueryTypeFactory.DoubleX)
                         return this.f.LiteralDouble(value.ValueAsDouble);
                     else if (typTarget == XmlQueryTypeFactory.BooleanX)
@@ -5623,7 +5620,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Remove unused global functions, variables, or parameters from the list.
         /// </summary>
-        private static void EliminateUnusedGlobals(IList<QilNode> globals)
+        private static void EliminateUnusedGlobals(QilList globals)
         {
             int newIdx = 0;
 

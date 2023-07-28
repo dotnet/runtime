@@ -18,11 +18,6 @@ namespace System.Xml
         private int _bits;
         private int _bitsFilled;
 
-        private const string CharsBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        private static readonly byte[] s_mapBase64 = ConstructMapBase64();
-        private const int MaxValidChar = (int)'z';
-        private const byte Invalid = unchecked((byte)-1);
-
         //
         // IncrementalReadDecoder interface
         //
@@ -46,18 +41,9 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
-            if (startPos < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startPos));
-            }
-            if (chars.Length - startPos < len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
+            ArgumentOutOfRangeException.ThrowIfNegative(startPos);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(len, chars.Length - startPos);
 
             if (len == 0)
             {
@@ -74,18 +60,9 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(str);
 
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
-            if (startPos < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startPos));
-            }
-            if (str.Length - startPos < len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
+            ArgumentOutOfRangeException.ThrowIfNegative(startPos);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(len, str.Length - startPos);
 
             if (len == 0)
             {
@@ -121,19 +98,6 @@ namespace System.Xml
         //
         // Private methods
         //
-        private static byte[] ConstructMapBase64()
-        {
-            byte[] mapBase64 = new byte[MaxValidChar + 1];
-            for (int i = 0; i < mapBase64.Length; i++)
-            {
-                mapBase64[i] = Invalid;
-            }
-            for (int i = 0; i < CharsBase64.Length; i++)
-            {
-                mapBase64[(int)CharsBase64[i]] = (byte)i;
-            }
-            return mapBase64;
-        }
 
         private void Decode(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsDecoded, out int bytesDecoded)
         {
@@ -142,6 +106,19 @@ namespace System.Xml
             int iChar = 0;
             int b = _bits;
             int bFilled = _bitsFilled;
+
+            const byte Invalid = 255;
+            ReadOnlySpan<byte> mapBase64 = new byte[123]
+            {
+                255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+                255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+                255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 62,  255, 255, 255, 63,
+                52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  255, 255, 255, 255, 255, 255,
+                255, 0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,
+                15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  255, 255, 255, 255, 255,
+                255, 26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,
+                41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,
+            };
 
             while ((uint)iChar < (uint)chars.Length)
             {
@@ -165,7 +142,7 @@ namespace System.Xml
                 }
 
                 int digit;
-                if (ch > 122 || (digit = s_mapBase64[ch]) == Invalid)
+                if (ch >= mapBase64.Length || (digit = mapBase64[ch]) == Invalid)
                 {
                     throw new XmlException(SR.Xml_InvalidBase64Value, chars.ToString());
                 }

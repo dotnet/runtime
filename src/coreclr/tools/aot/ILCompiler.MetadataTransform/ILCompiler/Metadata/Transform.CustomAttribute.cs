@@ -14,7 +14,7 @@ using NamedArgumentMemberKind = Internal.Metadata.NativeFormat.NamedArgumentMemb
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         private List<CustomAttribute> HandleCustomAttributes(Cts.Ecma.EcmaModule module, Ecma.CustomAttributeHandleCollection attributes)
         {

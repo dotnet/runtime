@@ -171,6 +171,7 @@ namespace
         }
 
         fclose(file);
+        free(line);
         if (!found)
             return false;
 
@@ -665,7 +666,7 @@ pal::string_t pal::get_current_os_rid_platform()
     return ridOS;
 }
 #elif defined(TARGET_FREEBSD)
-// On FreeBSD get major verion. Minors should be compatible
+// On FreeBSD get major version. Minors should be compatible
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
@@ -755,7 +756,7 @@ pal::string_t pal::get_current_os_rid_platform()
 #else
 // For some distros, we don't want to use the full version from VERSION_ID. One example is
 // Red Hat Enterprise Linux, which includes a minor version in their VERSION_ID but minor
-// versions are backwards compatable.
+// versions are backwards compatible.
 //
 // In this case, we'll normalized RIDs like 'rhel.7.2' and 'rhel.7.3' to a generic
 // 'rhel.7'. This brings RHEL in line with other distros like CentOS or Debian which
@@ -841,8 +842,13 @@ pal::string_t pal::get_current_os_rid_platform()
                     size_t pos = line.find(strVersionID);
                     if ((pos != std::string::npos) && (pos == 0))
                     {
-                        valVersionID.append(line.substr(11));
-                        fFoundVersion = true;
+                        pal::string_t version = line.substr(11);
+                        // check if version characters are valid (quotes are trimmed at a later stage)
+                        if (!version.empty() && version.find_first_not_of("0123456789.\"'") == std::string::npos)
+                        {
+                            valVersionID.append(version);
+                            fFoundVersion = true;
+                        }
                     }
                 }
 
@@ -1098,5 +1104,16 @@ bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const st
 #else
     // On Linux, paths are case-sensitive
     return path1 == path2;
+#endif
+}
+
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+extern void initialize_static_createdump();
+#endif
+
+void pal::initialize_createdump()
+{
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+    initialize_static_createdump();
 #endif
 }

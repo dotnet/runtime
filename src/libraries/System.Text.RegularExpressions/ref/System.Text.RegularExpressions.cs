@@ -142,6 +142,8 @@ namespace System.Text.RegularExpressions
         protected internal string? pattern;
         protected internal System.Text.RegularExpressions.RegexOptions roptions;
         protected Regex() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected Regex(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public Regex([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { }
         public Regex([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { }
@@ -156,14 +158,15 @@ namespace System.Text.RegularExpressions
         public System.TimeSpan MatchTimeout { get { throw null; } }
         public System.Text.RegularExpressions.RegexOptions Options { get { throw null; } }
         public bool RightToLeft { get { throw null; } }
-        [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the RegexGeneratorAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the GeneratedRegexAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname) { }
-        [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the RegexGeneratorAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the GeneratedRegexAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[]? attributes) { }
-        [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the RegexGeneratorAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the GeneratedRegexAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[]? attributes, string? resourceFile) { }
         public int Count(string input) { throw null; }
         public int Count(System.ReadOnlySpan<char> input) { throw null; }
+        public int Count(System.ReadOnlySpan<char> input, int startat) { throw null; }
         public static int Count(string input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { throw null; }
         public static int Count(string input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
         public static int Count(string input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
@@ -172,6 +175,7 @@ namespace System.Text.RegularExpressions
         public static int Count(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public static string Escape(string str) { throw null; }
         public System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input) { throw null; }
+        public System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, int startat) { throw null; }
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[]{ "options"})] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[]{ "options"})] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
@@ -179,8 +183,11 @@ namespace System.Text.RegularExpressions
         public int[] GetGroupNumbers() { throw null; }
         public string GroupNameFromNumber(int i) { throw null; }
         public int GroupNumberFromName(string name) { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected void InitializeReferences() { }
         public bool IsMatch(System.ReadOnlySpan<char> input) { throw null; }
+        public bool IsMatch(System.ReadOnlySpan<char> input, int startat) { throw null; }
         public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
         public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
         public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
@@ -221,8 +228,12 @@ namespace System.Text.RegularExpressions
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public static string Unescape(string str) { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected bool UseOptionC() { throw null; }
-        protected internal bool UseOptionR() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        protected bool UseOptionR() { throw null; }
         protected internal static void ValidateMatchTimeout(System.TimeSpan matchTimeout) { }
         public ref partial struct ValueMatchEnumerator
         {
@@ -233,7 +244,7 @@ namespace System.Text.RegularExpressions
             public bool MoveNext() { throw null; }
         }
     }
-    [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the RegexGeneratorAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the GeneratedRegexAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class RegexCompilationInfo
     {
         public RegexCompilationInfo(string pattern, System.Text.RegularExpressions.RegexOptions options, string name, string fullnamespace, bool ispublic) { }
@@ -246,11 +257,14 @@ namespace System.Text.RegularExpressions
         public string Pattern { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public sealed partial class RegexGeneratorAttribute : System.Attribute
+    public sealed partial class GeneratedRegexAttribute : System.Attribute
     {
-        public RegexGeneratorAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { }
-        public RegexGeneratorAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { }
-        public RegexGeneratorAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, int matchTimeoutMilliseconds) { }
+        public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { }
+        public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { }
+        public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, string cultureName) { }
+        public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, int matchTimeoutMilliseconds) { }
+        public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, int matchTimeoutMilliseconds, string cultureName) { }
+        public string CultureName { get; }
         public string Pattern { get; }
         public System.Text.RegularExpressions.RegexOptions Options { get; }
         public int MatchTimeoutMilliseconds { get; }
@@ -258,6 +272,8 @@ namespace System.Text.RegularExpressions
     public partial class RegexMatchTimeoutException : System.TimeoutException, System.Runtime.Serialization.ISerializable
     {
         public RegexMatchTimeoutException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected RegexMatchTimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public RegexMatchTimeoutException(string message) { }
         public RegexMatchTimeoutException(string message, System.Exception inner) { }
@@ -322,8 +338,11 @@ namespace System.Text.RegularExpressions
         private RegexParseException() { }
         public System.Text.RegularExpressions.RegexParseError Error { get { throw null; } }
         public int Offset { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract partial class RegexRunner
     {
         protected internal int[]? runcrawl;
@@ -342,7 +361,8 @@ namespace System.Text.RegularExpressions
         protected internal int runtrackpos;
         protected internal RegexRunner() { }
         protected void Capture(int capnum, int start, int end) { }
-        protected static bool CharInClass(char ch, string charClass) { throw null; }
+        public static bool CharInClass(char ch, string charClass) { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected static bool CharInSet(char ch, string @set, string category) { throw null; }
         protected void CheckTimeout() { }
         protected void Crawl(int i) { }
@@ -360,12 +380,15 @@ namespace System.Text.RegularExpressions
         protected int MatchIndex(int cap) { throw null; }
         protected int MatchLength(int cap) { throw null; }
         protected int Popcrawl() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected internal System.Text.RegularExpressions.Match? Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected internal System.Text.RegularExpressions.Match? Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, System.TimeSpan timeout) { throw null; }
         protected internal virtual void Scan(System.ReadOnlySpan<char> text) { throw null; }
         protected void TransferCapture(int capnum, int uncapnum, int start, int end) { }
         protected void Uncapture() { }
     }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract partial class RegexRunnerFactory
     {
         protected RegexRunnerFactory() { }

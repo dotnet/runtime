@@ -1,0 +1,18 @@
+<linker xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.EmbeddedLinkAttributes">
+      <field name="_typeWithPublicParameterlessConstructor">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+          <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicParameterlessConstructor</argument>
+        </attribute>
+      </field>
+    </type>
+  </assembly>
+  <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.EmbeddedLinkAttributes">
+    <field name="_typeWithPublicFields">
+      <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+        <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicFields</argument>
+      </attribute>
+    </field>
+  </type>
+</linker>

@@ -1441,7 +1441,7 @@ DECLARE_INTERFACE_(IMetaDataDispenserEx, IMetaDataDispenser)
         LPCWSTR  szAssemblyName,            // [IN] required - this is the assembly you are requesting
         LPCWSTR  szName,                    // [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN] the name buffer's size
-        ULONG    *pcName) PURE;             // [OUT] the number of characters returend in the buffer
+        ULONG    *pcName) PURE;             // [OUT] the number of characters returned in the buffer
 
     STDMETHOD(FindAssemblyModule)(          // S_OK or error
         LPCWSTR  szAppBase,                 // [IN] optional - can be NULL
@@ -1452,7 +1452,7 @@ DECLARE_INTERFACE_(IMetaDataDispenserEx, IMetaDataDispenser)
       _Out_writes_to_opt_(cchName, *pcName)
         LPWSTR   szName,                    // [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN]  the name buffer's size
-        ULONG    *pcName) PURE;             // [OUT] the number of characters returend in the buffer
+        ULONG    *pcName) PURE;             // [OUT] the number of characters returned in the buffer
 
 };
 
@@ -2211,7 +2211,7 @@ inline ULONG CorSigCompressSignedInt(   // return number of bytes that compresse
         *(pBytes + 3) = BYTE(iData & 0xff);
         return 4;
     }
-    // Out of compressable range
+    // Out of compressible range
     return (ULONG)-1;
 } // CorSigCompressSignedInt
 

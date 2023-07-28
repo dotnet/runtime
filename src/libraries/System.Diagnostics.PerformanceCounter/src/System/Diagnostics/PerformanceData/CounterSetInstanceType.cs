@@ -32,7 +32,7 @@ namespace System.Diagnostics.PerformanceData
         GlobalAggregateWithHistory = 0x0000000B, // PERF_COUNTERSET_SINGLE_AGGREGATE_HISTORY
 
         /// <summary>
-        /// MultipleInstancesWithAggregate acts similar to Multiple, but it also generate aggregated instace
+        /// MultipleInstancesWithAggregate acts similar to Multiple, but it also generate aggregated instance
         /// "_Total" that hosts aggregated raw counter data from all other instances.
         /// </summary>
         MultipleAggregate = 0x00000006, // PERF_COUNTERSET_MULTI_AGGREGATE

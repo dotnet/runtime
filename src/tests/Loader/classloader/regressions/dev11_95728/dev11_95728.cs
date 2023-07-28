@@ -28,7 +28,7 @@ namespace StaticFieldBug
         
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             Foo<string>("Run me to crash LINQ...");
             

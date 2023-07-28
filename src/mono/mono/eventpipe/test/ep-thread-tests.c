@@ -288,7 +288,7 @@ test_thread_lock (void)
 
 	ep_thread_requires_lock_not_held (thread);
 
-	ep_rt_spin_lock_aquire (ep_thread_get_rt_lock_ref (thread));
+	ep_rt_spin_lock_acquire (ep_thread_get_rt_lock_ref (thread));
 
 	ep_thread_requires_lock_held (thread);
 
@@ -409,7 +409,7 @@ test_thread_session_state (void)
 
 	test_location = 3;
 
-	ep_rt_spin_lock_aquire (ep_thread_get_rt_lock_ref (thread));
+	ep_rt_spin_lock_acquire (ep_thread_get_rt_lock_ref (thread));
 	session_state = ep_thread_get_or_create_session_state (thread, session);
 	ep_rt_spin_lock_release (ep_thread_get_rt_lock_ref (thread));
 
@@ -420,7 +420,7 @@ test_thread_session_state (void)
 
 	test_location = 4;
 
-	ep_rt_spin_lock_aquire (ep_thread_get_rt_lock_ref (thread));
+	ep_rt_spin_lock_acquire (ep_thread_get_rt_lock_ref (thread));
 	EventPipeThreadSessionState *current_session_state = ep_thread_get_or_create_session_state (thread, session);
 	ep_rt_spin_lock_release (ep_thread_get_rt_lock_ref (thread));
 
@@ -431,7 +431,7 @@ test_thread_session_state (void)
 
 	test_location = 5;
 
-	ep_rt_spin_lock_aquire (ep_thread_get_rt_lock_ref (thread));
+	ep_rt_spin_lock_acquire (ep_thread_get_rt_lock_ref (thread));
 	current_session_state = ep_thread_get_session_state (thread, session);
 	ep_rt_spin_lock_release (ep_thread_get_rt_lock_ref (thread));
 
@@ -442,7 +442,7 @@ test_thread_session_state (void)
 
 ep_on_exit:
 	if (thread && session_state) {
-		ep_rt_spin_lock_aquire (ep_thread_get_rt_lock_ref (thread));
+		ep_rt_spin_lock_acquire (ep_thread_get_rt_lock_ref (thread));
 		ep_thread_delete_session_state (thread, session);
 		ep_rt_spin_lock_release (ep_thread_get_rt_lock_ref (thread));
 	}

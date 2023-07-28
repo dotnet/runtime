@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
-        public void Constructor1_AttributedComposablePartDefintion_ShouldProduceValidObject()
+        public void Constructor1_AttributedComposablePartDefinition_ShouldProduceValidObject()
         {
             var definition = PartDefinitionFactory.CreateAttributed(typeof(MyExport));
             var part = new ReflectionComposablePart(definition);
@@ -68,7 +68,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
-        public void Constructor1_AttributedComposablePartDefintion_Disposable_ShouldProduceValidObject()
+        public void Constructor1_AttributedComposablePartDefinition_Disposable_ShouldProduceValidObject()
         {
             var definition = PartDefinitionFactory.CreateAttributed(typeof(DisposablePart));
             var part = new DisposableReflectionComposablePart(definition);

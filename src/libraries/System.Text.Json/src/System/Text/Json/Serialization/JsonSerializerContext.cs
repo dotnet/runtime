@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -8,62 +9,72 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Provides metadata about a set of types that is relevant to JSON serialization.
     /// </summary>
-    public abstract partial class JsonSerializerContext
+    public abstract partial class JsonSerializerContext : IJsonTypeInfoResolver, IBuiltInJsonTypeInfoResolver
     {
-        private bool? _canUseSerializationLogic;
-
-        internal JsonSerializerOptions? _options;
+        private JsonSerializerOptions? _options;
 
         /// <summary>
         /// Gets the run time specified options of the context. If no options were passed
-        /// when instanciating the context, then a new instance is bound and returned.
+        /// when instantiating the context, then a new instance is bound and returned.
         /// </summary>
         /// <remarks>
-        /// The instance cannot be mutated once it is bound with the context instance.
+        /// The options instance cannot be mutated once it is bound to the context instance.
         /// </remarks>
-        public JsonSerializerOptions Options => _options ??= new JsonSerializerOptions { JsonSerializerContext = this };
+        public JsonSerializerOptions Options
+        {
+            get
+            {
+                JsonSerializerOptions? options = _options;
+
+                if (options is null)
+                {
+                    options = new JsonSerializerOptions { TypeInfoResolver = this };
+                    options.MakeReadOnly();
+                    _options = options;
+                }
+
+                return options;
+            }
+        }
+
+        internal void AssociateWithOptions(JsonSerializerOptions options)
+        {
+            Debug.Assert(!options.IsReadOnly);
+            options.TypeInfoResolver = this;
+            options.MakeReadOnly();
+            _options = options;
+        }
 
         /// <summary>
         /// Indicates whether pre-generated serialization logic for types in the context
         /// is compatible with the run time specified <see cref="JsonSerializerOptions"/>.
         /// </summary>
-        internal bool CanUseSerializationLogic
+        bool IBuiltInJsonTypeInfoResolver.IsCompatibleWithOptions(JsonSerializerOptions options)
         {
-            get
-            {
-                if (!_canUseSerializationLogic.HasValue)
-                {
-                    if (GeneratedSerializerOptions == null)
-                    {
-                        _canUseSerializationLogic = false;
-                    }
-                    else
-                    {
-                        _canUseSerializationLogic =
-                            // Guard against unsupported features
-                            Options.Converters.Count == 0 &&
-                            Options.Encoder == null &&
-                            // Disallow custom number handling we'd need to honor when writing.
-                            // AllowReadingFromString and Strict are fine since there's no action to take when writing.
-                            (Options.NumberHandling & (JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals)) == 0 &&
-                            Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.None &&
+            Debug.Assert(options != null);
+
+            JsonSerializerOptions? generatedSerializerOptions = GeneratedSerializerOptions;
+
+            return
+                generatedSerializerOptions is not null &&
+                // Guard against unsupported features
+                options.Converters.Count == 0 &&
+                options.Encoder is null &&
+                // Disallow custom number handling we'd need to honor when writing.
+                // AllowReadingFromString and Strict are fine since there's no action to take when writing.
+                !JsonHelpers.RequiresSpecialNumberHandlingOnWrite(options.NumberHandling) &&
+                options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.None &&
 #pragma warning disable SYSLIB0020
-                            !Options.IgnoreNullValues && // This property is obsolete.
+                !options.IgnoreNullValues && // This property is obsolete.
 #pragma warning restore SYSLIB0020
 
-                            // Ensure options values are consistent with expected defaults.
-                            Options.DefaultIgnoreCondition == GeneratedSerializerOptions.DefaultIgnoreCondition &&
-                            Options.IgnoreReadOnlyFields == GeneratedSerializerOptions.IgnoreReadOnlyFields &&
-                            Options.IgnoreReadOnlyProperties == GeneratedSerializerOptions.IgnoreReadOnlyProperties &&
-                            Options.IncludeFields == GeneratedSerializerOptions.IncludeFields &&
-                            Options.PropertyNamingPolicy == GeneratedSerializerOptions.PropertyNamingPolicy &&
-                            Options.DictionaryKeyPolicy == GeneratedSerializerOptions.DictionaryKeyPolicy &&
-                            Options.WriteIndented == GeneratedSerializerOptions.WriteIndented;
-                    }
-                }
-
-                return _canUseSerializationLogic.Value;
-            }
+                // Ensure options values are consistent with expected defaults.
+                options.DefaultIgnoreCondition == generatedSerializerOptions.DefaultIgnoreCondition &&
+                options.IgnoreReadOnlyFields == generatedSerializerOptions.IgnoreReadOnlyFields &&
+                options.IgnoreReadOnlyProperties == generatedSerializerOptions.IgnoreReadOnlyProperties &&
+                options.IncludeFields == generatedSerializerOptions.IncludeFields &&
+                options.PropertyNamingPolicy == generatedSerializerOptions.PropertyNamingPolicy &&
+                options.DictionaryKeyPolicy is null;
         }
 
         /// <summary>
@@ -83,8 +94,8 @@ namespace System.Text.Json.Serialization
         {
             if (options != null)
             {
-                options.JsonSerializerContext = this;
-                _options = options;
+                options.VerifyMutable();
+                AssociateWithOptions(options);
             }
         }
 
@@ -94,5 +105,15 @@ namespace System.Text.Json.Serialization
         /// <param name="type">The type to fetch metadata about.</param>
         /// <returns>The metadata for the specified type, or <see langword="null" /> if the context has no metadata for the type.</returns>
         public abstract JsonTypeInfo? GetTypeInfo(Type type);
+
+        JsonTypeInfo? IJsonTypeInfoResolver.GetTypeInfo(Type type, JsonSerializerOptions options)
+        {
+            if (options != null && options != _options)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ResolverTypeInfoOptionsNotCompatible();
+            }
+
+            return GetTypeInfo(type);
+        }
     }
 }

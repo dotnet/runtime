@@ -9,17 +9,6 @@ namespace System.Configuration
     {
         private static volatile IConfigurationManagerInternal s_instance;
 
-        internal static IConfigurationManagerInternal Instance
-        {
-            get
-            {
-                if (s_instance == null)
-                {
-                    s_instance = new ConfigurationManagerInternal();
-                }
-
-                return s_instance;
-            }
-        }
+        internal static IConfigurationManagerInternal Instance => s_instance ??= new ConfigurationManagerInternal();
     }
 }

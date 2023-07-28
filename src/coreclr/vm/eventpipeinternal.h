@@ -51,11 +51,12 @@ extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
 //!
 extern "C" void QCALLTYPE EventPipeInternal_Disable(UINT64 sessionID);
 
-extern "C" bool QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo);
+extern "C" BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo);
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
     _In_z_ LPCWSTR providerName,
-    EventPipeCallback pCallbackFunc);
+    EventPipeCallback pCallbackFunc,
+    void* pCallbackContext);
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
     INT_PTR provHandle,
@@ -82,14 +83,14 @@ extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
     UINT32 eventDataCount,
     LPCGUID pActivityId, LPCGUID pRelatedActivityId);
 
-extern "C" bool QCALLTYPE EventPipeInternal_GetNextEvent(
+extern "C" BOOL QCALLTYPE EventPipeInternal_GetNextEvent(
     UINT64 sessionID,
     EventPipeEventInstanceData *pInstance);
 
-extern "C" bool QCALLTYPE EventPipeInternal_SignalSession(
+extern "C" BOOL QCALLTYPE EventPipeInternal_SignalSession(
     UINT64 sessionID);
 
-extern "C" bool QCALLTYPE EventPipeInternal_WaitForSessionSignal(
+extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(
     UINT64 sessionID,
     INT32 timeoutMs);
 

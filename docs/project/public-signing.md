@@ -16,6 +16,7 @@ Known issues when debugging and testing public signed assemblies on .NET Framewo
 - You will not be able to install the assembly to the [Global Assembly Cache (GAC)](https://msdn.microsoft.com/en-us/library/yf1d93sz.aspx)
 - You will not be able to load the assembly in an AppDomain where shadow copying is turned on.
 - You will not be able to load the assembly in a partially trusted AppDomain
+- You will not be able to pre-compile ASP.NET applications
 
 The `corflags.exe` tool that ships with the .NET Framework SDK can show whether a binary is delay-signed or strong-named. For a delay-signed assembly it may show:
 

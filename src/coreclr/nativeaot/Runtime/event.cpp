@@ -16,7 +16,6 @@
 #include "thread.h"
 #include "holder.h"
 #include "Crst.h"
-#include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 

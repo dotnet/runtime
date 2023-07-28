@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class BringUpTest_StaticCalls
 {
@@ -92,12 +93,6 @@ public class BringUpTest_StaticCalls
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void Print(int s)
-    {
-       Console.WriteLine(s);
-    }
-
-    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int StaticCalls()
     {
         int a = 1;
@@ -175,7 +170,8 @@ public class BringUpTest_StaticCalls
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int y = StaticCalls();      
         return y;        

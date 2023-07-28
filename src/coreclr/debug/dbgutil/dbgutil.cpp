@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <memory>
+#include <dn-u16.h>
 #include "corhlpr.h"
 
 #ifdef HOST_WINDOWS
@@ -29,7 +30,7 @@ namespace
         DWORD* directoryRVA)
     {
         // Fun code ahead... below is a hand written PE decoder with some of the file offsets hardcoded.
-        // It supports no more than what we absolutely have to to get to the PE directory we need. Any of the
+        // It supports no more than what we absolutely have to get to the PE directory we need. Any of the
         // magic numbers used below can be determined by using the public documentation on the web.
         //
         // Yes utilcode has a PE decoder, no it does not support reading its data through a datatarget
@@ -115,7 +116,7 @@ namespace
         }
 
         *directoryRVA = sectionRVA;
-        return S_OK;
+        return hr;
     }
 }
 
@@ -252,7 +253,7 @@ HRESULT GetResourceRvaFromResourceSectionRvaByName(ICorDebugDataTarget* pDataTar
 //   pNextLevelRVA - out - The RVA for the next level tree directory or the RVA of the resource entry
 //
 // Returns:
-//   S_OK if succesful or an appropriate failing HRESULT
+//   S_OK if successful or an appropriate failing HRESULT
 HRESULT GetNextLevelResourceEntryRVA(ICorDebugDataTarget* pDataTarget,
     DWORD id,
     ULONG64 moduleBaseAddress,
@@ -319,7 +320,7 @@ HRESULT GetNextLevelResourceEntryRVA(ICorDebugDataTarget* pDataTarget,
 //   pNextLevelRVA - out - The RVA for the next level tree directory or the RVA of the resource entry
 //
 // Returns:
-//   S_OK if succesful or an appropriate failing HRESULT
+//   S_OK if successful or an appropriate failing HRESULT
 HRESULT GetNextLevelResourceEntryRVAByName(ICorDebugDataTarget* pDataTarget,
     LPCWSTR pwzName,
     ULONG64 moduleBaseAddress,
@@ -328,7 +329,7 @@ HRESULT GetNextLevelResourceEntryRVAByName(ICorDebugDataTarget* pDataTarget,
     DWORD* pNextLevelRva)
 {
     HRESULT hr = S_OK;
-    DWORD nameLength = (DWORD)wcslen(pwzName);
+    DWORD nameLength = (DWORD)u16_strlen(pwzName);
     WCHAR entryName[50];
     assert(nameLength < 50);     // this implementation won't support matching a name longer
     // than 50 characters. We only look up the hard coded name

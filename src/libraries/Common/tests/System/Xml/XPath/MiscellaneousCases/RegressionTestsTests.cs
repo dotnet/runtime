@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
-using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.MiscellaneousCases
 {
@@ -17,73 +15,91 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         /// <summary>
         /// translate() cannot handle surrogate pair mapping correctly
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest552()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest552(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = "translate('+\uD800\uDF30+', '\uD800\uDF30', 'x')";
             var expected = @"+x+";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// translate() cannot handle surrogate pair mapping correctly
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest553()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest553(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = "translate('+\uD800\uDF30+', '\uD800\uDF30', 'xy')";
             var expected = @"+xy+";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// translate() cannot handle surrogate pair mapping correctly
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest554()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest554(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"translate('1.2.3.4.5.6.7.8.9.', '112233445566778899', 'axaxaxaxaxaxaxaxax')";
             var expected = @"a.a.a.a.a.a.a.a.a.";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// translate('--aaa--', 'xyz', '')
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest555()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest555(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"translate('--aaa--', 'xyz', '')";
             var expected = @"--aaa--";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// translate('abc', 'abc', '')
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest556()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest556(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"translate('abc', 'abc', '')";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// //namespace::*
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest557()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest557(Utils.NavigatorKind kind)
         {
             var xml = "t98598.xml";
             var testExpression = @"//namespace::*";
@@ -147,51 +163,63 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
                     Value = "http://www.w3.org/XML/1998/namespace"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// position()
+        /// position(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest558()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest558(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"position()";
             var expected = 1d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// //book[starts-with(@stype,'text')]
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest559()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest559(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,'text')]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// //book[starts-with(@stype,'glo')]
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5510()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5510(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,'glo')]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// //book[starts-with(@stype,'')]
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5511()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5511(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,'')]";
@@ -273,135 +301,165 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
                         "\n\t\tTrenton Today, Trenton Tomorrow\n\t\t\n\t\t\tToni\n\t\t\tBob\n\t\t\tB.A.\n\t\t\tPh.D.\n\t\t\tPulizer\n\t\t\tStill in Trenton\n\t\t\tTrenton Forever\n\t\t\n\t\t6.50\n\t\t\n\t\t\tIt was a dark and stormy night.\n\t\t\tBut then all nights in Trenton seem dark and\n\t\t\tstormy to someone who has gone through what\n\t\t\tI have.\n\t\t\t\n\t\t\t\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t\n\t\t\n\t"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// //book[starts-with(@stype,' ')]
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5512()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5512(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,' ')]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// //book[starts-with(@stype,' text')]
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5513()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5513(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,' text')]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// //book[starts-with(@stype,'text ')]
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5514()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5514(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,'text ')]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// last()
+        /// last(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5515()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5515(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"last()";
             var expected = 1d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// /child::MyComputer/descendant::UIntData/descendant::Value//@value
-        /// last()
+        /// last(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5516()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5516(Utils.NavigatorKind kind)
         {
             var xml = "t114730.xml";
             var testExpression = @"/child::MyComputer/descendant::UIntData/descendant::Value//@value";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Execution of XPath expressions like that compare string to node-set with arithmetic operators in context of parent expression results in NRE.
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5519()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5519(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"/*['6' > *]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Match() String functions inside predicate use wrong context node
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5520()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5520(Utils.NavigatorKind kind)
         {
             var xml = "bookstore.xml";
             var testExpression = @"book[substring-before(local-name(),'store')]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Expected: Line 1 == Line 3, Actual Line 1 == Line 2 (this test cases is Line1==Line2?)
         /// count(/*[1]//node()[1]) = count(/*[1]/descendant::node()[1])
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5523()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5523(Utils.NavigatorKind kind)
         {
             var xml = "bookstore.xml";
             var testExpression = @"count(/*[1]//node()[1]) = count(/*[1]/descendant::node()[1])";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Expected: Line 1 == Line 3, Actual Line 1 == Line 2 (this test cases is Line1==Line3?)
         /// count(/*[1]//node()[1]) = count(/*//node()[1])
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5524()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5524(Utils.NavigatorKind kind)
         {
             var xml = "bookstore.xml";
             var testExpression = @"count(/*[1]//node()[1]) = count(/*//node()[1])";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Numeric operators are incorrectly treated as returning boolean
         /// not(0+0)
         /// </summary>
-        [Fact]
-        public static void RegressionTestsTest5525()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void RegressionTestsTest5525(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"not(0+0)";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
     }
 }

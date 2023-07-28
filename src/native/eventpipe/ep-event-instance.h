@@ -104,8 +104,8 @@ ep_event_instance_get_flattened_size (const EventPipeEventInstance *ep_event_ins
 {
 	EP_ASSERT (ep_event_instance != NULL);
 	return ep_event_instance_get_data (ep_event_instance) ?
-		sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_instance_get_total_size (ep_event_instance_get_stack_contents_instance_cref (ep_event_instance)) + ep_event_instance_get_data_len (ep_event_instance) :
-		sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_instance_get_total_size (ep_event_instance_get_stack_contents_instance_cref (ep_event_instance));
+		sizeof (*ep_event_instance) - sizeof (ep_event_instance->stack_contents_instance.stack_frames) + ep_stack_contents_instance_get_full_size (ep_event_instance_get_stack_contents_instance_cref (ep_event_instance)) + ep_event_instance_get_data_len (ep_event_instance) :
+		sizeof (*ep_event_instance) - sizeof (ep_event_instance->stack_contents_instance.stack_frames) + ep_stack_contents_instance_get_full_size (ep_event_instance_get_stack_contents_instance_cref (ep_event_instance));
 }
 
 /*
@@ -121,7 +121,7 @@ struct _EventPipeSequencePoint {
 #else
 struct _EventPipeSequencePoint_Internal {
 #endif
-	ep_rt_thread_sequence_number_hash_map_t thread_sequence_numbers;
+	dn_umap_t *thread_sequence_numbers;
 	ep_timestamp_t timestamp;
 };
 
@@ -131,7 +131,7 @@ struct _EventPipeSequencePoint {
 };
 #endif
 
-EP_DEFINE_GETTER_REF(EventPipeSequencePoint *, sequence_point, ep_rt_thread_sequence_number_hash_map_t *, thread_sequence_numbers)
+EP_DEFINE_GETTER(EventPipeSequencePoint *, sequence_point, dn_umap_t *, thread_sequence_numbers)
 EP_DEFINE_GETTER(EventPipeSequencePoint *, sequence_point, ep_timestamp_t, timestamp)
 EP_DEFINE_SETTER(EventPipeSequencePoint *, sequence_point, ep_timestamp_t, timestamp)
 

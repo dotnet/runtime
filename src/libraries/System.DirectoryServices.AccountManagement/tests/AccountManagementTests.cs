@@ -747,18 +747,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             ((CustomFilter) AdvancedSearchFilter).SetFilter(name);
         }
 
-        public override AdvancedFilters AdvancedSearchFilter
-        {
-            get
-            {
-                if (_customFilter == null)
-                {
-                    _customFilter = new CustomFilter(this);
-                }
-
-                return _customFilter;
-            }
-        }
+        public override AdvancedFilters AdvancedSearchFilter => _customFilter ??= new CustomFilter(this);
 
         // Custom properties
         [DirectoryProperty("postalCode")]

@@ -10,6 +10,7 @@
 #include <atomic>
 #include <cassert>
 #include <exception>
+#include <stdexcept>
 #include <list>
 #include <mutex>
 #include <unordered_map>
@@ -579,6 +580,25 @@ extern "C" DLL_EXPORT LONG STDMETHODCALLTYPE TrackerTarget_ReleaseFromReferenceT
 {
     assert(target != nullptr);
     return (LONG)target->ReleaseFromReferenceTracker();
+}
+
+namespace
+{
+    using QueryInterface_t = HRESULT(STDMETHODCALLTYPE*)(void*,GUID*,void**);
+    QueryInterface_t _qiToWrap;
+
+    HRESULT STDMETHODCALLTYPE QueryInterfaceWrapper(void* _this, GUID* riid, void** ppvObject)
+    {
+        if (_qiToWrap == nullptr)
+            return E_UNEXPECTED;
+        return _qiToWrap(_this, riid, ppvObject);
+    }
+}
+
+extern "C" DLL_EXPORT void* WrapQueryInterface(QueryInterface_t qiToWrap)
+{
+    _qiToWrap = qiToWrap;
+    return (void*)&QueryInterfaceWrapper;
 }
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIUnknown(IUnknown *obj, int i, IUnknown **out)

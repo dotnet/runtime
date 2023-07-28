@@ -45,7 +45,7 @@ public class HandlerException {
 	}
 		
 	
-	public static int Main(String [] args) {
+	public static int Main() {
 		String s = "Done";
 		int retVal = 100;
 		Thread mv_Thread;

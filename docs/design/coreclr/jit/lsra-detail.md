@@ -511,12 +511,12 @@ node, which builds `RefPositions` according to the liveness model described abov
 ```
 N037  t16 =    ┌──▌  LCL_VAR   ref    V04 arg3
 N039 t127 = ┌──▌  PUTARG_REG ref    REG rcx
-N041 t128 = │                 ┌──▌  LCL_VAR   ref    V04 arg3    (last use)     
-N043 t129 = │              ┌──▌  LEA(b+0)  byref 
-N045 t130 = │           ┌──▌  IND       long  
-N047 t131 = │        ┌──▌  LEA(b+72) long  
-N049 t132 = │     ┌──▌  IND       long  
-N051 t133 = │  ┌──▌  LEA(b+40) long  
+N041 t128 = │                 ┌──▌  LCL_VAR   ref    V04 arg3    (last use)
+N043 t129 = │              ┌──▌  LEA(b+0)  byref
+N045 t130 = │           ┌──▌  IND       long
+N047 t131 = │        ┌──▌  LEA(b+72) long
+N049 t132 = │     ┌──▌  IND       long
+N051 t133 = │  ┌──▌  LEA(b+40) long
 N053 t134 = ├──▌  IND       long   REG NA
 N055  t17 = ▌  CALLV ind int    System.Globalization.CultureInfo.get_LCID $242
 ```
@@ -552,7 +552,7 @@ Loc RP#  Name Type  Action Reg  │rax │rcx │rdx │rbx │rbp │rsi │rdi
         -   This is generally not required, as the block will
             normally have a predecessor block that has already
             been allocated. This facility is exercised by the 0x100
-            (`LSRA_BLOCK_BOUNDARY_LAYOUT`) or 0x200 (`LSRA_BLOCK_BOUNDARY_ROTATE`) settings of `COMPlus_JitStressRegs`.
+            (`LSRA_BLOCK_BOUNDARY_LAYOUT`) or 0x200 (`LSRA_BLOCK_BOUNDARY_ROTATE`) settings of `DOTNET_JitStressRegs`.
 
 -   At the end of a block, for any exposed uses that do not have downstream
     `RefPosition`s (e.g. variables that are live across the backedge, so there is no
@@ -733,7 +733,7 @@ LinearScanAllocation(List<RefPosition> refPositions)
 
     -   Resolution of exception edges
 
-        -   When `COMPlus_EnableEHWriteThru == 0`, any variable that's
+        -   When `DOTNET_EnableEHWriteThru == 0`, any variable that's
             live in to an exception region is always referenced on the stack.
 
         -   See [Enable EHWriteThru by default](#enable-ehwritethru-by-default).
@@ -962,7 +962,7 @@ The following dumps and debugging modes are provided:
 LSRA Stress Modes
 -----------------
 
-The implementation uses the `COMPlus_JitStressRegs` environment variable.
+The implementation uses the `DOTNET_JitStressRegs` environment variable.
 The following are the stress modes associated with this variable. For
 the most part they can be combined, though in some cases the values are
 exclusive:
@@ -1012,7 +1012,7 @@ exclusive:
 
 -   Always insert a `GTF_RELOAD` above a use of a spilled register (0x400).
 
--   Alyways spill (0x800). This mode is not fully functional, as there are
+-   Always spill (0x800). This mode is not fully functional, as there are
     cases where spill isn't actually supported (it should be possible to simply
     not spill in such cases).
 
@@ -1201,7 +1201,7 @@ Issues [\#8552](https://github.com/dotnet/runtime/issues/8552) and [\#40264](htt
 
 ### Enable EHWriteThru by default
 
-When `COMPlus_EnableEHWriteThru` is set, some performance regressions are observed. When an EH write-thru variable (i.e. one that is live into an exception region) is defined, its value is
+When `DOTNET_EnableEHWriteThru` is set, some performance regressions are observed. When an EH write-thru variable (i.e. one that is live into an exception region) is defined, its value is
 always stored, in addition to potentially remaining live in a register. This increases register
 pressure which may result in worse code.
 
@@ -1211,7 +1211,7 @@ term "EH Var" means a `lclVar` marked `lvLiveInOutOfHndlr`):
 -   Adjust the heuristics:
 
     1. For determining whether an EH var should be a candidate for register allocation,
-       e.g. if the defs outweight the uses.
+       e.g. if the defs outweigh the uses.
 
        - An initial investigation might only consider an EH var as a register candidate if it has a single use. One complication is that we sometimes generate better code for a non-register-candidate local than one that is always spilled (we don't support `RegOptional` defs).
        Thus, it would be better to identify *before* building intervals whether we should consider it a candidate, but the problem with that is that we don't necessarily know at that
@@ -1381,14 +1381,14 @@ kill site.
 ## Test and Cleanup Issues
 
 Issue [\#9767](https://github.com/dotnet/runtime/issues/9767) captures the issue that the
-"spill always" stress mode, `LSRA_SPILL_ALWAYS`, `COMPlus_JitStressRegs=0x800` doesn't work properly.
+"spill always" stress mode, `LSRA_SPILL_ALWAYS`, `DOTNET_JitStressRegs=0x800` doesn't work properly.
 
 Issue [\#6261](https://github.com/dotnet/runtime/issues/6261) has to do with `RegOptional`
 `RefPositions` that are marked as `copyReg` or `moveReg`. See the notes on this issue;
 I don't think such cases should arise, but there may be some cleanup needed here.
 
 Issue [\#5793](https://github.com/dotnet/runtime/issues/5793) suggests adding a stress mode that
-allocates registers forr mullti-reg nodes in the reverse of the ABI requirements.
+allocates registers for multi-reg nodes in the reverse of the ABI requirements.
 
 Issue [#10691](https://github.com/dotnet/runtime/issues/10691) suggests adding a stress mode that
 deliberately trashes registers that are not currently occupied (e.g. at block boundaries).

@@ -18,6 +18,37 @@ namespace System.IO.Tests
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
                 fs.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(() => Flush(fs, flushToDisk));
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void FlushThrowsForDisposedHandle_EmptyBuffer(bool? flushToDisk)
+        {
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
+            {
+                fs.SafeFileHandle.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(() => Flush(fs, flushToDisk));
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void FlushThrowsForDisposedHandle_NonEmptyBuffer(bool? flushToDisk)
+        {
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
+            {
+                fs.WriteByte(1); // fills the internal buffer
+
+                fs.SafeFileHandle.Dispose();
+
                 Assert.Throws<ObjectDisposedException>(() => Flush(fs, flushToDisk));
             }
         }

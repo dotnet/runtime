@@ -452,7 +452,7 @@ namespace System.Data
         }
 
 
-        private bool IsOperatorIn(ExpressionNode? enode)
+        private static bool IsOperatorIn(ExpressionNode? enode)
         {
             BinaryNode? bnode = (enode as BinaryNode);
             if (null != bnode)
@@ -630,7 +630,7 @@ namespace System.Data
             }
             catch (Exception e) when (ADP.IsCatchableExceptionType(e))
             {
-                throw ExprException.FilterConvertion(_rowFilter!.Expression);
+                throw ExprException.FilterConversion(_rowFilter!.Expression);
             }
             return result;
         }
@@ -676,7 +676,7 @@ namespace System.Data
                 StorageType resultType;
                 if (expr._left.IsSqlColumn || expr._right.IsSqlColumn)
                 {
-                    resultType = BinaryNode.ResultSqlType(leftType, rightType, isLConst, isRConst, expr._op);
+                    resultType = BinaryNode.ResultSqlType(leftType, rightType, expr._op);
                 }
                 else
                 {

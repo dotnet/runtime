@@ -239,11 +239,21 @@ namespace ILCompiler.DependencyAnalysis
                 ISymbolDefinitionNode lastImportThunk = null;
                 ObjectNode lastWrittenObjectNode = null;
 
+                // Save cold method nodes here, and emit them to execution section last.
+                List<ObjectNode> methodColdCodeNodes = new List<ObjectNode>();
+
                 int nodeIndex = -1;
                 foreach (var depNode in _nodes)
                 {
-                    ++nodeIndex;
                     ObjectNode node = depNode as ObjectNode;
+
+                    if (node is MethodColdCodeNode)
+                    {
+                        methodColdCodeNodes.Add(node);
+                        continue;
+                    }
+
+                    ++nodeIndex;
 
                     if (node == null)
                     {
@@ -281,30 +291,32 @@ namespace ILCompiler.DependencyAnalysis
                         lastImportThunk = importThunkNode;
                     }
 
-                    string name = null;
+                    string name = GetDependencyNodeName(depNode);
 
-                    if (_mapFileBuilder != null)
-                    {
-                        name = depNode.GetType().ToString();
-                        int firstGeneric = name.IndexOf('[');
-                        if (firstGeneric < 0)
-                        {
-                            firstGeneric = name.Length;
-                        }
-                        int lastDot = name.LastIndexOf('.', firstGeneric - 1, firstGeneric);
-                        if (lastDot > 0)
-                        {
-                            name = name.Substring(lastDot + 1);
-                        }
-                    }
-
-                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section);
+                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.GetSection(_nodeFactory));
                     lastWrittenObjectNode = node;
+                }
+                
+                if (_outputInfoBuilder != null)
+                {
+                    foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
+                        _outputInfoBuilder.AddMethod(methodNode, methodNode);
+                }
 
-                    if (_outputInfoBuilder != null && node is MethodWithGCInfo methodNode)
+                // Emit cold method nodes to end of execution section.
+                foreach (ObjectNode node in methodColdCodeNodes)
+                {
+                    ++nodeIndex;
+
+                    if (node == null)
                     {
-                        _outputInfoBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
+                        continue;
                     }
+
+                    ObjectData nodeContents = node.GetData(_nodeFactory);
+                    string name = GetDependencyNodeName(node);
+
+                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.GetSection(_nodeFactory));
                 }
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
@@ -430,6 +442,36 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         /// <summary>
+        /// Helper method to generate the name of a given DependencyNode. Returns null if a name is not needed.
+        /// A name is needed only when the executable generator should output a map file.
+        /// </summary>
+        /// <param name="depNode">The DependencyNode to return a name for, if one is needed.</param>
+        private string GetDependencyNodeName(DependencyNode depNode)
+        {
+            if (_mapFileBuilder == null)
+            {
+                return null;
+            }
+
+            string name = depNode.GetType().ToString();
+            int firstGeneric = name.IndexOf('[');
+
+            if (firstGeneric < 0)
+            {
+                firstGeneric = name.Length;
+            }
+
+            int lastDot = name.LastIndexOf('.', firstGeneric - 1, firstGeneric);
+
+            if (lastDot > 0)
+            {
+                name = name.Substring(lastDot + 1);
+            }
+
+            return name;
+        }
+
+        /// <summary>
         /// Update the PE header directories by setting up the exception directory to point to the runtime functions table.
         /// This is needed for RtlLookupFunctionEntry / RtlLookupFunctionTable to work.
         /// </summary>
@@ -459,7 +501,10 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Fail("Duplicate node name emitted to file",
                     $"Symbol {definedSymbol.GetMangledName(_nodeFactory.NameMangler)} has already been written to the output object file {_objectFilePath} with symbol {alreadyWrittenSymbol}");
                 }
-                _previouslyWrittenNodeNames.Add(symbolName, new NodeInfo(definedSymbol, nodeIndex, symbolIndex));
+                else
+                {
+                    _previouslyWrittenNodeNames.Add(symbolName, new NodeInfo(definedSymbol, nodeIndex, symbolIndex));
+                }
             }
 #endif
 

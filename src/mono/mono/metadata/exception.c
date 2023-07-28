@@ -464,7 +464,7 @@ mono_get_exception_serialization (const char *msg)
  * \returns a new instance of the \c System.InvalidCastException
  */
 MonoException *
-mono_get_exception_invalid_cast ()
+mono_get_exception_invalid_cast (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System", "InvalidCastException");
 }
@@ -493,7 +493,7 @@ mono_exception_new_invalid_operation (const char *msg, MonoError *error)
  * \returns a new instance of the \c System.IndexOutOfRangeException
  */
 MonoException *
-mono_get_exception_index_out_of_range ()
+mono_get_exception_index_out_of_range (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "IndexOutOfRangeException");
@@ -1219,31 +1219,41 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 		unhandled_exception_hook (exc, unhandled_exception_hook_data);
 	} else {
 		ERROR_DECL (inner_error);
-		MonoObject *other = NULL;
-		MonoString *str = mono_object_try_to_string (exc, &other, inner_error);
 		char *msg = NULL;
 
-		if (str && is_ok (inner_error)) {
-			msg = mono_string_to_utf8_checked_internal (str, inner_error);
-			if (!is_ok (inner_error)) {
-				msg = g_strdup_printf ("Nested exception while formatting original exception");
-				mono_error_cleanup (inner_error);
-			}
-		} else if (other) {
-			char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
-			char *nested_backtrace = mono_exception_get_managed_backtrace ((MonoException*)other);
+		if (exc == (MonoObject*)mono_domain_get ()->stack_overflow_ex) {
+			// Build stack trace directly instead of calling ToString so we don't put
+			// additional pressure on the limited stack
+			char *backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
 
-			msg = g_strdup_printf ("Nested exception detected.\nOriginal Exception: %s\nNested exception:%s\n",
-				original_backtrace, nested_backtrace);
-
-			g_free (original_backtrace);
-			g_free (nested_backtrace);
+			msg = g_strdup_printf ("System.StackOverflowException: The requested operation caused a stack overflow.\n%s\n",
+				backtrace);
 		} else {
-			msg = g_strdup ("Nested exception trying to figure out what went wrong");
+			MonoObject *other = NULL;
+			MonoString *str = mono_object_try_to_string (exc, &other, inner_error);
+
+			if (str && is_ok (inner_error)) {
+				msg = mono_string_to_utf8_checked_internal (str, inner_error);
+				if (!is_ok (inner_error)) {
+					msg = g_strdup_printf ("Nested exception while formatting original exception");
+					mono_error_cleanup (inner_error);
+				}
+			} else if (other) {
+				char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
+				char *nested_backtrace = mono_exception_get_managed_backtrace ((MonoException*)other);
+
+				msg = g_strdup_printf ("Nested exception detected.\nOriginal Exception: %s\nNested exception:%s\n",
+					original_backtrace, nested_backtrace);
+
+				g_free (original_backtrace);
+				g_free (nested_backtrace);
+			} else {
+				msg = g_strdup ("Nested exception trying to figure out what went wrong");
+			}
 		}
 		mono_runtime_printf_err ("[ERROR] FATAL UNHANDLED EXCEPTION: %s", msg);
 		g_free (msg);
-#if defined(HOST_IOS)
+#if defined(HOST_IOS) || defined(HOST_TVOS)
 		g_assertion_message ("Terminating runtime due to unhandled exception");
 #else
 		exit (mono_environment_exitcode_get ());
@@ -1328,7 +1338,6 @@ mono_error_set_field_missing (MonoError *error, MonoClass *klass, const char *fi
 void
 mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *method_name, MonoMethodSignature *sig, const char *reason, ...)
 {
-	int i;
 	char *result;
 	GString *res;
 
@@ -1361,7 +1370,7 @@ mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *m
 	if (sig) {
 		if (sig->generic_param_count) {
 			g_string_append_c (res, '<');
-			for (i = 0; i < sig->generic_param_count; ++i) {
+			for (guint i = 0; i < sig->generic_param_count; ++i) {
 				if (i > 0)
 					g_string_append (res, ",");
 				g_string_append_printf (res, "!%d", i);
@@ -1370,7 +1379,7 @@ mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *m
 		}
 
 		g_string_append_c (res, '(');
-		for (i = 0; i < sig->param_count; ++i) {
+		for (guint16 i = 0; i < sig->param_count; ++i) {
 			if (i > 0)
 				g_string_append_c (res, ',');
 			mono_type_get_desc (res, sig->params [i], TRUE);

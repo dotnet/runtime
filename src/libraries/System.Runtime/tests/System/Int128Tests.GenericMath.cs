@@ -159,6 +159,690 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void TryReadBigEndianByteTest()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_007F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_00FF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianInt16Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0100), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_7FFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_8000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianInt32Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0100_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_7FFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_8000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianInt64Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0100_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x7FFF_FFFF_FFFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0x8000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianInt96Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0100_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_7FFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_8000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianInt128Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0100_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianSByteTest()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_007F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF80), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianUInt16Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0100), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_7FFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_8000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianUInt32Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0100_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_7FFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_8000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianUInt64Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0100_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x7FFF_FFFF_FFFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x8000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianUInt96Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0100_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_7FFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_8000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianUInt128Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0100_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+
+            Assert.False(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.False(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.False(BinaryIntegerHelper<Int128>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianByteTest()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_007F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_00FF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianInt16Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0100), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_8000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_7FFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianInt32Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0100_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_8000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_7FFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianInt64Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0100_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0x8000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x7FFF_FFFF_FFFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianInt96Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0100_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_8000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_7FFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianInt128Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0100_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianSByteTest()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_007F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80 }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF80), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF }, isUnsigned: false, out result));
+            Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianUInt16Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0100), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_8000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_7FFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianUInt32Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0100_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_8000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_7FFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianUInt64Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0100_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x8000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x7FFF_FFFF_FFFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianUInt96Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0100_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_8000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF7F), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_7FFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianUInt128Test()
+        {
+            Int128 result;
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0100_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.False(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), result);
+
+            Assert.False(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0080), result);
+
+            Assert.True(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
+
+            Assert.False(BinaryIntegerHelper<Int128>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), result);
+        }
+
+        [Fact]
         public static void GetByteCountTest()
         {
             Assert.Equal(16, BinaryIntegerHelper<Int128>.GetByteCount(Zero));
@@ -245,6 +929,14 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            Int128 compare = new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+            Assert.Equal(compare, BinaryNumberHelper<Int128>.AllBitsSet);
+            Assert.Equal((Int128)0, ~BinaryNumberHelper<Int128>.AllBitsSet);
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<Int128>.IsPow2(Zero));
@@ -315,41 +1007,41 @@ namespace System.Tests
         [Fact]
         public static void op_GreaterThanTest()
         {
-            Assert.False(ComparisonOperatorsHelper<Int128, Int128>.op_GreaterThan(Zero, 1));
-            Assert.False(ComparisonOperatorsHelper<Int128, Int128>.op_GreaterThan(One, 1));
-            Assert.True(ComparisonOperatorsHelper<Int128, Int128>.op_GreaterThan(MaxValue, 1));
-            Assert.False(ComparisonOperatorsHelper<Int128, Int128>.op_GreaterThan(MinValue, 1));
-            Assert.False(ComparisonOperatorsHelper<Int128, Int128>.op_GreaterThan(NegativeOne, 1));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(Zero, 1));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(One, 1));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(MaxValue, 1));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(MinValue, 1));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(NegativeOne, 1));
         }
 
         [Fact]
         public static void op_GreaterThanOrEqualTest()
         {
-            Assert.False(ComparisonOperatorsHelper<Int128, Int128>.op_GreaterThanOrEqual(Zero, 1));
-            Assert.True(ComparisonOperatorsHelper<Int128, Int128>.op_GreaterThanOrEqual(One, 1));
-            Assert.True(ComparisonOperatorsHelper<Int128, Int128>.op_GreaterThanOrEqual(MaxValue, 1));
-            Assert.False(ComparisonOperatorsHelper<Int128, Int128>.op_GreaterThanOrEqual(MinValue, 1));
-            Assert.False(ComparisonOperatorsHelper<Int128, Int128>.op_GreaterThanOrEqual(NegativeOne, 1));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(Zero, 1));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(One, 1));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(MaxValue, 1));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(MinValue, 1));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(NegativeOne, 1));
         }
 
         [Fact]
         public static void op_LessThanTest()
         {
-            Assert.True(ComparisonOperatorsHelper<Int128, Int128>.op_LessThan(Zero, 1));
-            Assert.False(ComparisonOperatorsHelper<Int128, Int128>.op_LessThan(One, 1));
-            Assert.False(ComparisonOperatorsHelper<Int128, Int128>.op_LessThan(MaxValue, 1));
-            Assert.True(ComparisonOperatorsHelper<Int128, Int128>.op_LessThan(MinValue, 1));
-            Assert.True(ComparisonOperatorsHelper<Int128, Int128>.op_LessThan(NegativeOne, 1));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(Zero, 1));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(One, 1));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(MaxValue, 1));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(MinValue, 1));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(NegativeOne, 1));
         }
 
         [Fact]
         public static void op_LessThanOrEqualTest()
         {
-            Assert.True(ComparisonOperatorsHelper<Int128, Int128>.op_LessThanOrEqual(Zero, 1));
-            Assert.True(ComparisonOperatorsHelper<Int128, Int128>.op_LessThanOrEqual(One, 1));
-            Assert.False(ComparisonOperatorsHelper<Int128, Int128>.op_LessThanOrEqual(MaxValue, 1));
-            Assert.True(ComparisonOperatorsHelper<Int128, Int128>.op_LessThanOrEqual(MinValue, 1));
-            Assert.True(ComparisonOperatorsHelper<Int128, Int128>.op_LessThanOrEqual(NegativeOne, 1));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(Zero, 1));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(One, 1));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(MaxValue, 1));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(MinValue, 1));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(NegativeOne, 1));
         }
 
         //
@@ -412,21 +1104,21 @@ namespace System.Tests
         [Fact]
         public static void op_EqualityTest()
         {
-            Assert.False(EqualityOperatorsHelper<Int128, Int128>.op_Equality(Zero, 1));
-            Assert.True(EqualityOperatorsHelper<Int128, Int128>.op_Equality(One, 1));
-            Assert.False(EqualityOperatorsHelper<Int128, Int128>.op_Equality(MaxValue, 1));
-            Assert.False(EqualityOperatorsHelper<Int128, Int128>.op_Equality(MinValue, 1));
-            Assert.False(EqualityOperatorsHelper<Int128, Int128>.op_Equality(NegativeOne, 1));
+            Assert.False(EqualityOperatorsHelper<Int128, Int128, bool>.op_Equality(Zero, 1));
+            Assert.True(EqualityOperatorsHelper<Int128, Int128, bool>.op_Equality(One, 1));
+            Assert.False(EqualityOperatorsHelper<Int128, Int128, bool>.op_Equality(MaxValue, 1));
+            Assert.False(EqualityOperatorsHelper<Int128, Int128, bool>.op_Equality(MinValue, 1));
+            Assert.False(EqualityOperatorsHelper<Int128, Int128, bool>.op_Equality(NegativeOne, 1));
         }
 
         [Fact]
         public static void op_InequalityTest()
         {
-            Assert.True(EqualityOperatorsHelper<Int128, Int128>.op_Inequality(Zero, 1));
-            Assert.False(EqualityOperatorsHelper<Int128, Int128>.op_Inequality(One, 1));
-            Assert.True(EqualityOperatorsHelper<Int128, Int128>.op_Inequality(MaxValue, 1));
-            Assert.True(EqualityOperatorsHelper<Int128, Int128>.op_Inequality(MinValue, 1));
-            Assert.True(EqualityOperatorsHelper<Int128, Int128>.op_Inequality(NegativeOne, 1));
+            Assert.True(EqualityOperatorsHelper<Int128, Int128, bool>.op_Inequality(Zero, 1));
+            Assert.False(EqualityOperatorsHelper<Int128, Int128, bool>.op_Inequality(One, 1));
+            Assert.True(EqualityOperatorsHelper<Int128, Int128, bool>.op_Inequality(MaxValue, 1));
+            Assert.True(EqualityOperatorsHelper<Int128, Int128, bool>.op_Inequality(MinValue, 1));
+            Assert.True(EqualityOperatorsHelper<Int128, Int128, bool>.op_Inequality(NegativeOne, 1));
         }
 
         //
@@ -1669,31 +2361,31 @@ namespace System.Tests
         [Fact]
         public static void op_LeftShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, Int128>.op_LeftShift(Zero, 1));
-            Assert.Equal(Two, ShiftOperatorsHelper<Int128, Int128>.op_LeftShift(One, 1));
-            Assert.Equal(NegativeTwo, ShiftOperatorsHelper<Int128, Int128>.op_LeftShift(MaxValue, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, Int128>.op_LeftShift(MinValue, 1));
-            Assert.Equal(NegativeTwo, ShiftOperatorsHelper<Int128, Int128>.op_LeftShift(NegativeOne, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, int, Int128>.op_LeftShift(Zero, 1));
+            Assert.Equal(Two, ShiftOperatorsHelper<Int128, int, Int128>.op_LeftShift(One, 1));
+            Assert.Equal(NegativeTwo, ShiftOperatorsHelper<Int128, int, Int128>.op_LeftShift(MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, int, Int128>.op_LeftShift(MinValue, 1));
+            Assert.Equal(NegativeTwo, ShiftOperatorsHelper<Int128, int, Int128>.op_LeftShift(NegativeOne, 1));
         }
 
         [Fact]
         public static void op_RightShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, Int128>.op_RightShift(Zero, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, Int128>.op_RightShift(One, 1));
-            Assert.Equal(new Int128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<Int128, Int128>.op_RightShift(MaxValue, 1));
-            Assert.Equal(new Int128(0xC000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<Int128, Int128>.op_RightShift(MinValue, 1));
-            Assert.Equal(NegativeOne, ShiftOperatorsHelper<Int128, Int128>.op_RightShift(NegativeOne, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, int, Int128>.op_RightShift(Zero, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, int, Int128>.op_RightShift(One, 1));
+            Assert.Equal(new Int128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<Int128, int, Int128>.op_RightShift(MaxValue, 1));
+            Assert.Equal(new Int128(0xC000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<Int128, int, Int128>.op_RightShift(MinValue, 1));
+            Assert.Equal(NegativeOne, ShiftOperatorsHelper<Int128, int, Int128>.op_RightShift(NegativeOne, 1));
         }
 
         [Fact]
         public static void op_UnsignedRightShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, Int128>.op_UnsignedRightShift(Zero, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, Int128>.op_UnsignedRightShift(One, 1));
-            Assert.Equal(new Int128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<Int128, Int128>.op_UnsignedRightShift(MaxValue, 1));
-            Assert.Equal(new Int128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<Int128, Int128>.op_UnsignedRightShift(MinValue, 1));
-            Assert.Equal(MaxValue, ShiftOperatorsHelper<Int128, Int128>.op_UnsignedRightShift(NegativeOne, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, int, Int128>.op_UnsignedRightShift(Zero, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<Int128, int, Int128>.op_UnsignedRightShift(One, 1));
+            Assert.Equal(new Int128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<Int128, int, Int128>.op_UnsignedRightShift(MaxValue, 1));
+            Assert.Equal(new Int128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<Int128, int, Int128>.op_UnsignedRightShift(MinValue, 1));
+            Assert.Equal(MaxValue, ShiftOperatorsHelper<Int128, int, Int128>.op_UnsignedRightShift(NegativeOne, 1));
         }
 
         //

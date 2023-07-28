@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Xml.Schema;
+
 namespace System.Xml
 {
-    using System;
-    using System.Text;
-    using System.IO;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Xml.Schema;
-    using System.Globalization;
-
     internal sealed class XmlNodeReaderNavigator
     {
         private XmlNode _curNode;
@@ -355,10 +355,8 @@ namespace System.Xml
 
         private void CheckIndexCondition(int attributeIndex)
         {
-            if (attributeIndex < 0 || attributeIndex >= AttributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(attributeIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(attributeIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(attributeIndex, AttributeCount);
         }
 
         //8 functions below are the helper functions to deal with virtual attributes of XmlDeclaration nodes and DocumentType nodes.
@@ -366,21 +364,21 @@ namespace System.Xml
         {
             int i = 0;
             string? strTemp = _doc.Version;
-            if (strTemp != null && strTemp.Length != 0)
+            if (!string.IsNullOrEmpty(strTemp))
             {
                 decNodeAttributes[i].name = strVersion;
                 decNodeAttributes[i].value = strTemp;
                 i++;
             }
             strTemp = _doc.Encoding;
-            if (strTemp != null && strTemp.Length != 0)
+            if (!string.IsNullOrEmpty(strTemp))
             {
                 decNodeAttributes[i].name = strEncoding;
                 decNodeAttributes[i].value = strTemp;
                 i++;
             }
             strTemp = _doc.Standalone;
-            if (strTemp != null && strTemp.Length != 0)
+            if (!string.IsNullOrEmpty(strTemp))
             {
                 decNodeAttributes[i].name = strStandalone;
                 decNodeAttributes[i].value = strTemp;
@@ -865,13 +863,10 @@ namespace System.Xml
             }
 
             // construct the name of the xmlns attribute
-            string attrName;
-            if (prefix == null)
-                prefix = string.Empty;
-            if (prefix.Length == 0)
-                attrName = "xmlns";
-            else
-                attrName = $"xmlns:{prefix}";
+            prefix ??= string.Empty;
+            string attrName = prefix.Length == 0 ?
+                "xmlns" :
+                $"xmlns:{prefix}";
 
             // walk up the XmlNode parent chain, looking for the xmlns attribute
             XmlNode? node = _curNode;

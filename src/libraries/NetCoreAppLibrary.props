@@ -105,7 +105,6 @@
       System.ObjectModel;
       System.Private.CoreLib;
       System.Private.DataContractSerialization;
-      System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
       System.Private.Xml;
       System.Private.Xml.Linq;
@@ -127,6 +126,7 @@
       System.Runtime.Extensions;
       System.Runtime.Handles;
       System.Runtime.InteropServices;
+      System.Runtime.InteropServices.JavaScript;
       System.Runtime.InteropServices.RuntimeInformation;
       System.Runtime.Intrinsics;
       System.Runtime.Loader;
@@ -174,19 +174,13 @@
       System.Xml.XPath;
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
-    <NetCoreAppLibraryNoReference>
-      System.Net.Quic;
-      System.Private.CoreLib;
-      System.Private.DataContractSerialization;
-      System.Private.Runtime.InteropServices.JavaScript;
-      System.Private.Uri;
-      System.Private.Xml;
-      System.Private.Xml.Linq;
-    </NetCoreAppLibraryNoReference>
     <!-- List .NETCoreApp shared framework generator project names below. -->
     <NetCoreAppLibraryGenerator>
+      ComInterfaceGenerator;
       LibraryImportGenerator;
-      System.Text.Json.SourceGeneration.Roslyn4.0;
+      JSImportGenerator;
+      Microsoft.Interop.SourceGeneration;
+      System.Text.Json.SourceGeneration.Roslyn4.4;
       System.Text.RegularExpressions.Generator;
     </NetCoreAppLibraryGenerator>
     <AspNetCoreAppLibrary>
@@ -204,6 +198,7 @@
       Microsoft.Extensions.Configuration.Xml;
       Microsoft.Extensions.DependencyInjection;
       Microsoft.Extensions.DependencyInjection.Abstractions;
+      Microsoft.Extensions.Diagnostics;
       Microsoft.Extensions.FileProviders.Abstractions;
       Microsoft.Extensions.FileProviders.Composite;
       Microsoft.Extensions.FileProviders.Physical;
@@ -226,6 +221,7 @@
       System.Diagnostics.EventLog;
       System.IO.Pipelines;
       System.Security.Cryptography.Xml;
+      System.Threading.RateLimiting;
     </AspNetCoreAppLibrary>
     <WindowsDesktopCoreAppLibrary>
       Microsoft.Win32.Registry.AccessControl;
@@ -235,7 +231,6 @@
       System.Diagnostics.EventLog;
       System.Diagnostics.PerformanceCounter;
       System.DirectoryServices;
-      System.Drawing.Common;
       System.IO.Packaging;
       System.Resources.Extensions;
       System.Security.Cryptography.Pkcs;
@@ -250,7 +245,6 @@
   <ItemGroup>
     <NetFxReference Include="$(NetFxReference)" />
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
-    <NetCoreAppLibraryNoReference Include="$(NetCoreAppLibraryNoReference)" />
     <NetCoreAppLibraryGenerator Include="$(NetCoreAppLibraryGenerator)" />
     <AspNetCoreAppLibrary Include="$(AspNetCoreAppLibrary)" />
     <WindowsDesktopCoreAppLibrary Include="$(WindowsDesktopCoreAppLibrary)" />

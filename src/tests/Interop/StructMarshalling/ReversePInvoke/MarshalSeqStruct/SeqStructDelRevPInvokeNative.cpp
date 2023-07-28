@@ -25,7 +25,7 @@ struct ComplexStruct
     INT i;
     CHAR b;
     LPCSTR str;
-    //use this(padding), since in the Mac, it use 4bytes as struct pack(In windows, it is 8 bytes). 
+    //use this(padding), since in the Mac, it use 4bytes as struct pack(In windows, it is 8 bytes).
     //if i dont add this. In Mac, it will try to replace the value of (pedding) with idata's value
     LPVOID padding;//padding
     ScriptParamType type;
@@ -33,8 +33,8 @@ struct ComplexStruct
 
 
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructComplexStructByRef_Cdecl(ComplexStruct * pcs)
-{                       
-    //Check the Input    
+{
+    //Check the Input
     if((321 != pcs->i)||(!pcs->b)||(0 != strcmp(pcs->str,"Managed"))||(123 != pcs->type.idata)||(0x120000 != (int)(LONG64)(pcs->type.udata.ptrdata)))
     {
 
@@ -168,7 +168,7 @@ extern "C" DLL_EXPORT ComplexStructDelegatePInvokeByRefStdCallCaller __stdcall G
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructComplexStructByVal_Cdecl(ComplexStruct cs)
 {
-    //Check the Input    
+    //Check the Input
     if((321 != cs.i)||(!cs.b)||(0 != strcmp(cs.str,"Managed"))||(123 != cs.type.idata)||(0x120000 != (int)(LONG64)(cs.type.udata.ptrdata)))
     {
 
@@ -355,7 +355,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructInnerSequentialByRe
 typedef BOOL (_cdecl *InnerSequentialDelegatePInvokeByRefCdeclCaller)(InnerSequential* pcs);
 extern "C" DLL_EXPORT InnerSequentialDelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructInnerSequentialByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructInnerSequentialByRef_Cdecl;            
+    return MarshalStructInnerSequentialByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *InnerSequentialDelegatePInvokeByRefStdCallCaller)(InnerSequential* pcs);
@@ -368,7 +368,7 @@ extern "C" DLL_EXPORT InnerSequentialDelegatePInvokeByRefStdCallCaller __stdcall
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructInnerSequentialByVal_Cdecl(InnerSequential argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectInnerSequential(&argstr))
     {
         printf("\tMarshalStructInnerSequentialByVal_Cdecl: InnerSequential param not as expected\n");
@@ -392,7 +392,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructInnerSequentialByVal_Cdecl(InnerS
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructInnerSequentialByVal_StdCall(InnerSequential argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectInnerSequential(&argstr))
     {
         printf("\tMarshalStructInnerSequentialByVal_StdCall: InnerSequential param not as expected\n");
@@ -593,7 +593,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructInnerArraySequentia
 typedef BOOL (_cdecl *InnerArraySequentialDelegatePInvokeByRefCdeclCaller)(InnerArraySequential* pcs);
 extern "C" DLL_EXPORT InnerArraySequentialDelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructInnerArraySequentialByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructInnerArraySequentialByRef_Cdecl;            
+    return MarshalStructInnerArraySequentialByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *InnerArraySequentialDelegatePInvokeByRefStdCallCaller)(InnerArraySequential* pcs);
@@ -606,7 +606,7 @@ extern "C" DLL_EXPORT InnerArraySequentialDelegatePInvokeByRefStdCallCaller __st
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructInnerArraySequentialByVal_Cdecl(InnerArraySequential argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectInnerArraySequential(&argstr))
     {
         printf("\tMarshalStructInnerArraySequentialByVal_Cdecl: InnerArraySequential param not as expected\n");
@@ -637,7 +637,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructInnerArraySequentialByVal_Cdecl(I
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructInnerArraySequentialByVal_StdCall(InnerArraySequential argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectInnerArraySequential(&argstr))
     {
         printf("\tMarshalStructInnerArraySequentialByVal_StdCall: InnerArraySequential param not as expected\n");
@@ -855,7 +855,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructCharSetAnsiSequenti
 typedef BOOL (_cdecl *CharSetAnsiSequentialDelegatePInvokeByRefCdeclCaller)(CharSetAnsiSequential* pcs);
 extern "C" DLL_EXPORT CharSetAnsiSequentialDelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructCharSetAnsiSequentialByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructCharSetAnsiSequentialByRef_Cdecl;            
+    return MarshalStructCharSetAnsiSequentialByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *CharSetAnsiSequentialDelegatePInvokeByRefStdCallCaller)(CharSetAnsiSequential* pcs);
@@ -868,7 +868,7 @@ extern "C" DLL_EXPORT CharSetAnsiSequentialDelegatePInvokeByRefStdCallCaller __s
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructCharSetAnsiSequentialByVal_Cdecl(CharSetAnsiSequential argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectCharSetAnsiSequential(&argstr))
     {
         printf("\tMarshalStructCharSetAnsiSequentialByVal_Cdecl: CharSetAnsiSequential param not as expected\n");
@@ -894,7 +894,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructCharSetAnsiSequentialByVal_Cdecl(
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructCharSetAnsiSequentialByVal_StdCall(CharSetAnsiSequential argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectCharSetAnsiSequential(&argstr))
     {
         printf("\tMarshalStructCharSetAnsiSequentialByVal_StdCall: CharSetAnsiSequential param not as expected\n");
@@ -1095,7 +1095,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructCharSetUnicodeSeque
 typedef BOOL (_cdecl *CharSetUnicodeSequentialDelegatePInvokeByRefCdeclCaller)(CharSetUnicodeSequential* pcs);
 extern "C" DLL_EXPORT CharSetUnicodeSequentialDelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructCharSetUnicodeSequentialByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructCharSetUnicodeSequentialByRef_Cdecl;            
+    return MarshalStructCharSetUnicodeSequentialByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *CharSetUnicodeSequentialDelegatePInvokeByRefStdCallCaller)(CharSetUnicodeSequential* pcs);
@@ -1108,7 +1108,7 @@ extern "C" DLL_EXPORT CharSetUnicodeSequentialDelegatePInvokeByRefStdCallCaller 
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructCharSetUnicodeSequentialByVal_Cdecl(CharSetUnicodeSequential argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectCharSetUnicodeSequential(&argstr))
     {
         printf("\tMarshalStructCharSetUnicodeSequentialByVal_Cdecl: CharSetUnicodeSequential param not as expected\n");
@@ -1135,7 +1135,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructCharSetUnicodeSequentialByVal_Cde
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructCharSetUnicodeSequentialByVal_StdCall(CharSetUnicodeSequential argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectCharSetUnicodeSequential(&argstr))
     {
         printf("\tMarshalStructCharSetUnicodeSequentialByVal_StdCall: CharSetUnicodeSequential param not as expected\n");
@@ -1335,7 +1335,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructNumberSequentialByR
 typedef BOOL (_cdecl *NumberSequentialDelegatePInvokeByRefCdeclCaller)(NumberSequential* pcs);
 extern "C" DLL_EXPORT NumberSequentialDelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructNumberSequentialByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructNumberSequentialByRef_Cdecl;            
+    return MarshalStructNumberSequentialByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *NumberSequentialDelegatePInvokeByRefStdCallCaller)(NumberSequential* pcs);
@@ -1348,7 +1348,7 @@ extern "C" DLL_EXPORT NumberSequentialDelegatePInvokeByRefStdCallCaller __stdcal
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructNumberSequentialByVal_Cdecl(NumberSequential argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectNumberSequential(&argstr))
     {
         printf("\tMarshalStructNumberSequentialByVal_Cdecl: NumberSequential param not as expected\n");
@@ -1374,7 +1374,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructNumberSequentialByVal_Cdecl(Numbe
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructNumberSequentialByVal_StdCall(NumberSequential argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectNumberSequential(&argstr))
     {
         printf("\tMarshalStructNumberSequentialByVal_StdCall: NumberSequential param not as expected\n");
@@ -1583,7 +1583,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS3ByRef_StdCall(S3B
 typedef BOOL (_cdecl *S3DelegatePInvokeByRefCdeclCaller)(S3* pcs);
 extern "C" DLL_EXPORT S3DelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructS3ByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructS3ByRef_Cdecl;            
+    return MarshalStructS3ByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *S3DelegatePInvokeByRefStdCallCaller)(S3* pcs);
@@ -1596,7 +1596,7 @@ extern "C" DLL_EXPORT S3DelegatePInvokeByRefStdCallCaller __stdcall Get_MarshalS
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS3ByVal_Cdecl(S3 argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectS3(&argstr))
     {
         printf("\tMarshalStructS3ByVal_Cdecl: S3 param not as expected\n");
@@ -1622,7 +1622,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS3ByVal_Cdecl(S3 argstr)
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructS3ByVal_StdCall(S3 argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectS3(&argstr))
     {
         printf("\tMarshalStructS3ByVal_StdCall: S3 param not as expected\n");
@@ -1781,7 +1781,7 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructS5ByRef_Cdecl(S5ByRefC
     S5 argstr;
 
     Enum1 eInstance = e2;
-    const char* strSource = "change string";    
+    const char* strSource = "change string";
     size_t len =strlen(strSource) + 1;
     LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*len);
     if(temp != NULL)
@@ -1813,7 +1813,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS5ByRef_StdCall(S5B
     S5 argstr;
 
     Enum1 eInstance = e2;
-    const char* strSource = "change string";    
+    const char* strSource = "change string";
     size_t len =strlen(strSource) + 1;
     LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*len);
     if(temp != NULL)
@@ -1841,7 +1841,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS5ByRef_StdCall(S5B
 typedef BOOL (_cdecl *S5DelegatePInvokeByRefCdeclCaller)(S5* pcs);
 extern "C" DLL_EXPORT S5DelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructS5ByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructS5ByRef_Cdecl;            
+    return MarshalStructS5ByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *S5DelegatePInvokeByRefStdCallCaller)(S5* pcs);
@@ -1854,7 +1854,7 @@ extern "C" DLL_EXPORT S5DelegatePInvokeByRefStdCallCaller __stdcall Get_MarshalS
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS5ByVal_Cdecl(S5 argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectS5(&argstr))
     {
         printf("\tMarshalStructS5ByVal_Cdecl: S5 param not as expected\n");
@@ -1863,7 +1863,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS5ByVal_Cdecl(S5 argstr)
     }
 
     Enum1 eInstance = e2;
-    const char* strSource = "change string";    
+    const char* strSource = "change string";
     size_t len =strlen(strSource) + 1;
     LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*len);
     if(temp != NULL)
@@ -1879,7 +1879,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS5ByVal_Cdecl(S5 argstr)
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructS5ByVal_StdCall(S5 argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectS5(&argstr))
     {
         printf("\tMarshalStructS5ByVal_StdCall: S5 param not as expected\n");
@@ -1888,7 +1888,7 @@ extern "C" DLL_EXPORT BOOL __stdcall MarshalStructS5ByVal_StdCall(S5 argstr)
     }
 
     Enum1 eInstance = e2;
-    const char* strSource = "change string";    
+    const char* strSource = "change string";
     size_t len =strlen(strSource) + 1;
     LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*len);
     if(temp != NULL)
@@ -1908,7 +1908,7 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructS5ByVal_Cdecl(S5ByValC
     S5 argstr{};
 
     Enum1 eInstance = e2;
-    const char* strSource = "change string";    
+    const char* strSource = "change string";
     size_t len =strlen(strSource) + 1;
     LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*len);
     if(temp != NULL)
@@ -1942,7 +1942,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS5ByVal_StdCall(S5B
     S5 argstr{};
 
     Enum1 eInstance = e2;
-    const char* strSource = "change string";    
+    const char* strSource = "change string";
     size_t len =strlen(strSource) + 1;
     LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*len);
     if(temp != NULL)
@@ -2020,7 +2020,7 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructStringStructSequential
     }
     newFirst[512] = '\0';
     newLast[512] = '\0';
-    argstr.first = newFirst;    
+    argstr.first = newFirst;
     argstr.last = newLast;
 
     if(!caller(&argstr))
@@ -2052,7 +2052,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructStringStructSequent
     }
     newFirst[512] = '\0';
     newLast[512] = '\0';
-    argstr.first = newFirst;    
+    argstr.first = newFirst;
     argstr.last = newLast;
 
     if(!caller(&argstr))
@@ -2072,7 +2072,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructStringStructSequent
 typedef BOOL (_cdecl *StringStructSequentialAnsiDelegatePInvokeByRefCdeclCaller)(StringStructSequentialAnsi* pcs);
 extern "C" DLL_EXPORT StringStructSequentialAnsiDelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructStringStructSequentialAnsiByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructStringStructSequentialAnsiByRef_Cdecl;            
+    return MarshalStructStringStructSequentialAnsiByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *StringStructSequentialAnsiDelegatePInvokeByRefStdCallCaller)(StringStructSequentialAnsi* pcs);
@@ -2085,7 +2085,7 @@ extern "C" DLL_EXPORT StringStructSequentialAnsiDelegatePInvokeByRefStdCallCalle
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructStringStructSequentialAnsiByVal_Cdecl(StringStructSequentialAnsi argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectStringStructSequentialAnsi(&argstr))
     {
         printf("\tMarshalStructStringStructSequentialAnsiByVal_Cdecl: StringStructSequentialAnsi param not as expected\n");
@@ -2102,7 +2102,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructStringStructSequentialAnsiByVal_C
     }
     newFirst[512] = '\0';
     newLast[512] = '\0';
-    argstr.first = newFirst;    
+    argstr.first = newFirst;
     argstr.last = newLast;
 
     return TRUE;
@@ -2110,7 +2110,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructStringStructSequentialAnsiByVal_C
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructStringStructSequentialAnsiByVal_StdCall(StringStructSequentialAnsi argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectStringStructSequentialAnsi(&argstr))
     {
         printf("\tMarshalStructStringStructSequentialAnsiByVal_StdCall: StringStructSequentialAnsi param not as expected\n");
@@ -2127,7 +2127,7 @@ extern "C" DLL_EXPORT BOOL __stdcall MarshalStructStringStructSequentialAnsiByVa
     }
     newFirst[512] = '\0';
     newLast[512] = '\0';
-    argstr.first = newFirst;    
+    argstr.first = newFirst;
     argstr.last = newLast;
 
     return TRUE;
@@ -2147,7 +2147,7 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructStringStructSequential
     }
     newFirst[512] = '\0';
     newLast[512] = '\0';
-    argstr.first = newFirst;    
+    argstr.first = newFirst;
     argstr.last = newLast;
 
     if(!caller(argstr))
@@ -2179,7 +2179,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructStringStructSequent
     }
     newFirst[512] = '\0';
     newLast[512] = '\0';
-    argstr.first = newFirst;    
+    argstr.first = newFirst;
     argstr.last = newLast;
 
     if(!caller(argstr))
@@ -2302,7 +2302,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructStringStructSequent
 typedef BOOL (_cdecl *StringStructSequentialUnicodeDelegatePInvokeByRefCdeclCaller)(StringStructSequentialUnicode* pcs);
 extern "C" DLL_EXPORT StringStructSequentialUnicodeDelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructStringStructSequentialUnicodeByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructStringStructSequentialUnicodeByRef_Cdecl;            
+    return MarshalStructStringStructSequentialUnicodeByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *StringStructSequentialUnicodeDelegatePInvokeByRefStdCallCaller)(StringStructSequentialUnicode* pcs);
@@ -2315,7 +2315,7 @@ extern "C" DLL_EXPORT StringStructSequentialUnicodeDelegatePInvokeByRefStdCallCa
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructStringStructSequentialUnicodeByVal_Cdecl(StringStructSequentialUnicode argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectStringStructSequentialUnicode(&argstr))
     {
         printf("\tMarshalStructStringStructSequentialUnicodeByVal_Cdecl: StringStructSequentialUnicode param not as expected\n");
@@ -2340,7 +2340,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructStringStructSequentialUnicodeByVa
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructStringStructSequentialUnicodeByVal_StdCall(StringStructSequentialUnicode argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectStringStructSequentialUnicode(&argstr))
     {
         printf("\tMarshalStructStringStructSequentialUnicodeByVal_StdCall: StringStructSequentialUnicode param not as expected\n");
@@ -2548,7 +2548,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS8ByRef_StdCall(S8B
 typedef BOOL (_cdecl *S8DelegatePInvokeByRefCdeclCaller)(S8* pcs);
 extern "C" DLL_EXPORT S8DelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructS8ByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructS8ByRef_Cdecl;            
+    return MarshalStructS8ByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *S8DelegatePInvokeByRefStdCallCaller)(S8* pcs);
@@ -2561,7 +2561,7 @@ extern "C" DLL_EXPORT S8DelegatePInvokeByRefStdCallCaller __stdcall Get_MarshalS
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS8ByVal_Cdecl(S8 argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectS8(&argstr))
     {
         printf("\tMarshalStructS8ByVal_Cdecl: S8 param not as expected\n");
@@ -2593,7 +2593,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS8ByVal_Cdecl(S8 argstr)
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructS8ByVal_StdCall(S8 argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(!IsCorrectS8(&argstr))
     {
         printf("\tMarshalStructS8ByVal_StdCall: S8 param not as expected\n");
@@ -2808,7 +2808,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS9ByRef_StdCall(S9B
 typedef BOOL (_cdecl *S9DelegatePInvokeByRefCdeclCaller)(S9* pcs);
 extern "C" DLL_EXPORT S9DelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructS9ByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructS9ByRef_Cdecl;            
+    return MarshalStructS9ByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *S9DelegatePInvokeByRefStdCallCaller)(S9* pcs);
@@ -2821,7 +2821,7 @@ extern "C" DLL_EXPORT S9DelegatePInvokeByRefStdCallCaller __stdcall Get_MarshalS
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS9ByVal_Cdecl(S9 argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(argstr.i32 != 128 ||
         argstr.myDelegate1 == NULL)
     {
@@ -2836,7 +2836,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS9ByVal_Cdecl(S9 argstr)
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructS9ByVal_StdCall(S9 argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(argstr.i32 != 128 ||
         argstr.myDelegate1 == NULL)
     {
@@ -2903,96 +2903,96 @@ extern "C" DLL_EXPORT S9DelegatePInvokeByValStdCallCaller _cdecl Get_MarshalStru
     return MarshalStructS9ByVal_StdCall;
 }
 
-///////////////////////////////////////////Methods for IncludeOuterIntergerStructSequential struct////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL _cdecl MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl(IncludeOuterIntergerStructSequential* argstr)
+///////////////////////////////////////////Methods for IncludeOuterIntegerStructSequential struct////////////////////////////////////////////////////
+extern "C" DLL_EXPORT BOOL _cdecl MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl(IncludeOuterIntegerStructSequential* argstr)
 {
-    if(!IsCorrectIncludeOuterIntergerStructSequential(argstr))
+    if(!IsCorrectIncludeOuterIntegerStructSequential(argstr))
     {
-        printf("\tMarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl: IncludeOuterIntergerStructSequential param not as expected\n");
-        PrintIncludeOuterIntergerStructSequential(argstr,"argstr");
+        printf("\tMarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl: IncludeOuterIntegerStructSequential param not as expected\n");
+        PrintIncludeOuterIntegerStructSequential(argstr,"argstr");
         return FALSE;
     }
-    ChangeIncludeOuterIntergerStructSequential(argstr);
+    ChangeIncludeOuterIntegerStructSequential(argstr);
     return TRUE;
 }
-extern "C" DLL_EXPORT BOOL __stdcall MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall(IncludeOuterIntergerStructSequential* argstr)
+extern "C" DLL_EXPORT BOOL __stdcall MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall(IncludeOuterIntegerStructSequential* argstr)
 {
-    if(!IsCorrectIncludeOuterIntergerStructSequential(argstr))
+    if(!IsCorrectIncludeOuterIntegerStructSequential(argstr))
     {
-        printf("\tMarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall: IncludeOuterIntergerStructSequential param not as expected\n");
-        PrintIncludeOuterIntergerStructSequential(argstr,"argstr");
+        printf("\tMarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall: IncludeOuterIntegerStructSequential param not as expected\n");
+        PrintIncludeOuterIntegerStructSequential(argstr,"argstr");
         return FALSE;
     }
-    ChangeIncludeOuterIntergerStructSequential(argstr);
+    ChangeIncludeOuterIntegerStructSequential(argstr);
     return TRUE;
 }
-typedef BOOL (_cdecl *IncludeOuterIntergerStructSequentialByRefCdeclCaller)(IncludeOuterIntergerStructSequential* pcs);
-extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl(IncludeOuterIntergerStructSequentialByRefCdeclCaller caller)
+typedef BOOL (_cdecl *IncludeOuterIntegerStructSequentialByRefCdeclCaller)(IncludeOuterIntegerStructSequential* pcs);
+extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl(IncludeOuterIntegerStructSequentialByRefCdeclCaller caller)
 {
     //Init
-    IncludeOuterIntergerStructSequential argstr;
+    IncludeOuterIntegerStructSequential argstr;
 
     argstr.s.s_int.i = 64;
     argstr.s.i = 64;
 
     if(!caller(&argstr))
     {
-        printf("DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl:The Caller returns wrong value\n");
+        printf("DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl:The Caller returns wrong value\n");
         return FALSE;
     }
     //Verify the value unchanged
-    if(!IsCorrectIncludeOuterIntergerStructSequential(&argstr))
+    if(!IsCorrectIncludeOuterIntegerStructSequential(&argstr))
     {
-        printf("The parameter for DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl is wrong\n");
+        printf("The parameter for DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl is wrong\n");
         return FALSE;
     }
     return TRUE;
 }
 
-typedef BOOL (__stdcall *IncludeOuterIntergerStructSequentialByRefStdCallCaller)(IncludeOuterIntergerStructSequential* pcs);
-extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall(IncludeOuterIntergerStructSequentialByRefStdCallCaller caller)
+typedef BOOL (__stdcall *IncludeOuterIntegerStructSequentialByRefStdCallCaller)(IncludeOuterIntegerStructSequential* pcs);
+extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall(IncludeOuterIntegerStructSequentialByRefStdCallCaller caller)
 {
     //Init
-    IncludeOuterIntergerStructSequential argstr;
+    IncludeOuterIntegerStructSequential argstr;
 
     argstr.s.s_int.i = 64;
     argstr.s.i = 64;
 
     if(!caller(&argstr))
     {
-        printf("DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall:The Caller returns wrong value\n");
+        printf("DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall:The Caller returns wrong value\n");
         return FALSE;
     }
     //Verify the value unchanged
-    if(!IsCorrectIncludeOuterIntergerStructSequential(&argstr))
+    if(!IsCorrectIncludeOuterIntegerStructSequential(&argstr))
     {
-        printf("The parameter for DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall is wrong\n");
+        printf("The parameter for DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall is wrong\n");
         return FALSE;
     }
     return TRUE;
 }
 //Delegate PInvoke,passbyref
-typedef BOOL (_cdecl *IncludeOuterIntergerStructSequentialDelegatePInvokeByRefCdeclCaller)(IncludeOuterIntergerStructSequential* pcs);
-extern "C" DLL_EXPORT IncludeOuterIntergerStructSequentialDelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl_FuncPtr()
+typedef BOOL (_cdecl *IncludeOuterIntegerStructSequentialDelegatePInvokeByRefCdeclCaller)(IncludeOuterIntegerStructSequential* pcs);
+extern "C" DLL_EXPORT IncludeOuterIntegerStructSequentialDelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl;            
+    return MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl;
 }
 
-typedef BOOL (__stdcall *IncludeOuterIntergerStructSequentialDelegatePInvokeByRefStdCallCaller)(IncludeOuterIntergerStructSequential* pcs);
-extern "C" DLL_EXPORT IncludeOuterIntergerStructSequentialDelegatePInvokeByRefStdCallCaller __stdcall Get_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall_FuncPtr()
+typedef BOOL (__stdcall *IncludeOuterIntegerStructSequentialDelegatePInvokeByRefStdCallCaller)(IncludeOuterIntegerStructSequential* pcs);
+extern "C" DLL_EXPORT IncludeOuterIntegerStructSequentialDelegatePInvokeByRefStdCallCaller __stdcall Get_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall_FuncPtr()
 {
-    return MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall;
+    return MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall;
 }
 
 
 //Passby value
-extern "C" DLL_EXPORT BOOL _cdecl MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl(IncludeOuterIntergerStructSequential argstr)
+extern "C" DLL_EXPORT BOOL _cdecl MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl(IncludeOuterIntegerStructSequential argstr)
 {
-    //Check the Input    
-    if(!IsCorrectIncludeOuterIntergerStructSequential(&argstr))
+    //Check the Input
+    if(!IsCorrectIncludeOuterIntegerStructSequential(&argstr))
     {
-        printf("\tMarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl: IncludeOuterIntergerStructSequential param not as expected\n");
-        PrintIncludeOuterIntergerStructSequential(&argstr,"argstr");
+        printf("\tMarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl: IncludeOuterIntegerStructSequential param not as expected\n");
+        PrintIncludeOuterIntegerStructSequential(&argstr,"argstr");
         return FALSE;
     }
 
@@ -3002,13 +3002,13 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructIncludeOuterIntergerStructSequent
     return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL __stdcall MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall(IncludeOuterIntergerStructSequential argstr)
+extern "C" DLL_EXPORT BOOL __stdcall MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall(IncludeOuterIntegerStructSequential argstr)
 {
-    //Check the Input    
-    if(!IsCorrectIncludeOuterIntergerStructSequential(&argstr))
+    //Check the Input
+    if(!IsCorrectIncludeOuterIntegerStructSequential(&argstr))
     {
-        printf("\tMarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall: IncludeOuterIntergerStructSequential param not as expected\n");
-        PrintIncludeOuterIntergerStructSequential(&argstr,"argstr");
+        printf("\tMarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall: IncludeOuterIntegerStructSequential param not as expected\n");
+        PrintIncludeOuterIntegerStructSequential(&argstr,"argstr");
         return FALSE;
     }
 
@@ -3018,21 +3018,21 @@ extern "C" DLL_EXPORT BOOL __stdcall MarshalStructIncludeOuterIntergerStructSequ
     return TRUE;
 }
 
-typedef IncludeOuterIntergerStructSequential (_cdecl *IncludeOuterIntergerStructSequentialByValCdeclCaller)(IncludeOuterIntergerStructSequential cs);
-extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl(IncludeOuterIntergerStructSequentialByValCdeclCaller caller)
+typedef IncludeOuterIntegerStructSequential (_cdecl *IncludeOuterIntegerStructSequentialByValCdeclCaller)(IncludeOuterIntegerStructSequential cs);
+extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl(IncludeOuterIntegerStructSequentialByValCdeclCaller caller)
 {
     //Init
-    IncludeOuterIntergerStructSequential argstr;
+    IncludeOuterIntegerStructSequential argstr;
 
     argstr.s.s_int.i = 64;
     argstr.s.i = 64;
 
-    IncludeOuterIntergerStructSequential retstr = caller(argstr);
+    IncludeOuterIntegerStructSequential retstr = caller(argstr);
 
-    if (!IsCorrectIncludeOuterIntergerStructSequential(&retstr))
+    if (!IsCorrectIncludeOuterIntegerStructSequential(&retstr))
     {
-        printf("DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl:The Caller returns wrong value\n");
-        PrintIncludeOuterIntergerStructSequential(&retstr, "retstr");
+        printf("DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl:The Caller returns wrong value\n");
+        PrintIncludeOuterIntegerStructSequential(&retstr, "retstr");
         return FALSE;
     }
 
@@ -3045,21 +3045,21 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructIncludeOuterIntergerSt
     return TRUE;
 }
 
-typedef IncludeOuterIntergerStructSequential (__stdcall *IncludeOuterIntergerStructSequentialByValStdCallCaller)(IncludeOuterIntergerStructSequential cs);
-extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall(IncludeOuterIntergerStructSequentialByValStdCallCaller caller)
+typedef IncludeOuterIntegerStructSequential (__stdcall *IncludeOuterIntegerStructSequentialByValStdCallCaller)(IncludeOuterIntegerStructSequential cs);
+extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall(IncludeOuterIntegerStructSequentialByValStdCallCaller caller)
 {
     //Init
-    IncludeOuterIntergerStructSequential argstr;
+    IncludeOuterIntegerStructSequential argstr;
 
     argstr.s.s_int.i = 64;
     argstr.s.i = 64;
 
-    IncludeOuterIntergerStructSequential retstr = caller(argstr);
+    IncludeOuterIntegerStructSequential retstr = caller(argstr);
 
-    if (!IsCorrectIncludeOuterIntergerStructSequential(&retstr))
+    if (!IsCorrectIncludeOuterIntegerStructSequential(&retstr))
     {
-        printf("DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall:The Caller returns wrong value\n");
-        PrintIncludeOuterIntergerStructSequential(&retstr, "retstr");
+        printf("DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall:The Caller returns wrong value\n");
+        PrintIncludeOuterIntegerStructSequential(&retstr, "retstr");
         return FALSE;
     }
 
@@ -3071,16 +3071,16 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructIncludeOuterInterge
     return TRUE;
 }
 //Delegate PInvoke,passbyval
-typedef BOOL (_cdecl *IncludeOuterIntergerStructSequentialDelegatePInvokeByValCdeclCaller)(IncludeOuterIntergerStructSequential cs);
-extern "C" DLL_EXPORT IncludeOuterIntergerStructSequentialDelegatePInvokeByValCdeclCaller _cdecl Get_MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl_FuncPtr()
+typedef BOOL (_cdecl *IncludeOuterIntegerStructSequentialDelegatePInvokeByValCdeclCaller)(IncludeOuterIntegerStructSequential cs);
+extern "C" DLL_EXPORT IncludeOuterIntegerStructSequentialDelegatePInvokeByValCdeclCaller _cdecl Get_MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl_FuncPtr()
 {
-    return MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl;
+    return MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl;
 }
 
-typedef BOOL (__stdcall *IncludeOuterIntergerStructSequentialDelegatePInvokeByValStdCallCaller)(IncludeOuterIntergerStructSequential cs);
-extern "C" DLL_EXPORT IncludeOuterIntergerStructSequentialDelegatePInvokeByValStdCallCaller __stdcall Get_MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall_FuncPtr()
+typedef BOOL (__stdcall *IncludeOuterIntegerStructSequentialDelegatePInvokeByValStdCallCaller)(IncludeOuterIntegerStructSequential cs);
+extern "C" DLL_EXPORT IncludeOuterIntegerStructSequentialDelegatePInvokeByValStdCallCaller __stdcall Get_MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall_FuncPtr()
 {
-    return MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall;
+    return MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall;
 }
 
 ///////////////////////////////////////////Methods for S11 struct////////////////////////////////////////////////////
@@ -3155,7 +3155,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS11ByRef_StdCall(S1
 typedef BOOL (_cdecl *S11DelegatePInvokeByRefCdeclCaller)(S11* pcs);
 extern "C" DLL_EXPORT S11DelegatePInvokeByRefCdeclCaller _cdecl Get_MarshalStructS11ByRef_Cdecl_FuncPtr()
 {
-    return MarshalStructS11ByRef_Cdecl;            
+    return MarshalStructS11ByRef_Cdecl;
 }
 
 typedef BOOL (__stdcall *S11DelegatePInvokeByRefStdCallCaller)(S11* pcs);
@@ -3168,7 +3168,7 @@ extern "C" DLL_EXPORT S11DelegatePInvokeByRefStdCallCaller __stdcall Get_Marshal
 //Passby value
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS11ByVal_Cdecl(S11 argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(argstr.i32 != (LPINT)(32) || argstr.i != 32)
     {
         printf("\tMarshalStructS11ByVal_Cdecl: S11 param not as expected\n");
@@ -3183,7 +3183,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS11ByVal_Cdecl(S11 argstr)
 
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructS11ByVal_StdCall(S11 argstr)
 {
-    //Check the Input    
+    //Check the Input
     if(argstr.i32 != (LPINT)(32) || argstr.i != 32)
     {
         printf("\tMarshalStructS11ByVal_StdCall: S11 param not as expected\n");
@@ -3314,20 +3314,20 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructByVal_Cdecl_ByteStruct
     return TRUE;
 }
 
-typedef IntergerStructSequential (_cdecl *IntergerStructSequentialByValCdeclCaller)(IntergerStructSequential cs);
-extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructIntergerStructSequentialByVal_Cdecl(IntergerStructSequentialByValCdeclCaller caller)
+typedef IntegerStructSequential (_cdecl *IntegerStructSequentialByValCdeclCaller)(IntegerStructSequential cs);
+extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructIntegerStructSequentialByVal_Cdecl(IntegerStructSequentialByValCdeclCaller caller)
 {
     //Init
-    IntergerStructSequential argstr;
+    IntegerStructSequential argstr;
 
     argstr.i = 64;
 
-    IntergerStructSequential retstr = caller(argstr);
+    IntegerStructSequential retstr = caller(argstr);
 
-    if (!IsCorrectIntergerStructSequential(&retstr))
+    if (!IsCorrectIntegerStructSequential(&retstr))
     {
-        printf("DoCallBack_MarshalStructIntergerStructSequentialByVal_Cdecl:The Caller returns wrong value\n");
-        PrintIntergerStructSequential(&retstr, "retstr");
+        printf("DoCallBack_MarshalStructIntegerStructSequentialByVal_Cdecl:The Caller returns wrong value\n");
+        PrintIntegerStructSequential(&retstr, "retstr");
         return FALSE;
     }
 
@@ -3337,20 +3337,20 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructIntergerStructSequenti
     return TRUE;
 }
 
-typedef IntergerStructSequential (__stdcall *IntergerStructSequentialByValStdCallCaller)(IntergerStructSequential cs);
-extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructIntergerStructSequentialByVal_StdCall(IntergerStructSequentialByValStdCallCaller caller)
+typedef IntegerStructSequential (__stdcall *IntegerStructSequentialByValStdCallCaller)(IntegerStructSequential cs);
+extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructIntegerStructSequentialByVal_StdCall(IntegerStructSequentialByValStdCallCaller caller)
 {
     //Init
-    IntergerStructSequential argstr;
+    IntegerStructSequential argstr;
 
     argstr.i = 64;
 
-    IntergerStructSequential retstr = caller(argstr);
+    IntegerStructSequential retstr = caller(argstr);
 
-    if (!IsCorrectIntergerStructSequential(&retstr))
+    if (!IsCorrectIntegerStructSequential(&retstr))
     {
-        printf("DoCallBack_MarshalStructIntergerStructSequentialByVal_StdCall:The Caller returns wrong value\n");
-        PrintIntergerStructSequential(&retstr, "retstr");
+        printf("DoCallBack_MarshalStructIntegerStructSequentialByVal_StdCall:The Caller returns wrong value\n");
+        PrintIntegerStructSequential(&retstr, "retstr");
         return FALSE;
     }
 

@@ -28,7 +28,7 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream archive = new MemoryStream();
             using WrappedStream unwritable = new WrappedStream(archive, canRead: true, canWrite: false, canSeek: true);
-            Assert.Throws<IOException>(() => TarFile.CreateFromDirectory(sourceDirectoryName: "path",destination: unwritable, includeBaseDirectory: false));
+            Assert.Throws<ArgumentException>(() => TarFile.CreateFromDirectory(sourceDirectoryName: "path",destination: unwritable, includeBaseDirectory: false));
         }
 
         [Fact]

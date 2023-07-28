@@ -6,7 +6,7 @@ namespace TestRunningMono
 {
     class Program
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
              const int Pass = 100, Fail = 1;
              bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;

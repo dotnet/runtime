@@ -93,14 +93,6 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
-        internal sealed override string ParameterTypeString
-        {
-            get
-            {
-                return _parameterType.FormatTypeNameForReflection();
-            }
-        }
-
         private readonly RuntimeTypeInfo _parameterType;
     }
 }

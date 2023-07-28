@@ -203,7 +203,7 @@ namespace System.Net.Sockets
                                 {
                                     NetEventSource.Info(thisRef, canceled ?
                                         "Socket operation canceled." :
-                                        $"CancelIoEx failed with error '{Marshal.GetLastWin32Error()}'.");
+                                        $"CancelIoEx failed with error '{Marshal.GetLastPInvokeError()}'.");
                                 }
                             }
                             catch (ObjectDisposedException)
@@ -237,7 +237,7 @@ namespace System.Net.Sockets
                 socketError = (SocketError)(packedResult & 0xFFFFFFFF);
                 if (socketError != SocketError.Success)
                 {
-                    GetOverlappedResultOnError(ref socketError, ref Unsafe.As<int, uint>(ref bytesTransferred), ref socketFlags, overlapped);
+                    GetOverlappedResultOnError(ref socketError, ref *(uint*)&bytesTransferred, ref socketFlags, overlapped);
                 }
                 FreeNativeOverlapped(ref overlapped);
             }
@@ -281,7 +281,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationConnect(Socket socket, SafeSocketHandle handle)
+        internal SocketError DoOperationConnect(SafeSocketHandle handle)
         {
             // Called for connectionless protocols.
             SocketError socketError = SocketPal.Connect(handle, _socketAddress!.Buffer, _socketAddress.Size);
@@ -295,8 +295,6 @@ namespace System.Net.Sockets
 
             // ConnectEx uses a sockaddr buffer containing the remote address to which to connect.
             // It can also optionally take a single buffer of data to send after the connection is complete.
-            // The sockaddr is pinned with a GCHandle to avoid having to use the object array form of UnsafePack.
-            PinSocketAddressBuffer();
 
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
             {
@@ -305,9 +303,8 @@ namespace System.Net.Sockets
                 {
                     bool success = socket.ConnectEx(
                         handle,
-                        PtrSocketAddressBuffer,
-                        _socketAddress!.Size,
-                        (IntPtr)((byte*)_singleBufferHandle.Pointer + _offset),
+                        _socketAddress!.Buffer.AsSpan(),
+                        (IntPtr)(bufferPtr + _offset),
                         _count,
                         out int bytesTransferred,
                         overlapped);
@@ -493,10 +490,7 @@ namespace System.Net.Sockets
             PinSocketAddressBuffer();
 
             // Create a WSAMessageBuffer if none exists yet.
-            if (_wsaMessageBufferPinned == null)
-            {
-                _wsaMessageBufferPinned = GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.WSAMsg), pinned: true);
-            }
+            _wsaMessageBufferPinned ??= GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.WSAMsg), pinned: true);
 
             // Create and pin an appropriately sized control buffer if none already
             IPAddress? ipAddress = (_socketAddress!.Family == AddressFamily.InterNetworkV6 ? _socketAddress.GetIPAddress() : null);
@@ -517,10 +511,7 @@ namespace System.Net.Sockets
             uint wsaRecvMsgWSABufferCount;
             if (_bufferList == null)
             {
-                if (_wsaRecvMsgWSABufferArrayPinned == null)
-                {
-                    _wsaRecvMsgWSABufferArrayPinned = GC.AllocateUninitializedArray<WSABuffer>(1, pinned: true);
-                }
+                _wsaRecvMsgWSABufferArrayPinned ??= GC.AllocateUninitializedArray<WSABuffer>(1, pinned: true);
 
                 fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
                 {
@@ -749,9 +740,6 @@ namespace System.Net.Sockets
             // receive data and from which to send data respectively. Single and multiple buffers
             // are handled differently so as to optimize performance for the more common single buffer case.
             //
-            // WSARecvFrom and WSASendTo also uses a sockaddr buffer in which to store the address from which the data was received.
-            // The sockaddr is pinned with a GCHandle to avoid having to use the object array form of UnsafePack.
-            PinSocketAddressBuffer();
 
             return _bufferList == null ?
                 DoOperationSendToSingleBuffer(handle, cancellationToken) :
@@ -775,8 +763,7 @@ namespace System.Net.Sockets
                         1,
                         out int bytesTransferred,
                         _socketFlags,
-                        PtrSocketAddressBuffer,
-                        _socketAddress!.Size,
+                        _socketAddress!.Buffer.AsSpan(),
                         overlapped,
                         IntPtr.Zero);
 
@@ -803,8 +790,7 @@ namespace System.Net.Sockets
                     _bufferListInternal!.Count,
                     out int bytesTransferred,
                     _socketFlags,
-                    PtrSocketAddressBuffer,
-                    _socketAddress!.Size,
+                    _socketAddress!.Buffer.AsSpan(),
                     overlapped,
                     IntPtr.Zero);
 
@@ -1032,7 +1018,7 @@ namespace System.Net.Sockets
             return sendPacketsDescriptorPinned;
         }
 
-        internal void LogBuffer(int size)
+        internal unsafe void LogBuffer(int size)
         {
             // This should only be called if tracing is enabled. However, there is the potential for a race
             // condition where tracing is disabled between a calling check and here, in which case the assert
@@ -1044,7 +1030,7 @@ namespace System.Net.Sockets
                 for (int i = 0; i < _bufferListInternal!.Count; i++)
                 {
                     WSABuffer wsaBuffer = _wsaBufferArrayPinned![i];
-                    NetEventSource.DumpBuffer(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
+                    NetEventSource.DumpBuffer(this, new ReadOnlySpan<byte>((byte*)wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size)));
                     if ((size -= wsaBuffer.Length) <= 0)
                     {
                         break;
@@ -1186,6 +1172,7 @@ namespace System.Net.Sockets
         private unsafe void FinishOperationReceiveMessageFrom()
         {
             Interop.Winsock.WSAMsg* PtrMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBufferPinned!, 0);
+            _socketFlags = PtrMessage->flags;
 
             if (_controlBufferPinned!.Length == sizeof(Interop.Winsock.ControlData))
             {

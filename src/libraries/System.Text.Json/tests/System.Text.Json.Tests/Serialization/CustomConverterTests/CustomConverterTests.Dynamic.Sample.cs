@@ -514,7 +514,7 @@ namespace System.Text.Json.Serialization.Samples
                     value = dynamicType.Value;
                 }
 
-                JsonSerializer.Serialize<object>(writer, value, options);
+                JsonSerializer.Serialize(writer, value, value.GetType(), options);
             }
 
             private void ReadList(JsonDynamicArray dynamicArray, ref Utf8JsonReader reader, JsonSerializerOptions options)

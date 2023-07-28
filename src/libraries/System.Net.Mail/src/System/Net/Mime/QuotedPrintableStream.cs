@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Mime
 {
@@ -54,7 +55,7 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         };
 
-        private static ReadOnlySpan<byte> HexEncodeMap => new byte[] { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };
+        private static ReadOnlySpan<byte> HexEncodeMap => "0123456789ABCDEF"u8;
 
         private readonly int _lineLength;
         private ReadStateInfo? _readState;
@@ -67,10 +68,7 @@ namespace System.Net.Mime
         /// <param name="lineLength">Preferred maximum line-length for writes</param>
         internal QuotedPrintableStream(Stream stream, int lineLength) : base(stream)
         {
-            if (lineLength < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(lineLength));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(lineLength);
 
             _lineLength = lineLength;
         }
@@ -84,14 +82,8 @@ namespace System.Net.Mime
 
         internal WriteStateInfoBase WriteState => _writeState ??= new WriteStateInfoBase(1024, null, null, _lineLength);
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-        {
-            ValidateBufferArguments(buffer, offset, count);
-
-            WriteAsyncResult result = new WriteAsyncResult(this, buffer, offset, count, callback, state);
-            result.Write();
-            return result;
-        }
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override void Close()
         {
@@ -308,12 +300,24 @@ namespace System.Net.Mime
 
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
 
-        public override void EndWrite(IAsyncResult asyncResult) => WriteAsyncResult.End(asyncResult);
+        public override void EndWrite(IAsyncResult asyncResult) =>
+            TaskToAsyncResult.End(asyncResult);
 
         public override void Flush()
         {
             FlushInternal();
             base.Flush();
+        }
+
+        public override async Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (_writeState != null && _writeState.Length > 0)
+            {
+                await base.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
+                WriteState.BufferFlushed();
+            }
+
+            await base.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private void FlushInternal()
@@ -344,78 +348,34 @@ namespace System.Net.Mime
             }
         }
 
-        private sealed class ReadStateInfo
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            internal bool IsEscaped { get; set; }
-            internal short Byte { get; set; } = -1;
-        }
+            ValidateBufferArguments(buffer, offset, count);
+            return WriteAsyncCore(buffer, offset, count, cancellationToken);
 
-        private sealed class WriteAsyncResult : LazyAsyncResult
-        {
-            private readonly QuotedPrintableStream _parent;
-            private readonly byte[] _buffer;
-            private readonly int _offset;
-            private readonly int _count;
-            private static readonly AsyncCallback s_onWrite = new AsyncCallback(OnWrite);
-            private int _written;
-
-            internal WriteAsyncResult(QuotedPrintableStream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) : base(null, state, callback)
+            async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                _parent = parent;
-                _buffer = buffer;
-                _offset = offset;
-                _count = count;
-            }
-
-            private void CompleteWrite(IAsyncResult result)
-            {
-                _parent.BaseStream.EndWrite(result);
-                _parent.WriteState.BufferFlushed();
-            }
-
-            internal static void End(IAsyncResult result)
-            {
-                WriteAsyncResult thisPtr = (WriteAsyncResult)result;
-                thisPtr.InternalWaitForCompletion();
-                Debug.Assert(thisPtr._written == thisPtr._count);
-            }
-
-            private static void OnWrite(IAsyncResult result)
-            {
-                if (!result.CompletedSynchronously)
-                {
-                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState!;
-                    try
-                    {
-                        thisPtr.CompleteWrite(result);
-                        thisPtr.Write();
-                    }
-                    catch (Exception e)
-                    {
-                        thisPtr.InvokeCallback(e);
-                    }
-                }
-            }
-
-            internal void Write()
-            {
+                int written = 0;
                 while (true)
                 {
-                    _written += _parent.EncodeBytes(_buffer, _offset + _written, _count - _written);
-                    if (_written < _count)
+                    written += EncodeBytes(buffer, offset + written, count - written);
+                    if (written < count)
                     {
-                        IAsyncResult result = _parent.BaseStream.BeginWrite(_parent.WriteState.Buffer, 0, _parent.WriteState.Length, s_onWrite, this);
-                        if (!result.CompletedSynchronously)
-                            break;
-                        CompleteWrite(result);
+                        await FlushAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        InvokeCallback();
                         break;
                     }
                 }
             }
+        }
+
+
+        private sealed class ReadStateInfo
+        {
+            internal bool IsEscaped { get; set; }
+            internal short Byte { get; set; } = -1;
         }
     }
 }

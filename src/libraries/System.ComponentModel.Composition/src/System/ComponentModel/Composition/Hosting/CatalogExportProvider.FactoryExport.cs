@@ -29,14 +29,8 @@ namespace System.ComponentModel.Composition.Hosting
                 get { return _factoryExportDefinition; }
             }
 
-            protected override object GetExportedValueCore()
-            {
-                if (_factoryExportPartDefinition == null)
-                {
-                    _factoryExportPartDefinition = new FactoryExportPartDefinition(this);
-                }
-                return _factoryExportPartDefinition;
-            }
+            protected override object GetExportedValueCore() =>
+                _factoryExportPartDefinition ??= new FactoryExportPartDefinition(this);
 
             protected ComposablePartDefinition UnderlyingPartDefinition
             {

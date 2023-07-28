@@ -5,10 +5,12 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
-        private static void TryPopulateTimeZoneDisplayNamesFromGlobalizationData(string timeZoneId, TimeSpan baseUtcOffset, ref string? standardDisplayName, ref string? daylightDisplayName, ref string? displayName)
-        {
-            // Do nothing. We'll use the fallback values already set.
-        }
+#pragma warning disable IDE0060
+        static partial void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, ref string? displayName);
+
+        static partial void GetStandardDisplayName(string timeZoneId, ref string? displayName);
+
+        static partial void GetDaylightDisplayName(string timeZoneId, ref string? displayName);
 
         private static string GetUtcStandardDisplayName()
         {
@@ -40,5 +42,6 @@ namespace System
             ianaId = null;
             return false;
         }
+#pragma warning restore IDE0060
     }
 }

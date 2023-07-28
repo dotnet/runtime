@@ -26,28 +26,11 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override bool IsGenericTypeParameter => false;
         public sealed override bool IsGenericMethodParameter => false;
 
-        public sealed override bool IsByRefLike
-        {
-            get
-            {
-                RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
-                if (!typeHandle.IsNull())
-                    return RuntimeAugments.IsByRefLike(typeHandle);
+        public abstract override bool IsByRefLike { get; }
 
-                foreach (CustomAttributeData cad in CustomAttributes)
-                {
-                    if (cad.AttributeType == typeof(IsByRefLikeAttribute))
-                        return true;
-                }
-                return false;
-            }
-        }
-
-        // Left unsealed as RuntimeCLSIDTypeInfo has special behavior and needs to override.
-        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             // Do not rewrite as a call to IsConstructedGenericType - we haven't yet established that "other" is a runtime-implemented member yet!
             if (other is RuntimeConstructedGenericTypeInfo otherConstructedGenericType)

@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates
                 // Initialize view structure.
                 Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW ViewInfo = default;
 #if NET7_0_OR_GREATER
-                ViewInfo.dwSize = (uint)sizeof(Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW.Native);
+                ViewInfo.dwSize = (uint)sizeof(Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW.Marshaller.Native);
 #else
                 ViewInfo.dwSize = (uint)Marshal.SizeOf<Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW>();
 #endif
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 // View the certificate
                 if (!Interop.CryptUI.CryptUIDlgViewCertificateW(ViewInfo, IntPtr.Zero))
-                    dwErrorCode = Marshal.GetLastWin32Error();
+                    dwErrorCode = Marshal.GetLastPInvokeError();
 
                 // CryptUIDlgViewCertificateW returns ERROR_CANCELLED if the user closes
                 // the window through the x button or by pressing CANCEL, so ignore this error code
@@ -113,7 +113,11 @@ namespace System.Security.Cryptography.X509Certificates
                 IntPtr.Zero);
 
             if (safeCertStoreHandle == null || safeCertStoreHandle.IsInvalid)
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+            {
+                Exception e = new CryptographicException(Marshal.GetLastPInvokeError());
+                safeCertStoreHandle?.Dispose();
+                throw e;
+            }
 
             Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW csc = default;
             // Older versions of CRYPTUI do not check the size correctly,
@@ -121,9 +125,9 @@ namespace System.Security.Cryptography.X509Certificates
 #if NET7_0_OR_GREATER
             // Declare a local for Native to enable us to get the managed byte offset
             // without having a null check cause a failure.
-            Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW.Native native;
+            Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW.Marshaller.Native native;
             Unsafe.SkipInit(out native);
-            csc.dwSize = (uint)Unsafe.ByteOffset(ref Unsafe.As<Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW.Native, byte>(ref native), ref Unsafe.As<IntPtr, byte>(ref native.hSelectedCertStore));
+            csc.dwSize = (uint)Unsafe.ByteOffset(ref Unsafe.As<Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW.Marshaller.Native, byte>(ref native), ref Unsafe.As<IntPtr, byte>(ref native.hSelectedCertStore));
 #else
             csc.dwSize = (uint)Marshal.OffsetOf(typeof(Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW), "hSelectedCertStore");
 #endif
@@ -155,12 +159,15 @@ namespace System.Security.Cryptography.X509Certificates
                                                         Interop.Crypt32.CERT_STORE_ADD_ALWAYS,
                                                         ppStoreContext))
                 {
-                    dwErrorCode = Marshal.GetLastWin32Error();
+                    dwErrorCode = Marshal.GetLastPInvokeError();
                 }
             }
 
             if (dwErrorCode != ERROR_SUCCESS)
+            {
+                safeCertContextHandle?.Dispose();
                 throw new CryptographicException(dwErrorCode);
+            }
 
             return safeCertStoreHandle;
         }

@@ -19,7 +19,7 @@
     .field public uint8 b
 }
 
-.class DevDiv_255263 {
+.class public DevDiv_255263 {
 
 
 //    .data d = int32(0x00000000)
@@ -29,7 +29,7 @@
 //-------------------------
 // Entry point - Main
 //-------------------------
-.method static int32 Main(class [mscorlib]System.String[])
+.method public static int32 Main()
 {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00

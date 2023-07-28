@@ -629,7 +629,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        [return: NotNullIfNotNull("source")]
+        [return: NotNullIfNotNull(nameof(source))]
         private static object? CloneStringHeaderInfoValues(object? source)
         {
             if (source == null)
@@ -1027,14 +1027,11 @@ namespace System.Net.Http.Headers
 
         private HeaderDescriptor GetHeaderDescriptor(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {
-                throw new FormatException(string.Format(SR.net_http_headers_invalid_header_name, name));
+                throw new FormatException(SR.Format(SR.net_http_headers_invalid_header_name, name));
             }
 
             if ((descriptor.HeaderType & _allowedHeaderTypes) != 0)
@@ -1111,12 +1108,12 @@ namespace System.Net.Http.Headers
             {
                 int length = GetValueCount(info);
 
-                Span<string?> values;
+                scoped Span<string?> values;
                 singleValue = null;
                 if (length == 1)
                 {
                     multiValue = null;
-                    values = MemoryMarshal.CreateSpan(ref singleValue, 1);
+                    values = new Span<string?>(ref singleValue);
                 }
                 else
                 {
@@ -1321,11 +1318,6 @@ namespace System.Net.Http.Headers
 
         #region Low-level implementation details that work with _headerStore directly
 
-        // Used to store the CollectionsMarshal.GetValueRefOrAddDefault out parameter.
-        // This is a workaround for the Roslyn bug where we can't use a discard instead:
-        // https://github.com/dotnet/roslyn/issues/56587#issuecomment-934955526
-        private static bool s_dictionaryGetValueRefOrAddDefaultExistsDummy;
-
         private const int InitialCapacity = 4;
         internal const int ArrayThreshold = 64; // Above this threshold, header ordering will not be preserved
 
@@ -1459,13 +1451,13 @@ namespace System.Net.Http.Headers
                     dictionary.Add(entry.Key, entry.Value);
                 }
                 Debug.Assert(dictionary.Count == _count - 1);
-                return ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out s_dictionaryGetValueRefOrAddDefaultExistsDummy);
+                return ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out _);
             }
 
             ref object? DictionaryGetValueRefOrAddDefault(HeaderDescriptor key)
             {
                 var dictionary = (Dictionary<HeaderDescriptor, object>)_headerStore!;
-                ref object? value = ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out s_dictionaryGetValueRefOrAddDefaultExistsDummy);
+                ref object? value = ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out _);
                 if (value is null)
                 {
                     _count++;

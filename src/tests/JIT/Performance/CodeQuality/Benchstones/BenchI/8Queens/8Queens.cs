@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Benchstone.BenchI
 {
@@ -78,7 +79,8 @@ public static class EightQueens
         return result;
     }
 
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
         bool result = TestBase();
         return (result ? 100 : -1);
     }

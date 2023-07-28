@@ -168,7 +168,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // If the resolved method is the declMethod, then only types which derive from the
                 // OwningType of the decl method need to be within the version bubble.
                 //
-                // If not, then then all the types from the implType to the Owning type of the resolved
+                // If not, then all the types from the implType to the Owning type of the resolved
                 // virtual method must be within the version bubble.
                 if (firstTypeInImplTypeHierarchyNotInVersionBubble == null)
                 {

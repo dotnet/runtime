@@ -211,10 +211,7 @@ namespace System.Runtime.Caching
 
             // Call Release after the new entry has been completely added so
             // that the CacheItemRemovedCallback can take a dependency on the newly inserted item.
-            if (toBeReleasedEntry != null)
-            {
-                toBeReleasedEntry.Release(_cache, CacheEntryRemovedReason.Expired);
-            }
+            toBeReleasedEntry?.Release(_cache, CacheEntryRemovedReason.Expired);
             return existingEntry;
         }
 
@@ -370,10 +367,7 @@ namespace System.Runtime.Caching
 
             // Call Release after the new entry has been completely added so
             // that the CacheItemRemovedCallback can take a dependency on the newly inserted item.
-            if (existingEntry != null)
-            {
-                existingEntry.Release(_cache, reason);
-            }
+            existingEntry?.Release(_cache, reason);
         }
 
         internal long TrimInternal(int percent)

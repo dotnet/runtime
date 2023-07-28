@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Microsoft.Extensions.Configuration.Memory;
 using Xunit;
 
@@ -60,7 +61,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        private void GetChildKeys_CanChainEmptyKeys()
+        public void GetChildKeys_CanChainEmptyKeys()
         {
             var input = new Dictionary<string, string>() { };
             for (int i = 0; i < 1000; i++)
@@ -89,7 +90,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        private void GetChildKeys_CanChainKeyWithNoDelimiter()
+        public void GetChildKeys_CanChainKeyWithNoDelimiter()
         {
             var input = new Dictionary<string, string>() { };
             for (int i = 1000; i < 2000; i++)
@@ -685,6 +686,39 @@ namespace Microsoft.Extensions.Configuration.Test
             config.Reload();
             Assert.Equal(1, called1);
             Assert.Equal(2, called2);
+        }
+
+        [Fact]
+        public void AsyncLocalsNotCapturedAndRestoredConfigurationReloadToken()
+        {
+            // Capture clean context
+            var executionContext = ExecutionContext.Capture();
+
+            var configurationReloadToken = new ConfigurationReloadToken();
+            var executed = false;
+
+            // Set AsyncLocal
+            var asyncLocal = new AsyncLocal<int>();
+            asyncLocal.Value = 1;
+
+            // Register Callback
+            configurationReloadToken.RegisterChangeCallback(al =>
+            {
+                // AsyncLocal not set, when run on clean context
+                // A suppressed flow runs in current context, rather than restoring the captured context
+                Assert.Equal(0, ((AsyncLocal<int>)al).Value);
+                executed = true;
+            }, asyncLocal);
+
+            // AsyncLocal should still be set
+            Assert.Equal(1, asyncLocal.Value);
+
+            // Check AsyncLocal is not restored by running on clean context
+            ExecutionContext.Run(executionContext, crt => ((ConfigurationReloadToken)crt).OnReload(), configurationReloadToken);
+
+            // AsyncLocal should still be set
+            Assert.Equal(1, asyncLocal.Value);
+            Assert.True(executed);
         }
 
         [Fact]

@@ -74,13 +74,9 @@ class AppDomain;
 #ifdef EnC_SUPPORTED
 class EnCSyncBlockInfo;
 typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
-
 #endif // EnC_SUPPORTED
 
 #include "eventstore.hpp"
-
-#include "eventstore.hpp"
-
 #include "synch.h"
 
 // At a negative offset from each Object is an ObjHeader.  The 'size' of the
@@ -102,15 +98,15 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 
 #define BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX    0x08000000
 
-// if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is layed out as follows:
-// - lower ten bits (bits 0 thru 9) is thread id used for the thin locks
+// if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is laid out as follows:
+// - lower sixteen bits (bits 0 thru 15) is thread id used for the thin locks
 //   value is zero if no thread is holding the lock
-// - following six bits (bits 10 thru 15) is recursion level used for the thin locks
+// - following six bits (bits 16 thru 21) is recursion level used for the thin locks
 //   value is zero if lock is not taken or only taken once by the same thread
-#define SBLK_MASK_LOCK_THREADID             0x000003FF   // special value of 0 + 1023 thread ids
-#define SBLK_MASK_LOCK_RECLEVEL             0x0000FC00   // 64 recursion levels
-#define SBLK_LOCK_RECLEVEL_INC              0x00000400   // each level is this much higher than the previous one
-#define SBLK_RECLEVEL_SHIFT                 10           // shift right this much to get recursion level
+#define SBLK_MASK_LOCK_THREADID             0x0000FFFF   // special value of 0 + 65535 thread ids
+#define SBLK_MASK_LOCK_RECLEVEL             0x003F0000   // 64 recursion levels
+#define SBLK_LOCK_RECLEVEL_INC              0x00010000   // each level is this much higher than the previous one
+#define SBLK_RECLEVEL_SHIFT                 16           // shift right this much to get recursion level
 
 // add more bits here... (adjusting the following mask to make room)
 
@@ -382,13 +378,21 @@ private:
         LockState CompareExchange(LockState toState, LockState fromState)
         {
             LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            return (UINT32)FastInterlockedCompareExchange((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#else
             return (UINT32)InterlockedCompareExchange((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#endif
         }
 
         LockState CompareExchangeAcquire(LockState toState, LockState fromState)
         {
             LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            return (UINT32)FastInterlockedCompareExchangeAcquire((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#else
             return (UINT32)InterlockedCompareExchangeAcquire((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#endif
         }
 
     public:
@@ -432,6 +436,7 @@ private:
 
     ULONG           m_Recursion;
     PTR_Thread      m_HoldingThread;
+    SIZE_T          m_HoldingOSThreadId;
 
     LONG            m_TransientPrecious;
 
@@ -443,6 +448,7 @@ private:
     CLREvent        m_SemEvent;
 
     DWORD m_waiterStarvationStartTimeMs;
+    int m_emittedLockCreatedEvent;
 
     static const DWORD WaiterStarvationDurationMsBeforeStoppingPreemptingWaiters = 100;
 
@@ -450,12 +456,14 @@ private:
     AwareLock(DWORD indx)
         : m_Recursion(0),
 #ifndef DACCESS_COMPILE
-// PreFAST has trouble with intializing a NULL PTR_Thread.
+// PreFAST has trouble with initializing a NULL PTR_Thread.
           m_HoldingThread(NULL),
 #endif // DACCESS_COMPILE
+          m_HoldingOSThreadId(0),
           m_TransientPrecious(0),
           m_dwSyncIndex(indx),
-          m_waiterStarvationStartTimeMs(0)
+          m_waiterStarvationStartTimeMs(0),
+          m_emittedLockCreatedEvent(0)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -521,13 +529,14 @@ private:
     bool ShouldStopPreemptingWaiters() const;
 
 private: // friend access is required for this unsafe function
-    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, PTR_Thread holdingThread)
+    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, PTR_Thread holdingThread, SIZE_T holdingOSThreadId)
     {
         WRAPPER_NO_CONTRACT;
 
         m_lockState.InitializeToLockedWithNoWaiters();
         m_Recursion = recursionLevel;
         m_HoldingThread = holdingThread;
+        m_HoldingOSThreadId = holdingOSThreadId;
     }
 
 public:
@@ -554,7 +563,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        // CLREvent::SetMonitorEvent works even if the event has not been intialized yet
+        // CLREvent::SetMonitorEvent works even if the event has not been initialized yet
         m_SemEvent.SetMonitorEvent();
 
         m_lockState.InterlockedTrySetShouldNotPreemptWaitersIfNecessary(this);
@@ -618,9 +627,25 @@ public:
 #endif // !TARGET_UNIX
 
     InteropSyncBlockInfo()
+        : m_pUMEntryThunk{}
+#ifdef FEATURE_COMINTEROP
+        , m_pCCW{}
+#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+        , m_pCCF{}
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+        , m_pRCW{}
+#endif // FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
+        , m_externalComObjectContext{}
+        , m_managedObjectComWrapperLock{}
+        , m_managedObjectComWrapperMap{}
+#endif // FEATURE_COMWRAPPERS
+#ifdef FEATURE_OBJCMARSHAL
+        , m_taggedMemory{}
+        , m_taggedAlloc{}
+#endif // FEATURE_OBJCMARSHAL
     {
         LIMITED_METHOD_CONTRACT;
-        ZeroMemory(this, sizeof(InteropSyncBlockInfo));
 
 #if defined(FEATURE_COMWRAPPERS)
         // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.
@@ -932,6 +957,10 @@ private:
     // Two pointers worth of bytes of the requirement for
     // the current consuming implementation so that is what
     // is being allocated.
+    // If the size of this array is changed, the NativeAOT version
+    // should be updated as well.
+    // See the TAGGED_MEMORY_SIZE_IN_POINTERS constant in
+    // ObjectiveCMarshal.NativeAot.cs
     BYTE m_taggedAlloc[2 * sizeof(void*)];
 #endif // FEATURE_OBJCMARSHAL
 };
@@ -975,7 +1004,7 @@ class SyncBlock
     // space for the minimum, which is the pointer within an SLink.
     SLink       m_Link;
 
-    // This is the hash code for the object. It can either have been transfered
+    // This is the hash code for the object. It can either have been transferred
     // from the header dword, in which case it will be limited to 26 bits, or
     // have been generated right into this member variable here, when it will
     // be a full 32 bits.
@@ -1224,10 +1253,10 @@ class SyncBlock
     // This should ONLY be called when initializing a SyncBlock (i.e. ONLY from
     // ObjHeader::GetSyncBlock()), otherwise we'll have a race condition.
     // </NOTE>
-    void InitState(ULONG recursionLevel, PTR_Thread holdingThread)
+    void InitState(ULONG recursionLevel, PTR_Thread holdingThread, SIZE_T holdingOSThreadId)
     {
         WRAPPER_NO_CONTRACT;
-        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThread);
+        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThread, holdingOSThreadId);
     }
 
 #if defined(ENABLE_CONTRACTS_IMPL)
@@ -1280,7 +1309,7 @@ class SyncBlockCache
   private:
     PTR_SLink   m_pCleanupBlockList;    // list of sync blocks that need cleanup
     SLink*      m_FreeBlockList;        // list of free sync blocks
-    Crst        m_CacheLock;            // cache lock
+    CrstStatic  m_CacheLock;            // cache lock
     DWORD       m_FreeCount;            // count of active sync blocks
     DWORD       m_ActiveCount;          // number active
     SyncBlockArray *m_SyncBlocks;       // Array of new SyncBlocks.
@@ -1316,19 +1345,9 @@ class SyncBlockCache
     SPTR_DECL(SyncBlockCache, s_pSyncBlockCache);
     static SyncBlockCache*& GetSyncBlockCache();
 
-    void *operator new(size_t size, void *pInPlace)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return pInPlace;
-    }
-
-    void operator delete(void *p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    SyncBlockCache();
-    ~SyncBlockCache();
+    // Note: No constructors/destructors - global instance
+    void Init();
+    void Destroy();
 
     static void Attach();
     static void Detach();

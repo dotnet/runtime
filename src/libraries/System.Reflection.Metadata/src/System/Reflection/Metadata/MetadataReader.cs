@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Reflection.Metadata
@@ -85,10 +86,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(metadata));
             }
 
-            if (utf8Decoder == null)
-            {
-                utf8Decoder = MetadataStringDecoder.DefaultUTF8;
-            }
+            utf8Decoder ??= MetadataStringDecoder.DefaultUTF8;
 
             if (!(utf8Decoder.Encoding is UTF8Encoding))
             {
@@ -554,7 +552,7 @@ namespace System.Reflection.Metadata
             externalTableRowCounts = ReadMetadataTableRowCounts(ref reader, externalTableMask);
 
             debugMetadataHeader = new DebugMetadataHeader(
-                ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref pdbId),
+                ImmutableCollectionsMarshal.AsImmutableArray(pdbId),
                 MethodDefinitionHandle.FromRowId(entryPointRowId),
                 idStartOffset: pdbStreamOffset);
         }
@@ -1020,7 +1018,7 @@ namespace System.Reflection.Metadata
         public MetadataStringComparer StringComparer => new MetadataStringComparer(this);
 
         /// <summary>
-        /// The decoder used by the reader to produce <see cref="string"/> instances from UTF8 encoded byte sequences.
+        /// The decoder used by the reader to produce <see cref="string"/> instances from UTF-8 encoded byte sequences.
         /// </summary>
         public MetadataStringDecoder UTF8Decoder { get; }
 
@@ -1084,7 +1082,7 @@ namespace System.Reflection.Metadata
         {
             // TODO: We can skip a copy for virtual blobs.
             byte[]? bytes = GetBlobBytes(handle);
-            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
+            return ImmutableCollectionsMarshal.AsImmutableArray(bytes);
         }
 
         public BlobReader GetBlobReader(BlobHandle handle)

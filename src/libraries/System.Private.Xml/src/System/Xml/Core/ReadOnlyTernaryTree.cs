@@ -156,7 +156,6 @@ namespace System.Xml
             {
                 int pos = nodePos * 4;
                 int charInTheTree = nodeBuffer[pos + (int)TernaryTreeByte.CharacterByte];
-                //Console.WriteLine("charToFind: {0},charInTheTree: {1}, nodePos: {2}", charToFind, charInTheTree, nodePos);
 
                 if (charToFind < charInTheTree)
                 {

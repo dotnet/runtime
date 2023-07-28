@@ -36,34 +36,12 @@ namespace System.Configuration
             }
         }
 
-        private XmlEscaper Escaper
-        {
-            get
-            {
-                if (_escaper == null)
-                {
-                    _escaper = new XmlEscaper();
-                }
-
-                return _escaper;
-            }
-        }
+        private XmlEscaper Escaper => _escaper ??= new XmlEscaper();
 
         /// <summary>
         /// We maintain a single instance of the ClientSettingsStore per instance of provider.
         /// </summary>
-        private ClientSettingsStore Store
-        {
-            get
-            {
-                if (_store == null)
-                {
-                    _store = new ClientSettingsStore();
-                }
-
-                return _store;
-            }
-        }
+        private ClientSettingsStore Store => _store ??= new ClientSettingsStore();
 
         /// <summary>
         /// Abstract ProviderBase method.
@@ -455,7 +433,7 @@ namespace System.Configuration
             return isUser;
         }
 
-        private XmlNode SerializeToXmlElement(SettingsProperty setting, SettingsPropertyValue value)
+        private XmlElement SerializeToXmlElement(SettingsProperty setting, SettingsPropertyValue value)
         {
             XmlDocument doc = new XmlDocument();
             XmlElement valueXml = doc.CreateElement(nameof(value));
@@ -477,10 +455,7 @@ namespace System.Configuration
                 }
             }
 
-            if (serializedValue == null)
-            {
-                serializedValue = string.Empty;
-            }
+            serializedValue ??= string.Empty;
 
             // We need to escape string serialized values
             if (setting.SerializeAs == SettingsSerializeAs.String)

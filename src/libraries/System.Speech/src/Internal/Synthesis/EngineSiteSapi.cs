@@ -184,7 +184,7 @@ namespace System.Speech.Internal.Synthesis
         public short ParameterType;
         public int StreamNumber;
         public long AudioStreamOffset;
-        public IntPtr Param1;   // Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
+        public nint Param1;   // Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
         public IntPtr Param2;   // Can be a numeric type, or pointer to string or object. Use SafeSapiLParamHandle to cleanup.
 
         public static bool operator ==(SpeechEventSapi event1, SpeechEventSapi event2) => event1.Equals(event2);

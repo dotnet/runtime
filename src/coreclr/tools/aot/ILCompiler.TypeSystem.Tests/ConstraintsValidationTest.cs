@@ -44,7 +44,7 @@ namespace TypeSystemTests
             _context = new TestTypeSystemContext(TargetArchitecture.Unknown);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(systemModule);
-            
+
             _testModule = systemModule;
 
             _iNonGenType = _testModule.GetType("GenericConstraints", "INonGen");
@@ -178,7 +178,7 @@ namespace TypeSystemTests
             }
 
             // SimpleTypeConstraint and DoubleSimpleTypeConstraint
-            foreach(var genType in new MetadataType[] { _simpleTypeConstraintType , _doubleSimpleTypeConstraintType })
+            foreach(var genType in new MetadataType[] { _simpleTypeConstraintType, _doubleSimpleTypeConstraintType })
             {
                 instantiatedType = genType.MakeInstantiatedType(_arg1Type);
                 Assert.True(instantiatedType.CheckConstraints());

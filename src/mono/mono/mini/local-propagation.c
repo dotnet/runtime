@@ -350,7 +350,7 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 			ins->opcode = OP_INEG;
 		} else if ((ins->opcode == OP_LMUL_IMM) && (ins->inst_imm == -1)) {
 			ins->opcode = OP_LNEG;
-		} else if (ins->inst_imm > 0) {
+		} else if (ins->inst_imm > 0 && ins->inst_imm <= UINT32_MAX) {
 			int power2 = mono_is_power_of_two (GTMREG_TO_UINT32 (ins->inst_imm));
 			if (power2 >= 0) {
 				ins->opcode = (ins->opcode == OP_MUL_IMM) ? OP_SHL_IMM : ((ins->opcode == OP_LMUL_IMM) ? OP_LSHL_IMM : OP_ISHL_IMM);
@@ -500,7 +500,7 @@ mono_local_cprop (MonoCompile *cfg)
 	MonoBasicBlock *bb, *bb_opt;
 	MonoInst **defs;
 	gint32 *def_index;
-	int max;
+	guint32 max;
 	int filter = FILTER_IL_SEQ_POINT;
 	int initial_max_vregs = cfg->next_vreg;
 
@@ -623,7 +623,6 @@ mono_local_cprop (MonoCompile *cfg)
 					/* This avoids propagating local vregs across calls */
 					((get_vreg_to_inst (cfg, def->sreg1) || !defs [def->sreg1] || (def_index [def->sreg1] >= last_call_index) || (def->opcode == OP_VMOVE))) &&
 					!(defs [def->sreg1] && mono_inst_next (defs [def->sreg1], filter) == def) &&
-					(!MONO_ARCH_USE_FPSTACK || (def->opcode != OP_FMOVE)) &&
 					(def->opcode != OP_FMOVE)) {
 					int vreg = def->sreg1;
 
@@ -640,7 +639,7 @@ mono_local_cprop (MonoCompile *cfg)
 				/* is_inst_imm is only needed for binops */
 				if ((((def->opcode == OP_ICONST) || ((sizeof (gpointer) == 8) && (def->opcode == OP_I8CONST)) || (def->opcode == OP_PCONST)))
 					||
-					(!MONO_ARCH_USE_FPSTACK && (def->opcode == OP_R8CONST))) {
+					(def->opcode == OP_R8CONST)) {
 					guint32 opcode2;
 
 					/* srcindex == 1 -> binop, ins->sreg2 == -1 -> unop */
@@ -742,7 +741,8 @@ mono_local_cprop (MonoCompile *cfg)
 				} else if (srcindex == 0 && ins->opcode == OP_COMPARE && defs [ins->sreg1]->opcode == OP_PCONST && defs [ins->sreg2] && defs [ins->sreg2]->opcode == OP_PCONST) {
 					/* typeof(T) == typeof(..) */
 					mono_constant_fold_ins (cfg, ins, defs [ins->sreg1], defs [ins->sreg2], TRUE);
-				} else if (ins->opcode == OP_MOVE && def->opcode == OP_LDADDR) {
+				} else if (ins->opcode == OP_MOVE && def->opcode == OP_LDADDR && !(G_UNLIKELY (cfg->gsharedvt) && mini_is_gsharedvt_variable_klass (def->klass))) {
+					/* Can't copyprop ldaddr for gsharedvt vars because the copy is missing the uses added by handle_gsharedvt_ldaddr () */
 					ins->opcode = OP_LDADDR;
 					ins->sreg1 = -1;
 					ins->inst_p0 = def->inst_p0;
@@ -813,17 +813,6 @@ mono_local_cprop (MonoCompile *cfg)
 			ins_index ++;
 		}
 	}
-}
-
-static gboolean
-reg_is_softreg_no_fpstack (int reg, const char spec)
-{
-	return (spec == 'i' && reg >= MONO_MAX_IREGS)
-		|| ((spec == 'f' && reg >= MONO_MAX_FREGS) && !MONO_ARCH_USE_FPSTACK)
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-		|| (spec == 'x' && reg >= MONO_MAX_XREGS)
-#endif
-		|| (spec == 'v');
 }
 
 static gboolean
@@ -953,8 +942,7 @@ mono_local_deadce (MonoCompile *cfg)
 				}
 			}
 
-			/* Enabling this on x86 could screw up the fp stack */
-			if (reg_is_softreg_no_fpstack (ins->dreg, spec [MONO_INST_DEST])) {
+			if (reg_is_softreg (ins->dreg, spec [MONO_INST_DEST])) {
 				/*
 				 * Assignments to global vregs can only be eliminated if there is another
 				 * assignment to the same vreg later in the same bblock.

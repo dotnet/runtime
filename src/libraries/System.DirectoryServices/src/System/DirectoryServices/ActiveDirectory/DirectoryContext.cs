@@ -605,7 +605,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             // If this is a directory user, extract domain info from username
                             if (!Utils.IsSamUser())
                             {
-                                WindowsIdentity identity = WindowsIdentity.GetCurrent();
+                                using WindowsIdentity identity = WindowsIdentity.GetCurrent();
 
                                 int index = identity.Name.IndexOf('\\');
                                 Debug.Assert(index != -1);
@@ -693,7 +693,7 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr tempHandle = global::Interop.Kernel32.LoadLibrary(systemPath + "\\ntdsapi.dll");
             if (tempHandle == (IntPtr)0)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
             else
             {

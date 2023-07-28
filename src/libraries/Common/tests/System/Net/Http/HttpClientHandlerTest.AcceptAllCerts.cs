@@ -46,7 +46,6 @@ namespace System.Net.Http.Functional.Tests
 #pragma warning restore SYSLIB0039
         [InlineData(SslProtocols.None, false)]
         [InlineData(SslProtocols.None, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SetDelegate_ConnectionSucceeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
@@ -55,11 +54,9 @@ namespace System.Net.Http.Functional.Tests
             requestOnlyThisProtocol |= PlatformDetection.IsOSX && acceptedProtocol == SslProtocols.Tls;
 #pragma warning restore SYSLIB0039
 
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-
                 if (requestOnlyThisProtocol)
                 {
                     handler.SslProtocols = acceptedProtocol;
@@ -99,13 +96,11 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
         [MemberData(nameof(InvalidCertificateServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task InvalidCertificateServers_CertificateValidationDisabled_Succeeds(string url)
         {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
                 (await client.GetAsync(url)).Dispose();
             }
         }

@@ -13,7 +13,7 @@ namespace CuriouslyRecurringPatternThroughInterface
     class Program
     {
         static object _o;
-        static int Main(string[] args)
+        static int Main()
         {
             // Test that the a generic using a variant of the curiously recurring pattern involving an interface can be loaded.
             _o = typeof(CuriouslyRecurringThroughInterface<int>);

@@ -62,4 +62,4 @@ No-op if a is null.
 The given EXTENDED_KEY_USAGE pointer is invalid after this call.
 Always succeeds.
 */
-PALEXPORT void CryptoNative_ExtendedKeyUsageDestory(EXTENDED_KEY_USAGE* a);
+PALEXPORT void CryptoNative_ExtendedKeyUsageDestroy(EXTENDED_KEY_USAGE* a);

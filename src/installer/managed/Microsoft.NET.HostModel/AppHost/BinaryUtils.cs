@@ -82,7 +82,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
         public static unsafe int SearchInFile(string filePath, byte[] searchPattern)
         {
-            using (var mappedFile = MemoryMappedFile.CreateFromFile(filePath))
+            using (var mappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read))
             {
                 using (var accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
                 {

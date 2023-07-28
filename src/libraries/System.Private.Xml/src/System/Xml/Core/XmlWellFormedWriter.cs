@@ -360,10 +360,7 @@ namespace System.Xml
         {
             try
             {
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
                 XmlConvert.VerifyQName(name, ExceptionType.XmlException);
 
                 if (_conformanceLevel == ConformanceLevel.Fragment)
@@ -428,10 +425,7 @@ namespace System.Xml
             try
             {
                 // check local name
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
                 CheckNCName(localName);
 
                 AdvanceState(Token.StartElement);
@@ -443,18 +437,12 @@ namespace System.Xml
                     {
                         prefix = LookupPrefix(ns);
                     }
-                    if (prefix == null)
-                    {
-                        prefix = string.Empty;
-                    }
+                    prefix ??= string.Empty;
                 }
                 else if (prefix.Length > 0)
                 {
                     CheckNCName(prefix);
-                    if (ns == null)
-                    {
-                        ns = LookupNamespace(prefix);
-                    }
+                    ns ??= LookupNamespace(prefix);
                     if (ns == null || (ns != null && ns.Length == 0))
                     {
                         throw new ArgumentException(SR.Xml_PrefixForEmptyNs);
@@ -613,7 +601,7 @@ namespace System.Xml
             try
             {
                 // check local name
-                if (localName == null || localName.Length == 0)
+                if (string.IsNullOrEmpty(localName))
                 {
                     if (prefix == "xmlns")
                     {
@@ -640,10 +628,7 @@ namespace System.Xml
                             prefix = LookupPrefix(namespaceName);
                     }
 
-                    if (prefix == null)
-                    {
-                        prefix = string.Empty;
-                    }
+                    prefix ??= string.Empty;
                 }
                 if (namespaceName == null)
                 {
@@ -651,10 +636,7 @@ namespace System.Xml
                     {
                         namespaceName = LookupNamespace(prefix);
                     }
-                    if (namespaceName == null)
-                    {
-                        namespaceName = string.Empty;
-                    }
+                    namespaceName ??= string.Empty;
                 }
 
                 if (prefix.Length == 0)
@@ -672,7 +654,7 @@ namespace System.Xml
                     else if (namespaceName.Length > 0)
                     {
                         prefix = LookupPrefix(namespaceName);
-                        if (prefix == null || prefix.Length == 0)
+                        if (string.IsNullOrEmpty(prefix))
                         {
                             prefix = GeneratePrefix();
                         }
@@ -873,10 +855,7 @@ namespace System.Xml
         {
             try
             {
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
                 AdvanceState(Token.CData);
                 _writer.WriteCData(text);
             }
@@ -891,10 +870,7 @@ namespace System.Xml
         {
             try
             {
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
                 AdvanceState(Token.Comment);
                 _writer.WriteComment(text);
             }
@@ -910,17 +886,11 @@ namespace System.Xml
             try
             {
                 // check name
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
                 CheckNCName(name);
 
                 // check text
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
 
                 // xml declaration is a special case (not a processing instruction, but we allow WriteProcessingInstruction as a convenience)
                 if (name.Length == 3 && string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase))
@@ -961,10 +931,7 @@ namespace System.Xml
             try
             {
                 // check name
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
                 CheckNCName(name);
 
                 AdvanceState(Token.Text);
@@ -1040,10 +1007,7 @@ namespace System.Xml
         {
             try
             {
-                if (ws == null)
-                {
-                    ws = string.Empty;
-                }
+                ws ??= string.Empty;
                 if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
@@ -1097,18 +1061,9 @@ namespace System.Xml
             try
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 AdvanceState(Token.Text);
                 if (SaveAttrValue)
@@ -1132,18 +1087,9 @@ namespace System.Xml
             try
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 AdvanceState(Token.RawData);
                 if (SaveAttrValue)
@@ -1193,18 +1139,9 @@ namespace System.Xml
             try
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 AdvanceState(Token.Base64);
                 _writer.WriteBase64(buffer, index, count);
@@ -1307,7 +1244,7 @@ namespace System.Xml
                         return prefix;
                     }
                 }
-                return (_predefinedNamespaces != null) ? _predefinedNamespaces.LookupPrefix(ns) : null;
+                return _predefinedNamespaces?.LookupPrefix(ns);
             }
             catch
             {
@@ -1342,15 +1279,12 @@ namespace System.Xml
         {
             try
             {
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
                 CheckNCName(localName);
 
                 AdvanceState(Token.Text);
                 string? prefix = string.Empty;
-                if (ns != null && ns.Length != 0)
+                if (!string.IsNullOrEmpty(ns))
                 {
                     prefix = LookupPrefix(ns);
                     if (prefix == null)
@@ -1602,10 +1536,7 @@ namespace System.Xml
             else
                 Debug.Fail("State.Attribute == currentState || State.RootLevelAttr == currentState");
 
-            if (_attrValueCache == null)
-            {
-                _attrValueCache = new AttributeValueCache();
-            }
+            _attrValueCache ??= new AttributeValueCache();
         }
 
         private void WriteStartDocumentImpl(XmlStandalone standalone)
@@ -1982,26 +1913,17 @@ namespace System.Xml
                         break;
 
                     case State.PostB64Cont:
-                        if (_rawWriter != null)
-                        {
-                            _rawWriter.WriteEndBase64();
-                        }
+                        _rawWriter?.WriteEndBase64();
                         _currentState = State.Content;
                         goto Advance;
 
                     case State.PostB64Attr:
-                        if (_rawWriter != null)
-                        {
-                            _rawWriter.WriteEndBase64();
-                        }
+                        _rawWriter?.WriteEndBase64();
                         _currentState = State.Attribute;
                         goto Advance;
 
                     case State.PostB64RootAttr:
-                        if (_rawWriter != null)
-                        {
-                            _rawWriter.WriteEndBase64();
-                        }
+                        _rawWriter?.WriteEndBase64();
                         _currentState = State.RootLevelAttr;
                         goto Advance;
 
@@ -2046,10 +1968,7 @@ namespace System.Xml
                 }
             }
 
-            if (_rawWriter != null)
-            {
-                _rawWriter.StartElementContent();
-            }
+            _rawWriter?.StartElementContent();
         }
 
         private static string GetStateName(State state)
@@ -2074,7 +1993,7 @@ namespace System.Xml
                     return _nsStack[i].namespaceUri;
                 }
             }
-            return (_predefinedNamespaces != null) ? _predefinedNamespaces.LookupNamespace(prefix) : null;
+            return _predefinedNamespaces?.LookupNamespace(prefix);
         }
 
         private string? LookupLocalNamespace(string prefix)
@@ -2138,7 +2057,7 @@ namespace System.Xml
             }
         }
 
-        private static Exception InvalidCharsException(string name, int badCharIndex)
+        private static ArgumentException InvalidCharsException(string name, int badCharIndex)
         {
             string[] badCharArgs = XmlException.BuildCharExceptionArgs(name, badCharIndex);
             string[] args = new string[3];
@@ -2200,10 +2119,7 @@ namespace System.Xml
                 // reached the threshold -> add all attributes to hash table
                 if (_attrCount == MaxAttrDuplWalkCount)
                 {
-                    if (_attrHashTable == null)
-                    {
-                        _attrHashTable = new Dictionary<string, int>();
-                    }
+                    _attrHashTable ??= new Dictionary<string, int>();
                     Debug.Assert(_attrHashTable.Count == 0);
                     for (int i = 0; i < top; i++)
                     {

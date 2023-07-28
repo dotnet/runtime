@@ -31,7 +31,7 @@ namespace MathFloorSingleTest
             8.8f
         };
 
-        unsafe static int Main(string[] args)
+        unsafe static int Main()
         {
             float localValue = 9.9f;
 

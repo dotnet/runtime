@@ -6,7 +6,7 @@ namespace DefaultNamespace {
 
     internal class ArrCpy
     {
-        public static int Main(String [] str)
+        public static int Main()
         {
             int iSize = 100;
             int iRep = 10;

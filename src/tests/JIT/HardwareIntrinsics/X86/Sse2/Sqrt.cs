@@ -5,17 +5,15 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.SSE2
 {
-    internal static partial class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void Sqrt()
         {
-            int testResult = Pass;
             int testsCount = 21;
             string methodUnderTestName = nameof(Sse2.Sqrt);
 
@@ -35,7 +33,7 @@ namespace IntelHardwareIntrinsicTest
                     if (!doubleTable.CheckResult(checkDouble))
                     {
                         PrintError(doubleTable, methodUnderTestName, "(double x, double y, double z, ref double a) => (a = x - y) == z", checkDouble);
-                        testResult = Fail;
+                        Assert.Fail("");
                     }
                 }
             }
@@ -43,8 +41,6 @@ namespace IntelHardwareIntrinsicTest
             {
                 Console.WriteLine($"Sse2.IsSupported: {Sse2.IsSupported}, skipped tests of {typeof(Sse2)}.{methodUnderTestName}");
             }
-
-            return testResult;
         }
     }
 }

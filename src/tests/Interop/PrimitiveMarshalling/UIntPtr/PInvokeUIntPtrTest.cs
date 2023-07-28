@@ -28,7 +28,7 @@ class Test
     private static extern UIntPtr MarshalPointer_Out(out UIntPtr puintPtr);
 
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         UIntPtr uintPtrManaged = (UIntPtr)1000;
         UIntPtr uintPtrNative = (UIntPtr)2000;

@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem.Interop
 {
-    partial class PInvokeDelegateWrapper : IPrefixMangledType
+    public partial class PInvokeDelegateWrapper : IPrefixMangledType
     {
         TypeDesc IPrefixMangledType.BaseType
         {

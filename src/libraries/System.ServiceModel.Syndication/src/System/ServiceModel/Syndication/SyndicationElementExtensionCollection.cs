@@ -68,10 +68,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(dataContractExtension));
             }
 
-            if (dataContractSerializer == null)
-            {
-                dataContractSerializer = new DataContractSerializer(dataContractExtension.GetType());
-            }
+            dataContractSerializer ??= new DataContractSerializer(dataContractExtension.GetType());
             base.Add(new SyndicationElementExtension(outerName, outerNamespace, dataContractExtension, dataContractSerializer));
         }
 
@@ -82,10 +79,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
 
-            if (serializer == null)
-            {
-                serializer = new XmlSerializer(xmlSerializerExtension.GetType());
-            }
+            serializer ??= new XmlSerializer(xmlSerializerExtension.GetType());
             base.Add(new SyndicationElementExtension(xmlSerializerExtension, serializer));
         }
 
@@ -102,7 +96,7 @@ namespace System.ServiceModel.Syndication
         public XmlReader GetReaderAtElementExtensions()
         {
             XmlBuffer extensionsBuffer = GetOrCreateBufferOverExtensions();
-            XmlReader reader = extensionsBuffer.GetReader(0);
+            XmlDictionaryReader reader = extensionsBuffer.GetReader(0);
             reader.ReadStartElement();
             return reader;
         }
@@ -211,7 +205,7 @@ namespace System.ServiceModel.Syndication
             }
 
             XmlBuffer newBuffer = new XmlBuffer(int.MaxValue);
-            using (XmlWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
+            using (XmlDictionaryWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
             {
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
                 for (int i = 0; i < Count; ++i)
@@ -250,10 +244,7 @@ namespace System.ServiceModel.Syndication
 
             Debug.Assert((dcSerializer == null) != (xmlSerializer == null), "exactly one serializer should be supplied");
             // normalize the null and empty namespace
-            if (extensionNamespace == null)
-            {
-                extensionNamespace = string.Empty;
-            }
+            extensionNamespace ??= string.Empty;
             Collection<TExtension> results = new Collection<TExtension>();
             for (int i = 0; i < Count; ++i)
             {

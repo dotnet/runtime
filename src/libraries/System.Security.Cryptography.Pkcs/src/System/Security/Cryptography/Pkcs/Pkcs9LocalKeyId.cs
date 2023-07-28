@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Pkcs
             _lazyKeyId = null;
         }
 
-        [return: NotNullIfNotNull("rawData")]
+        [return: NotNullIfNotNull(nameof(rawData))]
         private static byte[]? Decode(byte[]? rawData)
         {
             if (rawData == null)

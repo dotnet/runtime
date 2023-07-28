@@ -17,8 +17,8 @@
 //////////////////////////////////////////////////////////////////////////
 
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
-#ifdef HAS_ASAN
-        // Need to call __asan_handle_no_return explicitly here because we re-intialize ESP before
+#ifdef HAS_ADDRESS_SANITIZER
+        // Need to call __asan_handle_no_return explicitly here because we re-initialize ESP before
         // throwing exception in ThrowExceptionHelper
         call  EXTERNAL_C_FUNC(__asan_handle_no_return)
 #endif

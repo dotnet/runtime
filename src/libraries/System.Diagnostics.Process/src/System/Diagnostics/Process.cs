@@ -93,7 +93,7 @@ namespace System.Diagnostics
         public Process()
         {
             // This class once inherited a finalizer. For backward compatibility it has one so that
-            // any derived class that depends on it will see the behaviour expected. Since it is
+            // any derived class that depends on it will see the behavior expected. Since it is
             // not used by this class itself, suppress it immediately if this is not an instance
             // of a derived class it doesn't suffer the GC burden of finalization.
             if (GetType() == typeof(Process))
@@ -480,7 +480,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (!Enum.IsDefined(typeof(ProcessPriorityClass), value))
+                if (!Enum.IsDefined(value))
                 {
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ProcessPriorityClass));
                 }
@@ -1036,7 +1036,7 @@ namespace System.Diagnostics
         {
             if (!ProcessManager.IsProcessRunning(processId, machineName))
             {
-                throw new ArgumentException(SR.Format(SR.MissingProccess, processId.ToString()));
+                throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
             }
 
             return new Process(machineName, ProcessManager.IsRemoteMachine(machineName), processId, null);
@@ -1327,16 +1327,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process Start(string fileName, IEnumerable<string> arguments)
         {
-            ArgumentNullException.ThrowIfNull(fileName);
-            ArgumentNullException.ThrowIfNull(arguments);
-
-            var startInfo = new ProcessStartInfo(fileName);
-            foreach (string argument in arguments)
-            {
-                startInfo.ArgumentList.Add(argument);
-            }
-
-            return Start(startInfo)!;
+            return Start(new ProcessStartInfo(fileName, arguments))!;
         }
 
         /// <devdoc>
@@ -1386,15 +1377,8 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (rwh != null)
-                {
-                    rwh.Unregister(null);
-                }
-
-                if (wh != null)
-                {
-                    wh.Dispose();
-                }
+                rwh?.Unregister(null);
+                wh?.Dispose();
             }
         }
 
@@ -1461,10 +1445,10 @@ namespace System.Diagnostics
         private static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
+
             return (int)totalMilliseconds;
         }
 
@@ -1493,7 +1477,7 @@ namespace System.Diagnostics
             // registering the handler and no special cases are needed.
             //
             // CASE 1.2: PROCESS EXITS BEFORE REGISTERING HANDLER
-            // It's possible that the process can exit after we enable events but before we reigster
+            // It's possible that the process can exit after we enable events but before we register
             // the handler. In that case we must check for exit after registering the handler.
             //
             //
@@ -1747,8 +1731,8 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Throws a System.ObjectDisposedException if the Proces was disposed</summary>
-        /// <exception cref="System.ObjectDisposedException">If the Proces has been disposed.</exception>
+        /// <summary>Throws a <see cref="System.ObjectDisposedException"/> if the Process was disposed</summary>
+        /// <exception cref="System.ObjectDisposedException">If the Process has been disposed.</exception>
         private void CheckDisposed()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);

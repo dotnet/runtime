@@ -645,7 +645,7 @@ public static class Tests_len5_8
 
 public static class Tests_len14_9
 {
-    const string cns = "aaaaaaaaaжжaaa";
+    const string cns = "aaaaaaaaa\u0436\u0436aaa";
     [MethodImpl(Utils.NoOpt)]public static bool Test_ref_0(string s) => s == Utils.Var(cns);
     [MethodImpl(Utils.Opt)]  public static bool Test_tst_0(string s) => s == cns;
     [MethodImpl(Utils.NoOpt)]public static bool Test_ref_1(string s) => Utils.Var(cns) == s;

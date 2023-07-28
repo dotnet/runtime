@@ -173,7 +173,7 @@ namespace System.Xml
             _write = _write.ParentNode;
         }
 
-        internal override void WriteEndElement(string prefix, string localName, string ns)
+        internal override void WriteEndElement(string? prefix, string localName, string? ns)
         {
             WriteEndElement();
         }

@@ -110,6 +110,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70450", TestPlatforms.OSX)]
         public void FileSystemWatcher_SymbolicLink_IncludeSubdirectories_DoNotDereferenceChildLink()
         {
             // Arrange

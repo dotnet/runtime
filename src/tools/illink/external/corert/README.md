@@ -1,0 +1,1 @@
+The code in this folder was adapted from dotnet/corert commit c8bfca5f4554badfb89b80d2319769f83512bf62

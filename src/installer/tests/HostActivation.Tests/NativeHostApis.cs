@@ -54,7 +54,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         private class SdkResolutionFixture
         {
-            private readonly string _builtDotnet;
             private readonly TestProjectFixture _fixture;
 
             public DotNetCli Dotnet { get; }
@@ -87,8 +86,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public SdkResolutionFixture(SharedTestState state)
             {
-                _builtDotnet = Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish");
-                Dotnet = new DotNetCli(_builtDotnet);
+                Dotnet = new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet);
 
                 _fixture = state.HostApiInvokerAppFixture.Copy();
 
@@ -100,16 +98,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 foreach (string sdk in ProgramFilesGlobalSdks)
                 {
-                    Directory.CreateDirectory(Path.Combine(ProgramFilesGlobalSdkDir, sdk));
+                    AddSdkDirectory(ProgramFilesGlobalSdkDir, sdk);
                 }
                 foreach (string sdk in SelfRegisteredGlobalSdks)
                 {
-                    Directory.CreateDirectory(Path.Combine(SelfRegisteredGlobalSdkDir, sdk));
+                    AddSdkDirectory(SelfRegisteredGlobalSdkDir, sdk);
                 }
                 foreach (string sdk in LocalSdks)
                 {
-                    Directory.CreateDirectory(Path.Combine(LocalSdkDir, sdk));
+                    AddSdkDirectory(LocalSdkDir, sdk);
                 }
+
+                // Empty SDK directory - this should not be recognized as a valid SDK directory
+                Directory.CreateDirectory(Path.Combine(LocalSdkDir, "9.9.9"));
 
                 foreach ((string fwName, string[] fwVersions) in ProgramFilesGlobalFrameworks)
                 {
@@ -120,6 +121,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 {
                     foreach (string fwVersion in fwVersions)
                         Directory.CreateDirectory(Path.Combine(LocalFrameworksDir, fwName, fwVersion));
+                }
+
+                static void AddSdkDirectory(string sdkDir, string version)
+                {
+                    string versionDir = Path.Combine(sdkDir, version);
+                    Directory.CreateDirectory(versionDir);
+                    File.WriteAllText(Path.Combine(versionDir, "dotnet.dll"), string.Empty);
                 }
             }
         }
@@ -473,6 +481,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass();
         }
 
+        [Fact]
+        public void HostRuntimeContract_get_runtime_property()
+        {
+            var fixture = sharedTestState.HostApiInvokerAppFixture;
+
+            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(fixture.TestProject.AppDll)}")
+                .And.HaveStdOutContaining($"DOES_NOT_EXIST = <none>")
+                .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {fixture.TestProject.AssemblyName}");
+        }
+
         public class SharedTestState : IDisposable
         {
             public TestProjectFixture HostApiInvokerAppFixture { get; }
@@ -508,12 +531,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                     // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so copy it next to the app dll.
                     var fixture = HostApiInvokerAppFixture;
-                    var hostfxr = Path.Combine(
-                        fixture.BuiltDotnet.GreatestVersionHostFxrPath,
-                        RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
-
                     FileUtils.CopyIntoDirectory(
-                        hostfxr,
+                        fixture.BuiltDotnet.GreatestVersionHostFxrFilePath,
                         Path.GetDirectoryName(fixture.TestProject.AppDll));
                 }
             }

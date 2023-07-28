@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
         public void SetParent_TypeCreated_ThrowsInvalidOperationException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => type.SetParent(typeof(string)));
         }
 

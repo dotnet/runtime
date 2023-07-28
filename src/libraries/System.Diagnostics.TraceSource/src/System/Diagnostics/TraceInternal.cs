@@ -46,6 +46,7 @@ namespace System.Diagnostics
         private static volatile bool s_autoFlush;
         private static volatile bool s_useGlobalLock;
         private static volatile bool s_settingsInitialized;
+        private static volatile bool s_settingsInitializing;
 
 
         // this is internal so TraceSource can use it.  We want to lock on the same object because both TraceInternal and
@@ -80,17 +81,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal static string AppName
-        {
-            get
-            {
-                if (s_appName == null)
-                {
-                    s_appName = Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
-                }
-                return s_appName;
-            }
-        }
+        internal static string AppName => s_appName ??= Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
 
         public static bool AutoFlush
         {
@@ -222,6 +213,7 @@ namespace System.Diagnostics
             Fail(message, detailMessage);
         }
 
+        [DoesNotReturn]
         public static void Fail(string? message)
         {
             if (UseGlobalLock)
@@ -254,8 +246,11 @@ namespace System.Diagnostics
                     }
                 }
             }
+#pragma warning disable 8763 // "A method marked [DoesNotReturn] should not return."
         }
+#pragma warning restore 8763
 
+        [DoesNotReturn]
         public static void Fail(string? message, string? detailMessage)
         {
             if (UseGlobalLock)
@@ -288,21 +283,32 @@ namespace System.Diagnostics
                     }
                 }
             }
+#pragma warning disable 8763 // "A method marked [DoesNotReturn] should not return."
         }
+#pragma warning restore 8763
 
         private static void InitializeSettings()
         {
             if (!s_settingsInitialized)
             {
-                // we should avoid 2 threads altering the state concurrently for predictable behavior
-                // though it may not be strictly necessary at present
+                // We should avoid 2 threads altering the state concurrently for predictable behavior
+                // though it may not be strictly necessary at present.
                 lock (critSec)
                 {
+                    // Prevent re-entrance.
+                    if (s_settingsInitializing)
+                    {
+                        return;
+                    }
+
+                    s_settingsInitializing = true;
+
                     if (!s_settingsInitialized)
                     {
                         s_autoFlush = DiagnosticsConfiguration.AutoFlush;
                         s_useGlobalLock = DiagnosticsConfiguration.UseGlobalLock;
                         s_settingsInitialized = true;
+                        s_settingsInitializing = false;
                     }
                 }
             }

@@ -292,7 +292,7 @@ namespace System.Speech.Recognition
 
                         // Get the ITN and Look for replacement phrase/
                         IntPtr itnBuffer = new((long)buffer + _serializedPhrase.ReplacementsOffset);
-                        for (int i = 0; i < _serializedPhrase.cReplacements; i++, itnBuffer = (IntPtr)((long)itnBuffer + Marshal.SizeOf<SPPHRASEREPLACEMENT>()))
+                        for (int i = 0; i < _serializedPhrase.cReplacements; i++, itnBuffer = (nint)itnBuffer + Marshal.SizeOf<SPPHRASEREPLACEMENT>())
                         {
                             SPPHRASEREPLACEMENT replacement = (SPPHRASEREPLACEMENT)Marshal.PtrToStructure<SPPHRASEREPLACEMENT>(itnBuffer);
                             string text = Marshal.PtrToStringUni(new IntPtr((long)buffer + replacement.pszReplacementText));
@@ -644,10 +644,7 @@ namespace System.Speech.Recognition
                         }
                         while (semanticValue._dictionary.ContainsKey(key));
                         semanticValue._dictionary.Add(key, thisSemanticValue);
-                        if (dupItems == null)
-                        {
-                            dupItems = new Collection<SemanticValue>();
-                        }
+                        dupItems ??= new Collection<SemanticValue>();
                         SemanticValue s = semanticValue._dictionary[key];
                         dupItems.Add(s);
                     }
@@ -744,7 +741,7 @@ namespace System.Speech.Recognition
 
             // find the grammar for this rule. If the grammar does not belong to any existing ruleref then
             // it must be local.
-            Grammar ruleRef = grammar != null ? grammar.Find(name) : null;
+            Grammar ruleRef = grammar?.Find(name);
             if (ruleRef != null)
             {
                 grammar = ruleRef;
@@ -781,11 +778,11 @@ namespace System.Speech.Recognition
             {
                 IntPtr smlBuffer = gc.AddrOfPinnedObject();
 
-                SPSEMANTICERRORINFO semanticError = Marshal.PtrToStructure<SPSEMANTICERRORINFO>((IntPtr)((long)smlBuffer + (int)_serializedPhrase.SemanticErrorInfoOffset));
+                SPSEMANTICERRORINFO semanticError = Marshal.PtrToStructure<SPSEMANTICERRORINFO>((nint)smlBuffer + (nint)_serializedPhrase.SemanticErrorInfoOffset);
 
-                string source = Marshal.PtrToStringUni(new IntPtr((long)smlBuffer + semanticError.pszSourceOffset));
-                string description = Marshal.PtrToStringUni(new IntPtr((long)smlBuffer + semanticError.pszDescriptionOffset));
-                string script = Marshal.PtrToStringUni(new IntPtr((long)smlBuffer + semanticError.pszScriptLineOffset));
+                string source = Marshal.PtrToStringUni((nint)smlBuffer + (nint)semanticError.pszSourceOffset);
+                string description = Marshal.PtrToStringUni((nint)smlBuffer + (nint)semanticError.pszDescriptionOffset);
+                string script = Marshal.PtrToStringUni((nint)smlBuffer + (nint)semanticError.pszScriptLineOffset);
 
                 string error = string.Format(CultureInfo.InvariantCulture, "Error while evaluating semantic interpretation:\n" +
                                             "  HRESULT:     {0:x}\n" +
@@ -1026,7 +1023,7 @@ namespace System.Speech.Recognition
 
         private void AppendSml(XmlDocument document, int i, NumberFormatInfo nfo)
         {
-            XmlNode root = document.DocumentElement;
+            XmlElement root = document.DocumentElement;
             XmlElement alternateNode = document.CreateElement("alternate");
             root.AppendChild(alternateNode);
 

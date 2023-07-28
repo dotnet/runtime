@@ -31,10 +31,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 CustomizeDotNetWithNetCoreApp(dotNetBuilder);
                 DotNetWithNetCoreApp = dotNetBuilder.Build();
 
-                TestApp app = CreateTestFrameworkReferenceApp();
-                FrameworkReferenceApp = NetCoreAppBuilder.PortableForNETCoreApp(app)
-                    .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
-                    .Build(app);
+                FrameworkReferenceApp = CreateTestFrameworkReferenceApp();
 
                 _nativeHostingState = new NativeHosting.SharedTestStateBase();
             }
@@ -60,7 +57,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 {
                     resolve_component_dependencies,
                     run_app_and_resolve,
-                    Path.Combine(hostFxrFolder, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),
+                    Path.Combine(hostFxrFolder, Binaries.HostFxr.FileName),
                     hostApp.AppDll,
                     componentPath
                 };
@@ -85,7 +82,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 {
                     resolve_component_dependencies,
                     run_app_and_resolve_multithreaded,
-                    Path.Combine(hostFxrFolder, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),
+                    Path.Combine(hostFxrFolder, Binaries.HostFxr.FileName),
                     hostApp.AppDll,
                     componentOnePath,
                     componentTwoPath

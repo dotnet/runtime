@@ -165,10 +165,10 @@ inline bool Thread::IsGCSpecial()
     return m_fGCSpecial;
 }
 
-inline void Thread::SetGCSpecial(bool fGCSpecial)
+inline void Thread::SetGCSpecial()
 {
     LIMITED_METHOD_CONTRACT;
-    m_fGCSpecial = fGCSpecial;
+    m_fGCSpecial = true;
 }
 
 #if !defined(DACCESS_COMPILE)

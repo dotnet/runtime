@@ -208,16 +208,9 @@ namespace System.Net.Sockets.Tests
                 if (closeOrDispose) socket.Close();
                 else socket.Dispose();
 
-                if (DisposeDuringOperationResultsInDisposedException)
-                {
-                    await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask).WaitAsync(CancellationTestTimeout);
-                }
-                else
-                {
-                    SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask).WaitAsync(CancellationTestTimeout);
-                    SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
-                    Assert.Equal(expectedError, ex.SocketErrorCode);
-                }
+                SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask).WaitAsync(CancellationTestTimeout);
+                SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
+                Assert.Equal(expectedError, ex.SocketErrorCode);
             }
         }
 
@@ -255,6 +248,40 @@ namespace System.Net.Sockets.Tests
 
             var r = await ReceiveMessageFromAsync(receiver, new byte[1], sender.LocalEndPoint);
             Assert.Equal(1, r.ReceivedBytes);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // MSG_BCAST is Windows-specifc
+        public async Task SendBroadcast_BroadcastFlagIsSetOnReceive()
+        {
+            using var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            ConfigureNonBlocking(receiver);
+            int receiverPort = receiver.BindToAnonymousPort(IPAddress.Loopback);
+
+            using var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            sender.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
+            int senderPort = sender.BindToAnonymousPort(IPAddress.Loopback);
+            var destEp = new IPEndPoint(IPAddress.Parse("127.255.255.255"), receiverPort);
+
+            sender.SendTo(new byte[1], destEp);
+
+            var sourceEp = new IPEndPoint(IPAddress.Any, senderPort);
+            var r = await ReceiveMessageFromAsync(receiver, new byte[1], sourceEp);
+            Assert.Equal(SocketFlags.Broadcast, r.SocketFlags);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows doesn't report MSG_TRUNC
+        public async Task ReceiveTruncated_TruncatedFlagIsSetOnReceive()
+        {
+            using var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            receiver.BindToAnonymousPort(IPAddress.Loopback);
+            using var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+            sender.SendTo(new byte[2], receiver.LocalEndPoint);
+
+            var r = await ReceiveMessageFromAsync(receiver, new byte[1], sender.LocalEndPoint);
+            Assert.Equal(SocketFlags.Truncated, r.SocketFlags);
         }
     }
 

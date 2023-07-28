@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class Exception : ISerializable
     {
         private protected const string InnerExceptionPrefix = " ---> ";
@@ -38,6 +40,8 @@ namespace System
             _innerException = innerException;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Exception(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
@@ -95,6 +99,8 @@ namespace System
             set => _source = value;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
@@ -223,7 +229,7 @@ namespace System
         private string GetStackTrace()
         {
             // Do not include a trailing newline for backwards compatibility
-            return new StackTrace(this, fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+            return new StackTrace(this, fNeedFileInfo: true).ToString(Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
         [StackTraceHidden]
@@ -238,7 +244,7 @@ namespace System
             // remoting of exceptions cross app-domain boundaries, and is thus concatenated into Exception.StackTrace
             // when it's retrieved.
             var sb = new StringBuilder(256);
-            new StackTrace(fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
+            new StackTrace(fNeedFileInfo: true).ToString(Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
             sb.AppendLine(SR.Exception_EndStackTraceFromPreviousThrow);
             _remoteStackTraceString = sb.ToString();
         }

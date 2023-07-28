@@ -7,14 +7,13 @@ using System.Collections.Generic;
 using System.Reflection;
 using Debug = System.Diagnostics.Debug;
 using ConditionalAttribute = System.Diagnostics.ConditionalAttribute;
-using HandleType = Internal.Metadata.NativeFormat.HandleType;
 using Internal.LowLevelLinq;
 using Internal.NativeFormat;
+using Graph = Internal.Metadata.NativeFormat.Writer.AdjacencyGraph;
 
 namespace Internal.Metadata.NativeFormat.Writer
 {
-    using Graph = AdjacencyGraph;
-    internal class Edge
+    internal sealed class Edge
     {
         public MetadataRecord Source;
         public MetadataRecord Target;
@@ -24,7 +23,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             Target = target;
         }
     };
-    internal class AdjacencyGraph
+    internal sealed class AdjacencyGraph
     {
         private HashSet<MetadataRecord> _vertices = new HashSet<MetadataRecord>();
         // private Dictionary<MetadataRecord, HashSet<Edge>> _edges = new Dictionary<MetadataRecord, HashSet<Edge>>();
@@ -74,7 +73,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             where DstT : MetadataRecord;
     }
 
-    internal class SourceVertex : MetadataRecord
+    internal sealed class SourceVertex : MetadataRecord
     {
         public override HandleType HandleType
         {
@@ -278,12 +277,12 @@ namespace Internal.Metadata.NativeFormat.Writer
         public readonly MetadataRecord MetaSourceVertex = new SourceVertex();
     }
 
-    internal class RecordVisitor : RecordVisitorBase
+    internal sealed class RecordVisitor : RecordVisitorBase
     {
     }
 
 
-    internal partial class MetadataHeader : MetadataRecord
+    internal sealed partial class MetadataHeader : MetadataRecord
     {
         public const uint Signature = 0xDEADDFFD;
         public List<ScopeDefinition> ScopeDefinitions = new List<ScopeDefinition>();
@@ -316,7 +315,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             get { return _metadataHeader.ScopeDefinitions; }
         }
 
-        private RecordVisitor _visitor = null;
+        private RecordVisitor _visitor;
 
         public MetadataWriter()
         {
@@ -357,7 +356,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
             if (LogWriter != null)
             {
-                // Create a CSV file, one line per meta-data record.  
+                // Create a CSV file, one line per meta-data record.
                 LogWriter.WriteLine("Handle, Kind, Name, Children");
                 // needed to enumerate children of a meta-data record
                 var childVisitor = new WriteChildrenVisitor(LogWriter);
@@ -387,7 +386,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                         LogWriter.Write("\"");
                     LogWriter.Write(", ");
 
-                    // Finally write out the handle IDs for my children 
+                    // Finally write out the handle IDs for my children
                     LogWriter.Write("\"");
                     childVisitor.Reset();
                     rec.Visit(childVisitor);
@@ -398,12 +397,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         }
 
-        // WriteChildrenVisitor is a helper class needed to write out the list of the 
-        // handles (as space separated hex numbers) of all children of a given node 
-        // to the 'logWriter' text stream.  It simply implementes the IRecordVisitor
+        // WriteChildrenVisitor is a helper class needed to write out the list of the
+        // handles (as space separated hex numbers) of all children of a given node
+        // to the 'logWriter' text stream.  It simply implements the IRecordVisitor
         // interface to hook the callbacks needed for the MetadataRecord.Visit API.
-        // It is only used in the Write() method above.  
-        private class WriteChildrenVisitor : IRecordVisitor
+        // It is only used in the Write() method above.
+        private sealed class WriteChildrenVisitor : IRecordVisitor
         {
             public WriteChildrenVisitor(TextWriter logWriter)
             {
@@ -447,10 +446,10 @@ namespace Internal.Metadata.NativeFormat.Writer
             private TextWriter _logWriter;    // Where we write output to
         }
 
-        public TextWriter LogWriter = null;
+        public TextWriter LogWriter;
     }
 
-    internal class ReentrancyGuardStack
+    internal sealed class ReentrancyGuardStack
     {
         private MetadataRecord[] _array;
         private int _size;
@@ -470,7 +469,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             {
                 // Important: we use ReferenceEquals because this method will be called from Equals()
                 // on 'record'. This is also why we can't use System.Collections.Generic.Stack.
-                if (Object.ReferenceEquals(item, _array[count]))
+                if (ReferenceEquals(item, _array[count]))
                     return true;
             }
             return false;
@@ -495,10 +494,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     public abstract class MetadataRecord : Vertex
     {
-        protected int _hash = 0;
+        protected int _hash;
 
         // debug-only guard against reentrancy in GetHashCode()
-        private bool _gettingHashCode = false;
+        private bool _gettingHashCode;
 
         [Conditional("DEBUG")]
         protected void EnterGetHashCode()
@@ -546,7 +545,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         protected static string ToString<T>(IEnumerable<T> arr, string sep = ", ", bool includeHandleValue = false) where T : MetadataRecord
         {
-            return String.Join(sep, arr.Select(v => v.ToString(includeHandleValue)));
+            return string.Join(sep, arr.Select(v => v.ToString(includeHandleValue)));
         }
     }
 
@@ -586,7 +585,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
         public override string ToString(bool includeHandleValue)
         {
-            return Name.ToString() + (includeHandleValue ? String.Format(" ({0:x})", Handle._value) : "");
+            return Name.ToString() + (includeHandleValue ? string.Format(" ({0:x})", Handle._value) : "");
         }
     }
 
@@ -598,7 +597,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
         public override string ToString(bool includeHandleValue)
         {
-            return Name.ToString() + (includeHandleValue ? String.Format(" ({0:x})", Handle._value) : "");
+            return Name.ToString() + (includeHandleValue ? string.Format(" ({0:x})", Handle._value) : "");
         }
     }
 
@@ -613,7 +612,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             string str;
 
-            if (Name != null && !String.IsNullOrEmpty(Name.Value))
+            if (Name != null && !string.IsNullOrEmpty(Name.Value))
             {
                 str = Name.Value;
             }
@@ -623,14 +622,14 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
 
             if (includeHandleValue)
-                str += String.Format("({0})", Handle.ToString());
+                str += string.Format("({0})", Handle.ToString());
 
             if (this.ParentScopeOrNamespace != null)
             {
                 var pns = this.ParentScopeOrNamespace as NamespaceDefinition;
                 if (pns != null)
                 {
-                    if (!String.IsNullOrEmpty(pns.ToString(false)))
+                    if (!string.IsNullOrEmpty(pns.ToString(false)))
                         str = pns.ToString(false) + '.' + str;
                 }
             }
@@ -648,7 +647,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             string str;
 
-            if (Name != null && !String.IsNullOrEmpty(Name.Value))
+            if (Name != null && !string.IsNullOrEmpty(Name.Value))
             {
                 str = Name.Value;
             }
@@ -658,14 +657,14 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
 
             if (includeHandleValue)
-                str += String.Format("({0})", Handle.ToString());
+                str += string.Format("({0})", Handle.ToString());
 
             if (this.ParentScopeOrNamespace != null)
             {
                 var pns = this.ParentScopeOrNamespace as NamespaceReference;
                 if (pns != null)
                 {
-                    if (!String.IsNullOrEmpty(pns.ToString(false)))
+                    if (!string.IsNullOrEmpty(pns.ToString(false)))
                         str = pns.ToString(false) + '.' + str;
                 }
                 else
@@ -685,24 +684,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
         public override string ToString(bool includeHandleValue)
         {
-            string str = null;
+            string str;
             if (this.EnclosingType != null)
             {
                 str = this.EnclosingType.ToString(false) + "+" + Name.Value;
                 if (includeHandleValue)
-                    str += String.Format(" ({0:x})", Handle._value);
+                    str += string.Format(" ({0:x})", Handle._value);
                 return str;
             }
             else if (this.NamespaceDefinition != null && this.NamespaceDefinition.Name != null)
             {
                 str = this.NamespaceDefinition.ToString(false) + "." + Name.Value;
                 if (includeHandleValue)
-                    str += String.Format(" ({0:x})", Handle._value);
+                    str += string.Format(" ({0:x})", Handle._value);
                 return str;
             }
-            str = Name.Value + String.Format(" ({0:x})", Handle._value);
+            str = Name.Value + string.Format(" ({0:x})", Handle._value);
             if (includeHandleValue)
-                str += String.Format(" ({0:x})", Handle._value);
+                str += string.Format(" ({0:x})", Handle._value);
             return str;
         }
     }
@@ -715,14 +714,14 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
         public override string ToString(bool includeHandleValue)
         {
-            String s = "";
+            string s = "";
             if (ParentNamespaceOrType is NamespaceReference)
                 s += ParentNamespaceOrType.ToString(false) + ".";
             if (ParentNamespaceOrType is TypeReference)
                 s += ParentNamespaceOrType.ToString(false) + "+";
             s += TypeName.Value;
             if (includeHandleValue)
-                s += String.Format(" ({0:x})", Handle._value);
+                s += string.Format(" ({0:x})", Handle._value);
             return s;
         }
     }
@@ -795,7 +794,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return ElementType.ToString() + "[" + new String(',', Rank - 1) + "]";
+            return ElementType.ToString() + "[" + new string(',', Rank - 1) + "]";
         }
     }
 
@@ -811,7 +810,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return this.GenericType.ToString() + "<" + String.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString())) + ">";
+            return this.GenericType.ToString() + "<" + string.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString())) + ">";
         }
     }
 
@@ -831,7 +830,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             return Method.ToString()
                 + "(Arguments: "
                 + "<"
-                + String.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString()))
+                + string.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString()))
                 + ">";
         }
     }
@@ -849,8 +848,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString()
         {
             string str = Constructor.ToString();
-            str += "(" + String.Join(", ", FixedArguments.Select(fa => fa.ToString()))
-                + String.Join(", ", NamedArguments.Select(na => na.ToString())) + ")";
+            str += "(" + string.Join(", ", FixedArguments.Select(fa => fa.ToString()))
+                + string.Join(", ", NamedArguments.Select(na => na.ToString())) + ")";
             str += "(ctor: " + Constructor.Handle.ToString();
             return str;
         }
@@ -890,13 +889,13 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public string ToString(string name)
         {
-            return String.Join(" ", new string[] {
+            return string.Join(" ", new string[] {
                 CallingConvention.FlagsToString(),
                 ReturnType.ToString(false),
                 name
                     + (GenericParameterCount == 0 ? "" : "`" + GenericParameterCount.ToString())
-                    + "(" + String.Join(", ", Parameters.Select(p => p.ToString(false))) +
-                    String.Join(", ", VarArgParameters.Select(p => p.ToString(false))) + ")"}.Where(e => !String.IsNullOrWhiteSpace(e)));
+                    + "(" + string.Join(", ", Parameters.Select(p => p.ToString(false))) +
+                    string.Join(", ", VarArgParameters.Select(p => p.ToString(false))) + ")"}.Where(e => !string.IsNullOrWhiteSpace(e)));
         }
     }
 
@@ -904,7 +903,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return String.Join(" ", Enum.GetName(typeof(CallingConventions), CallingConvention),
+            return string.Join(" ", Enum.GetName(typeof(CallingConventions), CallingConvention),
                 Type.ToString()) + "(" + ToString(Parameters) + ")";
         }
     }
@@ -947,7 +946,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString()
         {
             string flags = Flags.FlagsToString();
-            return String.Format("{0}{1} (Seq:{2}) {3}",
+            return string.Format("{0}{1} (Seq:{2}) {3}",
                 flags,
                 Name.ToString(),
                 Sequence,
@@ -972,7 +971,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (flags.Count() == 0)
                 return "";
             else
-                return "[" + String.Join(" | ", flags.Select(eVal => Enum.GetName<T>(eVal))) + "] ";
+                return "[" + string.Join(" | ", flags.Select(Enum.GetName<T>)) + "] ";
         }
     }
 
@@ -1038,10 +1037,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return false;
             }
 
-            if (comparer == null)
-            {
-                comparer = EqualityComparer<T>.Default;
-            }
+            comparer ??= EqualityComparer<T>.Default;
 
             for (int i = 0; i < first.Count; i++)
             {
@@ -1066,10 +1062,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return false;
             }
 
-            if (comparer == null)
-            {
-                comparer = EqualityComparer<T>.Default;
-            }
+            comparer ??= EqualityComparer<T>.Default;
 
             for (int i = 0; i < first.Length; i++)
             {

@@ -112,7 +112,7 @@ namespace BINDER_SPACE
             if (AssemblyIdentity::Have(dwIdentityFlags, AssemblyIdentity::IDENTITY_FLAG_VERSION))
             {
                 tmpString.Clear();
-                tmpString.Printf(W("%d.%d.%d.%d"),
+                tmpString.Printf("%d.%d.%d.%d",
                                  (DWORD)(USHORT)pAssemblyIdentity->m_version.GetMajor(),
                                  (DWORD)(USHORT)pAssemblyIdentity->m_version.GetMinor(),
                                  (DWORD)(USHORT)pAssemblyIdentity->m_version.GetBuild(),

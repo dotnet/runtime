@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Sse42_r</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -8,7 +8,6 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CompareGreaterThan.Int64.cs" />
     <Compile Include="Program.Sse42.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

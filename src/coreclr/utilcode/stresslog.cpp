@@ -60,7 +60,7 @@ unsigned __int64 getTimeStamp() {
 #if defined(HOST_X86) && !defined(HOST_UNIX)
 
 /*********************************************************************************/
-/* Get the frequency cooresponding to 'getTimeStamp'.  For x86, this is the
+/* Get the frequency corresponding to 'getTimeStamp'.  For x86, this is the
    frequency of the RDTSC instruction, which is just the clock rate of the CPU.
    This can vary due to power management, so this is at best a rough approximation.
 */
@@ -108,7 +108,7 @@ unsigned __int64 getTickFrequency()
 
 
 /*********************************************************************************/
-/* Get the frequency cooresponding to 'getTimeStamp'.  For non-x86
+/* Get the frequency corresponding to 'getTimeStamp'.  For non-x86
    architectures, this is just the performance counter frequency.
 */
 unsigned __int64 getTickFrequency()
@@ -143,6 +143,35 @@ void StressLog::Leave(CRITSEC_COOKIE) {
     DecCantAllocCount();
 }
 
+void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
+{
+    // if the string "{pid}" occurs in the logFilename,
+    // replace it by the PID of our process
+    // only the first occurrence will be replaced
+    const WCHAR* pidLit =  W("{pid}");
+    const WCHAR* pidPtr = u16_strstr(original, pidLit);
+    if (pidPtr != nullptr)
+    {
+        // copy the file name up to the "{pid}" occurrence
+        ptrdiff_t pidInx = pidPtr - original;
+        wcsncpy_s(replaced, replacedLength, original, pidInx);
+
+        // append the string representation of the PID
+        DWORD pid = GetCurrentProcessId();
+        WCHAR pidStr[20];
+        _itow_s(pid, pidStr, ARRAY_SIZE(pidStr), 10);
+        wcscat_s(replaced, replacedLength, pidStr);
+
+        // append the rest of the filename
+        wcscat_s(replaced, replacedLength, original + pidInx + u16_strlen(pidLit));
+    }
+    else
+    {
+        size_t originalLength = u16_strlen(original);
+        wcsncpy_s(replaced, replacedLength, original, originalLength);
+    }
+}
+
 #ifdef MEMORY_MAPPED_STRESSLOG
 static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
 {
@@ -150,31 +179,11 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     {
         return nullptr;
     }
-    WCHAR fileName[MAX_PATH];
 
-    // if the string "{pid}" occurs in the logFilename,
-    // replace it by the PID of our process
-    // only the first occurrence will be replaced
-    const WCHAR* pidLit =  W("{pid}");
-    WCHAR* pidPtr = wcsstr(logFilename, pidLit);
-    if (pidPtr != nullptr)
-    {
-        // copy the file name up to the "{pid}" occurrence
-        ptrdiff_t pidInx = pidPtr - logFilename;
-        wcsncpy_s(fileName, MAX_PATH, logFilename, pidInx);
+    WCHAR logFilenameReplaced[MAX_PATH];
+    ReplacePid(logFilename, logFilenameReplaced, MAX_PATH);
 
-        // append the string representation of the PID
-        DWORD pid = GetCurrentProcessId();
-        WCHAR pidStr[20];
-        _itow_s(pid, pidStr, ARRAY_SIZE(pidStr), 10);
-        wcscat_s(fileName, MAX_PATH, pidStr);
-
-        // append the rest of the filename
-        wcscat_s(fileName, MAX_PATH, logFilename + pidInx + wcslen(pidLit));
-
-        logFilename = fileName;
-    }
-    HandleHolder hFile = WszCreateFile(logFilename,
+    HandleHolder hFile = WszCreateFile(logFilenameReplaced,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ,
         NULL,                 // default security descriptor
@@ -257,7 +266,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
             StressLogHeader* hdr = (StressLogHeader*)(uint8_t*)(void*)theLog.hMapView;
             hdr->headerSize = sizeof(StressLogHeader);
             hdr->magic = *(uint32_t*)"LRTS";
-            hdr->version = 0x00010001;
+            hdr->version = 0x00010002;
             hdr->memoryBase = (uint8_t*)hdr;
             hdr->memoryCur = hdr->memoryBase + sizeof(StressLogHeader);
             hdr->memoryLimit = hdr->memoryBase + maxBytesTotal;
@@ -515,7 +524,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
             if (msgs->isDead)
             {
                 BOOL hasTimeStamp = msgs->curPtr != (StressMsg *)msgs->chunkListTail->EndPtr();
-                if (hasTimeStamp && msgs->curPtr->timeStamp < recycleStamp)
+                if (hasTimeStamp && msgs->curPtr->GetTimeStamp() < recycleStamp)
                 {
                     skipInsert = TRUE;
                     InterlockedDecrement(&theLog.deadCount);
@@ -526,7 +535,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
                 {
                     oldestDeadMsg = msgs;
                 }
-                else if (hasTimeStamp && oldestDeadMsg->curPtr->timeStamp > msgs->curPtr->timeStamp)
+                else if (hasTimeStamp && oldestDeadMsg->curPtr->GetTimeStamp() > msgs->curPtr->GetTimeStamp())
                 {
                     oldestDeadMsg = msgs;
                 }
@@ -636,6 +645,12 @@ void StressLog::ThreadDetach() {
 
 BOOL StressLog::AllowNewChunk (LONG numChunksInCurThread)
 {
+#ifdef MEMORY_MAPPED_STRESSLOG
+    if (StressLogChunk::s_memoryMapped)
+    {
+        return TRUE;
+    }
+#endif
     _ASSERTE (numChunksInCurThread <= theLog.totalChunk);
     DWORD perThreadLimit = theLog.MaxSizePerThread;
 
@@ -735,30 +750,24 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
         moduleIndex++;
     }
 
-    // _ASSERTE ( offs < StressMsg::maxOffset );
-    if (offs >= StressMsg::maxOffset)
+    if (offs > StressMsg::maxOffset)
     {
-#ifdef _DEBUG
-        DebugBreak(); // in lieu of the above _ASSERTE
-#endif // _DEBUG
-
-        // Set it to this string instead.
-        offs =
-#ifdef _DEBUG
-            (size_t)"<BUG: StressLog format string beyond maxOffset>";
-#else // _DEBUG
-            0; // a 0 offset is ignored by StressLog::Dump
-#endif // _DEBUG else
+        // This string is at a location that is too far away from the base address of the module set.
+        // We can handle up to 68GB of native modules registered in the stresslog (like the runtime or GC).
+        // Managed assemblies cannot write to the stresslog.
+        // If you hit this break, there's either a bug or the string that was passed in is not a static string
+        // in the module.
+        DebugBreak();
+        offs = 0;
     }
 
     // Get next available slot
     StressMsg* msg = AdvanceWrite(cArgs);
 
-    msg->timeStamp = getTimeStamp();
-    msg->facility = facility;
-    msg->formatOffset = offs;
-    msg->numberOfArgs = cArgs & 0x7;
-    msg->numberOfArgsX = cArgs >> 3;
+    msg->SetTimeStamp(getTimeStamp());
+    msg->SetFacility(facility);
+    msg->SetFormatOffset(offs);
+    msg->SetNumberOfArgs(cArgs);
 
     for ( int i = 0; i < cArgs; ++i )
     {

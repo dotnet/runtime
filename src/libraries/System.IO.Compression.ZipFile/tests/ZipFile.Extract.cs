@@ -30,11 +30,11 @@ namespace System.IO.Compression.Tests
         [Fact]
         public void ExtractToDirectoryNull()
         {
-            AssertExtensions.Throws<ArgumentNullException>("sourceArchiveFileName", () => ZipFile.ExtractToDirectory(null, GetTestFilePath()));
+            AssertExtensions.Throws<ArgumentNullException>("sourceArchiveFileName", () => ZipFile.ExtractToDirectory(sourceArchiveFileName: null, GetTestFilePath()));
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60582", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72951", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ExtractToDirectoryUnicode()
         {
             string zipFileName = zfile("unicode.zip");
@@ -184,23 +184,27 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public void ExtractToDirectoryZipArchiveOverwrite()
+        public void FilesOutsideDirectory()
         {
-            string zipFileName = zfile("normal.zip");
-            string folderName = zfolder("normal");
-
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            string archivePath = GetTestFilePath();
+            using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            using (StreamWriter writer = new StreamWriter(archive.CreateEntry(Path.Combine("..", "entry1"), CompressionLevel.Optimal).Open()))
             {
-                using (ZipArchive archive = ZipFile.Open(zipFileName, ZipArchiveMode.Read))
-                {
-                    archive.ExtractToDirectory(tempFolder.Path);
-                    Assert.Throws<IOException>(() => archive.ExtractToDirectory(tempFolder.Path /* default false */));
-                    Assert.Throws<IOException>(() => archive.ExtractToDirectory(tempFolder.Path, overwriteFiles: false));
-                    archive.ExtractToDirectory(tempFolder.Path, overwriteFiles: true);
-
-                    DirsEqual(tempFolder.Path, folderName);
-                }
+                writer.Write("This is a test.");
             }
+            Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, GetTestFilePath()));
+        }
+
+        [Fact]
+        public void DirectoryEntryWithData()
+        {
+            string archivePath = GetTestFilePath();
+            using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            using (StreamWriter writer = new StreamWriter(archive.CreateEntry("testdir" + Path.DirectorySeparatorChar, CompressionLevel.Optimal).Open()))
+            {
+                writer.Write("This is a test.");
+            }
+            Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, GetTestFilePath()));
         }
     }
 }

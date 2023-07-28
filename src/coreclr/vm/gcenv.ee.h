@@ -59,7 +59,7 @@ public:
     void DiagWalkBGCSurvivors(void* gcContext);
     void StompWriteBarrier(WriteBarrierParameters* args);
 
-    void EnableFinalization(bool foundFinalizers);
+    void EnableFinalization(bool gcHasWorkForFinalizerThread);
     void HandleFatalError(unsigned int exitCode);
     bool EagerFinalized(Object* obj);
     MethodTable* GetFreeObjectMethodTable();
@@ -87,6 +87,8 @@ public:
     uint32_t GetCurrentProcessCpuCount();
 
     void DiagAddNewRegion(int generation, BYTE * rangeStart, BYTE * rangeEnd, BYTE * rangeEndReserved);
+
+    void LogErrorToHost(const char *message);
 };
 
 } // namespace standalone

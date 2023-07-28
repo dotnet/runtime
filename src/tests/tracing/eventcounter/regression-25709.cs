@@ -86,7 +86,7 @@ namespace EventCounterRegressionTests
             }
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             Task exceptionTask = Task.Run(ThrowExceptionTask);
             Thread.Sleep(5000);

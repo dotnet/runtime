@@ -14,7 +14,7 @@ namespace System.Collections.Immutable
         /// <returns>The <see cref="ReadOnlySpan{T}"/> representation of the <see cref="ImmutableArray{T}"/></returns>
         public ReadOnlySpan<T> AsSpan(Range range)
         {
-            var self = this;
+            ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
 
             (int start, int length) = range.GetOffsetAndLength(self.Length);

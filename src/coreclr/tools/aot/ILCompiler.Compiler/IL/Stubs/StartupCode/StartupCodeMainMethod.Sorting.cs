@@ -1,17 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-
 using Internal.TypeSystem;
-
-using AssemblyName = System.Reflection.AssemblyName;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs.StartupCode
 {
-    partial class StartupCodeMainMethod
+    public partial class StartupCodeMainMethod
     {
         protected override int ClassCode => -304225481;
 
@@ -22,7 +17,7 @@ namespace Internal.IL.Stubs.StartupCode
             return 0;
         }
 
-        partial class MainMethodWrapper
+        private partial class MainMethodWrapper
         {
             protected override int ClassCode => -215672259;
 

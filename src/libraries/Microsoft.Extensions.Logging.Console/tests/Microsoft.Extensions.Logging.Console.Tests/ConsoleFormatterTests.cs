@@ -38,7 +38,9 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var errorSink = new ConsoleSink();
             var console = new TestConsole(sink);
             var errorConsole = new TestConsole(errorSink);
-            var consoleLoggerProcessor = new TestLoggerProcessor(console, errorConsole);
+            var bufferMode = options == null ? ConsoleLoggerQueueFullMode.Wait : options.QueueFullMode;
+            var maxQueueLength = options == null ? ConsoleLoggerOptions.DefaultMaxQueueLengthValue : options.MaxQueueLength;
+            var consoleLoggerProcessor = new TestLoggerProcessor(console, errorConsole, bufferMode, maxQueueLength);
 
             var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(ConsoleLoggerTest.GetFormatters(simpleOptions, systemdOptions, jsonOptions).ToDictionary(f => f.Name));
 

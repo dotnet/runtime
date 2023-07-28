@@ -175,7 +175,7 @@ namespace System.ComponentModel.Composition.Hosting
                 ct.AddCompleteAction(() => executedAction = true);
 
                 ct.Complete();
-                Assert.False(executedAction, "Action should not have been exectued yet");
+                Assert.False(executedAction, "Action should not have been executed yet");
             }
 
             innerAtomicComposition.Complete();
@@ -216,7 +216,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 ct.AddCompleteAction(() => executedAction = true);
 
-                Assert.False(executedAction, "Action should not have been exectued yet");
+                Assert.False(executedAction, "Action should not have been executed yet");
 
                 // Do not complete
             }

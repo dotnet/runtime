@@ -54,7 +54,7 @@ namespace System.Runtime.Loader.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             // Generate the type and return the associated assembly
-            return typeBuilder.CreateTypeInfo().AsType().Assembly;
+            return typeBuilder.CreateType().Assembly;
         }
     }
 }

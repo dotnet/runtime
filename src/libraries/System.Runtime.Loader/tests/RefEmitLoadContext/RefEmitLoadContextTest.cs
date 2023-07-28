@@ -38,10 +38,7 @@ namespace System.Runtime.Loader.Tests
             var assemblyFilename = "System.Runtime.Loader.Noop.Assembly.dll";
 
             // Form the dynamic path that would not collide if another instance of this test is running.
-            s_loadFromPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-
-            // Create the folder
-            Directory.CreateDirectory(s_loadFromPath);
+            s_loadFromPath = Directory.CreateTempSubdirectory().FullName;
 
             var targetPath = Path.Combine(s_loadFromPath, assemblyFilename);
 

@@ -131,7 +131,7 @@ namespace System
             // method ptrs don't match, go down long path
             //
             if (_methodBase == null || d._methodBase == null || !(_methodBase is MethodInfo) || !(d._methodBase is MethodInfo))
-                return Delegate.InternalEqualMethodHandles(this, d);
+                return InternalEqualMethodHandles(this, d);
             else
                 return _methodBase.Equals(d._methodBase);
         }
@@ -161,7 +161,7 @@ namespace System
                 IRuntimeMethodInfo method = FindMethodHandle();
                 RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
                 // need a proper declaring type instance method on a generic type
-                if (RuntimeTypeHandle.IsGenericTypeDefinition(declaringType) || RuntimeTypeHandle.HasInstantiation(declaringType))
+                if (declaringType.IsGenericType)
                 {
                     bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != (MethodAttributes)0;
                     if (!isStatic)

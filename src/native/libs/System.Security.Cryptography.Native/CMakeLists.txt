@@ -44,6 +44,21 @@ set(NATIVECRYPTO_SOURCES
     pal_x509ext.c
 )
 
+if (LOCAL_BUILD)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    add_definitions(-DLOCAL_BUILD)
+    add_definitions(-DPALEXPORT=EXTERN_C)
+    add_definitions(-DTARGET_UNIX)
+    # For minipal files
+    include_directories(../../)
+    include_directories(../Common)
+    include_directories(${CMAKE_CURRENT_BINARY_DIR})
+    configure_file(
+        ../Common/pal_config.h.in
+        ${CMAKE_CURRENT_BINARY_DIR}/pal_config.h)
+endif()
+
+
 # Always build portable on macOS because OpenSSL is not a system component
 # and our prebuilts should not assume a specific ABI version for the types
 # that use OpenSSL at runtime.
@@ -83,12 +98,12 @@ set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERT
 
 if (GEN_SHARED_LIB)
     if (FEATURE_DISTRO_AGNOSTIC_SSL)
-        # on macOS the link step fails with undefined symbols, and the script doesn't run.
+        # on macOS and Alpine the link step fails with undefined symbols, and the script doesn't run.
         # if the build succeeds, the script would succeed, except it uses a Linux-only command.
         #
         # on Linux, the build will succeed with undefined symbols, then the script reports them
         # and fails the build for us.
-        if (NOT APPLE)
+        if (NOT APPLE AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
             add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
                 COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
                 COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
@@ -111,6 +126,7 @@ if (GEN_SHARED_LIB)
     endif()
 
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
+        PRIVATE
         ${NATIVE_LIBS_EXTRA}
     )
 endif()

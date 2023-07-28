@@ -14,7 +14,114 @@ namespace System.Security.Cryptography.EcDsa.Tests
             ecdsa.VerifyData(new ReadOnlySpan<byte>(data, offset, count), signature, hashAlgorithm);
 
         protected override byte[] SignData(ECDsa ecdsa, byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+            WithOutputArray(dest => ecdsa.SignData(new ReadOnlySpan<byte>(data, offset, count), dest, hashAlgorithm));
+
+        protected override byte[] SignHash(ECDsa ecdsa, byte[] hash, int offset, int count) =>
+            WithOutputArray(dest => ecdsa.SignHash(new ReadOnlySpan<byte>(hash, offset, count), dest));
+
+        protected override bool VerifyHash(ECDsa ecdsa, byte[] hash, int offset, int count, byte[] signature) =>
+            ecdsa.VerifyHash(new ReadOnlySpan<byte>(hash, offset, count), signature);
+
+        protected override void UseAfterDispose(ECDsa ecdsa, byte[] data, byte[] sig)
+        {
+            base.UseAfterDispose(ecdsa, data, sig);
+            byte[] hash = new byte[32];
+
+
+            Assert.Throws<ObjectDisposedException>(() => ecdsa.VerifyHash(hash.AsSpan(), sig.AsSpan()));
+            Assert.Throws<ObjectDisposedException>(() => ecdsa.SignData(hash.AsSpan(), Span<byte>.Empty, HashAlgorithmName.SHA256));
+            Assert.Throws<ObjectDisposedException>(() => ecdsa.SignHash(hash.AsSpan(), Span<byte>.Empty));
+        }
+
+        [Theory]
+        [MemberData(nameof(RealImplementations))]
+        public void SignData_InvalidArguments_Throws(ECDsa ecdsa)
+        {
+            Assert.Throws<ArgumentNullException>("hashAlgorithm", () =>
+                ecdsa.SignData(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, new HashAlgorithmName(null)));
+
+            Assert.Throws<ArgumentException>("hashAlgorithm", () =>
+                ecdsa.SignData(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, new HashAlgorithmName("")));
+
+            Assert.Throws<ArgumentOutOfRangeException>("signatureFormat",
+                () => ecdsa.SignData(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, HashAlgorithmName.SHA256, (DSASignatureFormat)42));
+
+            Assert.ThrowsAny<CryptographicException>(() =>
+                ecdsa.SignData(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+        }
+
+        private static byte[] WithOutputArray(Func<byte[], int> func)
+        {
+            for (int length = 1; ; length = checked(length * 2))
+            {
+                byte[] result = new byte[length];
+
+                try
+                {
+                    int written = func(result);
+                    Array.Resize(ref result, written);
+                    return result;
+                }
+                catch (ArgumentException ae) when (ae.ParamName == "destination")
+                {
+                    continue;
+                }
+            }
+        }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
+    public sealed class ECDsaTests_AllocatingSpan : ECDsaTests
+    {
+        protected override bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm) =>
+            ecdsa.VerifyData(new ReadOnlySpan<byte>(data, offset, count), signature, hashAlgorithm);
+
+        protected override byte[] SignData(ECDsa ecdsa, byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+            ecdsa.SignData(new ReadOnlySpan<byte>(data, offset, count), hashAlgorithm);
+
+        protected override byte[] SignHash(ECDsa ecdsa, byte[] hash, int offset, int count) =>
+            ecdsa.SignHash(new ReadOnlySpan<byte>(hash, offset, count));
+
+        protected override bool VerifyHash(ECDsa ecdsa, byte[] hash, int offset, int count, byte[] signature) =>
+            ecdsa.VerifyHash(new ReadOnlySpan<byte>(hash, offset, count), signature);
+
+        protected override void UseAfterDispose(ECDsa ecdsa, byte[] data, byte[] sig)
+        {
+            base.UseAfterDispose(ecdsa, data, sig);
+            byte[] hash = new byte[32];
+
+            Assert.Throws<ObjectDisposedException>(() => ecdsa.VerifyHash(hash.AsSpan(), sig.AsSpan()));
+            Assert.Throws<ObjectDisposedException>(() => ecdsa.SignData(hash.AsSpan(), HashAlgorithmName.SHA256));
+            Assert.Throws<ObjectDisposedException>(() => ecdsa.SignHash(hash.AsSpan()));
+        }
+
+        [Theory]
+        [MemberData(nameof(RealImplementations))]
+        public void SignData_InvalidArguments_Throws(ECDsa ecdsa)
+        {
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(ReadOnlySpan<byte>.Empty, new HashAlgorithmName(null)));
+            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(ReadOnlySpan<byte>.Empty, new HashAlgorithmName("")));
+            Assert.Throws<ArgumentOutOfRangeException>("signatureFormat", () => ecdsa.SignData(ReadOnlySpan<byte>.Empty, HashAlgorithmName.SHA256, (DSASignatureFormat)42));
+            Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(ReadOnlySpan<byte>.Empty, new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+        }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
+    public sealed class ECDsaTests_TrySpan : ECDsaTests
+    {
+        protected override bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm) =>
+            ecdsa.VerifyData(new ReadOnlySpan<byte>(data, offset, count), signature, hashAlgorithm);
+
+        protected override byte[] SignData(ECDsa ecdsa, byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
             TryWithOutputArray(dest => ecdsa.TrySignData(new ReadOnlySpan<byte>(data, offset, count), dest, hashAlgorithm, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
+
+        protected override byte[] SignHash(ECDsa ecdsa, byte[] hash, int offset, int count) =>
+            TryWithOutputArray(dest => ecdsa.TrySignHash(new ReadOnlySpan<byte>(hash, offset, count), dest, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
+
+        protected override bool VerifyHash(ECDsa ecdsa, byte[] hash, int offset, int count, byte[] signature) =>
+            ecdsa.VerifyHash(new ReadOnlySpan<byte>(hash, offset, count), signature);
 
         protected override void UseAfterDispose(ECDsa ecdsa, byte[] data, byte[] sig)
         {
@@ -95,7 +202,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 {
                     newEc.ImportParameters(param);
 
-                    // The curve name is not flowed on explicit export\import (by design) so this excercises logic
+                    // The curve name is not flowed on explicit export\import (by design) so this exercises logic
                     // that regenerates based on current curve values
                     newEc.GenerateKey(param.Curve);
                     param2 = newEc.ExportExplicitParameters(true);

@@ -7,28 +7,27 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.Pause
 {
-    class Program
+    public class Program
     {
         const int Pass = 100;
         const int Fail = 0;
 
-        static unsafe int Main(string[] args)
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73454;https://github.com/dotnet/runtime/pull/61707#issuecomment-973122341", TestRuntimes.Mono)]
+        public static unsafe void Pause()
         {
-            int testResult = X86Base.IsSupported ? Pass : Fail;
-
-            try
+            if (X86Base.IsSupported)
             {
                 X86Base.Pause();
             }
-            catch (Exception e)
+            else
             {
-                testResult = (X86Base.IsSupported || (e is not PlatformNotSupportedException)) ? Fail : Pass;
+                Assert.Throws<PlatformNotSupportedException>(X86Base.Pause);
             }
-
-            return testResult;
         }
     }
 }

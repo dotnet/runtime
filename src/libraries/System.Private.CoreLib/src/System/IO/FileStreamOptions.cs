@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.IO
 {
     public sealed class FileStreamOptions
@@ -11,6 +13,7 @@ namespace System.IO
         private FileOptions _options;
         private long _preallocationSize;
         private int _bufferSize = FileStream.DefaultBufferSize;
+        private UnixFileMode? _unixCreateMode;
 
         /// <summary>
         /// One of the enumeration values that determines how to open or create the file.
@@ -31,7 +34,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// A bitwise combination of the enumeration values that determines how the file can be accessed by the <see cref="FileStream" /> object. This also determines the values returned by the <see cref="System.IO.FileStream.CanRead" /> and <see cref="System.IO.FileStream.CanWrite" /> properties of the <see cref="FileStream" /> object.
+        /// A bitwise combination of the enumeration values that determines how the file can be accessed by the <see cref="FileStream" /> object. This also determines the values returned by the <see cref="FileStream.CanRead" /> and <see cref="FileStream.CanWrite" /> properties of the <see cref="FileStream" /> object.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
         public FileAccess Access
@@ -49,7 +52,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// A bitwise combination of the enumeration values that determines how the file will be shared by processes. The default value is <see cref="System.IO.FileShare.Read" />.
+        /// A bitwise combination of the enumeration values that determines how the file will be shared by processes. The default value is <see cref="FileShare.Read" />.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
         public FileShare Share
@@ -69,7 +72,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// A bitwise combination of the enumeration values that specifies additional file options. The default value is <see cref="System.IO.FileOptions.None" />, which indicates synchronous IO.
+        /// A bitwise combination of the enumeration values that specifies additional file options. The default value is <see cref="FileOptions.None" />, which indicates synchronous IO.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
         public FileOptions Options
@@ -96,7 +99,11 @@ namespace System.IO
         public long PreallocationSize
         {
             get => _preallocationSize;
-            set => _preallocationSize = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                _preallocationSize = value;
+            }
         }
 
         /// <summary>
@@ -107,7 +114,38 @@ namespace System.IO
         public int BufferSize
         {
             get => _bufferSize;
-            set => _bufferSize = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                _bufferSize = value;
+            }
+        }
+
+        /// <summary>
+        /// Unix file mode used when a new file is created.
+        /// </summary>
+        /// <exception cref="T:System.ArgumentException">When <paramref name="value" /> is an invalid file mode.</exception>
+        public UnixFileMode? UnixCreateMode
+        {
+            get
+            {
+                return _unixCreateMode;
+            }
+            [UnsupportedOSPlatform("windows")]
+            set
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
+                }
+
+                if (value.HasValue && ((value & ~FileSystem.ValidUnixFileModes) != 0))
+                {
+                    throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixCreateMode));
+                }
+
+                _unixCreateMode = value;
+            }
         }
     }
 }

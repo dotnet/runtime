@@ -11,9 +11,11 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting.Unit.Tests;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -34,6 +36,83 @@ namespace Microsoft.Extensions.Hosting.Tests
             await host.StopAsync(cts.Token);
         }
 
+        public static IEnumerable<object[]> StartAsync_StopAsync_Concurrency_TestCases
+        {
+            get
+            {
+                foreach (bool stopConcurrently in new[] { true, false })
+                {
+                    foreach (bool startConcurrently in new[] { true, false })
+                    {
+                        foreach (int hostedServiceCount in new[] { 1, 4, 10 })
+                        {
+                            yield return new object[] { stopConcurrently, startConcurrently, hostedServiceCount };
+                        }
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StartAsync_StopAsync_Concurrency_TestCases))]
+        public async Task StartAsync_StopAsync_Concurrency(bool stopConcurrently, bool startConcurrently, int hostedServiceCount)
+        {
+            var hostedServices = new DelegateHostedService[hostedServiceCount];
+            bool[,] events = new bool[hostedServiceCount, 2];
+
+            for (int i = 0; i < hostedServiceCount; i++)
+            {
+                var index = i;
+                var service = new DelegateHostedService(() => { events[index, 0] = true; }, () => { events[index, 1] = true; } , () => { });
+                service.Identifier = index;
+                hostedServices[index] = service;
+            }
+
+            using var host = Host.CreateDefaultBuilder().ConfigureHostConfiguration(configBuilder =>
+            {
+                configBuilder.AddInMemoryCollection(new KeyValuePair<string, string>[]
+                {
+                    new KeyValuePair<string, string>("servicesStartConcurrently", startConcurrently.ToString()),
+                    new KeyValuePair<string, string>("servicesStopConcurrently", stopConcurrently.ToString())
+                });
+            }).ConfigureServices(serviceCollection =>
+            {
+                foreach (var hostedService in hostedServices)
+                {
+                    serviceCollection.Add(ServiceDescriptor.Singleton<IHostedService>(hostedService));
+                }
+            }).Build();
+
+            await host.StartAsync(CancellationToken.None);
+
+            // Verifies that StartAsync had been called and that StopAsync had not been launched yet
+            for (int i = 0; i < hostedServiceCount; i++)
+            {
+                Assert.True(events[i, 0]);
+                Assert.False(events[i, 1]);
+            }
+
+            // Ensures that IHostedService instances are started in FIFO order when services are started non concurrently
+            if (hostedServiceCount > 0 && !startConcurrently)
+            {
+                AssertExtensions.Equal(hostedServices, hostedServices.OrderBy(h => h.StartDate).ToArray());
+            }
+
+            await host.StopAsync(CancellationToken.None);
+
+            // Verifies that StopAsync had been called
+            for (int i = 0; i < hostedServiceCount; i++)
+            {
+                Assert.True(events[i, 1]);
+            }
+
+            // Ensures that IHostedService instances are stopped in LIFO order  when services are stopped non concurrently
+            if (hostedServiceCount > 0 && !stopConcurrently)
+            {
+                AssertExtensions.Equal(hostedServices, hostedServices.OrderByDescending(h => h.StopDate).ToArray());
+            }
+        }
+
         [Fact]
         public void CreateDefaultBuilder_IncludesContentRootByDefault()
         {
@@ -44,6 +123,31 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(expected, config["ContentRoot"]);
             var env = host.Services.GetRequiredService<IHostEnvironment>();
             Assert.Equal(expected, env.ContentRootPath);
+        }
+
+        public static bool IsWindowsAndRemotExecutorIsSupported => PlatformDetection.IsWindows && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(typeof(HostTests), nameof(IsWindowsAndRemotExecutorIsSupported))]
+        public void CreateDefaultBuilder_DoesNotChangeContentRootIfCurrentDirectoryIsWindowsSystemDirectory()
+        {
+            using var _ = RemoteExecutor.Invoke(() =>
+            {
+                string systemDirectory = Environment.SystemDirectory;
+
+                // Test that the path gets normalized before comparison. Use C:\WINDOWS\SYSTEM32\ instead of C:\Windows\system32.
+                systemDirectory = systemDirectory.ToUpper() + "\\";
+
+                Environment.CurrentDirectory = systemDirectory;
+
+                IHostBuilder builder = Host.CreateDefaultBuilder();
+                using IHost host = builder.Build();
+
+                var config = host.Services.GetRequiredService<IConfiguration>();
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+                Assert.Null(config[HostDefaults.ContentRootKey]);
+                Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
+            });
         }
 
         [Fact]

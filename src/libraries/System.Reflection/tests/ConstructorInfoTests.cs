@@ -69,7 +69,6 @@ namespace System.Reflection.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInvokingStaticConstructorsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40351", TestRuntimes.Mono)]
         public void Invoke_StaticConstructorMultipleTimes()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection));
@@ -114,7 +113,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public void Invoke_OneDimensionalArray_NegativeLengths_ThrowsOverflowException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(object[]));

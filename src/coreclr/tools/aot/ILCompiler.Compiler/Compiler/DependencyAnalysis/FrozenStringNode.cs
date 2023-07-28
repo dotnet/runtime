@@ -6,9 +6,11 @@ using System.Collections.Generic;
 using Internal.Text;
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.DependencyAnalysis
 {
-    public class FrozenStringNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public sealed class FrozenStringNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private string _data;
         private int _syncBlockSize;
@@ -41,20 +43,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             DefType systemStringType = factory.TypeSystemContext.GetWellKnownType(WellKnownType.String);
 
-            //
-            // The GC requires a direct reference to frozen objects' EETypes. If System.String will be compiled into a separate
-            // binary, it must be cloned into this one.
-            //
             IEETypeNode stringSymbol = factory.ConstructedTypeSymbol(systemStringType);
 
-            if (stringSymbol.RepresentsIndirectionCell)
-            {
-                return factory.ConstructedClonedTypeSymbol(systemStringType);
-            }
-            else
-            {
-                return stringSymbol;
-            }
+            //
+            // The GC requires a direct reference to frozen objects' EETypes. System.String needs
+            // to be compiled into this binary.
+            //
+            Debug.Assert(!stringSymbol.RepresentsIndirectionCell);
+            return stringSymbol;
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
@@ -72,7 +68,6 @@ namespace ILCompiler.DependencyAnalysis
 
             // Null-terminate for friendliness with interop
             dataBuilder.EmitShort(0);
-
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -85,17 +80,14 @@ namespace ILCompiler.DependencyAnalysis
             };
         }
 
-        protected override void OnMarked(NodeFactory factory)
-        {
-            factory.FrozenSegmentRegion.AddEmbeddedObject(this);
-        }
-
         public override int ClassCode => -1733946122;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return string.CompareOrdinal(_data, ((FrozenStringNode)other)._data);
         }
+
+        public string Data => _data;
 
         public override string ToString() => $"\"{_data}\"";
     }

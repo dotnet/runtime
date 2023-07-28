@@ -14,9 +14,6 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       32      // Upper bound to let the code generator to loop unroll CpBlk.
-  #define INITBLK_UNROLL_LIMIT     16      // Upper bound to let the code generator to loop unroll InitBlk.
-
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
@@ -34,7 +31,7 @@
   #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 floats or doubles using an HFA)
   #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            4  // Maxiumum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            4  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 
   #define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers

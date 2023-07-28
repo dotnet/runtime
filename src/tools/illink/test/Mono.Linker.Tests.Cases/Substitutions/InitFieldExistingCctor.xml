@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.InitFieldExistingCctor">
+      <field name="IntValue" value="5" initialize="true">
+      </field>
+    </type>
+  </assembly>
+</linker>

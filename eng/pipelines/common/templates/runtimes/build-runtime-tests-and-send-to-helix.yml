@@ -1,0 +1,137 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  testBuildArgs: ''
+  crossBuild: false
+  readyToRun: false
+  compositeBuildMode: false
+  helixQueues: ''
+  displayNameArgs: ''
+  runInUnloadableContext: false
+  nativeAotTest: false
+  runtimeFlavor: 'mono'
+  runtimeVariant: 'monointerpreter'
+  llvmAotStepContainer: ''
+  scenarios:
+    - normal
+  variables: {}
+  pool: ''
+  dependsOn: []
+  #arcade-specific parameters
+  condition: always()
+  continueOnError: false
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+  shouldContinueOnError: false
+  compileOnHelix: false
+  interpreter: false
+
+steps:
+  - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+    parameters:
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      archType: ${{ parameters.archType }}
+      buildConfig: ${{ parameters.buildConfig }}
+      testBuildArgs: ${{ parameters.testBuildArgs }}
+
+  # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
+  - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:
+    - ${{ if eq(parameters.archType, 'arm64') }}:
+      - script: ./build.sh
+                -subset mono
+                -c ${{ parameters.buildConfig }}
+                -arch ${{ parameters.archType }}
+                /p:BuildMonoAotCrossCompiler=true
+                /p:BuildMonoAotCrossCompilerOnly=true
+                /p:MonoLibClang="/usr/local/lib/libclang.so.16"
+                /p:MonoAOTEnableLLVM=true
+                /p:CrossBuild=true
+        displayName: "Build Mono LLVM AOT cross compiler"
+
+    - ${{ if eq(parameters.archType, 'x64') }}:
+      - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }}
+          displayName: "LLVM AOT compile CoreCLR tests"
+          target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
+      - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }}
+          displayName: "LLVM AOT compile CoreCLR tests"
+          target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
+    - ${{ if eq(parameters.archType, 'arm64') }}:
+      - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }}  $(_monoAotCrossCompileArg) /p:RuntimeVariant=llvmfullaot -maxcpucount:2
+          displayName: "LLVM AOT cross-compile CoreCLR tests"
+          env:
+            __MonoToolPrefix: aarch64-linux-gnu-
+      - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} $(_monoAotCrossCompileArg) /p:RuntimeVariant=llvmfullaot -maxcpucount:2
+          displayName: "LLVM AOT cross-compile CoreCLR tests"
+          env:
+            __MonoToolPrefix: aarch64-linux-gnu-
+
+  # Checks the value of the compileOnHelix parameter
+  # and if set invokes libraries pipeline for AOT on Helix
+  - ${{ if eq(parameters.compileOnHelix, 'true') }}:
+    - template: /eng/pipelines/libraries/helix.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        archType: ${{ parameters.archType }}
+        targetRid: ${{ parameters.targetRid }}
+        buildConfig: ${{ parameters.buildConfig }}
+        interpreter: ${{ parameters.interpreter }}
+        testRunNamePrefixSuffix: ${{ parameters.testRunNamePrefixSuffix }}
+        extraHelixArguments: ${{ parameters.extraHelixArguments }}
+        helixQueues: ${{ parameters.helixQueues }}
+        creator: ${{ parameters.creator }}
+  - ${{ else }}:
+    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+      parameters:
+        displayName: Send tests to Helix
+        buildConfig: $(buildConfigUpper)
+        archType: ${{ parameters.archType }}
+        osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup}}
+        coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
+        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        runtimeVariant: ${{ parameters.runtimeVariant }}
+
+        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          creator: $(Build.DefinitionName)
+
+          helixBuild: $(Build.BuildNumber)
+          helixSource: $(_HelixSource)
+
+          ${{ if ne(parameters.readyToRun, true) }}:
+            helixType: 'test/functional/cli/'
+
+          helixQueues: ${{ parameters.helixQueues }}
+
+          # This tests whether an array is empty
+          ${{ if eq(join('', parameters.helixQueues), '') }}:
+            condition: false
+
+          publishTestResults: true
+
+          timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
+          timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+
+          runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
+          compositeBuildMode: ${{ parameters.compositeBuildMode }}
+          runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+          nativeAotTest: ${{ parameters.nativeAotTest }}
+
+          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+            # Access token variable for internal project from the
+            # DotNet-HelixApi-Access variable group
+            helixAccessToken: $(HelixApiAccessToken)
+
+          helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+
+          scenarios: ${{ parameters.scenarios }}

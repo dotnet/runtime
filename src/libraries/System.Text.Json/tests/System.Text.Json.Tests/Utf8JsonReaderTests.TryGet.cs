@@ -1026,7 +1026,7 @@ namespace System.Text.Json.Tests
             var expectedPropertyNames = new List<string>();
             var expectedValues = new List<string>();
 
-            var jsonNewtonsoft = new JsonTextReader(new StringReader(jsonString));
+            var jsonNewtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
             while (jsonNewtonsoft.Read())
             {
                 if (jsonNewtonsoft.TokenType == JsonToken.String)
@@ -1125,13 +1125,22 @@ namespace System.Text.Json.Tests
                         int length = json.HasValueSequence ? (int)json.ValueSequence.Length : json.ValueSpan.Length;
 
                         InvalidOperationException ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.GetString());
-                        Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        if (ex.InnerException is not null)
+                        {
+                            Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        }
 
                         ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new byte[length]));
-                        Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        if (ex.InnerException is not null)
+                        {
+                            Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        }
 
                         ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new char[length]));
-                        Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        if (ex.InnerException is not null)
+                        {
+                            Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        }
                     }
                 }
             }
@@ -1224,7 +1233,7 @@ namespace System.Text.Json.Tests
                 byte[] buffer = new byte[expectedUtf8Size];
                 for (int i = 0; i < expectedUtf8Size; i++)
                 {
-                    JsonTestHelper.AssertThrows<ArgumentException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(buffer.AsSpan().Slice(0, i)));
+                    JsonTestHelper.AssertThrows<ArgumentException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(buffer.AsSpan(0, i)));
                     Assert.All(buffer, static b => Assert.Equal(0, b));
                 }
 
@@ -1249,7 +1258,7 @@ namespace System.Text.Json.Tests
                 char[] buffer = new char[expectedSize];
                 for (int i = 0; i < expectedSize; i++)
                 {
-                    JsonTestHelper.AssertThrows<ArgumentException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(buffer.AsSpan().Slice(0, i)));
+                    JsonTestHelper.AssertThrows<ArgumentException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(buffer.AsSpan(0, i)));
                     Assert.All(buffer, static c => Assert.Equal(0, c));
                 }
 

@@ -31,13 +31,6 @@ DbgTransportSession *g_pDbgTransport = NULL;
 #include "ddmarshalutil.h"
 #endif // !RIGHT_SIDE_COMPILE
 
-// No real work done in the constructor. Use Init() instead.
-DbgTransportSession::DbgTransportSession()
-{
-    m_ref = 1;
-    m_eState = SS_Closed;
-}
-
 DbgTransportSession::~DbgTransportSession()
 {
     DbgTransportLog(LC_Proxy, "DbgTransportSession::~DbgTransportSession() called");
@@ -81,9 +74,9 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
 
     // Start with a blank slate so that Shutdown() on a partially initialized instance will only do the
     // cleanup necessary.
-    memset(this, 0, sizeof(*this));
+    *this = {};
 
-    // Because of the above memset the embeded classes/structs need to be reinitialized especially
+    // Because of the above memset the embedded classes/structs need to be reinitialized especially
     // the two way pipe; it expects the in/out handles to be -1 instead of 0.
     m_ref = 1;
     m_pipe = TwoWayPipe();
@@ -1234,6 +1227,8 @@ void DbgTransportSession::InitSessionState()
 // instance method version defined below for convenience in the implementation.
 DWORD WINAPI DbgTransportSession::TransportWorkerStatic(LPVOID pvContext)
 {
+    SetThreadName(GetCurrentThread(), W(".NET DebugPipe"));
+
     ((DbgTransportSession*)pvContext)->TransportWorker();
 
     // Nobody looks at this result, the choice of 0 is arbitrary.
@@ -2207,8 +2202,10 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_CONTROL_C_EVENT_RESULT:
     case DB_IPCE_BEFORE_GARBAGE_COLLECTION:
     case DB_IPCE_AFTER_GARBAGE_COLLECTION:
+    case DB_IPCE_DISABLE_OPTS_RESULT:
         cbAdditionalSize = 0;
         break;
+
     case DB_IPCE_DATA_BREAKPOINT:
         cbAdditionalSize = sizeof(pEvent->DataBreakpointData);
         break;
@@ -2499,6 +2496,15 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     case DB_IPCE_CUSTOM_NOTIFICATION:
         cbAdditionalSize = sizeof(pEvent->CustomNotification);
+        break;
+
+    case DB_IPCE_DISABLE_OPTS:
+    case DB_IPCE_IS_OPTS_DISABLED:
+        cbAdditionalSize = sizeof(pEvent->DisableOptData);
+        break;
+
+    case DB_IPCE_IS_OPTS_DISABLED_RESULT:
+        cbAdditionalSize = sizeof(pEvent->IsOptsDisabledData);
         break;
 
     default:

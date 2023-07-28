@@ -67,8 +67,8 @@ namespace System.Globalization
         {
             ArgumentNullException.ThrowIfNull(unicode);
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (index > unicode.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (index > unicode.Length - count)
@@ -114,8 +114,8 @@ namespace System.Globalization
         {
             ArgumentNullException.ThrowIfNull(ascii);
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (index > ascii.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (index > ascii.Length - count)
@@ -182,9 +182,6 @@ namespace System.Globalization
         private const int c_tmax = 26;
         private const int c_skew = 38;
         private const int c_damp = 700;
-
-        // Legal "dot" separators (i.e: . in www.microsoft.com)
-        private static readonly char[] s_dotSeparators = { '.', '\u3002', '\uFF0E', '\uFF61' };
 
         private string GetAsciiInvariant(string unicode, int index, int count)
         {
@@ -321,11 +318,12 @@ namespace System.Globalization
             // Find the next dot
             while (iNextDot < unicode.Length)
             {
+                // Legal "dot" separators (i.e: . in www.microsoft.com)
+                const string DotSeparators = ".\u3002\uFF0E\uFF61";
+
                 // Find end of this segment
-                iNextDot = unicode.IndexOfAny(s_dotSeparators, iAfterLastDot);
-                Debug.Assert(iNextDot <= unicode.Length, "[IdnMapping.punycode_encode]IndexOfAny is broken");
-                if (iNextDot < 0)
-                    iNextDot = unicode.Length;
+                iNextDot = unicode.AsSpan(iAfterLastDot).IndexOfAny(DotSeparators);
+                iNextDot = iNextDot < 0 ? unicode.Length : iNextDot + iAfterLastDot;
 
                 // Only allowed to have empty . section at end (www.microsoft.com.)
                 if (iNextDot == iAfterLastDot)
@@ -412,9 +410,7 @@ namespace System.Globalization
                 else
                 {
                     // If it has some non-basic code points the input cannot start with xn--
-                    if (unicode.Length - iAfterLastDot >= c_strAcePrefix.Length &&
-                        unicode.Substring(iAfterLastDot, c_strAcePrefix.Length).Equals(
-                            c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
+                    if (unicode.AsSpan(iAfterLastDot).StartsWith(c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
                         throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(unicode));
 
                     // Need to do ACE encoding

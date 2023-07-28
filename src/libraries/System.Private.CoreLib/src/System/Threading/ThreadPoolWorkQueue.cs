@@ -1,15 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Class for creating and managing a threadpool
-**
-**
-=============================================================================*/
-
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,11 +13,14 @@ using System.Threading.Tasks;
 
 namespace System.Threading
 {
+    /// <summary>
+    /// Class for creating and managing a threadpool.
+    /// </summary>
     internal sealed partial class ThreadPoolWorkQueue
     {
         internal static class WorkStealingQueueList
         {
-#pragma warning disable CA1825 // avoid the extra generic instantation for Array.Empty<T>(); this is the only place we'll ever create this array
+#pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>(); this is the only place we'll ever create this array
             private static volatile WorkStealingQueue[] _queues = new WorkStealingQueue[0];
 #pragma warning restore CA1825
 
@@ -935,7 +929,7 @@ namespace System.Threading
                 // us to return the thread to the pool or not.
                 //
                 int currentTickCount = Environment.TickCount;
-                if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTickCount))
+                if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject!, currentTickCount))
                 {
                     // This thread is being parked and may remain inactive for a while. Transfer any thread-local work items
                     // to ensure that they would not be heavily delayed. Tell the caller that this thread was requested to stop
@@ -1355,24 +1349,28 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        internal const string WorkerThreadName = ".NET ThreadPool Worker";
+        internal const string WorkerThreadName = ".NET TP Worker";
 
         internal static readonly ThreadPoolWorkQueue s_workQueue = new ThreadPoolWorkQueue();
 
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
         internal static readonly Action<object?> s_invokeAsyncStateMachineBox = static state =>
         {
-            if (!(state is IAsyncStateMachineBox box))
+            if (state is IAsyncStateMachineBox box)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
-                return;
+                box.MoveNext();
             }
-
-            box.MoveNext();
+            else
+            {
+                ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
+            }
         };
 
         internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
 
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         [CLSCompliant(false)]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
@@ -1387,6 +1385,9 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         [CLSCompliant(false)]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
@@ -1401,6 +1402,9 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1409,11 +1413,13 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
-            if (millisecondsTimeOutInterval < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1422,11 +1428,13 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
-            if (millisecondsTimeOutInterval < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
@@ -1435,13 +1443,14 @@ namespace System.Threading
             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
         )
         {
-            if (millisecondsTimeOutInterval < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (millisecondsTimeOutInterval > (uint)int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
@@ -1450,13 +1459,14 @@ namespace System.Threading
             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
         )
         {
-            if (millisecondsTimeOutInterval < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (millisecondsTimeOutInterval > (uint)int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
                           WaitHandle waitObject,
                           WaitOrTimerCallback callBack,
@@ -1466,13 +1476,16 @@ namespace System.Threading
                           )
         {
             long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (tm > (long)int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(tm, int.MaxValue, nameof(timeout));
+
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, true);
         }
 
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
                           WaitHandle waitObject,
                           WaitOrTimerCallback callBack,
@@ -1482,10 +1495,10 @@ namespace System.Threading
                           )
         {
             long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (tm > (long)int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(tm, int.MaxValue, nameof(timeout));
+
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, false);
         }
 
@@ -1541,12 +1554,12 @@ namespace System.Threading
             //
             // This occurs when user code queues its provided continuation to the ThreadPool;
             // internally we call UnsafeQueueUserWorkItemInternal directly for Tasks.
-            if (ReferenceEquals(callBack, ThreadPool.s_invokeAsyncStateMachineBox))
+            if (ReferenceEquals(callBack, s_invokeAsyncStateMachineBox))
             {
                 if (!(state is IAsyncStateMachineBox))
                 {
                     // The provided state must be the internal IAsyncStateMachineBox (Task) type
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                    ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
                 }
 
                 UnsafeQueueUserWorkItemInternal((object)state!, preferLocal);
@@ -1658,7 +1671,7 @@ namespace System.Threading
             get
             {
                 ThreadPoolWorkQueue workQueue = s_workQueue;
-                return ThreadPoolWorkQueue.LocalCount + workQueue.GlobalCount + PendingUnmanagedWorkItemCount;
+                return ThreadPoolWorkQueue.LocalCount + workQueue.GlobalCount;
             }
         }
     }

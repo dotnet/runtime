@@ -159,6 +159,7 @@ namespace
             case DynamicMethodDesc::StubWrapperDelegate:    return "IL_STUB_WrapperDelegate_Invoke";
             case DynamicMethodDesc::StubTailCallStoreArgs:  return "IL_STUB_StoreTailCallArgs";
             case DynamicMethodDesc::StubTailCallCallTarget: return "IL_STUB_CallTailCallTarget";
+            case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_bVirtualStaticMethodDispatch";
             default:
                 UNREACHABLE_MSG("Unknown stub type");
         }
@@ -184,7 +185,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
                                                            mcDynamic,
                                                            TRUE /* fNonVtableSlot */,
                                                            TRUE /* fNativeCodeSlot */,
-                                                           FALSE /* fComPlusCallInfo */,
                                                            pMT,
                                                            pamTracker);
 
@@ -320,6 +320,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         }
     }
 
+    if (SF_IsVirtualStaticMethodDispatchStub(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubVirtualStaticMethodDispatch);
+    }
+
 // if we made it this far, we can set a more descriptive stub name
 #ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
@@ -398,6 +403,45 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
     RETURN m_pStubMT;
 }
 
+
+MethodDesc* ILStubCache::LookupStubMethodDesc(ILStubHashBlob* pHashBlob)
+{
+    CrstHolder ch(&m_crst);
+
+    // Try to find the stub
+    const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
+    if (phe)
+    {
+        return phe->m_pMethodDesc;
+    }
+
+    return NULL;
+}
+
+MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* pHashBlob)
+{
+    size_t cbSizeOfBlob = pHashBlob->m_cbSizeOfBlob;
+
+    CrstHolder ch(&m_crst);
+
+    const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
+    if (phe == NULL)
+    {
+        AllocMemHolder<ILStubHashBlob> pBlobHolder( m_heap->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
+        ILStubHashBlob* pBlob = pBlobHolder;
+        _ASSERTE(pHashBlob->m_cbSizeOfBlob == cbSizeOfBlob);
+        memcpy(pBlob, pHashBlob, cbSizeOfBlob);
+
+        m_hashMap.Add(ILStubCacheEntry{ pMD, pBlob });
+        pBlobHolder.SuppressRelease();
+
+        return pMD;
+    }
+    else
+    {
+        return phe->m_pMethodDesc;
+    }
+}
 #endif // DACCESS_COMPILE
 
 //

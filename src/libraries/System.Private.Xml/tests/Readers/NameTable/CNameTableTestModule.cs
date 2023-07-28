@@ -4,7 +4,7 @@
 using OLEDB.Test.ModuleCore;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.NameTableTests
 {
     public partial class CNameTableTestModule : CTestModule
     {

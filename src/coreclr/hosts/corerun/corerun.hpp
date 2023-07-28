@@ -454,6 +454,8 @@ namespace pal
 
         // Attempt to read
         ssize_t bytes_read = ::read(fd, status, sizeof(status) - 1);
+        ::close(fd);
+
         if (bytes_read > 0)
         {
             // We have data. At this point we can likely make a strong decision.

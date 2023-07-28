@@ -114,14 +114,15 @@ MONO_RESTORE_WARNING
 #include <time.h>
 
 /* Returns the number of milliseconds from boot time: this should be monotonic */
-/* Adapted from CoreCLR: https://github.com/dotnet/coreclr/blob/66d2738ea96fcce753dec1370e79a0c78f7b6adb/src/pal/src/misc/time.cpp */
+/* Adapted from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/pal/src/misc/time.cpp */
 gint64
 mono_msec_boottime (void)
 {
 	/* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */
-#if !defined (TARGET_WASM) && ((defined(HAVE_CLOCK_MONOTONIC_COARSE) || defined(HAVE_CLOCK_MONOTONIC)) && !(defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS)))
+#if ((defined(HAVE_CLOCK_MONOTONIC_COARSE) || defined(HAVE_CLOCK_MONOTONIC)) && !(defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS)))
 	clockid_t clockType =
-#if HAVE_CLOCK_MONOTONIC_COARSE
+	/* emscripten exposes CLOCK_MONOTONIC_COARSE but doesn't implement it */
+#if defined(HAVE_CLOCK_MONOTONIC_COARSE) && !defined(TARGET_WASM)
 	CLOCK_MONOTONIC_COARSE; /* good enough resolution, fastest speed */
 #else
 	CLOCK_MONOTONIC;

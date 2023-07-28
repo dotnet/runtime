@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
-using Internal.Runtime;
 using Internal.NativeFormat;
 using System.Diagnostics;
 using System.Text;
 
 namespace Internal.Runtime
 {
-    internal unsafe partial class EETypeOptionalFieldsBuilder
+    internal sealed unsafe partial class EETypeOptionalFieldsBuilder
     {
         private NativePrimitiveEncoder _encoder;
         private OptionalField[] _rgFields = new OptionalField[(int)EETypeOptionalFieldTag.Count];
@@ -18,17 +16,17 @@ namespace Internal.Runtime
         private struct OptionalField
         {
             internal bool _fieldPresent;
-            internal UInt32 _value;
+            internal uint _value;
         }
 
         internal EETypeOptionalFieldsBuilder() { }
 
-        internal UInt32 GetFieldValue(EETypeOptionalFieldTag eTag, UInt32 defaultValueIfNotFound)
+        internal uint GetFieldValue(EETypeOptionalFieldTag eTag, uint defaultValueIfNotFound)
         {
             return _rgFields[(int)eTag]._fieldPresent ? _rgFields[(int)eTag]._value : defaultValueIfNotFound;
         }
 
-        internal void SetFieldValue(EETypeOptionalFieldTag eTag, UInt32 value)
+        internal void SetFieldValue(EETypeOptionalFieldTag eTag, uint value)
         {
             _rgFields[(int)eTag]._fieldPresent = true;
             _rgFields[(int)eTag]._value = value;
@@ -49,7 +47,7 @@ namespace Internal.Runtime
             if (eLastTag == EETypeOptionalFieldTag.Count)
                 return 0;
 
-            _encoder = new NativePrimitiveEncoder();
+            _encoder = default(NativePrimitiveEncoder);
             _encoder.Init();
 
             for (EETypeOptionalFieldTag eTag = 0; eTag < EETypeOptionalFieldTag.Count; eTag++)
@@ -98,13 +96,13 @@ namespace Internal.Runtime
                 }
                 else
                 {
-                    sb.Append("x");
+                    sb.Append('x');
                 }
 
 
                 if (i != (int)EETypeOptionalFieldTag.Count - 1)
                 {
-                    sb.Append("_");
+                    sb.Append('_');
                 }
             }
 

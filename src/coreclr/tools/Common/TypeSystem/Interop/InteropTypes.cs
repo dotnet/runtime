@@ -3,8 +3,6 @@
 
 using Internal.IL;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem.Interop
 {
     public static class InteropTypes
@@ -117,11 +115,6 @@ namespace Internal.TypeSystem.Interop
             return IsCoreNamedType(context, type, "System", "ArgIterator");
         }
 
-        public static bool IsSystemByReference(TypeSystemContext context, TypeDesc type)
-        {
-            return IsCoreNamedType(context, type, "System", "ByReference`1");
-        }
-
         public static bool IsSystemSpan(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "Span`1");
@@ -150,6 +143,11 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemRuntimeIntrinsicsVector256T(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector256`1");
+        }
+
+        public static bool IsSystemRuntimeIntrinsicsVector512T(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector512`1");
         }
 
         public static bool IsSystemNumericsVectorT(TypeSystemContext context, TypeDesc type)

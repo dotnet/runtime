@@ -9,7 +9,7 @@ namespace System.Reflection
         // NOTES: We have lookup masks defined in RuntimeType and Activator.  If we
         //    change the lookup values then these masks may need to change also.
 
-        // a place holder for no flag specifed
+        // a place holder for no flag specified
         Default = 0x00,
 
         // These flags indicate what to search for when binding

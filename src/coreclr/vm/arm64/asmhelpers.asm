@@ -20,6 +20,8 @@
 #ifdef FEATURE_READYTORUN
     IMPORT DynamicHelperWorker
 #endif
+    IMPORT HijackHandler
+    IMPORT ThrowControlForThread
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     IMPORT  g_sw_ww_table
@@ -54,7 +56,8 @@
     IMPORT JIT_WriteBarrier_Table_Loc
     IMPORT JIT_WriteBarrier_Loc
 
-    TEXTAREA
+    ;;like TEXTAREA, but with 64 byte alignment so that we can align the patchable pool below to 64 without warning
+    AREA    |.text|,ALIGN=6,CODE,READONLY
 
 ;; LPVOID __stdcall GetCurrentIP(void);
     LEAF_ENTRY GetCurrentIP
@@ -231,7 +234,7 @@ ThePreStubPatchLabel
         LEAF_END
 
 ;-----------------------------------------------------------------------------
-; The following Macros help in WRITE_BARRIER Implemetations
+; The following Macros help in WRITE_BARRIER Implementations
     ; WRITE_BARRIER_ENTRY
     ;
     ; Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
@@ -471,15 +474,19 @@ ShadowUpdateDisabled
 CheckCardTable
         ; Branch to Exit if the reference is not in the Gen0 heap
         ;
-        adr      x12,  wbs_ephemeral_low
-        ldp      x12,  x16, [x12]
+        ldr      x12,  wbs_ephemeral_low
         cbz      x12,  SkipEphemeralCheck
-
         cmp      x15,  x12
-        blo      Exit
 
-        cmp      x15,  x16
-        bhi      Exit
+        ldr      x12,  wbs_ephemeral_high
+
+        ; Compare against the upper bound if the previous comparison indicated
+        ; that the destination address is greater than or equal to the lower
+        ; bound. Otherwise, set the C flag (specified by the 0x2) so that the
+        ; branch to exit is taken.
+        ccmp     x15,  x12, #0x2, hs
+
+        bhs      Exit
 
 SkipEphemeralCheck
         ; Check if we need to update the card table
@@ -1029,6 +1036,31 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
 
 ; ------------------------------------------------------------------
+;
+; Helpers for ThreadAbort exceptions
+;
+
+        NESTED_ENTRY RedirectForThreadAbort2,,HijackHandler
+        PROLOG_SAVE_REG_PAIR fp,lr, #-16!
+
+        ; stack must be 16 byte aligned
+        CHECK_STACK_ALIGNMENT
+
+        ; On entry:
+        ;
+        ; x0 = address of FaultingExceptionFrame
+        ;
+        ; Invoke the helper to setup the FaultingExceptionFrame and raise the exception
+        bl              ThrowControlForThread
+
+        ; ThrowControlForThread doesn't return.
+        EMIT_BREAKPOINT
+
+        NESTED_END RedirectForThreadAbort2
+
+        GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
+
+; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
 ;
 ; This method will perform a quick chained lookup of the entry if the
@@ -1085,10 +1117,10 @@ Success
         blt     Promote
 
         ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
-        br      x16               ; branch to interface implemenation target
+        br      x16               ; branch to interface implementation target
 
 Promote
-                                  ; Move this entry to head postion of the chain
+                                  ; Move this entry to head position of the chain
         mov     x16, #256
         str     x16, [x13]        ; be quick to reset the counter so we don't get a bunch of contending threads
         orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG

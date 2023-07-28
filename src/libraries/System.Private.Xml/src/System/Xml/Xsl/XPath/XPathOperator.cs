@@ -3,7 +3,7 @@
 
 namespace System.Xml.Xsl.XPath
 {
-    // order is importent. We are using them as an index in OperatorGroup & QilOperator & XPathOperatorToQilNodeType arrays
+    // order is important. We are using them as an index in OperatorGroup & QilOperator & XPathOperatorToQilNodeType arrays
     // (ValEq - Eq) == (ValGe - Ge)
     internal enum XPathOperator
     {

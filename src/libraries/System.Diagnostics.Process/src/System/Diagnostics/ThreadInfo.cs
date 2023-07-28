@@ -10,14 +10,14 @@ namespace System.Diagnostics
     ///     can throw it away all at once when Refresh is called on the component.
     /// </devdoc>
     /// <internalonly/>
-    internal sealed class ThreadInfo
+    internal sealed unsafe class ThreadInfo
     {
 #pragma warning disable CS0649 // The fields are unused on iOS/tvOS as the respective managed logic (mostly around libproc) is excluded.
         internal ulong _threadId;
         internal int _processId;
         internal int _basePriority;
         internal int _currentPriority;
-        internal IntPtr _startAddress;
+        internal void* _startAddress;
         internal ThreadState _threadState;
         internal ThreadWaitReason _threadWaitReason;
 #pragma warning restore CS0649

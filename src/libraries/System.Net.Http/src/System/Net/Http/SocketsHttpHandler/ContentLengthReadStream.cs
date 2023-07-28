@@ -38,7 +38,7 @@ namespace System.Net.Http
                 if (bytesRead <= 0 && buffer.Length != 0)
                 {
                     // Unexpected end of response stream.
-                    throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _contentBytesRemaining));
+                    throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _contentBytesRemaining));
                 }
 
                 Debug.Assert((ulong)bytesRead <= _contentBytesRemaining);
@@ -100,7 +100,7 @@ namespace System.Net.Http
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                     // Unexpected end of response stream.
-                    throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _contentBytesRemaining));
+                    throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _contentBytesRemaining));
                 }
 
                 Debug.Assert((ulong)bytesRead <= _contentBytesRemaining);
@@ -233,7 +233,7 @@ namespace System.Net.Http
                         if (_contentBytesRemaining == 0)
                         {
                             // Dispose of the registration and then check whether cancellation has been
-                            // requested. This is necessary to make determinstic a race condition between
+                            // requested. This is necessary to make deterministic a race condition between
                             // cancellation being requested and unregistering from the token.  Otherwise,
                             // it's possible cancellation could be requested just before we unregister and
                             // we then return a connection to the pool that has been or will be disposed

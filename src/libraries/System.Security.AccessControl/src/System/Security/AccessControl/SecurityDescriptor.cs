@@ -261,11 +261,7 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (binaryForm.Length - offset < BinaryLength)
             {
@@ -472,15 +468,7 @@ namespace System.Security.AccessControl
             // The array passed in must be valid
             //
 
-            if (offset < 0)
-            {
-                //
-                // Offset must not be negative
-                //
-
-                throw new ArgumentOutOfRangeException(nameof(offset),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             //
             // At least make sure the header is in place
@@ -632,7 +620,7 @@ namespace System.Security.AccessControl
                         out byteArray,
                         ref byteArraySize))
                 {
-                    error = Marshal.GetLastWin32Error();
+                    error = Marshal.GetLastPInvokeError();
 
                     if (error == Interop.Errors.ERROR_INVALID_PARAMETER ||
                         error == Interop.Errors.ERROR_INVALID_ACL ||
@@ -874,14 +862,11 @@ namespace System.Security.AccessControl
             // Replace null DACL with an allow-all for everyone DACL
             //
 
-            if (discretionaryAcl == null)
-            {
-                //
-                // to conform to native behavior, we will add allow everyone ace for DACL
-                //
+            //
+            // to conform to native behavior, we will add allow everyone ace for DACL
+            //
 
-                discretionaryAcl = DiscretionaryAcl.CreateAllowEveryoneFullAccess(_isDS, _isContainer);
-            }
+            discretionaryAcl ??= DiscretionaryAcl.CreateAllowEveryoneFullAccess(_isDS, _isContainer);
 
             _dacl = discretionaryAcl;
 
@@ -904,7 +889,7 @@ namespace System.Security.AccessControl
                 actualFlags |= (ControlFlags.SystemAclPresent);
             }
 
-            _rawSd = new RawSecurityDescriptor(actualFlags, owner, group, systemAcl == null ? null : systemAcl.RawAcl, discretionaryAcl.RawAcl);
+            _rawSd = new RawSecurityDescriptor(actualFlags, owner, group, systemAcl?.RawAcl, discretionaryAcl.RawAcl);
         }
 
         #endregion
@@ -1191,20 +1176,14 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(sid);
 
-            if (DiscretionaryAcl != null)
-            {
-                DiscretionaryAcl.Purge(sid);
-            }
+            DiscretionaryAcl?.Purge(sid);
         }
 
         public void PurgeAudit(SecurityIdentifier sid)
         {
             ArgumentNullException.ThrowIfNull(sid);
 
-            if (SystemAcl != null)
-            {
-                SystemAcl.Purge(sid);
-            }
+            SystemAcl?.Purge(sid);
         }
 
         public void AddDiscretionaryAcl(byte revision, int trusted)

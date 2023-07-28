@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Holds code for canonicalizing pointers
-    partial class PointerType
+    public partial class PointerType
     {
         protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {

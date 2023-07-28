@@ -87,7 +87,7 @@ namespace Dynamic.Tests
         [Fact]
         public void PartialInterfaceWithTwoMembers()
         {
-            dynamic d = new ExplicitlyImlementedPartialInterface();
+            dynamic d = new ExplicitlyImplementedPartialInterface();
             Assert.Throws<RuntimeBinderException>(() => d.Foo());
 
             var x = Helpers.Cast<PartialInterfaceWithTwoMembers>(d);
@@ -191,7 +191,7 @@ namespace Dynamic.Tests
         int Bar();
     }
 
-    public class ExplicitlyImlementedPartialInterface : PartialInterfaceWithTwoMembers
+    public class ExplicitlyImplementedPartialInterface : PartialInterfaceWithTwoMembers
     {
         int PartialInterfaceWithTwoMembers.Foo() => 0;
         public int Bar() => 1;

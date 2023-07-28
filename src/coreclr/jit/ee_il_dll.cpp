@@ -33,9 +33,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 FILE* jitstdout = nullptr;
 
-ICorJitHost*   g_jitHost        = nullptr;
-static CILJit* ILJitter         = nullptr; // The one and only JITTER I return
-bool           g_jitInitialized = false;
+ICorJitHost* g_jitHost        = nullptr;
+bool         g_jitInitialized = false;
 
 /*****************************************************************************/
 
@@ -73,21 +72,19 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
     assert(!JitConfig.isInitialized());
     JitConfig.initialize(jitHost);
 
-#ifdef DEBUG
     const WCHAR* jitStdOutFile = JitConfig.JitStdOutFile();
     if (jitStdOutFile != nullptr)
     {
         jitstdout = _wfopen(jitStdOutFile, W("a"));
         assert(jitstdout != nullptr);
     }
-#endif // DEBUG
 
 #if !defined(HOST_UNIX)
     if (jitstdout == nullptr)
     {
         int stdoutFd = _fileno(procstdout());
         // Check fileno error output(s) -1 may overlap with errno result
-        // but is included for completness.
+        // but is included for completeness.
         // We want to detect the case where the initial handle is null
         // or bogus and avoid making further calls.
         if ((stdoutFd != -1) && (stdoutFd != -2) && (errno != EINVAL))
@@ -123,6 +120,16 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
     g_jitInitialized = true;
 }
 
+#ifndef DEBUG
+void jitprintf(const char* fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    vfprintf(jitstdout, fmt, vl);
+    va_end(vl);
+}
+#endif
+
 void jitShutdown(bool processIsTerminating)
 {
     if (!g_jitInitialized)
@@ -152,17 +159,7 @@ void jitShutdown(bool processIsTerminating)
 
 /*****************************************************************************/
 
-struct CILJitSingletonAllocator
-{
-    int x;
-};
-const CILJitSingletonAllocator CILJitSingleton = {0};
-
-void* __cdecl operator new(size_t, const CILJitSingletonAllocator&)
-{
-    static char CILJitBuff[sizeof(CILJit)];
-    return CILJitBuff;
-}
+static CILJit g_CILJit;
 
 DLLEXPORT ICorJitCompiler* getJit()
 {
@@ -171,11 +168,7 @@ DLLEXPORT ICorJitCompiler* getJit()
         return nullptr;
     }
 
-    if (ILJitter == nullptr)
-    {
-        ILJitter = new (CILJitSingleton) CILJit();
-    }
-    return (ILJitter);
+    return &g_CILJit;
 }
 
 /*****************************************************************************/
@@ -302,9 +295,12 @@ void CILJit::getVersionIdentifier(GUID* versionIdentifier)
 
 #ifdef TARGET_OS_RUNTIMEDETERMINED
 bool TargetOS::OSSettingConfigured = false;
-bool TargetOS::IsWindows           = false;
-bool TargetOS::IsUnix              = false;
-bool TargetOS::IsMacOS             = false;
+#ifndef TARGET_UNIX_OS_RUNTIMEDETERMINED // This define is only set if ONLY the different unix variants are
+                                         // runtimedetermined
+bool TargetOS::IsWindows = false;
+bool TargetOS::IsUnix    = false;
+#endif
+bool TargetOS::IsMacOS = false;
 #endif
 
 /*****************************************************************************
@@ -314,46 +310,14 @@ bool TargetOS::IsMacOS             = false;
 void CILJit::setTargetOS(CORINFO_OS os)
 {
 #ifdef TARGET_OS_RUNTIMEDETERMINED
-    TargetOS::IsMacOS             = os == CORINFO_MACOS;
-    TargetOS::IsUnix              = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
-    TargetOS::IsWindows           = os == CORINFO_WINNT;
+    TargetOS::IsMacOS = os == CORINFO_MACOS;
+#ifndef TARGET_UNIX_OS_RUNTIMEDETERMINED // This define is only set if ONLY the different unix variants are
+                                         // runtimedetermined
+    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsWindows = os == CORINFO_WINNT;
+#endif
     TargetOS::OSSettingConfigured = true;
 #endif
-}
-
-/*****************************************************************************
- * Determine the maximum length of SIMD vector supported by this JIT.
- */
-
-unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
-{
-    JitFlags jitFlags;
-    jitFlags.SetFromFlags(cpuCompileFlags);
-
-#ifdef FEATURE_SIMD
-#if defined(TARGET_XARCH)
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) &&
-        jitFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_AVX2))
-    {
-        if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-        {
-            JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 32\n");
-        }
-        return 32;
-    }
-#endif // defined(TARGET_XARCH)
-    if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-    {
-        JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 16\n");
-    }
-    return 16;
-#else  // !FEATURE_SIMD
-    if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-    {
-        JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 0\n");
-    }
-    return 0;
-#endif // !FEATURE_SIMD
 }
 
 //------------------------------------------------------------------------
@@ -444,7 +408,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
                 }
             }
         }
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Any structs that are larger than MAX_PASS_MULTIREG_BYTES are always passed by reference
         if (structSize > MAX_PASS_MULTIREG_BYTES)
         {
@@ -710,9 +674,15 @@ void Compiler::eeSetLVdone()
         eeDispVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
     }
 #endif // DEBUG
+    if ((eeVarsCount == 0) && (eeVars != nullptr))
+    {
+        // We still call setVars with nullptr when eeVarsCount is 0 as part of the contract.
+        // We also need to free the nonused memory.
+        info.compCompHnd->freeArray(eeVars);
+        eeVars = nullptr;
+    }
 
     info.compCompHnd->setVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
-
     eeVars = nullptr; // We give up ownership after setVars()
 }
 
@@ -859,8 +829,17 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         name = "typeCtx";
     }
-    printf("%3d(%10s) : From %08Xh to %08Xh, in ", var->varNumber,
-           (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name), var->startOffset, var->endOffset);
+    if (0 <= var->varNumber && var->varNumber < lvaCount)
+    {
+        printf("(");
+        gtDispLclVar(var->varNumber, false);
+        printf(")");
+    }
+    else
+    {
+        printf("(%10s)", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name));
+    }
+    printf(" : From %08Xh to %08Xh, in ", var->startOffset, var->endOffset);
 
     switch ((CodeGenInterface::siVarLocType)var->loc.vlType)
     {
@@ -995,13 +974,9 @@ void Compiler::eeSetLIinfo(unsigned which, UNATIVE_OFFSET nativeOffset, IPmappin
 
     switch (kind)
     {
-        int source;
-
         case IPmappingDscKind::Normal:
             eeBoundaries[which].ilOffset = loc.GetOffset();
-            source                       = loc.IsStackEmpty() ? ICorDebugInfo::STACK_EMPTY : 0;
-            source |= loc.IsCall() ? ICorDebugInfo::CALL_INSTRUCTION : 0;
-            eeBoundaries[which].source = (ICorDebugInfo::SourceTypes)source;
+            eeBoundaries[which].source   = loc.EncodeSourceTypes();
             break;
         case IPmappingDscKind::Prolog:
             eeBoundaries[which].ilOffset = ICorDebugInfo::PROLOG;
@@ -1122,34 +1097,64 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
-void Compiler::eeAllocMem(AllocMemArgs* args)
+void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSectionAlignment)
 {
 #ifdef DEBUG
-    const UNATIVE_OFFSET hotSizeRequest  = args->hotCodeSize;
-    const UNATIVE_OFFSET coldSizeRequest = args->coldCodeSize;
 
-    // Fake splitting implementation: place hot/cold code in contiguous section
-    if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
+    // Fake splitting implementation: place hot/cold code in contiguous section.
+    UNATIVE_OFFSET coldCodeOffset = 0;
+    if (JitConfig.JitFakeProcedureSplitting() && (args->coldCodeSize > 0))
     {
-        args->hotCodeSize  = hotSizeRequest + coldSizeRequest;
+        coldCodeOffset = args->hotCodeSize;
+        assert(coldCodeOffset > 0);
+        args->hotCodeSize += args->coldCodeSize;
         args->coldCodeSize = 0;
     }
-#endif
+
+#endif // DEBUG
+
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
+    // For arm64/LoongArch64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
+    // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
+    // For LoongArch64 using `pcaddi + ld` to access such data.
+
+    UNATIVE_OFFSET roDataAlignmentDelta = 0;
+    if (args->roDataSize > 0)
+    {
+        roDataAlignmentDelta = AlignmentPad(args->hotCodeSize, roDataSectionAlignment);
+    }
+
+    const UNATIVE_OFFSET roDataOffset = args->hotCodeSize + roDataAlignmentDelta;
+    args->hotCodeSize                 = roDataOffset + args->roDataSize;
+    args->roDataSize                  = 0;
+
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     info.compCompHnd->allocMem(args);
 
 #ifdef DEBUG
-    if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
-    {
-        // Fix up hot/cold code pointers
-        args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + hotSizeRequest;
-        args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + hotSizeRequest;
 
-        // Reset args' hot/cold code sizes in case caller reads them later
-        args->hotCodeSize  = hotSizeRequest;
-        args->coldCodeSize = coldSizeRequest;
+    if (JitConfig.JitFakeProcedureSplitting() && (coldCodeOffset > 0))
+    {
+        // Fix up cold code pointers. Cold section is adjacent to hot section.
+        assert(args->coldCodeBlock == nullptr);
+        assert(args->coldCodeBlockRW == nullptr);
+        args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + coldCodeOffset;
+        args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + coldCodeOffset;
     }
-#endif
+
+#endif // DEBUG
+
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
+    // Fix up data section pointers.
+    assert(args->roDataBlock == nullptr);
+    assert(args->roDataBlockRW == nullptr);
+    args->roDataBlock   = ((BYTE*)args->hotCodeBlock) + roDataOffset;
+    args->roDataBlockRW = ((BYTE*)args->hotCodeBlockRW) + roDataOffset;
+
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 }
 
 void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
@@ -1362,11 +1367,6 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
 
 #endif // UNIX_AMD64_ABI
 
-bool Compiler::eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken)
-{
-    return info.compCompHnd->tryResolveToken(resolvedToken);
-}
-
 bool Compiler::eeRunWithErrorTrapImp(void (*function)(void*), void* param)
 {
     return info.compCompHnd->runWithErrorTrap(function, param);
@@ -1377,149 +1377,7 @@ bool Compiler::eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param)
     return info.compCompHnd->runWithSPMIErrorTrap(function, param);
 }
 
-/*****************************************************************************
- *
- *                      Utility functions
- */
-
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(FEATURE_TRACELOGGING)
-
-/*****************************************************************************/
-
-// static helper names - constant array
-const char* jitHlpFuncTable[CORINFO_HELP_COUNT] = {
-#define JITHELPER(code, pfnHelper, sig) #code,
-#define DYNAMICJITHELPER(code, pfnHelper, sig) #code,
-#include "jithelpers.h"
-};
-
-/*****************************************************************************
-*
-*  Filter wrapper to handle exception filtering.
-*  On Unix compilers don't support SEH.
-*/
-
-struct FilterSuperPMIExceptionsParam_ee_il
-{
-    Compiler*             pThis;
-    Compiler::Info*       pJitInfo;
-    CORINFO_FIELD_HANDLE  field;
-    CORINFO_METHOD_HANDLE method;
-    CORINFO_CLASS_HANDLE  clazz;
-    const char**          classNamePtr;
-    const char*           fieldOrMethodOrClassNamePtr;
-    char16_t*             classNameWidePtr;
-    unsigned              classSize;
-    EXCEPTION_POINTERS    exceptionPointers;
-};
-
-const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char** classNamePtr)
-{
-    if (eeGetHelperNum(method) != CORINFO_HELP_UNDEF)
-    {
-        if (classNamePtr != nullptr)
-        {
-            *classNamePtr = "HELPER";
-        }
-        CorInfoHelpFunc ftnNum = eeGetHelperNum(method);
-        const char*     name   = info.compCompHnd->getHelperName(ftnNum);
-
-        // If it's something unknown from a RET VM, or from SuperPMI, then use our own helper name table.
-        if ((strcmp(name, "AnyJITHelper") == 0) || (strcmp(name, "Yickish helper name") == 0))
-        {
-            if ((unsigned)ftnNum < CORINFO_HELP_COUNT)
-            {
-                name = jitHlpFuncTable[ftnNum];
-            }
-        }
-        return name;
-    }
-
-    if (eeIsNativeMethod(method))
-    {
-        if (classNamePtr != nullptr)
-        {
-            *classNamePtr = "NATIVE";
-        }
-        method = eeGetMethodHandleForNative(method);
-    }
-
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis        = this;
-    param.pJitInfo     = &info;
-    param.method       = method;
-    param.classNamePtr = classNamePtr;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->fieldOrMethodOrClassNamePtr =
-                pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
-        },
-        &param);
-
-    if (!success)
-    {
-        if (param.classNamePtr != nullptr)
-        {
-            *(param.classNamePtr) = "hackishClassName";
-        }
-
-        param.fieldOrMethodOrClassNamePtr = "hackishMethodName";
-    }
-
-    return param.fieldOrMethodOrClassNamePtr;
-}
-
-const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** classNamePtr)
-{
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis        = this;
-    param.pJitInfo     = &info;
-    param.field        = field;
-    param.classNamePtr = classNamePtr;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->fieldOrMethodOrClassNamePtr =
-                pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
-        },
-        &param);
-
-    if (!success)
-    {
-        param.fieldOrMethodOrClassNamePtr = "hackishFieldName";
-    }
-
-    return param.fieldOrMethodOrClassNamePtr;
-}
-
-const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
-{
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
-        },
-        &param);
-
-    if (!success)
-    {
-        param.fieldOrMethodOrClassNamePtr = "hackishClassName";
-    }
-    return param.fieldOrMethodOrClassNamePtr;
-}
-
-#endif // DEBUG || FEATURE_JIT_METHOD_PERF
-
 #ifdef DEBUG
-
 //------------------------------------------------------------------------
 // eeTryGetClassSize: wraps getClassSize but if doing SuperPMI replay
 // and the value isn't found, use a bogus size.
@@ -1531,109 +1389,10 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 //
 unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
 {
-    FilterSuperPMIExceptionsParam_ee_il param;
+    unsigned classSize = UINT_MAX;
+    eeRunFunctorWithSPMIErrorTrap([&]() { classSize = info.compCompHnd->getClassSize(clsHnd); });
 
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->classSize = pParam->pJitInfo->compCompHnd->getClassSize(pParam->clazz);
-        },
-        &param);
-
-    if (!success)
-    {
-        param.classSize = (unsigned)-1; // Use the maximum unsigned value as the size
-    }
-    return param.classSize;
+    return classSize;
 }
 
-//------------------------------------------------------------------------
-// eeGetShortClassName: wraps appendClassName to provide functionality
-// similar to getClassName(), but returns a class name that is shortened,
-// not using full assembly info.
-//
-// Arguments:
-//   clsHnd - the class handle to get the type name of
-//
-// Return value:
-//   string class name. Note: unlike eeGetClassName/getClassName, this string is
-//   allocated from the JIT heap, so care should possibly be taken to avoid leaking it.
-//   It returns a char16_t string, since that's what appendClassName returns.
-//
-const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
-{
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            int            len        = 0;
-            constexpr bool fNamespace = true;
-            constexpr bool fFullInst  = false;
-            constexpr bool fAssembly  = false;
-
-            // Warning: crossgen2 doesn't fully implement the `appendClassName` API.
-            // We need to pass size zero, get back the actual buffer size required, allocate that space,
-            // and call the API again to get the full string.
-            int cchStrLen = pParam->pJitInfo->compCompHnd->appendClassName(nullptr, &len, pParam->clazz, fNamespace,
-                                                                           fFullInst, fAssembly);
-
-            size_t cchBufLen         = (size_t)cchStrLen + /* null terminator */ 1;
-            pParam->classNameWidePtr = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<char16_t>(cchBufLen);
-            char16_t* pbuf           = pParam->classNameWidePtr;
-            len                      = (int)cchBufLen;
-
-            int cchResultStrLen = pParam->pJitInfo->compCompHnd->appendClassName(&pbuf, &len, pParam->clazz, fNamespace,
-                                                                                 fFullInst, fAssembly);
-            noway_assert(cchStrLen == cchResultStrLen);
-            noway_assert(pParam->classNameWidePtr[cchResultStrLen] == 0);
-        },
-        &param);
-
-    if (!success)
-    {
-        const char16_t substituteClassName[] = u"hackishClassName";
-        size_t         cchLen                = ArrLen(substituteClassName);
-        param.classNameWidePtr               = getAllocator(CMK_DebugOnly).allocate<char16_t>(cchLen);
-        memcpy(param.classNameWidePtr, substituteClassName, cchLen * sizeof(char16_t));
-    }
-
-    return param.classNameWidePtr;
-}
-
-const WCHAR* Compiler::eeGetCPString(size_t strHandle)
-{
-#ifdef HOST_UNIX
-    return nullptr;
-#else
-    char buff[512 + sizeof(CORINFO_String)];
-
-    // make this bulletproof, so it works even if we are wrong.
-    if (ReadProcessMemory(GetCurrentProcess(), (void*)strHandle, buff, 4, nullptr) == 0)
-    {
-        return (nullptr);
-    }
-
-    CORINFO_String* asString = *((CORINFO_String**)strHandle);
-
-    if (ReadProcessMemory(GetCurrentProcess(), asString, buff, sizeof(buff), nullptr) == 0)
-    {
-        return (nullptr);
-    }
-
-    if (asString->stringLen >= 255 || asString->chars[asString->stringLen] != 0)
-    {
-        return nullptr;
-    }
-
-    return (WCHAR*)(asString->chars);
-#endif // HOST_UNIX
-}
-
-#endif // DEBUG
+#endif // !DEBUG

@@ -4,13 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 
 using Internal.NativeFormat;
 
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
+
 namespace Internal.TypeSystem
 {
-    public abstract partial class TypeSystemContext : IModuleResolver
+    public abstract partial class TypeSystemContext
     {
         public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown, TargetAbi.Unknown))
         {
@@ -44,38 +47,7 @@ namespace Internal.TypeSystem
             get;
         }
 
-        public ModuleDesc SystemModule
-        {
-            get;
-            private set;
-        }
-
-        protected void InitializeSystemModule(ModuleDesc systemModule)
-        {
-            Debug.Assert(SystemModule == null);
-            SystemModule = systemModule;
-        }
-
         public abstract DefType GetWellKnownType(WellKnownType wellKnownType, bool throwIfNotFound = true);
-
-        public virtual ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
-        {
-            if (throwIfNotFound)
-                throw new NotSupportedException();
-            return null;
-        }
-
-        internal virtual ModuleDesc ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound = true)
-        {
-            if (throwIfNotFound)
-                throw new NotSupportedException();
-            return null;
-        }
-
-        ModuleDesc IModuleResolver.ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound)
-        {
-            return ResolveModule(referencingModule, fileName, throwIfNotFound);
-        }
 
         //
         // Array types
@@ -117,7 +89,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class ArrayTypeKeyHashtable : LockFreeReaderHashtable<ArrayTypeKey, ArrayType>
+            public sealed class ArrayTypeKeyHashtable : LockFreeReaderHashtable<ArrayTypeKey, ArrayType>
             {
                 protected override int GetKeyHashCode(ArrayTypeKey key)
                 {
@@ -270,6 +242,10 @@ namespace Internal.TypeSystem
 
         public FunctionPointerType GetFunctionPointerType(MethodSignature signature)
         {
+            // The type system only distinguishes between unmanaged and managed signatures.
+            // The caller should have normalized the signature by modifying flags and stripping modopts.
+            Debug.Assert((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) is 0 or MethodSignatureFlags.UnmanagedCallingConvention);
+            Debug.Assert(!signature.HasEmbeddedSignatureData);
             return _functionPointerTypes.GetOrCreateValue(signature);
         }
 
@@ -304,7 +280,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class InstantiatedTypeKeyHashtable : LockFreeReaderHashtable<InstantiatedTypeKey, InstantiatedType>
+            public sealed class InstantiatedTypeKeyHashtable : LockFreeReaderHashtable<InstantiatedTypeKey, InstantiatedType>
             {
                 protected override int GetKeyHashCode(InstantiatedTypeKey key)
                 {
@@ -403,7 +379,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class InstantiatedMethodKeyHashtable : LockFreeReaderHashtable<InstantiatedMethodKey, InstantiatedMethod>
+            public sealed class InstantiatedMethodKeyHashtable : LockFreeReaderHashtable<InstantiatedMethodKey, InstantiatedMethod>
             {
                 protected override int GetKeyHashCode(InstantiatedMethodKey key)
                 {
@@ -502,7 +478,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class MethodForInstantiatedTypeKeyHashtable : LockFreeReaderHashtable<MethodForInstantiatedTypeKey, MethodForInstantiatedType>
+            public sealed class MethodForInstantiatedTypeKeyHashtable : LockFreeReaderHashtable<MethodForInstantiatedTypeKey, MethodForInstantiatedType>
             {
                 protected override int GetKeyHashCode(MethodForInstantiatedTypeKey key)
                 {
@@ -575,7 +551,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class FieldForInstantiatedTypeKeyHashtable : LockFreeReaderHashtable<FieldForInstantiatedTypeKey, FieldForInstantiatedType>
+            public sealed class FieldForInstantiatedTypeKeyHashtable : LockFreeReaderHashtable<FieldForInstantiatedTypeKey, FieldForInstantiatedType>
             {
                 protected override int GetKeyHashCode(FieldForInstantiatedTypeKey key)
                 {
@@ -617,7 +593,7 @@ namespace Internal.TypeSystem
         //
         // Signature variables
         //
-        private class SignatureVariableHashtable : LockFreeReaderHashtable<uint, SignatureVariable>
+        private sealed class SignatureVariableHashtable : LockFreeReaderHashtable<uint, SignatureVariable>
         {
             private TypeSystemContext _context;
             public SignatureVariableHashtable(TypeSystemContext context)
@@ -680,16 +656,6 @@ namespace Internal.TypeSystem
         protected internal virtual IEnumerable<MethodDesc> GetAllVirtualMethods(TypeDesc type)
         {
             return type.GetVirtualMethods();
-        }
-
-        /// <summary>
-        /// Abstraction to allow the type system context to affect the field layout
-        /// algorithm used by types to lay themselves out.
-        /// </summary>
-        public virtual FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
-        {
-            // Type system contexts that support computing field layout need to override this.
-            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -813,5 +779,8 @@ namespace Internal.TypeSystem
         /// Determine if the type implements <code>IDynamicInterfaceCastable</code>
         /// </summary>
         protected internal abstract bool IsIDynamicInterfaceCastableInterface(DefType type);
+
+        public virtual bool SupportsTypeEquivalence => false;
+        public virtual bool SupportsCOMInterop => false;
     }
 }

@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>dotnet-Microsoft.XmlSerializer.Generator</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>..\..\System.Private.Xml\src\Resources\Strings.resx</StringResourcesPath>
     <StringResourcesName>FxResources.$(AssemblyName.Replace('-', '_')).SR</StringResourcesName>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netstandard2.0</TargetFramework>
     <Nullable>disable</Nullable>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <IsPackable>true</IsPackable>
@@ -13,7 +13,6 @@
     <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=863421</PackageReleaseNotes>
     <PackageProjectUrl>https://go.microsoft.com/fwlink/?linkid=858594</PackageProjectUrl>
     <PackageDescription>Creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.</PackageDescription>
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- this assembly doesn't need to be binplaced -->
     <EnableBinPlacing>false</EnableBinPlacing>
     <IsTrimmable>false</IsTrimmable>

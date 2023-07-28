@@ -305,7 +305,9 @@ namespace BinderTracing
 
                 case FUSION_E_REF_DEF_MISMATCH:
                     result = Result::MismatchedAssemblyName;
-                    errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_assemblyName.GetUnicode());
+                    errorMsg.Append(W("Requested assembly name '"));
+                    errorMsg.Append(m_assemblyName.GetUnicode());
+                    errorMsg.Append(W("' does not match found assembly name"));
                     if (resultAssembly != nullptr)
                     {
                         errorMsg.Append(W(" '"));
@@ -325,7 +327,7 @@ namespace BinderTracing
                     else
                     {
                         result = Result::Failure;
-                        errorMsg.Printf(W("Resolution failed with HRESULT (%08x)"), m_hr);
+                        errorMsg.Printf("Resolution failed with HRESULT (%08x)", m_hr);
                     }
             }
         }

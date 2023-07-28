@@ -1789,7 +1789,7 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   of the same size are arranged in a circularly-linked list, with only
   the oldest chunk (the next to be used, in our FIFO ordering)
   actually in the tree.  (Tree members are distinguished by a non-null
-  parent pointer.)  If a chunk with the same size an an existing node
+  parent pointer.)  If a chunk with the same size an existing node
   is inserted, it is linked off the existing node using pointers that
   work in the same way as fd/bk pointers of small chunks.
 
@@ -3311,7 +3311,9 @@ static void add_segment(mstate m, char* tbase, size_t tsize, flag_t mmapped) {
   msegmentptr ss = (msegmentptr)(chunk2mem(sp));
   mchunkptr tnext = chunk_plus_offset(sp, ssize);
   mchunkptr p = tnext;
+#ifdef DEBUG
   int nfences = 0;
+#endif
 
   /* reset top to new space */
   init_top(m, (mchunkptr)tbase, tsize - TOP_FOOT_SIZE);
@@ -3329,7 +3331,9 @@ static void add_segment(mstate m, char* tbase, size_t tsize, flag_t mmapped) {
   for (;;) {
     mchunkptr nextp = chunk_plus_offset(p, SIZE_T_SIZE);
     p->head = FENCEPOST_HEAD;
+#ifdef DEBUG
     ++nfences;
+#endif
     if ((char*)(&(nextp->head)) < old_end)
       p = nextp;
     else
@@ -4193,7 +4197,7 @@ void* dlmalloc(size_t bytes) {
 
 void dlfree(void* mem) {
   /*
-     Consolidate freed chunks with preceeding or succeeding bordering
+     Consolidate freed chunks with preceding or succeeding bordering
      free chunks, if they exist, and then place in a bin.  Intermixed
      with special cases for top, dv, mmapped chunks, and usage errors.
   */
@@ -5037,7 +5041,7 @@ History:
         Wolfram Gloger (Gloger@lrz.uni-muenchen.de).
       * Use last_remainder in more cases.
       * Pack bins using idea from  colin@nyx10.cs.du.edu
-      * Use ordered bins instead of best-fit threshhold
+      * Use ordered bins instead of best-fit threshold
       * Eliminate block-local decls to simplify tracing and debugging.
       * Support another case of realloc via move into top
       * Fix error occurring when initial sbrk_base not word-aligned.

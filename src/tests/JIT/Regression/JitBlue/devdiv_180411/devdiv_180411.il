@@ -2,13 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 .assembly devdiv_180411
 {
 }
-.class _simple {
+.class public _simple {
 
-.method static int32 main(class System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	100
 call       int64 [devdiv_180411]_simple::test()

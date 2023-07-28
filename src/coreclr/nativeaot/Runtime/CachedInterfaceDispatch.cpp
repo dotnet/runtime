@@ -28,7 +28,6 @@
 #include "ObjectLayout.h"
 #include "gcrhinterface.h"
 #include "shash.h"
-#include "RWLock.h"
 #include "TypeManager.h"
 #include "RuntimeInstance.h"
 #include "MethodTable.inl"
@@ -186,12 +185,12 @@ static InterfaceDispatchCache * UpdateCellStubAndCache(InterfaceDispatchCell * p
 // any more) we can place them on one of several free lists based on their size.
 //
 
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
+#ifndef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 
 // Head of the list of discarded cache blocks that can't be re-used just yet.
-InterfaceDispatchCache * g_pDiscardedCacheList; // for AMD64 and ARM64, m_pCell is not used and we can link the discarded blocks themselves
+InterfaceDispatchCache * g_pDiscardedCacheList; // m_pCell is not used and we can link the discarded blocks themselves
 
-#else // defined(HOST_AMD64) || defined(HOST_ARM64)
+#else // INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 
 struct DiscardedCacheBlock
 {
@@ -205,7 +204,7 @@ static DiscardedCacheBlock * g_pDiscardedCacheList = NULL;
 // Free list of DiscardedCacheBlock items
 static DiscardedCacheBlock * g_pDiscardedCacheFree = NULL;
 
-#endif // defined(HOST_AMD64) || defined(HOST_ARM64)
+#endif // INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 
 // Free lists for each cache size up to the maximum. We allocate from these in preference to new memory.
 static InterfaceDispatchCache * g_rgFreeLists[CID_MAX_CACHE_SIZE_LOG2 + 1];
@@ -350,13 +349,13 @@ static void DiscardCache(InterfaceDispatchCache * pCache)
 
     CrstHolder lh(&g_sListLock);
 
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
+#ifndef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 
-    // on AMD64 and ARM64, we can thread the list through the blocks directly
+    // we can thread the list through the blocks directly
     pCache->m_pNextFree = g_pDiscardedCacheList;
     g_pDiscardedCacheList = pCache;
 
-#else // defined(HOST_AMD64) || defined(HOST_ARM64)
+#else // INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 
     // on other architectures, we cannot overwrite pCache->m_pNextFree yet
     // because it shares storage with m_pCell which may still be used as a back
@@ -376,7 +375,7 @@ static void DiscardCache(InterfaceDispatchCache * pCache)
 
         g_pDiscardedCacheList = pDiscardedCacheBlock;
     }
-#endif // defined(HOST_AMD64) || defined(HOST_ARM64)
+#endif // INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 }
 
 // Called during a GC to empty the list of discarded caches (which we can now guarantee aren't being accessed)
@@ -386,9 +385,9 @@ void ReclaimUnusedInterfaceDispatchCaches()
     // No need for any locks, we're not racing with any other threads any more.
 
     // Walk the list of discarded caches.
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
+#ifndef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 
-    // on AMD64, this is threaded directly through the cache blocks
+    // this is threaded directly through the cache blocks
     InterfaceDispatchCache * pCache = g_pDiscardedCacheList;
     while (pCache)
     {
@@ -404,7 +403,7 @@ void ReclaimUnusedInterfaceDispatchCaches()
         pCache = pNextCache;
     }
 
-#else // defined(HOST_AMD64) || defined(HOST_ARM64)
+#else // INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 
     // on other architectures, we use an auxiliary list instead
     DiscardedCacheBlock * pDiscardedCacheBlock = g_pDiscardedCacheList;
@@ -426,7 +425,7 @@ void ReclaimUnusedInterfaceDispatchCaches()
         pDiscardedCacheBlock = pNextDiscardedCacheBlock;
     }
 
-#endif // defined(HOST_AMD64) || defined(HOST_ARM64)
+#endif // INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 
     // We processed all the discarded entries, so we can simply NULL the list head.
     g_pDiscardedCacheList = NULL;
@@ -496,11 +495,11 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell
     if (InterfaceDispatchCell::IsCache(newCacheValue))
     {
         pCache = (InterfaceDispatchCache*)newCacheValue;
-#if !defined(HOST_AMD64) && !defined(HOST_ARM64)
-        // Set back pointer to interface dispatch cell for non-AMD64 and non-ARM64
-        // for AMD64 and ARM64, we have enough registers to make this trick unnecessary
+#ifdef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
+        // Set back pointer to interface dispatch cell for x86 and ARM, on other
+        // architectures we have enough registers to make this trick unnecessary
         pCache->m_pCell = pCell;
-#endif // !defined(HOST_AMD64) && !defined(HOST_ARM64)
+#endif // INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 
         // Add entry to the first unused slot.
         InterfaceDispatchCacheEntry * pCacheEntry = &pCache->m_rgEntries[cOldCacheEntries];

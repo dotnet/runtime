@@ -10,7 +10,6 @@
 #define DEFINE_DACGFN_STATIC(class, func)
 #endif
 
-DEFINE_DACGFN_STATIC(ThreadpoolMgr, AsyncTimerCallbackCompletion)
 DEFINE_DACGFN(DACNotifyCompilationFinished)
 DEFINE_DACGFN(ThePreStub)
 

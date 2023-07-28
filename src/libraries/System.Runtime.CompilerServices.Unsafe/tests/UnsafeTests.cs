@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -154,6 +155,30 @@ namespace System.Runtime.CompilerServices
             Unsafe.Copy(&destination2, ref value);
             Assert.Equal(10, destination2);
             Assert.Equal(10, value);
+        }
+
+        [Fact]
+        public static unsafe void CopyToRefGenericStruct()
+        {
+            Int32Generic<string> destination = default;
+            Int32Generic<string> value = new() { Int32 = 5, Value = "a" };
+
+            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value));
+
+            Assert.Equal(5, destination.Int32);
+            Assert.Equal("a", destination.Value);
+        }
+
+        [Fact]
+        public static unsafe void CopyToVoidPtrGenericStruct()
+        {
+            Int32Generic<string> destination = default;
+            Int32Generic<string> value = new() { Int32 = 5, Value = "a" };
+
+            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value);
+
+            Assert.Equal(5, destination.Int32);
+            Assert.Equal("a", destination.Value);
         }
 
         [Fact]
@@ -740,6 +765,20 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static unsafe void ReadUnaligned_ByRef_StructManaged()
+        {
+            Int32Generic<string> s = new() { Int32 = 5, Value = "a" };
+
+            Int32Generic<string> actual = Read<Int32Generic<string>>(ref Unsafe.As<Int32Generic<string>, byte>(ref s));
+
+            Assert.Equal(5, actual.Int32);
+            Assert.Equal("a", actual.Value);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static T Read<T>(ref byte b) => Unsafe.ReadUnaligned<T>(ref b);
+        }
+
+        [Fact]
         public static unsafe void ReadUnaligned_Ptr_Int32()
         {
             byte[] unaligned = Int32Double.Unaligned(123456789, 3.42);
@@ -811,6 +850,20 @@ namespace System.Runtime.CompilerServices
             Int32Double actual = Int32Double.Aligned(unaligned);
             Assert.Equal(123456789, actual.Int32);
             Assert.Equal(3.42, actual.Double);
+        }
+
+        [Fact]
+        public static unsafe void WriteUnaligned_ByRef_StructManaged()
+        {
+            Int32Generic<string> actual = default;
+
+            Write(ref Unsafe.As<Int32Generic<string>, byte>(ref actual), new Int32Generic<string>() { Int32 = 5, Value = "a" });
+
+            Assert.Equal(5, actual.Int32);
+            Assert.Equal("a", actual.Value);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void Write<T>(ref byte b, T value) => Unsafe.WriteUnaligned<T>(ref b, value);
         }
 
         [Fact]
@@ -1079,7 +1132,153 @@ namespace System.Runtime.CompilerServices
             Assert.Throws<NullReferenceException>(() => Unsafe.NullRef<int>() = 42);
             Assert.Throws<NullReferenceException>(() => Unsafe.NullRef<int>());
         }
+
+        [Fact]
+        public static unsafe void BitCast()
+        {
+            // Conversion between differently sized types should fail
+
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<int, long>(5));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<long, int>(5));
+
+            // Conversion between floating-point and same sized integral should succeed
+
+            Assert.Equal(0x8000_0000u, Unsafe.BitCast<float, uint>(-0.0f));
+            Assert.Equal(float.PositiveInfinity, Unsafe.BitCast<uint, float>(0x7F80_0000u));
+
+            // Conversion between same sized integers should succeed
+
+            Assert.Equal(int.MinValue, Unsafe.BitCast<uint, int>(0x8000_0000u));
+            Assert.Equal(0x8000_0000u, Unsafe.BitCast<int, uint>(int.MinValue));
+
+            // Conversion from runtime SIMD type to a custom struct should succeed
+
+            Vector4 vector4a = new Vector4(1.0f, 2.0f, 3.0f, 4.0f);
+            Single4 single4a = Unsafe.BitCast<Vector4, Single4>(vector4a);
+
+            Assert.Equal(1.0f, single4a.X);
+            Assert.Equal(2.0f, single4a.Y);
+            Assert.Equal(3.0f, single4a.Z);
+            Assert.Equal(4.0f, single4a.W);
+
+            // Conversion from custom struct to a runtime SIMD type should succeed
+
+            Single4 single4b = new Single4 { X = -1.0f, Y = -2.0f, Z = -3.0f, W = -4.0f };
+            Vector4 vector4b = Unsafe.BitCast<Single4, Vector4>(single4b);
+
+            Assert.Equal(-1.0f, vector4b.X);
+            Assert.Equal(-2.0f, vector4b.Y);
+            Assert.Equal(-3.0f, vector4b.Z);
+            Assert.Equal(-4.0f, vector4b.W);
+
+            // Runtime requires that all types be at least 1-byte, so empty to empty should succeed
+
+            EmptyA empty1 = new EmptyA();
+            EmptyB empty2 = Unsafe.BitCast<EmptyA, EmptyB>(empty1);
+
+            // ..., likewise, empty to/from byte should succeed
+
+            byte empty3 = Unsafe.BitCast<EmptyA, byte>(empty1);
+            EmptyA empty4 = Unsafe.BitCast<byte, EmptyA>(1);
+
+            // ..., however, empty to/from a larger type should fail
+
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<int, EmptyA>(5));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<EmptyA, int>(empty1));
+
+            Assert.Equal(uint.MaxValue, (long)Unsafe.BitCast<int, uint>(-1));
+            Assert.Equal(uint.MaxValue, (ulong)Unsafe.BitCast<int, uint>(-1));
+
+            byte b = 255;
+            sbyte sb = -1;
+
+            Assert.Equal(255L, (long)Unsafe.BitCast<sbyte, byte>(sb));
+            Assert.Equal(-1L, (long)Unsafe.BitCast<byte, sbyte>(b));
+
+            Assert.Equal(255L, (long)Unsafe.BitCast<short, ushort>(b));
+            Assert.Equal(ushort.MaxValue, (long)Unsafe.BitCast<short, ushort>(sb));
+            Assert.Equal(255L, (long)Unsafe.BitCast<ushort, short>(b));
+
+            Assert.Equal(255L, (long)Unsafe.BitCast<int, uint>(b));
+            Assert.Equal(uint.MaxValue, (long)Unsafe.BitCast<int, uint>(sb));
+            Assert.Equal(255L, (long)Unsafe.BitCast<uint, int>(b));
+
+            Assert.Equal(255UL, Unsafe.BitCast<long, ulong>(b));
+            Assert.Equal(ulong.MaxValue, Unsafe.BitCast<long, ulong>(sb));
+            Assert.Equal(255L, Unsafe.BitCast<ulong, long>(b));
+
+            S2 s2 = BitConverter.IsLittleEndian ? new S2(255, 0) : new S2(0, 255);
+            S4 s4 = BitConverter.IsLittleEndian ? new S4(255, 0, 0, 0) : new S4(0, 0, 0, 255);
+            S8 s8 = BitConverter.IsLittleEndian ? new S8(255, 0, 0, 0, 0, 0, 0, 0) : new S8(0, 0, 0, 0, 0, 0, 0, 255);
+
+            Assert.Equal(s2, Unsafe.BitCast<ushort, S2>(b));
+            Assert.Equal(s2, Unsafe.BitCast<short, S2>(b));
+            Assert.Equal(new S2(255, 255), Unsafe.BitCast<short, S2>(sb));
+
+            Assert.Equal(s4, Unsafe.BitCast<uint, S4>(b));
+            Assert.Equal(s4, Unsafe.BitCast<int, S4>(b));
+            Assert.Equal(new S4(255, 255, 255, 255), Unsafe.BitCast<int, S4>(sb));
+
+            Assert.Equal(s8, Unsafe.BitCast<ulong, S8>(b));
+            Assert.Equal(s8, Unsafe.BitCast<long, S8>(b));
+            Assert.Equal(new S8(255, 255, 255, 255, 255, 255, 255, 255), Unsafe.BitCast<long, S8>(sb));
+
+            Assert.Equal((ushort)255, Unsafe.BitCast<S2, ushort>(s2));
+            Assert.Equal((short)255, Unsafe.BitCast<S2, short>(s2));
+            Assert.Equal(255U, Unsafe.BitCast<S4, uint>(s4));
+            Assert.Equal(255, Unsafe.BitCast<S4, int>(s4));
+            Assert.Equal(255UL, Unsafe.BitCast<S8, ulong>(s8));
+            Assert.Equal(255L, Unsafe.BitCast<S8, long>(s8));
+
+            byte* misalignedPtr = (byte*)NativeMemory.AlignedAlloc(9, 64) + 1;
+            new Span<byte>(misalignedPtr, 8).Clear();
+
+            *misalignedPtr = 255;
+
+            Assert.Equal(s2, Unsafe.BitCast<ushort, S2>(*misalignedPtr));
+            Assert.Equal(s2, Unsafe.BitCast<short, S2>(*misalignedPtr));
+            Assert.Equal(new S2(255, 255), Unsafe.BitCast<short, S2>(*(sbyte*)misalignedPtr));
+
+            Assert.Equal(s4, Unsafe.BitCast<uint, S4>(*misalignedPtr));
+            Assert.Equal(s4, Unsafe.BitCast<int, S4>(*misalignedPtr));
+            Assert.Equal(new S4(255, 255, 255, 255), Unsafe.BitCast<int, S4>(*(sbyte*)misalignedPtr));
+
+            Assert.Equal(s8, Unsafe.BitCast<ulong, S8>(*misalignedPtr));
+            Assert.Equal(s8, Unsafe.BitCast<long, S8>(*misalignedPtr));
+            Assert.Equal(new S8(255, 255, 255, 255, 255, 255, 255, 255), Unsafe.BitCast<long, S8>(*(sbyte*)misalignedPtr));
+
+            *(S2*)misalignedPtr = s2;
+            Assert.Equal((ushort)255, Unsafe.BitCast<S2, ushort>(*(S2*)misalignedPtr));
+            Assert.Equal((short)255, Unsafe.BitCast<S2, short>(*(S2*)misalignedPtr));
+            *(S4*)misalignedPtr = s4;
+            Assert.Equal(255U, Unsafe.BitCast<S4, uint>(*(S4*)misalignedPtr));
+            Assert.Equal(255, Unsafe.BitCast<S4, int>(*(S4*)misalignedPtr));
+            *(S8*)misalignedPtr = s8;
+            Assert.Equal(255UL, Unsafe.BitCast<S8, ulong>(*(S8*)misalignedPtr));
+            Assert.Equal(255L, Unsafe.BitCast<S8, long>(*(S8*)misalignedPtr));
+
+            Half h = Unsafe.ReadUnaligned<Half>(ref Unsafe.As<S2, byte>(ref s2));
+            float s = Unsafe.ReadUnaligned<float>(ref Unsafe.As<S4, byte>(ref s4));
+            double d = Unsafe.ReadUnaligned<double>(ref Unsafe.As<S8, byte>(ref s8));
+
+            Assert.Equal(h, Unsafe.BitCast<S2, Half>(s2));
+            Assert.Equal(s, Unsafe.BitCast<S4, float>(s4));
+            Assert.Equal(d, Unsafe.BitCast<S8, double>(s8));
+
+            *(S2*)misalignedPtr = s2;
+            Assert.Equal(h, Unsafe.BitCast<S2, Half>(*(S2*)misalignedPtr));
+            *(S4*)misalignedPtr = s4;
+            Assert.Equal(s, Unsafe.BitCast<S4, float>(*(S4*)misalignedPtr));
+            *(S8*)misalignedPtr = s8;
+            Assert.Equal(d, Unsafe.BitCast<S8, double>(*(S8*)misalignedPtr));
+
+            NativeMemory.AlignedFree(misalignedPtr - 1);
+        }
     }
+
+    [StructLayout(LayoutKind.Sequential)] public record struct S2(byte a, byte b);
+    [StructLayout(LayoutKind.Sequential)] public record struct S4(byte a, byte b, byte c, byte d);
+    [StructLayout(LayoutKind.Sequential)] public record struct S8(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h);
 
     [StructLayout(LayoutKind.Explicit)]
     public struct Byte4
@@ -1154,5 +1353,27 @@ namespace System.Runtime.CompilerServices
     {
         public string String;
         public int Int32;
+    }
+
+    public struct Int32Generic<T>
+    {
+        public int Int32;
+        public T Value;
+    }
+
+    public struct Single4
+    {
+        public float X;
+        public float Y;
+        public float Z;
+        public float W;
+    }
+
+    public struct EmptyA
+    {
+    }
+
+    public struct EmptyB
+    {
     }
 }

@@ -75,7 +75,7 @@
   <data name="OnImportsSatisfiedFeature_AttributeError" xml:space="preserve">
     <value>The method {0}.{1} has the OnImportsSatisfied attribute applied, but is not a public or internal parameterless instance method returning void.</value>
   </data>
-  <data name="TypeInspector_ArgumentMissmatch" xml:space="preserve">
+  <data name="TypeInspector_ArgumentMismatch" xml:space="preserve">
     <value>Exported contract '{0}' of open generic part '{1}' does not match the generic arguments of the class.</value>
   </data>
   <data name="TypeInspector_ContractNotAssignable" xml:space="preserve">

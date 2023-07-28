@@ -185,11 +185,10 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     {
         StackSString debugTypeKeyName;
         TypeString::AppendTypeKeyDebug(debugTypeKeyName, pTypeKey);
-        LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: New instantiation requested: %S\n", debugTypeKeyName.GetUnicode()));
+        LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: New instantiation requested: %s\n", debugTypeKeyName.GetUTF8()));
 
-        StackScratchBuffer buf;
-        if (g_pConfig->ShouldBreakOnInstantiation(debugTypeKeyName.GetUTF8(buf)))
-            CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", debugTypeKeyName.GetUTF8(buf)));
+        if (g_pConfig->ShouldBreakOnInstantiation(debugTypeKeyName.GetUTF8()))
+            CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", debugTypeKeyName.GetUTF8()));
     }
 #endif // _DEBUG
 
@@ -281,17 +280,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         ThrowHR(COR_E_OVERFLOW);
     }
 
-    BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pOldMT, pLoaderModule);
-
-    SIZE_T offsetOfUnsharedVtableChunks = allocSize.Value();
-
-    // We either share all of the canonical's virtual slots or none of them
-    // If none, we need to allocate space for the slots
-    if (!canShareVtableChunks)
-    {
-        allocSize += S_SIZE_T( cSlots ) * S_SIZE_T( sizeof(MethodTable::VTableIndir2_t) );
-    }
-
     if (allocSize.IsOverflow())
     {
         ThrowHR(COR_E_OVERFLOW);
@@ -311,7 +299,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Note: Memory allocated on loader heap is zero filled
     pMT->SetWriteableData(pMTWriteableData);
 
-    // This also disables IBC logging until the type is sufficiently intitialized so
+    // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
     pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -359,28 +347,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     MethodTable::VtableIndirectionSlotIterator it = pMT->IterateVtableIndirectionSlots();
     while (it.Next())
     {
-        if (canShareVtableChunks)
-        {
-            // Share the canonical chunk
-            it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()]);
-        }
-        else
-        {
-            // Use the locally allocated chunk
-            it.SetIndirectionSlot((MethodTable::VTableIndir2_t *)(pMemory+offsetOfUnsharedVtableChunks));
-            offsetOfUnsharedVtableChunks += it.GetSize();
-        }
-    }
-
-    // If we are not sharing parent chunks, copy down the slot contents
-    if (!canShareVtableChunks)
-    {
-        // Need to assign the slots one by one to filter out jump thunks
-        MethodTable::MethodDataWrapper hOldMTData(MethodTable::GetMethodData(pOldMT, FALSE));
-        for (DWORD i = 0; i < cSlots; i++)
-        {
-            pMT->CopySlotFrom(i, hOldMTData, pOldMT);
-        }
+        // Share the canonical chunk
+        it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()]);
     }
 
     // All flags on m_pNgenPrivateData data apart
@@ -474,8 +442,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Name for debugging
     StackSString debug_ClassNameString;
     TypeString::AppendTypeKey(debug_ClassNameString, pTypeKey, TypeString::FormatNamespace | TypeString::FormatAngleBrackets | TypeString::FormatFullInst);
-    StackScratchBuffer debug_ClassNameBuffer;
-    const char *debug_szClassNameBuffer = debug_ClassNameString.GetUTF8(debug_ClassNameBuffer);
+    const char *debug_szClassNameBuffer = debug_ClassNameString.GetUTF8();
     S_SIZE_T safeLen = S_SIZE_T(strlen(debug_szClassNameBuffer)) + S_SIZE_T(1);
     if (safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
 
@@ -489,7 +456,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         pMT->Debug_SetHasInjectedInterfaceDuplicates();
 #endif // _DEBUG
 
-    // <NICE>This logic is identical to logic in class.cpp.  Factor these out.</NICE>
     // No need to generate IDs for open types.   However
     // we still leave the optional member in the MethodTable holding the value -1 for the ID.
     if (fHasGenericsStaticsInfo)

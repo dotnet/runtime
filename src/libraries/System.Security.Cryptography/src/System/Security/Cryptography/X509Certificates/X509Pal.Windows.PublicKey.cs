@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 return DecodeECPublicKey(
                     pal,
-                    factory: cngKey => new ECDsaCng(cngKey));
+                    factory: cngKey => new ECDsaCng(cngKey, transferOwnership: true));
             }
 
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 return DecodeECPublicKey(
                     pal,
-                    factory: cngKey => new ECDiffieHellmanCng(cngKey),
+                    factory: cngKey => new ECDiffieHellmanCng(cngKey, transferOwnership: true),
                     importFlags: CryptImportPublicKeyInfoFlags.CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG);
             }
 
@@ -56,14 +56,14 @@ namespace System.Security.Cryptography.X509Certificates
                 case AlgId.CALG_RSA_KEYX:
                 case AlgId.CALG_RSA_SIGN:
                     {
-                        byte[] keyBlob = DecodeKeyBlob(CryptDecodeObjectStructType.CNG_RSA_PUBLIC_KEY_BLOB, encodedKeyValue);
-                        CngKey cngKey = CngKey.Import(keyBlob, CngKeyBlobFormat.GenericPublicBlob);
-                        return new RSACng(cngKey);
+                        var rsa = new RSABCrypt();
+                        rsa.ImportRSAPublicKey(encodedKeyValue, out _);
+                        return rsa;
                     }
                 case AlgId.CALG_DSS_SIGN:
                     {
                         byte[] keyBlob = ConstructDSSPublicKeyCspBlob(encodedKeyValue, encodedParameters);
-                        DSACryptoServiceProvider dsa = new DSACryptoServiceProvider();
+                        var dsa = new DSACryptoServiceProvider();
                         dsa.ImportCspBlob(keyBlob);
                         return dsa;
                     }
@@ -80,10 +80,10 @@ namespace System.Security.Cryptography.X509Certificates
         {
             TAlgorithm key;
 
-            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext, importFlags))
+            using (SafeCertContextHandle certContext = certificatePal.GetCertContext())
+            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certContext, importFlags))
             {
                 CngKeyBlobFormat blobFormat;
-                byte[] keyBlob;
                 string? curveName = GetCurveName(bCryptKeyHandle);
 
                 if (curveName == null)
@@ -97,18 +97,24 @@ namespace System.Security.Cryptography.X509Certificates
                         blobFormat = CngKeyBlobFormat.EccPublicBlob;
                     }
 
-                    keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
-                    using (CngKey cngKey = CngKey.Import(keyBlob, blobFormat))
+                    ArraySegment<byte> keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
+
+                    try
                     {
-                        key = factory(cngKey);
+                        key = factory(CngKey.Import(keyBlob, blobFormat));
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(keyBlob);
                     }
                 }
                 else
                 {
                     blobFormat = CngKeyBlobFormat.EccPublicBlob;
-                    keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
+                    ArraySegment<byte> keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
                     ECParameters ecparams = default;
                     ExportNamedCurveParameters(ref ecparams, keyBlob, false);
+                    CryptoPool.Return(keyBlob);
                     ecparams.Curve = ECCurve.CreateFromFriendlyName(curveName);
                     key = new TAlgorithm();
                     key.ImportParameters(ecparams);
@@ -129,9 +135,20 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     unsafe
                     {
-                        bool success = Interop.Crypt32.CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
+                        bool success = Interop.Crypt32.CryptImportPublicKeyInfoEx2(
+                            Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING,
+                            &(certContext.DangerousCertContext->pCertInfo->SubjectPublicKeyInfo),
+                            importFlags,
+                            null,
+                            out bCryptKeyHandle);
+
                         if (!success)
-                            throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                        {
+                            Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                            bCryptKeyHandle.Dispose();
+                            throw e;
+                        }
+
                         return bCryptKeyHandle;
                     }
                 }
@@ -143,25 +160,14 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static byte[] ExportKeyBlob(SafeBCryptKeyHandle bCryptKeyHandle, CngKeyBlobFormat blobFormat)
+        private static ArraySegment<byte> ExportKeyBlob(SafeBCryptKeyHandle bCryptKeyHandle, CngKeyBlobFormat blobFormat)
         {
             string blobFormatString = blobFormat.Format;
 
-            int numBytesNeeded;
-            NTSTATUS ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, null, 0, out numBytesNeeded, 0);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw new CryptographicException(Interop.Kernel32.GetMessage((int)ntStatus));
-
-            byte[] keyBlob = new byte[numBytesNeeded];
-            ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, keyBlob, keyBlob.Length, out numBytesNeeded, 0);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw new CryptographicException(Interop.Kernel32.GetMessage((int)ntStatus));
-
-            Array.Resize(ref keyBlob, numBytesNeeded);
-            return keyBlob;
+            return Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, blobFormatString);
         }
 
-        private static void ExportNamedCurveParameters(ref ECParameters ecParams, byte[] ecBlob, bool includePrivateParameters)
+        private static void ExportNamedCurveParameters(ref ECParameters ecParams, ReadOnlySpan<byte> ecBlob, bool includePrivateParameters)
         {
             // We now have a buffer laid out as follows:
             //     BCRYPT_ECCKEY_BLOB   header
@@ -198,11 +204,11 @@ namespace System.Security.Cryptography.X509Certificates
         {
             int cbDecoded = 0;
             if (!Interop.crypt32.CryptDecodeObject(CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, null, ref cbDecoded))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
             byte[] keyBlob = new byte[cbDecoded];
             if (!Interop.crypt32.CryptDecodeObject(CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, keyBlob, ref cbDecoded))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
             return keyBlob;
         }

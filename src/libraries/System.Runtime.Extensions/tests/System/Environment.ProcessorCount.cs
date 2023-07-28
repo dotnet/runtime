@@ -63,7 +63,7 @@ namespace System.Tests
         public static int GetProcessorCount() => Environment.ProcessorCount;
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52910", TestRuntimes.Mono)]
         [InlineData(8000, 0, null)]
         [InlineData(8000, 2000, null)]

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -12,8 +13,8 @@ namespace System
     {
         public virtual object Clone() => MemberwiseClone();
 
-        [return: NotNullIfNotNull("a")]
-        [return: NotNullIfNotNull("b")]
+        [return: NotNullIfNotNull(nameof(a))]
+        [return: NotNullIfNotNull(nameof(b))]
         public static Delegate? Combine(Delegate? a, Delegate? b)
         {
             if (a is null)
@@ -61,6 +62,8 @@ namespace System
             return DynamicInvokeImpl(args);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) => throw new PlatformNotSupportedException();
 
         public MethodInfo Method => GetMethodImpl();

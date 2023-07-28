@@ -117,6 +117,20 @@ namespace ILCompiler.DependencyAnalysis.X64
             }
         }
 
+        public void EmitJNE(ISymbolNode symbol)
+        {
+            if (symbol.RepresentsIndirectionCell)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                Builder.EmitByte(0x0f);
+                Builder.EmitByte(0x85);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+            }
+        }
+
         public void EmitINT3()
         {
             Builder.EmitByte(0xCC);
@@ -189,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis.X64
             Builder.EmitByte((byte)(0xC0 | (((int)reg & 0x07) << 3) | ((int)reg & 0x07)));
         }
 
-        private bool InSignedByteRange(int i)
+        private static bool InSignedByteRange(int i)
         {
             return i == (int)(sbyte)i;
         }
@@ -228,8 +242,7 @@ namespace ILCompiler.DependencyAnalysis.X64
             {
                 byte lowOrderBitsOfBaseReg = (byte)((int)addrMode.BaseReg & 0x07);
                 modRM |= lowOrderBitsOfBaseReg;
-                int offsetSize = 0;
-
+                int offsetSize;
                 if (addrMode.Offset == 0 && (lowOrderBitsOfBaseReg != (byte)Register.RBP))
                 {
                     offsetSize = 0;
@@ -250,7 +263,7 @@ namespace ILCompiler.DependencyAnalysis.X64
 
                 if (addrMode.BaseReg == Register.None)
                 {
-                    //# ifdef _TARGET_AMD64_          
+                    //# ifdef _TARGET_AMD64_
                     // x64 requires SIB to avoid RIP relative address
                     emitSibByte = true;
                     //#else
@@ -287,7 +300,7 @@ namespace ILCompiler.DependencyAnalysis.X64
                     modRM = (byte)((modRM & 0xF8) | (int)Register.RSP);
                     Builder.EmitByte(modRM);
 
-                    int indexRegAsInt = (int)(addrMode.IndexReg.HasValue ? addrMode.IndexReg.Value : Register.RSP);
+                    int indexRegAsInt = (int)(addrMode.IndexReg ?? Register.RSP);
 
                     Builder.EmitByte((byte)((addrMode.Scale << 6) + ((indexRegAsInt & 0x07) << 3) + ((int)sibByteBaseRegister & 0x07)));
                 }

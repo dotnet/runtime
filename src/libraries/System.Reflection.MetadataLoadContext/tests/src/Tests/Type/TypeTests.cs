@@ -365,6 +365,30 @@ namespace System.Reflection.Tests
             }
         }
 
+#if NET7_0_OR_GREATER
+        [Fact]
+        public static void GetEnumValuesAsUnderlyingType()
+        {
+            var intEnumType = typeof(E_2_I4).Project();
+            int[] expectedIntValues = { int.MinValue, 0, 1, int.MaxValue };
+            Array intArr = intEnumType.GetEnumValuesAsUnderlyingType();
+            for (int i = 0; i < intArr.Length; i++)
+            {
+                Assert.Equal(expectedIntValues[i], intArr.GetValue(i));
+                Assert.Equal(Type.GetTypeCode(expectedIntValues[i].GetType()), Type.GetTypeCode(intArr.GetValue(i).GetType()));
+            }
+
+            var uintEnumType = typeof(E_2_U4).Project();
+            uint[] expectesUIntValues = { uint.MinValue, 0, 1, uint.MaxValue };
+            Array uintArr = uintEnumType.GetEnumValuesAsUnderlyingType();
+            for (int i = 0; i < uintArr.Length; i++)
+            {
+                Assert.Equal(expectesUIntValues[i], uintArr.GetValue(i));
+                Assert.Equal(Type.GetTypeCode(expectesUIntValues[i].GetType()), Type.GetTypeCode(uintArr.GetValue(i).GetType()));
+            }
+        }
+#endif        
+
         [Theory]
         [MemberData(nameof(GetTypeCodeTheoryData))]
         public static void GettypeCode(TypeWrapper tw, TypeCode expectedTypeCode)

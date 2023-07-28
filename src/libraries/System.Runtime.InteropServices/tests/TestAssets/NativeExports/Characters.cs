@@ -8,7 +8,7 @@ namespace NativeExports
 {
     public static unsafe class Characters
     {
-        [UnmanagedCallersOnly(EntryPoint = "unicode_return_as_uint")]
+        [UnmanagedCallersOnly(EntryPoint = "ushort_return_as_uint")]
         public static uint ReturnUnicodeAsUInt(ushort input)
         {
             return input;
@@ -20,10 +20,10 @@ namespace NativeExports
             return input;
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "char_return_as_refuint")]
-        public static void ReturnUIntAsRefUInt(uint input, uint* res)
+        [UnmanagedCallersOnly(EntryPoint = "char_return_as_refushort")]
+        public static void ReturnUIntAsRefUInt(uint input, ushort* res)
         {
-            *res = input;
+            *res = (ushort)input;
         }
 
         [UnmanagedCallersOnly(EntryPoint = "char_reverse_buffer_ref")]

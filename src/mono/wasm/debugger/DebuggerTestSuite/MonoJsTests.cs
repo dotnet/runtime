@@ -8,11 +8,15 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     public class MonoJsTests : DebuggerTests
     {
+        public MonoJsTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task BadRaiseDebugEventsTest()
         {
@@ -54,7 +58,9 @@ namespace DebuggerTests
                     tcs.SetResult(true);
                 }
 
-                await Task.CompletedTask;
+                return tcs.Task.IsCompleted
+                            ?  await Task.FromResult(ProtocolEventHandlerReturn.RemoveHandler)
+                            :  await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
             });
 
             var trace_str = trace.HasValue ? $"trace: {trace.ToString().ToLower()}" : String.Empty;
@@ -88,8 +94,8 @@ namespace DebuggerTests
         public async Task DuplicateAssemblyLoadedEventForAssemblyFromBundle(bool load_pdb, int expected_count)
             => await AssemblyLoadedEventTest(
                 "debugger-test",
-                Path.Combine(DebuggerTestAppPath, "managed/debugger-test.dll"),
-                load_pdb ? Path.Combine(DebuggerTestAppPath, "managed/debugger-test.pdb") : null,
+                Path.Combine(DebuggerTestAppPath, "_framework/debugger-test.dll"),
+                load_pdb ? Path.Combine(DebuggerTestAppPath, "_framework/debugger-test.pdb") : null,
                 "/debugger-test.cs",
                 expected_count
             );
@@ -106,7 +112,6 @@ namespace DebuggerTests
 
         async Task AssemblyLoadedEventTest(string asm_name, string asm_path, string pdb_path, string source_file, int expected_count)
         {
-
             int event_count = 0;
             var tcs = new TaskCompletionSource<bool>();
             insp.On("Debugger.scriptParsed", async (args, c) =>
@@ -126,10 +131,12 @@ namespace DebuggerTests
                     tcs.SetException(ex);
                 }
 
-                await Task.CompletedTask;
+                return tcs.Task.IsCompleted
+                            ?  await Task.FromResult(ProtocolEventHandlerReturn.RemoveHandler)
+                            :  await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
             });
 
-            byte[] bytes = File.ReadAllBytes(asm_path);
+            byte[] bytes = File.Exists(asm_path) ? File.ReadAllBytes(asm_path) : File.ReadAllBytes(Path.ChangeExtension(asm_path, WebcilInWasmExtension)); // hack!
             string asm_base64 = Convert.ToBase64String(bytes);
 
             string pdb_base64 = String.Empty;

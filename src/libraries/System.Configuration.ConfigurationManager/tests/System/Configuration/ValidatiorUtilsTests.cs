@@ -53,7 +53,7 @@ namespace System.ConfigurationTests
             else
             {
                 Assert.Equal(
-                    string.Format(SR.GetResourceString(message, null), min, max),
+                    SR.Format(SR.GetResourceString(message, null), min, max),
                     AssertExtensions.Throws<ArgumentException>(null, action).Message);
             }
         }
@@ -72,7 +72,7 @@ namespace System.ConfigurationTests
             else
             {
                 Assert.Equal(
-                    string.Format(SR.GetResourceString(message, null), resolution),
+                    SR.Format(SR.GetResourceString(message, null), resolution),
                     AssertExtensions.Throws<ArgumentException>(null, action).Message);
             }
         }

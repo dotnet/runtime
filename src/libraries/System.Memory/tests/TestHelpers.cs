@@ -48,14 +48,11 @@ namespace System
             try
             {
                 action(span);
-                Assert.False(true, "Expected exception: " + typeof(E).GetType());
+                Assert.False(true, $"Expected exception: {typeof(E)}");
             }
-            catch (E)
+            catch (Exception ex)
             {
-            }
-            catch (Exception wrongException)
-            {
-                Assert.False(true, "Wrong exception thrown: Expected " + typeof(E).GetType() + ": Actual: " + wrongException.GetType());
+                Assert.True(ex is E, $"Wrong exception thrown. Expected: {typeof(E)} Actual: {ex.GetType()}");
             }
         }
 
@@ -112,14 +109,11 @@ namespace System
             try
             {
                 action(span);
-                Assert.False(true, "Expected exception: " + typeof(E).GetType());
+                Assert.False(true, $"Expected exception: {typeof(E)}");
             }
-            catch (E)
+            catch (Exception ex)
             {
-            }
-            catch (Exception wrongException)
-            {
-                Assert.False(true, "Wrong exception thrown: Expected " + typeof(E).GetType() + ": Actual: " + wrongException.GetType());
+                Assert.True(ex is E, $"Wrong exception thrown. Expected: {typeof(E)} Actual: {ex.GetType()}");
             }
         }
 
@@ -409,7 +403,7 @@ namespace System
         /// <summary>Creates a <see cref="ReadOnlyMemory{T}"/> with the specified values in its backing field.</summary>
         public static ReadOnlyMemory<T> DangerousCreateReadOnlyMemory<T>(object obj, int offset, int length) =>
             DangerousCreateMemory<T>(obj, offset, length);
-
+        
         public static TheoryData<string[], bool> ContainsNullData => new TheoryData<string[], bool>()
         {
             { new string[] { "1", null, "2" }, true},
@@ -417,6 +411,24 @@ namespace System
             { null, false},
             { new string[] { "1", null, null }, true},
             { new string[] { null, null, null }, true},
+        };
+        
+        public static TheoryData<string[], int> CountNullData => new TheoryData<string[], int>()
+        {
+            { new string[] { "1", null, "2" }, 1},
+            { new string[] { "1", "3", "2" }, 0},
+            { null, 0},
+            { new string[] { "1", null, null }, 2},
+            { new string[] { null, null, null }, 3},
+        };
+
+        public static TheoryData<string[], int> CountNullRosData => new TheoryData<string[], int>()
+        {
+            { new string[] { "1", null, "9", "2" }, 1},
+            { new string[] { "1", "3", "9", "2" }, 0},
+            { null, 0},
+            { new string[] { "1", null, "9", null, "9"}, 2},
+            { new string[] { null, null, "9", null, "9", "9", null, "9"}, 3},
         };
 
         public static TheoryData<string[], string[],  bool> SequenceEqualsNullData => new TheoryData<string[], string[], bool>()
@@ -534,7 +546,11 @@ namespace System
 
             { new string[] { "1", "3", "2" }, new string[] { null, "1" }, 0},
             { new string[] { "1", "3", "2" }, new string[] { "1", "2", null }, 2},
+            { new string[] { "1", "3", "2" }, new string[] { "4", "5", null }, -1},
             { new string[] { "1", "3", "2" }, new string[] { null, null }, -1},
+            { new string[] { "1", "3", "2" }, new string[] { null, null, null }, -1},
+            { new string[] { "1", "3", "2" }, new string[] { null, null, null, null }, -1},
+            { new string[] { "1", "3", "2" }, new string[] { null, null, null, null, null }, -1},
 
             { null, new string[] { null, "1" }, -1},
 

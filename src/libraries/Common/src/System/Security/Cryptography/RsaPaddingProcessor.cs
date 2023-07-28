@@ -44,43 +44,62 @@ namespace System.Security.Cryptography
                 0x40,
             };
 
+        private static ReadOnlySpan<byte> DigestInfoSha3_256 => new byte[]
+            {
+                0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
+                0x01, 0x65, 0x03, 0x04, 0x02, 0x08, 0x05, 0x00, 0x04,
+                0x20,
+            };
+
+        private static ReadOnlySpan<byte> DigestInfoSha3_384 => new byte[]
+            {
+                0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
+                0x01, 0x65, 0x03, 0x04, 0x02, 0x09, 0x05, 0x00, 0x04,
+                0x30,
+            };
+
+        private static ReadOnlySpan<byte> DigestInfoSha3_512 => new byte[]
+            {
+                0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
+                0x01, 0x65, 0x03, 0x04, 0x02, 0x0A, 0x05, 0x00, 0x04,
+                0x40,
+            };
+
         private static ReadOnlySpan<byte> EightZeros => new byte[8];
 
         private static ReadOnlySpan<byte> GetDigestInfoForAlgorithm(
             HashAlgorithmName hashAlgorithmName,
             out int digestLengthInBytes)
         {
-            if (hashAlgorithmName == HashAlgorithmName.MD5)
+            switch (hashAlgorithmName.Name)
             {
-#pragma warning disable CA1416 // Unsupported on Browser. We just want the const here.
-                digestLengthInBytes = MD5.HashSizeInBytes;
-                return DigestInfoMD5;
-#pragma warning restore CA1416
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA1)
-            {
-                digestLengthInBytes = SHA1.HashSizeInBytes;
-                return DigestInfoSha1;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA256)
-            {
-                digestLengthInBytes = SHA256.HashSizeInBytes;
-                return DigestInfoSha256;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA384)
-            {
-                digestLengthInBytes = SHA384.HashSizeInBytes;
-                return DigestInfoSha384;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA512)
-            {
-                digestLengthInBytes = SHA512.HashSizeInBytes;
-                return DigestInfoSha512;
-            }
-            else
-            {
-                Debug.Fail("Unknown digest algorithm");
-                throw new CryptographicException();
+                case HashAlgorithmNames.MD5:
+                    digestLengthInBytes = MD5.HashSizeInBytes;
+                    return DigestInfoMD5;
+                case HashAlgorithmNames.SHA1:
+                    digestLengthInBytes = SHA1.HashSizeInBytes;
+                    return DigestInfoSha1;
+                case HashAlgorithmNames.SHA256:
+                    digestLengthInBytes = SHA256.HashSizeInBytes;
+                    return DigestInfoSha256;
+                case HashAlgorithmNames.SHA384:
+                    digestLengthInBytes = SHA384.HashSizeInBytes;
+                    return DigestInfoSha384;
+                case HashAlgorithmNames.SHA512:
+                    digestLengthInBytes = SHA512.HashSizeInBytes;
+                    return DigestInfoSha512;
+                case HashAlgorithmNames.SHA3_256:
+                    digestLengthInBytes = SHA3_256.HashSizeInBytes;
+                    return DigestInfoSha3_256;
+                case HashAlgorithmNames.SHA3_384:
+                    digestLengthInBytes = SHA3_384.HashSizeInBytes;
+                    return DigestInfoSha3_384;
+                case HashAlgorithmNames.SHA3_512:
+                    digestLengthInBytes = SHA3_512.HashSizeInBytes;
+                    return DigestInfoSha3_512;
+                default:
+                    Debug.Fail("Unknown digest algorithm");
+                    throw new CryptographicException();
             }
         }
 
@@ -118,7 +137,7 @@ namespace System.Security.Cryptography
             destination[ps.Length + 2] = 0;
 
             // 2(a). Fill PS with random data from a CSPRNG, but no zero-values.
-            FillNonZeroBytes(ps);
+            RandomNumberGeneratorImplementation.FillNonZeroBytes(ps);
 
             source.CopyTo(mInEM);
         }
@@ -252,105 +271,6 @@ namespace System.Security.Cryptography
                 {
                     CryptographicOperations.ZeroMemory(dbMaskSpan);
                     CryptoPool.Return(dbMask, clearSize: 0);
-                }
-            }
-        }
-
-        internal static bool DepadOaep(
-            HashAlgorithmName hashAlgorithmName,
-            ReadOnlySpan<byte> source,
-            Span<byte> destination,
-            out int bytesWritten)
-        {
-            int hLen = HashLength(hashAlgorithmName);
-
-            // https://tools.ietf.org/html/rfc3447#section-7.1.2
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
-            {
-                Debug.Assert(hasher.HashLengthInBytes == hLen);
-
-                Span<byte> lHash = stackalloc byte[hLen];
-
-                if (!hasher.TryGetHashAndReset(lHash, out int hLen2) || hLen2 != hLen)
-                {
-                    Debug.Fail("TryGetHashAndReset failed with exact-size destination");
-                    throw new CryptographicException();
-                }
-
-                int y = source[0];
-                ReadOnlySpan<byte> maskedSeed = source.Slice(1, hLen);
-                ReadOnlySpan<byte> maskedDB = source.Slice(1 + hLen);
-
-                Span<byte> seed = stackalloc byte[hLen];
-                // seedMask = MGF(maskedDB, hLen)
-                Mgf1(hasher, maskedDB, seed);
-
-                // seed = seedMask XOR maskedSeed
-                Xor(seed, maskedSeed);
-
-                byte[] tmp = CryptoPool.Rent(source.Length);
-
-                try
-                {
-                    Span<byte> dbMask = new Span<byte>(tmp, 0, maskedDB.Length);
-                    // dbMask = MGF(seed, k - hLen - 1)
-                    Mgf1(hasher, seed, dbMask);
-
-                    // DB = dbMask XOR maskedDB
-                    Xor(dbMask, maskedDB);
-
-                    ReadOnlySpan<byte> lHashPrime = dbMask.Slice(0, hLen);
-
-                    int separatorPos = int.MaxValue;
-
-                    for (int i = dbMask.Length - 1; i >= hLen; i--)
-                    {
-                        // if dbMask[i] is 1, val is 0. otherwise val is [01,FF]
-                        byte dbMinus1 = (byte)(dbMask[i] - 1);
-                        int val = dbMinus1;
-
-                        // if val is 0: FFFFFFFF & FFFFFFFF => FFFFFFFF
-                        // if val is any other byte value, val-1 will be in the range 00000000 to 000000FE,
-                        // and so the high bit will not be set.
-                        val = (~val & (val - 1)) >> 31;
-
-                        // if val is 0: separator = (0 & i) | (~0 & separator) => separator
-                        // else: separator = (~0 & i) | (0 & separator) => i
-                        //
-                        // Net result: non-branching "if (dbMask[i] == 1) separatorPos = i;"
-                        separatorPos = (val & i) | (~val & separatorPos);
-                    }
-
-                    bool lHashMatches = CryptographicOperations.FixedTimeEquals(lHash, lHashPrime);
-                    bool yIsZero = y == 0;
-                    bool separatorMadeSense = separatorPos < dbMask.Length;
-
-                    // This intentionally uses non-short-circuiting operations to hide the timing
-                    // differential between the three failure cases
-                    bool shouldContinue = lHashMatches & yIsZero & separatorMadeSense;
-
-                    if (!shouldContinue)
-                    {
-                        throw new CryptographicException(SR.Cryptography_OAEP_Decryption_Failed);
-                    }
-
-                    Span<byte> message = dbMask.Slice(separatorPos + 1);
-
-                    if (message.Length <= destination.Length)
-                    {
-                        message.CopyTo(destination);
-                        bytesWritten = message.Length;
-                        return true;
-                    }
-                    else
-                    {
-                        bytesWritten = 0;
-                        return false;
-                    }
-                }
-                finally
-                {
-                    CryptoPool.Return(tmp, source.Length);
                 }
             }
         }
@@ -598,41 +518,6 @@ namespace System.Security.Cryptography
                 }
 
                 count++;
-            }
-        }
-
-        // This is a copy of RandomNumberGeneratorImplementation.GetNonZeroBytes, but adapted
-        // to the object-less RandomNumberGenerator.Fill.
-        private static void FillNonZeroBytes(Span<byte> data)
-        {
-            while (data.Length > 0)
-            {
-                // Fill the remaining portion of the span with random bytes.
-                RandomNumberGenerator.Fill(data);
-
-                // Find the first zero in the remaining portion.
-                int indexOfFirst0Byte = data.Length;
-                for (int i = 0; i < data.Length; i++)
-                {
-                    if (data[i] == 0)
-                    {
-                        indexOfFirst0Byte = i;
-                        break;
-                    }
-                }
-
-                // If there were any zeros, shift down all non-zeros.
-                for (int i = indexOfFirst0Byte + 1; i < data.Length; i++)
-                {
-                    if (data[i] != 0)
-                    {
-                        data[indexOfFirst0Byte++] = data[i];
-                    }
-                }
-
-                // Request new random bytes if necessary; dont re-use
-                // existing bytes since they were shifted down.
-                data = data.Slice(indexOfFirst0Byte);
             }
         }
 

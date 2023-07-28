@@ -335,7 +335,7 @@ namespace System.Management
                 if ((query.GetType() == typeof(SelectQuery)) &&
                     (((SelectQuery)query).Condition == null) &&
                     (((SelectQuery)query).SelectedProperties == null) &&
-                    (options.EnumerateDeep == true))
+                    options.EnumerateDeep)
                 {
                     //Need to make sure that we're not passing invalid flags to enumeration APIs.
                     //The only flags not valid for enumerations are EnsureLocatable & PrototypeOnly.
@@ -428,7 +428,7 @@ namespace System.Management
                 if ((query.GetType() == typeof(SelectQuery)) &&
                     (((SelectQuery)query).Condition == null) &&
                     (((SelectQuery)query).SelectedProperties == null) &&
-                    (options.EnumerateDeep == true))
+                    options.EnumerateDeep)
                 {
                     //Need to make sure that we're not passing invalid flags to enumeration APIs.
                     //The only flags not valid for enumerations are EnsureLocatable & PrototypeOnly.

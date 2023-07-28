@@ -25,7 +25,6 @@
 #include "clrhost.h"
 #include "debugmacros.h"
 #include "corhlprpriv.h"
-#include "winnls.h"
 #include "check.h"
 #include "safemath.h"
 #include "new.hpp"
@@ -37,9 +36,9 @@
 #endif
 
 #include "contract.h"
-#include "entrypoints.h"
 
-#include<minipal/utils.h>
+#include <minipal/utils.h>
+#include <dn-u16.h>
 
 #include "clrnt.h"
 
@@ -59,7 +58,6 @@
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
-#define LegacyCoreLibName_A "mscorlib"
 
 class StringArrayList;
 
@@ -187,15 +185,6 @@ typedef LPSTR   LPUTF8;
 // given and ANSI String, copy it into a wide buffer.
 // be careful about scoping when using this macro!
 //
-// how to use the below two macros:
-//
-//  ...
-//  LPSTR pszA;
-//  pszA = MyGetAnsiStringRoutine();
-//  MAKE_WIDEPTR_FROMANSI(pwsz, pszA);
-//  MyUseWideStringRoutine(pwsz);
-//  ...
-//
 // similarily for MAKE_ANSIPTR_FROMWIDE.  note that the first param does not
 // have to be declared, and no clean up must be done.
 //
@@ -213,31 +202,12 @@ typedef LPSTR   LPUTF8;
 #define MAKE_TRANSLATIONFAILED ThrowWin32(ERROR_NO_UNICODE_TRANSLATION)
 #endif
 
-// This version throws on conversion errors (ie, no best fit character
-// mapping to characters that look similar, and no use of the default char
-// ('?') when printing out unrepresentable characters.  Use this method for
-// most development in the EE, especially anything like metadata or class
-// names.  See the BESTFIT version if you're printing out info to the console.
-#define MAKE_MULTIBYTE_FROMWIDE(ptrname, widestr, codepage) \
-    int __l##ptrname = (int)wcslen(widestr);        \
-    if (__l##ptrname > MAKE_MAX_LENGTH)         \
-        MAKE_TOOLONGACTION;                     \
-    __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
-    CQuickBytes __CQuickBytes##ptrname; \
-    __CQuickBytes##ptrname.AllocThrows(__l##ptrname); \
-    BOOL __b##ptrname; \
-    DWORD __cBytes##ptrname = WszWideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, &__b##ptrname); \
-    if (__b##ptrname || (__cBytes##ptrname == 0 && (widestr[0] != W('\0')))) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()
-
 // This version does best fit character mapping and also allows the use
 // of the default char ('?') for any Unicode character that isn't
 // representable.  This is reasonable for writing to the console, but
 // shouldn't be used for most string conversions.
 #define MAKE_MULTIBYTE_FROMWIDE_BESTFIT(ptrname, widestr, codepage) \
-    int __l##ptrname = (int)wcslen(widestr);        \
+    int __l##ptrname = (int)u16_strlen(widestr);        \
     if (__l##ptrname > MAKE_MAX_LENGTH)         \
         MAKE_TOOLONGACTION;                     \
     __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
@@ -249,45 +219,11 @@ typedef LPSTR   LPUTF8;
     } \
     LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()
 
-// Use for anything critical other than output to console, where weird
-// character mappings are unacceptable.
-#define MAKE_ANSIPTR_FROMWIDE(ptrname, widestr) MAKE_MULTIBYTE_FROMWIDE(ptrname, widestr, CP_ACP)
-
-// Use for output to the console.
-#define MAKE_ANSIPTR_FROMWIDE_BESTFIT(ptrname, widestr) MAKE_MULTIBYTE_FROMWIDE_BESTFIT(ptrname, widestr, CP_ACP)
-
-#define MAKE_WIDEPTR_FROMANSI(ptrname, ansistr) \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszMultiByteToWideChar(CP_ACP, 0, ansistr, -1, 0, 0); \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    LPWSTR ptrname = (LPWSTR) __qb##ptrname.AllocThrows((__l##ptrname+1)*sizeof(WCHAR));  \
-    if (WszMultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, ansistr, -1, ptrname, __l##ptrname) == 0) { \
-        MAKE_TRANSLATIONFAILED; \
-    }
-
-#define MAKE_WIDEPTR_FROMANSI_NOTHROW(ptrname, ansistr) \
-    CQuickBytes __qb##ptrname; \
-    LPWSTR ptrname = 0; \
-    int __l##ptrname; \
-    __l##ptrname = WszMultiByteToWideChar(CP_ACP, 0, ansistr, -1, 0, 0); \
-    if (__l##ptrname <= MAKE_MAX_LENGTH) { \
-        ptrname = (LPWSTR) __qb##ptrname.AllocNoThrow((__l##ptrname+1)*sizeof(WCHAR));  \
-        if (ptrname) { \
-            if (WszMultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, ansistr, -1, ptrname, __l##ptrname) != 0) { \
-                ptrname[__l##ptrname] = 0; \
-            } else { \
-                ptrname = 0; \
-            } \
-        } \
-    }
-
 #define MAKE_UTF8PTR_FROMWIDE(ptrname, widestr) CQuickBytes _##ptrname; _##ptrname.ConvertUnicode_Utf8(widestr); LPSTR ptrname = (LPSTR) _##ptrname.Ptr();
 
 #define MAKE_UTF8PTR_FROMWIDE_NOTHROW(ptrname, widestr) \
     CQuickBytes __qb##ptrname; \
-    int __l##ptrname = (int)wcslen(widestr); \
+    int __l##ptrname = (int)u16_strlen(widestr); \
     LPUTF8 ptrname = 0; \
     if (__l##ptrname <= MAKE_MAX_LENGTH) { \
         __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
@@ -314,21 +250,7 @@ typedef LPSTR   LPUTF8;
         } \
     } \
 
-#define MAKE_WIDEPTR_FROMUTF8N(ptrname, utf8str, n8chrs) \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszMultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    LPWSTR ptrname = (LPWSTR) __qb##ptrname .AllocThrows((__l##ptrname+1)*sizeof(WCHAR)); \
-    if (0==WszMultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname)) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    ptrname[__l##ptrname] = 0;
-
-
 #define MAKE_WIDEPTR_FROMUTF8(ptrname, utf8str) CQuickBytes _##ptrname;  _##ptrname.ConvertUtf8_Unicode(utf8str); LPCWSTR ptrname = (LPCWSTR) _##ptrname.Ptr();
-
 
 #define MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, n8chrs) \
     CQuickBytes __qb##ptrname; \
@@ -348,42 +270,10 @@ typedef LPSTR   LPUTF8;
 
 #define MAKE_WIDEPTR_FROMUTF8_NOTHROW(ptrname, utf8str)   MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, -1)
 
-// This method takes the number of characters
-#define MAKE_MULTIBYTE_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt, codepage)        \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszWideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, widestr, _nCharacters, NULL, 0, NULL, NULL);           \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    ptrname = (LPUTF8) __qb##ptrname .AllocThrows(__l##ptrname+1); \
-    BOOL __b##ptrname; \
-    DWORD _pCnt = WszWideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, widestr, _nCharacters, ptrname, __l##ptrname, NULL, &__b##ptrname);  \
-    if (__b##ptrname || (_pCnt == 0 && _nCharacters > 0)) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    ptrname[__l##ptrname] = 0;
-
-#define MAKE_MULTIBYTE_FROMWIDEN_BESTFIT(ptrname, widestr, _nCharacters, _pCnt, codepage)        \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszWideCharToMultiByte(codepage, 0, widestr, _nCharacters, NULL, 0, NULL, NULL);           \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    ptrname = (LPUTF8) __qb##ptrname .AllocThrows(__l##ptrname+1); \
-    DWORD _pCnt = WszWideCharToMultiByte(codepage, 0, widestr, _nCharacters, ptrname, __l##ptrname, NULL, NULL);  \
-    if (_pCnt == 0 && _nCharacters > 0) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    ptrname[__l##ptrname] = 0;
-
-#define MAKE_ANSIPTR_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt)        \
-       MAKE_MULTIBYTE_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt, CP_ACP)
-
 const SIZE_T MaxSigned32BitDecString = ARRAY_SIZE("-2147483648") - 1;
 const SIZE_T MaxUnsigned32BitDecString = ARRAY_SIZE("4294967295") - 1;
 const SIZE_T MaxIntegerDecHexString = ARRAY_SIZE("-9223372036854775808") - 1;
 
-const SIZE_T Max16BitHexString = ARRAY_SIZE("1234") - 1;
 const SIZE_T Max32BitHexString = ARRAY_SIZE("12345678") - 1;
 const SIZE_T Max64BitHexString = ARRAY_SIZE("1234567812345678") - 1;
 
@@ -411,104 +301,6 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     *str = W('\0');
     return str;
 }
-
-class GuidString final
-{
-    char _buffer[ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}")];
-public:
-    static void Create(const GUID& g, GuidString& ret)
-    {
-        // Ensure we always have a null
-        ret._buffer[ARRAY_SIZE(ret._buffer) - 1] = '\0';
-        sprintf_s(ret._buffer, ARRAY_SIZE(ret._buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-            g.Data1, g.Data2, g.Data3,
-            g.Data4[0], g.Data4[1],
-            g.Data4[2], g.Data4[3],
-            g.Data4[4], g.Data4[5],
-            g.Data4[6], g.Data4[7]);
-    }
-
-    const char* AsString() const
-    {
-        return _buffer;
-    }
-
-    operator const char*() const
-    {
-        return _buffer;
-    }
-};
-
-inline
-LPWSTR DuplicateString(
-    LPCWSTR wszString,
-    size_t  cchString)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    LPWSTR wszDup = NULL;
-    if (wszString != NULL)
-    {
-        wszDup = new (nothrow) WCHAR[cchString + 1];
-        if (wszDup != NULL)
-        {
-            wcscpy_s(wszDup, cchString + 1, wszString);
-        }
-    }
-    return wszDup;
-}
-
-inline
-LPWSTR DuplicateString(
-    LPCWSTR wszString)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    if (wszString != NULL)
-    {
-        return DuplicateString(wszString, wcslen(wszString));
-    }
-    else
-    {
-        return NULL;
-    }
-}
-
-void DECLSPEC_NORETURN ThrowOutOfMemory();
-
-inline
-LPWSTR DuplicateStringThrowing(
-    LPCWSTR wszString,
-    size_t cchString)
-{
-    STATIC_CONTRACT_THROWS;
-
-    if (wszString == NULL)
-        return NULL;
-
-    LPWSTR wszDup = DuplicateString(wszString, cchString);
-    if (wszDup == NULL)
-        ThrowOutOfMemory();
-
-    return wszDup;
-}
-
-inline
-LPWSTR DuplicateStringThrowing(
-    LPCWSTR wszString)
-{
-    STATIC_CONTRACT_THROWS;
-
-    if (wszString == NULL)
-        return NULL;
-
-    LPWSTR wszDup = DuplicateString(wszString);
-    if (wszDup == NULL)
-        ThrowOutOfMemory();
-
-    return wszDup;
-}
-
 
 //*****************************************************************************
 // Placement new is used to new and object at an exact location.  The pointer
@@ -597,7 +389,7 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 BOOL CLRFreeLibrary(HMODULE hModule);
 
 // Load a string using the resources for the current module.
-STDAPI UtilLoadStringRC(UINT iResouceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
+STDAPI UtilLoadStringRC(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
 
 // Specify callbacks so that UtilLoadStringRC can find out which language we're in.
 // If no callbacks specified (or both parameters are NULL), we default to the
@@ -656,7 +448,7 @@ public:
         if (id == UICULTUREID_DONTCARE)
             return FALSE;
 
-        return wcscmp(id, m_LangId) == 0;
+        return u16_strcmp(id, m_LangId) == 0;
     }
 
     HRESOURCEDLL GetLibraryHandle()
@@ -792,7 +584,7 @@ public:
     }
 
 private:
-// String resouces packaged as PE files only exist on Windows
+// String resources packaged as PE files only exist on Windows
 #ifdef HOST_WINDOWS
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
 #ifndef DACCESS_COMPILE
@@ -828,7 +620,7 @@ private:
     FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
 };
 
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
+HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
 
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
 // <TODO>TODO: All HRESULT_FROM_WIN32(GetLastError()) should be replaced by calls to
@@ -902,8 +694,6 @@ inline int CountBits(int iNum)
     return (iBits);
 }
 
-#include "bitposition.h"
-
 // Convert the currency to a decimal and canonicalize.
 inline void VarDecFromCyCanonicalize(CY cyIn, DECIMAL* dec)
 {
@@ -941,15 +731,9 @@ inline void VarDecFromCyCanonicalize(CY cyIn, DECIMAL* dec)
 // Paths functions. Use these instead of the CRT.
 //
 //*****************************************************************************
-// secure version! Specify the size of the each buffer in count of elements
-void    SplitPath(const WCHAR *path,
-                  __inout_z __inout_ecount_opt(driveSizeInWords) WCHAR *drive, int driveSizeInWords,
-                  __inout_z __inout_ecount_opt(dirSizeInWords) WCHAR *dir, int dirSizeInWords,
-                  __inout_z __inout_ecount_opt(fnameSizeInWords) WCHAR *fname, size_t fnameSizeInWords,
-                  __inout_z __inout_ecount_opt(extSizeInWords) WCHAR *ext, size_t extSizeInWords);
 
 //*******************************************************************************
-// A much more sensible version that just points to each section of the string.
+// Split a path into individual components - points to each section of the string
 //*******************************************************************************
 void    SplitPathInterior(
     _In_      LPCWSTR wszPath,
@@ -958,25 +742,6 @@ void    SplitPathInterior(
     _Out_opt_ LPCWSTR *pwszFileName, _Out_opt_ size_t *pcchFileName,
     _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt);
 
-
-void    MakePath(_Out_ CQuickWSTR &path,
-                 _In_ LPCWSTR drive,
-                 _In_ LPCWSTR dir,
-                 _In_ LPCWSTR fname,
-                 _In_ LPCWSTR ext);
-
-WCHAR * FullPath(_Out_writes_ (maxlen) WCHAR *UserBuf, const WCHAR *path, size_t maxlen);
-
-//*****************************************************************************
-//
-// SString version of the path functions.
-//
-//*****************************************************************************
-void    SplitPath(_In_ SString const &path,
-                  __inout_opt SString *drive,
-                  __inout_opt SString *dir,
-                  __inout_opt SString *fname,
-                  __inout_opt SString *ext);
 
 #include "ostype.h"
 
@@ -996,31 +761,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 // Allocate free memory with specific alignment
 //
 LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect, SIZE_T alignment);
-
-class NumaNodeInfo
-{
-private:
-    static BOOL m_enableGCNumaAware;
-    static uint16_t m_nNodes;
-    static BOOL InitNumaNodeInfoAPI();
-
-public:
-    static BOOL CanEnableGCNumaAware();
-    static void InitNumaNodeInfo();
-
-#if !defined(FEATURE_NATIVEAOT)
-public: 	// functions
-
-    static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
-                                     DWORD allocType, DWORD prot, DWORD node);
-#ifdef HOST_WINDOWS
-    static BOOL GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no);
-    static bool GetNumaInfo(PUSHORT total_nodes, DWORD* max_procs_per_node);
-#else // HOST_WINDOWS
-    static BOOL GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no);
-#endif // HOST_WINDOWS
-#endif
-};
 
 #ifdef HOST_WINDOWS
 
@@ -1389,7 +1129,8 @@ T *CUnorderedArrayWithAllocator<T,iGrowInc,ALLOCATOR>::Grow()  // exception if c
 
     // try to allocate memory for reallocation.
     pTemp = ALLOCATOR::AllocThrowing(this, m_iSize+iGrowInc);
-    memcpy (pTemp, m_pTable, m_iSize*sizeof(T));
+    if (m_iSize > 0)
+        memcpy (pTemp, m_pTable, m_iSize*sizeof(T));
     ALLOCATOR::Free(this, m_pTable);
     m_pTable = pTemp;
     m_iSize += iGrowInc;
@@ -1676,8 +1417,8 @@ private:
             if (iLeft >= iRight)
                 return;
 
-            // ASSERT that we now have valid indicies.  This is statically provable
-            // since this private function is only called with valid indicies,
+            // ASSERT that we now have valid indices.  This is statically provable
+            // since this private function is only called with valid indices,
             // and iLeft and iRight only converge towards eachother.  However,
             // PreFast can't detect this because it doesn't know about our callers.
             COMPILER_ASSUME(iLeft >= 0 && iLeft < m_iCount);
@@ -2023,7 +1764,7 @@ public:
 //*****************************************************************************
 // Returns the first entry in the first hash bucket and inits the search
 // struct.  Use the FindNextEntry function to continue walking the list.  The
-// return order is not gauranteed.
+// return order is not guaranteed.
 //*****************************************************************************
     BYTE *FindFirstEntry(               // First entry found, or 0.
         HASHFIND    *psSrch)            // Search object.
@@ -2264,7 +2005,7 @@ public:
     // accessors here. So if you're not using these functions, don't start.
     // We can hopefully remove them.
     // Note that we can't just make RCThread a friend of this class (we tried
-    // originally) because the inheritence chain has a private modifier,
+    // originally) because the inheritance chain has a private modifier,
     // so DebuggerPatchTable::m_pcEntries is illegal.
     static SIZE_T helper_GetOffsetOfEntries()
     {
@@ -2409,32 +2150,6 @@ inline COUNT_T HashPtr(COUNT_T currentHash, PTR_VOID ptr)
     return HashCOUNT_T(currentHash, COUNT_T(SIZE_T(dac_cast<TADDR>(ptr))));
 }
 
-inline DWORD HashThreeToOne(DWORD a, DWORD b, DWORD c)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    /*
-    lookup3.c, by Bob Jenkins, May 2006, Public Domain.
-
-    These are functions for producing 32-bit hashes for hash table lookup.
-    hashword(), hashlittle(), hashlittle2(), hashbig(), mix(), and final()
-    are externally useful functions.  Routines to test the hash are included
-    if SELF_TEST is defined.  You can use this free for any purpose.  It's in
-    the public domain.  It has no warranty.
-    */
-
-    #define rot32(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
-    c ^= b; c -= rot32(b,14);
-    a ^= c; a -= rot32(c,11);
-    b ^= a; b -= rot32(a,25);
-    c ^= b; c -= rot32(b,16);
-    a ^= c; a -= rot32(c,4);
-    b ^= a; b -= rot32(a,14);
-    c ^= b; c -= rot32(b,24);
-
-    return c;
-}
-
 inline ULONG HashBytes(BYTE const *pbData, size_t iSize)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2487,7 +2202,7 @@ inline ULONG HashStringN(LPCWSTR szStr, SIZE_T cchStr)
     ULONG *ptr = (ULONG *)szStr;
 
     // we assume that szStr is null-terminated
-    _ASSERTE(cchStr <= wcslen(szStr));
+    _ASSERTE(cchStr <= u16_strlen(szStr));
     SIZE_T cDwordCount = (cchStr + 1) / 2;
 
     for (SIZE_T i = 0; i < cDwordCount; i++)
@@ -2849,139 +2564,6 @@ private:
     int         m_iCollisions;              // How many have we had.
     BYTE        *m_rgData;                  // Data element list.
 };
-
-//*****************************************************************************
-// IMPORTANT: This data structure is deprecated, please do not add any new uses.
-// The hashtable implementation that should be used instead is code:SHash.
-// If code:SHash does not work for you, talk to mailto:clrdeag.
-//*****************************************************************************
-template <class T> class CClosedHash : public CClosedHashBase
-{
-public:
-    CClosedHash(
-        int         iBuckets,               // How many buckets should we start with.
-        bool        bPerfect=false) :       // true if bucket size will hash with no collisions.
-        CClosedHashBase(iBuckets, sizeof(T), bPerfect)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    T &operator[](int iIndex)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T &) *(Data() + (iIndex * sizeof(T))));
-    }
-
-
-//*****************************************************************************
-// Add a new item to hash table given the key value.  If this new entry
-// exceeds maximum size, then the table will grow and be re-hashed, which
-// may cause a memory error.
-//*****************************************************************************
-    T *Add(                                 // New item to fill out on success.
-        void        *pData)                 // The value to hash on.
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T *) CClosedHashBase::Add(pData));
-    }
-
-//*****************************************************************************
-// Lookup a key value and return a pointer to the element if found.
-//*****************************************************************************
-    T *Find(                                // The item if found, 0 if not.
-        void        *pData)                 // The key to lookup.
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T *) CClosedHashBase::Find(pData));
-    }
-
-//*****************************************************************************
-// Look for an item in the table.  If it isn't found, then create a new one and
-// return that.
-//*****************************************************************************
-    T *FindOrAdd(                           // The item if found, 0 if not.
-        void        *pData,                 // The key to lookup.
-        bool        &bNew)                  // true if created.
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T *) CClosedHashBase::FindOrAdd(pData, bNew));
-    }
-
-
-//*****************************************************************************
-// The following functions are used to traverse each used entry.  This code
-// will skip over deleted and free entries freeing the caller up from such
-// logic.
-//*****************************************************************************
-    T *GetFirst()                           // The first entry, 0 if none.
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T *) CClosedHashBase::GetFirst());
-    }
-
-    T *GetNext(T *Prev)                     // The next entry, 0 if done.
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T *) CClosedHashBase::GetNext((BYTE *) Prev));
-    }
-};
-
-
-//*****************************************************************************
-// IMPORTANT: This data structure is deprecated, please do not add any new uses.
-// The hashtable implementation that should be used instead is code:SHash.
-// If code:SHash does not work for you, talk to mailto:clrdeag.
-//*****************************************************************************
-// Closed hash with typed parameters.  The derived class is the second
-//  parameter to the template.  The derived class must implement:
-//    unsigned long Hash(const T *pData);
-//    unsigned long Compare(const T *p1, T *p2);
-//    ELEMENTSTATUS Status(T *pEntry);
-//    void SetStatus(T *pEntry, ELEMENTSTATUS s);
-//    void* GetKey(T *pEntry);
-//*****************************************************************************
-template<class T, class H>class CClosedHashEx : public CClosedHash<T>
-{
-public:
-    CClosedHashEx(
-        int         iBuckets,               // How many buckets should we start with.
-        bool        bPerfect=false) :       // true if bucket size will hash with no collisions.
-        CClosedHash<T> (iBuckets, bPerfect)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    unsigned int Hash(const void *pData)
-    {
-        WRAPPER_NO_CONTRACT;
-        return static_cast<H*>(this)->Hash((const T*)pData);
-    }
-
-    unsigned int Compare(const void *p1, BYTE *p2)
-    {
-        WRAPPER_NO_CONTRACT;
-        return static_cast<H*>(this)->Compare((const T*)p1, (T*)p2);
-    }
-
-    typename CClosedHash<T>::ELEMENTSTATUS Status(BYTE *p)
-    {
-        WRAPPER_NO_CONTRACT;
-        return static_cast<H*>(this)->Status((T*)p);
-    }
-
-    void SetStatus(BYTE *p, typename CClosedHash<T>::ELEMENTSTATUS s)
-    {
-        WRAPPER_NO_CONTRACT;
-        static_cast<H*>(this)->SetStatus((T*)p, s);
-    }
-
-    void* GetKey(BYTE *p)
-    {
-        WRAPPER_NO_CONTRACT;
-        return static_cast<H*>(this)->GetKey((T*)p);
-    }
-};
-
 
 //*****************************************************************************
 // IMPORTANT: This data structure is deprecated, please do not add any new uses.
@@ -3466,28 +3048,50 @@ private:
     BYTE m_inited;
 };
 
-//*****************************************************************************
-// Convert a pointer to a string into a GUID.
-//*****************************************************************************
-HRESULT LPCSTRToGuid(                   // Return status.
-    LPCSTR      szGuid,                 // String to convert.
-    GUID        *psGuid);               // Buffer for converted GUID.
+// 38 characters + 1 null terminating.
+#define GUID_STR_BUFFER_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))
 
 //*****************************************************************************
 // Convert a GUID into a pointer to a string
 //*****************************************************************************
-int GuidToLPWSTR(                  // Return status.
-    GUID        Guid,                  // [IN] The GUID to convert.
-    _Out_writes_ (cchGuid) LPWSTR szGuid, // [OUT] String into which the GUID is stored
-    DWORD       cchGuid);              // [IN] Size in wide chars of szGuid
+int GuidToLPSTR(
+    REFGUID guid,   // [IN] The GUID to convert.
+    LPSTR szGuid,   // [OUT] String into which the GUID is stored
+    DWORD cchGuid); // [IN] Size in chars of szGuid
+
+template<DWORD N>
+int GuidToLPSTR(REFGUID guid, CHAR (&s)[N])
+{
+    return GuidToLPSTR(guid, s, N);
+}
+
+//*****************************************************************************
+// Convert a pointer to a string into a GUID.
+//*****************************************************************************
+BOOL LPCSTRToGuid(
+    LPCSTR szGuid,  // [IN] String to convert.
+    GUID* pGuid);  // [OUT] Buffer for converted GUID.
+
+//*****************************************************************************
+// Convert a GUID into a pointer to a string
+//*****************************************************************************
+int GuidToLPWSTR(
+    REFGUID guid,   // [IN] The GUID to convert.
+    LPWSTR szGuid,  // [OUT] String into which the GUID is stored
+    DWORD cchGuid); // [IN] Size in wide chars of szGuid
+
+template<DWORD N>
+int GuidToLPWSTR(REFGUID guid, WCHAR (&s)[N])
+{
+    return GuidToLPWSTR(guid, s, N);
+}
 
 //*****************************************************************************
 // Parse a Wide char string into a GUID
 //*****************************************************************************
-BOOL LPWSTRToGuid(
-    GUID      * Guid,                         // [OUT] The GUID to fill in
-    _In_reads_(cchGuid)   LPCWSTR szGuid,    // [IN] String to parse
-    DWORD       cchGuid);                     // [IN] Count in wchars in string
+BOOL LPCWSTRToGuid(
+    LPCWSTR szGuid, // [IN] String to convert.
+    GUID* pGuid);   // [OUT] Buffer for converted GUID.
 
 typedef VPTR(class RangeList) PTR_RangeList;
 
@@ -3808,14 +3412,6 @@ inline bool FitsInRel28(INT64 val64)
     return (val64 >= -0x08000000LL) && (val64 < 0x08000000LL);
 }
 
-//*****************************************************************************
-// Splits a command line into argc/argv lists, using the VC7 parsing rules.
-// This functions interface mimics the CommandLineToArgvW api.
-// If function fails, returns NULL.
-// If function suceeds, call delete [] on return pointer when done.
-//*****************************************************************************
-LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs);
-
 //
 // TEB access can be dangerous when using fibers because a fiber may
 // run on multiple threads.  If the TEB pointer is retrieved and saved
@@ -3838,11 +3434,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         // not fiber for HOST_UNIX - use the regular thread ID
         return (void *)(size_t)GetCurrentThreadId();
-    }
-
-    static void* InvalidFiberPtrId()
-    {
-        return NULL;
     }
 
     static void* GetStackBase()
@@ -3877,33 +3468,12 @@ public:
         return NtCurrentTeb()->NtTib.StackLimit;
     }
 
-    // Please don't start to use this method unless you absolutely have to.
-    // The reason why this is added is for WIN64 to support LEGACY PE-style TLS
-    // variables.  On X86 it is supported by the JIT compilers themselves.  On
-    // WIN64 we build more logic into the JIT helper for accessing fields.
-    static void* GetLegacyThreadLocalStoragePointer()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->ThreadLocalStoragePointer;
-    }
-
     static void* GetOleReservedPtr()
     {
         LIMITED_METHOD_CONTRACT;
         return NtCurrentTeb()->ReservedForOle;
     }
 
-    static void* GetProcessEnvironmentBlock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->ProcessEnvironmentBlock;
-    }
-
-
-    static void* InvalidFiberPtrId()
-    {
-        return (void*) 1;
-    }
 #endif // HOST_UNIX
 };
 
@@ -3930,16 +3500,6 @@ inline BOOL IsGateSpecialThread ()
     STATIC_CONTRACT_MODE_ANY;
 
     return !!(t_ThreadType & ThreadType_Gate);
-}
-
-// check if current thread is a Timer thread
-inline BOOL IsTimerSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Timer);
 }
 
 // check if current thread is a debugger helper thread
@@ -4260,7 +3820,7 @@ template<class T> void DeleteExecutable(T *p)
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
 
-BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack);
+BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommittedStack);
 
 #ifdef FEATURE_COMINTEROP
 FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolation); SysFreeString(str); }
@@ -4458,13 +4018,6 @@ inline T* InterlockedCompareExchangeT(
 // Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
 HRESULT GetClrModuleDirectory(SString& wszPath);
-HRESULT CopySystemDirectory(const SString& pPathString, SString& pbuffer);
-
-HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt_z_ LPCWSTR modulePath=NULL, bool trySelf=true);
-// This is a slight variation that can be used for anything else
-typedef void* (__cdecl *LocalizedFileHandler)(LPCWSTR);
-void* FindLocalizedFile(_In_z_ LPCWSTR wzResourceDllName, LocalizedFileHandler lfh, _In_opt_z_ LPCWSTR modulePath=NULL);
-
 
 namespace Clr { namespace Util
 {

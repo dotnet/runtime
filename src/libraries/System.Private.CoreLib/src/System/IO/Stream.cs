@@ -449,17 +449,13 @@ namespace System.IO
             return totalRead;
         }
 
-#if NATIVEAOT // TODO: https://github.com/dotnet/corert/issues/3251
-        private static bool HasOverriddenBeginEndRead() => true;
-
-        private static bool HasOverriddenBeginEndWrite() => true;
-#else
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndRead();
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndWrite();
-#endif
 
         private Task<int> BeginEndReadAsync(byte[] buffer, int offset, int count)
         {
@@ -690,7 +686,7 @@ namespace System.IO
                 {
                     _callback = callback;
                     _context = ExecutionContext.Capture();
-                    base.AddCompletionAction(this);
+                    AddCompletionAction(this);
                 }
             }
 
@@ -1001,10 +997,7 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(destination);
 
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             if (!destination.CanWrite)
             {
@@ -1048,16 +1041,16 @@ namespace System.IO
                     Task.CompletedTask;
 
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-                TaskToApm.Begin(Task<int>.s_defaultResultTask, callback, state);
+                TaskToAsyncResult.Begin(Task<int>.s_defaultResultTask, callback, state);
 
             public override int EndRead(IAsyncResult asyncResult) =>
-                TaskToApm.End<int>(asyncResult);
+                TaskToAsyncResult.End<int>(asyncResult);
 
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-                TaskToApm.Begin(Task.CompletedTask, callback, state);
+                TaskToAsyncResult.Begin(Task.CompletedTask, callback, state);
 
             public override void EndWrite(IAsyncResult asyncResult) =>
-                TaskToApm.End(asyncResult);
+                TaskToAsyncResult.End(asyncResult);
 
             public override int Read(byte[] buffer, int offset, int count) => 0;
 
@@ -1227,9 +1220,6 @@ namespace System.IO
 
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
-#if NATIVEAOT
-                throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3251
-#else
                 bool overridesBeginRead = _stream.HasOverriddenBeginEndRead();
 
                 lock (_stream)
@@ -1244,7 +1234,6 @@ namespace System.IO
                         _stream.BeginRead(buffer, offset, count, callback, state) :
                         _stream.BeginReadInternal(buffer, offset, count, callback, state, serializeAsynchronously: true, apm: true);
                 }
-#endif
             }
 
             public override int EndRead(IAsyncResult asyncResult)
@@ -1302,9 +1291,6 @@ namespace System.IO
 
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
-#if NATIVEAOT
-                throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3251
-#else
                 bool overridesBeginWrite = _stream.HasOverriddenBeginEndWrite();
 
                 lock (_stream)
@@ -1319,7 +1305,6 @@ namespace System.IO
                         _stream.BeginWrite(buffer, offset, count, callback, state) :
                         _stream.BeginWriteInternal(buffer, offset, count, callback, state, serializeAsynchronously: true, apm: true);
                 }
-#endif
             }
 
             public override void EndWrite(IAsyncResult asyncResult)

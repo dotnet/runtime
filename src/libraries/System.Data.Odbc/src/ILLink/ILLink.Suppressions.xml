@@ -47,7 +47,7 @@
       <argument>ILLink</argument>
       <argument>IL2072</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Data.Odbc.OdbcMetaDataFactory.NewDataTableFromReader(System.Data.IDataReader,System.Object[]@,System.String)</property>
+      <property name="Target">M:System.Data.Odbc.OdbcMetaDataFactory.NewDataTableFromReader(System.Data.Odbc.OdbcDataReader,System.Object[]@,System.String)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

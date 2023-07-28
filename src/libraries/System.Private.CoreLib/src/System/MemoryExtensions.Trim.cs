@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -12,7 +13,7 @@ namespace System
         /// </summary>
         /// <param name="memory">The source memory from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static Memory<T> Trim<T>(this Memory<T> memory, T trimElement) where T : IEquatable<T>
+        public static Memory<T> Trim<T>(this Memory<T> memory, T trimElement) where T : IEquatable<T>?
         {
             ReadOnlySpan<T> span = memory.Span;
             int start = ClampStart(span, trimElement);
@@ -25,7 +26,7 @@ namespace System
         /// </summary>
         /// <param name="memory">The source memory from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static Memory<T> TrimStart<T>(this Memory<T> memory, T trimElement) where T : IEquatable<T>
+        public static Memory<T> TrimStart<T>(this Memory<T> memory, T trimElement) where T : IEquatable<T>?
             => memory.Slice(ClampStart(memory.Span, trimElement));
 
         /// <summary>
@@ -33,7 +34,7 @@ namespace System
         /// </summary>
         /// <param name="memory">The source memory from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static Memory<T> TrimEnd<T>(this Memory<T> memory, T trimElement) where T : IEquatable<T>
+        public static Memory<T> TrimEnd<T>(this Memory<T> memory, T trimElement) where T : IEquatable<T>?
             => memory.Slice(0, ClampEnd(memory.Span, 0, trimElement));
 
         /// <summary>
@@ -41,7 +42,7 @@ namespace System
         /// </summary>
         /// <param name="memory">The source memory from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static ReadOnlyMemory<T> Trim<T>(this ReadOnlyMemory<T> memory, T trimElement) where T : IEquatable<T>
+        public static ReadOnlyMemory<T> Trim<T>(this ReadOnlyMemory<T> memory, T trimElement) where T : IEquatable<T>?
         {
             ReadOnlySpan<T> span = memory.Span;
             int start = ClampStart(span, trimElement);
@@ -54,7 +55,7 @@ namespace System
         /// </summary>
         /// <param name="memory">The source memory from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static ReadOnlyMemory<T> TrimStart<T>(this ReadOnlyMemory<T> memory, T trimElement) where T : IEquatable<T>
+        public static ReadOnlyMemory<T> TrimStart<T>(this ReadOnlyMemory<T> memory, T trimElement) where T : IEquatable<T>?
             => memory.Slice(ClampStart(memory.Span, trimElement));
 
         /// <summary>
@@ -62,7 +63,7 @@ namespace System
         /// </summary>
         /// <param name="memory">The source memory from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static ReadOnlyMemory<T> TrimEnd<T>(this ReadOnlyMemory<T> memory, T trimElement) where T : IEquatable<T>
+        public static ReadOnlyMemory<T> TrimEnd<T>(this ReadOnlyMemory<T> memory, T trimElement) where T : IEquatable<T>?
             => memory.Slice(0, ClampEnd(memory.Span, 0, trimElement));
 
         /// <summary>
@@ -70,7 +71,7 @@ namespace System
         /// </summary>
         /// <param name="span">The source span from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static Span<T> Trim<T>(this Span<T> span, T trimElement) where T : IEquatable<T>
+        public static Span<T> Trim<T>(this Span<T> span, T trimElement) where T : IEquatable<T>?
         {
             int start = ClampStart(span, trimElement);
             int length = ClampEnd(span, start, trimElement);
@@ -82,7 +83,7 @@ namespace System
         /// </summary>
         /// <param name="span">The source span from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static Span<T> TrimStart<T>(this Span<T> span, T trimElement) where T : IEquatable<T>
+        public static Span<T> TrimStart<T>(this Span<T> span, T trimElement) where T : IEquatable<T>?
             => span.Slice(ClampStart(span, trimElement));
 
         /// <summary>
@@ -90,7 +91,7 @@ namespace System
         /// </summary>
         /// <param name="span">The source span from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static Span<T> TrimEnd<T>(this Span<T> span, T trimElement) where T : IEquatable<T>
+        public static Span<T> TrimEnd<T>(this Span<T> span, T trimElement) where T : IEquatable<T>?
             => span.Slice(0, ClampEnd(span, 0, trimElement));
 
         /// <summary>
@@ -98,7 +99,7 @@ namespace System
         /// </summary>
         /// <param name="span">The source span from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static ReadOnlySpan<T> Trim<T>(this ReadOnlySpan<T> span, T trimElement) where T : IEquatable<T>
+        public static ReadOnlySpan<T> Trim<T>(this ReadOnlySpan<T> span, T trimElement) where T : IEquatable<T>?
         {
             int start = ClampStart(span, trimElement);
             int length = ClampEnd(span, start, trimElement);
@@ -110,7 +111,7 @@ namespace System
         /// </summary>
         /// <param name="span">The source span from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static ReadOnlySpan<T> TrimStart<T>(this ReadOnlySpan<T> span, T trimElement) where T : IEquatable<T>
+        public static ReadOnlySpan<T> TrimStart<T>(this ReadOnlySpan<T> span, T trimElement) where T : IEquatable<T>?
             => span.Slice(ClampStart(span, trimElement));
 
         /// <summary>
@@ -118,7 +119,7 @@ namespace System
         /// </summary>
         /// <param name="span">The source span from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        public static ReadOnlySpan<T> TrimEnd<T>(this ReadOnlySpan<T> span, T trimElement) where T : IEquatable<T>
+        public static ReadOnlySpan<T> TrimEnd<T>(this ReadOnlySpan<T> span, T trimElement) where T : IEquatable<T>?
             => span.Slice(0, ClampEnd(span, 0, trimElement));
 
         /// <summary>
@@ -126,7 +127,7 @@ namespace System
         /// </summary>
         /// <param name="span">The source span from which the element is removed.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        private static int ClampStart<T>(ReadOnlySpan<T> span, T trimElement) where T : IEquatable<T>
+        private static int ClampStart<T>(ReadOnlySpan<T> span, T trimElement) where T : IEquatable<T>?
         {
             int start = 0;
 
@@ -160,7 +161,7 @@ namespace System
         /// <param name="span">The source span from which the element is removed.</param>
         /// <param name="start">The start index from which to being searching.</param>
         /// <param name="trimElement">The specified element to look for and remove.</param>
-        private static int ClampEnd<T>(ReadOnlySpan<T> span, int start, T trimElement) where T : IEquatable<T>
+        private static int ClampEnd<T>(ReadOnlySpan<T> span, int start, T trimElement) where T : IEquatable<T>?
         {
             // Initially, start==len==0. If ClampStart trims all, start==len
             Debug.Assert((uint)start <= span.Length);
@@ -198,7 +199,7 @@ namespace System
         /// <param name="memory">The source memory from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the memory is returned unaltered.</remarks>
-        public static Memory<T> Trim<T>(this Memory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static Memory<T> Trim<T>(this Memory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -223,7 +224,7 @@ namespace System
         /// <param name="memory">The source memory from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the memory is returned unaltered.</remarks>
-        public static Memory<T> TrimStart<T>(this Memory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static Memory<T> TrimStart<T>(this Memory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -245,7 +246,7 @@ namespace System
         /// <param name="memory">The source memory from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the memory is returned unaltered.</remarks>
-        public static Memory<T> TrimEnd<T>(this Memory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static Memory<T> TrimEnd<T>(this Memory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -267,7 +268,7 @@ namespace System
         /// <param name="memory">The source memory from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the memory is returned unaltered.</remarks>
-        public static ReadOnlyMemory<T> Trim<T>(this ReadOnlyMemory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static ReadOnlyMemory<T> Trim<T>(this ReadOnlyMemory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -292,7 +293,7 @@ namespace System
         /// <param name="memory">The source memory from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the memory is returned unaltered.</remarks>
-        public static ReadOnlyMemory<T> TrimStart<T>(this ReadOnlyMemory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static ReadOnlyMemory<T> TrimStart<T>(this ReadOnlyMemory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -314,7 +315,7 @@ namespace System
         /// <param name="memory">The source memory from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the memory is returned unaltered.</remarks>
-        public static ReadOnlyMemory<T> TrimEnd<T>(this ReadOnlyMemory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static ReadOnlyMemory<T> TrimEnd<T>(this ReadOnlyMemory<T> memory, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -336,7 +337,7 @@ namespace System
         /// <param name="span">The source span from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the span is returned unaltered.</remarks>
-        public static Span<T> Trim<T>(this Span<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static Span<T> Trim<T>(this Span<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -360,7 +361,7 @@ namespace System
         /// <param name="span">The source span from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the span is returned unaltered.</remarks>
-        public static Span<T> TrimStart<T>(this Span<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static Span<T> TrimStart<T>(this Span<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -382,7 +383,7 @@ namespace System
         /// <param name="span">The source span from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the span is returned unaltered.</remarks>
-        public static Span<T> TrimEnd<T>(this Span<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static Span<T> TrimEnd<T>(this Span<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -404,7 +405,7 @@ namespace System
         /// <param name="span">The source span from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the span is returned unaltered.</remarks>
-        public static ReadOnlySpan<T> Trim<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static ReadOnlySpan<T> Trim<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -428,7 +429,7 @@ namespace System
         /// <param name="span">The source span from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the span is returned unaltered.</remarks>
-        public static ReadOnlySpan<T> TrimStart<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static ReadOnlySpan<T> TrimStart<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -450,7 +451,7 @@ namespace System
         /// <param name="span">The source span from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
         /// <remarks>If <paramref name="trimElements"/> is empty, the span is returned unaltered.</remarks>
-        public static ReadOnlySpan<T> TrimEnd<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        public static ReadOnlySpan<T> TrimEnd<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             if (trimElements.Length > 1)
             {
@@ -471,7 +472,7 @@ namespace System
         /// </summary>
         /// <param name="span">The source span from which the elements are removed.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
-        private static int ClampStart<T>(ReadOnlySpan<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        private static int ClampStart<T>(ReadOnlySpan<T> span, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             int start = 0;
             for (; start < span.Length; start++)
@@ -492,7 +493,7 @@ namespace System
         /// <param name="span">The source span from which the elements are removed.</param>
         /// <param name="start">The start index from which to being searching.</param>
         /// <param name="trimElements">The span which contains the set of elements to remove.</param>
-        private static int ClampEnd<T>(ReadOnlySpan<T> span, int start, ReadOnlySpan<T> trimElements) where T : IEquatable<T>
+        private static int ClampEnd<T>(ReadOnlySpan<T> span, int start, ReadOnlySpan<T> trimElements) where T : IEquatable<T>?
         {
             // Initially, start==len==0. If ClampStart trims all, start==len
             Debug.Assert((uint)start <= span.Length);
@@ -565,27 +566,39 @@ namespace System
         /// Removes all leading and trailing white-space characters from the span.
         /// </summary>
         /// <param name="span">The source span from which the characters are removed.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> span)
         {
-            int start = 0;
-            for (; start < span.Length; start++)
+            // Assume that in most cases input doesn't need trimming
+            if (span.Length == 0 ||
+                (!char.IsWhiteSpace(span[0]) && !char.IsWhiteSpace(span[^1])))
             {
-                if (!char.IsWhiteSpace(span[start]))
-                {
-                    break;
-                }
+                return span;
             }
+            return TrimFallback(span);
 
-            int end = span.Length - 1;
-            for (; end > start; end--)
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static ReadOnlySpan<char> TrimFallback(ReadOnlySpan<char> span)
             {
-                if (!char.IsWhiteSpace(span[end]))
+                int start = 0;
+                for (; start < span.Length; start++)
                 {
-                    break;
+                    if (!char.IsWhiteSpace(span[start]))
+                    {
+                        break;
+                    }
                 }
-            }
 
-            return span.Slice(start, end - start + 1);
+                int end = span.Length - 1;
+                for (; end > start; end--)
+                {
+                    if (!char.IsWhiteSpace(span[end]))
+                    {
+                        break;
+                    }
+                }
+                return span.Slice(start, end - start + 1);
+            }
         }
 
         /// <summary>
@@ -770,11 +783,39 @@ namespace System
         /// Removes all leading and trailing white-space characters from the span.
         /// </summary>
         /// <param name="span">The source span from which the characters are removed.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<char> Trim(this Span<char> span)
         {
-            int start = ClampStart(span);
-            int length = ClampEnd(span, start);
-            return span.Slice(start, length);
+            // Assume that in most cases input doesn't need trimming
+            if (span.Length == 0 ||
+                (!char.IsWhiteSpace(span[0]) && !char.IsWhiteSpace(span[^1])))
+            {
+                return span;
+            }
+            return TrimFallback(span);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Span<char> TrimFallback(Span<char> span)
+            {
+                int start = 0;
+                for (; start < span.Length; start++)
+                {
+                    if (!char.IsWhiteSpace(span[start]))
+                    {
+                        break;
+                    }
+                }
+
+                int end = span.Length - 1;
+                for (; end > start; end--)
+                {
+                    if (!char.IsWhiteSpace(span[end]))
+                    {
+                        break;
+                    }
+                }
+                return span.Slice(start, end - start + 1);
+            }
         }
 
         /// <summary>

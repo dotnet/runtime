@@ -87,6 +87,23 @@ PTR_Module TypeDesc::GetLoaderModule()
     }
 }
 
+BOOL TypeDesc::IsSharedByGenericInstantiations()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (HasTypeParam())
+    {
+        return GetRootTypeParam().IsCanonicalSubtype();
+    }
+
+    if (IsFnPtr())
+    {
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->IsSharedByGenericInstantiations();
+    }
+
+    return FALSE;
+}
+
 PTR_BaseDomain TypeDesc::GetDomain()
 {
     CONTRACTL
@@ -221,14 +238,20 @@ void TypeDesc::ConstructName(CorElementType kind,
 
     case ELEMENT_TYPE_VAR:
     case ELEMENT_TYPE_MVAR:
+    {
         if (kind == ELEMENT_TYPE_VAR)
         {
-            ssBuff.Printf(W("!%d"), rank);
+            ssBuff.Append(W('!'));
         }
         else
         {
-            ssBuff.Printf(W("!!%d"), rank);
+            ssBuff.Append(W("!!"));
         }
+
+        WCHAR buffer[MaxSigned32BitDecString + 1];
+        FormatInteger(buffer, ARRAY_SIZE(buffer), "%d", rank);
+        ssBuff.Append(buffer);
+    }
         break;
 
     case ELEMENT_TYPE_FNPTR:
@@ -492,26 +515,33 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL) {
-        REFLECTCLASSBASEREF  refClass = NULL;
-        GCPROTECT_BEGIN(refClass);
-        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
+    if (m_hExposedClassObject == NULL)
+    {
+        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
+    }
+    return GetManagedClassObjectIfExists();
+}
 
-        LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
-        TypeHandle th = TypeHandle(this);
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(th);
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
+#endif // #ifndef DACCESS_COMPILE
 
-        // Let all threads fight over who wins using InterlockedCompareExchange.
-        // Only the winner can set m_hExposedClassObject from NULL.
-        LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
+#ifndef DACCESS_COMPILE
 
-        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
-        {
-            pLoaderAllocator->FreeHandle(hExposedClassObject);
-        }
+OBJECTREF FnPtrTypeDesc::GetManagedClassObject()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
 
-        GCPROTECT_END();
+        INJECT_FAULT(COMPlusThrowOM());
+
+        PRECONDITION(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
+    }
+    CONTRACTL_END;
+
+    if (m_hExposedClassObject == NULL)
+    {
+        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }
     return GetManagedClassObjectIfExists();
 }
@@ -519,17 +549,6 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
 #endif // #ifndef DACCESS_COMPILE
 
 BOOL TypeDesc::IsRestored()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    SUPPORTS_DAC;
-
-    return IsRestored_NoLogging();
-}
-
-BOOL TypeDesc::IsRestored_NoLogging()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -594,7 +613,7 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
 //                 dependencies - the root caller must handle this.
 //
 //
-//   pfBailed - if we or one of our depedencies bails early due to cyclic dependencies, we
+//   pfBailed - if we or one of our dependencies bails early due to cyclic dependencies, we
 //              must set *pfBailed to TRUE. Otherwise, we must *leave it unchanged* (thus, the
 //              boolean acts as a cumulative OR.)
 //
@@ -811,6 +830,14 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         else
         {
             _ASSERTE(TypeFromToken(defToken) == mdtTypeDef);
+
+            bool foundResult = false;
+            if (!GetModule()->m_pTypeGenericInfoMap->HasConstraints(defToken, &foundResult) && foundResult)
+            {
+                m_numConstraints = 0;
+                return;
+            }
+
             TypeHandle genericType = LoadOwnerType();
             _ASSERTE(genericType.IsGenericTypeDefinition());
 
@@ -1550,7 +1577,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                 }
                 else
                 {
-                    // if a concrete type can be cast to the constraint, then this constraint will be satisifed
+                    // if a concrete type can be cast to the constraint, then this constraint will be satisfied
                     if (thElem.CanCastTo(thConstraint))
                     {
                         // Static virtual methods need an extra check when an abstract type is used for instantiation
@@ -1573,7 +1600,9 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                                 if (pMD->IsVirtual() &&
                                     pMD->IsStatic() &&
                                     (pMD->IsAbstract() && !thElem.AsMethodTable()->ResolveVirtualStaticMethod(
-                                        pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE)))
+                                        pInterfaceMT, pMD,
+                                        ResolveVirtualStaticMethodFlags::AllowNullResult | ResolveVirtualStaticMethodFlags::VerifyImplemented | ResolveVirtualStaticMethodFlags::AllowVariantMatches,
+                                        /*uniqueResolution*/ NULL, CLASS_DEPENDENCIES_LOADED)))
                                 {
                                     virtualStaticResolutionCheckFailed = true;
                                     break;
@@ -1596,7 +1625,6 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
     return TRUE;
 }
 
-
 OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
@@ -1610,26 +1638,9 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL) {
-        REFLECTCLASSBASEREF  refClass = NULL;
-        GCPROTECT_BEGIN(refClass);
-        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
-
-        LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
-        TypeHandle th = TypeHandle(this);
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(th);
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
-
-        // Let all threads fight over who wins using InterlockedCompareExchange.
-        // Only the winner can set m_hExposedClassObject from NULL.
-        LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
-
-        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
-        {
-            pLoaderAllocator->FreeHandle(hExposedClassObject);
-        }
-
-        GCPROTECT_END();
+    if (m_hExposedClassObject == NULL)
+    {
+        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }
     return GetManagedClassObjectIfExists();
 }
@@ -1639,17 +1650,25 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 TypeHandle *
 FnPtrTypeDesc::GetRetAndArgTypes()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
+    LIMITED_METHOD_CONTRACT;
 
     return m_RetAndArgTypes;
 } // FnPtrTypeDesc::GetRetAndArgTypes
+
+BOOL
+FnPtrTypeDesc::IsSharedByGenericInstantiations()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    for (DWORD i = 0; i <= m_NumArgs; i++)
+    {
+        if (m_RetAndArgTypes[i].IsCanonicalSubtype())
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+} // FnPtrTypeDesc::IsSharedByGenericInstantiations
 
 #ifndef DACCESS_COMPILE
 
@@ -1665,10 +1684,9 @@ FnPtrTypeDesc::IsExternallyVisible() const
     }
     CONTRACTL_END;
 
-    const TypeHandle * rgRetAndArgTypes = GetRetAndArgTypes();
     for (DWORD i = 0; i <= m_NumArgs; i++)
     {
-        if (!rgRetAndArgTypes[i].IsExternallyVisible())
+        if (!m_RetAndArgTypes[i].IsExternallyVisible())
         {
             return FALSE;
         }

@@ -38,8 +38,12 @@ namespace ILCompiler
         private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
         private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
+        private bool _hotColdSplitting;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
+        private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
+        private int _genericCycleDetectionDepthCutoff = -1;
+        private int _genericCycleDetectionBreadthCutoff = -1;
 
         private string _jitPath;
         private string _outputFile;
@@ -47,7 +51,7 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        private ILProvider _ilProvider = new ReadyToRunILProvider();
+        private ILProvider _ilProvider;
 
         public ReadyToRunCodegenCompilationBuilder(
             CompilerTypeSystemContext context,
@@ -56,11 +60,9 @@ namespace ILCompiler
             string compositeRootPath)
             : base(context, group, new NativeAotNameMangler())
         {
+            _ilProvider = new ReadyToRunILProvider(group);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
-
-            // R2R field layout needs compilation group information
-            ((ReadyToRunCompilerContext)context).SetCompilationGroup(group);
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
@@ -186,6 +188,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseHotColdSplitting(bool hotColdSplitting)
+        {
+            _hotColdSplitting = hotColdSplitting;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseCompositeImageSettings(CompositeImageSettings compositeImageSettings)
         {
             _compositeImageSettings = compositeImageSettings;
@@ -195,6 +203,19 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseImageBase(ulong imageBase)
         {
             _imageBase = imageBase;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseNodeFactoryOptimizationFlags(NodeFactoryOptimizationFlags flags)
+        {
+            _nodeFactoryOptimizationFlags = flags;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseGenericCycleDetection(int depthCutoff, int breadthCutoff)
+        {
+            _genericCycleDetectionDepthCutoff = depthCutoff;
+            _genericCycleDetectionBreadthCutoff = breadthCutoff;
             return this;
         }
 
@@ -230,6 +251,11 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
+            bool automaticTypeValidation = _nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.Automatic || _nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging;
+            if (_nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(
@@ -241,7 +267,11 @@ namespace ILCompiler
                 debugDirectoryNode,
                 win32Resources,
                 flags,
-                _imageBase
+                _nodeFactoryOptimizationFlags,
+                _imageBase,
+                automaticTypeValidation ? singleModule : null,
+                genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
+                genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff
                 );
 
             factory.CompositeImageSettings = _compositeImageSettings;
@@ -249,7 +279,12 @@ namespace ILCompiler
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
 
+            
             List<CorJitFlag> corJitFlags = new List<CorJitFlag> { CorJitFlag.CORJIT_FLAG_DEBUG_INFO };
+            if (_hotColdSplitting)
+            {
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PROCSPLIT);
+            }
 
             switch (_optimizationMode)
             {
@@ -272,6 +307,10 @@ namespace ILCompiler
                     corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
                     break;
             }
+
+            // Always allow frozen allocators for R2R (NativeAOT is able to preinitialize objects on
+            // frozen segments without JIT's help)
+            corJitFlags.Add(CorJitFlag.CORJIT_FLAG_FROZEN_ALLOC_ALLOWED);
 
             if (!_isJitInitialized)
             {

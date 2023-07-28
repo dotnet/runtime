@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -616,20 +617,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50721", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public async Task ReadISetTOfHashSetT()
         {
             ISet<HashSet<int>> result = await Serializer.DeserializeWrapper<ISet<HashSet<int>>>(@"[[1,2],[3,4]]");
 
             if (result.First().Contains(1))
             {
-                Assert.Equal(new HashSet<int> { 1, 2 }, result.First());
-                Assert.Equal(new HashSet<int> { 3, 4 }, result.Last());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, result.First());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, result.Last());
             }
             else
             {
-                Assert.Equal(new HashSet<int> { 3, 4 }, result.First());
-                Assert.Equal(new HashSet<int> { 1, 2 }, result.Last());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, result.First());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, result.Last());
             }
         }
 
@@ -1281,8 +1281,8 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task IReadOnlyDictionary_NotSupportedKey()
         {
-            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<IReadOnlyDictionary<Uri, int>>(@"{""http://foo"":1}"));
-            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(new GenericIReadOnlyDictionaryWrapper<Uri, int>(new Dictionary<Uri, int> { { new Uri("http://foo"), 1 } })));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<IReadOnlyDictionary<JsonNode, int>>(@"{""key"":1}"));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(new GenericIReadOnlyDictionaryWrapper<JsonNode, int>(new Dictionary<JsonNode, int> { { JsonNode.Parse("false"), 1 } })));
         }
     }
 }

@@ -49,10 +49,7 @@ DumpWriter::WriteDump()
     uint64_t phnum = 1;
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
-        if (memoryRegion.IsBackedByMemory())
-        {
-            phnum++;
-        }
+        phnum++;
     }
 
     if (phnum < PH_HDR_CANARY) {
@@ -118,19 +115,16 @@ DumpWriter::WriteDump()
     // Write memory region note headers
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
-        if (memoryRegion.IsBackedByMemory())
-        {
-            phdr.p_flags = memoryRegion.Permissions();
-            phdr.p_vaddr = memoryRegion.StartAddress();
-            phdr.p_memsz = memoryRegion.Size();
+        phdr.p_flags = memoryRegion.Permissions();
+        phdr.p_vaddr = memoryRegion.StartAddress();
+        phdr.p_memsz = memoryRegion.Size();
 
-            offset += filesz;
-            phdr.p_filesz = filesz = memoryRegion.Size();
-            phdr.p_offset = offset;
+        offset += filesz;
+        phdr.p_filesz = filesz = memoryRegion.Size();
+        phdr.p_offset = offset;
 
-            if (!WriteData(&phdr, sizeof(phdr))) {
-                return false;
-            }
+        if (!WriteData(&phdr, sizeof(phdr))) {
+            return false;
         }
     }
 
@@ -154,7 +148,7 @@ DumpWriter::WriteDump()
     // Write all the thread's state and registers
     for (const ThreadInfo* thread : m_crashInfo.Threads())
     {
-        if (!WriteThread(*thread, SIGABRT)) {
+        if (!WriteThread(*thread)) {
             return false;
         }
     }
@@ -178,13 +172,18 @@ DumpWriter::WriteDump()
     uint64_t total = 0;
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
-        // Only write the regions that are backed by memory
-        if (memoryRegion.IsBackedByMemory())
-        {
-            uint64_t address = memoryRegion.StartAddress();
-            size_t size = memoryRegion.Size();
-            total += size;
+        uint64_t address = memoryRegion.StartAddress();
+        size_t size = memoryRegion.Size();
+        total += size;
 
+        if (address == SpecialDiagInfoAddress)
+        {
+            if (!WriteDiagInfo(size)) {
+                return false;
+            }
+        }
+        else
+        {
             while (size > 0)
             {
                 size_t bytesToRead = std::min(size, sizeof(m_tempBuffer));
@@ -368,13 +367,20 @@ DumpWriter::WriteNTFileInfo()
 }
 
 bool
-DumpWriter::WriteThread(const ThreadInfo& thread, int fatal_signal)
+DumpWriter::WriteThread(const ThreadInfo& thread)
 {
     prstatus_t pr;
     memset(&pr, 0, sizeof(pr));
+    const siginfo_t* siginfo = nullptr;
 
-    pr.pr_info.si_signo = fatal_signal;
-    pr.pr_cursig = fatal_signal;
+    if (m_crashInfo.Signal() != 0 && thread.IsCrashThread())
+    {
+        siginfo = m_crashInfo.SigInfo();
+        pr.pr_info.si_signo = siginfo->si_signo;
+        pr.pr_info.si_code = siginfo->si_code;
+        pr.pr_info.si_errno = siginfo->si_errno;
+        pr.pr_cursig = siginfo->si_signo;
+    }
     pr.pr_pid = thread.Tid();
     pr.pr_ppid = thread.Ppid();
     pr.pr_pgrp = thread.Tgid();
@@ -405,9 +411,8 @@ DumpWriter::WriteThread(const ThreadInfo& thread, int fatal_signal)
         return false;
     }
 
-    nhdr.n_namesz = 6;
-
 #if defined(__i386__)
+    nhdr.n_namesz = 6;
     nhdr.n_descsz = sizeof(user_fpxregs_struct);
     nhdr.n_type = NT_PRXFPREG;
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
@@ -418,6 +423,7 @@ DumpWriter::WriteThread(const ThreadInfo& thread, int fatal_signal)
 #endif
 
 #if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+    nhdr.n_namesz = 6;
     nhdr.n_descsz = sizeof(user_vfpregs_struct);
     nhdr.n_type = NT_ARM_VFP;
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
@@ -427,5 +433,19 @@ DumpWriter::WriteThread(const ThreadInfo& thread, int fatal_signal)
     }
 #endif
 
+    if (siginfo != nullptr)
+    {
+        TRACE("Writing NT_SIGINFO tid %04x signo %d (%04x) code %04x errno %04x addr %p\n",
+            thread.Tid(), siginfo->si_signo, siginfo->si_signo, siginfo->si_code, siginfo->si_errno, siginfo->si_addr);
+
+        nhdr.n_namesz = 5;
+        nhdr.n_descsz = sizeof(siginfo_t);
+        nhdr.n_type = NT_SIGINFO;
+        if (!WriteData(&nhdr, sizeof(nhdr)) ||
+            !WriteData("CORE\0SIG", 8) ||
+            !WriteData(siginfo, sizeof(siginfo_t))) {
+            return false;
+        }
+    }
     return true;
 }

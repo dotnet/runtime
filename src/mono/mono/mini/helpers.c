@@ -69,7 +69,11 @@ static const gint16 opidx [] = {
 
 #endif
 
+#ifdef TARGET_RISCV64
+#define ARCH_PREFIX "riscv64-linux-gnu-"
+#else
 #define ARCH_PREFIX ""
+#endif
 //#define ARCH_PREFIX "powerpc64-linux-gnu-"
 
 const char*
@@ -91,7 +95,7 @@ void
 mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom)
 {
 #ifndef DISABLE_LOGGING
-	int i;
+	guint i;
 
 	if (name)
 		g_print ("%s:", name);

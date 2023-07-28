@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
-    class App
+    public class App
     {
         static void Func(ref Array param1) { }
         static void Main1()
@@ -13,7 +14,8 @@ namespace Test
             Array arr = null;
             Func(ref ((Array[])arr)[0]);
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

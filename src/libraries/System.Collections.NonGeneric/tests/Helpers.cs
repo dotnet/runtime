@@ -192,7 +192,7 @@ namespace System.Collections.Tests
 
             for (int i = start; i < start + count; i++)
             {
-                sortedList.Add("Key_" + i.ToString("D2"), "Value_" + i);
+                sortedList.Add($"Key_{i:D2}", $"Value_{i}");
             }
 
             return sortedList;

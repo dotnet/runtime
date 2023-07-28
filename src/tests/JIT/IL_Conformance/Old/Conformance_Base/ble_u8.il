@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace ble_u8
+{
 .class public ble_un {
 
 .field public static	int64 all
@@ -14,99 +17,102 @@
 .method public static	void initialize() {
 .maxstack	10
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	stsfld	int64 ble_un::all
+	stsfld	int64 ble_u8.ble_un::all
 	ldc.i8		0x0000000000000000
-	stsfld	int64 ble_un::none
+	stsfld	int64 ble_u8.ble_un::none
 	ldc.i8		0x5555555555555555
-	stsfld	int64 ble_un::odd
+	stsfld	int64 ble_u8.ble_un::odd
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	stsfld	int64 ble_un::even
+	stsfld	int64 ble_u8.ble_un::even
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	call	void ble_un::initialize()
+	call	void ble_u8.ble_un::initialize()
 
 
-	ldsfld	int64 ble_un::all
-	ldsfld	int64 ble_un::all
+	ldsfld	int64 ble_u8.ble_un::all
+	ldsfld	int64 ble_u8.ble_un::all
 	ble.un A
 	br FAIL
 
 A:
-	ldsfld	int64 ble_un::all
-	ldsfld	int64 ble_un::none
+	ldsfld	int64 ble_u8.ble_un::all
+	ldsfld	int64 ble_u8.ble_un::none
 	ble.un FAIL
 
-	ldsfld	int64 ble_un::all
-	ldsfld	int64 ble_un::odd
+	ldsfld	int64 ble_u8.ble_un::all
+	ldsfld	int64 ble_u8.ble_un::odd
 	ble.un FAIL
 
-	ldsfld	int64 ble_un::all
-	ldsfld	int64 ble_un::even
+	ldsfld	int64 ble_u8.ble_un::all
+	ldsfld	int64 ble_u8.ble_un::even
 	ble.un FAIL
-	ldsfld	int64 ble_un::none
-	ldsfld	int64 ble_un::all
+	ldsfld	int64 ble_u8.ble_un::none
+	ldsfld	int64 ble_u8.ble_un::all
 	ble.un B
 	br FAIL
 
 B:
-	ldsfld	int64 ble_un::none
-	ldsfld	int64 ble_un::none
+	ldsfld	int64 ble_u8.ble_un::none
+	ldsfld	int64 ble_u8.ble_un::none
 	ble.un C
 	br FAIL
 
 C:
-	ldsfld	int64 ble_un::none
-	ldsfld	int64 ble_un::odd
+	ldsfld	int64 ble_u8.ble_un::none
+	ldsfld	int64 ble_u8.ble_un::odd
 	ble.un D
 	br FAIL
 
 D:
-	ldsfld	int64 ble_un::none
-	ldsfld	int64 ble_un::even
+	ldsfld	int64 ble_u8.ble_un::none
+	ldsfld	int64 ble_u8.ble_un::even
 	ble.un E
 	br FAIL
 E:
-	ldsfld	int64 ble_un::odd
-	ldsfld	int64 ble_un::all
+	ldsfld	int64 ble_u8.ble_un::odd
+	ldsfld	int64 ble_u8.ble_un::all
 	ble.un F
 	br FAIL
 
 F:
-	ldsfld	int64 ble_un::odd
-	ldsfld	int64 ble_un::none
+	ldsfld	int64 ble_u8.ble_un::odd
+	ldsfld	int64 ble_u8.ble_un::none
 	ble.un FAIL
 
-	ldsfld	int64 ble_un::odd
-	ldsfld	int64 ble_un::odd
+	ldsfld	int64 ble_u8.ble_un::odd
+	ldsfld	int64 ble_u8.ble_un::odd
 	ble.un G
 	br FAIL
 
 G:
-	ldsfld	int64 ble_un::odd
-	ldsfld	int64 ble_un::even
+	ldsfld	int64 ble_u8.ble_un::odd
+	ldsfld	int64 ble_u8.ble_un::even
 	ble.un H
 	br FAIL
 H:
-	ldsfld	int64 ble_un::even
-	ldsfld	int64 ble_un::all
+	ldsfld	int64 ble_u8.ble_un::even
+	ldsfld	int64 ble_u8.ble_un::all
 	ble.un I
 	br FAIL
 
 I:
-	ldsfld	int64 ble_un::even
-	ldsfld	int64 ble_un::none
+	ldsfld	int64 ble_u8.ble_un::even
+	ldsfld	int64 ble_u8.ble_un::none
 	ble.un FAIL
 
-	ldsfld	int64 ble_un::even
-	ldsfld	int64 ble_un::odd
+	ldsfld	int64 ble_u8.ble_un::even
+	ldsfld	int64 ble_u8.ble_un::odd
 	ble.un FAIL
 
-	ldsfld	int64 ble_un::even
-	ldsfld	int64 ble_un::even
+	ldsfld	int64 ble_u8.ble_un::even
+	ldsfld	int64 ble_u8.ble_un::even
 	ble.un BACKCHECK
 	br FAIL
 TOPASS:
@@ -128,3 +134,4 @@ FAIL:
 }
 }
 .assembly ble_u8{}
+}

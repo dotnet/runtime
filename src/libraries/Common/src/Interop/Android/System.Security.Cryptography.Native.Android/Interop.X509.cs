@@ -47,14 +47,26 @@ internal static partial class Interop
                 throw new CryptographicException();
 
             IntPtr[] ptrs = new IntPtr[size];
-            ret = X509DecodeCollection(ref buf, data.Length, ptrs, ref size);
-            if (ret != SUCCESS)
-                throw new CryptographicException();
-
             SafeX509Handle[] handles = new SafeX509Handle[ptrs.Length];
             for (var i = 0; i < handles.Length; i++)
             {
-                handles[i] = new SafeX509Handle(ptrs[i]);
+                handles[i] = new SafeX509Handle();
+            }
+
+            ret = X509DecodeCollection(ref buf, data.Length, ptrs, ref size);
+            if (ret != SUCCESS)
+            {
+                foreach (SafeX509Handle handle in handles)
+                {
+                    handle.Dispose();
+                }
+
+                throw new CryptographicException();
+            }
+
+            for (var i = 0; i < handles.Length; i++)
+            {
+                Marshal.InitHandle(handles[i], ptrs[i]);
             }
 
             return handles;

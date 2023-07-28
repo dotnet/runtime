@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly DevDiv_199169
 {
 }
-.module DevDiv_199169.exe
 
 .class public sequential ansi sealed beforefieldinit Blob
        extends [mscorlib]System.ValueType
@@ -27,8 +27,13 @@
   IL_000d:  ret
 }
 
-.method assembly static int32  main(string[] args) cil managed
+.class public auto ansi Test
 {
+.method public static int32  main() cil managed
+{
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  6
   .locals (int32 V_0)
@@ -60,4 +65,5 @@
   IL_0041:  ret
   IL_0048:  ldc.i4.s   101
   IL_0050:  ret
+}
 }

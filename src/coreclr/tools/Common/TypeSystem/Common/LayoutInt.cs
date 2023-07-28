@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
         {
             if (input < 0)
             {
-                throw new ArgumentException();
+                throw new ArgumentOutOfRangeException(nameof(input));
             }
             else
             {

@@ -1,16 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: This is the value class representing a Unicode character
-** Char methods until we create this functionality.
-**
-**
-===========================================================*/
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -23,6 +13,9 @@ using System.Text;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a character as a UTF-16 code unit.
+    /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -34,7 +27,10 @@ namespace System
           ISpanFormattable,
           IBinaryInteger<char>,
           IMinMaxValue<char>,
-          IUnsignedNumber<char>
+          IUnsignedNumber<char>,
+          IUtf8SpanFormattable,
+          IUtfChar<char>,
+          IBinaryIntegerParseAndFormatInfo<char>
     {
         //
         // Member Variables
@@ -63,21 +59,21 @@ namespace System
         {
         //  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x8E, 0x8E, 0x8E, 0x8E, 0x0E, 0x0E, // U+0000..U+000F
-            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0010..U+001F
-            0x8B, 0x18, 0x18, 0x18, 0x1A, 0x18, 0x18, 0x18, 0x14, 0x15, 0x18, 0x19, 0x18, 0x13, 0x18, 0x18, // U+0020..U+002F
-            0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x18, 0x18, 0x19, 0x19, 0x19, 0x18, // U+0030..U+003F
-            0x18, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, // U+0040..U+004F
-            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x14, 0x18, 0x15, 0x1B, 0x12, // U+0050..U+005F
-            0x1B, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+0060..U+006F
-            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x14, 0x19, 0x15, 0x19, 0x0E, // U+0070..U+007F
-            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0080..U+008F
-            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0090..U+009F
-            0x8B, 0x18, 0x1A, 0x1A, 0x1A, 0x1A, 0x1C, 0x18, 0x1B, 0x1C, 0x04, 0x16, 0x19, 0x0F, 0x1C, 0x1B, // U+00A0..U+00AF
-            0x1C, 0x19, 0x0A, 0x0A, 0x1B, 0x21, 0x18, 0x18, 0x1B, 0x0A, 0x04, 0x17, 0x0A, 0x0A, 0x0A, 0x18, // U+00B0..U+00BF
-            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, // U+00C0..U+00CF
-            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x19, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x21, // U+00D0..U+00DF
-            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+00E0..U+00EF
-            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x19, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+00F0..U+00FF
+            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0001..U+001F
+            0x8B, 0x18, 0x18, 0x18, 0x1A, 0x18, 0x18, 0x18, 0x14, 0x15, 0x18, 0x19, 0x18, 0x13, 0x18, 0x18, // U+0002..U+002F
+            0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x18, 0x18, 0x19, 0x19, 0x19, 0x18, // U+0003..U+003F
+            0x18, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, // U+0004..U+004F
+            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x14, 0x18, 0x15, 0x1B, 0x12, // U+0005..U+005F
+            0x1B, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+0006..U+006F
+            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x14, 0x19, 0x15, 0x19, 0x0E, // U+0007..U+007F
+            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0008..U+008F
+            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0009..U+009F
+            0x8B, 0x18, 0x1A, 0x1A, 0x1A, 0x1A, 0x1C, 0x18, 0x1B, 0x1C, 0x04, 0x16, 0x19, 0x0F, 0x1C, 0x1B, // U+000A..U+00AF
+            0x1C, 0x19, 0x0A, 0x0A, 0x1B, 0x21, 0x18, 0x18, 0x1B, 0x0A, 0x04, 0x17, 0x0A, 0x0A, 0x0A, 0x18, // U+000B..U+00BF
+            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, // U+000C..U+00CF
+            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x19, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x21, // U+000D..U+00DF
+            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+000E..U+00EF
+            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x19, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+000F..U+00FF
         };
 
         // Return true for all characters below or equal U+00ff, which is ASCII + Latin-1 Supplement.
@@ -160,12 +156,12 @@ namespace System
         // Overrides System.Object.ToString.
         public override string ToString()
         {
-            return char.ToString(m_value);
+            return ToString(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return char.ToString(m_value);
+            return ToString(m_value);
         }
 
         //
@@ -191,33 +187,45 @@ namespace System
             return false;
         }
 
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            new Rune(this).TryEncodeToUtf8(utf8Destination, out bytesWritten);
+
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString(m_value);
 
         public static char Parse(string s)
         {
-            if (s == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            }
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan());
+        }
 
+        internal static char Parse(ReadOnlySpan<char> s)
+        {
             if (s.Length != 1)
             {
-                throw new FormatException(SR.Format_NeedSingleChar);
+                ThrowHelper.ThrowFormatException_NeedSingleChar();
             }
             return s[0];
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out char result)
         {
-            result = '\0';
-            if (s == null)
+            if (s is null)
             {
+                result = '\0';
                 return false;
             }
+            return TryParse(s.AsSpan(), out result);
+        }
+
+        internal static bool TryParse(ReadOnlySpan<char> s, out char result)
+        {
             if (s.Length != 1)
             {
+                result = '\0';
                 return false;
             }
+
             result = s[0];
             return true;
         }
@@ -268,27 +276,27 @@ namespace System
         /// </remarks>
         public static bool IsAsciiLetterOrDigit(char c) => IsAsciiLetter(c) | IsBetween(c, '0', '9');
 
-        /// <summary>Indicates whether a character is categorized as an ASCII hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// 'A' through 'F', inclusive, or 'a' through 'f', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigit(char c) => HexConverter.IsHexChar(c);
 
-        /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// or 'A' through 'F', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigitUpper(char c) => HexConverter.IsHexUpperChar(c);
 
-        /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a lower-case hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a lower-case hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// or 'a' through 'f', inclusive.
@@ -410,11 +418,9 @@ namespace System
         // Determines whether a character is a punctuation mark.
         public static bool IsPunctuation(char c)
         {
-            if (IsLatin1(c))
-            {
-                return CheckPunctuation(GetLatin1UnicodeCategory(c));
-            }
-            return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategory(c));
+            return CheckPunctuation(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategory(c));
         }
 
         /*=================================CheckLetterOrDigit=====================================
@@ -422,17 +428,23 @@ namespace System
         ==============================================================================*/
         internal static bool CheckLetterOrDigit(UnicodeCategory uc)
         {
-            return CheckLetter(uc) || uc == UnicodeCategory.DecimalDigitNumber;
+            const int LetterOrDigitCategories =
+                1 << (int)UnicodeCategory.UppercaseLetter |
+                1 << (int)UnicodeCategory.LowercaseLetter |
+                1 << (int)UnicodeCategory.TitlecaseLetter |
+                1 << (int)UnicodeCategory.ModifierLetter |
+                1 << (int)UnicodeCategory.OtherLetter |
+                1 << (int)UnicodeCategory.DecimalDigitNumber;
+
+            return (LetterOrDigitCategories & (1 << (int)uc)) != 0;
         }
 
         // Determines whether a character is a letter or a digit.
         public static bool IsLetterOrDigit(char c)
         {
-            if (IsLatin1(c))
-            {
-                return CheckLetterOrDigit(GetLatin1UnicodeCategory(c));
-            }
-            return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategory(c));
+            return CheckLetterOrDigit(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategory(c));
         }
 
         /*===================================ToUpper====================================
@@ -591,7 +603,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -606,7 +618,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -626,7 +638,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -647,18 +659,15 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             char c = s[index];
-            if (IsLatin1(c))
-            {
-                return CheckLetterOrDigit(GetLatin1UnicodeCategory(c));
-            }
-
-            return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
+            return CheckLetterOrDigit(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsLower(string s, int index)
@@ -667,8 +676,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -710,7 +718,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -743,18 +751,15 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             char c = s[index];
-            if (IsLatin1(c))
-            {
-                return CheckPunctuation(GetLatin1UnicodeCategory(c));
-            }
-
-            return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
+            return CheckPunctuation(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         /*================================= CheckSeparator ============================
@@ -788,7 +793,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -813,7 +818,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -832,11 +837,9 @@ namespace System
 
         public static bool IsSymbol(char c)
         {
-            if (IsLatin1(c))
-            {
-                return CheckSymbol(GetLatin1UnicodeCategory(c));
-            }
-            return CheckSymbol(CharUnicodeInfo.GetUnicodeCategory(c));
+            return CheckSymbol(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategory(c));
         }
 
         public static bool IsSymbol(string s, int index)
@@ -845,18 +848,15 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             char c = s[index];
-            if (IsLatin1(c))
-            {
-                return CheckSymbol(GetLatin1UnicodeCategory(c));
-            }
-
-            return CheckSymbol(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
+            return CheckSymbol(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsUpper(string s, int index)
@@ -865,7 +865,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -885,7 +885,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -911,7 +911,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -935,7 +935,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -957,7 +957,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -979,7 +979,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -996,12 +996,12 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            if (index + 1 < s.Length)
+            if ((uint)(index + 1) < (uint)s.Length)
             {
                 return IsSurrogatePair(s[index], s[index + 1]);
             }
@@ -1103,45 +1103,39 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
-            if (index < 0 || index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
             }
+
             // Check if the character at index is a high surrogate.
-            int temp1 = (int)s[index] - CharUnicodeInfo.HIGH_SURROGATE_START;
-            if (temp1 >= 0 && temp1 <= 0x7ff)
+            int temp1 = s[index] - CharUnicodeInfo.HIGH_SURROGATE_START;
+            if ((uint)temp1 <= 0x7ff)
             {
                 // Found a surrogate char.
+                bool invalidIsLow = true;
                 if (temp1 <= 0x3ff)
                 {
                     // Found a high surrogate.
-                    if (index < s.Length - 1)
+                    if ((uint)(index + 1) < (uint)s.Length)
                     {
-                        int temp2 = (int)s[index + 1] - CharUnicodeInfo.LOW_SURROGATE_START;
-                        if (temp2 >= 0 && temp2 <= 0x3ff)
+                        int temp2 = s[index + 1] - CharUnicodeInfo.LOW_SURROGATE_START;
+                        if ((uint)temp2 <= 0x3ff)
                         {
                             // Found a low surrogate.
                             return (temp1 * 0x400) + temp2 + UNICODE_PLANE01_START;
                         }
-                        else
-                        {
-                            throw new ArgumentException(SR.Format(SR.Argument_InvalidHighSurrogate, index), nameof(s));
-                        }
                     }
-                    else
-                    {
-                        // Found a high surrogate at the end of the string.
-                        throw new ArgumentException(SR.Format(SR.Argument_InvalidHighSurrogate, index), nameof(s));
-                    }
+
+                    invalidIsLow = false;
                 }
-                else
-                {
-                    // Find a low surrogate at the character pointed by index.
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidLowSurrogate, index), nameof(s));
-                }
+
+                throw new ArgumentException(SR.Format(invalidIsLow ? SR.Argument_InvalidLowSurrogate : SR.Argument_InvalidHighSurrogate, index), nameof(s));
+
             }
-            // Not a high-surrogate or low-surrogate. Genereate the UTF32 value for the BMP characters.
-            return (int)s[index];
+
+            // Not a high-surrogate or low-surrogate. Generate the UTF32 value for the BMP characters.
+            return s[index];
         }
 
         //
@@ -1179,6 +1173,104 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         static char IBinaryInteger<char>.TrailingZeroCount(char value) => (char)(BitOperations.TrailingZeroCount(value << 16) - 16);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<char>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out char value)
+        {
+            char result = default;
+
+            if (source.Length != 0)
+            {
+                if (!isUnsigned && sbyte.IsNegative((sbyte)source[0]))
+                {
+                    // When we are signed and the sign bit is set, we are negative and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if ((source.Length > sizeof(char)) && (source[..^sizeof(char)].ContainsAnyExcept((byte)0x00)))
+                {
+                    // When we have any non-zero leading data, we are a large positive and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(char))
+                {
+                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(char));
+
+                    // We have at least 2 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We only have 1-byte so read it directly
+                    result = (char)sourceRef;
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<char>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out char value)
+        {
+            char result = default;
+
+            if (source.Length != 0)
+            {
+                if (!isUnsigned && sbyte.IsNegative((sbyte)source[^1]))
+                {
+                    // When we are signed and the sign bit is set, we are negative and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if ((source.Length > sizeof(char)) && (source[sizeof(char)..].ContainsAnyExcept((byte)0x00)))
+                {
+                    // When we have any non-zero leading data, we are a large positive and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(char))
+                {
+                    // We have at least 2 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
+
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We only have 1-byte so read it directly
+                    result = (char)sourceRef;
+                }
+            }
+
+            value = result;
+            return true;
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<char>.GetShortestBitLength() => (sizeof(char) * 8) - ushort.LeadingZeroCount(m_value);
@@ -1226,6 +1318,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static char IBinaryNumber<char>.AllBitsSet => (char)0xFFFF;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         static bool IBinaryNumber<char>.IsPow2(char value) => ushort.IsPow2(value);
 
@@ -1252,17 +1347,17 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
-        static bool IComparisonOperators<char, char>.operator <(char left, char right) => left < right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char, bool>.operator <(char left, char right) => left < right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
-        static bool IComparisonOperators<char, char>.operator <=(char left, char right) => left <= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char, bool>.operator <=(char left, char right) => left <= right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
-        static bool IComparisonOperators<char, char>.operator >(char left, char right) => left > right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char, bool>.operator >(char left, char right) => left > right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
-        static bool IComparisonOperators<char, char>.operator >=(char left, char right) => left >= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char, bool>.operator >=(char left, char right) => left >= right;
 
         //
         // IDecrementOperators
@@ -1285,11 +1380,11 @@ namespace System
         // IEqualityOperators
         //
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
-        static bool IEqualityOperators<char, char>.operator ==(char left, char right) => left == right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
+        static bool IEqualityOperators<char, char, bool>.operator ==(char left, char right) => left == right;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
-        static bool IEqualityOperators<char, char>.operator !=(char left, char right) => left != right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
+        static bool IEqualityOperators<char, char, bool>.operator !=(char left, char right) => left != right;
 
         //
         // IIncrementOperators
@@ -1416,14 +1511,7 @@ namespace System
 
         static char INumberBase<char>.Parse(string s, NumberStyles style, IFormatProvider? provider) => Parse(s);
 
-        static char INumberBase<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-        {
-            if (s.Length != 1)
-            {
-                throw new FormatException(SR.Format_NeedSingleChar);
-            }
-            return s[0];
-        }
+        static char INumberBase<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => Parse(s);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1615,7 +1703,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<char>.TryConvertToChecked<TOther>(char value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<char>.TryConvertToChecked<TOther>(char value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1682,14 +1770,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<char>.TryConvertToSaturating<TOther>(char value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<char>.TryConvertToSaturating<TOther>(char value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1756,14 +1844,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<char>.TryConvertToTruncating<TOther>(char value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<char>.TryConvertToTruncating<TOther>(char value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1830,23 +1918,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
-        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result)
-        {
-            if (s.Length != 1)
-            {
-                result = default;
-                return false;
-            }
-            result = s[0];
-            return true;
-        }
+        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         //
         // IParsable
@@ -1860,38 +1939,22 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static char IShiftOperators<char, char>.operator <<(char value, int shiftAmount) => (char)(value << shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
+        static char IShiftOperators<char, int, char>.operator <<(char value, int shiftAmount) => (char)(value << shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static char IShiftOperators<char, char>.operator >>(char value, int shiftAmount) => (char)(value >> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
+        static char IShiftOperators<char, int, char>.operator >>(char value, int shiftAmount) => (char)(value >> shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        static char IShiftOperators<char, char>.operator >>>(char value, int shiftAmount) => (char)(value >>> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
+        static char IShiftOperators<char, int, char>.operator >>>(char value, int shiftAmount) => (char)(value >>> shiftAmount);
 
         //
         // ISpanParsable
         //
 
-        static char ISpanParsable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-        {
-            if (s.Length != 1)
-            {
-                throw new FormatException(SR.Format_NeedSingleChar);
-            }
-            return s[0];
-        }
+        static char ISpanParsable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
 
-        static bool ISpanParsable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result)
-        {
-            if (s.Length != 1)
-            {
-                result = default;
-                return false;
-            }
-            result = s[0];
-            return true;
-        }
+        static bool ISpanParsable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         //
         // ISubtractionOperators
@@ -1919,5 +1982,37 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static char IUnaryPlusOperators<char, char>.operator +(char value) => (char)(+value);
+
+        //
+        // IUtfChar
+        //
+
+        static char IUtfChar<char>.CastFrom(byte value) => (char)value;
+        static char IUtfChar<char>.CastFrom(char value) => value;
+        static char IUtfChar<char>.CastFrom(int value) => (char)value;
+        static char IUtfChar<char>.CastFrom(uint value) => (char)value;
+        static char IUtfChar<char>.CastFrom(ulong value) => (char)value;
+
+        static uint IUtfChar<char>.CastToUInt32(char value) => value;
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<char>.IsSigned => false;
+
+        static int IBinaryIntegerParseAndFormatInfo<char>.MaxDigitCount => 5; // 65_535
+
+        static int IBinaryIntegerParseAndFormatInfo<char>.MaxHexDigitCount => 4; // 0xFFFF
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MaxValueDiv10 => (char)(MaxValue / 10);
+
+        static string IBinaryIntegerParseAndFormatInfo<char>.OverflowMessage => SR.Overflow_Char;
+
+        static bool IBinaryIntegerParseAndFormatInfo<char>.IsGreaterThanAsUnsigned(char left, char right) => left > right;
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy10(char value) => (char)(value * 10);
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy16(char value) => (char)(value * 16);
     }
 }

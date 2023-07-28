@@ -416,7 +416,7 @@ mono_lldb_save_method_info (MonoCompile *cfg)
 	Buffer tmpbuf;
 	Buffer *buf = &tmpbuf;
 	MonoDebugMethodInfo *minfo;
-	int i, j, n_il_offsets;
+	int n_il_offsets;
 	int *source_files;
 	GPtrArray *source_file_list;
 	MonoSymSeqPoint *sym_seq_points;
@@ -466,17 +466,17 @@ mono_lldb_save_method_info (MonoCompile *cfg)
 	if (minfo && seq_points) {
 		mono_debug_get_seq_points (minfo, NULL, &source_file_list, &source_files, &sym_seq_points, &n_il_offsets);
 		buffer_add_int (buf, source_file_list->len);
-		for (i = 0; i < source_file_list->len; ++i) {
+		for (guint i = 0; i < source_file_list->len; ++i) {
 			MonoDebugSourceInfo *sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, i);
 			buffer_add_string (buf, sinfo->source_file);
-			for (j = 0; j < 16; ++j)
+			for (guint j = 0; j < 16; ++j)
 				buffer_add_byte (buf, sinfo->hash [j]);
 		}
 
 		// The sym seq points are ordered by il offset, need to order them by address
 		int skipped = 0;
 		locs = g_new0 (FullSeqPoint, n_il_offsets);
-		for (i = 0; i < n_il_offsets; ++i) {
+		for (int i = 0; i < n_il_offsets; ++i) {
 			locs [i].sp = sym_seq_points [i];
 
 			// FIXME: O(n^2)
@@ -492,7 +492,7 @@ mono_lldb_save_method_info (MonoCompile *cfg)
 
 		n_il_offsets -= skipped;
 		buffer_add_int (buf, n_il_offsets);
-		for (i = 0; i < n_il_offsets; ++i) {
+		for (int i = 0; i < n_il_offsets; ++i) {
 			MonoSymSeqPoint *sp = &locs [i].sp;
 
 			//printf ("%s %x %d %d\n", cfg->method->name, locs [i].native_offset, sp->il_offset, sp->line);

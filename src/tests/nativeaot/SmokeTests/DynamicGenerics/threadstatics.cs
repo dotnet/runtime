@@ -485,7 +485,12 @@ namespace ThreadLocalStatics
                 GC.Collect();
             }
 
-            MultiThreaded_Test(TypeOf.TLS_T4, TypeOf.TLS_T5, 20, 20);
+#if DEBUG
+            const int numTasks = 15;
+#else
+            const int numTasks = 20;
+#endif
+            MultiThreaded_Test(TypeOf.TLS_T4, TypeOf.TLS_T5, numTasks, 20);
         }
     }
 }

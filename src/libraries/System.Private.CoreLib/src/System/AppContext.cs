@@ -15,7 +15,11 @@ namespace System
 {
     public static partial class AppContext
     {
-        private static Dictionary<string, object?>? s_dataStore;
+        private static Dictionary<string, object?>? s_dataStore
+#if NATIVEAOT
+            = InitializeDataStore()
+#endif
+            ;
         private static Dictionary<string, bool>? s_switches;
         private static string? s_defaultBaseDirectory;
 
@@ -67,14 +71,18 @@ namespace System
         }
 
 #pragma warning disable CS0067 // events raised by the VM
+#if MONO
         [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(UnhandledExceptionEventArgs))]
-        public static event UnhandledExceptionEventHandler? UnhandledException;
+#endif
+        internal static event UnhandledExceptionEventHandler? UnhandledException;
 
+#if MONO
         [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(FirstChanceExceptionEventArgs))]
-        public static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
+#endif
+        internal static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
-        public static event EventHandler? ProcessExit;
+        internal static event EventHandler? ProcessExit;
 
         internal static void OnProcessExit()
         {

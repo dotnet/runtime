@@ -6,7 +6,7 @@
 **
 **
 ** Purpose: This class only exists to provide support for
-**          implenting IDispatch on managed objects. It is
+**          implementing IDispatch on managed objects. It is
 **          used to provide OleAut style coercion rules.
 **
 **

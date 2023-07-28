@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using OLEDB.Test.ModuleCore;
-using XmlCoreTest.Common;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterApiTests
 {
     //[TestCase(Name = "Invalid State Combinations", Pri = 1)]
     public class TCErrorState

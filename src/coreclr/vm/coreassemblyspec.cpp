@@ -28,21 +28,6 @@
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
-static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        MODE_ANY;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    StackSString name;
-    pSpec->GetDisplayName(0, name);
-    EEFileLoadException::Throw(name, hr);
-}
-
 HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
 {
     CONTRACTL
@@ -186,7 +171,7 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
     BEGIN_QCALL;
 
     StackSString ssName;
-    SString(SString::Literal, pAssemblyNameParts->_pName).ConvertToUTF8(ssName);
+    ssName.SetAndConvertToUTF8(pAssemblyNameParts->_pName);
 
     AssemblyMetaDataInternal asmInfo;
 
@@ -197,11 +182,11 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
 
     SmallStackSString ssLocale;
     if (pAssemblyNameParts->_pCultureName != NULL)
-        SString(SString::Literal, pAssemblyNameParts->_pCultureName).ConvertToUTF8(ssLocale);
-    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8NoConvert() : NULL;
+        ssLocale.SetAndConvertToUTF8(pAssemblyNameParts->_pCultureName);
+    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8() : NULL;
 
     // Initialize spec
-    pAssemblySpec->Init(ssName.GetUTF8NoConvert(), &asmInfo,
+    pAssemblySpec->Init(ssName.GetUTF8(), &asmInfo,
         pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
     // Copy and own any fields we do not own

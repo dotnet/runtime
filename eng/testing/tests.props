@@ -8,18 +8,7 @@
     <VSTestNoLogo>true</VSTestNoLogo>
     <ILLinkDescriptorsPath>$(MSBuildThisFileDirectory)ILLinkDescriptors\</ILLinkDescriptorsPath>
     <TestSingleFile Condition="'$(TestNativeAot)' == 'true'">true</TestSingleFile>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Default and user defined categories -->
-    <_withCategories Condition="'$(WithCategories)' != ''">;$(WithCategories.Trim(';'))</_withCategories>
-    <_withoutCategories Condition="'$(WithoutCategories)' != ''">;$(WithoutCategories.Trim(';'))</_withoutCategories>
-
-    <TestScope Condition="'$(TestScope)' == '' and '$(Outerloop)' == 'true'">all</TestScope>
-    <_withCategories Condition="'$(TestScope)' == 'outerloop'">$(_withCategories);OuterLoop</_withCategories>
-    <_withoutCategories Condition="'$(ArchiveTests)' == 'true'">$(_withoutCategories);IgnoreForCI</_withoutCategories>
-    <_withoutCategories Condition="'$(TestScope)' == '' or '$(TestScope)' == 'innerloop'">$(_withoutCategories);OuterLoop</_withoutCategories>
-    <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
+    <TestSingleFile Condition="'$(TestReadyToRun)' == 'true'">true</TestSingleFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
@@ -28,7 +17,7 @@
     <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(Configuration)', '$(NetCoreAppCurrent)'))</AndroidTestRunnerDir>
     <WasmTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmTestRunner', '$(Configuration)', '$(NetCoreAppCurrent)'))</WasmTestRunnerDir>
 
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
@@ -39,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestRunRequiresLiveRefPack)' == 'true'">
-    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll" CopyToOutputDirectory="PreserveNewest" LinkBase="live-ref-pack/" Visible="false" />
+    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" LinkBase="live-ref-pack/" Visible="false" />
   </ItemGroup>
 
   <!--

@@ -58,11 +58,9 @@ namespace System.Net.Http
                 }
 
                 // Normalize header value by trimming whitespace.
-                int valueStartIndex = colonIndex + 1;
-                int valueLength = startIndex + length - colonIndex - 1;
-                CharArrayHelpers.Trim(_buffer, ref valueStartIndex, ref valueLength);
+                ReadOnlySpan<char> valueSpan = new ReadOnlySpan<char>(_buffer, colonIndex + 1, startIndex + length - colonIndex - 1).Trim();
 
-                value = HttpKnownHeaderNames.GetHeaderValue(name, _buffer, valueStartIndex, valueLength);
+                value = HttpKnownHeaderNames.GetHeaderValue(name, valueSpan);
 
                 return true;
             }
@@ -91,30 +89,22 @@ namespace System.Net.Http
         {
             Debug.Assert(_buffer != null);
 
-            int i = _position;
+            int pos = _position;
 
-            while (i < _length)
+            int newline = _buffer.AsSpan(pos, _length - pos).IndexOf("\r\n".AsSpan());
+            if (newline >= 0)
             {
-                char ch = _buffer[i];
-                if (ch == '\r')
-                {
-                    int next = i + 1;
-                    if (next < _length && _buffer[next] == '\n')
-                    {
-                        startIndex = _position;
-                        length = i - _position;
-                        _position = i + 2;
-                        return true;
-                    }
-                }
-                i++;
+                startIndex = pos;
+                length = newline;
+                _position = pos + newline + 2;
+                return true;
             }
 
-            if (i > _position)
+            if (pos < _length)
             {
-                startIndex = _position;
-                length = i - _position;
-                _position = i;
+                startIndex = pos;
+                length = _length - pos;
+                _position = _length;
                 return true;
             }
 

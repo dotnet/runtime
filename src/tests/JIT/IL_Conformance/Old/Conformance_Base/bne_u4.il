@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
+.namespace bne_u4
+{
 .class public bne_un {
 
 .field public static	int32 all
@@ -12,102 +15,105 @@
 .method public static void initialize() {
 .maxstack		10
 	ldc.i4		0xFFFFFFFF
-	stsfld	int32 bne_un::all
+	stsfld	int32 bne_u4.bne_un::all
 	ldc.i4		0x00000000
-	stsfld	int32 bne_un::none
+	stsfld	int32 bne_u4.bne_un::none
 	ldc.i4		0x55555555
-	stsfld	int32 bne_un::odd
+	stsfld	int32 bne_u4.bne_un::odd
 	ldc.i4		0xAAAAAAAA
-	stsfld	int32 bne_un::even
+	stsfld	int32 bne_u4.bne_un::even
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	call	void bne_un::initialize()
+	call	void bne_u4.bne_un::initialize()
 
-	ldsfld	int32 bne_un::all
-	ldsfld	int32 bne_un::all
+	ldsfld	int32 bne_u4.bne_un::all
+	ldsfld	int32 bne_u4.bne_un::all
 	bne.un FAIL
 
-	ldsfld	int32 bne_un::all
-	ldsfld	int32 bne_un::none
+	ldsfld	int32 bne_u4.bne_un::all
+	ldsfld	int32 bne_u4.bne_un::none
 	bne.un A
 	br FAIL
 
 A:
-	ldsfld	int32 bne_un::all
-	ldsfld	int32 bne_un::odd
+	ldsfld	int32 bne_u4.bne_un::all
+	ldsfld	int32 bne_u4.bne_un::odd
 	bne.un B
 	br FAIL
 
 B:
-	ldsfld	int32 bne_un::all
-	ldsfld	int32 bne_un::even
+	ldsfld	int32 bne_u4.bne_un::all
+	ldsfld	int32 bne_u4.bne_un::even
 	bne.un C
 	br FAIL
 C:
-	ldsfld	int32 bne_un::none
-	ldsfld	int32 bne_un::all
+	ldsfld	int32 bne_u4.bne_un::none
+	ldsfld	int32 bne_u4.bne_un::all
 	bne.un D
 	br FAIL
 
 D:
-	ldsfld	int32 bne_un::none
-	ldsfld	int32 bne_un::none
+	ldsfld	int32 bne_u4.bne_un::none
+	ldsfld	int32 bne_u4.bne_un::none
 	bne.un FAIL
 
-	ldsfld	int32 bne_un::none
-	ldsfld	int32 bne_un::odd
+	ldsfld	int32 bne_u4.bne_un::none
+	ldsfld	int32 bne_u4.bne_un::odd
 	bne.un E
 	br FAIL
 
 E:
-	ldsfld	int32 bne_un::none
-	ldsfld	int32 bne_un::even
+	ldsfld	int32 bne_u4.bne_un::none
+	ldsfld	int32 bne_u4.bne_un::even
 	bne.un F
 	br FAIL
 F:
-	ldsfld	int32 bne_un::odd
-	ldsfld	int32 bne_un::all
+	ldsfld	int32 bne_u4.bne_un::odd
+	ldsfld	int32 bne_u4.bne_un::all
 	bne.un G
 	br FAIL
 
 G:
-	ldsfld	int32 bne_un::odd
-	ldsfld	int32 bne_un::none
+	ldsfld	int32 bne_u4.bne_un::odd
+	ldsfld	int32 bne_u4.bne_un::none
 	bne.un H
 	br FAIL
 
 H:
-	ldsfld	int32 bne_un::odd
-	ldsfld	int32 bne_un::odd
+	ldsfld	int32 bne_u4.bne_un::odd
+	ldsfld	int32 bne_u4.bne_un::odd
 	bne.un FAIL
 
-	ldsfld	int32 bne_un::odd
-	ldsfld	int32 bne_un::even
+	ldsfld	int32 bne_u4.bne_un::odd
+	ldsfld	int32 bne_u4.bne_un::even
 	bne.un I
 	br FAIL
 I:
-	ldsfld	int32 bne_un::even
-	ldsfld	int32 bne_un::all
+	ldsfld	int32 bne_u4.bne_un::even
+	ldsfld	int32 bne_u4.bne_un::all
 	bne.un J
 	br FAIL
 
 J:
-	ldsfld	int32 bne_un::even
-	ldsfld	int32 bne_un::none
+	ldsfld	int32 bne_u4.bne_un::even
+	ldsfld	int32 bne_u4.bne_un::none
 	bne.un K
 	br FAIL
 
 K:
-	ldsfld	int32 bne_un::even
-	ldsfld	int32 bne_un::odd
+	ldsfld	int32 bne_u4.bne_un::even
+	ldsfld	int32 bne_u4.bne_un::odd
 	bne.un L
 
-L:	ldsfld	int32 bne_un::even
-	ldsfld	int32 bne_un::even
+L:	ldsfld	int32 bne_u4.bne_un::even
+	ldsfld	int32 bne_u4.bne_un::even
 	bne.un FAIL
 	br BACKCHECK
 
@@ -129,3 +135,4 @@ FAIL:
 }
 }
 .assembly bne_u4{}
+}

@@ -88,7 +88,7 @@ namespace System
                         {
                             result = Convert.ToInt16(str, 16);
                         }
-                        else if (str.StartsWith("0"))
+                        else if (str.StartsWith('0'))
                         {
                             result = Convert.ToInt16(str, 8);
                         }

@@ -49,8 +49,20 @@ Therefore the managed portion of each test **must not contain**:
     * e.g. `<DisableProjectBuild>true</DisableProjectBuild>`
 * Exclude test from GCStress runs by adding the following to the csproj:
     * `<GCStressIncompatible>true</GCStressIncompatible>`
+* Exclude test from HeapVerify testing runs runs by adding the following to the csproj:
+    * `<HeapVerifyIncompatible>true</HeapVerifyIncompatible>`
 * Exclude test from JIT stress runs runs by adding the following to the csproj:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
+* Exclude test from NativeAOT runs runs by adding the following to the csproj:
+    * `<NativeAotIncompatible>true</NativeAotIncompatible>`
+* Exclude the test from ilasm round trip testing by adding the following to the csproj
+    * `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
+* Exclude the test for unloadability (collectible assemblies) testing
+    * `<UnloadabilityIncompatible>true</UnloadabilityIncompatible>`
+* If the test is specific for testing crossgen2, and should be compiled as such in all test modes
+    * `<AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>`
+* When `CrossGenTest` is set to false, this test is not run with standard R2R compilation even if running an R2R test pass.
+    * `<CrossGenTest>false</CrossGenTest>`
 * Add NuGet references by updating the following [test project](https://github.com/dotnet/runtime/blob/main/src/tests/Common/test_dependencies/test_dependencies.csproj).
 * Any System.Private.CoreLib types and methods used by tests must be available for building on all platforms.
 This means there must be enough implementation for the C# compiler to find the referenced types and methods. Unsupported target platforms
@@ -94,3 +106,17 @@ should simply `throw new PlatformNotSupportedException()` in its dummy method im
     * CMake reference: `<CMakeProjectReference Include="../NativeDll/CMakeLists.txt" />`
 1. Build the test.
 1. Follow the steps to re-run a failed test to validate the new test.
+
+### Creating a merged test runner project
+1. Use an existing test such as `<repo_root>\src\tests\JIT\Methodical\Methodical_d1.csproj` as a template.
+1. If your new merged test runner has MANY tests in it, and takes too long to run under GC Stress, set `<NumberOfStripesToUseInStress>` to a number such as 10 to make it possible for the test to complete in a reasonable timeframe.
+
+#### Command line arguments for merged test runner projects
+Unless tests are manually run on the command line to repro a problem, these parameters are handled internally by the test infrastructure, but for running tests locally, there are a set of standard parameters that these merged test runners support.
+
+`[testFilterString] [-stripe <whichStripe> <totalStripes>]`
+
+`testFilterString` is any string other that `-stripe`. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name).
+
+Either the -stripe <whichStripe> <totalStripes> parameter can be used or the TEST_HARNESS_STRIPE_TO_EXECUTE environment variable may be used to control striping. The TEST_HARNESS_STRIPE_TO_EXECUTE environment variable must be set to a string of the form `.<whichStripe>.<totalStripes>` if it is used. `<whichStripe>` is a 0 based index into the count of stripes, `<totalStripes>` is the total number of stripes.
+

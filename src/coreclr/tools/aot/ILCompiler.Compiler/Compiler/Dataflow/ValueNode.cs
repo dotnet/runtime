@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using ILLink.Shared;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 #nullable enable
@@ -28,7 +28,7 @@ namespace ILCompiler.Dataflow
 
         public override int GetHashCode()
         {
-            HashCode hashCode = new HashCode();
+            HashCode hashCode = default(HashCode);
             foreach (var item in this)
                 hashCode.Add(item.GetHashCode());
             return hashCode.ToHashCode();
@@ -51,7 +51,7 @@ namespace ILCompiler.Dataflow
         }
     }
 
-    public struct ValueBasicBlockPair
+    public struct ValueBasicBlockPair : IEquatable<ValueBasicBlockPair>
     {
         public ValueBasicBlockPair(MultiValue value, int basicBlockIndex)
         {
@@ -61,5 +61,14 @@ namespace ILCompiler.Dataflow
 
         public MultiValue Value { get; }
         public int BasicBlockIndex { get; }
+
+        public bool Equals(ValueBasicBlockPair other) => Value.Equals(other.Value) && BasicBlockIndex.Equals(other.BasicBlockIndex);
+
+        public override bool Equals(object? obj) => obj is ValueBasicBlockPair other && Equals(other);
+
+        public override int GetHashCode() => HashUtils.Combine(Value.GetHashCode(), BasicBlockIndex);
+
+        public static bool operator ==(ValueBasicBlockPair left, ValueBasicBlockPair right) => left.Equals(right);
+        public static bool operator !=(ValueBasicBlockPair left, ValueBasicBlockPair right) => !(left == right);
     }
 }

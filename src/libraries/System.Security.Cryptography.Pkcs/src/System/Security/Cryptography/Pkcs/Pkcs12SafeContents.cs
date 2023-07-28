@@ -65,10 +65,7 @@ namespace System.Security.Cryptography.Pkcs
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
 
-            if (_bags == null)
-            {
-                _bags = new List<Pkcs12SafeBag>();
-            }
+            _bags ??= new List<Pkcs12SafeBag>();
 
             _bags.Add(safeBag);
         }
@@ -360,10 +357,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                 }
 
-                if (bag == null)
-                {
-                    bag = new Pkcs12SafeBag.UnknownBag(serializedBags[i].BagId, bagValue);
-                }
+                bag ??= new Pkcs12SafeBag.UnknownBag(serializedBags[i].BagId, bagValue);
 
                 bag.Attributes = SignerInfo.MakeAttributeCollection(serializedBags[i].BagAttributes);
                 bags.Add(bag);

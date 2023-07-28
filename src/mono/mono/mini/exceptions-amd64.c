@@ -195,7 +195,7 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 	return res;
 }
 
-void win32_seh_init()
+void win32_seh_init(void)
 {
 	if (!mono_aot_only)
 		restore_stack = (void (*) (void))get_win32_restore_stack ();
@@ -204,7 +204,7 @@ void win32_seh_init()
 	mono_win_vectored_exception_handle = AddVectoredExceptionHandler (1, seh_vectored_exception_handler);
 }
 
-void win32_seh_cleanup()
+void win32_seh_cleanup(void)
 {
 	guint32 ret = 0;
 
@@ -606,7 +606,7 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
  * Returns a function pointer which can be used to raise
  * corlib exceptions. The returned function has the following
  * signature: void (*func) (guint32 ex_token, guint32 offset);
- * Here, offset is the offset which needs to be substracted from the caller IP
+ * Here, offset is the offset which needs to be subtracted from the caller IP
  * to get the IP of the throw. Passing the offset has the advantage that it
  * needs no relocations in the caller.
  */
@@ -764,7 +764,11 @@ handle_signal_exception (gpointer obj)
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
+
 	mono_handle_exception (&ctx, (MonoObject *)obj);
+
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
 
 	mono_restore_context (&ctx);
 }
@@ -904,7 +908,7 @@ altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
 void
 mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer fault_addr, gboolean stack_ovf)
 {
-#if defined(MONO_ARCH_USE_SIGACTION)
+#if defined(MONO_ARCH_USE_SIGACTION) && !defined(MONO_CROSS_COMPILE)
 	MonoException *exc = NULL;
 	gpointer *sp;
 	MonoJitTlsData *jit_tls = NULL;
@@ -1584,7 +1588,7 @@ mono_arch_unwindinfo_find_rt_func_in_table (const gpointer code, gsize code_size
 		g_assert_checked (found_entry->end_range >= begin_range && found_entry->end_range >= end_range);
 		g_assert_checked (found_entry->rt_funcs != NULL);
 
-		for (int i = 0; i < found_entry->rt_funcs_current_count; ++i) {
+		for (DWORD i = 0; i < found_entry->rt_funcs_current_count; ++i) {
 			PRUNTIME_FUNCTION current_rt_func = (PRUNTIME_FUNCTION)(&found_entry->rt_funcs [i]);
 
 			// Is this our RT function entry?
@@ -1621,7 +1625,7 @@ validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
 
 	PRUNTIME_FUNCTION current_rt_func = NULL;
 	PRUNTIME_FUNCTION previous_rt_func = NULL;
-	for (int i = 0; i < entry->rt_funcs_current_count; ++i) {
+	for (DWORD i = 0; i < entry->rt_funcs_current_count; ++i) {
 		current_rt_func = &(entry->rt_funcs [i]);
 
 		g_assert_checked (current_rt_func->BeginAddress < current_rt_func->EndAddress);

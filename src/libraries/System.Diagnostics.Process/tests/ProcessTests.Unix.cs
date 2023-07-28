@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
-        private static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
+        private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
         [Fact]
         private void TestWindowApisUnix()
@@ -81,6 +81,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         [OuterLoop("Opens program")]
         [SkipOnPlatform(TestPlatforms.MacCatalyst, "In App Sandbox mode, the process doesn't have read access to the binary.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_DirectoryNameInCurDirectorySameAsFileNameInExecDirectory_Success()
         {
             string fileToOpen = "dotnet";
@@ -110,6 +111,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [OuterLoop]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_UseShellExecute_OnUnix_OpenMissingFile_DoesNotThrow()
         {
             if (OperatingSystem.IsLinux() &&
@@ -129,6 +131,7 @@ namespace System.Diagnostics.Tests
 
         [Theory, InlineData(true), InlineData(false)]
         [OuterLoop("Opens program")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_UseShellExecute_OnUnix_SuccessWhenProgramInstalled(bool isFolder)
         {
             string programToOpen = s_allowedProgramsToRun.FirstOrDefault(program => IsProgramInstalled(program));
@@ -162,12 +165,13 @@ namespace System.Diagnostics.Tests
         [Fact]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst, "On OSX, ProcessName returns the script interpreter.")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/13757")]
         public void ProcessNameMatchesScriptName()
         {
             string scriptName = GetTestFileName();
             string filename = Path.Combine(TestDirectory, scriptName);
             File.WriteAllText(filename, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
-            ChMod(filename, "744"); // set x-bit
+            File.SetUnixFileMode(filename, ExecutablePermissions);
 
             using (var process = Process.Start(new ProcessStartInfo { FileName = filename }))
             {
@@ -235,7 +239,7 @@ namespace System.Diagnostics.Tests
             // Create a file that has the x-bit set, but which isn't a valid script.
             string filename = WriteScriptFile(TestDirectory, GetTestFileName(), returnValue: 0);
             File.WriteAllText(filename, $"not a script");
-            ChMod(filename, "744"); // set x-bit
+            File.SetUnixFileMode(filename, ExecutablePermissions);
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["PATH"] = path;
@@ -455,7 +459,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsUnixAndSuperUser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestPriorityClassUnix()
         {
             CreateDefaultProcess();
@@ -477,11 +481,11 @@ namespace System.Diagnostics.Tests
             }
             catch (Win32Exception ex)
             {
-                Assert.True(!PlatformDetection.IsSuperUser, $"Failed even though superuser {ex.ToString()}");
+                Assert.False(PlatformDetection.IsPrivilegedProcess, $"Failed even though superuser {ex.ToString()}");
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsUnixAndSuperUser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestBasePriorityOnUnix()
         {
             CreateDefaultProcess();
@@ -498,7 +502,7 @@ namespace System.Diagnostics.Tests
             }
             catch (Win32Exception ex)
             {
-                Assert.True(!PlatformDetection.IsSuperUser, $"Failed even though superuser {ex.ToString()}");
+                Assert.False(PlatformDetection.IsPrivilegedProcess, $"Failed even though superuser {ex.ToString()}");
             }
         }
 
@@ -508,7 +512,7 @@ namespace System.Diagnostics.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            ChMod(path, "644");
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
@@ -520,7 +524,7 @@ namespace System.Diagnostics.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            ChMod(path, "744"); // set x-bit
+            File.SetUnixFileMode(path, ExecutablePermissions);
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
@@ -595,8 +599,7 @@ namespace System.Diagnostics.Tests
         /// Tests when running as root and starting a new process as a normal user,
         /// the new process doesn't have elevated privileges.
         /// </summary>
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
-        [OuterLoop("Needs sudo access")]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(true)]
         [InlineData(false)]
         public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)
@@ -655,7 +658,7 @@ namespace System.Diagnostics.Tests
 
         private static string GetCurrentRealUserName()
         {
-            string realUserName = geteuid() == 0 ?
+            string realUserName = Environment.IsPrivilegedProcess ?
                 Environment.GetEnvironmentVariable("SUDO_USER") :
                 Environment.UserName;
 
@@ -742,7 +745,6 @@ namespace System.Diagnostics.Tests
         /// Tests the ProcessWaitState reference count drops to zero.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // Test validates Unix implementation
         public async Task TestProcessWaitStateReferenceCount()
         {
             using (var exitedEventSemaphore = new SemaphoreSlim(0, 1))
@@ -832,7 +834,6 @@ namespace System.Diagnostics.Tests
             Assert.True(foundRecycled);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("/dev/stdin",  O_RDONLY)]
         [InlineData("/dev/stdout", O_WRONLY)]
@@ -937,14 +938,6 @@ namespace System.Diagnostics.Tests
         }
 
         [DllImport("libc")]
-        private static extern int chmod(string path, int mode);
-
-        private static void ChMod(string filename, string mode)
-        {
-            Assert.Equal(0, chmod(filename, Convert.ToInt32(mode, 8)));
-        }
-
-        [DllImport("libc")]
         private static extern uint geteuid();
         [DllImport("libc")]
         private static extern uint getuid();
@@ -1001,7 +994,7 @@ namespace System.Diagnostics.Tests
         {
             string filename = Path.Combine(directory, name);
             File.WriteAllText(filename, $"#!/bin/sh\nexit {returnValue}\n");
-            ChMod(filename, "744"); // set x-bit
+            File.SetUnixFileMode(filename, ExecutablePermissions);
             return filename;
         }
 

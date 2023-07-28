@@ -33,9 +33,10 @@ namespace System.Security.Cryptography
             HashSizeValue = HashSizeInBits;
         }
 
-        [SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
+        [SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementation of SHA1")]
         public static new SHA1 Create() => new Implementation();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new SHA1? Create(string hashName) => (SHA1?)CryptoConfig.CreateFromName(hashName);
 
@@ -142,7 +143,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA1, HashSizeInBytes, source, destination);
+            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA1, source, destination);
         }
 
         /// <summary>
@@ -188,7 +189,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.SHA1, HashSizeInBytes, source, cancellationToken);
+            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.SHA1, source, cancellationToken);
         }
 
         /// <summary>
@@ -229,7 +230,6 @@ namespace System.Security.Cryptography
 
             return LiteHashProvider.HashStreamAsync(
                 HashAlgorithmNames.SHA1,
-                HashSizeInBytes,
                 source,
                 destination,
                 cancellationToken);

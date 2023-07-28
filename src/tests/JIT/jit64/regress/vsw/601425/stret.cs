@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 //force struct size=22 otherwise with padding struct will be 24 and never hit bug
 [StructLayout(LayoutKind.Sequential, Size = 22)]
@@ -57,7 +58,8 @@ public class StructReturn
         return vt;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         long v1 = 4444;
         long v2 = 2222;

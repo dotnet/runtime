@@ -115,10 +115,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (MemoryCacheEntry entry in _dependencies)
                     {
-                        if (entry != null)
-                        {
-                            entry.RemoveDependent(this);
-                        }
+                        entry?.RemoveDependent(this);
                     }
                 }
             }

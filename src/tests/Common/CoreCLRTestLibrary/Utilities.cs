@@ -95,6 +95,10 @@ namespace TestLibrary
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
+
+        public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(Utilities).Assembly.Location);
+        public static bool IsSingleFile => !HasAssemblyFiles;
+
 #if NETCOREAPP
         public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
         public static bool IsNotReflectionEmitSupported => !IsReflectionEmitSupported;
@@ -102,7 +106,7 @@ namespace TestLibrary
         public static bool IsReflectionEmitSupported => true;
 #endif
         public static bool SupportsExceptionInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
-        public static bool IsGCStress => (Environment.GetEnvironmentVariable("COMPlus_GCStress") != null) || (Environment.GetEnvironmentVariable("DOTNET_GCStress") != null);
+        public static bool IsGCStress => (Environment.GetEnvironmentVariable("DOTNET_GCStress") != null);
 
         public static string ByteArrayToString(byte[] bytes)
         {

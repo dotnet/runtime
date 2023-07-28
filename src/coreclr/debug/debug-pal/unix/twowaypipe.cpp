@@ -56,7 +56,7 @@ bool TwoWayPipe::Connect(const ProcessDescriptor& pd)
     PAL_GetTransportPipeName(m_outPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "in");
 
     // Pipe opening order is reversed compared to WaitForConnection()
-    // in order to avaid deadlock.
+    // in order to avoid deadlock.
     m_outboundPipe = open(m_outPipeName, O_WRONLY);
     if (m_outboundPipe == INVALID_PIPE)
     {

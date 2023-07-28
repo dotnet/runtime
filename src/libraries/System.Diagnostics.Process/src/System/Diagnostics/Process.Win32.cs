@@ -69,13 +69,7 @@ namespace System.Diagnostics
                 else
                     shellExecuteInfo.fMask |= Interop.Shell32.SEE_MASK_FLAG_NO_UI;
 
-                shellExecuteInfo.nShow = startInfo.WindowStyle switch
-                {
-                    ProcessWindowStyle.Hidden => Interop.Shell32.SW_HIDE,
-                    ProcessWindowStyle.Minimized => Interop.Shell32.SW_SHOWMINIMIZED,
-                    ProcessWindowStyle.Maximized => Interop.Shell32.SW_SHOWMAXIMIZED,
-                    _ => Interop.Shell32.SW_SHOWNORMAL,
-                };
+                shellExecuteInfo.nShow = GetShowWindowFromWindowStyle(startInfo.WindowStyle);
                 ShellExecuteHelper executeHelper = new ShellExecuteHelper(&shellExecuteInfo);
                 if (!executeHelper.ShellExecuteOnSTAThread())
                 {
@@ -108,6 +102,14 @@ namespace System.Diagnostics
 
             return false;
         }
+
+        private static int GetShowWindowFromWindowStyle(ProcessWindowStyle windowStyle) => windowStyle switch
+        {
+            ProcessWindowStyle.Hidden => Interop.Shell32.SW_HIDE,
+            ProcessWindowStyle.Minimized => Interop.Shell32.SW_SHOWMINIMIZED,
+            ProcessWindowStyle.Maximized => Interop.Shell32.SW_SHOWMAXIMIZED,
+            _ => Interop.Shell32.SW_SHOWNORMAL,
+        };
 
         private static int GetShellError(IntPtr error)
         {
@@ -203,7 +205,7 @@ namespace System.Diagnostics
 #if DEBUG
                 // We never used to throw here, want to surface possible mistakes on our part
                 int error = Marshal.GetLastWin32Error();
-                Debug.Assert(error == 0, $"Failed GetWindowTextLengthW(): { new Win32Exception(error).Message }");
+                Debug.Assert(error == 0, $"Failed GetWindowTextLengthW(): { Marshal.GetPInvokeErrorMessage(error) }");
 #endif
                 return string.Empty;
             }
@@ -222,7 +224,7 @@ namespace System.Diagnostics
             {
                 // We never used to throw here, want to surface possible mistakes on our part
                 int error = Marshal.GetLastWin32Error();
-                Debug.Assert(error == 0, $"Failed GetWindowTextW(): { new Win32Exception(error).Message }");
+                Debug.Assert(error == 0, $"Failed GetWindowTextW(): { Marshal.GetPInvokeErrorMessage(error) }");
             }
 #endif
             return title.Slice(0, length).ToString();
@@ -265,18 +267,7 @@ namespace System.Diagnostics
             return true;
         }
 
-        public string MainWindowTitle
-        {
-            get
-            {
-                if (_mainWindowTitle == null)
-                {
-                    _mainWindowTitle = GetMainWindowTitle();
-                }
-
-                return _mainWindowTitle;
-            }
-        }
+        public string MainWindowTitle => _mainWindowTitle ??= GetMainWindowTitle();
 
         private bool IsRespondingCore()
         {
@@ -325,7 +316,7 @@ namespace System.Diagnostics
                         idle = false;
                         break;
                     default:
-                        throw new InvalidOperationException(SR.InputIdleUnkownError);
+                        throw new InvalidOperationException(SR.InputIdleUnknownError);
                 }
             }
             return idle;
@@ -441,17 +432,14 @@ namespace System.Diagnostics
             foreach (Process p in GetProcesses())
             {
                 SafeProcessHandle h = SafeGetHandle(p);
-                if (!h.IsInvalid)
+                if (!h.IsInvalid && predicate(this, p))
                 {
-                    if (predicate(this, p))
-                    {
-                        results.Add((p, h));
-                    }
-                    else
-                    {
-                        p.Dispose();
-                        h.Dispose();
-                    }
+                    results.Add((p, h));
+                }
+                else
+                {
+                    p.Dispose();
+                    h.Dispose();
                 }
             }
 

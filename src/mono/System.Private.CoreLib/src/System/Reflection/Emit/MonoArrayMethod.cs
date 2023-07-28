@@ -167,8 +167,8 @@ namespace System.Reflection
             for (int i = 0; i < p.Length; ++i)
             {
                 if (i > 0)
-                    parms = parms + ", ";
-                parms = parms + p[i].ParameterType.Name;
+                    parms += ", ";
+                parms += p[i].ParameterType.Name;
             }
             if (ReturnType != null)
                 return ReturnType.Name + " " + Name + "(" + parms + ")";

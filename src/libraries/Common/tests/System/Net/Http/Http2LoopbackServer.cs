@@ -44,6 +44,10 @@ namespace System.Net.Test.Common
                     localEndPoint.Address.ToString();
 
                 string scheme = _options.UseSsl ? "https" : "http";
+                if (_options.WebSocketEndpoint)
+                {
+                    scheme = _options.UseSsl ? "wss" : "ws";
+                }
 
                 _uri = new Uri($"{scheme}://{host}:{localEndPoint.Port}/");
 
@@ -144,7 +148,7 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            await using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
 			}
@@ -152,31 +156,32 @@ namespace System.Net.Test.Common
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
         {
-            using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            await using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 await funcAsync(connection).ConfigureAwait(false);
             }
         }
 
-        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, int timeout = 60_000)
+        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds)
         {
-            return CreateClientAndServerAsync(clientFunc, serverFunc, null, timeout);
+            return CreateClientAndServerAsync(clientFunc, serverFunc, null, millisecondsTimeout);
         }
 
-        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, Http2Options http2Options, int timeout = 60_000)
+        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, Http2Options http2Options, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds)
         {
             using (var server = Http2LoopbackServer.CreateServer(http2Options ?? new Http2Options()))
             {
                 Task clientTask = clientFunc(server.Address);
                 Task serverTask = serverFunc(server);
 
-                await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(timeout).ConfigureAwait(false);
+                await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(millisecondsTimeout).ConfigureAwait(false);
             }
         }
     }
 
     public class Http2Options : GenericLoopbackOptions
     {
+        public bool WebSocketEndpoint { get; set; } = false;
         public bool ClientCertificateRequired { get; set; }
 
         public bool EnableTransparentPingResponse { get; set; } = true;
@@ -191,7 +196,7 @@ namespace System.Net.Test.Common
     {
         public static readonly Http2LoopbackServerFactory Singleton = new Http2LoopbackServerFactory();
 
-        public static async Task CreateServerAsync(Func<Http2LoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000)
+        public static async Task CreateServerAsync(Func<Http2LoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds)
         {
             using (var server = Http2LoopbackServer.CreateServer())
             {
@@ -216,13 +221,14 @@ namespace System.Net.Test.Common
             {
                 http2Options.Address = options.Address;
                 http2Options.UseSsl = options.UseSsl;
+                http2Options.Certificate = options.Certificate;
                 http2Options.SslProtocols = options.SslProtocols;
                 http2Options.ListenBacklog = options.ListenBacklog;
             }
             return http2Options;
         }
 
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds, GenericLoopbackOptions options = null)
         {
             using (var server = CreateServer(options))
             {

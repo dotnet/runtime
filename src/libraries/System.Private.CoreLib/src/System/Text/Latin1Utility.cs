@@ -163,6 +163,7 @@ namespace System.Text
             goto Finish;
         }
 
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static unsafe nuint GetIndexOfFirstNonLatin1Char_Sse2(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // This method contains logic optimized for both SSE2 and SSE41. Much of the logic in this method
@@ -177,7 +178,7 @@ namespace System.Text
 
             // JIT turns the below into constants
 
-            uint SizeOfVector128InBytes = (uint)Unsafe.SizeOf<Vector128<byte>>();
+            uint SizeOfVector128InBytes = (uint)sizeof(Vector128<byte>);
             uint SizeOfVector128InChars = SizeOfVector128InBytes / sizeof(char);
 
             Debug.Assert(Sse2.IsSupported, "Should've been checked by caller.");
@@ -260,7 +261,9 @@ namespace System.Text
                     secondVector = Sse2.LoadAlignedVector128((ushort*)pBuffer + SizeOfVector128InChars);
                     Vector128<ushort> combinedVector = Sse2.Or(firstVector, secondVector);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                     if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                     {
                         // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                         // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
@@ -303,7 +306,9 @@ namespace System.Text
 
             firstVector = Sse2.LoadAlignedVector128((ushort*)pBuffer);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
             if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                 // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
@@ -336,7 +341,9 @@ namespace System.Text
                 pBuffer = (char*)((byte*)pBuffer + (bufferLength & (SizeOfVector128InBytes - 1)) - SizeOfVector128InBytes);
                 firstVector = Sse2.LoadVector128((ushort*)pBuffer); // unaligned load
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                 if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                     // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
@@ -370,7 +377,9 @@ namespace System.Text
             // we'll make sure the first vector local is the one that contains the non-Latin-1 data.
 
             // See comment earlier in the method for an explanation of how the below logic works.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
             if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 if (!Sse41.TestZ(firstVector, latin1MaskForTestZ))
                 {
@@ -445,7 +454,9 @@ namespace System.Text
 
             if ((bufferLength & 4) != 0)
             {
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Bmi1.X64 is considered supported or unsupported
                 if (Bmi1.X64.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     // If we can use 64-bit tzcnt to count the number of leading Latin-1 chars, prefer it.
 
@@ -538,7 +549,7 @@ namespace System.Text
             {
                 Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if SSE2 is supported.");
 
-                if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
+                if (elementCount >= 2 * (uint)sizeof(Vector128<byte>))
                 {
                     // Since there's overhead to setting up the vectorized code path, we only want to
                     // call into it after a quick probe to ensure the next immediate characters really are Latin-1.
@@ -567,7 +578,7 @@ namespace System.Text
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                uint SizeOfVector = (uint)Unsafe.SizeOf<Vector<byte>>(); // JIT will make this a const
+                uint SizeOfVector = (uint)sizeof(Vector<byte>); // JIT will make this a const
 
                 // Only bother vectorizing if we have enough data to do so.
                 if (elementCount >= 2 * SizeOfVector)
@@ -609,7 +620,7 @@ namespace System.Text
 
                         // TODO: Is the below logic also valid for big-endian platforms?
                         Vector<byte> latin1Vector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
-                        Unsafe.WriteUnaligned<Vector<byte>>(pLatin1Buffer + currentOffset, latin1Vector);
+                        Unsafe.WriteUnaligned(pLatin1Buffer + currentOffset, latin1Vector);
 
                         currentOffset += SizeOfVector;
                     } while (currentOffset <= finalOffsetWhereCanLoop);
@@ -750,6 +761,7 @@ namespace System.Text
             goto Finish;
         }
 
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static unsafe nuint NarrowUtf16ToLatin1_Sse2(char* pUtf16Buffer, byte* pLatin1Buffer, nuint elementCount)
         {
             // This method contains logic optimized for both SSE2 and SSE41. Much of the logic in this method
@@ -757,7 +769,7 @@ namespace System.Text
 
             // JIT turns the below into constants
 
-            uint SizeOfVector128 = (uint)Unsafe.SizeOf<Vector128<byte>>();
+            uint SizeOfVector128 = (uint)sizeof(Vector128<byte>);
             nuint MaskOfAllBitsInVector128 = SizeOfVector128 - 1;
 
             // This method is written such that control generally flows top-to-bottom, avoiding
@@ -779,7 +791,9 @@ namespace System.Text
             // If there's non-Latin-1 data in the first 8 elements of the vector, there's nothing we can do.
             // See comments in GetIndexOfFirstNonLatin1Char_Sse2 for information about how this works.
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
             if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
                 {
@@ -819,7 +833,9 @@ namespace System.Text
                 utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
 
                 // See comments earlier in this method for information about how this works.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                 if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
                     {
@@ -858,7 +874,9 @@ namespace System.Text
                 Vector128<short> combinedVector = Sse2.Or(utf16VectorFirst, utf16VectorSecond);
 
                 // See comments in GetIndexOfFirstNonLatin1Char_Sse2 for information about how this works.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                 if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     if (!Sse41.TestZ(combinedVector, latin1MaskForTestZ))
                     {
@@ -892,7 +910,9 @@ namespace System.Text
 
             // Can we at least narrow the high vector?
             // See comments in GetIndexOfFirstNonLatin1Char_Sse2 for information about how this works.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
             if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
                 {
@@ -940,11 +960,12 @@ namespace System.Text
             }
         }
 
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static unsafe void WidenLatin1ToUtf16_Sse2(byte* pLatin1Buffer, char* pUtf16Buffer, nuint elementCount)
         {
             // JIT turns the below into constants
 
-            uint SizeOfVector128 = (uint)Unsafe.SizeOf<Vector128<byte>>();
+            uint SizeOfVector128 = (uint)sizeof(Vector128<byte>);
             nuint MaskOfAllBitsInVector128 = SizeOfVector128 - 1;
 
             Debug.Assert(Sse2.IsSupported);
@@ -1067,8 +1088,8 @@ namespace System.Text
                         Vector.Widen(Vector.AsVectorByte(latin1Vector), out Vector<ushort> utf16LowVector, out Vector<ushort> utf16HighVector);
 
                         // TODO: Is the below logic also valid for big-endian platforms?
-                        Unsafe.WriteUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset, utf16LowVector);
-                        Unsafe.WriteUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count, utf16HighVector);
+                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset, utf16LowVector);
+                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset + Vector<ushort>.Count, utf16HighVector);
 
                         currentOffset += SizeOfVector;
                     } while (currentOffset <= finalOffsetWhereCanIterate);

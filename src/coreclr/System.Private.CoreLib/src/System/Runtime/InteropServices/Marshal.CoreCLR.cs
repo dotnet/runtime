@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static byte ReadByte(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadByte(nativeHome, offset));
+            return ReadValueSlow(ptr, ofs, ReadByte);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static short ReadInt16(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt16(nativeHome, offset));
+            return ReadValueSlow(ptr, ofs, ReadInt16);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -73,7 +73,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static int ReadInt32(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt32(nativeHome, offset));
+            return ReadValueSlow(ptr, ofs, ReadInt32);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices
         public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] object ptr, int ofs)
 #pragma warning restore CS0618 // Type or member is obsolete
         {
-            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt64(nativeHome, offset));
+            return ReadValueSlow(ptr, ofs, ReadInt64);
         }
 
         /// <summary>Read value from marshaled object (marshaled using AsAny).</summary>
@@ -125,7 +125,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteByte(object ptr, int ofs, byte val)
         {
-            WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, byte value) => WriteByte(nativeHome, offset, value));
+            WriteValueSlow(ptr, ofs, val, WriteByte);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -133,7 +133,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt16(object ptr, int ofs, short val)
         {
-            WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, short value) => Marshal.WriteInt16(nativeHome, offset, value));
+            WriteValueSlow(ptr, ofs, val, WriteInt16);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -141,7 +141,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt32(object ptr, int ofs, int val)
         {
-            WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, int value) => Marshal.WriteInt32(nativeHome, offset, value));
+            WriteValueSlow(ptr, ofs, val, WriteInt32);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -149,7 +149,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt64(object ptr, int ofs, long val)
         {
-            WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, long value) => Marshal.WriteInt64(nativeHome, offset, value));
+            WriteValueSlow(ptr, ofs, val, WriteInt64);
         }
 
         /// <summary>
@@ -268,6 +268,8 @@ namespace System.Runtime.InteropServices
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
         /// an HInstance.  In Memory (Dynamic) Modules won't have an HInstance.
         /// </summary>
+        [RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. " +
+            "This API will return -1 for modules without a file on disk.")]
         public static IntPtr GetHINSTANCE(Module m)
         {
             ArgumentNullException.ThrowIfNull(m);
@@ -309,6 +311,7 @@ namespace System.Runtime.InteropServices
             return strTypeLibName;
         }
 
+#pragma warning disable IDE0060
         // This method is identical to Type.GetTypeFromCLSID. Since it's interop specific, we expose it
         // on Marshal for more consistent API surface.
         internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
@@ -325,6 +328,7 @@ namespace System.Runtime.InteropServices
             GetTypeFromCLSID(clsid, server, ObjectHandleOnStack.Create(ref type));
             return type;
         }
+#pragma warning restore IDE0060
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetTypeFromCLSID", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void GetTypeFromCLSID(in Guid clsid, string? server, ObjectHandleOnStack retType);
@@ -578,7 +582,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [return: NotNullIfNotNull("o")]
+        [return: NotNullIfNotNull(nameof(o))]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
             if (!IsBuiltInComSupported)
@@ -787,19 +791,12 @@ namespace System.Runtime.InteropServices
                 Release(bindctx);
             }
         }
-        // Revist after https://github.com/mono/linker/issues/1989 is fixed
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
-            Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [LibraryImport(Interop.Libraries.Ole32)]
         private static partial int CreateBindCtx(uint reserved, out IntPtr ppbc);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
-            Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [LibraryImport(Interop.Libraries.Ole32)]
         private static partial int MkParseDisplayName(IntPtr pbc, [MarshalAs(UnmanagedType.LPWStr)] string szUserName, out uint pchEaten, out IntPtr ppmk);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
-            Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [LibraryImport(Interop.Libraries.Ole32)]
         private static partial int BindMoniker(IntPtr pmk, uint grfOpt, ref Guid iidResult, out IntPtr ppvResult);
 

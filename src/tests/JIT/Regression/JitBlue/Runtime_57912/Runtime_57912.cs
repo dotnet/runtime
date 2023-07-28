@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Sequential)]
 internal struct AA
@@ -30,7 +31,8 @@ internal struct AA
 public class Runtime_57912
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return (int)test_0_17(100, new AA(100), new AA(0));
     }

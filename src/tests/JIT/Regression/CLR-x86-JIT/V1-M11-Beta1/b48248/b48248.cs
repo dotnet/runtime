@@ -3,8 +3,9 @@
 //
 
 using System;
+using Xunit;
 
-struct test
+public struct test
 {
     public String str;
     public int int1;
@@ -26,7 +27,8 @@ struct test
         int6 = i;
         int7 = i;
     }
-    public static int Main(String[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         test t = new test();
 

@@ -10,7 +10,6 @@ namespace System.Runtime.CompilerServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void Ctor_RequiredContract(Type requiredContract)
         {
             var attribute = new RequiredAttributeAttribute(requiredContract);

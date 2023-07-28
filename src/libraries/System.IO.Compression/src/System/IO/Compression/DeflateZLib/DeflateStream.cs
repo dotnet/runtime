@@ -284,7 +284,7 @@ namespace System.IO.Compression
                         // - Inflation is not finished yet.
                         // - Provided input wasn't completely empty
                         // In such case, we are dealing with a truncated input stream.
-                        if (!buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
+                        if (s_useStrictValidation && !buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
                         {
                             ThrowTruncatedInvalidData();
                         }
@@ -326,11 +326,7 @@ namespace System.IO.Compression
 
         private void EnsureNotDisposed()
         {
-            if (_stream == null)
-                ThrowStreamClosedException();
-
-            static void ThrowStreamClosedException() =>
-                throw new ObjectDisposedException(nameof(DeflateStream), SR.ObjectDisposed_StreamClosed);
+            ObjectDisposedException.ThrowIf(_stream is null, this);
         }
 
         private void EnsureDecompressionMode()
@@ -360,13 +356,13 @@ namespace System.IO.Compression
             throw new InvalidDataException(SR.TruncatedData);
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override int EndRead(IAsyncResult asyncResult)
         {
             EnsureDecompressionMode();
             EnsureNotDisposed();
-            return TaskToApm.End<int>(asyncResult);
+            return TaskToAsyncResult.End<int>(asyncResult);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -433,7 +429,7 @@ namespace System.IO.Compression
                                 // - Inflation is not finished yet.
                                 // - Provided input wasn't completely empty
                                 // In such case, we are dealing with a truncated input stream.
-                                if (!_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
+                                if (s_useStrictValidation && !_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
                                 {
                                     ThrowTruncatedInvalidData();
                                 }
@@ -457,7 +453,6 @@ namespace System.IO.Compression
                             // decompress into at least one byte of output, but it's a reasonable approximation for the 99% case.  If it's
                             // wrong, it just means that a caller using zero-byte reads as a way to delay getting a buffer to use for a
                             // subsequent call may end up getting one earlier than otherwise preferred.
-                            Debug.Assert(bytesRead == 0);
                             break;
                         }
                     }
@@ -488,7 +483,7 @@ namespace System.IO.Compression
             }
             else
             {
-                WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                WriteCore(new ReadOnlySpan<byte>(in value));
             }
         }
 
@@ -763,13 +758,13 @@ namespace System.IO.Compression
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
             EnsureCompressionMode();
             EnsureNotDisposed();
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -915,7 +910,7 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     await _deflateStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(false);
-                    if (!_deflateStream._inflater.Finished())
+                    if (s_useStrictValidation && !_deflateStream._inflater.Finished())
                     {
                         ThrowTruncatedInvalidData();
                     }
@@ -951,7 +946,7 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     _deflateStream._stream.CopyTo(this, _arrayPoolBuffer.Length);
-                    if (!_deflateStream._inflater.Finished())
+                    if (s_useStrictValidation && !_deflateStream._inflater.Finished())
                     {
                         ThrowTruncatedInvalidData();
                     }
@@ -1079,5 +1074,8 @@ namespace System.IO.Compression
 
         private static void ThrowInvalidBeginCall() =>
             throw new InvalidOperationException(SR.InvalidBeginCall);
+
+        private static readonly bool s_useStrictValidation =
+            AppContext.TryGetSwitch("System.IO.Compression.UseStrictValidation", out bool strictValidation) ? strictValidation : false;
     }
 }

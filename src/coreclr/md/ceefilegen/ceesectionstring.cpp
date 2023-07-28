@@ -28,37 +28,8 @@ void CeeSectionString::deleteEntries(StringTableEntry *e)
     delete e;
 }
 
-#ifdef RDATA_STATS
-int CeeSectionString::dumpEntries(StringTableEntry *e)
-{
-    if (!e)
-        return 0;
-    else {
-        printf("    HashId: %d, value: %S\n", e->m_hashId, computOffset(e->m_offset));
-        return dumpEntries(e->m_next) + 1;
-    }
-}
-
-void CeeSectionString::dumpTable()
-{
-    int sum = 0, count = 0;
-    for (int i=0; i < MaxRealEntries; i++) {
-        if (stringTable[i]) {
-            printf("Bucket %d\n", i);
-            printf("Total size: %d\n\n",
-                    count = dumpEntries(stringTable[i]));
-            sum += count;
-        }
-    }
-    printf("Total number strings: %d\n\n", sum);
-}
-#endif
-
 CeeSectionString::~CeeSectionString()
 {
-#ifdef RDATA_STATS
-    dumpTable();
-#endif
     for (int i=0; i < MaxRealEntries; i++)
         deleteEntries(stringTable[i]);
 }
@@ -71,7 +42,7 @@ StringTableEntry* CeeSectionString::createEntry(_In_z_ LPWSTR target, ULONG hash
     entry->m_next = NULL;
     entry->m_hashId = hashId;
     entry->m_offset = dataLen();
-    size_t len = (wcslen(target)+1) * sizeof(WCHAR);
+    size_t len = (u16_strlen(target)+1) * sizeof(WCHAR);
     if (len > UINT32_MAX) {
         delete entry;
         return NULL;
@@ -99,7 +70,7 @@ StringTableEntry *CeeSectionString::findStringInsert(
         cur = cur->m_next;
     }
     while (cur && cur->m_hashId == hashId) {
-        if (wcscmp(target, (LPWSTR)(computePointer(cur->m_offset))) == 0)
+        if (u16_strcmp(target, (LPWSTR)(computePointer(cur->m_offset))) == 0)
             return cur;
         prev = cur;
         cur = cur->m_next;

@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Collections;
+using System.Xml;
+using System.Xml.XPath;
+using MS.Internal.Xml.XPath;
+using System.Globalization;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Xml;
-    using System.Xml.XPath;
-    using MS.Internal.Xml.XPath;
-    using System.Globalization;
-
     internal sealed class TemplateAction : TemplateBaseAction
     {
         private int _matchKey = Compiler.InvalidQueryKey;
@@ -150,7 +150,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (expr.QueryTree != query)
             {
-                // query was splitted and we need create new TheQuery for this template
+                // query was split and we need create new TheQuery for this template
                 compiler.QueryStore[this.MatchKey] = new TheQuery(
                     new CompiledXpathExpr(query, expr.Expression, false),
                     theQuery._ScopeManager

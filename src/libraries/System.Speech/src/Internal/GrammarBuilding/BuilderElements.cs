@@ -233,11 +233,13 @@ namespace System.Speech.Internal.GrammarBuilding
                 // Go deeper if the number of children is greater the element to compare against.
                 if (current != null)
                 {
-                    if (!dict.ContainsKey(current.Count))
+                    if (!dict.TryGetValue(current.Count, out Collection<BuilderElements> builderElements))
                     {
-                        dict.Add(current.Count, new Collection<BuilderElements>());
+                        builderElements = new Collection<BuilderElements>();
+                        dict.Add(current.Count, builderElements);
                     }
-                    dict[current.Count].Add(current);
+
+                    builderElements.Add(current);
 
                     current.GetDictionaryElements(dict);
                 }

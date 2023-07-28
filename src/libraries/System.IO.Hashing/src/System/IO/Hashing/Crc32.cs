@@ -11,8 +11,9 @@ namespace System.IO.Hashing
     /// </summary>
     /// <remarks>
     ///   <para>
-    ///     This implementation emits the answer in the Little Endian byte order so that
-    ///     the CRC residue relationship (CRC(message concat CRC(message))) is a fixed value) holds.
+    ///     For methods that return byte arrays or that write into spans of bytes, this implementation
+    ///     emits the answer in the Little Endian byte order so that the CRC residue relationship
+    ///     (CRC(message concat CRC(message))) is a fixed value) holds.
     ///     For CRC-32 this stable output is the byte sequence <c>{ 0x1C, 0xDF, 0x44, 0x21 }</c>,
     ///     the Little Endian representation of <c>0x2144DF1C</c>.
     ///   </para>
@@ -77,6 +78,11 @@ namespace System.IO.Hashing
             _crc = InitialState;
         }
 
+        /// <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+        /// <returns>The hash value for the data already provided.</returns>
+        [CLSCompliant(false)]
+        public uint GetCurrentHashAsUInt32() => ~_crc;
+
         /// <summary>
         ///   Computes the CRC-32 hash of the provided data.
         /// </summary>
@@ -103,7 +109,8 @@ namespace System.IO.Hashing
         public static byte[] Hash(ReadOnlySpan<byte> source)
         {
             byte[] ret = new byte[Size];
-            StaticHash(source, ret);
+            uint hash = HashToUInt32(source);
+            BinaryPrimitives.WriteUInt32LittleEndian(ret, hash);
             return ret;
         }
 
@@ -127,7 +134,9 @@ namespace System.IO.Hashing
                 return false;
             }
 
-            bytesWritten = StaticHash(source, destination);
+            uint hash = HashToUInt32(source);
+            BinaryPrimitives.WriteUInt32LittleEndian(destination, hash);
+            bytesWritten = Size;
             return true;
         }
 
@@ -142,26 +151,56 @@ namespace System.IO.Hashing
         public static int Hash(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             if (destination.Length < Size)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            {
+                ThrowDestinationTooShort();
+            }
 
-            return StaticHash(source, destination);
-        }
-
-        private static int StaticHash(ReadOnlySpan<byte> source, Span<byte> destination)
-        {
-            uint crc = InitialState;
-            crc = Update(crc, source);
-            BinaryPrimitives.WriteUInt32LittleEndian(destination, ~crc);
+            uint hash = HashToUInt32(source);
+            BinaryPrimitives.WriteUInt32LittleEndian(destination, hash);
             return Size;
         }
 
+        /// <summary>Computes the CRC-32 hash of the provided data.</summary>
+        /// <param name="source">The data to hash.</param>
+        /// <returns>The computed CRC-32 hash.</returns>
+        [CLSCompliant(false)]
+        public static uint HashToUInt32(ReadOnlySpan<byte> source) =>
+            ~Update(InitialState, source);
+
         private static uint Update(uint crc, ReadOnlySpan<byte> source)
         {
+#if NET7_0_OR_GREATER
+            if (CanBeVectorized(source))
+            {
+                return UpdateVectorized(crc, source);
+            }
+#endif
+
+            return UpdateScalar(crc, source);
+        }
+
+        private static uint UpdateScalar(uint crc, ReadOnlySpan<byte> source)
+        {
+#if NET6_0_OR_GREATER
+            // Use ARM intrinsics for CRC if available. This is used for the trailing bytes on the vectorized path
+            // and is the primary method if the vectorized path is unavailable.
+            if (System.Runtime.Intrinsics.Arm.Crc32.Arm64.IsSupported)
+            {
+                return UpdateScalarArm64(crc, source);
+            }
+
+            if (System.Runtime.Intrinsics.Arm.Crc32.IsSupported)
+            {
+                return UpdateScalarArm32(crc, source);
+            }
+#endif
+
+            ReadOnlySpan<uint> crcLookup = CrcLookup;
             for (int i = 0; i < source.Length; i++)
             {
                 byte idx = (byte)crc;
                 idx ^= source[i];
-                crc = s_crcLookup[idx] ^ (crc >> 8);
+                crc = crcLookup[idx] ^ (crc >> 8);
             }
 
             return crc;

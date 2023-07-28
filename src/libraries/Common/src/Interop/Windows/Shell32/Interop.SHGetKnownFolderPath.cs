@@ -287,12 +287,6 @@ internal static partial class Interop
             internal const string Startup = "{B97D20BB-F46A-4C97-BA10-5E3608430854}";
 
             /// <summary>
-            /// (CSIDL_SYSTEM) System32 folder
-            /// "%windir%\system32"
-            /// </summary>
-            internal const string System = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}";
-
-            /// <summary>
             /// (CSIDL_SYSTEMX86) X86 System32 folder
             /// "%windir%\system32" or "%windir%\syswow64"
             /// </summary>

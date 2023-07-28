@@ -75,7 +75,7 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the EC_KEY key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
-            SafeEcKeyHandle currentKey = _key.Value;
+            SafeEcKeyHandle currentKey = GetKey();
             SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 
             try
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography
         {
             if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
             {
-                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(ECDiffieHellmanOpenSsl)));
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_CryptographyOpenSSLNotFound, nameof(ECDiffieHellmanOpenSsl)));
             }
         }
     }

@@ -2,8 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'tvOS'">true</IgnoreForCI>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
@@ -56,7 +56,7 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
              Link="Common\System\IO\PathInternal.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Linux' or '$(TargetPlatformIdentifier)' == 'OSX'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'osx'">
     <Compile Include="FileSystemWatcher.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />

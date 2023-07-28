@@ -26,6 +26,7 @@ WCHAR*         g_HomeDirectory      = nullptr;
 WCHAR*         g_DefaultRealJitPath = nullptr;
 MethodContext* g_globalContext      = nullptr;
 bool           g_initialized        = false;
+char*          g_collectionFilter   = nullptr;
 
 void SetDefaultPaths()
 {
@@ -36,7 +37,7 @@ void SetDefaultPaths()
 
     if (g_DefaultRealJitPath == nullptr)
     {
-        size_t len           = wcslen(g_HomeDirectory) + 1 + wcslen(DEFAULT_REAL_JIT_NAME_W) + 1;
+        size_t len           = u16_strlen(g_HomeDirectory) + 1 + u16_strlen(DEFAULT_REAL_JIT_NAME_W) + 1;
         g_DefaultRealJitPath = new WCHAR[len];
         wcscpy_s(g_DefaultRealJitPath, len, g_HomeDirectory);
         wcscat_s(g_DefaultRealJitPath, len, DIRECTORY_SEPARATOR_STR_W);
@@ -80,6 +81,16 @@ void SetLogFilePath()
     }
 }
 
+void SetCollectionFilter()
+{
+    g_collectionFilter = GetEnvironmentVariableWithDefaultA("SuperPMIShimFilter", nullptr);
+
+    if (g_collectionFilter != nullptr)
+    {
+        fprintf(stderr, "*** SPMI filter '%s'\n", g_collectionFilter);
+    }
+}
+
 void InitializeShim()
 {
     if (g_initialized)
@@ -96,6 +107,12 @@ void InitializeShim()
         exit(1);
     }
 #endif // HOST_UNIX
+
+#ifdef HOST_WINDOWS
+    // Assertions will be sent to stderr instead of a pop-up dialog.
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+#endif // HOST_WINDOWS
 
     Logger::Initialize();
     SetLogFilePath();
@@ -140,6 +157,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
     SetDefaultPaths();
     SetLibName();
     SetDebugDumpVariables();
+    SetCollectionFilter();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {

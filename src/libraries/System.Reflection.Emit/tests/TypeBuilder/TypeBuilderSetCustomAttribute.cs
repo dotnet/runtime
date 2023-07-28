@@ -19,7 +19,7 @@ namespace System.Reflection.Emit.Tests
 
             CustomAttributeBuilder attribute = new CustomAttributeBuilder(attriubteConstructor, new object[] { 4 }, new FieldInfo[] { attributeField }, new object[] { "hello" });
             type.SetCustomAttribute(attribute);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             object[] attributes = type.GetCustomAttributes(false).ToArray();
             Assert.Equal(1, attributes.Length);
@@ -44,7 +44,7 @@ namespace System.Reflection.Emit.Tests
             CustomAttributeBuilder cuatbu = new CustomAttributeBuilder(constructor, new object[] { "hello" });
             type.SetCustomAttribute(cuatbu);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             object[] attributes = type.GetCustomAttributes(false).ToArray();
             Assert.Equal(1, attributes.Length);

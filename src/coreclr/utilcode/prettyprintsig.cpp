@@ -65,7 +65,7 @@ static HRESULT appendStrW(CQuickBytes *out, const WCHAR* str)
     }
     CONTRACTL_END
 
-    SIZE_T len = wcslen(str) * sizeof(WCHAR);
+    SIZE_T len = u16_strlen(str) * sizeof(WCHAR);
     SIZE_T oldSize = out->Size();
     if (FAILED(out->ReSizeNoThrow(oldSize + len)))
         return E_OUTOFMEMORY;
@@ -788,8 +788,12 @@ static HRESULT PrettyPrintTypeA(
         break;
 
     case ELEMENT_TYPE_FNPTR:
-        IfFailGo(appendStrA(out, "fnptr "));
-        IfFailGo(PrettyPrintSigWorkerInternal(typePtr, (typeEnd - typePtr), "", out,pIMDI));
+        {
+            IfFailGo(appendStrA(out, "fnptr "));
+            CQuickBytes qbOut;
+            IfFailGo(PrettyPrintSigWorkerInternal(typePtr, (typeEnd - typePtr), "", &qbOut,pIMDI));
+            IfFailGo(appendStrA(out, (char *)qbOut.Ptr()));
+        }
         break;
 
     case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
@@ -927,7 +931,7 @@ HRESULT PrettyPrintSigWorkerInternal(
     CONTRACTL_END
 
     HRESULT     hr = S_OK;
-    unsigned    numArgs;     // Count of arugments to function, or count of local vars.
+    unsigned    numArgs;     // Count of arguments to function, or count of local vars.
     unsigned numTyArgs = 0;
     PCCOR_SIGNATURE typeEnd = typePtr + typeLen;
     bool needComma = false;

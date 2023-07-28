@@ -89,6 +89,11 @@ FORCEINLINE void PalYieldProcessor()
         "rep\n"
         "nop"
         );
+#elif defined(HOST_ARM64)
+    __asm__ __volatile__(
+        "dmb ishst\n"
+        "yield"
+        );
 #endif
 }
 
@@ -107,4 +112,18 @@ FORCEINLINE int32_t PalGetLastError()
 FORCEINLINE void PalSetLastError(int32_t error)
 {
     errno = error;
+}
+
+FORCEINLINE int32_t PalOsPageSize()
+{
+#if defined(HOST_AMD64)
+    // all supported platforms use 4K pages on x64, including emulated environments
+    return 0x1000;
+#elif defined(HOST_APPLE)
+    // OSX and related OS expose 16-kilobyte pages to the 64-bit userspace
+    // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/Articles/AboutMemory.html
+    return 0x4000;
+#else
+    return PalGetOsPageSize();
+#endif
 }

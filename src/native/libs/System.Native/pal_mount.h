@@ -21,7 +21,7 @@ typedef struct
  * Using the callback pattern allows us to limit the number of allocs we do and makes it
  * cleaner on the managed side since we don't have to worry about cleaning up any unmanaged memory.
  */
-typedef void (*MountPointFound)(const char* name);
+typedef void (*MountPointFound)(void* context, const char* name);
 
 /**
  * Gets the space information for the given mount point and populates the input struct with the data.
@@ -45,4 +45,4 @@ PALEXPORT int32_t SystemNative_GetFormatInfoForMountPoint(
  * function pointer once-per-mount-point to prevent heap allocs
  * as much as possible.
  */
-PALEXPORT int32_t SystemNative_GetAllMountPoints(MountPointFound onFound);
+PALEXPORT int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context);

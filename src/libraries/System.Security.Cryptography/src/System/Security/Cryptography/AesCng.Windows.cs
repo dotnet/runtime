@@ -106,7 +106,6 @@ namespace System.Security.Cryptography
             ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
                 iv: default,
                 encrypting: false,
-                paddingMode,
                 CipherMode.ECB,
                 feedbackSizeInBits: 0);
 
@@ -125,7 +124,6 @@ namespace System.Security.Cryptography
             ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
                 iv: default,
                 encrypting: true,
-                paddingMode,
                 CipherMode.ECB,
                 feedbackSizeInBits: 0);
 
@@ -145,7 +143,6 @@ namespace System.Security.Cryptography
             ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
                 iv,
                 encrypting: true,
-                paddingMode,
                 CipherMode.CBC,
                 feedbackSizeInBits: 0);
 
@@ -165,7 +162,6 @@ namespace System.Security.Cryptography
             ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
                 iv,
                 encrypting: false,
-                paddingMode,
                 CipherMode.CBC,
                 feedbackSizeInBits: 0);
 
@@ -186,7 +182,6 @@ namespace System.Security.Cryptography
             ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
                 iv,
                 encrypting: false,
-                paddingMode,
                 CipherMode.CFB,
                 feedbackSizeInBits);
 
@@ -207,7 +202,6 @@ namespace System.Security.Cryptography
             ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
                 iv,
                 encrypting: true,
-                paddingMode,
                 CipherMode.CFB,
                 feedbackSizeInBits);
 

@@ -606,13 +606,14 @@ namespace System.Net.Http.Functional.Tests
 
             // Note that we don't throw when users access the Headers property. This is useful e.g. to be able to
             // read the headers of a content, even though the content is already disposed. Note that the .NET guidelines
-            // only require members to throw ObjectDisposedExcpetion for members "that cannot be used after the object
+            // only require members to throw ObjectDisposedException for members "that cannot be used after the object
             // has been disposed of".
             _output.WriteLine(content.Headers.ToString());
         }
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStringAsync_Buffered_IgnoresCancellationToken()
         {
             string content = Guid.NewGuid().ToString();
@@ -639,6 +640,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -669,6 +671,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -706,6 +709,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsByteArrayAsync_Buffered_IgnoresCancellationToken()
         {
             string content = Guid.NewGuid().ToString();
@@ -733,6 +737,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -763,6 +768,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -802,6 +808,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_Buffered_IgnoresCancellationToken(bool readStreamAsync)
         {
             string content = Guid.NewGuid().ToString();
@@ -833,6 +840,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_Unbuffered_IgnoresCancellationToken(bool readStreamAsync)
         {
             if(PlatformDetection.IsBrowser && !readStreamAsync)

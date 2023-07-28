@@ -42,7 +42,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             new object[]{GetHasProperty(1), 2.0, 3}
         };
 
-        public static object[][] PropertyAssigments =
+        public static object[][] PropertyAssignments =
         {
             new object[]{GetHasProperty(1), 2, 2},
             new object[]{GetHasProperty(1L), 2, 2L},
@@ -54,7 +54,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             new object[]{GetHasProperty(1), 2.0, 2}
         };
 
-        public static object[][] PropertyBadAssigments =
+        public static object[][] PropertyBadAssignments =
         {
             new object[]{GetHasProperty(1), decimal.MaxValue, true, false},
             new object[]{GetHasProperty(1), DateTime.MinValue, false, false},
@@ -67,7 +67,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             new object[]{GetHasProperty(2), new object(), false, true}
         };
 
-        public static IEnumerable<object[]> PropertyBadCheckedAssigments =
+        public static IEnumerable<object[]> PropertyBadCheckedAssignments =
             new[]
             {
                 new object[] {GetHasProperty(1), long.MaxValue, true, false},
@@ -76,7 +76,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                 new object[] {GetHasProperty(1), uint.MaxValue, true, false},
                 new object[] {GetHasProperty(default(short)), int.MaxValue, true, false},
                 new object[]{GetHasProperty(2UL), -1, true, false}
-            }.Concat(PropertyBadAssigments);
+            }.Concat(PropertyBadAssignments);
 
         [Theory, MemberData(nameof(Additions))]
         public void AddAssignment(dynamic lhs, dynamic rhs, object expected)
@@ -93,8 +93,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.Equal(expected, lhs.Prop);
         }
 
-        [Theory, MemberData(nameof(PropertyAssigments))]
-        public void PropertyAddResultAssigment(object lhs, object rhs, object expected)
+        [Theory, MemberData(nameof(PropertyAssignments))]
+        public void PropertyAddResultAssignment(object lhs, object rhs, object expected)
         {
             CallSite<Func<CallSite, object, object, object>> callSite =
                 CallSite<Func<CallSite, object, object, object>>.Create(
@@ -110,8 +110,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.Equal(expected, ((dynamic)lhs).Prop);
         }
 
-        [Theory, MemberData(nameof(PropertyAssigments))]
-        public void PropertyAddConstantResultAssigment(object lhs, object rhs, object expected)
+        [Theory, MemberData(nameof(PropertyAssignments))]
+        public void PropertyAddConstantResultAssignment(object lhs, object rhs, object expected)
         {
             CallSite<Func<CallSite, object, object, object>> callSite =
                 CallSite<Func<CallSite, object, object, object>>.Create(
@@ -127,8 +127,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.Equal(expected, ((dynamic)lhs).Prop);
         }
 
-        [Theory, MemberData(nameof(PropertyBadAssigments))]
-        public void PropertyIncompatibleAssigment(object lhs, object rhs, bool overflow, bool invalidCast)
+        [Theory, MemberData(nameof(PropertyBadAssignments))]
+        public void PropertyIncompatibleAssignment(object lhs, object rhs, bool overflow, bool invalidCast)
         {
             CallSite<Func<CallSite, object, object, object>> callSite =
                 CallSite<Func<CallSite, object, object, object>>.Create(
@@ -153,8 +153,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             }
         }
 
-        [Theory, MemberData(nameof(PropertyBadAssigments))]
-        public void PropertyIncompatibleConstantAssigment(object lhs, object rhs, bool overflow, bool invalidCast)
+        [Theory, MemberData(nameof(PropertyBadAssignments))]
+        public void PropertyIncompatibleConstantAssignment(object lhs, object rhs, bool overflow, bool invalidCast)
         {
             // Not used by this test
             _ = overflow;
@@ -178,8 +178,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             }
         }
 
-        [Theory, MemberData(nameof(PropertyBadCheckedAssigments))]
-        public void PropertyIncompatibleCheckedAssigment(object lhs, object rhs, bool overflow, bool invalidCast)
+        [Theory, MemberData(nameof(PropertyBadCheckedAssignments))]
+        public void PropertyIncompatibleCheckedAssignment(object lhs, object rhs, bool overflow, bool invalidCast)
         {
             CallSite<Func<CallSite, object, object, object>> callSite =
                 CallSite<Func<CallSite, object, object, object>>.Create(
@@ -205,8 +205,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             }
         }
 
-        [Theory, MemberData(nameof(PropertyBadCheckedAssigments))]
-        public void PropertyIncompatibleConstantCheckedAssigment(object lhs, object rhs, bool overflow, bool invalidCast)
+        [Theory, MemberData(nameof(PropertyBadCheckedAssignments))]
+        public void PropertyIncompatibleConstantCheckedAssignment(object lhs, object rhs, bool overflow, bool invalidCast)
         {
             // Not used by this test
             _ = overflow;

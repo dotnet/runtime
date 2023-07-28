@@ -4,10 +4,15 @@
     <BinPlaceSatelliteAssemblies>true</BinPlaceSatelliteAssemblies>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MissingManifestResourceExceptionTests.cs" />
+    <Compile Include="Resources\AToZResx.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AToZResx.resx</DependentUpon>
+    </Compile>
     <Compile Include="TrimCompatibilityTests.cs" />
     <Compile Include="NeutralResourcesLanguageAttributeTests.cs" />
     <Compile Include="ResourceManagerTests.cs" />
@@ -19,10 +24,13 @@
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
     <Compile Include="MissingSatelliteAssemblyException.cs" />
     <Compile Include="ResourceSetTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
-             Link="Common\System\Drawing\Helpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs" Link="Common\System\Drawing\Helpers.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\AToZResx.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>AToZResx.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\TestResx.netstandard17.resources">
       <WithCulture>false</WithCulture>
       <Type>Non-Resx</Type>
@@ -40,26 +48,17 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TestResx.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="Resources\TestResx.es.resx"/>
-    <EmbeddedResource Include="Resources\TestResx.es-MX.resx"/>
-    <EmbeddedResource Include="Resources\TestResx.fr-FR.resx"/>
-    <EmbeddedResource Include="Resources\TestClassWithoutNeutralResources.fr.resx"/>
+    <EmbeddedResource Include="Resources\TestResx.es.resx" />
+    <EmbeddedResource Include="Resources\TestResx.es-MX.resx" />
+    <EmbeddedResource Include="Resources\TestResx.fr-FR.resx" />
+    <EmbeddedResource Include="Resources\TestClassWithoutNeutralResources.fr.resx" />
     <EmbeddedResource Include="Resources\CustomReader.resx" />
-    <Content Include="Resources\TestResx.netstandard17.resources"
-          Link="%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest"
-          Visible="false" />
-    <Content Include="Resources\bitmap.bmp"
-          Link="%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest"
-          Visible="false" />
-    <Content Include="Resources\icon.ico"
-          Link="%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest"
-          Visible="false" />
+    <Content Include="Resources\TestResx.netstandard17.resources" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <Content Include="Resources\bitmap.bmp" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <Content Include="Resources\icon.ico" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
     <!--Reference to System.Resources.Extensions is required in order to be able to embed a resource that requires a custom reader-->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Resources.Extensions\src\System.Resources.Extensions.csproj" />
   </ItemGroup>

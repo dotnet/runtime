@@ -122,6 +122,7 @@ namespace System.IO.MemoryMappedFiles
             return CreateCore(null, mapName, inheritability, access, options, capacity, -1);
         }
 
+#pragma warning disable IDE0060
         /// <summary>
         /// Used by the OpenExisting factory method group and by CreateOrOpen if access is write.
         /// We'll throw an ArgumentException if the file mapping object didn't exist and the
@@ -143,9 +144,10 @@ namespace System.IO.MemoryMappedFiles
         {
             throw CreateNamedMapsNotSupportedException();
         }
+#pragma warning restore IDE0060
 
         /// <summary>Gets an exception indicating that named maps are not supported on this platform.</summary>
-        private static Exception CreateNamedMapsNotSupportedException()
+        private static PlatformNotSupportedException CreateNamedMapsNotSupportedException()
         {
             return new PlatformNotSupportedException(SR.PlatformNotSupported_NamedMaps);
         }
@@ -174,13 +176,13 @@ namespace System.IO.MemoryMappedFiles
             flags |= Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL; // CreateNew
 
             // Determine the permissions with which to create the file
-            Interop.Sys.Permissions perms = default(Interop.Sys.Permissions);
+            var perms = UnixFileMode.None;
             if ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0)
-                perms |= Interop.Sys.Permissions.S_IRUSR;
+                perms |= UnixFileMode.UserRead;
             if ((protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0)
-                perms |= Interop.Sys.Permissions.S_IWUSR;
+                perms |= UnixFileMode.UserWrite;
             if ((protections & Interop.Sys.MemoryMappedProtections.PROT_EXEC) != 0)
-                perms |= Interop.Sys.Permissions.S_IXUSR;
+                perms |= UnixFileMode.UserExecute;
 
             string mapName;
             SafeFileHandle fd;

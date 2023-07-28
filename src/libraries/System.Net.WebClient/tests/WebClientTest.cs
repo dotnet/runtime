@@ -489,7 +489,7 @@ namespace System.Net.Tests
 
         const string ExpectedTextAfterUrlEncode =
             "To+be%2c+or+not+to+be%2c+that+is+the+question%3a" +
-            "Whether+'tis+Nobler+in+the+mind+to+suffer" +
+            "Whether+%27tis+Nobler+in+the+mind+to+suffer" +
             "The+Slings+and+Arrows+of+outrageous+Fortune%2c" +
             "Or+to+take+Arms+against+a+Sea+of+troubles%2c" +
             "And+by+opposing+end+them%3a";
@@ -661,7 +661,7 @@ namespace System.Net.Tests
         }
 
         private static string GetRandomText(int length) =>
-            new string(Enumerable.Range(0, 512 * 1024).Select(_ => (char)('a' + Random.Shared.Next(0, 26))).ToArray());
+            new string(Random.Shared.GetItems<char>("abcdefghijklmnopqrstuvwxyz", 512 * 1024));
 
         [OuterLoop("Uses external servers")]
         [Theory]

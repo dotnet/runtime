@@ -224,10 +224,7 @@ namespace System.ComponentModel.Composition.Hosting
                 exports = null;
             }
 
-            if (exports == null)
-            {
-                exports = Array.Empty<Export>();
-            }
+            exports ??= Array.Empty<Export>();
 
             return checkResult;
         }

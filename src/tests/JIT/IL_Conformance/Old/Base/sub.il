@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern  mscorlib {}
 .assembly extern legacy library mscorlib {}
 .assembly 'sub'{}
 
+.namespace sub_
+{
 .class public _sub {
 
 
@@ -47,44 +50,47 @@
 	ret
 }
 
-.method static int32 main(class System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
 	ldc.i4	0xFF
 	ldc.i4	0xF0
-	call	int32 _sub::i4(int32,int32)
+	call	int32 sub_._sub::i4(int32,int32)
 	ldc.i4	0xF
 	ceq
 	brfalse	FAIL
 
 	ldc.i8	0xFF
 	ldc.i8	0xF0
-	call	int64 _sub::i8(int64,int64)
+	call	int64 sub_._sub::i8(int64,int64)
 	ldc.i8	0xF
 	ceq
 	brfalse	FAIL
 
 	ldc.r4	5.5
 	ldc.r4	1.25
-	call	float32 _sub::r4(float32,float32)
+	call	float32 sub_._sub::r4(float32,float32)
 	ldc.r4	4.25
 	ceq
 	brfalse	FAIL	
 	
 	ldc.r8	5.5
 	ldc.r8	1.25
-	call	float64 _sub::r8(float64,float64)
+	call	float64 sub_._sub::r8(float64,float64)
 	ldc.r8	4.25
 	ceq
 	brfalse	FAIL
 
 	ldc.i8	8
 	conv.i
-	stsfld	native int _sub::PTR
-	ldsfld	native int _sub::PTR
+	stsfld	native int sub_._sub::PTR
+	ldsfld	native int sub_._sub::PTR
 	ldc.i4	0x00000001
 	conv.i
-	call	native int _sub::i(native int,native int)
+	call	native int sub_._sub::i(native int,native int)
 	conv.i8
 	ldc.i8	0x00000007
 	ceq
@@ -96,5 +102,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

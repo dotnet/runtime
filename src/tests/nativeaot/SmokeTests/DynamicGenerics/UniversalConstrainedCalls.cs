@@ -21,12 +21,12 @@ namespace UnivConstCalls
     {
         public virtual string VirtualMethod()
         {
-            return "NonOverriden";
+            return "NonOverridden";
         }
 
         public virtual string GenVirtualMethod<T>()
         {
-            return "NonOverridenGeneric";
+            return "NonOverriddenGeneric";
         }
     }
 
@@ -330,7 +330,7 @@ namespace UnivConstCalls
                 Assert.AreEqual("42", o.MakeConstrainedCall());
                 Assert.AreEqual("42" + TypeOf.String, o.MakeGenericConstrainedCall());
 
-                // Test Non-overriden object methods
+                // Test Non-overridden object methods
                 Assert.AreEqual(testStruct.ToString(), o.MakeToStringCall());
                 Assert.AreEqual(testStruct.GetHashCode(), o.MakeGetHashCodeCall());
                 Assert.AreEqual(false, o.MakeEqualsCall(16));
@@ -346,7 +346,7 @@ namespace UnivConstCalls
             Assert.AreEqual("40", o.MakeConstrainedCall());
             Assert.AreEqual("40" + TypeOf.String, o.MakeGenericConstrainedCall());
 
-            // Test Overriden object methods
+            // Test Overridden object methods
             string toStringResult = testStruct2.ToString();
             int getHashCodeResult = testStruct2.GetHashCode();
 
@@ -368,7 +368,7 @@ namespace UnivConstCalls
         [TestMethod]
         public static void TestUSCCallsOnSharedGenStruct()
         {
-            // Use an explicit typeof here for GenericStructThatImplementsInterface<string> so that 
+            // Use an explicit typeof here for GenericStructThatImplementsInterface<string> so that
             // that case uses the normal shared generic path, and not anything else.
             var t = TypeOf.UCC_UCGConstrainedCall.MakeGenericType(typeof(GenericStructThatImplementsInterface<string>), TypeOf.Int16, TypeOf.String);
             var o = (TestConstrainedCallBase)Activator.CreateInstance(t);
@@ -380,7 +380,7 @@ namespace UnivConstCalls
                 Assert.AreEqual("74", o.MakeConstrainedCall());
                 Assert.AreEqual("74" + TypeOf.String, o.MakeGenericConstrainedCall());
 
-                // Test Overriden object methods
+                // Test Overridden object methods
                 string toStringResult = testStruct.ToString();
                 int getHashCodeResult = testStruct.GetHashCode();
 
@@ -415,7 +415,7 @@ namespace UnivConstCalls
                 Assert.AreEqual("162", o.MakeConstrainedCall());
                 Assert.AreEqual("162" + TypeOf.Int16, o.MakeGenericConstrainedCall());
 
-                // Test Overriden object methods
+                // Test Overridden object methods
                 string toStringResult = testStruct.ToString();
                 int getHashCodeResult = testStruct.GetHashCode();
 

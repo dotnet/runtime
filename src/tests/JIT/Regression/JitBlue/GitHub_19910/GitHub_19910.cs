@@ -5,10 +5,11 @@ using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace GitHub_19910
 {
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void SwapNonGeneric(ref Vector128<uint> a, ref Vector128<uint> b)
@@ -17,7 +18,8 @@ namespace GitHub_19910
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (Sse2.IsSupported)
             {

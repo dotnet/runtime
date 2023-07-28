@@ -153,15 +153,8 @@ namespace System.Data
                 throw ExceptionBuilder.SetRowStateFilter();
             }
 
-            if (Sort == null)
-            {
-                Sort = string.Empty;
-            }
-
-            if (RowFilter == null)
-            {
-                RowFilter = string.Empty;
-            }
+            Sort ??= string.Empty;
+            RowFilter ??= string.Empty;
 
             DataExpression newFilter = new DataExpression(table, RowFilter);
             SetIndex(Sort, RowState, newFilter);
@@ -318,10 +311,7 @@ namespace System.Data
             [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_RowFilter|API> {0}, '{1}'", ObjectID, value);
 
                 if (_fInitInProgress)
@@ -348,8 +338,8 @@ namespace System.Data
         {
             get
             {
-                RowPredicateFilter? filter = (GetFilter() as RowPredicateFilter);
-                return ((null != filter) ? filter._predicateFilter : null);
+                RowPredicateFilter? filter = GetFilter() as RowPredicateFilter;
+                return filter?._predicateFilter;
             }
             set
             {
@@ -434,10 +424,7 @@ namespace System.Data
             }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_Sort|API> {0}, '{1}'", ObjectID, value);
 
                 if (_fInitInProgress)
@@ -834,7 +821,7 @@ namespace System.Data
         /// </summary>
         public IEnumerator GetEnumerator()
         {
-            // V1.1 compatability: returning List<DataRowView>.GetEnumerator() from RowViewCache
+            // V1.1 compatibility: returning List<DataRowView>.GetEnumerator() from RowViewCache
             // prevents users from changing data without invalidating the enumerator
             // aka don't 'return this.RowViewCache.GetEnumerator()'
             var temp = new DataRowView[Count];
@@ -921,10 +908,7 @@ namespace System.Data
 
         internal Index? GetFindIndex(string column, bool keepIndex)
         {
-            if (_findIndexes == null)
-            {
-                _findIndexes = new Dictionary<string, Index>();
-            }
+            _findIndexes ??= new Dictionary<string, Index>();
 
             Index? findIndex;
             if (_findIndexes.TryGetValue(column, out findIndex))
@@ -1167,7 +1151,7 @@ namespace System.Data
 
         #region ITypedList
 
-        string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[] listAccessors)
+        string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[]? listAccessors)
         {
             if (_table != null)
             {
@@ -1180,7 +1164,7 @@ namespace System.Data
                     DataSet? dataSet = _table.DataSet;
                     if (dataSet != null)
                     {
-                        DataTable? foundTable = dataSet.FindTable(_table, listAccessors, 0);
+                        DataTable? foundTable = DataSet.FindTable(_table, listAccessors, 0);
                         if (foundTable != null)
                         {
                             return foundTable.TableName;
@@ -1191,13 +1175,13 @@ namespace System.Data
             return string.Empty;
         }
 
-        PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
+        PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[]? listAccessors)
         {
             if (_table != null)
             {
                 if (listAccessors == null || listAccessors.Length == 0)
                 {
-                    return _table.GetPropertyDescriptorCollection(null);
+                    return _table.GetPropertyDescriptorCollection();
                 }
                 else
                 {
@@ -1207,10 +1191,10 @@ namespace System.Data
                         return new PropertyDescriptorCollection(null);
                     }
 
-                    DataTable? foundTable = dataSet.FindTable(_table, listAccessors, 0);
+                    DataTable? foundTable = DataSet.FindTable(_table, listAccessors, 0);
                     if (foundTable != null)
                     {
-                        return foundTable.GetPropertyDescriptorCollection(null);
+                        return foundTable.GetPropertyDescriptorCollection();
                     }
                 }
             }

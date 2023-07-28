@@ -20,7 +20,7 @@ namespace System.Text.Encodings.Web
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Unlike the <see cref="Default"/>, this encoder instance does not escape HTML-senstive characters like &lt;, &gt;, &amp;, etc. and hence must be used cautiously
+        /// Unlike the <see cref="Default"/>, this encoder instance does not escape HTML-sensitive characters like &lt;, &gt;, &amp;, etc. and hence must be used cautiously
         /// (for example, if the output data is within a response whose content-type is known with a charset set to UTF-8).
         /// </para>
         /// <para>

@@ -420,9 +420,9 @@ const emitJumpKind emitReverseJumpKinds[] = {
  *  Return the allocated size (in bytes) of the given instruction descriptor.
  */
 
-size_t emitter::emitSizeOfInsDsc(instrDesc* id)
+size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
-    if (emitIsScnsInsDsc(id))
+    if (emitIsSmallInsDsc(id))
         return SMALL_IDSC_SIZE;
 
     insOpts insOp = id->idInsOpt();
@@ -586,35 +586,39 @@ void emitter::emitIns(instruction ins)
 }
 
 /*****************************************************************************
+ *  emitter::emitIns_S_R() and emitter::emitIns_R_S():
  *
  *  Add an Load/Store instruction(s): base+offset and base-addr-computing if needed.
  *  For referencing a stack-based local variable and a register
  *
  *  Special notes for LoongArch64:
  *    The parameter `offs` has special info.
- *    The real value of `offs` is positive.
- *    If the `offs` is negtive which its real value abs(offs),
- *    the negtive `offs` is special for optimizing the large offset which >2047.
- *    when offs >2047 we can't encode one instruction to load/store the data,
- *    if there are several load/store at this case, you have to repeat the similar
- *    large offs with reduntant instructions and maybe eat up the `SC_IG_BUFFER_SIZE`.
  *
- *    Optimize the following:
+ *    (1) The real value of `offs` is positive. `offs` = `offs`.
+ *
+ *    (2) If the `offs` is negtive, `offs` = -(offs),
+ *        the negtive `offs` is special for optimizing the large offset which >2047.
+ *        when offs >2047 we can't encode one instruction to load/store the data,
+ *        if there are several load/store at this case, you have to repeat the similar
+ *        large offs with reduntant instructions and maybe eat up the `emitIGbuffSize`.
+ *
+ *    Before optimizing the following instructions:
  *      lu12i.w  x0, 0x0
  *      ori  x0, x0, 0x9ac
  *      add.d  x0, x0, fp
  *      fst.s  fa0, x0, 0
  *
- *    For the offs within range [0,0x7ff], using one instruction:
- *      ori  x0, x0, offs
- *    For the offs within range [0x1000,0xffffffff], using two instruction
- *      lu12i.w  x0, offs-hi-20bits
- *      ori  x0, x0, offs-low-12bits
+ *    After optimized the instructions:
+ *      For the offs within range [0,0x7ff], using one instruction:
+ *        ori  x0, x0, offs
+ *      For the offs within range [0x1000,0xffffffff], using two instruction
+ *        lu12i.w  x0, offs-hi-20bits
+ *        ori  x0, x0, offs-low-12bits
  *
- *    Store/Load the data:
- *      fstx.s  fa0, x0, fp
+ *      Then Store/Load the data:
+ *        fstx.s  fa0, x0, fp
  *
- *    If the store/load are repeated,
+ *    If storing/loading the second field of a struct,
  *      addi_d  x0,x0,sizeof(type)
  *      fstx.s  fa0, x0, fp
  *
@@ -671,7 +675,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         assert(isValidSimm20(imm2 >> 12));
         emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_RA, imm2 >> 12);
 
-        emitIns_R_R_R(INS_add_d, attr, REG_RA, REG_RA, reg2);
+        emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_RA, REG_RA, reg2);
 
         imm2 = imm2 & 0x7ff;
         imm  = imm3 ? imm2 - imm3 : imm2;
@@ -792,7 +796,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             assert(isValidSimm20(imm2 >> 12));
             emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_RA, imm2 >> 12);
 
-            emitIns_R_R_R(INS_add_d, attr, REG_RA, REG_RA, reg2);
+            emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_RA, REG_RA, reg2);
 
             imm2 = imm2 & 0x7ff;
             imm3 = imm3 ? imm2 - imm3 : imm2;
@@ -1457,56 +1461,6 @@ void emitter::emitIns_R_R_I(
 }
 
 /*****************************************************************************
-*
-*  Add an instruction referencing two registers and a constant.
-*  Also checks for a large immediate that needs a second instruction
-*  and will load it in reg1
-*
-*/
-void emitter::emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm)
-{
-    assert(isGeneralRegister(reg1));
-    assert(reg1 != reg2);
-
-    bool immFits = true;
-
-#ifdef DEBUG
-    switch (ins)
-    {
-        case INS_addi_w:
-        case INS_addi_d:
-        case INS_ld_d:
-            immFits = isValidSimm12(imm);
-            break;
-
-        case INS_andi:
-        case INS_ori:
-        case INS_xori:
-            immFits = (0 <= imm) && (imm <= 0xfff);
-            break;
-
-        default:
-            assert(!"Unsupported instruction in emitIns_R_R_Imm");
-    }
-#endif
-
-    if (immFits)
-    {
-        emitIns_R_R_I(ins, attr, reg1, reg2, imm);
-    }
-    else
-    {
-        // Load 'imm' into the reg1 register
-        // then issue:   'ins'  reg1, reg2, reg1
-        //
-        assert(!EA_IS_RELOC(attr));
-        emitIns_I_la(attr, reg1, imm);
-        assert(ins == INS_ld_d);
-        emitIns_R_R_R(INS_ldx_d, attr, reg1, reg2, reg1);
-    }
-}
-
-/*****************************************************************************
  *
  *  Add an instruction referencing three registers.
  */
@@ -1912,7 +1866,7 @@ void emitter::emitIns_R_R_R_R(
  *
  *  Add an instruction with a register + static member operands.
  *  Constant is stored into JIT data which is adjacent to code.
- *  For LOONGARCH64, maybe not the best, here just suports the func-interface.
+ *  For LOONGARCH64, maybe not the best, here just supports the func-interface.
  *
  */
 void emitter::emitIns_R_C(
@@ -1920,25 +1874,23 @@ void emitter::emitIns_R_C(
 {
     assert(offs >= 0);
     assert(instrDesc::fitsInSmallCns(offs)); // can optimize.
-    // assert(ins == INS_bl);//for special. indicating isGeneralRegister(reg).
-    // assert(isGeneralRegister(reg)); while load float the reg is FPR.
 
     // when id->idIns == bl, for reloc! 4-ins.
     //   pcaddu12i reg, off-hi-20bits
     //   addi_d  reg, reg, off-lo-12bits
     // when id->idIns == load-ins, for reloc! 4-ins.
     //   pcaddu12i reg, off-hi-20bits
-    //   load  reg, offs_lo-12bits(reg)    #when ins is load ins.
+    //   load  reg, offs_lo-12bits(reg)
     //
-    // INS_OPTS_RC: ins == bl placeholders.  3-ins:  // TODO-LoongArch64: maybe optimize.
-    //   lu12i_w reg, addr-hi-20bits
-    //   ori     reg, reg, addr-lo-12bits
-    //   lu32i_d reg, addr_hi-32bits
+    // INS_OPTS_RC: ins == bl placeholders.  3-ins:
+    //   lu12i_w r21, addr_bits[31:12]
+    //   ori     reg, r21, addr_bits[11:0]
+    //   lu32i_d reg, addr_bits[50:32]
     //
     // INS_OPTS_RC: ins == load.  3-ins:
-    //   lu12i_w at, offs_hi-20bits           //NOTE: offs = (int)(offs_hi<<12) + (int)offs_lo
-    //   lu32i_d at, 0xff  addr_hi-32bits
-    //   load  reg, addr_lo-12bits(reg)    #when ins is load ins.
+    //   lu12i_w r21, addr_bits[31:12]
+    //   lu32i_d r21, addr_bits[50:32]
+    //   load  reg, r21 + addr_bits[11:0]
 
     instrDesc* id = emitNewInstr(attr);
 
@@ -1954,7 +1906,9 @@ void emitter::emitIns_R_C(
         id->idCodeSize(8);
     }
     else
-        id->idCodeSize(12); // TODO-LoongArch64: maybe optimize.
+    {
+        id->idCodeSize(12);
+    }
 
     if (EA_IS_GCREF(attr))
     {
@@ -2055,9 +2009,9 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     //   addi_d  reg, reg, offset-lo12
     //
     // else:  3-ins:
-    //   lu12i_w reg, dst-hi-20bits
-    //   ori reg, reg, dst-lo-12bits
-    //   bstrins_d  reg, zero, msbd, lsbd / lu32i_d reg, 0xff
+    //   lu12i_w r21, addr_bits[31:12]
+    //   ori     reg, r21, addr_bits[11:0]
+    //   lu32i_d reg, addr_bits[50:32]
 
     instrDesc* id = emitNewInstr(attr);
 
@@ -2071,7 +2025,9 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
         id->idCodeSize(8);
     }
     else
+    {
         id->idCodeSize(12);
+    }
 
     id->idReg1(reg);
 
@@ -2107,7 +2063,7 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 // NOTE:
 //  For loongarch64, emitIns_J is just only jump, not include the condition branch!
 //  The condition branch is the emitIns_J_cond_la().
-//  If using "BasicBlock* dst" lable as target, the INS_OPTS_J is a short jump while long jump will be replace by
+//  If using "BasicBlock* dst" label as target, the INS_OPTS_J is a short jump while long jump will be replace by
 //  INS_OPTS_JIRL.
 //
 //  The arg "instrCount" is two regs's encoding when ins is beq/bne/blt/bltu/bge/bgeu/beqz/bnez.
@@ -2499,9 +2455,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code)
 {
-    unsigned char callInstrSize = sizeof(code_t); // 4 bytes
-    regMaskTP     gcrefRegs;
-    regMaskTP     byrefRegs;
+    regMaskTP gcrefRegs;
+    regMaskTP byrefRegs;
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
 
@@ -2566,6 +2521,8 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         assert((addr & 3) == 0);
 
         dst += 4;
+        emitGCregDeadUpd(REG_T2, dst);
+
 #ifdef DEBUG
         code = emitInsCode(INS_pcaddu18i);
         assert((code | (14)) == 0x1e00000e);
@@ -2579,13 +2536,13 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
     }
     else
     {
-        // lu12i_w  t2, dst_offset_lo32-hi   // TODO-LoongArch64: maybe optimize.
-        // ori  t2, t2, dst_offset_lo32-lo
-        // lu32i_d  t2, dst_offset_hi32-lo
+        // lu12i_w  t2, addr_bits[31:12]   // TODO-LoongArch64: maybe optimize.
+        // ori  t2, t2, addr_bits[11:0]
+        // lu32i_d  t2, addr_bits[50:32]
         // jirl  t2
 
         ssize_t imm = (ssize_t)(id->idAddr()->iiaAddr);
-        assert((imm >> 32) == 0xff);
+        assert((uint64_t)(imm >> 32) <= 0x7ffff); // In fact max is <= 0xffff.
 
         int reg2 = (int)(imm & 1);
         imm -= reg2;
@@ -2596,6 +2553,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
         emitOutput_Instr(dst, code);
         dst += 4;
+        emitGCregDeadUpd(REG_T2, dst);
 
         code = emitInsCode(INS_ori);
         code |= (code_t)REG_T2;
@@ -2606,7 +2564,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
         code = emitInsCode(INS_lu32i_d);
         code |= (code_t)REG_T2;
-        code |= 0xff << 5;
+        code |= ((imm >> 32) & 0x7ffff) << 5;
 
         emitOutput_Instr(dst, code);
         dst += 4;
@@ -2620,24 +2578,14 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
     dst += 4;
 
-    // update volatile regs within emitThisGCrefRegs and emitThisByrefRegs.
-    if (gcrefRegs != emitThisGCrefRegs)
-    {
-        emitUpdateLiveGCregs(GCT_GCREF, gcrefRegs, dst);
-    }
-    if (byrefRegs != emitThisByrefRegs)
-    {
-        emitUpdateLiveGCregs(GCT_BYREF, byrefRegs, dst);
-    }
-
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
     if (id->idGCref() == GCT_GCREF)
     {
-        gcrefRegs = emitThisGCrefRegs | RBM_INTRET;
+        gcrefRegs |= RBM_INTRET;
     }
     else if (id->idGCref() == GCT_BYREF)
     {
-        byrefRegs = emitThisByrefRegs | RBM_INTRET;
+        byrefRegs |= RBM_INTRET;
     }
 
     // If is a multi-register return method is called, mark INTRET_1 (A1) appropriately
@@ -2672,25 +2620,17 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         // So we're not really doing a "stack pop" here (note that "args" is 0), but we use this mechanism
         // to record the call for GC info purposes.  (It might be best to use an alternate call,
         // and protect "emitStackPop" under the EMIT_TRACK_STACK_DEPTH preprocessor variable.)
-        emitStackPop(dst, /*isCall*/ true, callInstrSize, /*args*/ 0);
+        emitStackPop(dst, /*isCall*/ true, sizeof(code_t), /*args*/ 0);
 
         // Do we need to record a call location for GC purposes?
         //
         if (!emitFullGCinfo)
         {
-            emitRecordGCcall(dst, callInstrSize);
+            emitRecordGCcall(dst, sizeof(code_t));
         }
     }
-    if (id->idIsCallRegPtr())
-    {
-        callInstrSize = 1 << 2;
-    }
-    else
-    {
-        callInstrSize = id->idIsReloc() ? (2 << 2) : (4 << 2); // INS_OPTS_C: 2/4-ins.
-    }
 
-    return callInstrSize;
+    return id->idCodeSize();
 }
 
 //----------------------------------------------------------------------------------
@@ -2747,7 +2687,7 @@ void emitter::emitJumpDistBind()
 AGAIN:
 
 #ifdef DEBUG
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif
 
 #ifdef DEBUG
@@ -3116,7 +3056,7 @@ AGAIN:
         emitDispIGlist(false);
     }
 
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif // DEBUG
 }
 
@@ -3146,10 +3086,10 @@ AGAIN:
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*       dstRW  = *dp + writeableOffset;
-    BYTE*       dstRW2 = dstRW; // addr for updating gc info if needed.
+    BYTE*       dstRW2 = dstRW + 4; // addr for updating gc info if needed.
     code_t      code   = 0;
     instruction ins;
-    size_t      sz; // = emitSizeOfInsDsc(id);
+    size_t      sz;
 
 #ifdef DEBUG
 #if DUMP_GC_TABLES
@@ -3178,7 +3118,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             *(code_t*)dstRW = 0x1c000000 | (code_t)reg1;
 
-            dstRW2 = dstRW;
             dstRW += 4;
 
 #ifdef DEBUG
@@ -3202,20 +3141,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 *(code_t*)dstRW = 0x28c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
             }
 
-            if (id->idGCref() != GCT_NONE)
-            {
-                emitGCregLiveUpd(id->idGCref(), reg1, dstRW);
-            }
-            else
-            {
-                emitGCregDeadUpd(reg1, dstRW);
-            }
-
             dstRW += 4;
 
-            emitRecordRelocation(dstRW2, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
-
-            dstRW2 += 4;
+            emitRecordRelocation(dstRW - 8 - writeableOffset, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
 
             sz = sizeof(instrDesc);
         }
@@ -3224,7 +3152,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             ssize_t   imm  = (ssize_t)(id->idAddr()->iiaAddr);
             regNumber reg1 = id->idReg1();
-            dstRW2 += 4;
 
             switch (id->idCodeSize())
             {
@@ -3341,14 +3268,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   load  reg, offs_lo-12bits(r21)    #when ins is load ins.
             //
             // when id->idIns == bl
-            //   lu12i_w r21, addr-hi-20bits
-            //   ori     reg, r21, addr-lo-12bits
-            //   lu32i_d reg, addr_hi-32bits
+            //   lu12i_w r21, addr_bits[31:12]
+            //   ori     reg, r21, addr_bits[11:0]
+            //   lu32i_d reg, addr_bits[50:32]
             //
             // when id->idIns == load-ins
-            //   lu12i_w r21, offs_hi-20bits
-            //   lu32i_d r21, 0xff  addr_hi-32bits
-            //   load  reg, addr_lo-12bits(r21)
+            //   lu12i_w r21, addr_bits[31:12]
+            //   lu32i_d r21, addr_bits[50:32]
+            //   load  reg, r21 + addr_bits[11:0]
             assert(id->idAddr()->iiaIsJitDataOffset());
             assert(id->idGCref() == GCT_NONE);
 
@@ -3406,7 +3333,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     *(code_t*)dstRW = code;
                 }
                 dstRW += 4;
-                dstRW2 = dstRW;
             }
             else
             {
@@ -3416,7 +3342,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(INS_lu12i_w);
                 if (ins == INS_bl)
                 {
-                    assert((imm >> 32) == 0xff);
+                    assert((uint64_t)(imm >> 32) <= 0x7ffff);
 
                     doff = (int)imm >> 12;
                     code |= (code_t)REG_R21;
@@ -3431,12 +3357,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code |= (code_t)(imm & 0xfff) << 10;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
-                    dstRW2 = dstRW;
 
                     ins  = INS_lu32i_d;
                     code = emitInsCode(INS_lu32i_d);
                     code |= (code_t)reg1;
-                    code |= 0xff << 5;
+                    code |= ((imm >> 32) & 0x7ffff) << 5;
 
                     *(code_t*)dstRW = code;
                     dstRW += 4;
@@ -3447,7 +3372,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     imm += doff;
                     doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
 
-                    assert((imm >> 32) == 0xff);
+                    assert((uint64_t)(imm >> 32) <= 0x7ffff);
 
                     dataOffs = (unsigned)(imm >> 12); // addr-hi-20bits.
                     code |= (code_t)REG_R21;
@@ -3458,7 +3383,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     code = emitInsCode(INS_lu32i_d);
                     code |= (code_t)REG_R21;
-                    code |= 0xff << 5;
+                    code |= ((imm >> 32) & 0x7ffff) << 5;
 
                     *(code_t*)dstRW = code;
                     dstRW += 4;
@@ -3470,7 +3395,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     *(code_t*)dstRW = code;
                     dstRW += 4;
-                    dstRW2 = dstRW;
                 }
             }
 
@@ -3485,9 +3409,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   addi_d  reg, reg, offset-lo12
             //
             // else:       // TODO-LoongArch64:optimize.
-            //   lu12i_w reg, dstRW-hi-12bits
-            //   ori reg, reg, dstRW-lo-12bits
-            //   lu32i_d reg, dstRW-hi-32bits
+            //   lu12i_w r21, addr_bits[31:12]
+            //   ori     reg, r21, addr_bits[11:0]
+            //   lu32i_d reg, addr_bits[50:32]
 
             insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
             id->idAddr()->iiaIGlabel = tgtIG;
@@ -3498,7 +3422,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (id->idIsReloc())
             {
                 ssize_t imm = (ssize_t)tgtIG->igOffs;
-                imm         = (ssize_t)emitCodeBlock + imm - (ssize_t)dstRW;
+                imm         = (ssize_t)emitCodeBlock + imm - (ssize_t)(dstRW - writeableOffset);
                 assert((imm & 3) == 0);
 
                 int doff = (int)(imm & 0x800);
@@ -3510,7 +3434,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code            = 0x1c000000;
                 *(code_t*)dstRW = code | (code_t)reg1 | ((imm & 0xfffff000) >> 7);
                 dstRW += 4;
-                dstRW2 = dstRW;
 #ifdef DEBUG
                 code = emitInsCode(INS_pcaddu12i);
                 assert(code == 0x1c000000);
@@ -3523,7 +3446,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 ssize_t imm = (ssize_t)tgtIG->igOffs + (ssize_t)emitCodeBlock;
-                assert((imm >> 32) == 0xff);
+                assert((uint64_t)(imm >> 32) <= 0x7ffff);
 
                 code = emitInsCode(INS_lu12i_w);
                 code |= (code_t)REG_R21;
@@ -3538,12 +3461,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code |= (code_t)(imm & 0xfff) << 10;
                 *(code_t*)dstRW = code;
                 dstRW += 4;
-                dstRW2 = dstRW;
 
                 ins  = INS_lu32i_d;
                 code = emitInsCode(INS_lu32i_d);
                 code |= (code_t)reg1;
-                code |= 0xff << 5;
+                code |= ((imm >> 32) & 0x7ffff) << 5;
 
                 *(code_t*)dstRW = code;
             }
@@ -3760,16 +3682,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 sz = sizeof(instrDesc);
             }
             dstRW += emitOutputCall(ig, *dp, id, 0);
-            ins = INS_nop;
+
+            dstRW2 = dstRW;
+            ins    = INS_nop;
             break;
 
         // case INS_OPTS_NONE:
         default:
             *(code_t*)dstRW = id->idAddr()->iiaGetInstrEncode();
             dstRW += 4;
-            dstRW2 = dstRW;
-            ins    = id->idIns();
-            sz     = emitSizeOfInsDsc(id);
+            ins = id->idIns();
+            sz  = emitSizeOfInsDsc(id);
             break;
     }
 
@@ -3847,11 +3770,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     }
 
 #ifdef DEBUG
-    /* Make sure we set the instruction descriptor size correctly */
-
-    // size_t expected = emitSizeOfInsDsc(id);
-    // assert(sz == expected);
-
     if (emitComp->opts.disAsm || emitComp->verbose)
     {
         code_t* cp = (code_t*)(*dp + writeableOffset);
@@ -6013,6 +5931,11 @@ Label_OPCODE_E:
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
+    if (!emitComp->opts.disCodeBytes)
+    {
+        return;
+    }
+
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
     {
@@ -6028,13 +5951,26 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
+/*****************************************************************************
+ *
+ * For LoongArch64, the `emitter::emitDispIns` only supports
+ * the `DOTNET_JitDump`.
+ */
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    // LA implements this similar by `emitter::emitDisInsName`.
-    // For LA maybe the `emitDispIns` is over complicate.
-    // The `emitter::emitDisInsName` is focused on the most important for debugging.
-    NYI_LOONGARCH64("LA not used the emitter::emitDispIns");
+    if (ig)
+    {
+        BYTE* addr = emitCodeBlock + offset + writeableOffset;
+
+        int size = id->idCodeSize();
+        while (size > 0)
+        {
+            emitDisInsName(*(code_t*)addr, addr, id);
+            addr += 4;
+            size -= 4;
+        }
+    }
 }
 
 /*****************************************************************************
@@ -6094,7 +6030,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR, GT_LEA));
+        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA));
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -6243,7 +6179,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 regNumber addrReg = indir->GetSingleTempReg();
                 emitIns_R_C(ins, attr, dataReg, addrReg, addr->AsClsVar()->gtClsVarHnd, 0);
             }
-            else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+            else if (addr->OperIs(GT_LCL_ADDR))
             {
                 GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
                 unsigned             lclNum  = varNode->GetLclNum();
@@ -6280,18 +6216,17 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     else // addr is not contained, so we evaluate it into a register
     {
 #ifdef DEBUG
-        if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+        if (addr->OperIs(GT_LCL_ADDR))
         {
             // If the local var is a gcref or byref, the local var better be untracked, because we have
             // no logic here to track local variable lifetime changes, like we do in the contained case
-            // above. E.g., for a `str r0,[r1]` for byref `r1` to local `V01`, we won't store the local
+            // above. E.g., for a `st a0,[a1]` for byref `a1` to local `V01`, we won't store the local
             // `V01` and so the emitter can't update the GC lifetime for `V01` if this is a variable birth.
-            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-            unsigned             lclNum  = varNode->GetLclNum();
-            LclVarDsc*           varDsc  = emitComp->lvaGetDesc(lclNum);
+            LclVarDsc* varDsc = emitComp->lvaGetDesc(addr->AsLclVarCommon());
             assert(!varDsc->lvTracked);
         }
 #endif // DEBUG
+
         // Then load/store dataReg from/to [addrReg]
         emitIns_R_R_I(ins, attr, dataReg, addr->GetRegNum(), 0);
     }
@@ -6359,6 +6294,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
     }
 
+#ifdef DEBUG
     if (needCheckOv)
     {
         if (ins == INS_add_d)
@@ -6400,12 +6336,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
         else
         {
-#ifdef DEBUG
             printf("LOONGARCH64-Invalid ins for overflow check: %s\n", codeGen->genInsName(ins));
-#endif
             assert(!"Invalid ins for overflow check");
         }
     }
+#endif
 
     if (intConst != nullptr)
     {
@@ -6490,68 +6425,64 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
     else if (dst->OperGet() == GT_MUL)
     {
-        if (!needCheckOv && !(dst->gtFlags & GTF_UNSIGNED))
+        if (!needCheckOv)
         {
             emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
         }
         else
         {
-            if (needCheckOv)
+            assert(REG_R21 != dst->GetRegNum());
+            assert(REG_R21 != src1->GetRegNum());
+            assert(REG_R21 != src2->GetRegNum());
+            assert(REG_RA != dst->GetRegNum());
+            assert(REG_RA != src1->GetRegNum());
+            assert(REG_RA != src2->GetRegNum());
+
+            regNumber dstReg  = dst->GetRegNum();
+            regNumber tmpReg1 = src1->GetRegNum();
+            regNumber tmpReg2 = src2->GetRegNum();
+
+            bool        isUnsignd = (dst->gtFlags & GTF_UNSIGNED) != 0;
+            instruction ins2;
+            if (attr == EA_8BYTE)
             {
-                assert(REG_R21 != dst->GetRegNum());
-                assert(REG_R21 != src1->GetRegNum());
-                assert(REG_R21 != src2->GetRegNum());
-
-                instruction ins2;
-
-                if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+                if (isUnsignd)
                 {
-                    if (attr == EA_4BYTE)
-                        ins2 = INS_mulh_wu;
-                    else
-                        ins2 = INS_mulh_du;
+                    ins2 = INS_mulh_du;
                 }
                 else
                 {
-                    if (attr == EA_8BYTE)
-                        ins2 = INS_mulh_d;
-                    else
-                        ins2 = INS_mulh_w;
+                    ins2 = INS_mulh_d;
                 }
-
-                emitIns_R_R_R(ins2, attr, REG_R21, src1->GetRegNum(), src2->GetRegNum());
             }
+            else
+            {
+                if (isUnsignd)
+                {
+                    ins2 = INS_mulh_wu;
+                }
+                else
+                {
+                    ins2 = INS_mulh_w;
+                }
+            }
+            emitIns_R_R_R(ins2, EA_8BYTE, REG_R21, tmpReg1, tmpReg2);
 
             // n * n bytes will store n bytes result
-            emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
+            emitIns_R_R_R(ins, attr, dstReg, tmpReg1, tmpReg2);
 
-            if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+            if (isUnsignd)
             {
-                if (attr == EA_4BYTE)
-                    emitIns_R_R_I_I(INS_bstrins_d, EA_8BYTE, dst->GetRegNum(), REG_R0, 63, 32);
+                tmpReg2 = REG_R0;
+            }
+            else
+            {
+                size_t imm = (EA_SIZE(attr) == EA_8BYTE) ? 63 : 31;
+                emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai_d : INS_srai_w, attr, REG_RA, dstReg, imm);
+                tmpReg2 = REG_RA;
             }
 
-            if (needCheckOv)
-            {
-                assert(REG_R21 != dst->GetRegNum());
-                assert(REG_R21 != src1->GetRegNum());
-                assert(REG_R21 != src2->GetRegNum());
-
-                if ((dst->gtFlags & GTF_UNSIGNED) != 0)
-                {
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21);
-                }
-                else
-                {
-                    assert(REG_RA != dst->GetRegNum());
-                    assert(REG_RA != src1->GetRegNum());
-                    assert(REG_RA != src2->GetRegNum());
-                    size_t imm = (EA_SIZE(attr) == EA_8BYTE) ? 63 : 31;
-                    emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai_d : INS_srai_w, attr, REG_RA, dst->GetRegNum(),
-                                  imm);
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21, nullptr, REG_RA);
-                }
-            }
+            codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21, nullptr, tmpReg2);
         }
     }
     else if (dst->OperIs(GT_AND, GT_AND_NOT, GT_OR, GT_XOR))
@@ -6569,23 +6500,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         regNumber saveOperReg1 = REG_NA;
         regNumber saveOperReg2 = REG_NA;
 
-        if ((dst->gtFlags & GTF_UNSIGNED) && (attr == EA_8BYTE))
-        {
-            if (src1->gtType == TYP_INT)
-            {
-                assert(REG_R21 != regOp1);
-                assert(REG_RA != regOp1);
-                emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, REG_RA, regOp1, /*src1->GetRegNum(),*/ 31, 0);
-                regOp1 = REG_RA; // dst->ExtractTempReg();
-            }
-            if (src2->gtType == TYP_INT)
-            {
-                assert(REG_R21 != regOp2);
-                assert(REG_RA != regOp2);
-                emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, REG_R21, regOp2, /*src2->GetRegNum(),*/ 31, 0);
-                regOp2 = REG_R21; // dst->ExtractTempReg();
-            }
-        }
         if (needCheckOv)
         {
             assert(!varTypeIsFloating(dst));
@@ -6645,16 +6559,20 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 else
                 {
                     tempReg1 = REG_RA;
-                    tempReg2 = codeGen->rsGetRsvdReg();
+                    tempReg2 = dst->GetSingleTempReg();
                     assert(tempReg1 != tempReg2);
                     assert(tempReg1 != saveOperReg1);
                     assert(tempReg2 != saveOperReg2);
 
                     ssize_t ui6 = (attr == EA_4BYTE) ? 31 : 63;
                     if (dst->OperGet() == GT_ADD)
+                    {
                         emitIns_R_R_I(INS_srli_d, attr, tempReg1, saveOperReg1, ui6);
+                    }
                     else
+                    {
                         emitIns_R_R_I(INS_srli_d, attr, tempReg1, dst->GetRegNum(), ui6);
+                    }
                     emitIns_R_R_I(INS_srli_d, attr, tempReg2, saveOperReg2, ui6);
 
                     emitIns_R_R_R(INS_xor, attr, tempReg1, tempReg1, tempReg2);
@@ -6750,7 +6668,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 // Return value:
 //    A string that represents a general-purpose register name or floating-point scalar register name.
 //
-const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
+const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) const
 {
     assert(reg < REG_COUNT);
 

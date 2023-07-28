@@ -53,7 +53,7 @@ following members:
   procedure.  If the unwind-info consists of dynamic procedure info,
   \Var{format} is equal to \Const{UNW\_INFO\_FORMAT\_DYNAMIC}.  If the
   unwind-info consists of a (target-specific) unwind table, it is
-  equal to to \Const{UNW\_INFO\_FORMAT\_TABLE}.  All other values are
+  equal to \Const{UNW\_INFO\_FORMAT\_TABLE}.  All other values are
   reserved for future use by \Prog{libunwind}.  This member exists
   for use by the \Func{find\_proc\_info}() call-back (see
   \Func{unw\_create\_addr\_space}(3)).  The
@@ -75,7 +75,7 @@ following members:
 \end{description}
 Note that for the purposes of \Prog{libunwind}, the code of a
 procedure is assumed to occupy a single, contiguous range of
-addresses.  For this reason, it is alwas possible to describe the
+addresses.  For this reason, it is always possible to describe the
 extent of a procedure with the \Var{start\_ip} and \Var{end\_ip}
 members.  If a single function/routine is split into multiple,
 discontiguous pieces, \Prog{libunwind} will treat each piece as a

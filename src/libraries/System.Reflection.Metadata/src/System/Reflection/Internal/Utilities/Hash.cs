@@ -40,25 +40,7 @@ namespace System.Reflection.Internal
         /// </summary>
         /// <param name="data">The sequence of bytes</param>
         /// <returns>The FNV-1a hash of <paramref name="data"/></returns>
-        internal static int GetFNVHashCode(byte[] data)
-        {
-            int hashCode = Hash.FnvOffsetBias;
-
-            for (int i = 0; i < data.Length; i++)
-            {
-                hashCode = unchecked((hashCode ^ data[i]) * Hash.FnvPrime);
-            }
-
-            return hashCode;
-        }
-
-        /// <summary>
-        /// Compute the FNV-1a hash of a sequence of bytes
-        /// See http://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
-        /// </summary>
-        /// <param name="data">The sequence of bytes</param>
-        /// <returns>The FNV-1a hash of <paramref name="data"/></returns>
-        internal static int GetFNVHashCode(ImmutableArray<byte> data)
+        internal static int GetFNVHashCode(ReadOnlySpan<byte> data)
         {
             int hashCode = Hash.FnvOffsetBias;
 

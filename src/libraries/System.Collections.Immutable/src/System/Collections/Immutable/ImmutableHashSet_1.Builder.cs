@@ -115,7 +115,7 @@ namespace System.Collections.Immutable
 
                     if (value != _equalityComparer)
                     {
-                        var result = Union(this, new MutationInput(SortedInt32KeyNode<HashBucket>.EmptyNode, value, _hashBucketEqualityComparer, 0));
+                        ImmutableHashSet<T>.MutationResult result = Union(this, new MutationInput(SortedInt32KeyNode<HashBucket>.EmptyNode, value, _hashBucketEqualityComparer, 0));
 
                         _immutable = null;
                         _equalityComparer = value;
@@ -194,12 +194,7 @@ namespace System.Collections.Immutable
                 // Creating an instance of ImmutableSortedMap<T> with our root node automatically freezes our tree,
                 // ensuring that the returned instance is immutable.  Any further mutations made to this builder
                 // will clone (and unfreeze) the spine of modified nodes until the next time this method is invoked.
-                if (_immutable == null)
-                {
-                    _immutable = ImmutableHashSet<T>.Wrap(_root, _equalityComparer, _count);
-                }
-
-                return _immutable;
+                return _immutable ??= ImmutableHashSet<T>.Wrap(_root, _equalityComparer, _count);
             }
 
             /// <summary>
@@ -231,7 +226,7 @@ namespace System.Collections.Immutable
             /// <returns>True if the item did not already belong to the collection.</returns>
             public bool Add(T item)
             {
-                var result = ImmutableHashSet<T>.Add(item, this.Origin);
+                ImmutableHashSet<T>.MutationResult result = ImmutableHashSet<T>.Add(item, this.Origin);
                 this.Apply(result);
                 return result.Count != 0;
             }
@@ -246,7 +241,7 @@ namespace System.Collections.Immutable
             /// <exception cref="NotSupportedException">The <see cref="ICollection{T}"/> is read-only.</exception>
             public bool Remove(T item)
             {
-                var result = ImmutableHashSet<T>.Remove(item, this.Origin);
+                ImmutableHashSet<T>.MutationResult result = ImmutableHashSet<T>.Remove(item, this.Origin);
                 this.Apply(result);
                 return result.Count != 0;
             }
@@ -279,7 +274,7 @@ namespace System.Collections.Immutable
             /// <param name="other">The collection of items to remove from the set.</param>
             public void ExceptWith(IEnumerable<T> other)
             {
-                var result = ImmutableHashSet<T>.Except(other, _equalityComparer, _hashBucketEqualityComparer, _root);
+                ImmutableHashSet<T>.MutationResult result = ImmutableHashSet<T>.Except(other, _equalityComparer, _hashBucketEqualityComparer, _root);
                 this.Apply(result);
             }
 
@@ -289,7 +284,7 @@ namespace System.Collections.Immutable
             /// <param name="other">The collection to compare to the current set.</param>
             public void IntersectWith(IEnumerable<T> other)
             {
-                var result = ImmutableHashSet<T>.Intersect(other, this.Origin);
+                ImmutableHashSet<T>.MutationResult result = ImmutableHashSet<T>.Intersect(other, this.Origin);
                 this.Apply(result);
             }
 
@@ -364,7 +359,7 @@ namespace System.Collections.Immutable
             /// <param name="other">The collection to compare to the current set.</param>
             public void SymmetricExceptWith(IEnumerable<T> other)
             {
-                var result = ImmutableHashSet<T>.SymmetricExcept(other, this.Origin);
+                ImmutableHashSet<T>.MutationResult result = ImmutableHashSet<T>.SymmetricExcept(other, this.Origin);
                 this.Apply(result);
             }
 
@@ -374,7 +369,7 @@ namespace System.Collections.Immutable
             /// <param name="other">The collection to compare to the current set.</param>
             public void UnionWith(IEnumerable<T> other)
             {
-                var result = ImmutableHashSet<T>.Union(other, this.Origin);
+                ImmutableHashSet<T>.MutationResult result = ImmutableHashSet<T>.Union(other, this.Origin);
                 this.Apply(result);
             }
 

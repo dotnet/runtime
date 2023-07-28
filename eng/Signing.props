@@ -1,5 +1,4 @@
-<Project InitialTargets="SetupFilesToSign">
-
+<Project>
   <PropertyGroup>
     <!--
       Windows arm/arm64 jobs don't have MSIs to sign. Keep it simple: allow not finding any matches
@@ -20,6 +19,13 @@
     <!-- apphost and comhost template files are not signed, by design. -->
     <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
 
+    <!--
+      The DAC and the DBI must go through special signing provisioning using a system separate
+      from MicroBuild.
+    -->
+    <FileSignInfo Include="mscordaccore.dll" CertificateName="None" />
+    <FileSignInfo Include="mscordbi.dll" CertificateName="None" />
+
     <!-- We don't need to code sign .js files because they are not used in Windows Script Host. -->
     <!-- WARNING: Needs to happed outside of any target -->
     <FileExtensionSignInfo Update=".js" CertificateName="None" />
@@ -30,8 +36,6 @@
     <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
-
-    <FileSignInfo Include="mscordaccore.dll" CertificateName="MicrosoftSHA2" />
 
     <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
          other feeds (in fact, that have identical identity to their non-symbol variant) -->
@@ -51,42 +55,14 @@
     <FileSignInfo Update="@(FileSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true' and '$(PostBuildSign)' == 'true'">
+  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true'">
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.msi" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.exe" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.nupkg" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.zip" />
 
     <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
-    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" />
+    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" Condition="'$(PostBuildSign)' == 'true'" />
+    <ItemsToSign Include="@(ItemsToSignWithPaths->Distinct())" Condition="'$(PostBuildSign)' != 'true'" />
   </ItemGroup>
-
-  <Target Name="SetupFilesToSign">
-    <!-- Ensure that we don't miss the DAC or DBI with the globbing below -->
-    <PropertyGroup Condition="'$(SignDiagnostics)' == 'true' or '$(SignDiagnosticsPackages)' == 'true'">
-      <AllowEmptySignList>false</AllowEmptySignList>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(SignDiagnostics)' == 'true'">
-      <ItemsToSign Include="$(DiagnosticsFilesRoot)\**\mscordaccore*.dll" />
-      <ItemsToSign Include="$(DiagnosticsFilesRoot)\**\mscordbi.dll" />
-      <!--
-        The DAC should be signed with the SHA2 cert (both long and short name).
-        We already add the short-name DAC above, so add the long-name DAC here.
-      -->
-      <DacFileSignInfo Include="@(ItemsToSign->'%(FileName)%(Extension)')"
-                    Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore'))" />
-      <FileSignInfo Include="@(DacFileSignInfo->ClearMetadata()->Distinct())"
-                    Exclude="mscordaccore.dll"
-                    CertificateName="MicrosoftSHA2" />
-    </ItemGroup>
-    
-    <ItemGroup Condition="'$(SignDiagnosticsPackages)' == 'true'">
-      <!-- The cross OS diagnostics symbol packages need to be signed as they are the only packages
-      that have a specific version of assets that are only meant to be indexed in symbol servers.
-      Since only *symbols.nupkg get indexed, and installer doesn't produce these, we need to glob them for signing. -->
-      <ItemsToSign Include="$(PackagesFolder)\**\*CrossOsDiag*.nupkg" />
-    </ItemGroup>
-  </Target>
-
 </Project>

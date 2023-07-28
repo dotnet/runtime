@@ -14,17 +14,14 @@ namespace System.Diagnostics.Metrics
     /// <summary>
     /// MeterListener is class used to listen to the metrics instrument measurements recording.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public sealed class MeterListener : IDisposable
     {
         // We use LikedList here so we don't have to take any lock while iterating over the list as we always hold on a node which be either valid or null.
         // DiagLinkedList is thread safe for Add, Remove, and Clear operations.
-        private static List<MeterListener> s_allStartedListeners = new List<MeterListener>();
+        private static readonly List<MeterListener> s_allStartedListeners = new List<MeterListener>();
 
         // List of the instruments which the current listener is listening to.
-        private DiagLinkedList<Instrument> _enabledMeasurementInstruments = new DiagLinkedList<Instrument>();
+        private readonly DiagLinkedList<Instrument> _enabledMeasurementInstruments = new DiagLinkedList<Instrument>();
         private bool _disposed;
 
         // We initialize all measurement callback with no-op operations so we'll avoid the null checks during the execution;
@@ -67,7 +64,7 @@ namespace System.Diagnostics.Metrics
             {
                 if (instrument is not null && !_disposed && !instrument.Meter.Disposed)
                 {
-                    _enabledMeasurementInstruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
+                    _enabledMeasurementInstruments.AddIfNotExist(instrument, object.ReferenceEquals);
                     oldState = instrument.EnableMeasurement(new ListenerSubscription(this, state), out oldStateStored);
                     enabled = true;
                 }
@@ -98,7 +95,7 @@ namespace System.Diagnostics.Metrics
             object? state =  null;
             lock (Instrument.SyncObject)
             {
-                if (instrument is null || _enabledMeasurementInstruments.Remove(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2)) == default)
+                if (instrument is null || _enabledMeasurementInstruments.Remove(instrument, object.ReferenceEquals) == default)
                 {
                     return default;
                 }
@@ -117,10 +114,8 @@ namespace System.Diagnostics.Metrics
         /// <param name="measurementCallback">The callback which can be used to get measurement recording of numeric type T.</param>
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct
         {
-            if (measurementCallback is null)
-            {
-                measurementCallback = (instrument, measurement, tags, state) => { /* no-op */};
-            }
+            measurementCallback ??= (instrument, measurement, tags, state) => { /* no-op */};
+
             if (typeof(T) == typeof(byte))
             {
                 _byteMeasurementCallback = (MeasurementCallback<byte>)(object)measurementCallback;

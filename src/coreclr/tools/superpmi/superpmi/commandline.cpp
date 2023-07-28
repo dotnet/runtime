@@ -39,6 +39,9 @@ void CommandLine::DumpHelp(const char* program)
     printf(" -box\n");
     printf("     Break on exception thrown, such as for missing data during replay\n");
     printf("\n");
+    printf(" -ignoreStoredConfig\n");
+    printf("     On replay, ignore any stored configuration variables. Useful for Checked/Release asm diffs.\n");
+    printf("\n");
     printf(" -v[erbosity] messagetypes\n");
     printf("     Controls which types of messages SuperPMI logs. Specify a string of\n");
     printf("     characters representing message categories to enable, where:\n");
@@ -83,10 +86,6 @@ void CommandLine::DumpHelp(const char* program)
     printf("\n");
     printf(" -metricsSummary <file name>, -baseMetricsSummary <file name.csv>\n");
     printf("     Emit a summary of metrics to the specified file\n");
-    printf("     Currently includes:\n");
-    printf("       Total number of successful SPMI compiles\n");
-    printf("       Total number of failing SPMI compiles\n");
-    printf("       Total amount of ASM code in bytes\n");
     printf("\n");
     printf(" -diffMetricsSummary <file name>\n");
     printf("     Same as above, but emit for the diff/second JIT");
@@ -137,12 +136,12 @@ void CommandLine::DumpHelp(const char* program)
     printf(" -jitoption [force] key=value\n");
     printf("     Set the JIT option named \"key\" to \"value\" for JIT 1 if the option was not set.\n");
     printf("     With optional force flag overwrites the existing value if it was already set.\n");
-    printf("     NOTE: do not use a \"COMPlus_\" prefix, \"key\" and \"value\" are case sensitive!\n");
+    printf("     NOTE: do not use a \"DOTNET_\" prefix, \"key\" and \"value\" are case sensitive!\n");
     printf("\n");
     printf(" -jit2option [force] key=value\n");
     printf("     Set the JIT option named \"key\" to \"value\" for JIT 2 if the option was not set.\n");
     printf("     With optional force flag overwrites the existing value if it was already set.\n");
-    printf("     NOTE: do not use a \"COMPlus_\" prefix, \"key\" and \"value\" are case sensitive!\n");
+    printf("     NOTE: do not use a \"DOTNET_\" prefix, \"key\" and \"value\" are case sensitive!\n");
     printf("\n");
     printf("Inputs are case sensitive.\n");
     printf("\n");
@@ -322,7 +321,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
                 o->mclFilename = argv[i];
             }
-            else if ((_strnicmp(&argv[i][1], "diffMCList", 10) == 0))
+            else if ((_strnicmp(&argv[i][1], "diffsInfo", 9) == 0))
             {
                 if (++i >= argc)
                 {
@@ -330,7 +329,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                o->diffMCLFilename = argv[i];
+                o->diffsInfo = argv[i];
             }
             else if ((_strnicmp(&argv[i][1], "target", 6) == 0))
             {
@@ -354,6 +353,10 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             {
                 o->breakOnException = true;
             }
+            else if ((_strnicmp(&argv[i][1], "ignoreStoredConfig", 18) == 0))
+            {
+                o->ignoreStoredConfig = true;
+            }
             else if ((_strnicmp(&argv[i][1], "verbosity", argLen) == 0))
             {
                 if (++i >= argc)
@@ -362,7 +365,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                Logger::SetLogLevel(Logger::ParseLogLevelString(argv[i]));
+                o->verbosity = argv[i];
+                Logger::SetLogLevel(Logger::ParseLogLevelString(o->verbosity));
             }
             else if ((_strnicmp(&argv[i][1], "writeLogFile", argLen) == 0))
             {
@@ -453,7 +457,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                if (strlen(argv[i]) != (MD5_HASH_BUFFER_SIZE - 1))
+                if (strlen(argv[i]) != (MM3_HASH_BUFFER_SIZE - 1))
                 {
                     LogError("Arg '%s' is invalid, needed a valid method context hash.", argv[i]);
                     DumpHelp(argv[0]);
@@ -645,9 +649,9 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         DumpHelp(argv[0]);
         return false;
     }
-    if (o->diffMCLFilename != nullptr && !o->applyDiff)
+    if (o->diffsInfo != nullptr && !o->applyDiff)
     {
-        LogError("-diffMCList specified without -applyDiff.");
+        LogError("-diffsInfo specified without -applyDiff.");
         DumpHelp(argv[0]);
         return false;
     }
@@ -728,9 +732,9 @@ bool CommandLine::AddJitOption(int&  currArgument,
     }
 
     DWORD keyIndex =
-        (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(WCHAR) * ((unsigned int)wcslen(key) + 1));
+        (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(WCHAR) * ((unsigned int)u16_strlen(key) + 1));
     DWORD valueIndex =
-        (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(WCHAR) * ((unsigned int)wcslen(value) + 1));
+        (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(WCHAR) * ((unsigned int)u16_strlen(value) + 1));
     targetjitOptions->Add(keyIndex, valueIndex);
 
     delete[] key;

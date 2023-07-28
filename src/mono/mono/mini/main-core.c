@@ -19,10 +19,17 @@
 #pragma comment(linker, "/export:coreclr_initialize=_coreclr_initialize@28")
 #pragma comment(linker, "/export:coreclr_execute_assembly=_coreclr_execute_assembly@24")
 #pragma comment(linker, "/export:coreclr_shutdown_2=_coreclr_shutdown_2@12")
+#pragma comment(linker, "/export:coreclr_shutdown=_coreclr_shutdown@8")
 #pragma comment(linker, "/export:coreclr_create_delegate=_coreclr_create_delegate@24")
+#pragma comment(linker, "/export:coreclr_set_error_writer=_coreclr_set_error_writer@4")
 #undef MONO_API
 #define MONO_API MONO_EXTERN_C
 #endif
+
+//
+// Type of the callback function that can be set by the coreclr_set_error_writer
+//
+typedef void (*coreclr_error_writer_callback_fn) (const char *message);
 
 MONO_API int STDAPICALLTYPE coreclr_initialize (const char* exePath, const char* appDomainFriendlyName,
 	int propertyCount, const char** propertyKeys, const char** propertyValues,
@@ -33,10 +40,13 @@ MONO_API int STDAPICALLTYPE coreclr_execute_assembly (void* hostHandle, unsigned
 	const char* managedAssemblyPath, unsigned int* exitCode);
 
 MONO_API int STDAPICALLTYPE coreclr_shutdown_2 (void* hostHandle, unsigned int domainId, int* latchedExitCode);
+MONO_API int STDAPICALLTYPE coreclr_shutdown (void* hostHandle, unsigned int domainId);
 
 MONO_API int STDAPICALLTYPE coreclr_create_delegate (void* hostHandle, unsigned int domainId,
 	const char* entryPointAssemblyName, const char* entryPointTypeName, const char* entryPointMethodName,
 	void** delegate);
+
+MONO_API int STDAPICALLTYPE coreclr_set_error_writer(coreclr_error_writer_callback_fn error_writer);
 
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
@@ -98,6 +108,24 @@ int STDAPICALLTYPE coreclr_shutdown_2 (void* hostHandle, unsigned int domainId, 
 }
 
 //
+// Shutdown CoreCLR. It unloads the app domain and stops the CoreCLR host.
+//
+// Parameters:
+//  hostHandle              - Handle of the host
+//  domainId                - Id of the domain
+//  latchedExitCode         - Latched exit code after domain unloaded
+//
+// Returns:
+//  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
+//
+int STDAPICALLTYPE coreclr_shutdown (void* hostHandle, unsigned int domainId)
+{
+       int latchedExitCode = 0 ;
+       return monovm_shutdown (&latchedExitCode);
+}
+
+
+//
 // Create a native callable delegate for a managed method.
 //
 // Parameters:
@@ -116,4 +144,19 @@ int STDAPICALLTYPE coreclr_create_delegate (void* hostHandle, unsigned int domai
 	void** delegate)
 {
 	return monovm_create_delegate (entryPointAssemblyName, entryPointTypeName, entryPointMethodName, delegate);
+}
+
+//
+// Set callback for writing error logging
+//
+// Parameters:
+//  errorWriter             - callback that will be called for each line of the error info
+//                          - passing in NULL removes a callback that was previously set
+//
+// Returns:
+//  S_OK
+//
+int STDAPICALLTYPE coreclr_set_error_writer(coreclr_error_writer_callback_fn error_writer)
+{
+    return 0; // S_OK
 }

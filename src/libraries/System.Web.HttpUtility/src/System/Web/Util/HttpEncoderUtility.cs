@@ -32,7 +32,7 @@ namespace System.Web.Util
         }
 
         //  Helper to encode spaces only
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         internal static string? UrlEncodeSpaces(string? str) => str != null && str.Contains(' ') ? str.Replace(" ", "%20") : str;
     }
 }

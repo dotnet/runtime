@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -45,7 +46,7 @@ namespace System.Collections.Concurrent
         {
             // Validate the length
             Debug.Assert(boundedLength >= 2, $"Must be >= 2, got {boundedLength}");
-            Debug.Assert((boundedLength & (boundedLength - 1)) == 0, $"Must be a power of 2, got {boundedLength}");
+            Debug.Assert(BitOperations.IsPow2(boundedLength), $"Must be a power of 2, got {boundedLength}");
 
             // Initialize the slots and the mask.  The mask is used as a way of quickly doing "% _slots.Length",
             // instead letting us do "& _slotsMask".

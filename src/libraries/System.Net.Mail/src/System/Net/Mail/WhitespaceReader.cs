@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using System.Diagnostics;
 using System.Net.Mime;
 
@@ -166,7 +167,7 @@ namespace System.Net.Mail
                 }
                 // Check for valid characters within comments.  Allow Unicode, as we won't transmit any comments.
                 else if (commentDepth > 0
-                    && (data[index] > MailBnfHelper.Ascii7bitMaxValue || MailBnfHelper.Ctext[data[index]]))
+                    && (!Ascii.IsValid(data[index]) || MailBnfHelper.Ctext[data[index]]))
                 {
                     index--;
                 }

@@ -11,7 +11,7 @@ namespace ILCompiler
     /// </summary>
     public class UniversalGenericsRootProvider : ICompilationRootProvider
     {
-        TypeSystemContext _context;
+        private TypeSystemContext _context;
 
         public UniversalGenericsRootProvider(TypeSystemContext context)
         {

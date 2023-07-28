@@ -143,11 +143,7 @@ namespace System.Data.ProviderBase
             // Dispose of the _enlistedTransaction since it is a clone
             // of the original reference.
             // _enlistedTransaction can be changed by another thread (TX end event)
-            SysTx.Transaction? enlistedTransaction = Interlocked.Exchange(ref _enlistedTransaction, null);
-            if (enlistedTransaction != null)
-            {
-                enlistedTransaction.Dispose();
-            }
+            Interlocked.Exchange(ref _enlistedTransaction, null)?.Dispose();
         }
     }
 }

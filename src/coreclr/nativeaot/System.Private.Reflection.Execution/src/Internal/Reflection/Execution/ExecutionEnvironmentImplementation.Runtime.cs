@@ -21,11 +21,6 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        public sealed override object NewObject(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.NewObject(typeHandle);
-        }
-
         public sealed override Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
         {
             return RuntimeAugments.NewArray(typeHandleForArrayType, count);
@@ -102,7 +97,7 @@ namespace Internal.Reflection.Execution
                 tMethods[i] = (MethodInfo)methodBase;
                 continue;
 
-notFound:
+            notFound:
                 if (instanceType.IsAbstract)
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.Arg_InterfaceMapMustNotBeAbstract, interfaceType.FullName, instanceType.FullName));
@@ -115,11 +110,6 @@ notFound:
             targetMethods = tMethods;
         }
 
-        public sealed override string GetLastResortString(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.GetLastResortString(typeHandle);
-        }
-
         //==============================================================================================
         // Miscellaneous
         //==============================================================================================
@@ -128,7 +118,7 @@ notFound:
             return new LiteralFieldAccessor(value, fieldTypeHandle);
         }
 
-        public sealed override EnumInfo GetEnumInfo(RuntimeTypeHandle typeHandle)
+        public sealed override void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags)
         {
             // Handle the weird case of an enum type nested under a generic type that makes the
             // enum itself generic
@@ -138,29 +128,34 @@ notFound:
                 typeDefHandle = RuntimeAugments.GetGenericDefinition(typeHandle);
             }
 
-            // If the type is reflection blocked, we pretend there are no enum values defined
-            if (ReflectionExecution.ExecutionEnvironment.IsReflectionBlocked(typeDefHandle))
-            {
-                return new EnumInfo(RuntimeAugments.GetEnumUnderlyingType(typeHandle), Array.Empty<object>(), Array.Empty<string>(), false);
-            }
-
-            QTypeDefinition qTypeDefinition;
-            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(typeDefHandle, out qTypeDefinition))
-            {
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(Type.GetTypeFromHandle(typeDefHandle));
-            }
+            QTypeDefinition qTypeDefinition = ReflectionExecution.ExecutionEnvironment.GetMetadataForNamedType(typeDefHandle);
 
             if (qTypeDefinition.IsNativeFormatMetadataBased)
             {
-                return NativeFormatEnumInfo.Create(typeHandle, qTypeDefinition.NativeFormatReader, qTypeDefinition.NativeFormatHandle);
+                NativeFormatEnumInfo.GetEnumValuesAndNames(
+                    qTypeDefinition.NativeFormatReader,
+                    qTypeDefinition.NativeFormatHandle,
+                    out values,
+                    out names,
+                    out isFlags);
+                return;
             }
 #if ECMA_METADATA_SUPPORT
             if (qTypeDefinition.IsEcmaFormatMetadataBased)
             {
-                return EcmaFormatEnumInfo.Create(typeHandle, qTypeDefinition.EcmaFormatReader, qTypeDefinition.EcmaFormatHandle);
+                return EcmaFormatEnumInfo.Create<TUnderlyingValue>(typeHandle, qTypeDefinition.EcmaFormatReader, qTypeDefinition.EcmaFormatHandle);
             }
 #endif
-            return null;
+            names = Array.Empty<string>();
+            values = Array.Empty<object>();
+            isFlags = false;
+            return;
+        }
+
+        public override IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker)
+        {
+            return ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo.InvokeThunk
+                ;
         }
     }
 }

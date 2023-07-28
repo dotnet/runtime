@@ -87,7 +87,7 @@ static void appendStrNum(CQuickBytes *out, int num) {
 
 PCCOR_SIGNATURE PrettyPrintSignature(
     PCCOR_SIGNATURE typePtr,            // type to convert,
-    unsigned typeLen,                   // the lenght of 'typePtr'
+    unsigned typeLen,                   // the length of 'typePtr'
     const char* name,                   // can be "", the name of the method for this sig 0 means local var sig
     CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI,           // ptr to IMDInternalImport class with ComSig
@@ -174,7 +174,7 @@ const char* PrettyPrintSig(
 
 PCCOR_SIGNATURE PrettyPrintSignature(
     PCCOR_SIGNATURE typePtr,    // type to convert,
-    unsigned typeLen,           // the lenght of 'typePtr'
+    unsigned typeLen,           // the length of 'typePtr'
     const char* name,           // can be "", the name of the method for this sig 0 means local var sig
     CQuickBytes *out,           // where to put the pretty printed string
     IMDInternalImport *pIMDI,   // ptr to IMDInternalImport class with ComSig
@@ -688,8 +688,9 @@ PCCOR_SIGNATURE PrettyPrintType(
                         appendStr(out, "(null)");
                 }
 
-                char sz[32];
-                sprintf_s(sz, ARRAY_SIZE(sz), " /* MT: 0x%p */", pMT);
+                const char fmt[] = " /* MT: %p */";
+                char sz[Max64BitHexString + ARRAY_SIZE(fmt)];
+                sprintf_s(sz, ARRAY_SIZE(sz), fmt, pMT);
                 appendStr(out, sz);
                 break;
             }
@@ -1507,7 +1508,7 @@ error:
         buf.AppendASCII(" }) ");
 
         char * tgt = szString + strlen(szString);
-        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%S", buf.GetUnicode());
+        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%s", buf.GetUTF8());
         if (sprintf_ret == -1)
         {
             // Hit an error. Oh well, nothing to do...
@@ -1521,7 +1522,7 @@ error:
     else
     {
         char * tgt = szString + strlen(szString);
-        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%S", buf.GetUnicode());
+        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%s", buf.GetUTF8());
         if (sprintf_ret == -1)
         {
             // There was an error, possibly with converting the Unicode characters.

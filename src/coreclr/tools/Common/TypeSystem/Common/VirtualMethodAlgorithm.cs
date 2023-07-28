@@ -30,6 +30,8 @@ namespace Internal.TypeSystem
 
         public abstract DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc impl);
 
+        public abstract DefaultInterfaceMethodResolution ResolveVariantInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc impl);
+
         /// <summary>
         /// Resolves a virtual method call.
         /// </summary>

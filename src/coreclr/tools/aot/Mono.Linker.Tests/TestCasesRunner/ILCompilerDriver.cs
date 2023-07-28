@@ -3,9 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ILCompiler;
+using ILCompiler.Dataflow;
 using ILLink.Shared.TrimAnalysis;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -15,14 +18,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class ILCompilerDriver
 	{
-		private const string DefaultSystemModule = "System.Private.CoreLib";
+		internal const string DefaultSystemModule = "System.Private.CoreLib";
 
-		public void Trim (ILCompilerOptions options, ILogWriter logWriter)
+		public ILScanResults Trim (ILCompilerOptions options, ILogWriter logWriter)
 		{
 			ComputeDefaultOptions (out var targetOS, out var targetArchitecture);
 			var targetDetails = new TargetDetails (targetArchitecture, targetOS, TargetAbi.NativeAot);
 			CompilerTypeSystemContext typeSystemContext =
-				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All);
+				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All, genericCycleDepthCutoff: -1);
 
 			typeSystemContext.InputFilePaths = options.InputFilePaths;
 			typeSystemContext.ReferenceFilePaths = options.ReferenceFilePaths;
@@ -34,7 +37,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				inputModules.Add (module);
 			}
 
-			CompilationModuleGroup compilationGroup = new MultiFileSharedCompilationModuleGroup (typeSystemContext, inputModules);
+			foreach (var trimAssembly in options.TrimAssemblies) {
+				EcmaModule module = typeSystemContext.GetModuleForSimpleName (trimAssembly);
+				inputModules.Add (module);
+			}
+
+			CompilationModuleGroup compilationGroup;
+			if (options.FrameworkCompilation)
+				compilationGroup = new SingleFileCompilationModuleGroup ();
+			else
+				compilationGroup = new TestInfraMultiFileSharedCompilationModuleGroup (typeSystemContext, inputModules);
 
 			List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider> ();
 			EcmaModule? entrypointModule = null;
@@ -47,31 +59,64 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					entrypointModule = module;
 				}
 
-				compilationRoots.Add (new ExportedMethodsRootProvider (module));
+				compilationRoots.Add (new UnmanagedEntryPointsRootProvider (module));
 			}
 
-			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options)));
+			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options), generateLibraryAndModuleInitializers: true));
+
+			foreach (var rootedAssembly in options.AdditionalRootAssemblies) {
+				EcmaModule module = typeSystemContext.GetModuleForSimpleName (rootedAssembly);
+
+				// We only root the module type. The rest will fall out because we treat rootedAssemblies
+				// same as conditionally rooted ones and here we're fulfilling the condition ("something is used").
+				compilationRoots.Add (
+					new GenericRootProvider<ModuleDesc> (module,
+					(ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddReflectionRoot (module.GetGlobalModuleType (), "Command line root")));
+			}
 
 			ILProvider ilProvider = new NativeAotILProvider ();
 
-			ilProvider = new FeatureSwitchManager (ilProvider, options.FeatureSwitches);
+			Logger logger = new Logger (
+				logWriter,
+				ilProvider,
+				isVerbose: true,
+				suppressedWarnings: Enumerable.Empty<int> (),
+				options.SingleWarn,
+				singleWarnEnabledModules: Enumerable.Empty<string> (),
+				singleWarnDisabledModules: Enumerable.Empty<string> (),
+				suppressedCategories: Enumerable.Empty<string> ());
 
-			Logger logger = new Logger (logWriter, isVerbose: true);
+			foreach (var descriptor in options.Descriptors) {
+				if (!File.Exists (descriptor))
+					throw new FileNotFoundException ($"'{descriptor}' doesn't exist");
+				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
+			}
+			
+			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches, default);
+
+			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 
 			UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager (
 				compilationGroup,
 				typeSystemContext,
 				new NoMetadataBlockingPolicy (),
-				new ManifestResourceBlockingPolicy (options.FeatureSwitches),
+				new ManifestResourceBlockingPolicy (logger, options.FeatureSwitches, new Dictionary<ModuleDesc, IReadOnlySet<string>>()),
 				logFile: null,
 				new NoStackTraceEmissionPolicy (),
 				new NoDynamicInvokeThunkGenerationPolicy (),
-				new FlowAnnotations (logger, ilProvider),
+				new FlowAnnotations (logger, ilProvider, compilerGeneratedState),
 				UsageBasedMetadataGenerationOptions.ReflectionILScanning,
+				options: default,
 				logger,
-				Array.Empty<KeyValuePair<string, bool>> (),
+				options.FeatureSwitches,
 				Array.Empty<string> (),
-				options.TrimAssemblies.ToArray ());
+				options.AdditionalRootAssemblies.ToArray (),
+				options.TrimAssemblies.ToArray (),
+				Array.Empty<string> ());
+
+			PInvokeILEmitterConfiguration pinvokePolicy = new ILCompilerTestPInvokePolicy ();
+			InteropStateManager interopStateManager = new InteropStateManager (typeSystemContext.GeneratedAssembly);
+			InteropStubManager interopStubManager = new UsageBasedInteropStubManager (interopStateManager, pinvokePolicy, logger);
 
 			CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)
 				.UseILProvider (ilProvider)
@@ -81,9 +126,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.UseCompilationRoots (compilationRoots)
 				.UseMetadataManager (metadataManager)
 				.UseParallelism (System.Diagnostics.Debugger.IsAttached ? 1 : -1)
+				.UseInteropStubManager (interopStubManager)
 				.ToILScanner ();
 
-			ILScanResults results = scanner.Scan ();
+			return scanner.Scan ();
 		}
 
 		public static void ComputeDefaultOptions (out TargetOS os, out TargetArchitecture arch)
@@ -117,7 +163,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		private IReadOnlyCollection<MethodDesc> CreateInitializerList (CompilerTypeSystemContext context, ILCompilerOptions options)
+		private static IReadOnlyCollection<MethodDesc> CreateInitializerList (CompilerTypeSystemContext context, ILCompilerOptions options)
 		{
 			List<ModuleDesc> assembliesWithInitalizers = new List<ModuleDesc> ();
 

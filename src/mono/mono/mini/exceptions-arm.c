@@ -375,7 +375,7 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
  * \returns a function pointer which can be used to raise
  * corlib exceptions. The returned function has the following
  * signature: void (*func) (guint32 ex_token, guint32 offset);
- * Here, \c offset is the offset which needs to be substracted from the caller IP
+ * Here, \c offset is the offset which needs to be subtracted from the caller IP
  * to get the IP of the throw. Passing the offset has the advantage that it
  * needs no relocations in the caller.
  * On ARM, the ip is passed instead of an offset.
@@ -491,7 +491,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 
 		for (i = 0; i < 16; ++i)
 			regs [i] = new_ctx->regs [i];
-#ifdef TARGET_IOS
+#if defined (TARGET_IOS) || defined(TARGET_TVOS)
 		/* On IOS, d8..d15 are callee saved. They are mapped to 8..15 in unwind.c */
 		for (i = 0; i < 8; ++i)
 			regs [MONO_MAX_IREGS + i] = *(guint64*)&(new_ctx->fregs [8 + i]);
@@ -509,7 +509,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			new_ctx->regs [i] = regs [i];
 		new_ctx->pc = regs [ARMREG_LR];
 		new_ctx->regs [ARMREG_SP] = (gsize)cfa;
-#ifdef TARGET_IOS
+#if defined (TARGET_IOS) || defined(TARGET_TVOS)
 		for (i = 0; i < 8; ++i)
 			new_ctx->fregs [8 + i] = *(double*)&(regs [MONO_MAX_IREGS + i]);
 #endif
@@ -517,7 +517,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		/* Clear thumb bit */
 		new_ctx->pc &= ~1;
 
-		/* we substract 1, so that the IP points into the call instruction */
+		/* we subtract 1, so that the IP points into the call instruction */
 		new_ctx->pc--;
 
 		return TRUE;
@@ -550,7 +550,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		/* Clear thumb bit */
 		new_ctx->pc &= ~1;
 
-		/* we substract 1, so that the IP points into the call instruction */
+		/* we subtract 1, so that the IP points into the call instruction */
 		new_ctx->pc--;
 
 		*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~3);
@@ -574,7 +574,11 @@ handle_signal_exception (gpointer obj)
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
+	
 	mono_handle_exception (&ctx, (MonoObject*)obj);
+
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
 
 	mono_restore_context (&ctx);
 }

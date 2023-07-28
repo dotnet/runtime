@@ -114,13 +114,8 @@ namespace System.Security.AccessControl
 
             int Length = BinaryLength; // Invokes the most derived property
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(offset),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            else if (binaryForm.Length - offset < BinaryLength)
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            if (binaryForm.Length - offset < BinaryLength)
             {
                 //
                 // The buffer will not fit the header
@@ -243,13 +238,8 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(offset),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            else if (binaryForm.Length - offset < HeaderLength)
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            if (binaryForm.Length - offset < HeaderLength)
             {
                 //
                 // We expect at least the ACE header ( 4 bytes )
@@ -549,28 +539,19 @@ namespace System.Security.AccessControl
             }
 
             int thisLength = this.BinaryLength;
-            int aceLength = ace.BinaryLength;
 
-            if (thisLength != aceLength)
+            if (thisLength != ace.BinaryLength)
             {
                 return false;
             }
 
             byte[] array1 = new byte[thisLength];
-            byte[] array2 = new byte[aceLength];
-
             this.GetBinaryForm(array1, 0);
+
+            byte[] array2 = new byte[thisLength];
             ace.GetBinaryForm(array2, 0);
 
-            for (int i = 0; i < array1.Length; i++)
-            {
-                if (array1[i] != array2[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return array1.AsSpan().SequenceEqual(array2);
         }
 
         public sealed override int GetHashCode()
@@ -706,11 +687,7 @@ namespace System.Security.AccessControl
             [MemberNotNull(nameof(_sid))]
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
+                ArgumentNullException.ThrowIfNull(value);
                 _sid = value;
             }
         }
@@ -1321,28 +1298,28 @@ namespace System.Security.AccessControl
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } ACCESS_ALLOWED_CALLBACK_ACE, *PACCESS_ALLOWED_CALLBACK_ACE;
     //
     // typedef struct _ACCESS_DENIED_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } ACCESS_DENIED_CALLBACK_ACE, *PACCESS_DENIED_CALLBACK_ACE;
     //
     // typedef struct _SYSTEM_AUDIT_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } SYSTEM_AUDIT_CALLBACK_ACE, *PSYSTEM_AUDIT_CALLBACK_ACE;
     //
     // typedef struct _SYSTEM_ALARM_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } SYSTEM_ALARM_CALLBACK_ACE, *PSYSTEM_ALARM_CALLBACK_ACE;
     //
 
@@ -1662,7 +1639,7 @@ namespace System.Security.AccessControl
     //     GUID ObjectType;
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } ACCESS_ALLOWED_CALLBACK_OBJECT_ACE, *PACCESS_ALLOWED_CALLBACK_OBJECT_ACE;
     //
     // typedef struct _ACCESS_DENIED_CALLBACK_OBJECT_ACE {
@@ -1672,7 +1649,7 @@ namespace System.Security.AccessControl
     //     GUID ObjectType;
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } ACCESS_DENIED_CALLBACK_OBJECT_ACE, *PACCESS_DENIED_CALLBACK_OBJECT_ACE;
     //
     // typedef struct _SYSTEM_AUDIT_CALLBACK_OBJECT_ACE {
@@ -1682,7 +1659,7 @@ namespace System.Security.AccessControl
     //     GUID ObjectType;
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } SYSTEM_AUDIT_CALLBACK_OBJECT_ACE, *PSYSTEM_AUDIT_CALLBACK_OBJECT_ACE;
     //
     // typedef struct _SYSTEM_ALARM_CALLBACK_OBJECT_ACE {
@@ -1692,7 +1669,7 @@ namespace System.Security.AccessControl
     //     GUID ObjectType;
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } SYSTEM_ALARM_CALLBACK_OBJECT_ACE, *PSYSTEM_ALARM_CALLBACK_OBJECT_ACE;
     //
 

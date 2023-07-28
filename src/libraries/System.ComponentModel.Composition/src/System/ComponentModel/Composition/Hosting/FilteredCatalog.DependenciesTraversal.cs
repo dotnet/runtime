@@ -75,10 +75,7 @@ namespace System.ComponentModel.Composition.Hosting
                                 {
                                     if (import.IsImportDependentOnPart(candidateReachablePart, export, part.IsGeneric() != candidateReachablePart.IsGeneric()))
                                     {
-                                        if (reachablePartList == null)
-                                        {
-                                            reachablePartList = new List<ComposablePartDefinition>();
-                                        }
+                                        reachablePartList ??= new List<ComposablePartDefinition>();
                                         reachablePartList.Add(candidateReachablePart);
                                     }
                                 }

@@ -9,7 +9,7 @@ using System.Threading;
 namespace System.IO.Enumeration
 {
     /// <summary>
-    /// Enumerable that allows utilizing custom filter predicates and tranform delegates.
+    /// Enumerable that allows utilizing custom filter predicates and transform delegates.
     /// </summary>
     public class FileSystemEnumerable<TResult> : IEnumerable<TResult>
     {

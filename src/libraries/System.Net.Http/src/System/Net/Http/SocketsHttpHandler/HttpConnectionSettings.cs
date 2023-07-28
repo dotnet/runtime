@@ -4,11 +4,12 @@
 using System.Collections.Generic;
 using System.Net.Security;
 using System.IO;
-using System.Net.Quic.Implementations;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.Net.Http.Metrics;
 
 namespace System.Net.Http
 {
@@ -36,6 +37,8 @@ namespace System.Net.Http
         internal int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
         internal TimeSpan _maxResponseDrainTime = HttpHandlerDefaults.DefaultResponseDrainTimeout;
         internal int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
+        internal IMeterFactory? _meterFactory;
+        internal SocketsHttpHandlerMetrics? _metrics;
 
         internal TimeSpan _pooledConnectionLifetime = HttpHandlerDefaults.DefaultPooledConnectionLifetime;
         internal TimeSpan _pooledConnectionIdleTimeout = HttpHandlerDefaults.DefaultPooledConnectionIdleTimeout;
@@ -59,13 +62,12 @@ namespace System.Net.Http
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
 
-        // !!! NOTE !!! This is temporary and will not ship.
-        internal QuicImplementationProvider? _quicImplementationProvider;
-
         internal IDictionary<string, object?>? _properties;
 
         // Http2 flow control settings:
         internal int _initialHttp2StreamWindowSize = HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
+
+        internal ClientCertificateOption _clientCertificateOptions;
 
         public HttpConnectionSettings()
         {
@@ -75,6 +77,8 @@ namespace System.Net.Http
                 allowHttp3 && allowHttp2 ? HttpVersion.Version30 :
                 allowHttp2 ? HttpVersion.Version20 :
                 HttpVersion.Version11;
+
+            _clientCertificateOptions = ClientCertificateOption.Automatic;
         }
 
         /// <summary>Creates a copy of the settings but with some values normalized to suit the implementation.</summary>
@@ -101,6 +105,8 @@ namespace System.Net.Http
                 _maxResponseDrainSize = _maxResponseDrainSize,
                 _maxResponseDrainTime = _maxResponseDrainTime,
                 _maxResponseHeadersLength = _maxResponseHeadersLength,
+                _meterFactory = _meterFactory,
+                _metrics = _metrics,
                 _pooledConnectionLifetime = _pooledConnectionLifetime,
                 _pooledConnectionIdleTimeout = _pooledConnectionIdleTimeout,
                 _preAuthenticate = _preAuthenticate,
@@ -121,16 +127,13 @@ namespace System.Net.Http
                 _activityHeadersPropagator = _activityHeadersPropagator,
                 _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials),
                 _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials,
+                _clientCertificateOptions = _clientCertificateOptions,
             };
-
-            // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.
-            if (HttpConnectionPool.IsHttp3Supported())
-            {
-                settings._quicImplementationProvider = _quicImplementationProvider;
-            }
 
             return settings;
         }
+
+        public int MaxResponseHeadersByteLength => (int)Math.Min(int.MaxValue, _maxResponseHeadersLength * 1024L);
 
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
 

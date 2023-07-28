@@ -7,11 +7,15 @@
 enum class SimdAsHWIntrinsicClassId
 {
     Unknown,
+    Plane,
+    Quaternion,
     Vector2,
     Vector3,
     Vector4,
+    Vector,
     VectorT128,
     VectorT256,
+    VectorT512,
 };
 
 enum class SimdAsHWIntrinsicFlag : unsigned int
@@ -24,14 +28,19 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
     // Indicates the intrinsic is for an instance method.
     InstanceMethod = 0x02,
 
-    // Indicates the operands should be swapped in importation.
-    NeedsOperandsSwapped = 0x04,
+    /* UnusedFlag = 0x04, */
 
     // Base type should come from the this argument
     BaseTypeFromThisArg = 0x08,
 
     // For SIMDVectorHandle, keep the base type from the result type
     KeepBaseTypeFromRet = 0x10,
+
+    // Indicates that side effects need to be spilled for op1
+    SpillSideEffectsOp1 = 0x20,
+
+    // Indicates that side effects need to be spilled for op2
+    SpillSideEffectsOp2 = 0x40,
 };
 
 inline SimdAsHWIntrinsicFlag operator~(SimdAsHWIntrinsicFlag value)
@@ -65,14 +74,15 @@ struct SimdAsHWIntrinsicInfo
 
     static const SimdAsHWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(CORINFO_SIG_INFO* sig,
+    static NamedIntrinsic lookupId(Compiler*         comp,
+                                   CORINFO_SIG_INFO* sig,
                                    const char*       className,
                                    const char*       methodName,
-                                   const char*       enclosingClassName,
-                                   int               sizeOfVectorT);
-    static SimdAsHWIntrinsicClassId lookupClassId(const char* className,
-                                                  const char* enclosingClassName,
-                                                  int         sizeOfVectorT);
+                                   const char*       enclosingClassName);
+
+    static SimdAsHWIntrinsicClassId lookupClassId(Compiler*   comp,
+                                                  const char* className,
+                                                  const char* enclosingClassName);
 
     // Member lookup
 
@@ -125,12 +135,6 @@ struct SimdAsHWIntrinsicInfo
         return (flags & SimdAsHWIntrinsicFlag::InstanceMethod) == SimdAsHWIntrinsicFlag::InstanceMethod;
     }
 
-    static bool NeedsOperandsSwapped(NamedIntrinsic id)
-    {
-        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & SimdAsHWIntrinsicFlag::NeedsOperandsSwapped) == SimdAsHWIntrinsicFlag::NeedsOperandsSwapped;
-    }
-
     static bool BaseTypeFromThisArg(NamedIntrinsic id)
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
@@ -141,6 +145,18 @@ struct SimdAsHWIntrinsicInfo
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
         return (flags & SimdAsHWIntrinsicFlag::KeepBaseTypeFromRet) == SimdAsHWIntrinsicFlag::KeepBaseTypeFromRet;
+    }
+
+    static bool SpillSideEffectsOp1(NamedIntrinsic id)
+    {
+        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & SimdAsHWIntrinsicFlag::SpillSideEffectsOp1) == SimdAsHWIntrinsicFlag::SpillSideEffectsOp1;
+    }
+
+    static bool SpillSideEffectsOp2(NamedIntrinsic id)
+    {
+        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & SimdAsHWIntrinsicFlag::SpillSideEffectsOp2) == SimdAsHWIntrinsicFlag::SpillSideEffectsOp2;
     }
 };
 

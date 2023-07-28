@@ -32,12 +32,13 @@ namespace System.Collections.Generic
 
             /////////////////////////////////////////////////
             // KEEP THIS IN SYNC WITH THE DEVIRT CODE
-            // IN METHOD-TO-IR.C
+            // IN mini_handle_call_res_devirt
             /////////////////////////////////////////////////
 
-            if (t == typeof(byte))
+            if (t == typeof(string))
             {
-                return (EqualityComparer<T>)(object)(new ByteEqualityComparer());
+                // Specialize for string, as EqualityComparer<string>.Default is on the startup path
+                return (EqualityComparer<T>)(object)(new GenericEqualityComparer<string>());
             }
 
             if (typeof(IEquatable<T>).IsAssignableFrom(t))

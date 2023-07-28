@@ -24,10 +24,18 @@ namespace System.Runtime.Loader
         [DynamicDependency(nameof(_nativeAssemblyLoadContext))]
         private IntPtr InitializeAssemblyLoadContext(IntPtr thisHandlePtr, bool representsTPALoadContext, bool isCollectible)
         {
-            using (SafeStringMarshal handle = RuntimeMarshal.MarshalString(Name))
+            if (isCollectible)
+                KeepLoaderAllocator();
+            using (SafeStringMarshal handle = new SafeStringMarshal(Name))
             {
                 return InternalInitializeNativeALC(thisHandlePtr, handle.Value, representsTPALoadContext, isCollectible);
             }
+        }
+
+        // Keep the type alive since instances are created by the runtime
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(LoaderAllocator))]
+        private static void KeepLoaderAllocator()
+        {
         }
 
         [MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -47,15 +55,14 @@ namespace System.Runtime.Loader
 #pragma warning restore IDE0060
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        internal Assembly InternalLoad(byte[] arrAssembly, byte[]? arrSymbols)
+        internal Assembly InternalLoad(ReadOnlySpan<byte> arrAssembly, ReadOnlySpan<byte> arrSymbols)
         {
             unsafe
             {
-                int symbolsLength = arrSymbols?.Length ?? 0;
                 fixed (byte* ptrAssembly = arrAssembly, ptrSymbols = arrSymbols)
                 {
                     return InternalLoadFromStream(NativeALC, new IntPtr(ptrAssembly), arrAssembly.Length,
-                                       new IntPtr(ptrSymbols), symbolsLength);
+                                       new IntPtr(ptrSymbols), arrSymbols.Length);
                 }
             }
         }

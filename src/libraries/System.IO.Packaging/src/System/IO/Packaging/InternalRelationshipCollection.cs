@@ -244,8 +244,8 @@ namespace System.IO.Packaging
                         // Make sure that the current node read is an Element
                         if (reader.NodeType == XmlNodeType.Element
                             && (reader.Depth == 0)
-                            && (string.CompareOrdinal(RelationshipsTagName, reader.LocalName) == 0)
-                            && (string.CompareOrdinal(PackagingUtilities.RelationshipNamespaceUri, reader.NamespaceURI) == 0))
+                            && (reader.LocalName == RelationshipsTagName)
+                            && (reader.NamespaceURI == PackagingUtilities.RelationshipNamespaceUri))
                         {
                             ThrowIfXmlBaseAttributeIsPresent(reader);
 
@@ -268,8 +268,8 @@ namespace System.IO.Packaging
 
                                 if (reader.NodeType == XmlNodeType.Element
                                     && (reader.Depth == 1)
-                                    && (string.CompareOrdinal(RelationshipTagName, reader.LocalName) == 0)
-                                    && (string.CompareOrdinal(PackagingUtilities.RelationshipNamespaceUri, reader.NamespaceURI) == 0))
+                                    && (reader.LocalName == RelationshipTagName)
+                                    && (reader.NamespaceURI == PackagingUtilities.RelationshipNamespaceUri))
                                 {
                                     ThrowIfXmlBaseAttributeIsPresent(reader);
 
@@ -295,7 +295,7 @@ namespace System.IO.Packaging
                                     }
                                 }
                                 else
-                                    if (!(string.CompareOrdinal(RelationshipsTagName, reader.LocalName) == 0 && (reader.NodeType == XmlNodeType.EndElement)))
+                                    if (!((reader.LocalName == RelationshipsTagName) && (reader.NodeType == XmlNodeType.EndElement)))
                                     throw new XmlException(SR.UnknownTagEncountered, null, reader.LineNumber, reader.LinePosition);
                             }
                         }
@@ -370,7 +370,7 @@ namespace System.IO.Packaging
             //Skips over the following - ProcessingInstruction, DocumentType, Comment, Whitespace, or SignificantWhitespace
             reader.MoveToContent();
 
-            if (reader.NodeType == XmlNodeType.EndElement && string.CompareOrdinal(RelationshipTagName, reader.LocalName) == 0)
+            if (reader.NodeType == XmlNodeType.EndElement && reader.LocalName == RelationshipTagName)
                 return;
             else
                 throw new XmlException(SR.Format(SR.ElementIsNotEmptyElement, RelationshipTagName), null, reader.LineNumber, reader.LinePosition);
@@ -430,9 +430,13 @@ namespace System.IO.Packaging
 
             // Generate an ID if id is null. Throw exception if neither null nor a valid unique xsd:ID.
             if (id == null)
+            {
                 id = GenerateUniqueRelationshipId();
+            }
             else
+            {
                 ValidateUniqueRelationshipId(id);
+            }
 
             // create and add
             PackageRelationship relationship = new PackageRelationship(_package, _sourcePart, targetUri, targetMode, relationshipType, id);

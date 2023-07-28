@@ -347,7 +347,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static partial int DsGetDcNext(
             IntPtr getDcContextHandle,
             ref IntPtr sockAddressCount,
-            out IntPtr sockAdresses,
+            out IntPtr sockAddresses,
             out IntPtr dnsHostName);
 
         /*void WINAPI DsGetDcClose(

@@ -57,9 +57,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="net_toosmall" xml:space="preserve">
-    <value>The specified value must be greater than 0.</value>
-  </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
   </data>
@@ -80,6 +77,12 @@
   </data>
   <data name="dns_bad_ip_address" xml:space="preserve">
     <value>An invalid IP address was specified.</value>
+  </data>
+  <data name="net_bad_ip_network" xml:space="preserve">
+    <value>An invalid IP network was specified.</value>
+  </data>
+  <data name="net_bad_ip_network_invalid_baseaddress" xml:space="preserve">
+    <value>The specified baseAddress has non-zero bits after the network prefix.</value>
   </data>
   <data name="net_container_add_cookie" xml:space="preserve">
     <value>An error occurred when adding a cookie to the container.</value>

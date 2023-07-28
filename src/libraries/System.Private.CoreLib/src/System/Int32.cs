@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -22,7 +23,9 @@ namespace System
           IEquatable<int>,
           IBinaryInteger<int>,
           IMinMaxValue<int>,
-          ISignedNumber<int>
+          ISignedNumber<int>,
+          IUtf8SpanFormattable,
+          IBinaryIntegerParseAndFormatInfo<int>
     {
         private readonly int m_value; // Do not rename (binary serialization)
 
@@ -127,85 +130,56 @@ namespace System
             return Number.TryFormatInt32(m_value, ~0, format, provider, destination, out charsWritten);
         }
 
-        public static int Parse(string s)
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.TryFormatInt32(m_value, ~0, format, provider, utf8Destination, out bytesWritten);
         }
 
-        public static int Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static int Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        // Parses an integer from a String in the given style.  If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
-        //
-        public static int Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static int Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        // Parses an integer from a String in the given style.  If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
-        //
+        public static int Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
+
         public static int Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static int Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt32(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<char, int>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        // Parses an integer from a String. Returns false rather
-        // than throwing an exception if input is invalid.
-        //
-        public static bool TryParse([NotNullWhen(true)] string? s, out int result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out int result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-            return Number.TryParseInt32IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out int result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out int result)
-        {
-            return Number.TryParseInt32IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its 32-bit signed integer equivalent.</summary>
+        /// <param name="utf8Text">A span containing the UTF-8 characters representing the number to convert.</param>
+        /// <param name="result">When this method returns, contains the 32-bit signed integer value equivalent to the number contained in <paramref name="utf8Text" /> if the conversion succeeded, or zero if the conversion failed. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out int result) => TryParse(utf8Text, NumberStyles.Integer, provider: null, out result);
 
-        // Parses an integer from a String in the given style. Returns false rather
-        // than throwing an exception if input is invalid.
-        //
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out int result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s == null)
+            if (s is null)
             {
                 result = 0;
                 return false;
             }
-
-            return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out int result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //
@@ -317,19 +291,191 @@ namespace System
         public static (int Quotient, int Remainder) DivRem(int left, int right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        [Intrinsic]
         public static int LeadingZeroCount(int value) => BitOperations.LeadingZeroCount((uint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        [Intrinsic]
         public static int PopCount(int value) => BitOperations.PopCount((uint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        [Intrinsic]
         public static int RotateLeft(int value, int rotateAmount) => (int)BitOperations.RotateLeft((uint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        [Intrinsic]
         public static int RotateRight(int value, int rotateAmount) => (int)BitOperations.RotateRight((uint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        [Intrinsic]
         public static int TrailingZeroCount(int value) => BitOperations.TrailingZeroCount(value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<int>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out int value)
+        {
+            int result = default;
+
+            if (source.Length != 0)
+            {
+                // Propagate the most significant bit so we have `0` or `-1`
+                sbyte sign = (sbyte)(source[0]);
+                sign >>= 31;
+                Debug.Assert((sign == 0) || (sign == -1));
+
+                // We need to also track if the input data is unsigned
+                isUnsigned |= (sign == 0);
+
+                if (isUnsigned && sbyte.IsNegative(sign) && (source.Length >= sizeof(int)))
+                {
+                    // When we are unsigned and the most significant bit is set, we are a large positive
+                    // and therefore definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if (source.Length > sizeof(int))
+                {
+                    if (source[..^sizeof(int)].ContainsAnyExcept((byte)sign))
+                    {
+                        // When we are unsigned and have any non-zero leading data or signed with any non-set leading
+                        // data, we are a large positive/negative, respectively, and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+
+                    if (isUnsigned == sbyte.IsNegative((sbyte)source[^sizeof(int)]))
+                    {
+                        // When the most significant bit of the value being set/clear matches whether we are unsigned
+                        // or signed then we are a large positive/negative and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(int))
+                {
+                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(int));
+
+                    // We have at least 4 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<int>(ref sourceRef);
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We have between 1 and 3 bytes, so construct the relevant value directly
+                    // since the data is in Big Endian format, we can just read the bytes and
+                    // shift left by 8-bits for each subsequent part
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        result <<= 8;
+                        result |= Unsafe.Add(ref sourceRef, i);
+                    }
+
+                    if (!isUnsigned)
+                    {
+                        result |= ((1 << ((sizeof(int) * 8) - 1)) >> (((sizeof(int) - source.Length) * 8) - 1));
+                    }
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<int>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out int value)
+        {
+            int result = default;
+
+            if (source.Length != 0)
+            {
+                // Propagate the most significant bit so we have `0` or `-1`
+                sbyte sign = (sbyte)(source[^1]);
+                sign >>= 31;
+                Debug.Assert((sign == 0) || (sign == -1));
+
+                // We need to also track if the input data is unsigned
+                isUnsigned |= (sign == 0);
+
+                if (isUnsigned && sbyte.IsNegative(sign) && (source.Length >= sizeof(int)))
+                {
+                    // When we are unsigned and the most significant bit is set, we are a large positive
+                    // and therefore definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if (source.Length > sizeof(int))
+                {
+                    if (source[sizeof(int)..].ContainsAnyExcept((byte)sign))
+                    {
+                        // When we are unsigned and have any non-zero leading data or signed with any non-set leading
+                        // data, we are a large positive/negative, respectively, and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+
+                    if (isUnsigned == sbyte.IsNegative((sbyte)source[sizeof(int) - 1]))
+                    {
+                        // When the most significant bit of the value being set/clear matches whether we are unsigned
+                        // or signed then we are a large positive/negative and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(int))
+                {
+                    // We have at least 4 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<int>(ref sourceRef);
+
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We have between 1 and 3 bytes, so construct the relevant value directly
+                    // since the data is in Little Endian format, we can just read the bytes and
+                    // shift left by 8-bits for each subsequent part, then reverse endianness to
+                    // ensure the order is correct. This is more efficient than iterating in reverse
+                    // due to current JIT limitations
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        result <<= 8;
+                        result |= Unsafe.Add(ref sourceRef, i);
+                    }
+
+                    result <<= ((sizeof(int) - source.Length) * 8);
+                    result = BinaryPrimitives.ReverseEndianness(result);
+
+                    if (!isUnsigned)
+                    {
+                        result |= ((1 << ((sizeof(int) * 8) - 1)) >> (((sizeof(int) - source.Length) * 8) - 1));
+                    }
+                }
+            }
+
+            value = result;
+            return true;
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<int>.GetShortestBitLength()
@@ -389,10 +535,15 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static int IBinaryNumber<int>.AllBitsSet => NegativeOne;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(int value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Log2(int value)
         {
             if (value < 0)
@@ -422,17 +573,17 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
-        static bool IComparisonOperators<int, int>.operator <(int left, int right) => left < right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
+        static bool IComparisonOperators<int, int, bool>.operator <(int left, int right) => left < right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
-        static bool IComparisonOperators<int, int>.operator <=(int left, int right) => left <= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<int, int, bool>.operator <=(int left, int right) => left <= right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
-        static bool IComparisonOperators<int, int>.operator >(int left, int right) => left > right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
+        static bool IComparisonOperators<int, int, bool>.operator >(int left, int right) => left > right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
-        static bool IComparisonOperators<int, int>.operator >=(int left, int right) => left >= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<int, int, bool>.operator >=(int left, int right) => left >= right;
 
         //
         // IDecrementOperators
@@ -455,11 +606,11 @@ namespace System
         // IEqualityOperators
         //
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
-        static bool IEqualityOperators<int, int>.operator ==(int left, int right) => left == right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
+        static bool IEqualityOperators<int, int, bool>.operator ==(int left, int right) => left == right;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
-        static bool IEqualityOperators<int, int>.operator !=(int left, int right) => left != right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
+        static bool IEqualityOperators<int, int, bool>.operator !=(int left, int right) => left != right;
 
         //
         // IIncrementOperators
@@ -565,6 +716,63 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static int Abs(int value) => Math.Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            int result;
+
+            if (typeof(TOther) == typeof(int))
+            {
+                result = (int)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            int result;
+
+            if (typeof(TOther) == typeof(int))
+            {
+                result = (int)(object)value;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            int result;
+
+            if (typeof(TOther) == typeof(int))
+            {
+                result = (int)(object)value;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<int>.IsCanonical(int value) => true;
@@ -705,7 +913,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<int>.TryConvertFromChecked<TOther>(TOther value, out int result)
+        static bool INumberBase<int>.TryConvertFromChecked<TOther>(TOther value, out int result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out int result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -773,7 +985,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<int>.TryConvertFromSaturating<TOther>(TOther value, out int result)
+        static bool INumberBase<int>.TryConvertFromSaturating<TOther>(TOther value, out int result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out int result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -847,7 +1063,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<int>.TryConvertFromTruncating<TOther>(TOther value, out int result)
+        static bool INumberBase<int>.TryConvertFromTruncating<TOther>(TOther value, out int result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out int result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -918,7 +1138,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<int>.TryConvertToChecked<TOther>(int value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<int>.TryConvertToChecked<TOther>(int value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -979,14 +1199,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<int>.TryConvertToSaturating<TOther>(int value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<int>.TryConvertToSaturating<TOther>(int value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1050,14 +1270,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<int>.TryConvertToTruncating<TOther>(int value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<int>.TryConvertToTruncating<TOther>(int value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1118,7 +1338,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1127,20 +1347,21 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out int result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static int IShiftOperators<int, int>.operator <<(int value, int shiftAmount) => value << shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
+        static int IShiftOperators<int, int, int>.operator <<(int value, int shiftAmount) => value << shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static int IShiftOperators<int, int>.operator >>(int value, int shiftAmount) => value >> shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
+        static int IShiftOperators<int, int, int>.operator >>(int value, int shiftAmount) => value >> shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        static int IShiftOperators<int, int>.operator >>>(int value, int shiftAmount) => value >>> shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
+        static int IShiftOperators<int, int, int>.operator >>>(int value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISignedNumber
@@ -1185,5 +1406,49 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static int IUnaryPlusOperators<int, int>.operator +(int value) => +value;
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static int Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseBinaryInteger<byte, int>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out int result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static int Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Integer, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out int result) => TryParse(utf8Text, NumberStyles.Integer, provider, out result);
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<int>.IsSigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MaxDigitCount => 10; // 2_147_483_647
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MaxHexDigitCount => 8; // 0x7FFF_FFFF
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MaxValueDiv10 => MaxValue / 10;
+
+        static string IBinaryIntegerParseAndFormatInfo<int>.OverflowMessage => SR.Overflow_Int32;
+
+        static bool IBinaryIntegerParseAndFormatInfo<int>.IsGreaterThanAsUnsigned(int left, int right) => (uint)(left) > (uint)(right);
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MultiplyBy10(int value) => value * 10;
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MultiplyBy16(int value) => value * 16;
     }
 }

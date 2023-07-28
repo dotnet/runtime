@@ -613,7 +613,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(intrin.op2->isContainedIntOrIImmed());
                     assert(intrin.op2->AsIntCon()->gtIconVal == 0);
 
-                    const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
+                    const double dataValue = intrin.op3->AsDblCon()->DconValue();
                     GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
                 }
                 else
@@ -704,10 +704,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, node->GetOtherReg(), op1Reg);
                 break;
 
-            case NI_AdvSimd_Store:
-                GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
-                break;
-
             case NI_AdvSimd_StoreSelectedScalar:
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
@@ -736,15 +732,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     // fmov reg, #imm8
-                    const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                    const double dataValue = intrin.op1->AsDblCon()->DconValue();
                     GetEmitter()->emitIns_R_F(ins, emitTypeSize(intrin.baseType), targetReg, dataValue, INS_OPTS_NONE);
                 }
                 else if (varTypeIsFloating(intrin.baseType))
                 {
                     // fmov reg1, reg2
                     assert(GetEmitter()->IsMovInstruction(ins));
+                    assert(intrin.baseType == intrin.op1->gtType);
                     GetEmitter()->emitIns_Mov(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg,
-                                              /* canSkip */ false, INS_OPTS_NONE);
+                                              /* canSkip */ true, INS_OPTS_NONE);
                 }
                 else
                 {
@@ -799,14 +796,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     if (intrin.op1->isContainedFltOrDblImmed())
                     {
-                        const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                        const double dataValue = intrin.op1->AsDblCon()->DconValue();
                         GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
                     }
                     else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
                     {
                         assert(intrin.baseType == TYP_DOUBLE);
                         assert(GetEmitter()->IsMovInstruction(ins));
-                        GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ false, opt);
+                        assert(intrin.baseType == intrin.op1->gtType);
+                        GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true, opt);
                     }
                     else
                     {
@@ -957,18 +955,34 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Vector128_GetUpper:
+            {
+                const int byteIndex = 8;
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op1Reg, byteIndex, INS_OPTS_16B);
+                break;
+            }
+
+            case NI_Vector128_AsVector3:
+            {
+                // AsVector3 can be a no-op when it's already in the right register, otherwise
+                // we just need to move the value over. Vector3 operations will themselves mask
+                // out the upper element when it's relevant, so it's not worth us spending extra
+                // cycles doing so here.
+
+                GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true);
+                break;
+            }
+
             case NI_Vector64_ToScalar:
             case NI_Vector128_ToScalar:
             {
-                const ssize_t indexValue = 0;
-
-                // no-op if vector is float/double, targetReg == op1Reg and fetching for 0th index.
-                if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg) && (indexValue == 0)))
+                if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg)))
                 {
+                    // no-op if vector is float/double and targetReg == op1Reg
                     break;
                 }
 
-                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
+                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, /* imm */ 0,
                                             INS_OPTS_NONE);
             }
             break;
@@ -988,6 +1002,110 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                           (emitSize == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B);
                 break;
 
+            case NI_AdvSimd_VectorTableLookup:
+            case NI_AdvSimd_Arm64_VectorTableLookup:
+            {
+                unsigned regCount = 0;
+                if (intrin.op1->OperIsFieldList())
+                {
+                    GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
+                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                    op1Reg                       = firstField->GetRegNum();
+                    INDEBUG(regNumber argReg = op1Reg);
+                    for (GenTreeFieldList::Use& use : fieldList->Uses())
+                    {
+                        regCount++;
+#ifdef DEBUG
+
+                        GenTree* argNode = use.GetNode();
+                        assert(argReg == argNode->GetRegNum());
+                        argReg = REG_NEXT(argReg);
+#endif
+                    }
+                }
+                else
+                {
+                    regCount = 1;
+                    op1Reg   = intrin.op1->GetRegNum();
+                }
+
+                switch (regCount)
+                {
+                    case 2:
+                        ins = INS_tbl_2regs;
+                        break;
+                    case 3:
+                        ins = INS_tbl_3regs;
+                        break;
+                    case 4:
+                        ins = INS_tbl_4regs;
+                        break;
+                    default:
+                        assert(regCount == 1);
+                        assert(ins == INS_tbl);
+                        break;
+                }
+
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_AdvSimd_VectorTableLookupExtension:
+            case NI_AdvSimd_Arm64_VectorTableLookupExtension:
+            {
+                assert(isRMW);
+                unsigned regCount = 0;
+                op1Reg            = intrin.op1->GetRegNum();
+                op3Reg            = intrin.op3->GetRegNum();
+                assert(targetReg != op3Reg);
+                if (intrin.op2->OperIsFieldList())
+                {
+                    GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
+                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                    op2Reg                       = firstField->GetRegNum();
+                    INDEBUG(regNumber argReg = op2Reg);
+                    for (GenTreeFieldList::Use& use : fieldList->Uses())
+                    {
+                        regCount++;
+#ifdef DEBUG
+
+                        GenTree* argNode = use.GetNode();
+
+                        // registers should be consecutive
+                        assert(argReg == argNode->GetRegNum());
+                        // and they should not interfere with targetReg
+                        assert(targetReg != argReg);
+                        argReg = REG_NEXT(argReg);
+#endif
+                    }
+                }
+                else
+                {
+                    regCount = 1;
+                    op2Reg   = intrin.op2->GetRegNum();
+                }
+
+                switch (regCount)
+                {
+                    case 2:
+                        ins = INS_tbx_2regs;
+                        break;
+                    case 3:
+                        ins = INS_tbx_3regs;
+                        break;
+                    case 4:
+                        ins = INS_tbx_4regs;
+                        break;
+                    default:
+                        assert(regCount == 1);
+                        assert(ins == INS_tbx);
+                        break;
+                }
+
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
+                break;
+            }
             default:
                 unreached();
         }

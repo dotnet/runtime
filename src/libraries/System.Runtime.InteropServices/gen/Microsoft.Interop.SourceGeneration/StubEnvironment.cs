@@ -2,18 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Threading;
-
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -23,19 +12,60 @@ namespace Microsoft.Interop
         Version TargetFrameworkVersion,
         bool ModuleSkipLocalsInit)
     {
-        /// <summary>
-        /// Override for determining if two StubEnvironment instances are
-        /// equal. This intentionally excludes the Compilation instance
-        /// since that represents the actual compilation and not just the settings.
-        /// </summary>
-        /// <param name="env1">The first StubEnvironment</param>
-        /// <param name="env2">The second StubEnvironment</param>
-        /// <returns>True if the settings are equal, otherwise false.</returns>
-        public static bool AreCompilationSettingsEqual(StubEnvironment env1, StubEnvironment env2)
+        private Optional<INamedTypeSymbol?> _lcidConversionAttrType;
+        public INamedTypeSymbol? LcidConversionAttrType
         {
-            return env1.TargetFramework == env2.TargetFramework
-                && env1.TargetFrameworkVersion == env2.TargetFrameworkVersion
-                && env1.ModuleSkipLocalsInit == env2.ModuleSkipLocalsInit;
+            get
+            {
+                if (_lcidConversionAttrType.HasValue)
+                {
+                    return _lcidConversionAttrType.Value;
+                }
+                _lcidConversionAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute));
+                return _lcidConversionAttrType.Value;
+            }
+        }
+
+        private Optional<INamedTypeSymbol?> _suppressGCTransitionAttrType;
+        public INamedTypeSymbol? SuppressGCTransitionAttrType
+        {
+            get
+            {
+                if (_suppressGCTransitionAttrType.HasValue)
+                {
+                    return _suppressGCTransitionAttrType.Value;
+                }
+                _suppressGCTransitionAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.SuppressGCTransitionAttribute));
+                return _suppressGCTransitionAttrType.Value;
+            }
+        }
+
+        private Optional<INamedTypeSymbol?> _unmanagedCallConvAttrType;
+        public INamedTypeSymbol? UnmanagedCallConvAttrType
+        {
+            get
+            {
+                if (_unmanagedCallConvAttrType.HasValue)
+                {
+                    return _unmanagedCallConvAttrType.Value;
+                }
+                _unmanagedCallConvAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute));
+                return _unmanagedCallConvAttrType.Value;
+            }
+        }
+
+        private Optional<INamedTypeSymbol?> _defaultDllImportSearchPathsAttrType;
+        public INamedTypeSymbol? DefaultDllImportSearchPathsAttrType
+        {
+            get
+            {
+                if (_defaultDllImportSearchPathsAttrType.HasValue)
+                {
+                    return _defaultDllImportSearchPathsAttrType.Value;
+                }
+                _defaultDllImportSearchPathsAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.DefaultDllImportSearchPathsAttribute));
+                return _defaultDllImportSearchPathsAttrType.Value;
+            }
         }
     }
 }

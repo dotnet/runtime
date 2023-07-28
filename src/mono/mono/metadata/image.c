@@ -46,6 +46,7 @@
 #include <mono/metadata/metadata-update.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mono-private-unstable.h>
+#include <mono/metadata/webcil-loader.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -258,6 +259,10 @@ mono_images_init (void)
 	debug_assembly_unload = g_hasenv ("MONO_DEBUG_ASSEMBLY_UNLOAD");
 
 	install_pe_loader ();
+
+#ifdef ENABLE_WEBCIL
+	mono_webcil_loader_install ();
+#endif
 
 	mutex_inited = TRUE;
 }
@@ -700,7 +705,7 @@ mono_image_check_for_module_cctor (MonoImage *image)
  * it cannot be loaded. NULL without MonoError being set will be interpreted as "not found".
  */
 MonoImage*
-mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
+mono_image_load_module_checked (MonoImage *image, uint32_t idx, MonoError *error)
 {
 	error_init (error);
 
@@ -923,65 +928,93 @@ do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
 	return offset;
 }
 
-mono_bool
-mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
+static int32_t
+try_load_pe_cli_header (char *raw_data, uint32_t raw_data_len, MonoDotNetHeader *cli_header)
 {
-	MonoDotNetHeader cli_header;
 	MonoMSDOSHeader msdos;
-	int idx;
-	guint8 *data;
 
 	int offset = 0;
 	memcpy (&msdos, raw_data + offset, sizeof (msdos));
 
 	if (!(msdos.msdos_sig [0] == 'M' && msdos.msdos_sig [1] == 'Z')) {
-		return FALSE;
+		return -1;
 	}
 
 	msdos.pe_offset = GUINT32_FROM_LE (msdos.pe_offset);
 
 	offset = msdos.pe_offset;
 
-	int ret = do_load_header_internal (raw_data, raw_data_len, &cli_header, offset, FALSE);
-	if ( ret >= 0 ) {
+	int32_t ret = do_load_header_internal (raw_data, raw_data_len, cli_header, offset, FALSE);
+	return ret;
+}
+
+mono_bool
+mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
+{
+	guint8 *data;
+	MonoDotNetHeader cli_header;
+	gboolean is_pe = TRUE;
+
+	int32_t ret = try_load_pe_cli_header (raw_data, raw_data_len, &cli_header);
+
+#ifdef ENABLE_WEBCIL
+	int32_t webcil_section_adjustment = 0;
+	if (ret == -1) {
+		ret = mono_webcil_load_cli_header (raw_data, raw_data_len, 0, &cli_header, &webcil_section_adjustment);
+		is_pe = FALSE;
+	}
+#endif
+
+	if (ret > 0) {
 		MonoPEDirEntry *debug_dir_entry = (MonoPEDirEntry *) &cli_header.datadir.pe_debug;
 		ImageDebugDirectory debug_dir;
 		if (!debug_dir_entry->size)
 			return FALSE;
 		else {
 			const int top = cli_header.coff.coff_sections;
-			int addr = debug_dir_entry->rva;
+			guint32 addr = debug_dir_entry->rva;
 			int i = 0;
+			gboolean found = FALSE;
 			for (i = 0; i < top; i++){
-				MonoSectionTable t;
+				MonoSectionTable t = {0,};
 
-				if (ret + sizeof (MonoSectionTable) > raw_data_len) {
-					return FALSE;
-				}
+				if (G_LIKELY (is_pe)) {
+					if (ret + sizeof (MonoSectionTable) > raw_data_len)
+						return FALSE;
 
-				memcpy (&t, raw_data + ret, sizeof (MonoSectionTable));
-				ret += sizeof (MonoSectionTable);
+					memcpy (&t, raw_data + ret, sizeof (MonoSectionTable));
+					ret += sizeof (MonoSectionTable);
 
 		#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-				t.st_virtual_address = GUINT32_FROM_LE (t.st_virtual_address);
-				t.st_raw_data_size = GUINT32_FROM_LE (t.st_raw_data_size);
-				t.st_raw_data_ptr = GUINT32_FROM_LE (t.st_raw_data_ptr);
+					t.st_virtual_address = GUINT32_FROM_LE (t.st_virtual_address);
+					t.st_raw_data_size = GUINT32_FROM_LE (t.st_raw_data_size);
+					t.st_raw_data_ptr = GUINT32_FROM_LE (t.st_raw_data_ptr);
 		#endif
+				}
+#ifdef ENABLE_WEBCIL
+				else {
+					ret = mono_webcil_load_section_table (raw_data, raw_data_len, ret, webcil_section_adjustment, &t);
+					if (ret == -1)
+						return FALSE;
+				}
+#endif
 				/* consistency checks here */
 				if ((addr >= t.st_virtual_address) &&
 					(addr < t.st_virtual_address + t.st_raw_data_size)){
 					addr = addr - t.st_virtual_address + t.st_raw_data_ptr;
+					found = TRUE;
 					break;
 				}
 			}
-			for (idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
+			g_assert (found);
+			for (guint32 idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
 				data = (guint8 *) ((ImageDebugDirectory *) (raw_data + addr) + idx);
 				debug_dir.characteristics = read32(data);
 				debug_dir.time_date_stamp = read32(data + 4);
 				debug_dir.major_version   = read16(data + 8);
 				debug_dir.minor_version   = read16(data + 10);
 				debug_dir.type            = read32(data + 12);
-				if (debug_dir.type == DEBUG_DIR_PDB_CHECKSUM || debug_dir.type == DEBUG_DIR_REPRODUCIBLE)
+				if (debug_dir.type == DEBUG_DIR_PDB_CHECKSUM || debug_dir.type == DEBUG_DIR_ENTRY_CODEVIEW)
 					return TRUE;
 			}
 		}
@@ -1164,7 +1197,7 @@ dump_encmap (MonoImage *image)
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ENCMAP for %s", image->filename);
-		for (int i = 0; i < table_info_get_rows (encmap); ++i) {
+		for (guint32 i = 0; i < table_info_get_rows (encmap); ++i) {
 			guint32 cols [MONO_ENCMAP_SIZE];
 			mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
 			int token = cols [MONO_ENCMAP_TOKEN];
@@ -1316,7 +1349,7 @@ mono_image_storage_dtor (gpointer self)
 		}
 	}
 	if (storage->raw_data_allocated) {
-		g_free (storage->raw_data);
+		g_free (storage->raw_data_handle);
 	}
 
 	g_free (storage->key);
@@ -1397,6 +1430,7 @@ mono_image_storage_new_raw_data (char *datac, guint32 data_len, gboolean raw_dat
 	storage->raw_data = datac;
 	storage->raw_data_len = data_len;
 	storage->raw_data_allocated = !!raw_data_allocated;
+	storage->raw_data_handle = datac;
 
 	storage->key = key;
 	MonoImageStorage *other_storage = NULL;
@@ -2054,34 +2088,6 @@ free_hash (GHashTable *hash)
 		g_hash_table_destroy (hash);
 }
 
-void
-mono_wrapper_caches_free (MonoWrapperCaches *cache)
-{
-	free_hash (cache->delegate_invoke_cache);
-	free_hash (cache->delegate_begin_invoke_cache);
-	free_hash (cache->delegate_end_invoke_cache);
-	free_hash (cache->delegate_bound_static_invoke_cache);
-	free_hash (cache->runtime_invoke_signature_cache);
-
-	free_hash (cache->delegate_abstract_invoke_cache);
-
-	free_hash (cache->runtime_invoke_method_cache);
-	free_hash (cache->managed_wrapper_cache);
-
-	free_hash (cache->native_wrapper_cache);
-	free_hash (cache->native_wrapper_aot_cache);
-	free_hash (cache->native_wrapper_check_cache);
-	free_hash (cache->native_wrapper_aot_check_cache);
-
-	free_hash (cache->native_func_wrapper_aot_cache);
-	free_hash (cache->native_func_wrapper_indirect_cache);
-	free_hash (cache->synchronized_cache);
-	free_hash (cache->unbox_wrapper_cache);
-	free_hash (cache->cominterop_invoke_cache);
-	free_hash (cache->cominterop_wrapper_cache);
-	free_hash (cache->thunk_invoke_cache);
-}
-
 static void
 mono_image_close_except_pools_all (MonoImage**images, int image_count)
 {
@@ -2556,7 +2562,7 @@ mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 
 // Returning NULL with no error set will be interpeted as "not found"
 MonoImage*
-mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError *error)
+mono_image_load_file_for_image_checked (MonoImage *image, uint32_t fileidx, MonoError *error)
 {
 	char *base_dir, *name;
 	MonoImage *res;
@@ -2591,7 +2597,6 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 		mono_image_unlock (image);
 		mono_image_close (old);
 	} else {
-		int i;
 		/* g_print ("loaded file %s from %s (%p)\n", name, image->name, image->assembly); */
 		if (!assign_assembly_parent_for_netmodule (res, image, error)) {
 			mono_image_unlock (image);
@@ -2599,13 +2604,13 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 			return NULL;
 		}
 
-		for (i = 0; i < res->module_count; ++i) {
+		for (guint32 i = 0; i < res->module_count; ++i) {
 			if (res->modules [i] && !res->modules [i]->assembly)
 				res->modules [i]->assembly = image->assembly;
 		}
 
 		if (!image->files) {
-			int n = table_info_get_rows (t);
+			guint32 n = table_info_get_rows (t);
 			image->files = g_new0 (MonoImage*, n);
 			image->file_count = n;
 		}

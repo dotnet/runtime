@@ -22,7 +22,7 @@ typedef enum {
  * callers convert it to a MonoError.
  *
  * Don't expose this type to the runtime.  It's just an implementation
- * detail for backward compatability.
+ * detail for backward compatibility.
  */
 typedef struct MonoLookupPInvokeStatus {
 	MonoLookupPInvokeErr err_code;

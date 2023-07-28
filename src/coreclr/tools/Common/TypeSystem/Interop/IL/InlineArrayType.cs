@@ -173,7 +173,7 @@ namespace Internal.TypeSystem.Interop
 
         public override ClassLayoutMetadata GetClassLayout()
         {
-            ClassLayoutMetadata result = new ClassLayoutMetadata();
+            ClassLayoutMetadata result = default(ClassLayoutMetadata);
             result.PackingSize = 0;
             result.Size = checked((int)Length * ElementType.GetElementSize().AsInt);
             return result;
@@ -246,6 +246,12 @@ namespace Internal.TypeSystem.Interop
             flags |= TypeFlags.AttributeCacheComputed;
 
             return flags;
+        }
+
+        public override int GetInlineArrayLength()
+        {
+            Debug.Fail("when this is backed by an actual inline array, implement GetInlineArrayLength");
+            throw new InvalidOperationException();
         }
 
         private void InitializeMethods()
@@ -329,7 +335,7 @@ namespace Internal.TypeSystem.Interop
                     {
                         return "get_Item";
                     }
-                    else 
+                    else
                     {
                         return "set_Item";
                     }
@@ -352,9 +358,9 @@ namespace Internal.TypeSystem.Interop
                     {
                         if (_kind == InlineArrayMethodKind.Getter)
                         {
-                            _signature = new MethodSignature(MethodSignatureFlags.None, 
-                                     genericParameterCount: 0, 
-                                    returnType: _owningType.ElementType, 
+                            _signature = new MethodSignature(MethodSignatureFlags.None,
+                                     genericParameterCount: 0,
+                                    returnType: _owningType.ElementType,
                                     parameters: new TypeDesc[] { Context.GetWellKnownType(WellKnownType.Int32) });
                         }
                         else
@@ -373,10 +379,7 @@ namespace Internal.TypeSystem.Interop
             {
                 var emitter = new ILEmitter();
                 var codeStream = emitter.NewCodeStream();
-                var lIntermediate = emitter.NewCodeLabel();
-                var lCheck = emitter.NewCodeLabel();
-                var lValid = emitter.NewCodeLabel();
-                var vFlag = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Boolean));
+                _ = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Boolean));
                 var elementType = _owningType.ElementType;
 
                 // Getter:
@@ -442,6 +445,8 @@ namespace Internal.TypeSystem.Interop
                 }
             }
             public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
+
+            public override bool HasEmbeddedSignatureData => false;
 
             public override bool HasRva
             {

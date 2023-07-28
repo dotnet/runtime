@@ -134,7 +134,7 @@ namespace ETW
         static BOOL s_fHeapAllocHighEventEnabledNow;
         static BOOL s_fHeapAllocLowEventEnabledNow;
 
-        // If COMPLUS_UNSUPPORTED_ETW_ObjectAllocationEventsPerTypePerSec is set, then
+        // If DOTNET_UNSUPPORTED_ETW_ObjectAllocationEventsPerTypePerSec is set, then
         // this is used to determine the event frequency, overriding
         // s_nDefaultMsBetweenEvents above (regardless of which
         // GCSampledObjectAllocation*Keyword was used)

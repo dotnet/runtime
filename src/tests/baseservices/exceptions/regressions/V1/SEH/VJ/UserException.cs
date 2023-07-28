@@ -4,7 +4,7 @@ using System;
 using System.Threading;
 
 public class UserException : Exception {
-	public static int Main(String [] args) {
+	public static int Main() {
 			int counter = 0;
 			String str = "Done";
 

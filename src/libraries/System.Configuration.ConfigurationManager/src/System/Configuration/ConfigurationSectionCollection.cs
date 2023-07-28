@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Specialized;
-using System.Runtime.Serialization;
 
 namespace System.Configuration
 {
@@ -24,12 +23,6 @@ namespace System.Configuration
                 FactoryId factoryId = (FactoryId)de.Value;
                 if (factoryId.Group == _configSectionGroup.SectionGroupName) BaseAdd(factoryId.Name, factoryId.Name);
             }
-        }
-
-        private ConfigurationSectionCollection(SerializationInfo serializationInfo, StreamingContext streamingContext)
-            : base(serializationInfo, streamingContext)
-        {
-            throw new PlatformNotSupportedException();
         }
 
         public ConfigurationSection this[string name] => Get(name);

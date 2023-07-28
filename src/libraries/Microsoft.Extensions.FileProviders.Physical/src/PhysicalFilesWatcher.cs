@@ -39,9 +39,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly ExclusionFilters _filters;
 
         private Timer? _timer;
-        private bool _timerInitialzed;
+        private bool _timerInitialized;
         private object _timerLock = new();
-        private Func<Timer> _timerFactory;
+        private readonly Func<Timer> _timerFactory;
         private bool _disposed;
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             if (UseActivePolling)
             {
-                LazyInitializer.EnsureInitialized(ref _timer, ref _timerInitialzed, ref _timerLock, _timerFactory);
+                LazyInitializer.EnsureInitialized(ref _timer, ref _timerInitialized, ref _timerLock, _timerFactory);
             }
 
             IChangeToken changeToken;

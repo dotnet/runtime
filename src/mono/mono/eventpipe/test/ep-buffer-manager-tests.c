@@ -116,7 +116,7 @@ buffer_manager_init (
 
 	test_location = 3;
 
-	*provider = ep_create_provider (TEST_PROVIDER_NAME, NULL, NULL, NULL);
+	*provider = ep_create_provider (TEST_PROVIDER_NAME, NULL, NULL);
 	ep_raise_error_if_nok (*provider != NULL);
 
 	test_location = 4;
@@ -499,8 +499,8 @@ test_buffer_manager_perf (void)
 	bool write_result = false;
 	uint32_t events_written = 0;
 	uint32_t total_events_written = 0;
-	int64_t accumulted_buffer_manager_write_time_ticks = 0;
-	int64_t accumulted_buffer_to_null_file_time_ticks = 0;
+	int64_t accumulated_buffer_manager_write_time_ticks = 0;
+	int64_t accumulated_buffer_to_null_file_time_ticks = 0;
 	StreamWriter null_stream_writer;
 	StreamWriter *current_null_stream_writer = NULL;
 	EventPipeFile *null_file = NULL;
@@ -524,21 +524,21 @@ test_buffer_manager_perf (void)
 	test_location = 3;
 
 	while (!done) {
-		int64_t start = ep_perf_timestamp_get ();
+		int64_t start_write_events = ep_perf_timestamp_get ();
 		write_result = write_events (buffer_manager, thread_handle, session, ep_event, 10 * 1000 * 1000, &events_written);
-		int64_t stop = ep_perf_timestamp_get ();
+		int64_t stop_write_events = ep_perf_timestamp_get ();
 
-		accumulted_buffer_manager_write_time_ticks += stop - start;
+		accumulated_buffer_manager_write_time_ticks += stop_write_events - start_write_events;
 		total_events_written += events_written;
 		if (write_result || (total_events_written > 10 * 1000 * 1000)) {
 			done = true;
 		} else {
 			bool ignore_events_written;
-			int64_t start = ep_perf_timestamp_get ();
+			int64_t start_ep_buffer_manager_write_all_buffers_to_file = ep_perf_timestamp_get ();
 			ep_buffer_manager_write_all_buffers_to_file (buffer_manager, null_file, ep_perf_timestamp_get (), &ignore_events_written);
-			int64_t stop = ep_perf_timestamp_get ();
+			int64_t stop_ep_buffer_manager_write_all_buffers_to_file = ep_perf_timestamp_get ();
 
-			accumulted_buffer_to_null_file_time_ticks += stop - start;
+			accumulated_buffer_to_null_file_time_ticks += stop_ep_buffer_manager_write_all_buffers_to_file - start_ep_buffer_manager_write_all_buffers_to_file;
 		}
 	}
 
@@ -548,24 +548,24 @@ test_buffer_manager_perf (void)
 
 	test_location = 4;
 
-	float accumulted_buffer_manager_write_time_sec = ((float)accumulted_buffer_manager_write_time_ticks / (float)ep_perf_frequency_query ());
-	float buffer_manager_events_written_per_sec = (float)total_events_written / (accumulted_buffer_manager_write_time_sec ? accumulted_buffer_manager_write_time_sec : 1.0);
+	float accumulated_buffer_manager_write_time_sec = ((float)accumulated_buffer_manager_write_time_ticks / (float)ep_perf_frequency_query ());
+	float buffer_manager_events_written_per_sec = (float)total_events_written / (accumulated_buffer_manager_write_time_sec ? accumulated_buffer_manager_write_time_sec : 1.0);
 
-	float accumulted_buffer_to_null_file_time_sec = ((float)accumulted_buffer_to_null_file_time_ticks / (float)ep_perf_frequency_query ());
-	float null_file_events_written_per_sec = (float)total_events_written / (accumulted_buffer_to_null_file_time_sec ? accumulted_buffer_to_null_file_time_sec : 1.0);
+	float accumulated_buffer_to_null_file_time_sec = ((float)accumulated_buffer_to_null_file_time_ticks / (float)ep_perf_frequency_query ());
+	float null_file_events_written_per_sec = (float)total_events_written / (accumulated_buffer_to_null_file_time_sec ? accumulated_buffer_to_null_file_time_sec : 1.0);
 
-	float total_accumulted_time_sec = accumulted_buffer_manager_write_time_sec + accumulted_buffer_to_null_file_time_sec;
-	float total_events_written_per_sec = (float)total_events_written / (total_accumulted_time_sec ? total_accumulted_time_sec : 1.0);
+	float total_accumulated_time_sec = accumulated_buffer_manager_write_time_sec + accumulated_buffer_to_null_file_time_sec;
+	float total_events_written_per_sec = (float)total_events_written / (total_accumulated_time_sec ? total_accumulated_time_sec : 1.0);
 
 	// Measured number of events/second for one thread.
 	// TODO: Setup acceptable pass/failure metrics.
 	printf ("\n\tPerformance stats:\n");
 	printf ("\t\tTotal number of events: %i\n", total_events_written);
-	printf ("\t\tTotal time in sec: %.2f\n\t\tTotal number of events written per sec/core: %.2f\n", total_accumulted_time_sec, total_events_written_per_sec);
+	printf ("\t\tTotal time in sec: %.2f\n\t\tTotal number of events written per sec/core: %.2f\n", total_accumulated_time_sec, total_events_written_per_sec);
 	printf ("\t\tep_buffer_manager_write_event:\n");
-	printf ("\t\t\tTotal time in sec: %.2f\n\t\t\tEvents written per sec/core: %.2f\n", accumulted_buffer_manager_write_time_sec, buffer_manager_events_written_per_sec);
+	printf ("\t\t\tTotal time in sec: %.2f\n\t\t\tEvents written per sec/core: %.2f\n", accumulated_buffer_manager_write_time_sec, buffer_manager_events_written_per_sec);
 	printf ("\t\tep_buffer_manager_write_all_buffers_to_file:\n");
-	printf ("\t\t\tTotal time in sec: %.2f\n\t\t\tEvents written per sec/core: %.2f\n\t", accumulted_buffer_to_null_file_time_sec, null_file_events_written_per_sec);
+	printf ("\t\t\tTotal time in sec: %.2f\n\t\t\tEvents written per sec/core: %.2f\n\t", accumulated_buffer_to_null_file_time_sec, null_file_events_written_per_sec);
 
 ep_on_exit:
 	ep_file_free (null_file);

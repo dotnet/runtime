@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -671,6 +672,10 @@ namespace System.Management
         /// </summary>
         /// <param name='info'>The <see cref='System.Runtime.Serialization.SerializationInfo'/> to populate with data.</param>
         /// <param name='context'>The destination (see <see cref='System.Runtime.Serialization.StreamingContext'/> ) for this serialization.</param>
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected ManagementException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             errorCode = (ManagementStatus)info.GetValue("errorCode", typeof(ManagementStatus));
@@ -687,8 +692,8 @@ namespace System.Management
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementException'/>
         /// class with a specified error message.</para>
-        /// <param name='message'>The message that describes the error.</param>
         /// </summary>
+        /// <param name='message'>The message that describes the error.</param>
         public ManagementException(string message):this(ManagementStatus.Failed, message, null)
         {
 
@@ -696,11 +701,11 @@ namespace System.Management
 
         /// <summary>
         /// <para>Initializes a empty new instance of the <see cref='System.Management.ManagementException'/> class </para>
+        /// </summary>
         /// <param name='message'>The message that describes the error.</param>
         /// <param name='innerException'>The exception that is the cause of the current exception. If the innerException
         /// parameter is not a null reference (Nothing in Visual Basic), the current exception is raised in a catch
         /// block that handles the inner exception.</param>
-        /// </summary>
         public ManagementException(string message, Exception innerException):this(innerException, message, null)
         {
             // if the exception passed is not a ManagementException, then initialize the ErrorCode to Failed
@@ -715,7 +720,10 @@ namespace System.Management
         /// </summary>
         /// <param name='info'>The <see cref='System.Runtime.Serialization.SerializationInfo'/> to populate with data.</param>
         /// <param name='context'>The destination (see <see cref='System.Runtime.Serialization.StreamingContext'/> ) for this serialization.</param>
-
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

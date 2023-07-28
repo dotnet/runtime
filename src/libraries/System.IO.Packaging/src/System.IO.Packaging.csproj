@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Suppress `string.Contains(char)` offers better performance than `string.Contains(string)` to avoid ifdefs.-->
-    <NoWarn>$(NoWarn);CA1847</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes that support storage of multiple data objects in a single container.</PackageDescription>
   </PropertyGroup>
@@ -42,6 +40,7 @@
     <Compile Include="System\IO\Packaging\ZipStreamManager.cs" />
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
     <Compile Include="System\IO\Packaging\PackUriHelper.PackUriScheme.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
@@ -8,7 +9,6 @@ using System.Text;
 
 namespace System
 {
-    [Serializable]
     public struct RuntimeMethodHandle : IEquatable<RuntimeMethodHandle>, ISerializable
     {
         private readonly IntPtr value;
@@ -18,13 +18,10 @@ namespace System
             value = v;
         }
 
-        private RuntimeMethodHandle(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public IntPtr Value => value;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -90,7 +87,24 @@ namespace System
             return value == IntPtr.Zero;
         }
 
-        // Temporary placeholder until Mono adds support for supporting boxing true Nullables.
-        internal static object? ReboxFromNullable(object? src) => src;
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void ReboxFromNullable (object? src, ObjectHandleOnStack res);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void ReboxToNullable (object? src, QCallTypeHandle destNullableType, ObjectHandleOnStack res);
+
+        internal static object ReboxFromNullable(object? src)
+        {
+            object? res = null;
+            ReboxFromNullable(src, ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
+
+        internal static object ReboxToNullable(object? src, RuntimeType destNullableType)
+        {
+            object? res = null;
+            ReboxToNullable(src, new QCallTypeHandle(ref destNullableType), ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
     }
 }

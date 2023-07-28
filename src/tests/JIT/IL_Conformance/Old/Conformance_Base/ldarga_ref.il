@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace ldarga_ref
+{
 .class public _ldarg {
 
 .method public		void _ldarg() {
@@ -11,7 +14,7 @@
 	ret
 }
 
-.method public	class _ldarg args(class _ldarg) {
+.method public	class ldarga_ref._ldarg args(class ldarga_ref._ldarg) {
 .maxstack	5
 	ldarga 0
 	ldind.ref
@@ -19,15 +22,18 @@
 }
 
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
-.locals(class _ldarg)
+.locals(class ldarga_ref._ldarg)
 .maxstack		2
-	newobj		instance void _ldarg::_ldarg()
+	newobj		instance void ldarga_ref._ldarg::_ldarg()
 	stloc		0
 	ldloc		0
 	ldloc		0
-	call		instance class _ldarg _ldarg::args(class _ldarg)
+	call		instance class ldarga_ref._ldarg ldarga_ref._ldarg::args(class ldarga_ref._ldarg)
 	ldloc		0
 	ceq
 	brfalse		FAIL
@@ -41,3 +47,4 @@ FAIL:
 }
 
 .assembly ldarga_ref{}
+}

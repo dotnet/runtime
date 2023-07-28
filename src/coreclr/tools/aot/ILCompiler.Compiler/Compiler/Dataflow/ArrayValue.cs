@@ -14,7 +14,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    partial record ArrayValue
+    internal partial record ArrayValue
     {
         public static MultiValue Create(MultiValue size, TypeDesc elementType)
         {
@@ -27,15 +27,15 @@ namespace ILLink.Shared.TrimAnalysis
             return result;
         }
 
-        public static MultiValue Create(int size, TypeDesc elementType)
+        public static ArrayValue Create(int size, TypeDesc elementType)
         {
-            return new MultiValue(new ArrayValue(new ConstIntValue(size), elementType));
+            return new ArrayValue(new ConstIntValue(size), elementType);
         }
 
         /// <summary>
         /// Constructs an array value of the given size
         /// </summary>
-        ArrayValue(SingleValue size, TypeDesc elementType)
+        private ArrayValue(SingleValue size, TypeDesc elementType)
         {
             Size = size;
             ElementType = elementType;
@@ -72,11 +72,15 @@ namespace ILLink.Shared.TrimAnalysis
             if (!equals)
                 return false;
 
-            // If both sets T and O are the same size and "T intersect O" is empty, then T == O.
-            HashSet<KeyValuePair<int, ValueBasicBlockPair>> thisValueSet = new(IndexValues);
-            HashSet<KeyValuePair<int, ValueBasicBlockPair>> otherValueSet = new(otherArr.IndexValues);
-            thisValueSet.ExceptWith(otherValueSet);
-            return thisValueSet.Count == 0;
+            // Here we rely on the assumption that we can't store mutable values in arrays. The only mutable value
+            // which we currently support are array values, but those are not allowed in an array (to avoid complexity).
+            // As such we can rely on the values to be immutable, and thus if the counts are equal
+            // then the arrays are equal if items from one can be directly found in the other.
+            foreach (var kvp in IndexValues)
+                if (!otherArr.IndexValues.TryGetValue(kvp.Key, out ValueBasicBlockPair value) || !kvp.Value.Equals(value))
+                    return false;
+
+            return true;
         }
 
         public override SingleValue DeepCopy()
@@ -84,7 +88,16 @@ namespace ILLink.Shared.TrimAnalysis
             var newValue = new ArrayValue(Size.DeepCopy(), ElementType);
             foreach (var kvp in IndexValues)
             {
-                newValue.IndexValues.Add(kvp.Key, new ValueBasicBlockPair(kvp.Value.Value.Clone(), kvp.Value.BasicBlockIndex));
+#if DEBUG
+                // Since it's possible to store a reference to array as one of its own elements
+                // simple deep copy could lead to endless recursion.
+                // So instead we simply disallow arrays as element values completely - and treat that case as "too complex to analyze".
+                foreach (SingleValue v in kvp.Value.Value)
+                {
+                    System.Diagnostics.Debug.Assert(v is not ArrayValue);
+                }
+#endif
+                newValue.IndexValues.Add(kvp.Key, new ValueBasicBlockPair(kvp.Value.Value.DeepCopy(), kvp.Value.BasicBlockIndex));
             }
 
             return newValue;
@@ -102,11 +115,11 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 if (!first)
                 {
-                    result.Append(",");
+                    result.Append(',');
                     first = false;
                 }
 
-                result.Append("(");
+                result.Append('(');
                 result.Append(element.Key);
                 result.Append(",(");
                 bool firstValue = true;
@@ -114,7 +127,7 @@ namespace ILLink.Shared.TrimAnalysis
                 {
                     if (firstValue)
                     {
-                        result.Append(",");
+                        result.Append(',');
                         firstValue = false;
                     }
 

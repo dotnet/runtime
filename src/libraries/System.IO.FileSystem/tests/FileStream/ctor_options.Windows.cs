@@ -64,13 +64,13 @@ namespace System.IO.Tests
             {
                 string testDirectory = Path.GetTempPath(); // logic taken from FileCleanupTestBase, can't call the property here as it's not static
 
-                var volumeNameBufffer = new StringBuilder(250);
+                var volumeNameBuffer = new StringBuilder(250);
                 var fileSystemNameBuffer = new StringBuilder(250);
 
                 if (GetVolumeInformation(
                     Path.GetPathRoot(testDirectory),
-                    volumeNameBufffer,
-                    volumeNameBufffer.Capacity,
+                    volumeNameBuffer,
+                    volumeNameBuffer.Capacity,
                     out uint _,
                     out uint _,
                     out uint _,

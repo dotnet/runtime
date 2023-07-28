@@ -31,6 +31,7 @@
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-threads-wasm.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/w32api.h>
 #include <glib.h>
@@ -292,7 +293,7 @@ dump_threads (void)
 	g_async_safe_printf ("\t0x6\t- blocking (BAD, unless there's no suspend initiator)\n");
 	g_async_safe_printf ("\t0x?07\t- blocking async suspended (GOOD)\n");
 	g_async_safe_printf ("\t0x?08\t- blocking self suspended (GOOD)\n");
-	g_async_safe_printf ("\t0x?09\t- blocking suspend requested (BAD in coop; GOOD in hybrid)\n");
+	g_async_safe_printf ("\t0x?09\t- blocking suspend requested (GOOD in coop; BAD in hybrid)\n");
 
 	FOREACH_THREAD_SAFE_ALL (info) {
 #ifdef TARGET_MACH
@@ -309,7 +310,6 @@ dump_threads (void)
 gboolean
 mono_threads_wait_pending_operations (void)
 {
-	int i;
 	size_t c = pending_suspends;
 
 	/* Wait threads to park */
@@ -317,7 +317,7 @@ mono_threads_wait_pending_operations (void)
 	if (pending_suspends) {
 		MonoStopwatch suspension_time;
 		mono_stopwatch_start (&suspension_time);
-		for (i = 0; i < pending_suspends; ++i) {
+		for (gsize i = 0; i < pending_suspends; ++i) {
 			THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-WAITING]\n");
 			mono_atomic_inc_i32 (&waits_done);
 			if (mono_os_sem_timedwait (&suspend_semaphore, sleepAbortDuration, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_SUCCESS)
@@ -326,7 +326,7 @@ mono_threads_wait_pending_operations (void)
 
 			dump_threads ();
 
-			g_async_safe_printf ("WAITING for %d threads, got %d suspended\n", (int)pending_suspends, i);
+			g_async_safe_printf ("WAITING for %d threads, got %zu suspended\n", (int)pending_suspends, i);
 			g_error ("suspend_thread suspend took %d ms, which is more than the allowed %d ms", (int)mono_stopwatch_elapsed_ms (&suspension_time), sleepAbortDuration);
 		}
 		mono_stopwatch_stop (&suspension_time);
@@ -511,7 +511,18 @@ register_thread (MonoThreadInfo *info)
 	mono_native_tls_set_value (thread_info_key, info);
 
 	mono_thread_info_get_stack_bounds (&staddr, &stsize);
+
+	/* for wasm, the stack can be placed at the start of the linear memory */
+#ifndef TARGET_WASM
 	g_assert (staddr);
+#endif /* TARGET_WASM */
+
+#ifdef HOST_WASM
+#ifndef DISABLE_THREADS
+	mono_native_tls_set_value (jobs_key, NULL);
+#endif /* DISABLE_THREADS */
+#endif /* HOST_WASM */
+
 	g_assert (stsize);
 	info->stack_start_limit = staddr;
 	info->stack_end = staddr + stsize;
@@ -551,6 +562,10 @@ register_thread (MonoThreadInfo *info)
 	result = mono_thread_info_insert (info);
 	g_assert (result);
 	mono_thread_info_suspend_unlock ();
+
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_attached ();
+#endif
 
 	return TRUE;
 }
@@ -632,6 +647,10 @@ unregister_thread (void *arg)
 	mono_threads_transition_detach (info);
 
 	mono_thread_info_suspend_unlock ();
+
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_detached ();
+#endif
 
 	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);
 
@@ -954,6 +973,12 @@ mono_thread_info_init (size_t info_size)
 
 	mono_threads_suspend_policy_init ();
 
+#ifdef HOST_WASM
+#ifndef DISABLE_THREADS
+	res = mono_native_tls_alloc (&jobs_key, NULL);
+#endif /* DISABLE_THREADS */
+#endif /* HOST_BROWSER */
+
 #ifdef HOST_WIN32
 	res = mono_native_tls_alloc (&thread_info_key, NULL);
 	res = mono_native_tls_alloc (&thread_exited_key, NULL);
@@ -1099,8 +1124,6 @@ begin_suspend_peek_and_preempt (MonoThreadInfo *info);
 MonoThreadBeginSuspendResult
 mono_thread_info_begin_suspend (MonoThreadInfo *info, MonoThreadSuspendPhase phase)
 {
-	if (phase == MONO_THREAD_SUSPEND_PHASE_INITIAL && mono_threads_platform_stw_defer_initial_suspend (info))
-		return MONO_THREAD_BEGIN_SUSPEND_NEXT_PHASE;
 	if (phase == MONO_THREAD_SUSPEND_PHASE_MOPUP && mono_threads_is_hybrid_suspension_enabled ())
 		return begin_suspend_peek_and_preempt (info);
 	else
@@ -1533,43 +1556,6 @@ STATE_BLOCKING_SUSPEND_REQUESTED: Invalid if we're preemptively suspending block
 }
 
 /*
- * This is a very specific function whose only purpose is to
- * break a given thread from socket syscalls.
- *
- * This only exists because linux won't fail a call to connect
- * if the underlying is closed.
- *
- * TODO We should cleanup and unify this with the other syscall abort
- * facility.
- */
-void
-mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid)
-{
-	MonoThreadHazardPointers *hp;
-	MonoThreadInfo *info;
-
-	if (tid == mono_native_thread_id_get ())
-		return;
-
-	mono_thread_info_suspend_lock ();
-	hp = mono_hazard_pointer_get ();
-	info = mono_thread_info_lookup (tid);
-	if (!info) {
-		mono_thread_info_suspend_unlock ();
-		return;
-	}
-	mono_threads_begin_global_suspend ();
-
-	mono_threads_suspend_abort_syscall (info);
-	mono_threads_wait_pending_operations ();
-
-	mono_hazard_pointer_clear (hp, 1);
-
-	mono_threads_end_global_suspend ();
-	mono_thread_info_suspend_unlock ();
-}
-
-/*
  * mono_thread_info_set_is_async_context:
  *
  *   Set whenever the current thread is in an async context. Some runtime functions might behave
@@ -1613,19 +1599,14 @@ mono_thread_info_is_async_context (void)
  */
 void
 mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize)
-{
+{ 
 	guint8 *current = (guint8 *)&stsize;
 	mono_threads_platform_get_stack_bounds (staddr, stsize);
 	if (!*staddr)
 		return;
 
-#ifdef HOST_WASI
-	// TODO: Fix the stack positioning on WASI and re-enable the following check.
-	// Currently it works as a prototype anyway.
-#else
 	/* Sanity check the result */
 	g_assert ((current > *staddr) && (current < *staddr + *stsize));
-#endif
 
 #ifndef TARGET_WASM
 	/* When running under emacs, sometimes staddr is not aligned to a page size */
@@ -1659,7 +1640,7 @@ sleep_interrupt (gpointer data)
 }
 
 static guint32
-sleep_interruptable (guint32 ms, gboolean *alerted)
+sleep_interruptible (guint32 ms, gboolean *alerted)
 {
 	gint64 now = 0, end = 0;
 
@@ -1721,7 +1702,7 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 	}
 
 	if (alerted)
-		return sleep_interruptable (ms, alerted);
+		return sleep_interruptible (ms, alerted);
 
 	MONO_ENTER_GC_SAFE;
 
@@ -1934,7 +1915,7 @@ mono_thread_info_uninstall_interrupt (gboolean *interrupted)
 	/* Common to uninstall interrupt handler around OS API's affecting last error. */
 	/* This method could call OS API's on some platforms that will reset last error so make sure to restore */
 	/* last error before exit. */
-	W32_DEFINE_LAST_ERROR_RESTORE_POINT;
+	MONO_DEFINE_LAST_ERROR_RESTORE_POINT;
 
 	g_assert (interrupted);
 	*interrupted = FALSE;
@@ -1957,7 +1938,7 @@ mono_thread_info_uninstall_interrupt (gboolean *interrupted)
 	THREADS_INTERRUPT_DEBUG ("interrupt uninstall  tid %p previous_token %p interrupted %s\n",
 		mono_thread_info_get_tid (info), previous_token, *interrupted ? "TRUE" : "FALSE");
 
-	W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
+	MONO_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
 }
 
 static MonoThreadInfoInterruptToken*
@@ -2106,20 +2087,19 @@ mono_thread_info_wait_multiple_handle (MonoThreadHandle **thread_handles, gsize 
 {
 	MonoOSEventWaitRet res;
 	MonoOSEvent *thread_events [MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS];
-	gint i;
 
 	g_assert (nhandles <= MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS);
 	if (background_change_event)
 		g_assert (nhandles <= MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS - 1);
 
-	for (i = 0; i < nhandles; ++i)
+	for (gsize i = 0; i < nhandles; ++i)
 		thread_events [i] = &thread_handles [i]->event;
 
 	if (background_change_event)
 		thread_events [nhandles ++] = background_change_event;
 
 	res = mono_os_event_wait_multiple (thread_events, nhandles, waitall, timeout, alertable);
-	if (res >= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 && res <= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + nhandles - 1)
+	if (res >= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 && GINT_TO_UINT(res) <= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + nhandles - 1)
 		return (MonoThreadInfoWaitRet)(MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 + (res - MONO_OS_EVENT_WAIT_RET_SUCCESS_0));
 	else if (res == MONO_OS_EVENT_WAIT_RET_ALERTED)
 		return MONO_THREAD_INFO_WAIT_RET_ALERTED;
@@ -2172,11 +2152,3 @@ mono_thread_info_get_tools_data (void)
 
 	return info ? info->tools_data : NULL;
 }
-
-#ifndef HOST_WASM
-gboolean
-mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
-{
-	return FALSE;
-}
-#endif

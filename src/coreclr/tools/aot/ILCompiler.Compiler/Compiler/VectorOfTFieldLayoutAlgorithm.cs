@@ -25,6 +25,7 @@ namespace ILCompiler
             TargetDetails targetDetails = defType.Context.Target;
 
             ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
+            layoutFromMetadata.IsVectorTOrHasVectorTFields = true;
 
             LayoutInt instanceFieldSize;
 
@@ -35,6 +36,10 @@ namespace ILCompiler
             else if (targetDetails.MaximumSimdVectorLength == SimdVectorLength.Vector256Bit)
             {
                 instanceFieldSize = new LayoutInt(32);
+            }
+            else if (targetDetails.MaximumSimdVectorLength == SimdVectorLength.Vector512Bit)
+            {
+                instanceFieldSize = new LayoutInt(64);
             }
             else
             {
@@ -49,10 +54,11 @@ namespace ILCompiler
                 FieldAlignment = layoutFromMetadata.FieldAlignment,
                 FieldSize = instanceFieldSize,
                 Offsets = layoutFromMetadata.Offsets,
+                IsVectorTOrHasVectorTFields = true,
             };
         }
 
-        public unsafe override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
+        public override unsafe ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
         {
             return _fallbackAlgorithm.ComputeStaticFieldLayout(defType, layoutKind);
         }

@@ -439,9 +439,9 @@ typedef enum CorMethodAttr
 
 #define IsMdRTSpecialName(x)                ((x) & mdRTSpecialName)
 #define IsMdInstanceInitializer(x, str)     (((x) & mdRTSpecialName) && !strcmp((str), COR_CTOR_METHOD_NAME))
-#define IsMdInstanceInitializerW(x, str)    (((x) & mdRTSpecialName) && !wcscmp((str), COR_CTOR_METHOD_NAME_W))
+#define IsMdInstanceInitializerW(x, str)    (((x) & mdRTSpecialName) && !u16_strcmp((str), COR_CTOR_METHOD_NAME_W))
 #define IsMdClassConstructor(x, str)        (((x) & mdRTSpecialName) && !strcmp((str), COR_CCTOR_METHOD_NAME))
-#define IsMdClassConstructorW(x, str)       (((x) & mdRTSpecialName) && !wcscmp((str), COR_CCTOR_METHOD_NAME_W))
+#define IsMdClassConstructorW(x, str)       (((x) & mdRTSpecialName) && !u16_strcmp((str), COR_CCTOR_METHOD_NAME_W))
 #define IsMdHasSecurity(x)                  ((x) & mdHasSecurity)
 #define IsMdRequireSecObject(x)             ((x) & mdRequireSecObject)
 
@@ -1236,7 +1236,7 @@ typedef struct IMAGE_COR_ILMETHOD_TINY
 } IMAGE_COR_ILMETHOD_TINY;
 
 /************************************/
-// This strucuture is the 'fat' layout, where no compression is attempted.
+// This structure is the 'fat' layout, where no compression is attempted.
 // Note that this structure can be added on at the end, thus making it extensible
 typedef struct IMAGE_COR_ILMETHOD_FAT
 {

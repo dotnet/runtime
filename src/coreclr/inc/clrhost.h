@@ -72,7 +72,7 @@ extern int RFS_HashStack();
 // Critical section support for CLR DLLs other than the EE.
 // Include the header defining each Crst type and its corresponding level (relative rank). This is
 // auto-generated from a tool that takes a high-level description of each Crst type and its dependencies.
-#include "crsttypes.h"
+#include "crsttypes_generated.h"
 
 // critical section api
 CRITSEC_COOKIE ClrCreateCriticalSection(CrstType type, CrstFlags flags);
@@ -91,6 +91,14 @@ typedef Holder<CRITSEC_COOKIE, ClrEnterCriticalSection, ClrLeaveCriticalSection,
 // Use this holder to manage CRITSEC_COOKIE allocation to ensure it will be released if anything goes wrong
 FORCEINLINE void VoidClrDeleteCriticalSection(CRITSEC_COOKIE cs) { if (cs != NULL) ClrDeleteCriticalSection(cs); }
 typedef Wrapper<CRITSEC_COOKIE, DoNothing<CRITSEC_COOKIE>, VoidClrDeleteCriticalSection, NULL> CRITSEC_AllocationHolder;
+
+#ifndef DACCESS_COMPILE
+// Suspend/resume APIs that fail-fast on errors
+#ifdef TARGET_WINDOWS
+DWORD ClrSuspendThread(HANDLE hThread);
+#endif // TARGET_WINDOWS
+DWORD ClrResumeThread(HANDLE hThread);
+#endif // !DACCESS_COMPILE
 
 DWORD GetClrModulePathName(SString& buffer);
 

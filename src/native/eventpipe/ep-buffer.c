@@ -82,13 +82,14 @@ ep_buffer_write_event (
 	EP_ASSERT ((EventPipeBufferState)buffer->state == EP_BUFFER_STATE_WRITABLE);
 
 	bool success = true;
+	EventPipeEventInstance *instance = NULL;
 
 	// Calculate the location of the data payload.
 	uint8_t *data_dest;
-	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof(EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_get_instance_size (stack));
+	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof (*instance) - sizeof (instance->stack_contents_instance.stack_frames) + ep_stack_contents_get_full_size (stack));
 
 	// Calculate the size of the event.
-	uint32_t event_size = sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_get_instance_size (stack) + ep_event_payload_get_size (payload);
+	uint32_t event_size = sizeof (*instance) - sizeof (instance->stack_contents_instance.stack_frames) + ep_stack_contents_get_full_size (stack) + ep_event_payload_get_size (payload);
 
 	// Make sure we have enough space to write the event.
 	if(buffer->current + event_size > buffer->limit)
@@ -96,7 +97,6 @@ ep_buffer_write_event (
 
 	uint32_t proc_number;
 	proc_number = ep_rt_current_processor_get_number ();
-	EventPipeEventInstance *instance;
 	instance = ep_event_instance_init (
 		(EventPipeEventInstance *)buffer->current,
 		ep_event,

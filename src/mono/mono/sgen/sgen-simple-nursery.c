@@ -148,7 +148,7 @@ fill_parallel_with_concurrent_major_ops (SgenObjectOperations *ops)
 void
 sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel)
 {
-	if (mono_cpu_count () <= 1)
+	if (mono_cpu_limit () <= 1)
 		parallel = FALSE;
 
 #ifdef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC

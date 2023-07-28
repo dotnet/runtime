@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class MethodDelegator
+    public partial class MethodDelegator
     {
         public override bool IsIntrinsic
         {
@@ -82,14 +82,6 @@ namespace Internal.TypeSystem
             get
             {
                 return _wrappedMethod.IsUnmanagedCallersOnly;
-            }
-        }
-
-        public override bool IsRuntimeExport
-        {
-            get
-            {
-                return _wrappedMethod.IsRuntimeExport;
             }
         }
 

@@ -37,6 +37,15 @@
 #pragma warning(disable:4800) // type' : forcing value to bool 'true' or 'false' (performance warning)
 #endif
 
+// ArrayRef API is deprecated on C++17
+#if defined(__clang__) && (_LIBCPP_STD_VER > 17 || defined(__APPLE__))
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif
+
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
@@ -722,7 +731,7 @@ is_overloaded_intrins (IntrinsicId id)
  *   Register an LLVM intrinsic identified by ID.
  */
 LLVMValueRef
-mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id)
+mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *out_type)
 {
 	if (is_overloaded_intrins (id))
 		return NULL;
@@ -734,6 +743,8 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id)
 			outs () << id << "\n";
 			g_assert_not_reached ();
 		}
+		auto type = Intrinsic::getType (*unwrap(LLVMGetGlobalContext ()), intrins_id);
+		*out_type = wrap (type);
 		return wrap (f);
 	} else {
 		return NULL;
@@ -746,7 +757,7 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id)
  *   Register an overloaded LLVM intrinsic identified by ID using the supplied types.
  */
 LLVMValueRef
-mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *types, int ntypes)
+mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *types, int ntypes, LLVMTypeRef *out_type)
 {
 	auto intrins_id = get_intrins_id (id);
 
@@ -756,6 +767,8 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 	for (int i = 0; i < ntypes; ++i)
 		arr [i] = unwrap (types [i]);
 	auto f = Intrinsic::getDeclaration (unwrap (module), intrins_id, { arr, (size_t)ntypes });
+	auto type = Intrinsic::getType (*unwrap(LLVMGetGlobalContext ()), intrins_id, { arr, (size_t)ntypes });
+	*out_type = wrap (type);
 	return wrap (f);
 }
 

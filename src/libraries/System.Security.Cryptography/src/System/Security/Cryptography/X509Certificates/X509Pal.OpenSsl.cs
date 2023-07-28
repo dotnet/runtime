@@ -5,9 +5,6 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class X509Pal
     {
-        private static partial IX509Pal BuildSingleton()
-        {
-            return new OpenSslX509Encoder();
-        }
+        private static partial IX509Pal BuildSingleton() => new OpenSslX509Encoder();
     }
 }

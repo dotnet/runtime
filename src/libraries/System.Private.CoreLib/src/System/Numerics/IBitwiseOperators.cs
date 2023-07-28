@@ -8,7 +8,7 @@ namespace System.Numerics
     /// <typeparam name="TOther">The type that will is used in the operation with <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the result of <typeparamref name="TSelf" /> op <typeparamref name="TOther" />.</typeparam>
     public interface IBitwiseOperators<TSelf, TOther, TResult>
-        where TSelf : IBitwiseOperators<TSelf, TOther, TResult>
+        where TSelf : IBitwiseOperators<TSelf, TOther, TResult>?
     {
         /// <summary>Computes the bitwise-and of two values.</summary>
         /// <param name="left">The value to and with <paramref name="right" />.</param>

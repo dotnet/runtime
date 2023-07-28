@@ -8,10 +8,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace GitHub_23530
 {
-    class Program
+    public class Program
     {
         struct vec
         {
@@ -33,7 +34,8 @@ namespace GitHub_23530
             return Sse.Add(c, d).ToScalar();
         }
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (Fma.IsSupported)
             {

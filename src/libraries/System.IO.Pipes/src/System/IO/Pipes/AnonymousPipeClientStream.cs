@@ -34,9 +34,10 @@ namespace System.IO.Pipes
             }
 
             // next check whether the handle is invalid
-            SafePipeHandle safePipeHandle = new SafePipeHandle((IntPtr)result, true);
+            SafePipeHandle safePipeHandle = new SafePipeHandle((nint)result, true);
             if (safePipeHandle.IsInvalid)
             {
+                safePipeHandle.Dispose();
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(pipeHandleAsString));
             }
 

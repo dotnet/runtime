@@ -63,9 +63,10 @@ unsafe class StdCallMemberFunctionNative
     public static extern CLong GetWidthAsLongFromManaged(C* c);
 }
 
-unsafe class StdCallMemberFunctionTest
+public unsafe class StdCallMemberFunctionTest
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {
