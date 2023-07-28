@@ -36,6 +36,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<double>());
             _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<decimal>());
             _meterListener.Start();
+            _metricsListener.SetSource(this);
         }
 
         private void InstrumentPublished(Instrument instrument, MeterListener _)
@@ -53,8 +54,6 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     return;
                 }
 
-                // TODO: should this state flow somewhere?
-                var __ = _metricsListener.InstrumentPublished(instrument);
                 _instruments.Add(instrument);
                 RefreshInstrument(instrument);
             }
@@ -74,8 +73,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     if (_enabled.Remove(instrument))
                     {
                         _meterListener.DisableMeasurementEvents(instrument);
+                        _metricsListener.MeasurementsCompleted(instrument, state);
                     }
-                    _metricsListener.MeasurementsCompleted(instrument, state);
                 }
                 else
                 {
@@ -117,11 +116,15 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             {
                 _enabled.Remove(instrument);
                 _meterListener.DisableMeasurementEvents(instrument);
+                // TODO: State?
+                _metricsListener.MeasurementsCompleted(instrument, userState: null);
             }
             else if (enable && !alreadyEnabled)
             {
                 _meterListener.EnableMeasurementEvents(instrument);
                 _enabled.Add(instrument);
+                // TODO: should this returned state flow somewhere?
+                _metricsListener.InstrumentPublished(instrument);
             }
         }
 
