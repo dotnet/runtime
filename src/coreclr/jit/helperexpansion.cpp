@@ -843,16 +843,16 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     if (TargetOS::IsWindows)
     {
-        // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
-        tlsValue = gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-
         size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
         GenTree* dllRef        = nullptr;
         if (tlsIndexValue != 0)
         {
             dllRef = gtNewIconHandleNode(tlsIndexValue * TARGET_POINTER_SIZE, GTF_ICON_TLS_HDL);
         }
+
+        // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
+        tlsValue = gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
         if (dllRef != nullptr)
         {
@@ -960,8 +960,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     threadStaticBlocksValue = gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
-    GenTree* typeThreadStaticBlockIndexValue =
-        gtNewIconNode(0, TYP_INT); //    call->gtArgs.GetArgByIndex(0)->GetNode();
+    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
     GenTree* maxThreadStaticBlocksCond =
         gtNewOperNode(GT_LT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
     maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
