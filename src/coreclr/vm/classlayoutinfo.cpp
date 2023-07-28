@@ -1061,7 +1061,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
         {
             for (UINT i = 0; i < cInstanceFields; i++)
             {
-                _ASSERTE(pNativeFieldDescriptors[i].GetExternalOffset() == pNativeFieldDescriptors[i].GetFieldDesc()->GetOffset_NoLogging());
+                _ASSERTE(pNativeFieldDescriptors[i].GetExternalOffset() == pNativeFieldDescriptors[i].GetFieldDesc()->GetOffset());
                 _ASSERTE(pNativeFieldDescriptors[i].NativeSize() == pNativeFieldDescriptors[i].GetFieldDesc()->GetSize());
             }
             _ASSERTE(pNativeLayoutInfo->GetSize() == pEEClassLayoutInfo->GetManagedSize());
