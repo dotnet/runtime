@@ -29,7 +29,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/28403")]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [InlineData("System")]
