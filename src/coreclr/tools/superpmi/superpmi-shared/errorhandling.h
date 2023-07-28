@@ -19,11 +19,12 @@
 #define EXCEPTIONCODE_LWM 0xe0423000
 #define EXCEPTIONCODE_CALLUTILS 0xe0426000
 #define EXCEPTIONCODE_TYPEUTILS 0xe0427000
+#define EXCEPTIONCODE_RECORDED_EXCEPTION 0xe0428000
 #define EXCEPTIONCODE_ASSERT 0xe0440000
 
 // RaiseException wrappers
-void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode);
-void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const char* message, ...);
+void MSC_ONLY(__declspec(noreturn)) ThrowSpmiException(DWORD exceptionCode, const char* message, ...);
+void MSC_ONLY(__declspec(noreturn)) ThrowRecordedException(DWORD innerExceptionCode);
 
 // Assert stuff
 #define AssertCodeMsg(expr, exCode, msg, ...)                                                                          \
