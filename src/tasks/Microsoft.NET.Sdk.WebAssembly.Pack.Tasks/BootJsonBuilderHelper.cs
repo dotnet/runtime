@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Microsoft.Build.Utilities;
 
@@ -20,8 +21,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 if (res == null)
                     return;
 
-                foreach (var asset in res)
-                    sb.Append(asset.Value);
+                foreach (var assetHash in res.Values.OrderBy(v => v))
+                    sb.Append(assetHash);
             }
 
             AddDictionary(sb, bootConfig.resources.assembly);
