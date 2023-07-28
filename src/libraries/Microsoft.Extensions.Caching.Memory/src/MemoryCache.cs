@@ -593,7 +593,10 @@ namespace Microsoft.Extensions.Caching.Memory
             Dispose(true);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Dispose the cache and clear all entries.
+        /// </summary>
+        /// <param name="disposing">Dispose the object resources if true; otherwise, take no action.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)

@@ -49,6 +49,9 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        /// <summary>
+        /// Enables ot disables the option to compact the cache when the maximum size is exceeded.
+        /// </summary>
         [EditorBrowsableAttribute(EditorBrowsableState.Never)]
         [Obsolete("This property is retained only for compatibility.  Remove use and instead call MemoryCache.Compact as needed.", error: true)]
         public bool CompactOnMemoryPressure { get; set; }
