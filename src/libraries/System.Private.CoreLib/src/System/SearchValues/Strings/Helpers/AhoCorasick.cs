@@ -13,6 +13,7 @@ namespace System.Buffers
     /// An implementation of the Aho-Corasick algorithm we use as a fallback when we can't use Teddy
     /// (either due to missing hardware intrinsics, or due to characteristics of the values used).
     /// https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm
+    /// Works in O(n).
     /// </summary>
     internal readonly struct AhoCorasick
     {

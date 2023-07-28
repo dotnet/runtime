@@ -13,6 +13,7 @@ namespace System.Buffers
     /// An implementation of the Rabin-Karp algorithm we use as a fallback for
     /// short inputs that we can't handle with Teddy.
     /// https://en.wikipedia.org/wiki/Rabin%E2%80%93Karp_algorithm
+    /// Has an O(i * m) worst-case, but we will only use it for very short inputs.
     /// </summary>
     internal readonly struct RabinKarp
     {

@@ -13,6 +13,7 @@ namespace System.Buffers
     // Based on SpanHelpers.IndexOf(ref char, int, ref char, int)
     // This implementation uses 3 precomputed anchor points when searching.
     // This implementation may also be used for length=2 values, in which case two anchors point at the same position.
+    // Has an O(i * m) worst-case, with the expected time closer to O(n) for most inputs.
     internal sealed class SingleStringSearchValuesThreeChars<TCaseSensitivity> : SearchValues<string>
         where TCaseSensitivity : struct, ICaseSensitivity
     {
