@@ -144,6 +144,8 @@ export type LoaderHelpers = {
     hasDebuggingEnabled(config: MonoConfig): boolean,
     retrieve_asset_download(asset: AssetEntry): Promise<Response>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    logDownloadStatsToConsole: () => void;
+    purgeUnusedCacheEntriesAsync: () => Promise<void>;
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,

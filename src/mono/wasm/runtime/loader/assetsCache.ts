@@ -14,7 +14,7 @@ export function shouldApplyIntegrity(): boolean {
     return !!cacheIfUsed;
 }
 
-export function logToConsole(): void {
+export function logDownloadStatsToConsole(): void {
     const cacheLoadsEntries = Object.values(cacheLoads);
     const networkLoadsEntries = Object.values(networkLoads);
     const cacheResponseBytes = countTotalBytes(cacheLoadsEntries);

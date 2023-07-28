@@ -11,6 +11,7 @@ import { mono_download_assets, resolve_single_asset_path, retrieve_asset_downloa
 import { mono_log_error, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { hasDebuggingEnabled } from "./config";
+import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB = typeof window == "object";
@@ -92,6 +93,8 @@ export function setLoaderGlobals(
         mono_download_assets,
         resolve_asset_path: resolve_single_asset_path,
         setup_proxy_console,
+        logDownloadStatsToConsole,
+        purgeUnusedCacheEntriesAsync,
 
         hasDebuggingEnabled,
         retrieve_asset_download,
