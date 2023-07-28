@@ -73,7 +73,7 @@ void MulticoreJitFireEtwMethodCodeReturned(MethodDesc * pMethod)
         if(pMethod)
         {
             // Get the module id.
-            Module * pModule = pMethod->GetModule_NoLogging();
+            Module * pModule = pMethod->GetModule();
             ULONGLONG ullModuleID = (ULONGLONG)(TADDR) pModule;
 
             // Get the method id.
@@ -761,7 +761,7 @@ DWORD MulticoreJitRecorder::EncodeModule(Module * pReferencedModule)
     }
 
     // This increment is required, because we need to increase methodCount for all referenced modules for generic method.
-    // RecordMethodInfo will only increment this counter for pMethod->GetModule_NoLogging.
+    // RecordMethodInfo will only increment this counter for pMethod->GetModule.
     m_ModuleList[slot].methodCount++;
 
     return (DWORD) slot;
@@ -870,7 +870,7 @@ void MulticoreJitRecorder::RecordMethodJitOrLoad(MethodDesc * pMethod, bool appl
 {
     STANDARD_VM_CONTRACT;
 
-    Module * pModule = pMethod->GetModule_NoLogging();
+    Module * pModule = pMethod->GetModule();
 
     // Skip methods from non-supported modules
     if (! MulticoreJitManager::IsSupportedModule(pModule, true))

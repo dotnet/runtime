@@ -26,7 +26,7 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 {
     MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
 
-    Module * pModule = pMethod->GetModule_NoLogging();
+    Module * pModule = pMethod->GetModule();
 
     _ASSERTE(pModule->IsSystem());
 }

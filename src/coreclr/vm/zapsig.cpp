@@ -186,7 +186,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     // We may need to emit an out-of-module escape sequence
     //
-    Module *pTypeHandleModule = pMT->GetModule_NoLogging();
+    Module *pTypeHandleModule = pMT->GetModule();
 
     // If the type handle's module is different that the this->pInfoModule
     // we will need to add an out-of-module escape for the type
@@ -1216,7 +1216,7 @@ BOOL ZapSig::EncodeMethod(
     if (pInfoModule == NULL)
     {
         externalTokens = ZapSig::MulticoreJitTokens;
-        pInfoModule = pMethod->GetModule_NoLogging();
+        pInfoModule = pMethod->GetModule();
     }
 
     ZapSig zapSig(pInfoModule, pEncodeModuleContext, externalTokens,

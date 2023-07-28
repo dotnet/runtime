@@ -3454,7 +3454,7 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
             }
 
             ULONG ulMethodToken=0;
-            auto pModule = method->GetModule_NoLogging();
+            auto pModule = method->GetModule();
             bool bIsDynamicMethod = method->IsDynamicMethod();
             BOOL bIsGenericMethod = FALSE;
             if(method->GetMethodTable_NoLogging())
@@ -4545,7 +4545,7 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W(""),szDtraceOutput3=W("");
 
     if(pMethodDesc) {
-        pModule = pMethodDesc->GetModule_NoLogging();
+        pModule = pMethodDesc->GetModule();
 
         SendMethodDetailsEvent(pMethodDesc);
 
@@ -4645,7 +4645,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
             KEYWORDZERO);
     }
 
-    pModule = pMethodDesc->GetModule_NoLogging();
+    pModule = pMethodDesc->GetModule();
     bIsDynamicMethod = (BOOL)pMethodDesc->IsDynamicMethod();
     bHasSharedGenericCode = pMethodDesc->IsSharedByGenericInstantiations();
 

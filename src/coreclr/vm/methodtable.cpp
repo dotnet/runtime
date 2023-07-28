@@ -383,23 +383,6 @@ PTR_Module MethodTable::GetModule()
 }
 
 //==========================================================================================
-PTR_Module MethodTable::GetModule_NoLogging()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // Fast path for non-generic non-array case
-    if ((m_dwFlags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == 0)
-        return GetLoaderModule();
-
-    MethodTable * pMTForModule = IsArray() ? this : GetCanonicalMethodTable();
-    if (!pMTForModule->HasModuleOverride())
-        return pMTForModule->GetLoaderModule();
-
-    TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return *dac_cast<DPTR(PTR_Module)>(pSlot);
-}
-
-//==========================================================================================
 PTR_DispatchMap MethodTable::GetDispatchMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;

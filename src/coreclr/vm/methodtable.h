@@ -566,7 +566,6 @@ public:
 
 public:
     PTR_Module GetModule();
-    PTR_Module GetModule_NoLogging();
     Assembly *GetAssembly();
 
     PTR_Module GetModuleIfLoaded();

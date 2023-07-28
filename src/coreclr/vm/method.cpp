@@ -1379,19 +1379,6 @@ Module *MethodDesc::GetModule() const
     STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
-    Module *pModule = GetModule_NoLogging();
-
-    return pModule;
-}
-
-//*******************************************************************************
-Module *MethodDesc::GetModule_NoLogging() const
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    SUPPORTS_DAC;
-
     MethodTable* pMT = GetMethodDescChunk()->GetMethodTable();
     return pMT->GetModule();
 }

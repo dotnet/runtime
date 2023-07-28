@@ -1000,7 +1000,6 @@ public:
     inline MethodTable* GetCanonicalMethodTable();
 
     Module *GetModule() const;
-    Module *GetModule_NoLogging() const;
 
     Assembly *GetAssembly() const
     {
