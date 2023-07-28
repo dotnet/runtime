@@ -973,6 +973,32 @@ CorInfoIsAccessAllowedResult interceptor_ICJI::canAccessClass(
     return temp;
 }
 
+
+bool interceptor_ICJI::isConstValue(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isConstValue");
+    bool temp = original_ICorJitInfo->isConstValue(cls);
+    mc->recIsConstValue(cls, temp);
+    return temp;
+}
+
+uint64_t interceptor_ICJI::getConstValue(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getConstValue");
+    uint64_t temp = original_ICorJitInfo->getConstValue(cls);
+    mc->recGetConstValue(cls, temp);
+    return temp;
+}
+
+CorInfoType interceptor_ICJI::getConstValueType(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getConstValueType");
+    CorInfoType temp = original_ICorJitInfo->getConstValueType(cls);
+    mc->recGetConstValueType(cls, temp);
+    return temp;
+}
+
+
 /**********************************************************************************/
 //
 // ICorFieldInfo
