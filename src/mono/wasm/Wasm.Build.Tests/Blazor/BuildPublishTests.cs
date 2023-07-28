@@ -277,7 +277,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         File.WriteAllText(counterRazorPath, oldContent + additionalCode);
     }
 
-    [Theory, TestCategory("no-workload")]
+    [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
     public void DefaultTemplate_WithResources_Publish(string config)
