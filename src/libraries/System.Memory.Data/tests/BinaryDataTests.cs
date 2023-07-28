@@ -199,9 +199,9 @@ namespace System.Tests
             byte[] buffer = "some data"u8.ToArray();
             BinaryData data = BinaryData.FromBytes(buffer);
             Stream stream = data.ToStream();
-            buffer[0] = (byte)'c';
+            buffer[0] = (byte)'z';
             StreamReader sr = new StreamReader(stream);
-            Assert.Equal("come data", await sr.ReadToEndAsync());
+            Assert.Equal("zome data", await sr.ReadToEndAsync());
         }
 
         [Fact]
@@ -220,71 +220,56 @@ namespace System.Tests
         {
             byte[] buffer = "some data"u8.ToArray();
             using MemoryStream stream = new MemoryStream(buffer, 0, buffer.Length, true, true);
+            BinaryData data = BinaryData.FromStream(stream);
+            Assert.Equal(buffer, data.ToArray());
+
             byte[] output = new byte[buffer.Length];
+            var outputStream = data.ToStream();
+            outputStream.Read(output, 0, (int) outputStream.Length);
+            Assert.Equal(buffer, output);
 
-            {
-                stream.Position = 0;
-                BinaryData data = BinaryData.FromStream(stream);
-                Assert.Equal(buffer, data.ToArray());
-                Assert.Null(data.MediaType);
+            stream.Position = 0;
+            data = await BinaryData.FromStreamAsync(stream);
+            Assert.Equal(buffer, data.ToArray());
 
-                var outputStream = data.ToStream();
-                outputStream.Read(output, 0, (int)outputStream.Length);
-                Assert.Equal(buffer, output);
+            outputStream = data.ToStream();
+            outputStream.Read(output, 0, (int)outputStream.Length);
+            Assert.Equal(buffer, output);
 
-                //changing the backing buffer should not affect the BD instance
-                buffer[3]++;
-                Assert.NotEqual(buffer, data.ToMemory().ToArray());
-                buffer[3]--;
-            }
+            //changing the backing buffer should not affect the BD instance
+            buffer[3] = (byte)'z';
+            Assert.NotEqual(buffer, data.ToMemory().ToArray());
+        }
 
-            {
-                stream.Position = 0;
-                BinaryData data = BinaryData.FromStream(stream, MediaTypeNames.Application.Soap);
-                Assert.Equal(buffer, data.ToArray());
-                Assert.Equal(MediaTypeNames.Application.Soap, data.MediaType);
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(MediaTypeNames.Application.Soap)]
+        public async Task CanCreateBinaryDataFromStreamWithMediaType(string? mediaType)
+        {
+            byte[] buffer = "some data"u8.ToArray();
+            using MemoryStream stream = new MemoryStream(buffer, 0, buffer.Length, true, true);
+            BinaryData data = BinaryData.FromStream(stream, mediaType);
+            Assert.Equal(buffer, data.ToArray());
+            Assert.Equal(mediaType, data.MediaType);
 
-                var outputStream = data.ToStream();
-                outputStream.Read(output, 0, (int)outputStream.Length);
-                Assert.Equal(buffer, output);
+            byte[] output = new byte[buffer.Length];
+            var outputStream = data.ToStream();
+            outputStream.Read(output, 0, (int) outputStream.Length);
+            Assert.Equal(buffer, output);
 
-                //changing the backing buffer should not affect the BD instance
-                buffer[3]++;
-                Assert.NotEqual(buffer, data.ToMemory().ToArray());
-                buffer[3]--;
-            }
+            stream.Position = 0;
+            data = await BinaryData.FromStreamAsync(stream, mediaType);
+            Assert.Equal(buffer, data.ToArray());
+            Assert.Equal(mediaType, data.MediaType);
 
-            {
-                stream.Position = 0;
-                BinaryData data = await BinaryData.FromStreamAsync(stream);
-                Assert.Equal(buffer, data.ToArray());
-                Assert.Null(data.MediaType);
+            outputStream = data.ToStream();
+            outputStream.Read(output, 0, (int)outputStream.Length);
+            Assert.Equal(buffer, output);
 
-                var outputStream = data.ToStream();
-                outputStream.Read(output, 0, (int)outputStream.Length);
-                Assert.Equal(buffer, output);
-
-                //changing the backing buffer should not affect the BD instance
-                buffer[3]++;
-                Assert.NotEqual(buffer, data.ToMemory().ToArray());
-                buffer[3]--;
-            }
-
-            {
-                stream.Position = 0;
-                BinaryData data = await BinaryData.FromStreamAsync(stream, MediaTypeNames.Application.Soap);
-                Assert.Equal(buffer, data.ToArray());
-                Assert.Equal(MediaTypeNames.Application.Soap, data.MediaType);
-
-                var outputStream = data.ToStream();
-                outputStream.Read(output, 0, (int)outputStream.Length);
-                Assert.Equal(buffer, output);
-
-                //changing the backing buffer should not affect the BD instance
-                buffer[3]++;
-                Assert.NotEqual(buffer, data.ToMemory().ToArray());
-                buffer[3]--;
-            }
+            //changing the backing buffer should not affect the BD instance
+            buffer[3] = (byte)'z';
+            Assert.NotEqual(buffer, data.ToMemory().ToArray());
         }
 
         [Fact]
@@ -967,8 +952,9 @@ namespace System.Tests
             public override long Position => _offset;
         }
 
-        private class NonSeekableStream(byte[] buffer) : MemoryStream(buffer)
+        private class NonSeekableStream : MemoryStream
         {
+            public NonSeekableStream(byte[] buffer) : base(buffer) { }
             public override bool CanSeek => false;
         }
 
