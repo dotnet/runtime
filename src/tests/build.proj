@@ -369,7 +369,7 @@
     <!-- 
       This code fragment updates the default run script for Helix. 
       With the library tests, there is a single entry point provided as MainLibraryFileName. With the runtime tests, a bundle may have multiple main entry points. The code makes the following changes:
-      - For each main entry point, it adds the mlaunch environment parameter MONO_APPLE_APP_ENTRY_POINT_LIB_NAME
+      - For each main entry point, it adds the mlaunch environment parameters MONO_APPLE_APP_ENTRY_POINT_LIB_NAME and MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX
       - After each execution, it renames the log file to match the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME entry point
      -->
     <Code Type="Fragment" Language="cs">
@@ -383,8 +383,8 @@
         {
             string value = item.ItemSpec;
             
-            // Add the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME environment parameter to the run script
-            string output = lastLine.Replace("apple test", "apple run").Replace("--signal-app-end", $"--expected-exit-code=100 --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value}") + "&& echo \"Test passed\" || { echo \"Test failed\"; exit 1; }";
+            // Add the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME and MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX environment parameters to the run script
+            string output = lastLine.Replace("apple test", "apple run").Replace("--signal-app-end", $"--expected-exit-code=100 --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value} --set-env=MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX={value.Split('/')[0]}") + "&& echo \"Test passed\" || { echo \"Test failed\"; exit 1; }";
             resultBuilder.AppendLine(output);
 
             // Rename the log file to match the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME
