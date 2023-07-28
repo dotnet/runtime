@@ -304,6 +304,50 @@ namespace Microsoft.Interop
                         })
                 };
             }
+            // Ensure the size of collections are known at marshal / unmarshal in time.
+            // A collection that is marshalled in cannot have a size that is an 'out' parameter.
+            foreach (var parameter in signatureContext.ManagedParameters)
+            {
+                if (parameter.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
+                    && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo
+                    && !(parameter.RefKind is RefKind.Out
+                        || parameter.ByValueContentsMarshalKind is ByValueContentsMarshalKind.Out
+                        || parameter.ManagedIndex is TypePositionInfo.ReturnIndex))
+                {
+                    if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is RefKind.Out)
+                    {
+                        Location location = TypePositionInfo.GetLocation(parameter, symbol);
+                        generatorDiagnostics.ReportDiagnostic(
+                            DiagnosticInfo.Create(
+                                GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam,
+                                location,
+                                parameter.InstanceIdentifier,
+                                countInfo.ElementInfo.InstanceIdentifier));
+                        continue;
+                    }
+                    else if (countInfo.ElementInfo.ByValueContentsMarshalKind is ByValueContentsMarshalKind.Out)
+                    {
+                        Location location = TypePositionInfo.GetLocation(parameter, symbol);
+                        generatorDiagnostics.ReportDiagnostic(
+                            DiagnosticInfo.Create(
+                                GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallContentsOutParam,
+                                location,
+                                parameter.InstanceIdentifier,
+                                countInfo.ElementInfo.InstanceIdentifier));
+                        continue;
+                    }
+                    else if (countInfo.ElementInfo.ManagedIndex is TypePositionInfo.ReturnIndex)
+                    {
+                        Location location = TypePositionInfo.GetLocation(parameter, symbol);
+                        generatorDiagnostics.ReportDiagnostic(
+                            DiagnosticInfo.Create(
+                                GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue,
+                                location,
+                                parameter.InstanceIdentifier));
+                        continue;
+                    }
+                }
+            }
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 

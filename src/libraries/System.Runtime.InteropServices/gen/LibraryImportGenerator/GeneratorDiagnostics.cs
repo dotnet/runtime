@@ -232,6 +232,26 @@ namespace Microsoft.Interop
                     WellKnownDiagnosticTags.Unnecessary
                 });
 
+        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam"/>
+        internal static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallOutParam =
+            new DiagnosticDescriptor(
+                Ids.InvalidLibraryImportAttributeUsage,
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageContentsOutParam"/>
+        internal static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallContentsOutParam =
+            new DiagnosticDescriptor(
+                Ids.InvalidLibraryImportAttributeUsage,
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageContentsOutParam)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
         /// </summary>

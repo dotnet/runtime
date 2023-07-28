@@ -975,5 +975,75 @@ namespace ComInterfaceGenerator.Unit.Tests
             test.ExpectedDiagnostics.Add(expectedDiagnostic);
             await test.RunAsync();
         }
+
+        public static IEnumerable<object[]> CountParameterIsOutSnippets()
+        {
+            var g = GetAttributeProvider(GeneratorKind.ComInterfaceGenerator);
+            CodeSnippets a = new(g);
+            DiagnosticResult[] emptyDiagnostics = Array.Empty<DiagnosticResult>();
+            DiagnosticResult returnValueDiag = new DiagnosticResult(GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue).WithLocation(1).WithArguments("arr");
+            DiagnosticResult outParamDiag = new DiagnosticResult(GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam).WithLocation(1).WithArguments("arr", "size");
+            DiagnosticResult contentsOutParamDiag = new DiagnosticResult(GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallContentsOutParam).WithLocation(1).WithArguments("arr2", "arr");
+
+            var voidReturn = ("void", "", Array.Empty<string>());
+            var sizeReturn = ("int", "", Array.Empty<string>());
+
+            var size = ("int", "", "size", Array.Empty<string>());
+            var outSize = ("int", "out", "size", Array.Empty<string>());
+            var inSize = ("int", "in", "size", Array.Empty<string>());
+            var refSize = ("int", "ref", "size", Array.Empty<string>());
+
+            var arr = ("int[]", "", "arr", new[] { "size" });
+            var outArr = ("int[]", "out", "arr", new[] { "size" });
+            var inArr = ("int[]", "in", "arr", new[] { "size" });
+            var refArr = ("int[]", "ref", "arr", new[] { "size" });
+            var contentsOutArr = ("int[]", "[OutAttribute]", "arr", new[] { "size" });
+            var contentsInArr = ("int[]", "[InAttribute]", "arr", new[] { "size" });
+            var contentsInOutArr = ("int[]", "[InOutAttribute]", "arr", new[] { "size" });
+
+
+            yield return new object[] { ID(), Source(voidReturn, arr, size), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, arr, inSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, arr, outSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, arr, refSize), emptyDiagnostics };
+
+            yield return new object[] { ID(), Source(voidReturn, inArr, size), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, inArr, inSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, inArr, outSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, inArr, refSize), emptyDiagnostics };
+
+            yield return new object[] { ID(), Source(voidReturn, outArr, size), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, outArr, inSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, outArr, outSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, outArr, refSize), emptyDiagnostics };
+
+            yield return new object[] { ID(), Source(voidReturn, refArr, size), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, refArr, inSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, refArr, outSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, refArr, refSize), emptyDiagnostics };
+
+            yield return new object[] { ID(), Source(voidReturn, contentsInArr, size), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, contentsInArr, inSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, contentsInArr, outSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, contentsInArr, refSize), emptyDiagnostics };
+
+            yield return new object[] { ID(), Source(voidReturn, contentsOutArr, size), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, contentsOutArr, inSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, contentsOutArr, outSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, contentsOutArr, refSize), emptyDiagnostics };
+
+            yield return new object[] { ID(), Source(voidReturn, contentsInOutArr, size), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, contentsInOutArr, inSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, contentsInOutArr, outSize), emptyDiagnostics };
+            yield return new object[] { ID(), Source(voidReturn, contentsInOutArr, refSize), emptyDiagnostics };
+
+
+            string Source(
+                (string type, string modifiers, string[] counts) returnValue,
+                params (string type, string modifiers, string name, string[] counts)[] parameters)
+            {
+                return a.CollectionTypeMarshallingBasic(returnValue, parameters) + CodeSnippets.IntStructAndMarshaller;
+            }
+        }
     }
 }

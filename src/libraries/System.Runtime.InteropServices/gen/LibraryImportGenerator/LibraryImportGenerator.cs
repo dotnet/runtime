@@ -285,6 +285,27 @@ namespace Microsoft.Interop
 
             // Create the stub.
             var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr), environment, typeof(LibraryImportGenerator).Assembly);
+            // Ensure the size of collections are known at marshal / unmarshal in time.
+            // A collection that is marshalled in cannot have a size that is an 'out' parameter.
+            foreach (var parameter in signatureContext.ManagedParameters)
+            {
+                if (parameter.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
+                    && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo
+                    && (parameter.RefKind is not RefKind.Out
+                        || parameter.ByValueContentsMarshalKind is not ByValueContentsMarshalKind.Out))
+                {
+                    if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is RefKind.Out)
+                    {
+                        Location location = TypePositionInfo.GetLocation(parameter, symbol);
+                        generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam, location, parameter.InstanceIdentifier, countInfo.ElementInfo.InstanceIdentifier));
+                    }
+                    else if (countInfo.ElementInfo.ByValueContentsMarshalKind is ByValueContentsMarshalKind.Out)
+                    {
+                        Location location = TypePositionInfo.GetLocation(parameter, symbol);
+                        generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallContentsOutParam, location, parameter.InstanceIdentifier, countInfo.ElementInfo.InstanceIdentifier));
+                    }
+                }
+            }
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
