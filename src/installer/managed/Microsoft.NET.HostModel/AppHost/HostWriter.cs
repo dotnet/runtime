@@ -73,9 +73,9 @@ namespace Microsoft.NET.HostModel.AppHost
                     if (ResourceUpdater.IsSupportedOS())
                     {
                         // Copy resources from managed dll to the apphost
-                        new ResourceUpdater(appHostDestinationFilePath)
-                            .AddResourcesFromPEImage(assemblyToCopyResourcesFrom)
-                            .Update();
+                        using var updater = new ResourceUpdater(appHostDestinationFilePath);
+                        updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
+                        updater.Update();
                     }
                     else
                     {
