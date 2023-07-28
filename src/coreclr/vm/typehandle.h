@@ -476,12 +476,9 @@ public:
     // ARRAY or SZARRAY
     BOOL IsArray() const;
 
-    // VAR or MVAR or CVAR or MCVAR
+    // VAR or MVAR
     BOOL IsGenericVariable() const;
     
-    // CVAR or MCVAR
-    BOOL IsConstGenericVariable() const;
-
     // CTARG
     BOOL IsConstValue() const;
     uint64_t GetConstValue() const;

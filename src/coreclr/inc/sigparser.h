@@ -933,33 +933,19 @@ public:
 
         return GetTypeInfo_NoThrow(type).isGenVar;
     }
-    FORCEINLINE static BOOL IsConstGenericVariable(CorElementType type)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        CorTypeInfoEntry info = GetTypeInfo(type);
-        return info.isGenVar && info.isConst;
-    }
-    FORCEINLINE static BOOL IsConstGenericVariable_NoThrow(CorElementType type)
-    {
-        WRAPPER_NO_CONTRACT;
-        
-        CorTypeInfoEntry info = GetTypeInfo_NoThrow(type);
-        return info.isGenVar && info.isConst;
-    }
     FORCEINLINE static BOOL IsConstValue(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
 
         CorTypeInfoEntry info = GetTypeInfo(type);
-        return !info.isGenVar && info.isConst;
+        return info.isConst;
     }
     FORCEINLINE static BOOL IsConstValue_NoThrow(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
         
         CorTypeInfoEntry info = GetTypeInfo_NoThrow(type);
-        return !info.isGenVar && info.isConst;
+        return info.isConst;
     }
     FORCEINLINE static BOOL IsArray(CorElementType type)
     {

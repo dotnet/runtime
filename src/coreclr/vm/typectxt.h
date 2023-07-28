@@ -11,7 +11,7 @@
 
 //------------------------------------------------------------------------
 // A signature type context gives the information necessary to interpret
-// the ELEMENT_TYPE_(C)VAR and ELEMENT_TYPE_M(C)VAR elements of a regular
+// the ELEMENT_TYPE_VAR and ELEMENT_TYPE_MVAR elements of a regular
 // metadata signature.  These are usually stack allocated at appropriate
 // points where the SigPointer objects are created, or are allocated
 // inside a MetaSig (which are themselves normally stack allocated)

@@ -80,11 +80,11 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
             break;
 
         case ELEMENT_TYPE_MVAR:
-            //                    _ASSERTE(!"Cannot encode ET_M(C)VAR in a ZapSig");
+            //                    _ASSERTE(!"Cannot encode ET_MVAR in a ZapSig");
             return FALSE;
 
         case ELEMENT_TYPE_VAR:
-            //                    _ASSERTE(!"Cannot encode ET_(C)VAR in a ZapSig");
+            //                    _ASSERTE(!"Cannot encode ET_VAR in a ZapSig");
             return FALSE;
 
         case ELEMENT_TYPE_VAR_ZAPSIG:

@@ -52,7 +52,7 @@ inline TypeHandle ParamTypeDesc::GetTypeParam() {
 inline TypeHandle TypeDesc::GetConstValueType() {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (IsConstGenericVariable())
+    if (IsGenericVariable())
         return TypeHandle();
 
     _ASSERTE(IsConstValue());

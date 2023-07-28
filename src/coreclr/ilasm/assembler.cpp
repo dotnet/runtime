@@ -1614,32 +1614,6 @@ void Assembler::EmitInstrVarByName(Instr* instr, _In_ __nullterminated char* lab
 }
 
 /**************************************************************************/
-void Assembler::EmitInstrTypeVar(Instr* instr, CorElementType type, int var)
-{
-    unsigned opc = instr->opcode;
-    if(m_fOptimize)
-    {
-        if(var <= 0xFF)
-        {
-            opc = instr->opcode = ShortOf(opc);
-        }
-    }
-    EmitOpcode(instr);
-    if (isShort(opc))
-    {
-        EmitByte(type);
-        EmitByte(var);
-    }
-    else
-    {
-        short sh = (short)type;
-        EmitBytes((BYTE *)&sh,2);
-        sh = (short)var;
-        EmitBytes((BYTE *)&sh,2);
-    }
-}
-
-/**************************************************************************/
 void Assembler::EmitInstrI(Instr* instr, int val)
 {
     int opc = instr->opcode;

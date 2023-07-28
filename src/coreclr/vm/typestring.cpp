@@ -767,24 +767,10 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
 
         LPCSTR szName = NULL;
         mdToken mdOwner;
-        mdToken mdType;
 
-        IfFailThrow(ty.GetModule()->GetMDImport()->GetGenericParamProps(token, NULL, NULL, &mdOwner, &mdType, &szName));
+        IfFailThrow(ty.GetModule()->GetMDImport()->GetGenericParamProps(token, NULL, NULL, &mdOwner, NULL, &szName));
 
         _ASSERTE(TypeFromToken(mdOwner) == mdtTypeDef || TypeFromToken(mdOwner) == mdtMethodDef);
-
-        if (ty.IsConstGenericVariable())
-        {
-            _ASSERTE(TypeFromToken(mdType) == mdtTypeSpec && RidFromToken(mdType));
-            tnb.Append(W("const "));
-            ULONG cb;
-            PCCOR_SIGNATURE sig;
-            IfFailThrow(ty.GetModule()->GetMDImport()->GetTypeSpecFromToken(mdType, &sig, &cb));
-            _ASSERTE(cb == 1);
-            PTR_MethodTable mtType = CoreLibBinder::GetElementType((CorElementType)*sig);
-            AppendTypeDef(tnb, mtType->GetModule()->GetMDImport(), mtType->GetCl(), format);
-            tnb.Append(W(" "));
-        }
 
         LPCSTR szPrefix;
         if (!(format & FormatGenericParam))

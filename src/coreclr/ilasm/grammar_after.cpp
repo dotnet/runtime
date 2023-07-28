@@ -1410,8 +1410,6 @@ AGAIN:
 
         case ELEMENT_TYPE_VARFIXUP:
         case ELEMENT_TYPE_MVARFIXUP:
-        case ELEMENT_TYPE_CVARFIXUP:
-        case ELEMENT_TYPE_MCVARFIXUP:
                 if(fFixupType)
                 {
                     BYTE* pb = ptr-1; // ptr incremented in switch

@@ -33,9 +33,7 @@ const signed char       opcodeSizes[] =
 {
     #define InlineNone_size           0
     #define ShortInlineVar_size       1
-    #define ShortInlineTypeVar_size   2
     #define InlineVar_size            2
-    #define InlineTypeVar_size        4
     #define ShortInlineI_size         1
     #define InlineI_size              4
     #define InlineI8_size             8
@@ -60,9 +58,7 @@ const signed char       opcodeSizes[] =
 
     #undef InlineNone_size
     #undef ShortInlineVar_size
-    #undef ShortInlineTypeVar_size
     #undef InlineVar_size
-    #undef InlineTypeVar_size
     #undef ShortInlineI_size
     #undef InlineI_size
     #undef InlineI8_size

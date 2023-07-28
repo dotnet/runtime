@@ -1982,7 +1982,7 @@ TypeHandle SigPointer::GetGenericInstType(ModuleBase *        pModule,
     return genericType;
 }
 
-// SigPointer should be just after E_T_(C)VAR or E_T_M(C)VAR
+// SigPointer should be just after E_T_VAR or E_T_MVAR
 TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - may be used later for better error reporting
                                                CorElementType et,
                                                ClassLoader::LoadTypesFlag fLoadTypes/*=LoadTypes*/,
@@ -2011,7 +2011,7 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
     RETURN(res);
 }
 
-// SigPointer should be just after E_T_(C)VAR or E_T_M(C)VAR
+// SigPointer should be just after E_T_VAR or E_T_MVAR
 TypeHandle SigPointer::GetTypeVariable(CorElementType et,
                                        const SigTypeContext *pTypeContext)
 {
@@ -2040,10 +2040,10 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
 
     if (!pTypeContext
         ||
-        ((et == ELEMENT_TYPE_VAR) &&
+        (et == ELEMENT_TYPE_VAR &&
          (index >= pTypeContext->m_classInst.GetNumArgs()))
         ||
-        ((et == ELEMENT_TYPE_MVAR) &&
+        (et == ELEMENT_TYPE_MVAR &&
          (index >= pTypeContext->m_methodInst.GetNumArgs())))
     {
         LOG((LF_ALWAYS, LL_INFO1000, "GENERICS: Error: GetTypeVariable on out-of-range type variable\n"));

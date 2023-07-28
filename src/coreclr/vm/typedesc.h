@@ -103,9 +103,6 @@ public:
     // VAR, MVAR
     BOOL IsGenericVariable();
 
-    // CVAR, MCVAR
-    BOOL IsConstGenericVariable();
-
     // CTARG
     BOOL IsConstValue();
 
