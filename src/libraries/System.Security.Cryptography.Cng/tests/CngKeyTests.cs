@@ -5,11 +5,10 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
-    public static class CngTests
+    public static class CngKeyTests
     {
         [Theory]
         [MemberData(nameof(AllPublicProperties))]
@@ -27,7 +26,11 @@ namespace System.Security.Cryptography.Tests
             }
             catch
             {
-                throw new SkipException($"Property getter CngKey.{propertyName} threw an exception; skipping test.");
+                // Property getter threw an exception. It's nonsensical for us to query
+                // whether this same getter throws ObjectDisposedException once the object
+                // is disposed. So we'll just mark this test as success.
+
+                return;
             }
 
             // We've queried the property. Now dispose the object and query the property again.
