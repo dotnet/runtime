@@ -1163,7 +1163,7 @@ namespace System.Speech.Recognition
 
             private string DisplayDebugInfo()
             {
-                return $"'rule={_rule}";
+                return $"'rule = {_rule}";
             }
             internal Grammar _grammar;
             internal string _rule;
