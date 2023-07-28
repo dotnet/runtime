@@ -191,6 +191,83 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     }
                 }
                 if (!found) return;
+                if (method.DeclaringSyntaxReferences.IsEmpty) return;
+
+                int returnCount = 0;
+                foreach (SyntaxReference node in method.DeclaringSyntaxReferences.Where(n => n != null))
+                {
+                    foreach (ReturnStatementSyntax rs in node.GetSyntax(context.CancellationToken).DescendantNodes().OfType<ReturnStatementSyntax>())
+                    {
+                        if (rs.Expression == null) continue;
+                        if (rs.Expression is not LiteralExpressionSyntax les || les.Token.Value is not int) return;
+                        returnCount++;
+                    }
+                }
+
+                if (returnCount < 2) { return; }
+
+                int ifReturnCount = 0;
+                foreach (SyntaxReference node in method.DeclaringSyntaxReferences.Where(n => n != null))
+                {
+                    foreach (IfStatementSyntax ifs in node.GetSyntax(context.CancellationToken).DescendantNodes().OfType<IfStatementSyntax>())
+                    {
+                        if (ifs.Condition is BinaryExpressionSyntax bes &&
+                            (bes.Kind() == SyntaxKind.EqualsExpression ||
+                                bes.Kind() == SyntaxKind.NotEqualsExpression) &&
+                            ((bes.Left is LiteralExpressionSyntax lesLeft &&
+                                lesLeft.Token.Value is int iLeft &&
+                                iLeft == 100) ||
+                             (bes.Right is LiteralExpressionSyntax lesRight &&
+                                lesRight.Token.Value is int iRight &&
+                                iRight == 100)) &&
+                            ((ifs.Statement is ReturnStatementSyntax rfsIf &&
+                                rfsIf.Expression is LiteralExpressionSyntax lesIf &&
+                                lesIf.Token.Value is int) ||
+                             (ifs.Statement is BlockSyntax ifBlock &&
+                                ifBlock.Statements.Count == 1 &&
+                                ifBlock.Statements[0] is ReturnStatementSyntax) ||
+                             (ifs.Else?.Statement is ReturnStatementSyntax rfsElse &&
+                                rfsElse.Expression is LiteralExpressionSyntax lesElse &&
+                                lesElse.Token.Value is int) ||
+                             (ifs.Else?.Statement is BlockSyntax elseBlock &&
+                                elseBlock.Statements.Count == 1 &&
+                                elseBlock.Statements[0] is ReturnStatementSyntax)))
+                        {
+                            ifReturnCount++;
+                        }
+                    }
+                }
+
+                if (ifReturnCount < (returnCount - 1)) { return; }
+                context.ReportDiagnostic(Diagnostic.Create(Descriptors.XUWG1005, method.Locations[0]));
+            });
+
+        context.RegisterImplementationSourceOutput(
+            methodsInSource
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Where(data =>
+            {
+                var (_, configOptions) = data;
+                return configOptions.GlobalOptions.InMergedTestDirectory();
+            }),
+            static (context, data) =>
+            {
+                var (method, _) = data;
+
+                bool found = false;
+                foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
+                {
+                    switch (attr.AttributeClass?.ToDisplayString())
+                    {
+                        case "Xunit.ConditionalFactAttribute":
+                        case "Xunit.FactAttribute":
+                        case "Xunit.ConditionalTheoryAttribute":
+                        case "Xunit.TheoryAttribute":
+                            found = true;
+                            break;
+                    }
+                }
+                if (!found) return;
 
                 if (method.DeclaredAccessibility != Accessibility.Public)
                 {

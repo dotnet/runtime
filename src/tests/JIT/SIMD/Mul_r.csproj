@@ -5,6 +5,7 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize />
+    <NoWarn>$(NoWarn),XUW1005</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Mul.cs" />
