@@ -69,12 +69,22 @@ function getSingleAssetWithResolvedUrl(resources: ResourceList | undefined, beha
     mono_assert(keys.length == 1, `Expect to have one ${behavior} asset in resources`);
 
     const name = keys[0];
-    return {
+    const asset = {
         name,
         hash: resources![name],
         behavior,
         resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), behavior)
     };
+
+    const customSrc = invokeLoadBootResource(asset);
+    if (typeof (customSrc) === "string") {
+        asset.resolvedUrl = customSrc;
+    } else if (customSrc) {
+        // Since we must load this via a import, it's only valid to supply a URI (and not a Request, say)
+        throw new Error(`For a ${behavior} resource, custom loaders must supply a URI string.`);
+    }
+
+    return asset;
 }
 
 export function resolve_single_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
@@ -564,31 +574,19 @@ async function download_resource_with_cache(request: ResourceRequest): Promise<R
     return response;
 }
 
-const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
-    "resource": "assembly",
-    "assembly": "assembly",
-    "pdb": "pdb",
-    "icu": "globalization",
-    "vfs": "configuration",
-    "dotnetwasm": "dotnetwasm",
-};
-
 const credentialsIncludeAssetBehaviors: AssetBehaviors[] = ["vfs"]; // Previously only configuration
 
 function fetchResource(request: ResourceRequest): Promise<Response> {
     // Allow developers to override how the resource is loaded
     let url = request.resolvedUrl!;
     if (loaderHelpers.loadBootResource) {
-        const resourceType = monoToBlazorAssetTypeMap[request.behavior];
-        if (resourceType) {
-            const customLoadResult = loaderHelpers.loadBootResource(resourceType!, request.name, url, request.hash ?? "");
-            if (customLoadResult instanceof Promise) {
-                // They are supplying an entire custom response, so just use that
-                return customLoadResult;
-            } else if (typeof customLoadResult === "string") {
-                // They are supplying a custom URL, so use that with the default fetch behavior
-                url = customLoadResult;
-            }
+        const customLoadResult = invokeLoadBootResource(request);
+        if (customLoadResult instanceof Promise) {
+            // They are supplying an entire custom response, so just use that
+            return customLoadResult;
+        } else if (typeof customLoadResult === "string") {
+            // They are supplying a custom URL, so use that with the default fetch behavior
+            url = customLoadResult;
         }
     }
 
@@ -608,6 +606,39 @@ function fetchResource(request: ResourceRequest): Promise<Response> {
     }
 
     return loaderHelpers.fetch_like(url, fetchOptions);
+}
+
+const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
+    "resource": "assembly",
+    "assembly": "assembly",
+    "pdb": "pdb",
+    "icu": "globalization",
+    "vfs": "configuration",
+    "dotnetwasm": "dotnetwasm",
+    "js-module-native": "dotnetjs",
+    "js-module-runtime": "dotnetjs",
+    "js-module-threads": "dotnetjs"
+};
+
+function invokeLoadBootResource(request: ResourceRequest): string | Promise<Response> | null | undefined {
+    if (loaderHelpers.loadBootResource) {
+        const requestHash = request.hash ?? "";
+        const url = request.resolvedUrl!;
+
+        // Try to send with AssetBehaviors
+        let customLoadResult = loaderHelpers.loadBootResource(request.behavior, request.name, url, requestHash);
+        if (!customLoadResult) {
+            // If we don't get result, try to send with WebAssemblyBootResourceType
+            const resourceType = monoToBlazorAssetTypeMap[request.behavior];
+            if (resourceType) {
+                customLoadResult = loaderHelpers.loadBootResource(resourceType as AssetBehaviors, request.name, url, requestHash);
+            }
+        }
+
+        return customLoadResult;
+    }
+
+    return undefined;
 }
 
 export function cleanupAsset(asset: AssetEntryInternal) {

@@ -3,7 +3,7 @@
 
 import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
-import type { DotnetModuleConfig, MonoConfig } from "../types";
+import type { AssetBehaviors, DotnetModuleConfig, MonoConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
@@ -132,7 +132,7 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
 
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
-        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "") :
+        loaderHelpers.loadBootResource("manifest" as AssetBehaviors, "blazor.boot.json", defaultConfigSrc, "") :
         defaultLoadBootConfig(defaultConfigSrc);
 
     let loadConfigResponse: Response;

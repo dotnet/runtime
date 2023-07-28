@@ -145,7 +145,7 @@ export type ResourceList = { [name: string]: string | null | "" };
  * @param integrity The integrity string representing the expected content in the response.
  * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
  */
-export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
+export type LoadBootResourceCallback = (type: AssetBehaviors | "manifest", name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 
 export interface ResourceRequest {
     name: string, // the name of the asset, including extension.

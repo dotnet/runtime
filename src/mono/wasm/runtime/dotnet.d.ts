@@ -209,7 +209,7 @@ type ResourceList = {
  * @param integrity The integrity string representing the expected content in the response.
  * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
  */
-type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
+type LoadBootResourceCallback = (type: AssetBehaviors | "manifest", name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 interface ResourceRequest {
     name: string;
     behavior: AssetBehaviors;
@@ -396,7 +396,6 @@ type ModuleAPI = {
     exit: (code: number, reason?: any) => void;
 };
 type CreateDotnetRuntimeType = (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)) => Promise<RuntimeAPI>;
-type WebAssemblyBootResourceType = "assembly" | "pdb" | "dotnetjs" | "dotnetwasm" | "globalization" | "manifest" | "configuration";
 
 interface IDisposable {
     dispose(): void;
