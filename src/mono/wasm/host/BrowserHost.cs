@@ -92,7 +92,7 @@ internal sealed class BrowserHost
             Console.WriteLine($"Debug at url: {BuildUrl(serverURLs.Http, serverURLs.DebugPath, string.Empty)}");
 
             if (serverURLs.Https != null)
-                Console.WriteLine($"Debugger at url: {BuildUrl(serverURLs.Https, serverURLs.DebugPath, string.Empty)}");
+                Console.WriteLine($"Debug at url: {BuildUrl(serverURLs.Https, serverURLs.DebugPath, string.Empty)}");
         }
 
         await host.WaitForShutdownAsync(token);
