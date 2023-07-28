@@ -10754,9 +10754,22 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
   //*******************************************************************************************
 
-HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
+HCIMPL2_RAW(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
+GCX_COOP_THREAD_EXISTS(GET_THREAD());
+HCIMPL_PROLOG(ProfileEnter)
 {
     FCALL_CONTRACT;
+
+    if (GetThreadNULLOk() == NULL)
+    {
+        Thread *pThread = SetupThreadNoThrow();
+        if (pThread == NULL)
+        {
+            return;
+        }
+    }
+
+    GCX_COOP();
 
 #ifdef PROFILING_SUPPORTED
 
@@ -10924,7 +10937,9 @@ LExit:
 }
 HCIMPLEND
 
-HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
+HCIMPL2_RAW(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
+GCX_COOP();
+HCIMPL_PROLOG(ProfileLeave)
 {
     FCALL_CONTRACT;
 

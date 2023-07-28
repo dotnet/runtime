@@ -1805,9 +1805,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_WASM
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
 #elif defined(TARGET_ARM64)
-		if (COMPILE_LLVM (cfg))
-			return NULL;
-
 		MonoInst* result_ins = NULL;
 		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
@@ -1819,27 +1816,22 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		and_res_vec->sreg2 = msb_mask_vec->dreg;
 
 		MonoInst* msb_shift_vec = emit_msb_shift_vector_constant (cfg, arg_class, arg0_type);
-		MonoInst* shift_res_vec = emit_simd_ins (cfg, arg_class, OP_ARM64_USHL, and_res_vec->dreg, msb_shift_vec->dreg);
+		
+		MonoInst* shift_res_vec = emit_simd_ins (cfg, arg_class, OP_XOP_OVR_X_X_X, and_res_vec->dreg, msb_shift_vec->dreg);
+		shift_res_vec->inst_c0 = INTRINS_AARCH64_ADV_SIMD_USHL;
 		shift_res_vec->inst_c1 = arg0_type;
 
 		if (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1) {
-			// Always perform usigned operations as vector sum and extract operations could sign-extend the result into the GP register
+			// Always perform unsigned operations as vector sum and extract operations could sign-extend the result into the GP register
 			// making the final result invalid. This is not needed for wider type as the maximum sum of extracted MSB cannot be larger than 8bits
 			arg0_type = MONO_TYPE_U1;
 
-			// In order to sum high and low 64bits of the shifted vector separatly, we use a zeroed vector and the extract operation
-			MonoInst* zero_vec = emit_xzero(cfg, arg_class);
-
-			MonoInst* ext_low_vec = emit_simd_ins (cfg, arg_class, OP_ARM64_EXT_IMM, zero_vec->dreg, shift_res_vec->dreg);
-			ext_low_vec->inst_c0 = 8;
-			ext_low_vec->inst_c1 = arg0_type;
+			MonoInst* ext_low_vec = emit_simd_ins_for_sig (cfg, arg_class, OP_XLOWER, 8, arg0_type, fsig, &shift_res_vec);
 			MonoInst* sum_low_vec = emit_sum_vector (cfg, fsig->params [0], arg0_type, ext_low_vec);
-
-			MonoInst* ext_high_vec = emit_simd_ins (cfg, arg_class, OP_ARM64_EXT_IMM, shift_res_vec->dreg, zero_vec->dreg);
-			ext_high_vec->inst_c0 = 8;
-			ext_high_vec->inst_c1 = arg0_type;
-			MonoInst* sum_high_vec = emit_sum_vector (cfg, fsig->params [0], arg0_type, ext_high_vec);
-
+			
+			MonoInst* ext_high_vec = emit_simd_ins_for_sig (cfg, arg_class, OP_XUPPER, 8, arg0_type, fsig, &shift_res_vec);
+			MonoInst* sum_high_vec = emit_sum_vector (cfg, fsig->params [0], arg0_type, ext_high_vec);			
+			
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, sum_high_vec->dreg, sum_high_vec->dreg, 8);
 			EMIT_NEW_BIALU (cfg, result_ins, OP_IOR, sum_high_vec->dreg, sum_high_vec->dreg, sum_low_vec->dreg);
 		} else {

@@ -196,7 +196,6 @@ namespace System.Collections.Frozen.Tests
 
         [Theory]
         [MemberData(nameof(LookupItems_AllItemsFoundAsExpected_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/88628", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void LookupItems_AllItemsFoundAsExpected(int size, IEqualityComparer<TKey> comparer, bool specifySameComparer)
         {
             Dictionary<TKey, TValue> original =

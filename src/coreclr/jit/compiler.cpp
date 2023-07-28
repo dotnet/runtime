@@ -106,25 +106,25 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 #endif // which host OS
 
 const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) sz,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) al,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) st,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) jitType,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) jitType,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -3038,6 +3038,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (opts.disAsm)
 #endif
     {
+        if (JitConfig.JitDisasmTesting())
+        {
+            opts.disTesting = true;
+        }
         if (JitConfig.JitDisasmWithAlignmentBoundaries())
         {
             opts.disAlignment = true;
@@ -3375,9 +3379,32 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
     }
+#endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    rbmAllMask         = RBM_ALLMASK_INIT;
+    rbmMskCalleeTrash  = RBM_MSK_CALLEE_TRASH_INIT;
+    cntCalleeTrashMask = CNT_CALLEE_TRASH_MASK_INIT;
+
+    if (canUseEvexEncoding())
+    {
+        rbmAllMask |= RBM_ALLMASK_EVEX;
+        rbmMskCalleeTrash |= RBM_MSK_CALLEE_TRASH_EVEX;
+        cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK_EVEX;
+    }
+
+    // Make sure we copy the register info and initialize the
+    // trash regs after the underlying fields are initialized
+
+    const regMaskTP vtCalleeTrashRegs[TYP_COUNT]{
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
+#include "typelist.h"
+#undef DEF_TP
+    };
+    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
 
     codeGen->CopyRegisterInfo();
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 }
 
 #ifdef DEBUG
@@ -5414,6 +5441,9 @@ void Compiler::SplitTreesRandomly()
     CLRRandom rng;
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
+    // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
+    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+
     for (BasicBlock* block : Blocks())
     {
         for (Statement* stmt : block->NonPhiStatements())
@@ -5457,6 +5487,12 @@ void Compiler::SplitTreesRandomly()
 
                 splitTree--;
             }
+
+            if (lvaCount > maxLvaCount)
+            {
+                JITDUMP("Created too many locals (at %u) -- stopping\n", lvaCount);
+                return;
+            }
         }
     }
 #endif
@@ -5467,6 +5503,9 @@ void Compiler::SplitTreesRandomly()
 //
 void Compiler::SplitTreesRemoveCommas()
 {
+    // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
+    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+
     for (BasicBlock* block : Blocks())
     {
         Statement* stmt = block->FirstNonPhiDef();
@@ -5512,6 +5551,12 @@ void Compiler::SplitTreesRemoveCommas()
 
                 fgMorphStmtBlockOps(block, stmt);
                 gtUpdateStmtSideEffects(stmt);
+
+                if (lvaCount > maxLvaCount)
+                {
+                    JITDUMP("Created too many locals (at %u) -- stopping\n", lvaCount);
+                    return;
+                }
 
                 // Morphing block ops can introduce commas (and the original
                 // statement can also have more commas left). Proceed from the

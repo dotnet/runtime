@@ -79,6 +79,7 @@ internal static class ThrowHelper
             if (status == QUIC_STATUS_INVALID_ADDRESS) return new SocketException((int)SocketError.AddressNotAvailable);
             if (status == QUIC_STATUS_ADDRESS_IN_USE) return new SocketException((int)SocketError.AddressAlreadyInUse);
             if (status == QUIC_STATUS_UNREACHABLE) return new SocketException((int)SocketError.HostUnreachable);
+            if (status == QUIC_STATUS_ADDRESS_NOT_AVAILABLE) return new SocketException((int)SocketError.AddressFamilyNotSupported);
 
             //
             // TLS and certificate errors throw AuthenticationException to match SslStream
