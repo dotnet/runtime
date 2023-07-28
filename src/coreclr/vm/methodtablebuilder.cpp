@@ -10784,7 +10784,7 @@ MethodTableBuilder::SetupMethodTable2(
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
     // Mark the type as restored to avoid avoid asserts. Note that this also enables IBC logging.
-    pMT->GetWriteableDataForWrite_NoLogging()->SetIsRestoredForBuildMethodTable();
+    pMT->GetWriteableDataForWrite()->SetIsRestoredForBuildMethodTable();
 
 #ifdef _DEBUG
     // Store status if we tried to inject duplicate interfaces

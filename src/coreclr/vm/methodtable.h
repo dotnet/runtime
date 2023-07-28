@@ -879,7 +879,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !(GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
+        return !(GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
     }
 
     //-------------------------------------------------------------------
@@ -921,7 +921,7 @@ public:
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
     }
 
     // If canCompare is true, this method ensure an atomic operation for setting
@@ -932,7 +932,7 @@ public:
         if (canCompare)
         {
             // Set checked and canCompare flags in one interlocked operation.
-            InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
+            InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags,
                 MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
         }
         else
@@ -944,13 +944,13 @@ public:
     inline BOOL HasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         WRAPPER_NO_CONTRACT;
-        InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetIsDependenciesLoaded()
@@ -1793,7 +1793,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_pParentMethodTable = pParentMethodTable;
 #ifdef _DEBUG
-        GetWriteableDataForWrite_NoLogging()->SetParentMethodTablePointerValid();
+        GetWriteableDataForWrite()->SetParentMethodTablePointerValid();
 #endif
     }
 #endif // !DACCESS_COMPILE
@@ -2735,22 +2735,10 @@ public:
     inline PTR_Const_MethodTableWriteableData GetWriteableData() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetWriteableData_NoLogging();
-    }
-
-    inline PTR_Const_MethodTableWriteableData GetWriteableData_NoLogging() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
         return MethodTable::m_pWriteableData;
     }
 
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetWriteableDataForWrite_NoLogging();
-    }
-
-    inline PTR_MethodTableWriteableData GetWriteableDataForWrite_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return MethodTable::m_pWriteableData;

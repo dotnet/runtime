@@ -1366,7 +1366,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
-    const RUNTIMETYPEHANDLE handle = GetWriteableData_NoLogging()->m_hExposedClassObject;
+    const RUNTIMETYPEHANDLE handle = GetWriteableData()->m_hExposedClassObject;
 
     OBJECTREF retVal;
     if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&

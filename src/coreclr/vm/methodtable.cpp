@@ -7381,7 +7381,7 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
 
     // workaround: Type loader accesses partially initialized datastructures that interferes with IBC logging.
     // Once type loader is fixed to do not access partially  initialized datastructures, this can go away.
-    if (!GetWriteableData_NoLogging()->IsParentMethodTablePointerValid())
+    if (!GetWriteableData()->IsParentMethodTablePointerValid())
         return FALSE;
 
     return TRUE;
