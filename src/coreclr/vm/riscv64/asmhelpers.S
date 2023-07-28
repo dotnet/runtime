@@ -954,3 +954,12 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+// ------------------------------------------------------------------
+// size_t GetThreadStaticsVariableOffset()
+
+// Load offset of native thread local variable `t_ThreadStatics` in TCB and return it in `a0` register.
+LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
+    la.tls.ie   a0, t_ThreadStatics
+    EPILOG_RETURN
+LEAF_END GetThreadStaticsVariableOffset, _TEXT
