@@ -3588,7 +3588,7 @@ void MethodContext::dmpGetTlsRootInfo(DWORD key, const Agnostic_CORINFO_CONST_LO
 void MethodContext::repGetTlsRootInfo(CORINFO_CONST_LOOKUP* result)
 {
     DWORD key   = 0;
-    Agnostic_CORINFO_CONST_LOOKUP value = LookupByKeyOrMiss(GetTlsRootInfo, key, ": key 0");
+    Agnostic_CORINFO_CONST_LOOKUP value = LookupByKeyOrMiss(GetTlsRootInfo, key, ": key %d", 0);
 
     DEBUG_REP(dmpGetTlsRootInfo(key, value));
 
@@ -3613,7 +3613,7 @@ void MethodContext::dmpGetTlsIndexInfo(DWORD key, const Agnostic_CORINFO_CONST_L
 void MethodContext::repGetTlsIndexInfo(CORINFO_CONST_LOOKUP* result)
 {
     DWORD                         key   = 0;
-    Agnostic_CORINFO_CONST_LOOKUP value = LookupByKeyOrMiss(GetTlsIndexInfo, key, ": key 0");
+    Agnostic_CORINFO_CONST_LOOKUP value = LookupByKeyOrMiss(GetTlsIndexInfo, key, ": key %d", 0);
 
     DEBUG_REP(dmpGetTlsIndexInfo(key, value));
 
@@ -3639,7 +3639,7 @@ void MethodContext::dmpGetThreadStaticBaseSlowInfo(DWORD key, const Agnostic_COR
 void MethodContext::repGetThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* result)
 {
     DWORD                         key   = 0;
-    Agnostic_CORINFO_CONST_LOOKUP value = LookupByKeyOrMiss(GetThreadStaticBaseSlowInfo, key, ": key 0");
+    Agnostic_CORINFO_CONST_LOOKUP value = LookupByKeyOrMiss(GetThreadStaticBaseSlowInfo, key, ": key %d", 0);
 
     DEBUG_REP(dmpGetThreadStaticBaseSlowInfo(key, value));
 

@@ -585,7 +585,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         lvaTable[tlsLclNum].lvType = TYP_I_IMPL;
 
         // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
-        uint32_t offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
+        uint32_t offsetOfThreadLocalStoragePointer = 0;
+#ifdef _MSC_VER
+        offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
+#endif
         tlsValue = gtNewIconHandleNode(offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
