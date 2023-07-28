@@ -214,10 +214,9 @@ namespace System.Reflection
                 if (type is null && _ignoreCase && !_extensibleParser)
                 {
                     // Return the first name that matches. Which one gets returned on a multiple match is an implementation detail.
-                    string lowerName = nestedTypeNames[i].ToLowerInvariant();
                     foreach (Type nt in declaringType.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public))
                     {
-                        if (nt.Name.ToLowerInvariant() == lowerName)
+                        if (nt.Name.Equals(nestedTypeNames[i], StringComparison.InvariantCultureIgnoreCase))
                         {
                             type = nt;
                             break;
