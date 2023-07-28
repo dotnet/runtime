@@ -510,7 +510,7 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(IsMergedTestRunnerAssembly)' == 'true')">
+  <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(InMergedTestDirectory)' == 'true' or '$(IsMergedTestRunnerAssembly)' == 'true')">
     <ReferenceXUnitWrapperGenerator Condition="'$(ReferenceXUnitWrapperGenerator)' == ''">true</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
 
