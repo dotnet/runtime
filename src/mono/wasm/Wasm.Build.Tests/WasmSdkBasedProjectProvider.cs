@@ -21,6 +21,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptionsBase assertOptions)
         => new SortedDictionary<string, bool>()
             {
+               { "dotnet.js", false },
+               { "dotnet.js.map", false },
                { "dotnet.native.js", true },
                { "dotnet.native.js.symbols", false },
                { "dotnet.native.wasm", false },
