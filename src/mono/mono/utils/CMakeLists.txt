@@ -258,24 +258,20 @@ if(ENABLE_DTRACE)
     set(utils_sources "${utils_sources};${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h;../utils/dtrace.h")
 endif()
 
-list(APPEND library_configs_to_build "default")
 if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
-    list(APPEND library_configs_to_build "shared")
-endif()
-
-foreach(library_config IN LISTS library_configs_to_build)
-    set(library_name_suffix "")
-    if(NOT library_config STREQUAL "default")
-        set(library_name_suffix _${library_config})
-    endif()
-    set(utils_objects_library_name utils_objects${library_name_suffix})
-
-    add_library(${utils_objects_library_name} OBJECT ${utils_sources})
-    target_link_libraries(${utils_objects_library_name} PRIVATE monoapi eglib_api)
-    if(NOT HOST_WIN32 OR (HOST_WIN32 AND ${library_config} STREQUAL "shared"))
-        target_compile_definitions(${utils_objects_library_name} PRIVATE -DMONO_DLL_EXPORT)
-    endif()
-    target_include_directories(${utils_objects_library_name} PRIVATE ${PROJECT_BINARY_DIR}/../..
+    add_library(utils_objects_shared OBJECT ${utils_sources})
+    target_link_libraries(utils_objects_shared PRIVATE monoapi eglib_api)
+    target_compile_definitions(utils_objects_shared PRIVATE -DMONO_DLL_EXPORT)
+    target_include_directories(utils_objects_shared PRIVATE ${PROJECT_BINARY_DIR}/../..
         ${PROJECT_SOURCE_DIR}/../..
         ${PROJECT_SOURCE_DIR}/..)
-endforeach()
+endif()
+
+add_library(utils_objects OBJECT ${utils_sources})
+target_link_libraries(utils_objects PRIVATE monoapi eglib_api)
+if(NOT HOST_WIN32)
+    target_compile_definitions(utils_objects PRIVATE -DMONO_DLL_EXPORT)
+endif()
+target_include_directories(utils_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/..)

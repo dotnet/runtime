@@ -202,30 +202,28 @@ endif()
 
 set(metadata_sources "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_gc_sources};${ilgen_sources}")
 
-list(APPEND library_configs_to_build "default")
 if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
-    list(APPEND library_configs_to_build "shared")
-endif()
-
-foreach(library_config IN LISTS library_configs_to_build)
-    set(library_name_suffix "")
-    if (NOT library_config STREQUAL "default")
-        set (library_name_suffix _${library_config})
-    endif()
-    set(utils_objects_library_name utils_objects${library_name_suffix})
-    set(sgen_objects_library_name sgen_objects${library_name_suffix})
-    set(metadata_objects_library_name metadata_objects${library_name_suffix})
-
-    add_library(${metadata_objects_library_name} OBJECT ${metadata_sources})
-    target_compile_definitions(${metadata_objects_library_name} PRIVATE ${metadata_compile_definitions})
-    target_link_libraries(${metadata_objects_library_name} PRIVATE monoapi eglib_api ${utils_objects_library_name})
+    add_library(metadata_objects_shared OBJECT ${metadata_sources})
+    target_compile_definitions(metadata_objects_shared PRIVATE ${metadata_compile_definitions})
+    target_link_libraries(metadata_objects_shared PRIVATE monoapi eglib_api utils_objects_shared)
     # note: metadata_objects is an object library, so this doesn't force linking with sgen,
     # it just adds the relevant include directories - which we need even with Boehm
-    target_link_libraries(${metadata_objects_library_name} PRIVATE ${sgen_objects_library_name})
-    if(NOT HOST_WIN32 OR (HOST_WIN32 AND ${library_config} STREQUAL "shared"))
-        target_compile_definitions(${metadata_objects_library_name} PRIVATE -DMONO_DLL_EXPORT)
-    endif()
-    target_include_directories(${metadata_objects_library_name} PRIVATE ${PROJECT_BINARY_DIR}/../..
+    target_link_libraries(metadata_objects_shared PRIVATE sgen_objects_shared)
+    target_compile_definitions(metadata_objects_shared PRIVATE -DMONO_DLL_EXPORT)
+    target_include_directories(metadata_objects_shared PRIVATE ${PROJECT_BINARY_DIR}/../..
         ${PROJECT_SOURCE_DIR}/../..
         ${PROJECT_SOURCE_DIR}/..)
-endforeach()
+endif()
+
+add_library(metadata_objects OBJECT ${metadata_sources})
+target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitions})
+target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects)
+# note: metadata_objects is an object library, so this doesn't force linking with sgen,
+# it just adds the relevant include directories - which we need even with Boehm
+target_link_libraries(metadata_objects PRIVATE sgen_objects)
+if(NOT HOST_WIN32)
+    target_compile_definitions(metadata_objects PRIVATE -DMONO_DLL_EXPORT)
+endif()
+target_include_directories(metadata_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/..)
