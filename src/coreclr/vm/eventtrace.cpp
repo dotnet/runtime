@@ -3457,7 +3457,7 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
             auto pModule = method->GetModule();
             bool bIsDynamicMethod = method->IsDynamicMethod();
             BOOL bIsGenericMethod = FALSE;
-            if(method->GetMethodTable_NoLogging())
+            if(method->GetMethodTable())
                 bIsGenericMethod = method->HasClassOrMethodInstantiation_NoLogging();
 
             // Use MethodDesc if Dynamic or Generic methods
@@ -3684,7 +3684,7 @@ VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
                 for (; iter.IsValid(); iter.Next())
                 {
                     MethodDesc *pMD = (MethodDesc *)(iter.GetMethodDesc());
-                    if(pMD && pMD->GetMethodTable_NoLogging() == pMethodTable)
+                    if(pMD && pMD->GetMethodTable() == pMethodTable)
                         ETW::MethodLog::SendMethodEvent(pMD, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
                 }
             }
@@ -4463,7 +4463,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
 
             BulkTypeEventLogger typeLogger;
 
-            ULONGLONG typeID = (ULONGLONG)pMethodDesc->GetMethodTable_NoLogging();
+            ULONGLONG typeID = (ULONGLONG)pMethodDesc->GetMethodTable();
             ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, typeID, ETW::TypeSystemLog::kTypeLogBehaviorAlwaysLog);
             ULONGLONG loaderModuleID = (ULONGLONG)pMethodDesc->GetLoaderModule();
 
@@ -4551,7 +4551,7 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
 
         bool bIsDynamicMethod = pMethodDesc->IsDynamicMethod();
         BOOL bIsGenericMethod = FALSE;
-        if(pMethodDesc->GetMethodTable_NoLogging())
+        if(pMethodDesc->GetMethodTable())
             bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation_NoLogging();
 
         ullModuleID = (ULONGLONG)(TADDR) pModule;
@@ -4649,7 +4649,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     bIsDynamicMethod = (BOOL)pMethodDesc->IsDynamicMethod();
     bHasSharedGenericCode = pMethodDesc->IsSharedByGenericInstantiations();
 
-    if(pMethodDesc->GetMethodTable_NoLogging())
+    if(pMethodDesc->GetMethodTable())
         bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation_NoLogging();
 
     NativeCodeVersionId nativeCodeId = 0;

@@ -1210,7 +1210,7 @@ BOOL ZapSig::EncodeMethod(
     }
     CONTRACTL_END;
 
-    TypeHandle ownerType = pMethod->GetMethodTable_NoLogging();
+    TypeHandle ownerType = pMethod->GetMethodTable();
 
     ZapSig::ExternalTokens externalTokens = ZapSig::NormalTokens;
     if (pInfoModule == NULL)

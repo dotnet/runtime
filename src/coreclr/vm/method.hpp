@@ -467,7 +467,7 @@ public:
     inline BOOL HasClassInstantiation_NoLogging() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetMethodTable_NoLogging()->HasInstantiation();
+        return GetMethodTable()->HasInstantiation();
     }
 
     // Return the instantiation for an instantiated generic method
@@ -980,14 +980,13 @@ public:
     inline EEClass* GetClass()
     {
         WRAPPER_NO_CONTRACT;
-        MethodTable *pMT = GetMethodTable_NoLogging();
+        MethodTable *pMT = GetMethodTable();
         EEClass *pClass = pMT->GetClass_NoLogging();
         PREFIX_ASSUME(pClass != NULL);
         return pClass;
     }
 
     inline PTR_MethodTable GetMethodTable() const;
-    inline PTR_MethodTable GetMethodTable_NoLogging() const;
 
     inline DPTR(PTR_MethodTable) GetMethodTablePtr() const;
 
@@ -3423,20 +3422,13 @@ private:
 
 };
 
-inline PTR_MethodTable MethodDesc::GetMethodTable_NoLogging() const
+inline PTR_MethodTable MethodDesc::GetMethodTable() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     MethodDescChunk *pChunk = GetMethodDescChunk();
     PREFIX_ASSUME(pChunk != NULL);
     return pChunk->GetMethodTable();
-}
-
-inline PTR_MethodTable MethodDesc::GetMethodTable() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return GetMethodTable_NoLogging();
 }
 
 inline DPTR(PTR_MethodTable) MethodDesc::GetMethodTablePtr() const

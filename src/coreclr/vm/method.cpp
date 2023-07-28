@@ -499,7 +499,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
     }
 
     _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
-    return GetMethodTable_NoLogging()->GetSlot(GetSlot());
+    return GetMethodTable()->GetSlot(GetSlot());
 }
 
 PTR_PCODE MethodDesc::GetAddrOfSlot()
