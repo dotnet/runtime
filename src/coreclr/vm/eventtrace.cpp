@@ -3458,7 +3458,7 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
             bool bIsDynamicMethod = method->IsDynamicMethod();
             BOOL bIsGenericMethod = FALSE;
             if(method->GetMethodTable())
-                bIsGenericMethod = method->HasClassOrMethodInstantiation_NoLogging();
+                bIsGenericMethod = method->HasClassOrMethodInstantiation();
 
             // Use MethodDesc if Dynamic or Generic methods
             if( bIsDynamicMethod || bIsGenericMethod)
@@ -4552,7 +4552,7 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
         bool bIsDynamicMethod = pMethodDesc->IsDynamicMethod();
         BOOL bIsGenericMethod = FALSE;
         if(pMethodDesc->GetMethodTable())
-            bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation_NoLogging();
+            bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation();
 
         ullModuleID = (ULONGLONG)(TADDR) pModule;
         ullMethodIdentifier = (ULONGLONG)pMethodDesc;
@@ -4650,7 +4650,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     bHasSharedGenericCode = pMethodDesc->IsSharedByGenericInstantiations();
 
     if(pMethodDesc->GetMethodTable())
-        bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation_NoLogging();
+        bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation();
 
     NativeCodeVersionId nativeCodeId = 0;
     ulMethodFlags = ulMethodFlags |
