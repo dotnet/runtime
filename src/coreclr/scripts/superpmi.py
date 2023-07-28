@@ -650,7 +650,10 @@ class SuperPMICollect:
         self.collection_shim_path = os.path.join(self.core_root, self.collection_shim_name)
 
         jit_name = get_jit_name(coreclr_args)
+        self.jit_path = os.path.join(coreclr_args.core_root, jit_name)
         if coreclr_args.crossgen2:
+            # There are issues when running SuperPMI and crossgen2 when using the same JIT binary. 
+            # Therefore, we produce a copy of the JIT binary for SuperPMI to use. 
             jit_name_ext = os.path.splitext(jit_name)[1]
             jit_name_without_ext = os.path.splitext(jit_name)[0]
             self.superpmi_jit_path = os.path.join(coreclr_args.core_root, jit_name_without_ext + "_superpmi." + jit_name_ext)
