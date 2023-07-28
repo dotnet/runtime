@@ -14,6 +14,11 @@
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
+    <SkipInstallerBuild>true</SkipInstallerBuild>
+    <SkipArchivesBuild>true</SkipArchivesBuild>
+  </PropertyGroup>
+
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
   <Import Project="ReadyToRun.targets" />
 </Project>

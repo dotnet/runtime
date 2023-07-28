@@ -37,6 +37,8 @@ namespace Microsoft.Android.Build.Ndk
             { "x64", new AndroidArch("x86_64", "x86_64", "x86_64-linux-android") }
         };
 
+        private string armClangPrefix = "armv7a";
+
         public NdkTools(string netArch, string hostOS, string apiLevel)
         {
             string cmdExt = Utils.IsWindows() ? ".cmd" : "";
@@ -53,7 +55,16 @@ namespace Microsoft.Android.Build.Ndk
             asPrefixPath = Path.Combine(toolRootPath, Triple, "bin");
             toolPrefixPath = Path.Combine(toolRootPath, "bin");
 
-            clangPath = Path.Combine(ToolPrefixPath, $"{Triple}{apiLevel}-clang{cmdExt}");
+            // arm clang prefix is not the triple, but armv7a instead
+            if (netArch == "arm")
+            {
+                clangPath = Path.Combine(ToolPrefixPath, $"{armClangPrefix}{apiLevel}-clang{cmdExt}");
+            }
+            else
+            {
+                clangPath = Path.Combine(ToolPrefixPath, $"{Triple}{apiLevel}-clang{cmdExt}");
+            }
+
             ldPath = toolPrefixPath;
             ldName = "ld";
         }

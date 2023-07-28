@@ -667,8 +667,14 @@ namespace Microsoft.Extensions
             public int MyInt { get; }
         }
 
+        public interface IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
         [TypeConverter(typeof(GeolocationTypeConverter))]
-        public struct Geolocation : IEquatable<Geolocation>, IParsable<Geolocation>
+        public struct Geolocation : IGeolocation
         {
             public static readonly Geolocation Zero = new(0, 0);
 
@@ -684,36 +690,24 @@ namespace Microsoft.Extensions
 
             private sealed class GeolocationTypeConverter : TypeConverter
             {
-                public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
-                {
-                    if (sourceType == typeof(string) || sourceType == typeof(Geolocation))
-                    {
-                        return true;
-                    }
+                public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+                    throw new NotImplementedException();
 
-                    return base.CanConvertFrom(context, sourceType);
-                }
-
-                public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
-                {
-                    if (value is string s)
-                    {
-                        return Parse(s, culture);
-                    }
-                    else if (value is Geolocation geolocation)
-                    {
-                        return geolocation;
-                    }
-
-                    return base.ConvertFrom(context, culture, value);
-                }
+                public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                    throw new NotImplementedException();
             }
+        }
 
-            public bool Equals(Geolocation other) => Latitude == other.Latitude && Longitude == other.Longitude;
+        public sealed class GeolocationClass : IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
 
-            public static Geolocation Parse(string s, IFormatProvider? provider) => throw new NotImplementedException();
-
-            public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Geolocation result) => throw new NotImplementedException();
+        public sealed record GeolocationRecord : IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
         }
 
         public class GeolocationWrapper

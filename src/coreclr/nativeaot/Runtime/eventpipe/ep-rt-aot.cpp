@@ -17,16 +17,9 @@
 #include <unistd.h>
 #endif
 
-// The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
-// class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
-// implemented in some manner that doesn't rely on the Thread class.
+#include <minipal/random.h>
 
 #include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "holder.h"
-#include "SpinLock.h"
 
 #ifndef DIRECTORY_SEPARATOR_CHAR
 #ifdef TARGET_UNIX
@@ -34,14 +27,6 @@
 #else // TARGET_UNIX
 #define DIRECTORY_SEPARATOR_CHAR '\\'
 #endif // TARGET_UNIX
-#endif
-
-#ifdef TARGET_UNIX
-// Per module (1 for NativeAOT), key that will be used to implement TLS in Unix
-pthread_key_t eventpipe_tls_key;
-__thread EventPipeThreadHolder* eventpipe_tls_instance;
-#else
-thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHolderTLS;
 #endif
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
@@ -181,6 +166,46 @@ ep_rt_aot_diagnostics_command_line_get (void)
 #endif
 }
 
+namespace
+{
+    #ifdef TARGET_UNIX
+    __thread EventPipeThreadHolder* eventpipe_tls_instance;
+    #else
+    thread_local EventPipeThreadHolder* eventpipe_tls_instance;
+    #endif
+
+    void free_thread_holder ()
+    {
+        EventPipeThreadHolder *thread_holder = eventpipe_tls_instance;
+        if (thread_holder != NULL) {
+            thread_holder_free_func (thread_holder);
+            eventpipe_tls_instance = NULL;
+        }
+    }
+}
+
+EventPipeThread* ep_rt_aot_thread_get (void)
+{
+    EventPipeThreadHolder *thread_holder = eventpipe_tls_instance;
+    return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
+}
+
+EventPipeThread* ep_rt_aot_thread_get_or_create (void)
+{
+    EventPipeThread *thread = ep_rt_thread_get ();
+    if (thread != NULL)
+        return thread;
+
+    eventpipe_tls_instance = thread_holder_alloc_func ();
+    return ep_thread_holder_get_thread (eventpipe_tls_instance);
+}
+
+void
+ep_rt_aot_thread_exited (void)
+{
+    free_thread_holder ();
+}
+
 uint32_t
 ep_rt_aot_atomic_inc_uint32_t (volatile uint32_t *value)
 {
@@ -214,8 +239,6 @@ ep_rt_aot_atomic_inc_int64_t (volatile int64_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Consider replacing with a new PalInterlockedIncrement64 service
     int64_t currentValue;
     do {
         currentValue = *value;
@@ -229,8 +252,6 @@ int64_t
 ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value) { 
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Consider replacing with a new PalInterlockedDecrement64 service
     int64_t currentValue;
     do {
         currentValue = *value;
@@ -343,8 +364,7 @@ ep_rt_aot_thread_create (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (thread_func != NULL);
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Fill in the outgoing id if any callers ever need it
+    // Note that none of the callers examine the return id in any way
     if (id)
         *reinterpret_cast<DWORD*>(id) = 0xffffffff;
 
@@ -679,17 +699,6 @@ ep_rt_aot_volatile_store_ptr_without_barrier (
     VolatileStoreWithoutBarrier<void *> ((void **)ptr, value);
 }
 
-void unix_tls_callback_fn(void *value) 
-{
-    if (value) {
-        // we need to do the unallocation here
-        EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);    
-        // @TODO - inline
-        thread_holder_free_func (thread_holder_old);
-        value = NULL;
-    }
-}
-
 void ep_rt_aot_init (void)
 {
     extern ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
@@ -697,11 +706,6 @@ void ep_rt_aot_init (void)
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
     _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
-
-    // Initialize the pthread key used for TLS in Unix
-    #ifdef TARGET_UNIX
-    pthread_key_create(&eventpipe_tls_key, unix_tls_callback_fn);
-    #endif
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)
@@ -781,6 +785,47 @@ void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
         dn_vector_ptr_push_back (env_array, ep_rt_utf8_to_utf16le_string (*next, -1));
 #endif
 }
+
+void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_len)
+{
+    // We call CoCreateGuid for windows, and use a random generator for non-windows
+    STATIC_CONTRACT_NOTHROW;
+    EP_ASSERT (activity_id != NULL);
+    EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
+#ifdef HOST_WIN32
+    CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
+#else
+    if(minipal_get_cryptographically_secure_random_bytes(activity_id, activity_id_len)==-1)
+    {
+        *activity_id=0;
+        return;
+    }
+
+    const uint16_t version_mask = 0xF000;
+    const uint16_t random_guid_version = 0x4000;
+    const uint8_t clock_seq_hi_and_reserved_mask = 0xC0;
+    const uint8_t clock_seq_hi_and_reserved_value = 0x80;
+
+    // Modify bits indicating the type of the GUID
+    uint8_t *activity_id_c = activity_id + sizeof (uint32_t) + sizeof (uint16_t);
+    uint8_t *activity_id_d = activity_id + sizeof (uint32_t) + sizeof (uint16_t) + sizeof (uint16_t);
+
+    uint16_t c;
+    memcpy (&c, activity_id_c, sizeof (c));
+
+    uint8_t d;
+    memcpy (&d, activity_id_d, sizeof (d));
+
+    // time_hi_and_version
+    c = ((c & ~version_mask) | random_guid_version);
+    // clock_seq_hi_and_reserved
+    d = ((d & ~clock_seq_hi_and_reserved_mask) | clock_seq_hi_and_reserved_value);
+
+    memcpy (activity_id_c, &c, sizeof (c));
+    memcpy (activity_id_d, &d, sizeof (d));
+#endif
+}
+
 
 #ifdef EP_CHECKED_BUILD
 

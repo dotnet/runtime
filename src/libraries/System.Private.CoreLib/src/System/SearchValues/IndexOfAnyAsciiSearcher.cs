@@ -67,8 +67,7 @@ namespace System.Buffers
 
                 if (value > 127)
                 {
-                    // The values were modified concurrent with the call to SearchValues.Create
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+                    continue;
                 }
 
                 lookupLocal.Set(value);

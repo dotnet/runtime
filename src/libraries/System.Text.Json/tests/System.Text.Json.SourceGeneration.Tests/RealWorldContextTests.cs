@@ -251,10 +251,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterProperty);
                 Assert.Equal(ExpectedJson, json);
-            }
 
-            obj = JsonSerializer.Deserialize<ClassWithCustomConverterProperty>(ExpectedJson);
-            Assert.Equal(42, obj.Property.Value);
+                obj = JsonSerializer.Deserialize<ClassWithCustomConverterProperty>(ExpectedJson, DefaultContext.ClassWithCustomConverterProperty);
+                Assert.Equal(42, obj.Property.Value);
+            }
         }
 
         [Fact]
@@ -332,10 +332,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterProperty);
                 Assert.Equal(ExpectedJson, json);
-            }
 
-            obj = JsonSerializer.Deserialize<StructWithCustomConverterProperty>(ExpectedJson);
-            Assert.Equal(42, obj.Property.Value);
+                obj = JsonSerializer.Deserialize<StructWithCustomConverterProperty>(ExpectedJson, DefaultContext.StructWithCustomConverterProperty);
+                Assert.Equal(42, obj.Property.Value);
+            }
         }
 
         [Fact]

@@ -102,6 +102,7 @@ struct _MonoMethodWrapper {
 struct _MonoDynamicMethod {
 	MonoMethodWrapper method;
 	MonoAssembly *assembly;
+	MonoMemPool *mp;
 };
 
 struct _MonoMethodPInvoke {

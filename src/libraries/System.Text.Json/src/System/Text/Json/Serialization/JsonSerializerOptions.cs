@@ -746,6 +746,10 @@ namespace System.Text.Json
                         break;
                 }
             }
+            else if (_typeInfoResolver is null or EmptyJsonTypeInfoResolver)
+            {
+                ThrowHelper.ThrowInvalidOperationException_JsonSerializerIsReflectionDisabled();
+            }
 
             MakeReadOnly();
             _isConfiguredForJsonSerializer = true;

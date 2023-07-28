@@ -5,15 +5,22 @@
 // This API need to be exposed to implement the COM source generator in one form or another.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
     /// Base class for all COM source generated Runtime Callable Wrapper (RCWs).
     /// </summary>
-    public sealed unsafe class ComObject : IDynamicInterfaceCastable, IUnmanagedVirtualMethodTableProvider
+    public sealed unsafe class ComObject : IDynamicInterfaceCastable, IUnmanagedVirtualMethodTableProvider, ComImportInteropInterfaceDetailsStrategy.IComImportAdapter
     {
+        internal static bool BuiltInComSupported { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool supported) ? supported : true;
+        internal static bool ComImportInteropEnabled { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop", out bool enabled) ? enabled : false;
+
         private readonly void* _instancePointer;
+
+        private readonly object? _runtimeCallableWrapper;
 
         /// <summary>
         /// Initialize ComObject instance.
@@ -28,6 +35,11 @@ namespace System.Runtime.InteropServices.Marshalling
             IUnknownStrategy = iunknownStrategy;
             CacheStrategy = cacheStrategy;
             _instancePointer = IUnknownStrategy.CreateInstancePointer(thisPointer);
+            if (OperatingSystem.IsWindows() && BuiltInComSupported && ComImportInteropEnabled)
+            {
+                _runtimeCallableWrapper = Marshal.GetObjectForIUnknown((nint)thisPointer);
+                Debug.Assert(Marshal.IsComObject(_runtimeCallableWrapper));
+            }
         }
 
         /// <summary>
@@ -137,6 +149,12 @@ namespace System.Runtime.InteropServices.Marshalling
             }
 
             return new(result.ThisPtr, result.Table);
+        }
+
+        object ComImportInteropInterfaceDetailsStrategy.IComImportAdapter.GetRuntimeCallableWrapper()
+        {
+            Debug.Assert(_runtimeCallableWrapper != null);
+            return _runtimeCallableWrapper;
         }
     }
 }

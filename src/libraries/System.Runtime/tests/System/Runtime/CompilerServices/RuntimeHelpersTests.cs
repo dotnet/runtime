@@ -288,7 +288,7 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Fact]
         public static void GetUninitializedObject_DoesNotRunBeforeFieldInitCctors()
         {

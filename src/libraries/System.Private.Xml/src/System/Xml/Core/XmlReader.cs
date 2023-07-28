@@ -1612,7 +1612,7 @@ namespace System.Xml
 
             // Avoid using XmlReader.Create(string, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
-            return new XmlTextReaderImpl(inputUri, XmlReaderSettings.s_defaultReaderSettings, null, new XmlUrlResolver());
+            return new XmlTextReaderImpl(inputUri, XmlReaderSettings.s_defaultReaderSettings, null, XmlReaderSettings.GetDefaultPermissiveResolver());
         }
 
         // Creates an XmlReader according to the settings for parsing XML from the given Uri.
