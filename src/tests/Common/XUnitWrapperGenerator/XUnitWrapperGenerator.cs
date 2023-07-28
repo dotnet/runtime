@@ -130,6 +130,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 var (method, _) = data;
 
+                // Only check test methods
                 bool found = false;
                 foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
                 {
@@ -144,6 +145,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     }
                 }
                 if (!found) return;
+
+                // Find methods where all returns are the literal 100 (and there is at least one return)
                 if (method.DeclaringSyntaxReferences.IsEmpty) return;
 
                 found = false;
