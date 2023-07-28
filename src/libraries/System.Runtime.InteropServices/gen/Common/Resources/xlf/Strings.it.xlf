@@ -148,13 +148,13 @@
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
-        <source>The 'int' or 'enum' return value in the managed definition will be converted to an '[out]' paramter in the COM definition and the generated code will marshal the HResult. Use '[PreserveSig]' on the method to marshal the HResult as an 'int' or 'enum', or change the signature to return void to let the generated method marshal the HResult.</source>
-        <target state="new">The 'int' or 'enum' return value in the managed definition will be converted to an '[out]' paramter in the COM definition and the generated code will marshal the HResult. Use '[PreserveSig]' on the method to marshal the HResult as an 'int' or 'enum', or change the signature to return void to let the generated method marshal the HResult.</target>
+        <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
+        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
-        <source>The 'int' or 'enum' return value in the managed definition will be converted to an '[out]' paramter in the COM definition.</source>
-        <target state="new">The 'int' or 'enum' return value in the managed definition will be converted to an '[out]' paramter in the COM definition.</target>
+        <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
+        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
