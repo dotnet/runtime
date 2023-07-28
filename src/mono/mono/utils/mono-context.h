@@ -56,6 +56,7 @@ typedef __uint128_t MonoContextSimdReg;
 #elif defined(HOST_WIN32)
 #define MONO_HAVE_SIMD_REG
 //#define MONO_HAVE_SIMD_REG_AVX
+#include <intrin.h>
 #include <emmintrin.h>
 typedef __m128d MonoContextSimdReg;
 #elif defined(HOST_ANDROID)
@@ -77,6 +78,7 @@ typedef __uint128_t MonoContextSimdReg;
    a stand-in. This is not expected to work for Windows ARM64 native builds. */
 #if defined(HOST_WIN32)
 #define MONO_HAVE_SIMD_REG
+#include <intrin.h>
 #include <emmintrin.h>
 typedef __m128d MonoContextSimdReg;
 #else
@@ -507,7 +509,7 @@ typedef struct {
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
-#elif (defined(__aarch64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM64))
+#elif ((defined(_M_ARM64) || defined(__aarch64__)) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM64))
 
 #include <mono/arch/arm64/arm64-codegen.h>
 

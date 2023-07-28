@@ -840,7 +840,11 @@ mono_arch_ip_from_context (void *sigctx)
 
 	return (gpointer)UCONTEXT_REG_RIP (ctx);
 #elif defined(HOST_WIN32)
+#if defined(MONO_CROSS_COMPILE)
+	return (gpointer)NULL;
+#else
 	return (gpointer)(((CONTEXT*)sigctx)->Rip);
+#endif
 #else
 	MonoContext *ctx = (MonoContext*)sigctx;
 	return (gpointer)ctx->gregs [AMD64_RIP];
