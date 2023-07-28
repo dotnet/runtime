@@ -94,8 +94,9 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     const local_on_error = (ev: any) => {
         if (ws[wasm_ws_is_aborted]) return;
         ws.removeEventListener("message", local_on_message);
-
-        reject_promises(ws, new Error(ev.message || "WebSocket error"));
+        const error = new Error(ev.message || "WebSocket error");
+        mono_log_warn("WebSocket error", error);
+        reject_promises(ws, error);
     };
     ws.addEventListener("message", local_on_message);
     ws.addEventListener("open", local_on_open, { once: true });
