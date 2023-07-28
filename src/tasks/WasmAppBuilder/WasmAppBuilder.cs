@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -365,7 +366,13 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             helper.ComputeResourcesHash(bootConfig);
 
-            var json = JsonSerializer.Serialize(bootConfig, new JsonSerializerOptions { WriteIndented = true });
+            var jsonOptions = new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                WriteIndented = true
+            };
+            var json = JsonSerializer.Serialize(bootConfig, jsonOptions);
             sw.Write(json);
         }
 
