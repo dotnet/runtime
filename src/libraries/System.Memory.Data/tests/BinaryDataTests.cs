@@ -622,7 +622,13 @@ namespace System.Tests
             var ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromStream(null));
             Assert.Contains("stream", ex.Message);
 
+            ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromStream(null, null));
+            Assert.Contains("stream", ex.Message);
+
             ex = await Assert.ThrowsAsync<ArgumentNullException>(() => BinaryData.FromStreamAsync(null));
+            Assert.Contains("stream", ex.Message);
+
+            ex = await Assert.ThrowsAsync<ArgumentNullException>(() => BinaryData.FromStreamAsync(null, null));
             Assert.Contains("stream", ex.Message);
         }
 
@@ -633,7 +639,13 @@ namespace System.Tests
             var ex = Assert.Throws<ArgumentNullException>(() => new BinaryData(payload));
             Assert.Contains("data", ex.Message);
 
+            ex = Assert.Throws<ArgumentNullException>(() => new BinaryData(payload, null));
+            Assert.Contains("data", ex.Message);
+
             ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromString(payload));
+            Assert.Contains("data", ex.Message);
+
+            ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromString(payload, null));
             Assert.Contains("data", ex.Message);
         }
 
@@ -644,7 +656,13 @@ namespace System.Tests
             var ex = Assert.Throws<ArgumentNullException>(() => new BinaryData(payload));
             Assert.Contains("data", ex.Message);
 
+            ex = Assert.Throws<ArgumentNullException>(() => new BinaryData(payload, null));
+            Assert.Contains("data", ex.Message);
+
             ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromBytes(null));
+            Assert.Contains("data", ex.Message);
+
+            ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromBytes(null, null));
             Assert.Contains("data", ex.Message);
         }
 
@@ -967,7 +985,7 @@ namespace System.Tests
 
             var serializedTestModel = JsonSerializer.Serialize(testModel);
 
-            Assert.Equal(jsonTestModel, serializedTestModel);           
+            Assert.Equal(jsonTestModel, serializedTestModel);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
@@ -1015,7 +1033,7 @@ namespace System.Tests
             public object D { get; set; }
         }
 
-        internal class MismatchedTestModel 
+        internal class MismatchedTestModel
         {
             public int A { get; set; }
         }
@@ -1026,7 +1044,7 @@ namespace System.Tests
         }
 
         [JsonSerializable(typeof(MismatchedTestModel))]
-        internal partial class MismatchedTestModelJsonContext: JsonSerializerContext 
+        internal partial class MismatchedTestModelJsonContext: JsonSerializerContext
         {
         }
 

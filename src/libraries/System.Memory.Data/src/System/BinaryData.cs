@@ -226,7 +226,14 @@ namespace System
         /// <param name="stream">Stream containing the data.</param>
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
         public static BinaryData FromStream(Stream stream)
-            => FromStreamAsync(stream, async: false).GetAwaiter().GetResult();
+        {
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            return FromStreamAsync(stream, async: false).GetAwaiter().GetResult();
+        }
 
         /// <summary>
         /// Creates a <see cref="BinaryData"/> instance from the specified stream
@@ -238,7 +245,14 @@ namespace System
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
         /// <seealso cref="MediaTypeNames"/>
         public static BinaryData FromStream(Stream stream, string? mediaType)
-            => FromStreamAsync(stream, async: false, mediaType).GetAwaiter().GetResult();
+        {
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            return FromStreamAsync(stream, async: false, mediaType).GetAwaiter().GetResult();
+        }
 
         /// <summary>
         /// Creates a <see cref="BinaryData"/> instance from the specified stream.
