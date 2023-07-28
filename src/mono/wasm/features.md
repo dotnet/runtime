@@ -197,24 +197,30 @@ See also [CSP on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
 
 See also [wasm-unsafe-eval](https://github.com/WebAssembly/content-security-policy/blob/main/proposals/CSP.md#the-wasm-unsafe-eval-source-directive)
 
-## ICU
+## Globalization, ICU
 
 Browsers don't offer full set APIs for working with localization and so we have to bring the data and the logic as part of the application.
 
+In order to make downloades smaller, runtime will detect the locale of the browser and load just shard of the ICU database. You can also create and configure your own custom shards.
+
+For more details see [globalization-icu-wasm.md](../../../docs/design/features/globalization-icu-wasm.md)
+
 If your application doesn't need to work with locatization, you can reduce download size by `<InvariantCulture>true</InvariantCulture>`.
 
-If your application needs to work with locatization but you don't require processing speed for processing of large texts, you can reduce download size by `<HybridGlobalization>true</HybridGlobalization>`.
+For more details see [globalization-invariant-mode.md](../../../docs/design/features/globalization-invariant-mode.md)
+
+If your application needs to work with locatization but you don't require processing speed for working with large texts, you can reduce download size by `<HybridGlobalization>true</HybridGlobalization>`.
 It will use browser APIs instead part of ICU database. This feature is still in development.
 
-If your application needs to work with specific subset of locales, you can create your own ICU database.
+For more details see [globalization-hybrid-mode.md](../../../docs/design/features/globalization-hybrid-mode.md)
 
-_TODO_ HOW_TO custom ?
+This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
 ## Timezones
 
 Browsers don't offer API for working with time zone database and so we have to bring the time zone data as part of the application.
 
-If your application doesn't need to work with TZ, you can reduce download size by `<InvariantTimezone>true</InvariantTimezone>`.
+If your application doesn't need to work with time zones, you can reduce download size by `<InvariantTimezone>true</InvariantTimezone>`.
 
 This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
