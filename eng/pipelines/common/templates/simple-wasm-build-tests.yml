@@ -1,3 +1,4 @@
+# run Wasm.Build.Tests with a single threading runtime
 parameters:
   alwaysRun: false
   isExtraPlatformsBuild: false
@@ -9,7 +10,7 @@ parameters:
 jobs:
 
 #
-# Build the whole product using Mono and run libraries tests, for Wasm.Build.Tests
+# Build the whole product using Mono and run Wasm.Build.Tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
