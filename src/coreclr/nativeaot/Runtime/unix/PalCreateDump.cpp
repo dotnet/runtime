@@ -28,9 +28,7 @@
 #include <dlfcn.h>
 
 #ifdef __APPLE__
-#include <libproc.h>
 #include <sys/sysctl.h>
-#include <sys/posix_sem.h>
 #include <mach/task.h>
 #endif
 
