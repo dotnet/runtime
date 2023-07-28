@@ -201,7 +201,7 @@ namespace Microsoft.NET.HostModel
                 rsrcOriginalVirtualSize = resourceSection.VirtualSize;
             }
 
-            var objectDataBuilder = new ObjectDataBuilder(false);
+            var objectDataBuilder = new ObjectDataBuilder();
             _resourceData.WriteResources(rsrcVirtualAddress, ref objectDataBuilder);
             var rsrcSectionData = objectDataBuilder.ToData();
 

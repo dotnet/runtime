@@ -33,7 +33,6 @@
     <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
 
     <Compile Include="$(CoreClrProjectRoot)tools\Common\System\Collections\Generic\ArrayBuilder.cs" Link="Common\ArrayBuilder.cs" />
-    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" Link="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
   </ItemGroup>
 
 
