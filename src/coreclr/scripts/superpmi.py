@@ -650,11 +650,13 @@ class SuperPMICollect:
         self.collection_shim_path = os.path.join(self.core_root, self.collection_shim_name)
 
         jit_name = get_jit_name(coreclr_args)
-        jit_name_ext = os.path.splitext(jit_name)[1]
-        jit_name_without_ext = os.path.splitext(jit_name)[0]
-        self.jit_path = os.path.join(coreclr_args.core_root, jit_name)
-        self.superpmi_jit_path = os.path.join(coreclr_args.core_root, jit_name_without_ext + "_superpmi." + jit_name_ext)
-        shutil.copyfile(self.jit_path, self.superpmi_jit_path)
+        if coreclr_args.crossgen2:
+            jit_name_ext = os.path.splitext(jit_name)[1]
+            jit_name_without_ext = os.path.splitext(jit_name)[0]
+            self.superpmi_jit_path = os.path.join(coreclr_args.core_root, jit_name_without_ext + "_superpmi." + jit_name_ext)
+            shutil.copyfile(self.jit_path, self.superpmi_jit_path)
+        else:
+            self.superpmi_jit_path = self.jit_path
 
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.mcs_path = determine_mcs_tool_path(coreclr_args)
@@ -779,6 +781,10 @@ class SuperPMICollect:
 
         if passed:
             logging.info("Generated MCH file: %s", self.final_mch_file)
+
+        # Cleanup the copy of the JIT binary.
+        if self.coreclr_args.crossgen2 and not self.coreclr_args.skip_cleanup:
+            os.remove(self.superpmi_jit_path)
 
         return passed
 
