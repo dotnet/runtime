@@ -145,7 +145,7 @@ namespace System.Net.Http.Json
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
         public static System.Threading.Tasks.Task<T?> ReadFromJsonAsync<T>(this System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
-    public abstract partial class JsonContent : System.Net.Http.HttpContent
+    public sealed partial class JsonContent : System.Net.Http.HttpContent
     {
         internal JsonContent() { }
         public System.Type ObjectType { get { throw null; } }

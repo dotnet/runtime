@@ -15,37 +15,44 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    public abstract partial class JsonContent : HttpContent
+    public sealed partial class JsonContent : HttpContent
     {
-        public Type ObjectType => JsonTypeInfo.Type;
-        public object? Value => ValueCore;
+        private readonly JsonTypeInfo _typeInfo;
+        public Type ObjectType => _typeInfo.Type;
+        public object? Value { get; }
 
-        private protected abstract JsonTypeInfo JsonTypeInfo { get; }
-        private protected abstract object? ValueCore { get; }
-
-        private protected JsonContent(MediaTypeHeaderValue? mediaType)
+        private JsonContent(
+            object? inputValue,
+            JsonTypeInfo jsonTypeInfo,
+            MediaTypeHeaderValue? mediaType)
         {
+            ThrowHelper.ThrowIfNull(jsonTypeInfo);
+
+            if (inputValue != null && !jsonTypeInfo.Type.IsAssignableFrom(inputValue.GetType()))
+            {
+                throw new ArgumentException(SR.Format(SR.SerializeWrongType, jsonTypeInfo.Type, inputValue.GetType()));
+            }
+
+            Value = inputValue;
+            _typeInfo = jsonTypeInfo;
             Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
-            => Create(inputValue, typeof(T), mediaType, options);
+            => Create(inputValue, GetJsonTypeInfo(typeof(T), options), mediaType);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
-            => new JsonContentUntyped(inputValue, inputType, options, mediaType);
+            => Create(inputValue, GetJsonTypeInfo(inputType, options), mediaType);
 
-        public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo,
-            MediaTypeHeaderValue? mediaType = null)
-            => inputValue is not null
-                ? new JsonContent<T>(inputValue, jsonTypeInfo, mediaType)
-                : new JsonContentUntyped(null, jsonTypeInfo, mediaType);
+        public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
+            => new JsonContent(inputValue, jsonTypeInfo, mediaType);
 
         public static JsonContent Create(object? inputValue, JsonTypeInfo jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
-            => new JsonContentUntyped(inputValue, jsonTypeInfo, mediaType);
+            => new JsonContent(inputValue, jsonTypeInfo, mediaType);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             => SerializeToStreamAsyncCore(stream, async: true, CancellationToken.None);
@@ -55,12 +62,6 @@ namespace System.Net.Http.Json
             length = 0;
             return false;
         }
-
-        private protected abstract Task SerializeToUtf8StreamAsync(Stream targetStream, CancellationToken cancellationToken);
-
-#if NETCOREAPP
-        private protected abstract void SerializeToUtf8Stream(Stream targetStream);
-#endif
 
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
@@ -75,11 +76,11 @@ namespace System.Net.Http.Json
                 {
                     if (async)
                     {
-                        await SerializeToUtf8StreamAsync(transcodingStream, cancellationToken).ConfigureAwait(false);
+                        await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        SerializeToUtf8Stream(transcodingStream);
+                        JsonSerializer.Serialize(transcodingStream, Value, _typeInfo);
                     }
                 }
                 finally
@@ -100,7 +101,7 @@ namespace System.Net.Http.Json
 
                 using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
                 {
-                    await SerializeToUtf8StreamAsync(transcodingStream, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
                     // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
                     // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's
                     // acceptable to Flush a Stream (multiple times) prior to completion.
@@ -112,17 +113,31 @@ namespace System.Net.Http.Json
             {
                 if (async)
                 {
-                    await SerializeToUtf8StreamAsync(targetStream, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(targetStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
 #if NETCOREAPP
-                    SerializeToUtf8Stream(targetStream);
+                    JsonSerializer.Serialize(targetStream, Value, _typeInfo);
 #else
                     Debug.Fail("HttpContent synchronous serialization is only supported since .NET 5.0");
 #endif
                 }
             }
+        }
+
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
+        private static JsonTypeInfo GetJsonTypeInfo(Type inputType, JsonSerializerOptions? options)
+        {
+            ThrowHelper.ThrowIfNull(inputType);
+
+            // Ensure the options supports the call to GetTypeInfo
+            options ??= JsonHelpers.s_defaultSerializerOptions;
+            options.TypeInfoResolver ??= JsonSerializerOptions.Default.TypeInfoResolver;
+            options.MakeReadOnly();
+
+            return options.GetTypeInfo(inputType);
         }
     }
 }
