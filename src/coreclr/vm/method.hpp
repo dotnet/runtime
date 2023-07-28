@@ -1034,7 +1034,6 @@ public:
 
 public:
     mdMethodDef GetMemberDef() const;
-    mdMethodDef GetMemberDef_NoLogging() const;
 
 #ifdef _DEBUG
     BOOL SanityCheck();
@@ -3435,7 +3434,7 @@ inline MethodTable* MethodDesc::GetCanonicalMethodTable()
     return GetMethodTable()->GetCanonicalMethodTable();
 }
 
-inline mdMethodDef MethodDesc::GetMemberDef_NoLogging() const
+inline mdMethodDef MethodDesc::GetMemberDef() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -3447,12 +3446,6 @@ inline mdMethodDef MethodDesc::GetMemberDef_NoLogging() const
     static_assert_no_msg(enum_flag3_TokenRemainderMask == METHOD_TOKEN_REMAINDER_MASK);
 
     return MergeToken(tokrange, tokremainder);
-}
-
-inline mdMethodDef MethodDesc::GetMemberDef() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetMemberDef_NoLogging();
 }
 
 // Set the offset of this method desc in a chunk table (which allows us
@@ -3494,7 +3487,7 @@ inline void MethodDesc::SetMemberDef(mdMethodDef mb)
 #ifdef _DEBUG
     if (mb != 0)
     {
-        _ASSERTE(GetMemberDef_NoLogging() == mb);
+        _ASSERTE(GetMemberDef() == mb);
     }
 #endif
 }

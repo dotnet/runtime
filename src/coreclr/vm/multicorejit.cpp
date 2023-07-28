@@ -441,7 +441,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
         {
             _ASSERTE(m_JitInfoArray[i].IsNonGenericMethodInfo());
 
-            unsigned token = pMethod->GetMemberDef_NoLogging();
+            unsigned token = pMethod->GetMemberDef();
             m_JitInfoArray[i].PackTokenForNonGenericMethod(token);
         }
     }

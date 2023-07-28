@@ -1226,7 +1226,7 @@ BOOL ZapSig::EncodeMethod(
     //
     // output the sequence that represents the token for the method
     //
-    mdMethodDef methodToken               = pMethod->GetMemberDef_NoLogging();
+    mdMethodDef methodToken               = pMethod->GetMemberDef();
     DWORD       methodFlags               = 0;
     BOOL        fMethodNeedsInstantiation = pMethod->HasMethodInstantiation() && !pMethod->IsGenericMethodDefinition();
 
