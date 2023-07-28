@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Diagnostics.Eventing.Reader;
 using System.Threading;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 // Implementation is not robust with respect to concurrently writing and reading log
@@ -14,7 +12,7 @@ namespace System.Diagnostics.Tests
 {
     internal class Helpers
     {
-        public static bool HasAssemblyFilesIsElevatedAndSupportsEventLogs => PlatformDetection.HasAssemblyFiles && RemoteExecutor.IsSupported && SupportsEventLogs;
+        public static bool HasAssemblyFilesIsElevatedAndSupportsEventLogs => PlatformDetection.HasAssemblyFiles && IsElevatedAndSupportsEventLogs;
         public static bool NotElevatedAndSupportsEventLogs { get => !AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
         public static bool IsElevatedAndSupportsEventLogs { get => AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
         public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoNorServerCore && PlatformDetection.IsNotWindowsIoTCore; }
