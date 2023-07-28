@@ -803,6 +803,7 @@ void* MyICJI::getArrayInitializationData(CORINFO_FIELD_HANDLE field, uint32_t si
     return jitInstance->mc->repGetArrayInitializationData(field, size);
 }
 
+
 // Check Visibility rules.
 CorInfoIsAccessAllowedResult MyICJI::canAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                     CORINFO_METHOD_HANDLE   callerHandle,
@@ -816,6 +817,23 @@ CorInfoIsAccessAllowedResult MyICJI::canAccessClass(CORINFO_RESOLVED_TOKEN* pRes
     return jitInstance->mc->repCanAccessClass(pResolvedToken, callerHandle, pAccessHelper);
 }
 
+bool MyICJI::isConstValue(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isConstValue");
+    return jitInstance->mc->repIsConstValue(cls);
+}
+
+uint64_t MyICJI::getConstValue(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getConstValue");
+    return jitInstance->mc->repGetConstValue(cls);
+}
+
+CorInfoType MyICJI::getConstValueType(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getConstValueType");
+    return jitInstance->mc->repGetConstValueType(cls);
+}
 /**********************************************************************************/
 //
 // ICorFieldInfo

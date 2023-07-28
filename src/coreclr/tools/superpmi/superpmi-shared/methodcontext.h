@@ -645,6 +645,18 @@ public:
     void dmpGetArrayInitializationData(DLD key, DWORDLONG value);
     void* repGetArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD size);
 
+    void recIsConstValue(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsConstValue(DWORDLONG key, DWORD value);
+    bool repIsConstValue(CORINFO_CLASS_HANDLE cls);
+
+    void recGetConstValue(CORINFO_CLASS_HANDLE cls, uint64_t result);
+    void dmpGetConstValue(DWORDLONG key, DWORDLONG value);
+    uint64_t repGetConstValue(CORINFO_CLASS_HANDLE cls);
+
+    void recGetConstValueType(CORINFO_CLASS_HANDLE cls, CorInfoType result);
+    void dmpGetConstValueType(DWORDLONG key, DWORD value);
+    CorInfoType repGetConstValueType(CORINFO_CLASS_HANDLE cls);
+
     void recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
     void repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
@@ -1133,6 +1145,9 @@ enum mcPackets
     Packet_GetRISCV64PassStructInRegisterFlags = 209,
     Packet_GetObjectContent = 210,
     Packet_GetTypeLayout = 211,
+    Packet_IsConstValue = 212,
+    Packet_GetConstValueType = 213,
+    Packet_GetConstValue = 214,
 };
 
 void SetDebugDumpVariables();
