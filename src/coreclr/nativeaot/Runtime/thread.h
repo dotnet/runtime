@@ -109,9 +109,6 @@ struct ThreadBuffer
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
-#ifdef FEATURE_EVENT_TRACE
-    GUID                    m_activityId;                           // The activity ID for the current thread.
-#endif // FEATURE_EVENT_TRACE
 };
 
 struct ReversePInvokeFrame
@@ -312,10 +309,6 @@ public:
 
     bool                IsActivationPending();
     void                SetActivationPending(bool isPending);
-#ifdef FEATURE_EVENT_TRACE
-    const GUID* GetActivityId() const;
-    void SetActivityId(const GUID* pActivityId);
-#endif // FEATURE_EVENT_TRACE
 };
 
 #ifndef __GCENV_BASE_INCLUDED__

@@ -831,30 +831,13 @@ void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_le
 
 ep_rt_thread_handle_t ep_rt_aot_thread_get_handle (void)
 {
-    ThreadStore::AttachCurrentThread();
-    Thread* pThread = ThreadStore::GetCurrentThread();
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
     return pThread;
 }
 
 ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)
 {
     return thread_handle->GetPalThreadIdForLogging();
-}
-
-const uint8_t *ep_rt_aot_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id_handle)
-{
-    return reinterpret_cast<const uint8_t *>(activity_id_handle->GetActivityId ());
-}
-
-void ep_rt_aot_thread_set_activity_id (
-        ep_rt_thread_activity_id_handle_t activity_id_handle,
-        const uint8_t *activity_id,
-        uint32_t activity_id_len)
-{
-    EP_ASSERT (activity_id_handle != NULL);
-    EP_ASSERT (activity_id != NULL);
-    EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
-    activity_id_handle->SetActivityId (reinterpret_cast<const GUID*>(activity_id));
 }
 
 #ifdef EP_CHECKED_BUILD

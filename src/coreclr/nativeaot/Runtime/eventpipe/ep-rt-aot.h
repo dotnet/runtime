@@ -1600,8 +1600,7 @@ ep_rt_thread_activity_id_handle_t
 ep_rt_thread_get_activity_id_handle (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    extern ep_rt_thread_handle_t ep_rt_aot_thread_get_handle (void);
-    return reinterpret_cast<ep_rt_thread_activity_id_handle_t>(ep_rt_aot_thread_get_handle());
+    return ep_rt_thread_get_or_create();
 }
 
 static
@@ -1609,9 +1608,8 @@ inline
 const uint8_t *
 ep_rt_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id_handle)
 {
-    STATIC_CONTRACT_NOTHROW;
-    extern const uint8_t *ep_rt_aot_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id_handle);
-    return ep_rt_aot_thread_get_activity_id_cref(activity_id_handle);
+    EP_UNREACHABLE ("EP_THREAD_INCLUDE_ACTIVITY_ID should have been defined on NativeAOT");
+    return NULL;
 }
 
 static
@@ -1627,7 +1625,7 @@ ep_rt_thread_get_activity_id (
     EP_ASSERT (activity_id != NULL);
     EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-    memcpy (activity_id, ep_rt_thread_get_activity_id_cref (activity_id_handle), EP_ACTIVITY_ID_SIZE);
+    memcpy (activity_id, ep_thread_get_activity_id_cref (activity_id_handle), EP_ACTIVITY_ID_SIZE);
 }
 
 static
@@ -1639,12 +1637,11 @@ ep_rt_thread_set_activity_id (
     uint32_t activity_id_len)
 {
     STATIC_CONTRACT_NOTHROW;
-    extern void ep_rt_aot_thread_set_activity_id (
-        ep_rt_thread_activity_id_handle_t activity_id_handle,
-        const uint8_t *activity_id,
-        uint32_t activity_id_len);
+    EP_ASSERT (activity_id_handle != NULL);
+    EP_ASSERT (activity_id != NULL);
+    EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-    ep_rt_aot_thread_set_activity_id(activity_id_handle, activity_id, activity_id_len);
+    memcpy (ep_thread_get_activity_id_ref (activity_id_handle), activity_id, EP_ACTIVITY_ID_SIZE);
 }
 
 #undef EP_YIELD_WHILE

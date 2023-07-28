@@ -78,7 +78,7 @@ typedef struct _rt_aot_lock_internal_t ep_rt_spin_lock_handle_t;
 typedef class Thread * ep_rt_thread_handle_t;
 
 #undef ep_rt_thread_activity_id_handle_t
-typedef class Thread * ep_rt_thread_activity_id_handle_t;
+typedef EventPipeThread * ep_rt_thread_activity_id_handle_t;
 
 #undef ep_rt_thread_id_t
 // #ifndef TARGET_UNIX
