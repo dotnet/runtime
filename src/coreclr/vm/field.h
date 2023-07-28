@@ -347,16 +347,10 @@ public:
     __int64 GetValue64(OBJECTREF o);
     VOID    SetValue64(OBJECTREF o, __int64 value);
 
-    PTR_MethodTable GetApproxEnclosingMethodTable_NoLogging()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pMTOfEnclosingClass;
-    }
-
     PTR_MethodTable GetApproxEnclosingMethodTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetApproxEnclosingMethodTable_NoLogging();
+        return m_pMTOfEnclosingClass;
     }
 
     PTR_MethodTable GetEnclosingMethodTable()
