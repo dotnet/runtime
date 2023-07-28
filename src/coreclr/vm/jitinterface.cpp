@@ -3056,13 +3056,11 @@ static bool IsSignatureForTypicalInstantiation(SigPointer sigptr, CorElementType
 {
     STANDARD_VM_CONTRACT;
 
-    CorElementType alternativeVarType = varType == ELEMENT_TYPE_VAR ? ELEMENT_TYPE_CVAR : ELEMENT_TYPE_MCVAR;
-
     for (uint32_t i = 0; i < ntypars; i++)
     {
         CorElementType type;
         IfFailThrow(sigptr.GetElemType(&type));
-        if (type != varType || type != alternativeVarType)
+        if (type != varType)
             return false;
 
         uint32_t data;
@@ -3179,7 +3177,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
             CorElementType type;
             IfFailThrow(sigptr.GetElemType(&type));
-            if (type == ELEMENT_TYPE_MVAR || type == ELEMENT_TYPE_MCVAR)
+            if (type == ELEMENT_TYPE_MVAR)
             {
                 pResult->indirections = 2;
                 pResult->testForNull = 0;
@@ -3254,7 +3252,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
             CorElementType type;
             IfFailThrow(sigptr.GetElemType(&type));
-            if (type == ELEMENT_TYPE_VAR || type == ELEMENT_TYPE_CVAR)
+            if (type == ELEMENT_TYPE_VAR)
             {
                 pResult->indirections = 3;
                 pResult->testForNull = 0;
@@ -9571,8 +9569,6 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     switch (type) {
       case ELEMENT_TYPE_VAR :
       case ELEMENT_TYPE_MVAR :
-      case ELEMENT_TYPE_CVAR :
-      case ELEMENT_TYPE_MCVAR :
       case ELEMENT_TYPE_VALUETYPE :
       case ELEMENT_TYPE_TYPEDBYREF :
       case ELEMENT_TYPE_INTERNAL :

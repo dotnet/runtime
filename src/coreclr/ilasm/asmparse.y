@@ -1749,38 +1749,17 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                                                                   $$->append($1);
                                                                   corEmitInt($$, corCountArgs($3));
                                                                   $$->append($3); delete $1; delete $3; }}
-                        | CONST_ '!' '!' int32                {
-                                                                  $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_MCVAR); corEmitInt($$, $4);
-                                                              }
                         | '!' '!' int32                       { //if(PASM->m_pCurMethod)  {
                                                                 //  if(($3 < 0)||((DWORD)$3 >= PASM->m_pCurMethod->m_NumTyPars))
                                                                 //    PASM->report->error("Invalid method type parameter '%d'\n",$3);
                                                                   $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_MVAR); corEmitInt($$, $3);
                                                                 //} else PASM->report->error("Method type parameter '%d' outside method scope\n",$3);
                                                               }
-                        | CONST_ '!' int32                    {
-                                                                  $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_CVAR); corEmitInt($$, $3);
-                                                              }
                         | '!' int32                           { //if(PASM->m_pCurClass)  {
                                                                 //  if(($2 < 0)||((DWORD)$2 >= PASM->m_pCurClass->m_NumTyPars))
                                                                 //    PASM->report->error("Invalid type parameter '%d'\n",$2);
                                                                   $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_VAR); corEmitInt($$, $2);
                                                                 //} else PASM->report->error("Type parameter '%d' outside class scope\n",$2);
-                                                              }
-                        | CONST_ '!' '!' dottedName           { int eltype = ELEMENT_TYPE_MCVAR;
-                                                                int n=-1;
-                                                                if(PASM->m_pCurMethod) n = PASM->m_pCurMethod->FindTyPar($4);
-                                                                else {
-                                                                  if(PASM->m_TyParList) n = PASM->m_TyParList->IndexOf($4);
-                                                                  if(n == -1)
-                                                                  { n = TyParFixupList.COUNT();
-                                                                    TyParFixupList.PUSH($4);
-                                                                    eltype = ELEMENT_TYPE_MCVARFIXUP;
-                                                                  }
-                                                                }
-                                                                if(n == -1) { PASM->report->error("Invalid method const type parameter '%s'\n",$4);
-                                                                n = 0x1FFFFFFF; }
-                                                                $$ = new BinStr(); $$->appendInt8(eltype); corEmitInt($$,n);
                                                               }
                         | '!' '!' dottedName                  { int eltype = ELEMENT_TYPE_MVAR;
                                                                 int n=-1;
@@ -1794,21 +1773,6 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                                                                   }
                                                                 }
                                                                 if(n == -1) { PASM->report->error("Invalid method type parameter '%s'\n",$3);
-                                                                n = 0x1FFFFFFF; }
-                                                                $$ = new BinStr(); $$->appendInt8(eltype); corEmitInt($$,n);
-                                                              }
-                        | CONST_ '!' dottedName               { int eltype = ELEMENT_TYPE_CVAR;
-                                                                int n=-1;
-                                                                if(PASM->m_pCurClass && !newclass) n = PASM->m_pCurClass->FindTyPar($3);
-                                                                else {
-                                                                  if(PASM->m_TyParList) n = PASM->m_TyParList->IndexOf($3);
-                                                                  if(n == -1)
-                                                                  { n = TyParFixupList.COUNT();
-                                                                    TyParFixupList.PUSH($3);
-                                                                    eltype = ELEMENT_TYPE_CVARFIXUP;
-                                                                  }
-                                                                }
-                                                                if(n == -1) { PASM->report->error("Invalid const type parameter '%s'\n",$3);
                                                                 n = 0x1FFFFFFF; }
                                                                 $$ = new BinStr(); $$->appendInt8(eltype); corEmitInt($$,n);
                                                               }

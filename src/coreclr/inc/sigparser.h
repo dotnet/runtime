@@ -293,8 +293,6 @@ class SigParser
                 CorElementType typ = (CorElementType) * m_ptr;
 
                 if (typ < ELEMENT_TYPE_CMOD_REQD
-                    || typ == ELEMENT_TYPE_CVAR
-                    || typ == ELEMENT_TYPE_MCVAR
                     || typ == ELEMENT_TYPE_CTARG) // fast path with no modifiers: single byte
                 {
                     if (etype != NULL)
@@ -403,8 +401,6 @@ class SigParser
                 CorElementType typ = (CorElementType) * m_ptr;
 
                 if (typ < ELEMENT_TYPE_CMOD_REQD
-                    || typ == ELEMENT_TYPE_CVAR
-                    || typ == ELEMENT_TYPE_MCVAR
                     || typ == ELEMENT_TYPE_CTARG) // fast path with no modifiers: single byte
                 {
                     if ((typ == ELEMENT_TYPE_STRING) || (typ == ELEMENT_TYPE_OBJECT))
@@ -654,7 +650,6 @@ class SigParser
                 switch (bElementType)
                 {
                 case ELEMENT_TYPE_VAR_ZAPSIG:
-                case ELEMENT_TYPE_CVAR_ZAPSIG:
                 case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
                 case ELEMENT_TYPE_CANON_ZAPSIG:
                 case ELEMENT_TYPE_MODULE_ZAPSIG:

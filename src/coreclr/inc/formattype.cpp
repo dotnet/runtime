@@ -690,8 +690,6 @@ PCCOR_SIGNATURE PrettyPrintType(
                 }
                 } break;
                 
-            case ELEMENT_TYPE_CVAR        :
-                appendStr(out, KEYWORD("const "));
             case ELEMENT_TYPE_VAR        :
                 appendChar(out, '!');
                 n  = CorSigUncompressData(typePtr);
@@ -701,8 +699,6 @@ PCCOR_SIGNATURE PrettyPrintType(
                     appendStrNum(out, n);
                 break;
                 
-            case ELEMENT_TYPE_MCVAR        :
-                appendStr(out, KEYWORD("const "));
             case ELEMENT_TYPE_MVAR        :
                 appendChar(out, '!');
                 appendChar(out, '!');

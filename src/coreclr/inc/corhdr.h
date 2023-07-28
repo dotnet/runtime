@@ -912,12 +912,9 @@ typedef enum CorElementType
     // This is for signatures generated internally (which will not be persisted in any way).
     ELEMENT_TYPE_INTERNAL       = 0x21,     // INTERNAL <typehandle>
 
-    ELEMENT_TYPE_CVAR           = 0x22,    // a class const type variable CVAR <number>
-    ELEMENT_TYPE_MCVAR          = 0x23,     // a method const type variable MCVAR <number>
-
-    ELEMENT_TYPE_CTARG          = 0x24,     // const <class Token> <data>
+    ELEMENT_TYPE_CTARG          = 0x22,     // const <element type> <data>
     // Note that this is the max of base type excluding modifiers
-    ELEMENT_TYPE_MAX            = 0x25,     // first invalid element type
+    ELEMENT_TYPE_MAX            = 0x23,     // first invalid element type
 
 
     ELEMENT_TYPE_MODIFIER       = 0x40,

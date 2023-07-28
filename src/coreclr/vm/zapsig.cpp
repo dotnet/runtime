@@ -43,12 +43,6 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
         if (context.externalTokens == ZapSig::NormalTokens)
             elemType = (CorElementType) ELEMENT_TYPE_VAR_ZAPSIG;
     }
-    else if (elemType == ELEMENT_TYPE_CVAR || elemType == ELEMENT_TYPE_MCVAR)
-    {
-        // Enable encoding of const type variables for NGen signature only. IBC toolchain is not aware of them yet.
-        if (context.externalTokens == ZapSig::NormalTokens)
-            elemType = (CorElementType) ELEMENT_TYPE_CVAR_ZAPSIG;
-    }
 
     pSigBuilder->AppendElementType(elemType);
 
@@ -86,17 +80,14 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
             break;
 
         case ELEMENT_TYPE_MVAR:
-        case ELEMENT_TYPE_MCVAR:
             //                    _ASSERTE(!"Cannot encode ET_M(C)VAR in a ZapSig");
             return FALSE;
 
         case ELEMENT_TYPE_VAR:
-        case ELEMENT_TYPE_CVAR:
             //                    _ASSERTE(!"Cannot encode ET_(C)VAR in a ZapSig");
             return FALSE;
 
         case ELEMENT_TYPE_VAR_ZAPSIG:
-        case ELEMENT_TYPE_CVAR_ZAPSIG:
             {
                 TypeVarTypeDesc * pTypeVarDesc = dac_cast<PTR_TypeVarTypeDesc>(desc);
                 Module * pVarTypeModule = pTypeVarDesc->GetModule();

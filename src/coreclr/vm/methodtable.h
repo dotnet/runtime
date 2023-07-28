@@ -441,8 +441,6 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_OPT
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_INTERNAL
         
-        SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_CVAR
-        SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_MCVAR
         SystemVClassificationTypeStruct,                // ELEMENT_TYPE_CTARG
     };
 

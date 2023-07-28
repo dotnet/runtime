@@ -413,14 +413,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         BOOL isTypeDef = TypeFromToken(typeOrMethodDef) == mdtTypeDef;
-        if (RidFromToken(type))
-        {
-            return isTypeDef ? ELEMENT_TYPE_CVAR : ELEMENT_TYPE_MCVAR;
-        }
-        else
-        {
-            return isTypeDef ? ELEMENT_TYPE_VAR : ELEMENT_TYPE_MVAR;
-        }
+        return isTypeDef ? ELEMENT_TYPE_VAR : ELEMENT_TYPE_MVAR;
     }
 
 #endif // #ifndef DACCESS_COMPILE

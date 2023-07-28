@@ -55,6 +55,4 @@ TYPEINFO(ELEMENT_TYPE_CMOD_REQD,    NULL, NULL,                0,               
 TYPEINFO(ELEMENT_TYPE_CMOD_OPT,     NULL, NULL,                0,                    TYPE_GC_NONE,   false,  false,  false,  false,  false,  false) // 0x20
 TYPEINFO(ELEMENT_TYPE_INTERNAL,     NULL, NULL,                0,                    TYPE_GC_OTHER,  false,  false,  false,  false,  false,  false) // 0x21
 
-TYPEINFO(ELEMENT_TYPE_CVAR,         NULL, NULL,                TARGET_POINTER_SIZE,  TYPE_GC_OTHER,  false,  false,  false,  false,  true,   true)  // 0x22
-TYPEINFO(ELEMENT_TYPE_MCVAR,        NULL, NULL,                TARGET_POINTER_SIZE,  TYPE_GC_OTHER,  false,  false,  false,  false,  true,   true)  // 0x23
-TYPEINFO(ELEMENT_TYPE_CTARG,        NULL, NULL,                8,                    TYPE_GC_OTHER,  false,  false,  false,  false,  false,  true) // 0x24
+TYPEINFO(ELEMENT_TYPE_CTARG,        NULL, NULL,                8,                    TYPE_GC_OTHER,  false,  false,  false,  false,  false,  true) // 0x22
