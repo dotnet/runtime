@@ -28,9 +28,7 @@
 #include <dlfcn.h>
 
 #ifdef __APPLE__
-#include <libproc.h>
 #include <sys/sysctl.h>
-#include <sys/posix_sem.h>
 #include <mach/task.h>
 #endif
 
@@ -51,6 +49,8 @@
 
 #include <minipal/utils.h>
 #include <generatedumpflags.h>
+
+#if !defined(HOST_IOS) && !defined(HOST_TVOS)
 
 // Crash dump generating program arguments. MAX_ARGV_ENTRIES is the max number
 // of entries if every createdump option/argument is passed.
@@ -334,6 +334,8 @@ CreateCrashDump(
     return true;
 }
 
+#endif // !defined(HOST_IOS) && !defined(HOST_TVOS)
+
 /*++
 Function:
   PalCreateCrashDumpIfEnabled
@@ -350,6 +352,7 @@ Parameters:
 void
 PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* exceptionRecord)
 {
+#if !defined(HOST_IOS) && !defined(HOST_TVOS)
     // If enabled, launch the create minidump utility and wait until it completes
     if (g_argvCreateDump[0] != nullptr)
     {
@@ -435,6 +438,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* exceptionRecor
         free(signalAddressArg);
         free(exceptionRecordArg);
     }
+#endif // !defined(HOST_IOS) && !defined(HOST_TVOS)
 }
 
 void
@@ -478,6 +482,7 @@ PalGenerateCoreDump(
     char* errorMessageBuffer,
     int cbErrorMessageBuffer)
 {
+#if !defined(HOST_IOS) && !defined(HOST_TVOS)
     const char* argvCreateDump[MAX_ARGV_ENTRIES];
     if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
@@ -493,6 +498,9 @@ PalGenerateCoreDump(
         result = CreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer);
     }
     return result;
+#else
+    return false;
+#endif // !defined(HOST_IOS) && !defined(HOST_TVOS)
 }
 
 /*++
@@ -511,6 +519,7 @@ Return
 bool
 PalCreateDumpInitialize()
 {
+#if !defined(HOST_IOS) && !defined(HOST_TVOS)
     bool enabled = false;
     RhConfig::Environment::TryGetBooleanValue("DbgEnableMiniDump", &enabled);
     if (enabled)
@@ -605,5 +614,7 @@ PalCreateDumpInitialize()
             return false;
         }
     }
+#endif // !defined(HOST_IOS) && !defined(HOST_TVOS)
+
     return true;
 }
