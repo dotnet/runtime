@@ -1045,6 +1045,8 @@ namespace DebuggerTests
         [InlineData(false)]
         public async Task SteppingIntoLibrarySymbolsLoadedFromSymbolServer(bool justMyCode)
         {
+            //The test behavior is expecting to start with JustMyCode disabled
+            await SetJustMyCode(false);
             string cachePath = _env.CreateTempDirectory("symbols-cache");
             _testOutput.WriteLine($"** Using cache path: {cachePath}");
             var searchPaths = new JArray
