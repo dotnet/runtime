@@ -911,7 +911,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             else
             {
-                if (asm.asmMetadataReader is null && proxy.JustMyCode) //load on demand
+                if (asm.asmMetadataReader is null) //load on demand
                 {
                     var assemblyAndPdbData = await GetDataFromAssemblyAndPdbAsync(asm.Name, true, token);
                     if (assemblyAndPdbData is not null)

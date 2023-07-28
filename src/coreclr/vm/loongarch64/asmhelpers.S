@@ -412,7 +412,7 @@ LOCAL_LABEL(Done):
     // Its imperative that the return value of HelperMethodFrameRestoreState is zero
     // as it is used in the state machine to loop until it becomes zero.
     // Refer to HELPER_METHOD_FRAME_END macro for details.
-    ori  $v0, $zero, 0
+    ori  $a0, $zero, 0
     jirl  $r0, $ra, 0
 LEAF_END HelperMethodFrameRestoreState, _TEXT
 
@@ -508,7 +508,7 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     bl VirtualMethodFixupWorker
     ori  $t4,$a0,0
 
-    // On return, v0 contains the target to tailcall to
+    // On return, a0 contains the target to tailcall to
 
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
@@ -608,7 +608,7 @@ LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
     andi  $t8, $a2, 1
     beq  $t8, $zero, 1f //LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper)
 
-    ld.d  $v0, $a0, DomainLocalModule__m_pGCStatics
+    ld.d  $a0, $a0, DomainLocalModule__m_pGCStatics
     jirl  $r0, $ra, 0
 
 1:
@@ -771,8 +771,8 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     PROLOG_SAVE_REG 31, 80
 
     // save any integral return value(s)
-    st.d  $v0, $sp, 96
-    st.d  $v1, $sp, 104
+    st.d  $a0, $sp, 96
+    st.d  $a1, $sp, 104
 
     // save any FP/HFA return value(s)
     fst.d  $f0, $sp, 112
@@ -784,8 +784,8 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore callee saved registers
 
     // restore any integral return value(s)
-    ld.d  $v0, $sp, 96
-    ld.d  $v1, $sp, 104
+    ld.d  $a0, $sp, 96
+    ld.d  $a1, $sp, 104
 
     // restore any FP/HFA return value(s)
     fst.d  $f0, $sp, 112
@@ -987,9 +987,9 @@ DelayLoad_Helper\suffix:
     addi.d  $a0, $sp, __PWTB_TransitionBlock        // pTransitionBlock
     bl  DynamicHelperWorker
 
-    bne $v0, $r0, LOCAL_LABEL(FakeProlog\suffix\()_0)
+    bne $a0, $r0, LOCAL_LABEL(FakeProlog\suffix\()_0)
 
-    ld.d  $v0, $sp, __PWTB_ArgumentRegisters
+    ld.d  $a0, $sp, __PWTB_ArgumentRegisters
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 LOCAL_LABEL(FakeProlog\suffix\()_0):
     ori  $t4,$a0,0

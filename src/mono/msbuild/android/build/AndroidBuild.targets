@@ -41,8 +41,14 @@
       <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
+    <!-- Make sure marshal-ilgen is included in the components list. -->
+    <ItemGroup Condition="'$(RuntimeComponents)' != '*'">
+      <_RuntimeComponentList Include="$(RuntimeComponents)" />
+      <_RuntimeComponentList Include="marshal-ilgen" KeepDuplicates="false"/>
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(RuntimeComponents)' != '*'">
+      <RuntimeComponents>@(_RuntimeComponentList)</RuntimeComponents>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">

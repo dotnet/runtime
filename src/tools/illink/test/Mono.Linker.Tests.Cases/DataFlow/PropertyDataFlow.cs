@@ -32,6 +32,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.PropertyPublicParameterlessConstructorWithExplicitAccessors = null;
 			instance.PropertyPublicConstructorsWithExplicitAccessors = null;
 			instance.PropertyNonPublicConstructorsWithExplicitAccessors = null;
+			_ = PropertyWithUnsupportedType;
 
 			TestAutomaticPropagation ();
 
