@@ -27,6 +27,12 @@ namespace Microsoft.NET.Build.Tasks
         public string Crossgen2ExtraCommandLineArgs { get; set; }
         public ITaskItem[] Crossgen2PgoFiles { get; set; }
 
+        // GH Issue #85417: To enable TestReadyToRun in the CI pipelines, we need
+        // to be able to run Crossgen2 through the built dll, which requires
+        // slightly different handling. These two vars are used for that.
+        public bool IsTestReadyToRun { get; set; }
+        public string RepoRoot { get; set; }
+
         [Output]
         public bool WarningsDetected { get; set; }
 
@@ -36,6 +42,7 @@ namespace Microsoft.NET.Build.Tasks
         private string _outputPDBImage;
         private string _createPDBCommand;
         private bool _createCompositeImage;
+        private string _dotnetScriptExtension;
 
         private bool IsPdbCompilation => !string.IsNullOrEmpty(_createPDBCommand);
         private bool ActuallyUseCrossgen2 => UseCrossgen2 && !IsPdbCompilation;
@@ -101,17 +108,30 @@ namespace Microsoft.NET.Build.Tasks
                     Log.LogError(Strings.Crossgen2ToolMissingWhenUseCrossgen2IsSet);
                     return false;
                 }
-                if (!File.Exists(Crossgen2Tool.ItemSpec))
+
+                // When TestReadyToRun has been passed, we need to ensure the
+                // Crossgen2 dll exists, as well as determine the dotnet script's
+                // extension according to the current platform.
+                string crossgen2ToolPath = Crossgen2Tool.ItemSpec;
+                if (IsTestReadyToRun)
                 {
-                    Log.LogError(Strings.Crossgen2ToolExecutableNotFound, Crossgen2Tool.ItemSpec);
+                    crossgen2ToolPath = $"{crossgen2ToolPath}.dll";
+                    _dotnetScriptExtension = OperatingSystem.IsWindows() ? "cmd" : "sh";
+                }
+
+                if (!File.Exists(crossgen2ToolPath))
+                {
+                    Log.LogError(Strings.Crossgen2ToolExecutableNotFound, crossgen2ToolPath);
                     return false;
                 }
+
                 string hostPath = DotNetHostPath;
                 if (!string.IsNullOrEmpty(hostPath) && !File.Exists(hostPath))
                 {
                     Log.LogError(Strings.DotNetHostExecutableNotFound, hostPath);
                     return false;
                 }
+
                 string jitPath = Crossgen2Tool.GetMetadata(MetadataKeys.JitPath);
                 if (!string.IsNullOrEmpty(jitPath))
                 {
@@ -250,6 +270,14 @@ namespace Microsoft.NET.Build.Tasks
         {
             if (ActuallyUseCrossgen2 && !string.IsNullOrEmpty(DotNetHostPath))
             {
+                // GH Issue #85417: For running libraries tests using ReadyToRun,
+                // we need to call Crossgen2's dll with the Dotnet CLI.
+                if (IsTestReadyToRun)
+                {
+                    string dotnetCli = Path.Combine(RepoRoot, $"dotnet.{_dotnetScriptExtension}");
+                    return $"\"{dotnetCli} {Crossgen2Tool.ItemSpec}.dll\"";
+                }
+
                 return $"\"{Crossgen2Tool.ItemSpec}\"";
             }
             return null;

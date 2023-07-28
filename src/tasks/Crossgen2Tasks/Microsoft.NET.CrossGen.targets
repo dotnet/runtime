@@ -476,7 +476,9 @@ Copyright (c) .NET Foundation. All rights reserved.
                            CompilationEntry="@(_ReadyToRunCompileList)"
                            ContinueOnError="ErrorAndContinue"
                            ReadyToRunCompositeBuildReferences="@(_ReadyToRunCompositeBuildReferences)"
-                           ReadyToRunCompositeBuildInput="@(_ReadyToRunCompositeBuildInput)">
+                           ReadyToRunCompositeBuildInput="@(_ReadyToRunCompositeBuildInput)"
+                           IsTestReadyToRun="$(TestReadyToRun)"
+                           RepoRoot="$(RepoRoot)">
       <Output TaskParameter="ExitCode" PropertyName="_ReadyToRunCompilerExitCode" />
       <Output TaskParameter="WarningsDetected" PropertyName="_ReadyToRunWarningsDetected" />
     </RunReadyToRunCompiler>

@@ -143,16 +143,16 @@
   <Target Name="__ReplaceCrossgen2ExecutableWithFreshlyBuiltOne"
           BeforeTargets="_PrepareForReadyToRunCompilation">
     <PropertyGroup>
-      <ScriptSuffix Condition="'$(HostOS)' != 'windows'">.sh</ScriptSuffix>
+      <!-- <ScriptSuffix Condition="'$(HostOS)' != 'windows'">.sh</ScriptSuffix>
       <ScriptSuffix Condition="'$(HostOS)' == 'windows'">.cmd</ScriptSuffix>
       <DotNetCli>$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet$(ScriptSuffix)'))</DotNetCli>
       <Crossgen2ArtifactPath>$(CoreCLRCrossgen2Dir)crossgen2.dll</Crossgen2ArtifactPath>
-      <FullCrossgen2Executable>$(DotNetCli) $(Crossgen2ArtifactPath)</FullCrossgen2Executable>
-      <!-- <Crossgen2ArtifactPath>$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)</Crossgen2ArtifactPath> -->
+      <FullCrossgen2Executable>$(DotNetCli) $(Crossgen2ArtifactPath)</FullCrossgen2Executable> -->
+      <Crossgen2ArtifactPath>$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)</Crossgen2ArtifactPath>
     </PropertyGroup>
 
     <ItemGroup>
-      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(FullCrossgen2Executable)')" />
+      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(Crossgen2ArtifactPath)')" />
       <Crossgen2Tool Remove="@(Crossgen2Tool)" />
       <Crossgen2Tool Include="@(Crossgen2CurrentTool)" />
     </ItemGroup>
