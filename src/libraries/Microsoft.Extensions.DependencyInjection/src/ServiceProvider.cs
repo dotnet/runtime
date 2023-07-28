@@ -98,11 +98,17 @@ namespace Microsoft.Extensions.DependencyInjection
         public object? GetService(Type serviceType) => GetService(ServiceIdentifier.FromServiceType(serviceType), Root);
 
         public object? GetKeyedService(Type serviceType, object? serviceKey)
-            => GetService(new ServiceIdentifier(serviceKey, serviceType), Root);
+            => GetKeyedService(serviceType, serviceKey, Root);
+
+        internal object? GetKeyedService(Type serviceType, object? serviceKey, ServiceProviderEngineScope serviceProviderEngineScope)
+            => GetService(new ServiceIdentifier(serviceKey, serviceType), serviceProviderEngineScope);
 
         public object GetRequiredKeyedService(Type serviceType, object? serviceKey)
+            => GetRequiredKeyedService(serviceType, serviceKey, Root);
+
+        internal object GetRequiredKeyedService(Type serviceType, object? serviceKey, ServiceProviderEngineScope serviceProviderEngineScope)
         {
-            object? service = GetKeyedService(serviceType, serviceKey);
+            object? service = GetKeyedService(serviceType, serviceKey, serviceProviderEngineScope);
             if (service == null)
             {
                 throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
