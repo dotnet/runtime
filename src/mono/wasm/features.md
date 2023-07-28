@@ -47,11 +47,11 @@ Is required if the application uses [HttpClient](https://learn.microsoft.com/en-
 
 As opposed to desktop dotnet, we don't have HTTP client based on top of TCP/IP sockets because that's not available in the browser security sandbox.
 
-Instead we use `fetch` API of the browser as underlying implementation. 
+Instead we use `fetch` API of the browser as underlying implementation.
 
 See also [fetch API on MDN](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
 
-There are difference in scope of implemetned features. 
+There are difference in scope of implemetned features.
 Most prominently browser is limited by Cross-Origin Resource Sharing rules, see also [CORS on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS).
 
 NodeJS needs to install `node-fetch` and `node-abort-controller` npm packages to enable the feature.
@@ -123,9 +123,12 @@ See also [trimming guidance](https://learn.microsoft.com/en-us/dotnet/core/deplo
 Native rebuild will cause the .NET runtime to be re-built alongside your application, which allows you to link additional libraries into the WASM binary or change compiler configuration flags.
 
 You can enable native rebuild by `<WasmBuildNative>true</WasmBuildNative>`.
+
+You can add C files into the compilation by `<NativeFileReference Include="fibonacci.c" />`.
+
 This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
 
-# JavaScript API
+# JavaScript API, Interop
 
 We maintain description of JavaScript embedding API in [dotnet.d.ts](https://github.com/dotnet/runtime/blob/main/src/mono/wasm/runtime/dotnet.d.ts).
 
@@ -136,6 +139,25 @@ You can create simple application template by running `dotnet new wasmbrowser`.
 Then you could `dotnet run` and open the URL which it printed to test the app in your browser. For example `http://localhost:5292/index.html`
 
 You can also `dotnet publish -c Release` which will publish your app to [AppBundle](#Project-folder-structure) folder.
+
+## JavaScript interoperability
+
+When you want to call JavaScript functions from C# or managed code from JavaScript, you can annotate static method with `[JSImport]` or `[JSExport]` attributes.
+
+You can read [blog article](https://devblogs.microsoft.com/dotnet/use-net-7-from-any-javascript-app-in-net-7/) about it.
+
+You can also explore simple [TODO app sample](https://github.com/pavelsavara/dotnet-wasm-todo-mvc).
+
+For more details please see [documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/javascript-interoperability/import-export-interop).
+
+## Embedding in existing applications
+
+You can also explore simple sample of dotnet as [React component](https://github.com/maraf/dotnet-wasm-react).
+
+The npm tool chains usual in the JavaScript community are not well integrated with the MSBuild tool chain of the dotnet.
+Your project will need to handle both build systems.
+
+You will need pass output of the MSBuild from the `AppBundle` folder for the npm toolchain to process and host is on your web server with the other assets of your application.
 
 # Downloaded assets
 
