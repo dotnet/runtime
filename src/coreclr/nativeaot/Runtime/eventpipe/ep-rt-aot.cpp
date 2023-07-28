@@ -831,8 +831,7 @@ void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_le
 
 ep_rt_thread_handle_t ep_rt_aot_thread_get_handle (void)
 {
-    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
-    return pThread;
+    return ThreadStore::GetCurrentThreadIfAvailable();
 }
 
 ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)
