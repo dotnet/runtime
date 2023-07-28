@@ -248,6 +248,7 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
+          - windows_arm64
           - windows_x64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
