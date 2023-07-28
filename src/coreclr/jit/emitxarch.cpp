@@ -6246,12 +6246,25 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         case INS_kmovb_msk:
         case INS_kmovw_msk:
         case INS_kmovd_msk:
+        {
+            // Zero-extends the source
+            hasSideEffect = true;
+            break;
+        }
+
         case INS_kmovq_msk:
+        {
+            // No side effect, register is 64-bits
+            hasSideEffect = false;
+            break;
+        }
+
         case INS_kmovb_gpr:
         case INS_kmovw_gpr:
         case INS_kmovd_gpr:
         case INS_kmovq_gpr:
         {
+            // Zero-extends the source
             hasSideEffect = true;
             break;
         }
@@ -6977,7 +6990,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
 void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2)
 {
     assert(IsAvx512OrPriorInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
 
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
@@ -11557,7 +11570,7 @@ void emitter::emitDispIns(
         case IF_RWR_RWR_RRD:
         {
             assert(IsVexOrEvexEncodableInstruction(ins));
-            assert(IsThreeOperandAVXInstruction(ins));
+            assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
             if (ins == INS_bextr || ins == INS_bzhi
@@ -14956,7 +14969,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     instruction ins = id->idIns();
     assert(IsVexOrEvexEncodableInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins) || IsKInstruction(ins));
     regNumber targetReg = id->idReg1();
     regNumber src1      = id->idReg2();
     regNumber src2      = id->idReg3();
@@ -19171,6 +19184,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_6C : PERFSCORE_LATENCY_4C;
             break;
+
+        case INS_vptestmb:
+        case INS_vptestmd:
+        case INS_vptestmq:
+        case INS_vptestmw:
+        case INS_vptestnmb:
+        case INS_vptestnmd:
+        case INS_vptestnmq:
+        case INS_vptestnmw:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
+            break;
+        }
 
         case INS_mpsadbw:
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;

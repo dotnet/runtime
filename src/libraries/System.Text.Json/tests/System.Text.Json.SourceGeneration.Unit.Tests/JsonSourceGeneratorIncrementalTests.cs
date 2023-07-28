@@ -142,6 +142,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         {
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
             WalkObjectGraph(result.ContextGenerationSpecs);
+            WalkObjectGraph(result.Diagnostics);
 
             static void WalkObjectGraph(object obj)
             {

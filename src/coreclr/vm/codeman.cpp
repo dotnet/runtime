@@ -1299,7 +1299,6 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_VectorT256) != 0) && ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256)))
     {
         // We allow 256-bit Vector<T> by default
-        CPUCompileFlags.Clear(InstructionSet_VectorT128);
         CPUCompileFlags.Set(InstructionSet_VectorT256);
     }
 
@@ -1541,6 +1540,20 @@ void EEJitManager::SetCpuInfo()
     CPUCompileFlags.EnsureValidInstructionSetSupport();
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
+
+    // Clean up mutually exclusive ISAs
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
+    {
+        // We don't currently support InstructionSet_VectorT512, but just to
+        // make it future proof.
+        CPUCompileFlags.Clear(InstructionSet_VectorT256);
+        CPUCompileFlags.Clear(InstructionSet_VectorT128);
+    }
+    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
+    {
+        CPUCompileFlags.Clear(InstructionSet_VectorT128);
+    }
+
     int cpuidInfo[4];
 
     const int CPUID_EAX = 0;

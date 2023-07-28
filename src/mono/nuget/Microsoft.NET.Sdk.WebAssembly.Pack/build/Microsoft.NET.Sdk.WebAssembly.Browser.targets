@@ -341,8 +341,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="Items" ItemName="_WasmOutputWithHash" />
     </GetFileHash>
 
-
-
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
       Resources="@(_WasmOutputWithHash)"

@@ -1792,9 +1792,9 @@ namespace System
             }
             else if (IsPointer)
             {
-                Type? vtype = value.GetType();
-                if (vtype == typeof(IntPtr) || vtype == typeof(UIntPtr))
+                if (value is IntPtr or UIntPtr)
                     return CheckValueStatus.Success;
+
                 if (value is Pointer pointer)
                 {
                     Type pointerType = pointer.GetPointerType();
