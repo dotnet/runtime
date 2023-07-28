@@ -16,7 +16,7 @@ import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { invokeLibraryInitializers } from "./libraryInitializers";
-import { initCacheToUseIfEnabled } from "./resourceLoader";
+import { initCacheToUseIfEnabled } from "./assetsCache";
 
 const module = globalObjectsRoot.module;
 const monoConfig = module.config as MonoConfigInternal;

@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
-import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, ResourceRequest, SingleAssetBehaviors as SingleAssetBehaviors } from "../types";
+import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, ResourceRequest, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
 import { mono_exit } from "./exit";
-import { loadResource } from "./resourceLoader";
+import { addCachedReponse, findCachedResponse, shouldApplyIntegrity } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
 
 
@@ -522,10 +522,16 @@ const totalResources = new Set<string>();
 
 function download_resource(request: ResourceRequest): LoadingResource {
     try {
-        const response = loadResource(request);
+        mono_assert(request.resolvedUrl, "Request's resolvedUrl must be set");
+        const fetchResponse = download_resource_with_cache(request);
+        const response = { name: request.name, url: request.resolvedUrl, response: fetchResponse };
 
         totalResources.add(request.name!);
         response.response.then(() => {
+            if (request.behavior == "assembly") {
+                loaderHelpers.loadedAssemblies.push(request.resolvedUrl!);
+            }
+
             resourcesLoaded++;
             if (loaderHelpers.onDownloadResourceProgress)
                 loaderHelpers.onDownloadResourceProgress(resourcesLoaded, totalResources.size);
@@ -544,6 +550,62 @@ function download_resource(request: ResourceRequest): LoadingResource {
             name: request.name, url: request.resolvedUrl!, response: Promise.resolve(response)
         };
     }
+}
+
+async function download_resource_with_cache(request: ResourceRequest): Promise<Response> {
+    let response = await findCachedResponse(request);
+    if (!response) {
+        response = await fetchResource(request);
+        addCachedReponse(request, response);
+    }
+
+    return response;
+}
+
+const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
+    "resource": "assembly",
+    "assembly": "assembly",
+    "pdb": "pdb",
+    "icu": "globalization",
+    "vfs": "configuration",
+    "dotnetwasm": "dotnetwasm",
+};
+
+const credentialsIncludeAssetBehaviors: AssetBehaviors[] = ["vfs"]; // Previously only configuration
+
+function fetchResource(request: ResourceRequest): Promise<Response> {
+    // Allow developers to override how the resource is loaded
+    let url = request.resolvedUrl!;
+    if (loaderHelpers.loadBootResource) {
+        const resourceType = monoToBlazorAssetTypeMap[request.behavior];
+        if (resourceType) {
+            const customLoadResult = loaderHelpers.loadBootResource(resourceType!, request.name, url, request.hash ?? "");
+            if (customLoadResult instanceof Promise) {
+                // They are supplying an entire custom response, so just use that
+                return customLoadResult;
+            } else if (typeof customLoadResult === "string") {
+                // They are supplying a custom URL, so use that with the default fetch behavior
+                url = customLoadResult;
+            }
+        }
+    }
+
+    // Note that if cacheBootResources was explicitly disabled, we also bypass hash checking
+    // This is to give developers an easy opt-out from the entire caching/validation flow if
+    // there's anything they don't like about it.
+    const fetchOptions: RequestInit = {
+        cache: "no-cache"
+    };
+
+    if (credentialsIncludeAssetBehaviors.includes(request.behavior)) {
+        // Include credentials so the server can allow download / provide user specific file
+        fetchOptions.credentials = "include";
+    } else {
+        // Any other resource than configuration should provide integrity check
+        fetchOptions.integrity = shouldApplyIntegrity() ? (request.hash ?? "") : undefined;
+    }
+
+    return loaderHelpers.fetch_like(url, fetchOptions);
 }
 
 export function cleanupAsset(asset: AssetEntryInternal) {

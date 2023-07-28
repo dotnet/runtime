@@ -1,40 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert } from "./globals";
-import type { AssetBehaviors, MonoConfig, ResourceRequest, WebAssemblyBootResourceType } from "../types";
+import type { AssetBehaviors, MonoConfig, ResourceRequest } from "../types";
 import { loaderHelpers } from "./globals";
-const networkFetchCacheMode = "no-cache";
 
 const cacheSkipAssetBehaviors: AssetBehaviors[] = ["vfs"]; // Previously only configuration
-const credentialsIncludeAssetBehaviors: AssetBehaviors[] = ["vfs"]; // Previously only configuration
 const usedCacheKeys: { [key: string]: boolean } = {};
 const networkLoads: { [name: string]: LoadLogEntry } = {};
 const cacheLoads: { [name: string]: LoadLogEntry } = {};
 let cacheIfUsed: Cache | null;
 
-const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
-    "resource": "assembly",
-    "assembly": "assembly",
-    "pdb": "pdb",
-    "icu": "globalization",
-    "vfs": "configuration",
-    "dotnetwasm": "dotnetwasm",
-};
-
-export function loadResource(request: ResourceRequest): LoadingResource {
-    mono_assert(request.resolvedUrl, "Request's resolvedUrl must be set");
-
-    const response = cacheIfUsed && !cacheSkipAssetBehaviors.includes(request.behavior)
-        ? loadResourceWithCaching(cacheIfUsed, request)
-        : loadResourceWithoutCaching(request);
-
-    const absoluteUrl = loaderHelpers.locateFile(request.resolvedUrl);
-
-    if (request.behavior == "assembly") {
-        loaderHelpers.loadedAssemblies.push(absoluteUrl);
-    }
-    return { name: request.name, url: absoluteUrl, response };
+export function shouldApplyIntegrity(): boolean {
+    return !!cacheIfUsed;
 }
 
 export function logToConsole(): void {
@@ -90,15 +67,13 @@ export async function purgeUnusedCacheEntriesAsync(): Promise<void> {
     }
 }
 
-async function loadResourceWithCaching(cache: Cache, request: ResourceRequest) {
-    // Since we are going to cache the response, we require there to be a content hash for integrity
-    // checking. We don't want to cache bad responses. There should always be a hash, because the build
-    // process generates this data.
-    if (!request.hash || request.hash.length === 0) {
-        throw new Error("Content hash is required");
+export async function findCachedResponse(request: ResourceRequest): Promise<Response | undefined> {
+    const cache = cacheIfUsed;
+    if (!cache || cacheSkipAssetBehaviors.includes(request.behavior) || !request.hash || request.hash.length === 0) {
+        return undefined;
     }
 
-    const cacheKey = loaderHelpers.locateFile(`${request.resolvedUrl}.${request.hash}`);
+    const cacheKey = getCacheKey(request);
     usedCacheKeys[cacheKey] = true;
 
     let cachedResponse: Response | undefined;
@@ -109,52 +84,28 @@ async function loadResourceWithCaching(cache: Cache, request: ResourceRequest) {
         // chromium browsers may sometimes throw when working with the cache.
     }
 
-    if (cachedResponse) {
-        // It's in the cache.
-        const responseBytes = parseInt(cachedResponse.headers.get("content-length") || "0");
-        cacheLoads[request.name] = { responseBytes };
-        return cachedResponse;
-    } else {
-        // It's not in the cache. Fetch from network.
-        const networkResponse = await loadResourceWithoutCaching(request);
-        addToCacheAsync(cache, request.name, cacheKey, networkResponse); // Don't await - add to cache in background
-        return networkResponse;
+    if (!cachedResponse) {
+        return undefined;
     }
+
+    // It's in the cache.
+    const responseBytes = parseInt(cachedResponse.headers.get("content-length") || "0");
+    cacheLoads[request.name] = { responseBytes };
+    return cachedResponse;
 }
 
-function loadResourceWithoutCaching(request: ResourceRequest): Promise<Response> {
-    // Allow developers to override how the resource is loaded
-    let url = request.resolvedUrl!;
-    if (loaderHelpers.loadBootResource) {
-        const resourceType = monoToBlazorAssetTypeMap[request.behavior];
-        if (resourceType) {
-            const customLoadResult = loaderHelpers.loadBootResource(resourceType!, request.name, url, request.hash ?? "");
-            if (customLoadResult instanceof Promise) {
-                // They are supplying an entire custom response, so just use that
-                return customLoadResult;
-            } else if (typeof customLoadResult === "string") {
-                // They are supplying a custom URL, so use that with the default fetch behavior
-                url = customLoadResult;
-            }
-        }
+export function addCachedReponse(request: ResourceRequest, networkResponse: Response): void {
+    const cache = cacheIfUsed;
+    if (!cache || cacheSkipAssetBehaviors.includes(request.behavior) || !request.hash || request.hash.length === 0) {
+        return;
     }
 
-    // Note that if cacheBootResources was explicitly disabled, we also bypass hash checking
-    // This is to give developers an easy opt-out from the entire caching/validation flow if
-    // there's anything they don't like about it.
-    const fetchOptions: RequestInit = {
-        cache: networkFetchCacheMode
-    };
+    const cacheKey = getCacheKey(request);
+    addToCacheAsync(cache, request.name, cacheKey, networkResponse); // Don't await - add to cache in background
+}
 
-    if (credentialsIncludeAssetBehaviors.includes(request.behavior)) {
-        // Include credentials so the server can allow download / provide user specific file
-        fetchOptions.credentials = "include";
-    } else {
-        // Any other resource than configuration should provide integrity check
-        fetchOptions.integrity = cacheIfUsed ? (request.hash ?? "") : undefined;
-    }
-
-    return loaderHelpers.fetch_like(url, fetchOptions);
+function getCacheKey(request: ResourceRequest) {
+    return `${request.resolvedUrl}.${request.hash}`;
 }
 
 async function addToCacheAsync(cache: Cache, name: string, cacheKey: string, response: Response) {
