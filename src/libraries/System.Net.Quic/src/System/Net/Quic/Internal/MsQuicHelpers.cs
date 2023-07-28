@@ -35,10 +35,10 @@ internal static class MsQuicHelpers
         return false;
     }
 
-    internal static unsafe IPEndPoint ToIPEndPoint(this ref QuicAddr quicAddress, AddressFamily? addressFamilyOverride = null)
+    internal static unsafe IPEndPoint QuicAddrToIPEndPoint(QuicAddr* quicAddress, AddressFamily? addressFamilyOverride = null)
     {
         // MsQuic always uses storage size as if IPv6 was used
-        Span<byte> addressBytes = new Span<byte>((byte*)Unsafe.AsPointer(ref quicAddress), SocketAddressPal.IPv6AddressSize);
+        Span<byte> addressBytes = new Span<byte>(quicAddress, SocketAddressPal.IPv6AddressSize);
         if (addressFamilyOverride != null)
         {
             SocketAddressPal.SetAddressFamily(addressBytes, (AddressFamily)addressFamilyOverride!);

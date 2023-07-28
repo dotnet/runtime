@@ -177,7 +177,8 @@ namespace System.Net
         {
             AddressFamily family = GetAddressFamily(buffer);
             buffer.Clear();
-            buffer[0] = (byte)buffer.Length;
+            // platforms where this matters (OSXLike & BSD) use uint8 for SA length
+            buffer[0] = (byte)Math.Min(buffer.Length, 255);
             SetAddressFamily(buffer, family);
         }
     }

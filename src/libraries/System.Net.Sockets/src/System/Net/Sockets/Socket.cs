@@ -1904,33 +1904,25 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, receivedSocketAddress.Buffer, out int socketAddressSize, out bytesTransferred);
-
+            if (socketAddressSize > 0)
+            {
+                receivedSocketAddress.Size = socketAddressSize;
+            }
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
-            SocketException? socketException = null;
             if (errorCode != SocketError.Success)
             {
-                socketException = new SocketException((int)errorCode);
+                SocketException socketException = new SocketException((int)errorCode);
                 UpdateStatusAfterSocketError(socketException);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
 
-                if (socketException.SocketErrorCode != SocketError.MessageSize)
-                {
-                    throw socketException;
-                }
+                throw socketException;
             }
             else if (SocketsTelemetry.Log.IsEnabled())
             {
                 SocketsTelemetry.Log.BytesReceived(bytesTransferred);
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
-
-            if (socketException != null)
-            {
-                throw socketException;
-            }
-
-            receivedSocketAddress.Size = socketAddressSize;
 
             return bytesTransferred;
         }

@@ -796,13 +796,12 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe bool TryCompleteReceiveFrom(SafeSocketHandle socket, Span<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, Span<byte> socketAddress, out int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode)
+        public static unsafe bool TryCompleteReceiveFrom(SafeSocketHandle socket, Span<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, Span<byte> socketAddress, out int receivedSocketAddressLength, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode)
         {
             try
             {
                 Interop.Error errno;
                 int received;
-                int socketAddressLength = 0;
 
                 if (!socket.IsSocket)
                 {
@@ -812,11 +811,12 @@ namespace System.Net.Sockets
 
                     receivedFlags = default;
                     received = SysRead(socket, buffer, out errno);
+                    receivedSocketAddressLength = 0;
                 }
                 else if (buffers != null)
                 {
                     // Receive into a set of buffers
-                    received = SysReceive(socket, flags, buffers, socketAddress, out socketAddressLength, out receivedFlags, out errno);
+                    received = SysReceive(socket, flags, buffers, socketAddress, out receivedSocketAddressLength, out receivedFlags, out errno);
                 }
                 else if (buffer.Length == 0)
                 {
@@ -825,7 +825,7 @@ namespace System.Net.Sockets
                     // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
                     // synchronously. As such, we treat 0 specially, and perform a 1-byte peek.
                     byte oneBytePeekBuffer;
-                    received = SysReceive(socket, flags | SocketFlags.Peek, new Span<byte>(&oneBytePeekBuffer, 1), socketAddress, out socketAddressLength, out receivedFlags, out errno);
+                    received = SysReceive(socket, flags | SocketFlags.Peek, new Span<byte>(&oneBytePeekBuffer, 1), socketAddress, out receivedSocketAddressLength, out receivedFlags, out errno);
                     if (received > 0)
                     {
                         // Peeked for 1-byte, but the actual request was for 0.
@@ -835,25 +835,24 @@ namespace System.Net.Sockets
                 else
                 {
                     // Receive > 0 bytes into a single buffer
-                    received = SysReceive(socket, flags, buffer, socketAddress, out socketAddressLength, out receivedFlags, out errno);
+                    received = SysReceive(socket, flags, buffer, socketAddress, out receivedSocketAddressLength, out receivedFlags, out errno);
                 }
 
                 if (received != -1)
                 {
                     bytesReceived = received;
                     errorCode = SocketError.Success;
-                    socketAddressLen = socketAddressLength;
-                    if (socketAddress.Length > 0 && socketAddressLen == 0)
+                    if (socketAddress.Length > 0 && receivedSocketAddressLength == 0)
                     {
                         // We can fail to get peer address on TCP
-                        socketAddressLen = socketAddress.Length;
+                        receivedSocketAddressLength = socketAddress.Length;
                         SocketAddressPal.Clear(socketAddress);
                     }
                     return true;
                 }
 
                 bytesReceived = 0;
-                socketAddressLen = 0;
+                receivedSocketAddressLength = 0;
 
                 if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
                 {
@@ -869,28 +868,28 @@ namespace System.Net.Sockets
                 // The socket was closed, or is closing.
                 bytesReceived = 0;
                 receivedFlags = 0;
-                socketAddressLen = 0;
+                receivedSocketAddressLength = 0;
                 errorCode = SocketError.OperationAborted;
                 return true;
             }
         }
 
-        public static unsafe bool TryCompleteReceiveMessageFrom(SafeSocketHandle socket, Span<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
+        public static unsafe bool TryCompleteReceiveMessageFrom(SafeSocketHandle socket, Span<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, Memory<byte> socketAddress, out int receivedSocketAddressLength, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
         {
             try
             {
                 Interop.Error errno;
 
                 int received = buffers == null ?
-                    SysReceiveMessageFrom(socket, flags, buffer, socketAddress.Span, out socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno) :
-                    SysReceiveMessageFrom(socket, flags, buffers, socketAddress.Span, out socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
+                    SysReceiveMessageFrom(socket, flags, buffer, socketAddress.Span, out receivedSocketAddressLength, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno) :
+                    SysReceiveMessageFrom(socket, flags, buffers, socketAddress.Span, out receivedSocketAddressLength, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
 
                 if (received != -1)
                 {
-                    if (socketAddress.Length > 0 && socketAddressLen == 0)
+                    if (socketAddress.Length > 0 && receivedSocketAddressLength == 0)
                     {
                         // We can fail to get peer address on TCP
-                        socketAddressLen =  socketAddress.Length;
+                        receivedSocketAddressLength =  socketAddress.Length;
                         SocketAddressPal.Clear(socketAddress.Span);
                     }
                     bytesReceived = received;
@@ -914,7 +913,7 @@ namespace System.Net.Sockets
                 // The socket was closed, or is closing.
                 bytesReceived = 0;
                 receivedFlags = 0;
-                socketAddressLen = 0;
+                receivedSocketAddressLength = 0;
                 ipPacketInformation = default(IPPacketInformation);
                 errorCode = SocketError.OperationAborted;
                 return true;
