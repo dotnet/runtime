@@ -25,32 +25,7 @@ namespace System.Tests
             BinaryData data = BinaryData.FromBytes(payload);
             Assert.Equal(payload, data.ToArray());
 
-            MemoryMarshal.TryGetArray<byte>(payload, out ArraySegment<byte> array);
-            Assert.Same(payload, array.Array);
-
-            // using implicit conversion
-            ReadOnlyMemory<byte> bytes = data;
-            Assert.Equal(payload, bytes.ToArray());
-
-            // using implicit conversion
-            ReadOnlySpan<byte> span = data;
-            Assert.Equal(payload, span.ToArray());
-
-            // using implicit conversion from null
-            BinaryData nullData = null;
-            ReadOnlyMemory<byte> emptyBytes = nullData;
-            Assert.True(emptyBytes.IsEmpty);
-
-            // using implicit conversion from null
-            ReadOnlySpan<byte> emptySpan = nullData;
-            Assert.True(emptySpan.IsEmpty);
-        }
-
-        [Fact]
-        public void CanCreateBinaryDataFromBytesUsingCtor()
-        {
-            byte[] payload = "some data"u8.ToArray();
-            BinaryData data = new BinaryData(payload);
+            data = new BinaryData(payload);
             Assert.Equal(payload, data.ToArray());
 
             MemoryMarshal.TryGetArray<byte>(payload, out ArraySegment<byte> array);
@@ -86,6 +61,12 @@ namespace System.Tests
             Assert.Equal(mediaType, data.MediaType);
             MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
             Assert.Same(payload, array.Array);
+
+            data = BinaryData.FromBytes(payload, mediaType);
+            Assert.Equal(payload, data.ToArray());
+            Assert.Equal(mediaType, data.MediaType);
+            MemoryMarshal.TryGetArray(data.ToMemory(), out array);
+            Assert.Same(payload, array.Array);
         }
 
         [Theory]
@@ -100,6 +81,12 @@ namespace System.Tests
             Assert.Equal(payload, data.ToArray());
             Assert.Equal(mediaType, data.MediaType);
             MemoryMarshal.TryGetArray(data.ToMemory(), out ArraySegment<byte> array);
+            Assert.Same(payload, array.Array);
+
+            data = BinaryData.FromBytes(rom, mediaType);
+            Assert.Equal(payload, data.ToArray());
+            Assert.Equal(mediaType, data.MediaType);
+            MemoryMarshal.TryGetArray(data.ToMemory(), out array);
             Assert.Same(payload, array.Array);
         }
 
