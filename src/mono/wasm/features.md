@@ -41,17 +41,26 @@ Is required if the application uses Int64 marshaling in JS interop.
 
 See also WebAssembly proposal [JS-BigInt](https://github.com/WebAssembly/JS-BigInt-integration)
 
-## fetch browser API
+## HTTP, fetch browser API
 
 Is required if the application uses [HttpClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient)
 
-NodeJS needs to install `node-fetch` and `node-abort-controller` npm packages.
+As opposed to desktop dotnet, we don't have HTTP client based on top of TCP/IP sockets because that's not available in the browser security sandbox.
+
+Instead we use `fetch` API of the browser as underlying implementation. 
+
+See also [fetch API on MDN](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+
+There are difference in scope of implemetned features. 
+Most prominently browser is limited by Cross-Origin Resource Sharing rules, see also [CORS on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS).
+
+NodeJS needs to install `node-fetch` and `node-abort-controller` npm packages to enable the feature.
 
 ## WebSocket browser API
 
 Is required if the application uses [WebSocketClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.websockets.clientwebsocket)
 
-NodeJS needs to install `ws` npm package.
+NodeJS needs to install `ws` npm package to enable the feature.
 
 ## WASM linear memory
 
