@@ -35,6 +35,10 @@ namespace System.Collections.Frozen
             {
                 const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit...it's not worth the increase in algorithmic complexity to analyze longer substrings
 
+                // Sufficient uniqueness factor of 95% is good enough.
+                // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
+                int acceptableNonUniqueCount = uniqueStrings.Length / 20;
+
                 // Try to pick a substring comparer.
                 SubstringComparer comparer = ignoreCase ? new JustifiedCaseInsensitiveSubstringComparer() : new JustifiedSubstringComparer();
                 HashSet<string> set = new HashSet<string>(
@@ -56,7 +60,7 @@ namespace System.Collections.Frozen
                     {
                         comparer.Index = index;
 
-                        if (HasSufficientUniquenessFactor(set, uniqueStrings))
+                        if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                         {
                             return CreateAnalysisResults(set, ignoreCase, minLength, maxLength, index, count);
                         }
@@ -68,15 +72,15 @@ namespace System.Collections.Frozen
                     // right-justified substrings, and so we also check right-justification.
                     if (minLength != maxLength)
                     {
-                        // For each index, get a uniqueness factor for the right-justified substrings.
-                        // If any is above our threshold, we're done.
+                        // when Index is negative, we're offsetting from the right, ensure we're at least
+                        // far enough from the right that we have count characters available
                         comparer.Index = -count;
 
+                        // For each index, get a uniqueness factor for the right-justified substrings.
+                        // If any is above our threshold, we're done.
                         for (int offset = 0; offset <= minLength - count; offset++, comparer.Index--)
                         {
-                            // Get a uniqueness factor for the right-justified substrings.
-                            // If it's above our threshold, we're done.
-                            if (HasSufficientUniquenessFactor(set, uniqueStrings))
+                            if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                             {
                                 return CreateAnalysisResults(set, ignoreCase, minLength, maxLength, comparer.Index, count);
                             }
@@ -199,13 +203,9 @@ namespace System.Collections.Frozen
 #endif
         }
 
-        private static bool HasSufficientUniquenessFactor(HashSet<string> set, string[] uniqueStrings)
+        private static bool HasSufficientUniquenessFactor(HashSet<string> set, IEnumerable<string> uniqueStrings, int acceptableNonUniqueCount)
         {
             set.Clear();
-
-            // Sufficient uniqueness factor of 95% is good enough.
-            // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
-            int acceptableNonUniqueCount = uniqueStrings.Length / 20;
 
             foreach (string s in uniqueStrings)
             {
