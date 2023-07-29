@@ -3851,13 +3851,7 @@ namespace System
                         {
                             Vector128<T> mask = Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector);
                             ulong matches = AdvSimd.ShiftRightLogicalNarrowingLower(mask.AsUInt16(), 4).AsUInt64().ToScalar();
-                            count += BitOperations.PopCount(matches) >> (Unsafe.SizeOf<T>() switch
-                            {
-                                1 => 2,
-                                2 => 3,
-                                4 => 4,
-                                _ => 5
-                            });
+                            count += BitOperations.PopCount(matches) >> (int)((uint)BitOperations.PopCount(matches) / (4 * Unsafe.SizeOf<T>()));
                         }
                         else
                         {
