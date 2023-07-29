@@ -22,7 +22,7 @@ public:
     static bool OSSettingConfigured;
     static bool IsMacOS;
 #else
-#if defined(TARGET_OSX)
+#if defined(TARGET_APPLE)
     static const bool IsMacOS = true;
 #else
     static const bool IsMacOS = false;
