@@ -294,11 +294,20 @@ public class BuildPublishTests : BlazorWasmTestBase
         Utils.DirectoryCopy(resxSourcePath, Path.Combine(_projectDir!, "resx"));
 
         // Build and assert resource dlls
-        BlazorBuild(new BlazorBuildOptions(id, config));
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
         AssertResourcesDlls(FindBlazorBinFrameworkDir(config, false));
 
         // Publish and assert resource dlls
-        BlazorPublish(new BlazorBuildOptions(id, config));
+        if (config == "Release")
+        {
+            // relinking in publish for Release config
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
+        }
+        else
+        {
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
+        }
+        
         AssertResourcesDlls(FindBlazorBinFrameworkDir(config, true));
 
         void AssertResourcesDlls(string basePath)
