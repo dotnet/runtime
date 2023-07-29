@@ -314,7 +314,7 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>5b4bbda1c1c8a5cc4ced9facdacb4e531dfc8b3c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ILCompiler" Version="">
+    <Dependency Name="Microsoft.DotNet.ILCompiler" Version="8.0.0-rc.1.23374.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>5b4bbda1c1c8a5cc4ced9facdacb4e531dfc8b3c</Sha>
     </Dependency>
