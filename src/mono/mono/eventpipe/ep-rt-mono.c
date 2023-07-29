@@ -59,6 +59,9 @@ EVENTPIPE_TRACE_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DOTNET_Co
 #define RUNTIME_STRESS_PROVIDER_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context
 #define RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DOTNET_Context
 
+void
+ep_rt_mono_thread_exited (void);
+
 bool
 ep_rt_mono_rand_try_get_bytes (
 	uint8_t *buffer,
@@ -323,6 +326,22 @@ ep_rt_mono_thread_detach (void)
 	MonoThread *current_thread = mono_thread_current ();
 	if (current_thread)
 		mono_thread_internal_detach (current_thread);
+}
+
+void
+ep_rt_mono_thread_exited (void)
+{
+	if (_eventpipe_initialized) {
+		EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (_ep_rt_mono_thread_holder_tls_id);
+		if (thread_holder)
+			thread_holder_free_func (thread_holder);
+		mono_native_tls_set_value (_ep_rt_mono_thread_holder_tls_id, NULL);
+
+		EventPipeMonoThreadData *thread_data = (EventPipeMonoThreadData *)mono_native_tls_get_value (_thread_data_tls_id);
+		if (thread_data)
+			ep_rt_object_free (thread_data);
+		mono_native_tls_set_value (_thread_data_tls_id, NULL);
+	}
 }
 
 #ifdef HOST_WIN32
@@ -734,18 +753,7 @@ thread_stopped_callback (
 	uintptr_t tid)
 {
 	ep_rt_mono_runtime_provider_thread_stopped_callback (prof, tid);
-
-	if (_eventpipe_initialized) {
-		EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (_ep_rt_mono_thread_holder_tls_id);
-		if (thread_holder)
-			thread_holder_free_func (thread_holder);
-		mono_native_tls_set_value (_ep_rt_mono_thread_holder_tls_id, NULL);
-
-		EventPipeMonoThreadData *thread_data = (EventPipeMonoThreadData *)mono_native_tls_get_value (_thread_data_tls_id);
-		if (thread_data)
-			ep_rt_object_free (thread_data);
-		mono_native_tls_set_value (_thread_data_tls_id, NULL);
-	}
+	ep_rt_mono_thread_exited ();
 }
 
 void
