@@ -12,6 +12,19 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project ToolsVersion="14.0">
 
   <PropertyGroup>
+    <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(_WebAssemblyUserRunParameters)' == '' and '$(_UseBlazorDevServer)' == 'false'">
+    <RunCommand Condition="'$(DOTNET_HOST_PATH)' != '' and Exists($(DOTNET_HOST_PATH))">$(DOTNET_HOST_PATH)</RunCommand>
+    <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
+
+    <WasmAppHostDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'WasmAppHost'))</WasmAppHostDir>
+    <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(OutputPath), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
+    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <RunWorkingDirectory>$(OutputPath)</RunWorkingDirectory>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <EnableDefaultContentItems Condition=" '$(EnableDefaultContentItems)' == '' ">true</EnableDefaultContentItems>
 
     <!-- Trimmer defaults that depend on user-definable settings.
@@ -61,7 +74,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Turn off parts of the build that do not apply to WASM projects -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
-    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
     <PreserveCompilationContext>false</PreserveCompilationContext>
     <PreserveCompilationReferences>false</PreserveCompilationReferences>
     <IsWebConfigTransformDisabled>true</IsWebConfigTransformDisabled>
