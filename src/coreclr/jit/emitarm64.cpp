@@ -1154,7 +1154,9 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
         case INS_ldrb:
         case INS_strb:
         case INS_ldurb:
+        case INS_ldapurb:
         case INS_sturb:
+        case INS_stlurb:
             result = EA_4BYTE;
             break;
 
@@ -1169,6 +1171,8 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
         case INS_strh:
         case INS_ldurh:
         case INS_sturh:
+        case INS_ldapurh:
+        case INS_stlurh:
             result = EA_4BYTE;
             break;
 
@@ -1206,6 +1210,8 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
         case INS_str:
         case INS_ldur:
         case INS_stur:
+        case INS_ldapur:
+        case INS_stlur:
             result = id->idOpSize();
             break;
 
@@ -1234,7 +1240,9 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
         case INS_ldrb:
         case INS_strb:
         case INS_ldurb:
+        case INS_ldapurb:
         case INS_sturb:
+        case INS_stlurb:
         case INS_ldrsb:
         case INS_ldursb:
             result = EA_1BYTE;
@@ -1249,6 +1257,8 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
         case INS_sturh:
         case INS_ldrsh:
         case INS_ldursh:
+        case INS_ldapurh:
+        case INS_stlurh:
             result = EA_2BYTE;
             break;
 
@@ -1272,6 +1282,8 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
         case INS_str:
         case INS_ldur:
         case INS_stur:
+        case INS_ldapur:
+        case INS_stlur:
             result = id->idOpSize();
             break;
 
@@ -5499,6 +5511,8 @@ void emitter::emitIns_R_R_I(
             isLdSt     = true;
             break;
 
+        case INS_ldapurb:
+        case INS_stlurb:
         case INS_ldurb:
         case INS_sturb:
             // size is ignored
@@ -5516,7 +5530,9 @@ void emitter::emitIns_R_R_I(
             break;
 
         case INS_ldurh:
+        case INS_ldapurh:
         case INS_sturh:
+        case INS_stlurh:
             // size is ignored
             unscaledOp = true;
             scale      = 0;
@@ -5544,6 +5560,8 @@ void emitter::emitIns_R_R_I(
 
         case INS_ldur:
         case INS_stur:
+        case INS_ldapur:
+        case INS_stlur:
             // Is the target a vector register?
             if (isVectorRegister(reg1))
             {
