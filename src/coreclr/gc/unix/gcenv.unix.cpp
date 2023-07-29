@@ -1294,17 +1294,27 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
         }
         else
         {
-            available = GetAvailablePhysicalMemory();
-
             if (memory_load != NULL)
             {
                 bool isRestricted;
                 uint64_t total = GetPhysicalMemoryLimit(&isRestricted);
 
-                if (total > available)
+                if (GetPhysicalMemoryUsed(&used))
                 {
-                    used = total - available;
-                    load = (uint32_t)(((float)used * 100) / (float)total);
+                    if (total > used)
+                    {
+                        available = total - used;
+                        load = (uint32_t)(((float)used * 100) / (float)total);
+                    }
+                }
+                else
+                {
+                    available = GetAvailablePhysicalMemory();
+                    if (total > available)
+                    {
+                        used = total - available;
+                        load = (uint32_t)(((float)used * 100) / (float)total);
+                    }
                 }
             }
         }
