@@ -474,6 +474,10 @@ public:
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
     void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
 
+    void recGetThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_HANDLE cls);
+    void dmpGetThreadLocalStaticInfo_ReadyToRun(DWORDLONG key, const Agnostic_GetThreadStaticInfo_ReadyToRun& value);
+    void repGetThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_HANDLE cls);
+
     void recGetTlsRootInfo(CORINFO_CONST_LOOKUP* result);
     void dmpGetTlsRootInfo(DWORD key, const Agnostic_CORINFO_CONST_LOOKUP& value);
     void repGetTlsRootInfo(CORINFO_CONST_LOOKUP* addr);
@@ -1151,13 +1155,14 @@ enum mcPackets
     Packet_GetStaticBaseAddress = 206,
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
-    Packet_GetTlsRootInfo = 209,
-    Packet_GetTlsIndexInfo = 210,
-    Packet_GetThreadStaticBaseSlowInfo = 211,
-    Packet_GetEnsureClassCtorRunAndReturnThreadStaticBaseHelper = 212,
-    Packet_GetRISCV64PassStructInRegisterFlags = 213,
-    Packet_GetObjectContent = 214,
-    Packet_GetTypeLayout = 215,
+    Packet_GetThreadLocalStaticInfo_ReadyToRun = 209,
+    Packet_GetTlsRootInfo = 210,
+    Packet_GetTlsIndexInfo = 211,
+    Packet_GetThreadStaticBaseSlowInfo = 212,
+    Packet_GetEnsureClassCtorRunAndReturnThreadStaticBaseHelper = 213,
+    Packet_GetRISCV64PassStructInRegisterFlags = 214,
+    Packet_GetObjectContent = 215,
+    Packet_GetTypeLayout = 216,
 };
 
 void SetDebugDumpVariables();

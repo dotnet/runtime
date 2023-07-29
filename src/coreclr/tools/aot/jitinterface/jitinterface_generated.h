@@ -105,6 +105,7 @@ struct JitInterfaceCallbacks
     void (* getFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
     uint32_t (* getThreadLocalFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool isGCtype);
     void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
+    void (* getThreadLocalStaticInfo_ReadyToRun)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_HANDLE cls);
     void (* getTlsRootInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* addr);
     void (* getTlsIndexInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* addr);
     void (* getThreadStaticBaseSlowInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* addr);
@@ -1116,6 +1117,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->getThreadLocalStaticBlocksInfo(_thisHandle, &pException, pInfo, isGCType);
+    if (pException != nullptr) throw pException;
+}
+
+    virtual void getThreadLocalStaticInfo_ReadyToRun(
+          CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo,
+          CORINFO_CLASS_HANDLE cls)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->getThreadLocalStaticInfo_ReadyToRun(_thisHandle, &pException, pInfo, cls);
     if (pException != nullptr) throw pException;
 }
 

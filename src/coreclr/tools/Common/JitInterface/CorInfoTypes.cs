@@ -1159,6 +1159,18 @@ namespace Internal.JitInterface
         public uint offsetOfGCDataPointer;
     };
 
+
+    public unsafe struct CORINFO_THREAD_STATIC_INFO_READYTORUN
+    {
+        public uint offsetOfThreadLocalStoragePointer;
+        public CORINFO_CONST_LOOKUP tlsRootObject;
+        public CORINFO_CONST_LOOKUP tlsIndexObject;
+        public CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+        public uint classCtorContextSize;
+        public CORINFO_CONST_LOOKUP classCtorRunHelper;
+        public CORINFO_CONST_LOOKUP lazyCtorTargetSymbol;
+    };
+
     // System V struct passing
     // The Classification types are described in the ABI spec at https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
     public enum SystemVClassificationType : byte

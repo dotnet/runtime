@@ -3253,6 +3253,11 @@ namespace Internal.JitInterface
             // Implemented for NativeAOT only for now.
             return 0;
         }
+
+        private void getThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_STRUCT_* cls)
+        {
+            // Implemented for NativeAOT only for now.
+        }
 #pragma warning restore CA1822 // Mark members as static
     }
 }

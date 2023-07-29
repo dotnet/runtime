@@ -2150,6 +2150,9 @@ namespace Internal.JitInterface
                                 {
                                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
                                 }
+                            } else
+                            {
+                                Console.WriteLine(field.Name);
                             }
                         }
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
@@ -2440,6 +2443,22 @@ namespace Internal.JitInterface
             addr         = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
             targetSymbol = CreateConstLookupToSymbol(_compilation.NodeFactory.TypeNonGCStaticsSymbol(clsType));
             return -NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
+        }
+
+        private void getThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_STRUCT_* cls)
+        {
+            pInfo->offsetOfThreadLocalStoragePointer = (uint)(11 * PointerSize); // 0x58 = 0n88
+            pInfo->tlsIndexObject = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
+            pInfo->tlsRootObject = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
+            pInfo->threadStaticBaseSlow = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
+
+            MetadataType clsType = HandleToObject(cls) as MetadataType;
+            if (clsType != null)
+            {
+                pInfo->classCtorContextSize = (uint)-NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
+                pInfo->classCtorRunHelper = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                pInfo->lazyCtorTargetSymbol = CreateConstLookupToSymbol(_compilation.NodeFactory.TypeNonGCStaticsSymbol(clsType));
+            }
         }
     }
 }

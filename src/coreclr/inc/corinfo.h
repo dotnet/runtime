@@ -1740,6 +1740,20 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 };
 
 //----------------------------------------------------------------------------
+// getThreadLocalStaticInfo_ReadyToRun and CORINFO_THREAD_STATIC_INFO_READYTORUN: The EE instructs the JIT about how to access a thread local field
+
+struct CORINFO_THREAD_STATIC_INFO_READYTORUN
+{
+    uint32_t offsetOfThreadLocalStoragePointer;
+    CORINFO_CONST_LOOKUP tlsRootObject;
+    CORINFO_CONST_LOOKUP tlsIndexObject;
+    CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+    uint32_t classCtorContextSize;
+    CORINFO_CONST_LOOKUP lazyCtorRunHelper;
+    CORINFO_CONST_LOOKUP lazyCtorTargetSymbol;
+};
+
+//----------------------------------------------------------------------------
 // Exception handling
 
 struct CORINFO_EH_CLAUSE
@@ -2788,6 +2802,11 @@ public:
     virtual void getThreadLocalStaticBlocksInfo (
             CORINFO_THREAD_STATIC_BLOCKS_INFO*  pInfo,
             bool                                isGCType
+            ) = 0;
+
+    virtual void getThreadLocalStaticInfo_ReadyToRun(
+            CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo,
+            CORINFO_CLASS_HANDLE cls
             ) = 0;
 
     virtual void getTlsRootInfo(CORINFO_CONST_LOOKUP* addr) = 0;

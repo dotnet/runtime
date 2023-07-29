@@ -878,6 +878,12 @@ void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* p
     jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
+void MyICJI::getThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getThreadLocalStaticInfo_ReadyToRun");
+    jitInstance->mc->repGetThreadLocalStaticInfo_ReadyToRun(pInfo, cls);
+}
+
 void MyICJI::getTlsRootInfo(CORINFO_CONST_LOOKUP* pInfo)
 {
     jitInstance->mc->cr->AddCall("getTlsRootInfo");

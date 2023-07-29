@@ -669,6 +669,13 @@ void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
     original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
+void interceptor_ICJI::getThreadLocalStaticInfo_ReadyToRun(
+          CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo,
+          CORINFO_CLASS_HANDLE cls)
+{
+    original_ICorJitInfo->getThreadLocalStaticInfo_ReadyToRun(pInfo, cls);
+}
+
 void interceptor_ICJI::getTlsRootInfo(
           CORINFO_CONST_LOOKUP* addr)
 {

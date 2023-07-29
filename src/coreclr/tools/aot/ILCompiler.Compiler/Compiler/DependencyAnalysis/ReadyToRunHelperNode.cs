@@ -50,6 +50,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReadyToRunHelperNode(ReadyToRunHelperId id, object target)
         {
+            if (target is MetadataType mt)
+            {
+                if (mt.DiagnosticNamespace == "System.Runtime.InteropServices" && mt.DiagnosticName == "PInvokeMarshal")
+                {
+                    Console.WriteLine("here");
+                }
+            }
             _id = id;
             _target = target;
 

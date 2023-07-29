@@ -3740,6 +3740,59 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
 }
 
+void MethodContext::recGetThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo,
+    CORINFO_CLASS_HANDLE                   cls)
+{
+    if (GetThreadLocalStaticInfo_ReadyToRun == nullptr)
+        GetThreadLocalStaticInfo_ReadyToRun = new LightWeightMap<DWORDLONG, Agnostic_GetThreadStaticInfo_ReadyToRun>();
+
+    Agnostic_GetThreadStaticInfo_ReadyToRun value;
+    ZeroMemory(&value, sizeof(value));
+    value.tlsRootObject       = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsRootObject);
+    value.tlsIndexObject      = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsIndexObject);
+    value.offsetOfThreadLocalStoragePointer       = pInfo->offsetOfThreadLocalStoragePointer;
+    value.threadStaticBaseSlow       = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->threadStaticBaseSlow);
+    value.lazyCtorRunHelper    = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->lazyCtorRunHelper);
+    value.lazyCtorTargetSymbol = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->lazyCtorTargetSymbol);
+    value.classCtorContextSize = pInfo->classCtorContextSize;
+
+    DWORDLONG key = CastHandle(cls);
+
+    GetThreadLocalStaticInfo_ReadyToRun->Add(key, value);
+    DEBUG_REC(dmpGetThreadLocalStaticInfo_ReadyToRun(key, result));
+}
+void MethodContext::dmpGetThreadLocalStaticInfo_ReadyToRun(DWORDLONG                                     key,
+                                                           const Agnostic_GetThreadStaticInfo_ReadyToRun& value)
+{
+    printf("GetThreadLocalStaticInfo_ReadyToRun key %016" PRIX64 ", tlsRootObject-%s, tlsIndexObject-%s,  offsetOfThreadLocalStoragePointer-%u, "
+           "threadStaticBaseSlow-%s, lazyCtorRunHelper-%s, lazyCtorTargetSymbol-%s, classCtorContextSize-%u",
+           key, SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsRootObject).c_str(),
+           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndexObject).c_str(),
+           value.offsetOfThreadLocalStoragePointer,
+           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.threadStaticBaseSlow).c_str(),
+           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.lazyCtorRunHelper).c_str(),
+           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.lazyCtorTargetSymbol).c_str(),
+           value.classCtorContextSize);
+}
+
+void MethodContext::repGetThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo,
+    CORINFO_CLASS_HANDLE                   cls)
+{
+    DWORDLONG                               key = CastHandle(cls);
+    Agnostic_GetThreadStaticInfo_ReadyToRun value =
+        LookupByKeyOrMiss(GetThreadLocalStaticInfo_ReadyToRun, key, ": key %016" PRIX64 "", key);
+
+    DEBUG_REP(dmpGetThreadLocalStaticInfo_ReadyToRun(key, value));
+
+    pInfo->tlsRootObject                     = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.tlsRootObject);
+    pInfo->tlsIndexObject                    = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.tlsIndexObject);
+    pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
+    pInfo->threadStaticBaseSlow              = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.threadStaticBaseSlow);
+    pInfo->lazyCtorRunHelper                 = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.lazyCtorRunHelper);
+    pInfo->lazyCtorTargetSymbol              = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.lazyCtorTargetSymbol);
+    pInfo->classCtorContextSize              = value.classCtorContextSize;
+}
+
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                          void**                ppIndirection,
                                          CORINFO_METHOD_HANDLE result)
