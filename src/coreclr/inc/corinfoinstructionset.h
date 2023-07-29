@@ -30,14 +30,15 @@ enum CORINFO_InstructionSet
     InstructionSet_Dczva=12,
     InstructionSet_Rcpc=13,
     InstructionSet_VectorT128=14,
-    InstructionSet_ArmBase_Arm64=15,
-    InstructionSet_AdvSimd_Arm64=16,
-    InstructionSet_Aes_Arm64=17,
-    InstructionSet_Crc32_Arm64=18,
-    InstructionSet_Dp_Arm64=19,
-    InstructionSet_Rdm_Arm64=20,
-    InstructionSet_Sha1_Arm64=21,
-    InstructionSet_Sha256_Arm64=22,
+    InstructionSet_Rcpc2=15,
+    InstructionSet_ArmBase_Arm64=16,
+    InstructionSet_AdvSimd_Arm64=17,
+    InstructionSet_Aes_Arm64=18,
+    InstructionSet_Crc32_Arm64=19,
+    InstructionSet_Dp_Arm64=20,
+    InstructionSet_Rdm_Arm64=21,
+    InstructionSet_Sha1_Arm64=22,
+    InstructionSet_Sha256_Arm64=23,
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
@@ -761,6 +762,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Rcpc";
         case InstructionSet_VectorT128 :
             return "VectorT128";
+        case InstructionSet_Rcpc2 :
+            return "Rcpc2";
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
         case InstructionSet_X86Base :
@@ -994,6 +997,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Atomics: return InstructionSet_Atomics;
         case READYTORUN_INSTRUCTION_Rcpc: return InstructionSet_Rcpc;
         case READYTORUN_INSTRUCTION_VectorT128: return InstructionSet_VectorT128;
+        case READYTORUN_INSTRUCTION_Rcpc2: return InstructionSet_Rcpc2;
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;

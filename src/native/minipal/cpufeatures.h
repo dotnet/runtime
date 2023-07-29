@@ -56,6 +56,7 @@ enum ARM64IntrinsicConstants
     ARM64IntrinsicConstants_Atomics = 0x0080,
     ARM64IntrinsicConstants_Rcpc = 0x0100,
     ARM64IntrinsicConstants_VectorT128 = 0x0200,
+    ARM64IntrinsicConstants_Rcpc2 = 0x0400,
 };
 
 #include <assert.h>

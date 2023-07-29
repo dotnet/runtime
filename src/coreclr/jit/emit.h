@@ -628,8 +628,8 @@ protected:
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
-        static_assert_no_msg(INS_count <= 512);
-        instruction _idIns : 9;
+        static_assert_no_msg(INS_count <= 1024);
+        instruction _idIns : 10;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);

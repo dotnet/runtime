@@ -167,6 +167,7 @@ instructionset     ,ARM64 ,                      ,        ,   ,Vector128        
 instructionset     ,ARM64 ,                      ,        ,   ,Dczva                 ,
 instructionset     ,ARM64 ,                      ,Rcpc    ,26 ,Rcpc                  ,rcpc
 instructionset     ,ARM64 ,VectorT128            ,        ,39 ,VectorT128            ,vectort128
+instructionset     ,ARM64 ,                      ,Rcpc2   ,42 ,Rcpc2                 ,rcpc2
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd

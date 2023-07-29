@@ -356,6 +356,10 @@ int minipal_getcpufeatures(void)
       if (hwCap & HWCAP_LRCPC)
           result |= ARM64IntrinsicConstants_Rcpc;
 #endif
+#ifdef HWCAP_LRCPC2
+      if (hwCap & HWCAP_LRCPC2)
+          result |= ARM64IntrinsicConstants_Rcpc2;
+#endif
 #ifdef HWCAP_PMULL
 //    if (hwCap & HWCAP_PMULL)
 //        result |= ARM64IntrinsicConstants_???;
@@ -472,6 +476,9 @@ int minipal_getcpufeatures(void)
 
     if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Rcpc;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC2", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Rcpc2;
 #endif // HAVE_SYSCTLBYNAME
 
     // Every ARM64 CPU should support SIMD and FP
@@ -511,6 +518,9 @@ int minipal_getcpufeatures(void)
     {
         result |= ARM64IntrinsicConstants_Rcpc;
     }
+
+    // TODO: IsProcessorFeaturePresent doesn't support LRCPC2 yet.
+
 #endif // TARGET_WINDOWS
 
 #endif // TARGET_ARM64
