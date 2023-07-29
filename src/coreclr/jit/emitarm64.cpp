@@ -8823,11 +8823,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     if (callType == EC_INDIR_R)
     {
-        /* This is an indirect call (either a virtual call or func ptr call) */
-
-#ifndef TARGET_ARMARCH
-        id->idSetIsCallRegPtr();
-#endif
+/* This is an indirect call (either a virtual call or func ptr call) */
 
         if (isJump)
         {

@@ -763,12 +763,12 @@ protected:
         unsigned _idLargeDsp : 1;  // does a large displacement follow?
         unsigned _idLargeCall : 1; // large call descriptor used
 
-        unsigned _idBound : 1;      // jump target / frame offset bound
+        unsigned _idBound : 1; // jump target / frame offset bound
 #ifndef TARGET_ARMARCH
         unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
 #endif
-        unsigned _idCallAddr : 1;   // IL indirect calls: can make a direct call to iiaAddr
-        unsigned _idNoGC : 1;       // Some helpers don't get recorded in GC tables
+        unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
+        unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
         unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
 #endif                                //  TARGET_XARCH

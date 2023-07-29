@@ -1763,7 +1763,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
         // On arm64-v8.3+ we can use ldap* instructions with acquire/release semantics to avoid
         // full memory barriers if mixed with STLR
-        bool hasRcpc  = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc);
+        bool hasRcpc = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc);
 
         // On arm64-v8.3+ we can use ldap* instructions with acquire/release semantics to avoid
         // full memory barriers if address is contained and unscaled
@@ -1775,17 +1775,17 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
         {
             if (ins == INS_ldrb)
             {
-                ins = INS_ldapurb;
+                ins               = INS_ldapurb;
                 handledWithLdapur = true;
             }
             else if (ins == INS_ldrh)
             {
-                ins = INS_ldapurh;
+                ins               = INS_ldapurh;
                 handledWithLdapur = true;
             }
             else if (ins == INS_ldr)
             {
-                ins = INS_ldapur;
+                ins               = INS_ldapur;
                 handledWithLdapur = true;
             }
         }

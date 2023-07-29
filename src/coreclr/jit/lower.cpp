@@ -6061,7 +6061,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile())
     {
         // Generally, we try to avoid creating addressing modes for volatile INDs so we can then use
-        // ldar/stlr with less strict semantics. Although, with Arm 8.4+'s RCPC2 we handle unscaled
+        // ldar/stlr instead of ldr/str + dmb. Although, with Arm 8.4+'s RCPC2 we can handle unscaled
         // addressing modes (if the offset fits into 9 bits)
         assert(hasRcpc2);
         if ((scale > 1) || !emitter::emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(parent->TypeGet())))
