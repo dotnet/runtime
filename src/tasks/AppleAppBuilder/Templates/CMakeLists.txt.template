@@ -3,9 +3,6 @@ cmake_minimum_required(VERSION 3.16)
 project(%ProjectName%)
 enable_language(OBJC ASM)
 
-set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
-set(CMAKE_INSTALL_RPATH "@executable_path")
-
 set(APP_RESOURCES
 %AppResources%
 )
