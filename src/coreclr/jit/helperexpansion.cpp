@@ -464,6 +464,19 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
     call->ClearExpTLSFieldAccess();
     call->ClearExpTLSFieldAccessLazyCtor();
 
+    CORINFO_THREAD_STATIC_INFO_READYTORUN threadStaticInfo;
+    memset(&threadStaticInfo, 0, sizeof(CORINFO_THREAD_STATIC_INFO_READYTORUN));
+
+    info.compCompHnd->getThreadLocalStaticInfo_ReadyToRun(&threadStaticInfo, call->gtInitClsHnd);
+
+    JITDUMP("tlsRootObject= %p\n", dspPtr(threadStaticInfo.tlsRootObject.addr));
+    JITDUMP("tlsIndexObject= %p\n", dspPtr(threadStaticInfo.tlsIndexObject.addr));
+    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", dspOffset(threadStaticInfo.offsetOfThreadLocalStoragePointer));
+    JITDUMP("threadStaticBaseSlow= %p\n", dspPtr(threadStaticInfo.threadStaticBaseSlow.addr));
+    JITDUMP("classCtorContextSize= %u\n", threadStaticInfo.classCtorContextSize);
+    JITDUMP("lazyCtorRunHelper= %p\n", dspPtr(threadStaticInfo.lazyCtorRunHelper.addr));
+    JITDUMP("lazyCtorTargetSymbol= %p\n", dspPtr(threadStaticInfo.lazyCtorTargetSymbol.addr));
+
     // Split block right before the call tree
     BasicBlock* prevBb       = block;
     GenTree**   callUse      = nullptr;
@@ -511,17 +524,14 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
 
     if (hasLazyStaticCtor)
     {
-        CORINFO_CONST_LOOKUP classCtorRunHelper;
-        CORINFO_CONST_LOOKUP targetSymbol;
-        memset(&classCtorRunHelper, 0, sizeof(CORINFO_CONST_LOOKUP));
-        memset(&targetSymbol, 0, sizeof(CORINFO_CONST_LOOKUP));
-        int size =
-            info.compCompHnd->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(call->gtInitClsHnd,
-                                                                                   &classCtorRunHelper, &targetSymbol);
+        CORINFO_CONST_LOOKUP lazyCtorRunHelper    = threadStaticInfo.lazyCtorRunHelper;
+        CORINFO_CONST_LOOKUP lazyCtorTargetSymbol = threadStaticInfo.lazyCtorTargetSymbol;
+        int                  classCtorContextSize = threadStaticInfo.classCtorContextSize;
 
         // target symbol
-        GenTree* targetSymbolAddr = gtNewIconHandleNode((size_t)targetSymbol.addr, GTF_ICON_OBJ_HDL);
-        targetSymbolAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, targetSymbolAddr, gtNewIconNode(size, TYP_I_IMPL));
+        GenTree* targetSymbolAddr = gtNewIconHandleNode((size_t)lazyCtorTargetSymbol.addr, GTF_ICON_OBJ_HDL);
+        targetSymbolAddr =
+            gtNewOperNode(GT_ADD, TYP_I_IMPL, targetSymbolAddr, gtNewIconNode(classCtorContextSize, TYP_I_IMPL));
         targetSymbCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtCloneExpr(targetSymbolAddr), debugInfo);
 
         GenTree* targetSymbolAddrVal = gtNewIndir(TYP_I_IMPL, targetSymbolAddr);
@@ -531,7 +541,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         fgInsertStmtAfter(targetSymbCondBB, targetSymbCondBB->firstStmt(), fgNewStmtFromTree(targetSymbolNullCond));
 
         GenTreeCall* classCtorRunHelperCall =
-            gtNewIndCallNode(gtNewIconHandleNode((size_t)classCtorRunHelper.addr, GTF_ICON_FTN_ADDR), TYP_I_IMPL);
+            gtNewIndCallNode(gtNewIconHandleNode((size_t)lazyCtorRunHelper.addr, GTF_ICON_FTN_ADDR), TYP_I_IMPL);
 
         // arg0: unused
         classCtorRunHelperCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewIconNode(0)));
@@ -585,18 +595,12 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         lvaTable[tlsLclNum].lvType = TYP_I_IMPL;
 
         // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
-        uint32_t offsetOfThreadLocalStoragePointer = 0;
-#ifdef _MSC_VER
-        offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-#endif
-        tlsValue = gtNewIconHandleNode(offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+        tlsValue = gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-        CORINFO_CONST_LOOKUP tlsIndexValue;
-        memset(&tlsIndexValue, 0, sizeof(CORINFO_CONST_LOOKUP));
-        info.compCompHnd->getTlsIndexInfo(&tlsIndexValue);
+        CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
 
-        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexValue.handle, GTF_ICON_OBJ_HDL);
+        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_OBJ_HDL);
         dllRef          = gtNewIndir(TYP_UINT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
         dllRef          = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
 
@@ -606,11 +610,9 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         // Base of coreclr's thread local storage
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-        CORINFO_CONST_LOOKUP tlsRootNode;
-        memset(&tlsRootNode, 0, sizeof(CORINFO_CONST_LOOKUP));
-        info.compCompHnd->getTlsRootInfo(&tlsRootNode);
+        CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
 
-        GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootNode.handle, TYP_INT);
+        GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject.handle, TYP_INT);
         tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
 
         // Add the tlsValue and tlsRootOffset to produce tlsRootAddr.
@@ -634,9 +636,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootNullCond));
         fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootDef));
 
-        CORINFO_CONST_LOOKUP threadStaticSlowHelper;
-        memset(&threadStaticSlowHelper, 0, sizeof(CORINFO_CONST_LOOKUP));
-        info.compCompHnd->getThreadStaticBaseSlowInfo(&threadStaticSlowHelper);
+        CORINFO_CONST_LOOKUP threadStaticSlowHelper = threadStaticInfo.threadStaticBaseSlow;
 
         GenTreeCall* slowHelper =
             gtNewIndCallNode(gtNewIconHandleNode((size_t)threadStaticSlowHelper.addr, GTF_ICON_TLS_HDL), TYP_I_IMPL);
