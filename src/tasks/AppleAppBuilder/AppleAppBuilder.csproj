@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Templates\*.*" />
+    <EmbeddedResource Include="..\..\coreclr\hosts\inc\coreclrhost.h" Link="Templates\coreclrhost.h" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
