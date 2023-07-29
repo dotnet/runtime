@@ -7,6 +7,14 @@
 #include "runtimedetails.h"
 #include "spmiutil.h"
 
+void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode)
+{
+    if (BreakOnException())
+        __debugbreak();
+
+    RaiseException(exceptionCode, 0, 0, nullptr);
+}
+
 // Allocating memory here seems moderately dangerous: we'll probably leak like a sieve...
 void MSC_ONLY(__declspec(noreturn)) ThrowSpmiException(DWORD exceptionCode, va_list args, const char* message)
 {
@@ -28,18 +36,6 @@ void MSC_ONLY(__declspec(noreturn)) ThrowSpmiException(DWORD exceptionCode, cons
     va_list ap;
     va_start(ap, msg);
     ThrowSpmiException(exceptionCode, ap, msg);
-}
-
-// Throw an exception that indicates that the EE side threw an exception during recording.
-// These exceptions do not result in replay errors; see JitInstance::CompileMethod.
-void MSC_ONLY(__declspec(noreturn)) ThrowRecordedException(DWORD innerExceptionCode)
-{
-    if (BreakOnException())
-        __debugbreak();
-
-    ULONG_PTR args[1];
-    args[0] = (ULONG_PTR)innerExceptionCode;
-    RaiseException(EXCEPTIONCODE_RECORDED_EXCEPTION, 0, ArrLen(args), args);
 }
 
 SpmiException::SpmiException(FilterSuperPMIExceptionsParam_CaptureException* e)

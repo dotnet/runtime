@@ -435,13 +435,15 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             e.DeleteMessage();
             param.result = RESULT_MISSING;
         }
-        else if (e.GetCode() == EXCEPTIONCODE_RECORDED_EXCEPTION)
+        else if (e.GetCode() == EXCEPTIONCODE_COMPLUS)
         {
-            // Exception thrown by EE during recording, for example a managed
-            // MissingFieldException thrown by resolveToken. Several JIT-EE
-            // APIs can throw this and the recorder expects and rethrows their
-            // exceptions faithfully. We do not consider these a replay
-            // failure.
+            // We assume that managed exceptions are never JIT bugs and were
+            // thrown by the EE during recording. Various EE APIs can throw
+            // managed exceptions and replay will faithfully rethrow these. The
+            // JIT itself will sometimes catch them (e.g. during inlining), but
+            // if they make it out of the JIT then we assume that they are not
+            // JIT bugs. The typical scenario is something like
+            // MissingFieldException thrown from resolveToken.
 
             // Call these methods to capture that no code/GC info was generated.
             mc->cr->recAllocMemCapture();

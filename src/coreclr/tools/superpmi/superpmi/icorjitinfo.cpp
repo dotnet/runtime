@@ -77,7 +77,7 @@ bool MyICJI::getMethodInfo(CORINFO_METHOD_HANDLE  ftn,    /* IN  */
     DWORD exceptionCode = 0;
     bool  value         = jitInstance->mc->repGetMethodInfo(ftn, info, context, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowRecordedException(exceptionCode);
+        ThrowException(exceptionCode);
     return value;
 }
 
@@ -97,7 +97,7 @@ CorInfoInline MyICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /* IN  */
     DWORD         exceptionCode = 0;
     CorInfoInline result        = jitInstance->mc->repCanInline(callerHnd, calleeHnd, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowRecordedException(exceptionCode);
+        ThrowException(exceptionCode);
     return result;
 }
 
@@ -298,7 +298,7 @@ void MyICJI::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResolvedToken)
     jitInstance->mc->cr->AddCall("resolveToken");
     jitInstance->mc->repResolveToken(pResolvedToken, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowRecordedException(exceptionCode);
+        ThrowException(exceptionCode);
 }
 
 // Signature information about the call sig
@@ -1056,7 +1056,7 @@ CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
     jitInstance->mc->cr->AddCall("getArgType");
     CorInfoTypeWithMod value = jitInstance->mc->repGetArgType(sig, args, vcTypeRet, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowRecordedException(exceptionCode);
+        ThrowException(exceptionCode);
     return value;
 }
 
@@ -1078,7 +1078,7 @@ CORINFO_CLASS_HANDLE MyICJI::getArgClass(CORINFO_SIG_INFO*       sig, /* IN */
     jitInstance->mc->cr->AddCall("getArgClass");
     CORINFO_CLASS_HANDLE value = jitInstance->mc->repGetArgClass(sig, args, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowRecordedException(exceptionCode);
+        ThrowException(exceptionCode);
     return value;
 }
 
@@ -1360,7 +1360,7 @@ void MyICJI::getCallInfo(
     jitInstance->mc->repGetCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult,
                                     &exceptionCode);
     if (exceptionCode != 0)
-        ThrowRecordedException(exceptionCode);
+        ThrowException(exceptionCode);
 }
 
 // returns the class's domain ID for accessing shared statics
