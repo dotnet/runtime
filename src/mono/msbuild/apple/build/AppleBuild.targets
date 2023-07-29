@@ -53,13 +53,13 @@
       <AppleBundleDir Condition="'$(AppleBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AppleBundleDir>
 
       <BundleDir>$(AppleBundleDir)</BundleDir>
-      <_MonoHeaderPath Condition="'$(UseNativeAOTRuntime)' != 'true'">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
+      <_MonoHeaderPath Condition="'$(AppleAppBuilderRuntime)' == 'MonoVM'">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
       <_AotModuleTablePath>$(AppleBundleDir)\modules.m</_AotModuleTablePath>
       <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
     </PropertyGroup>
 
     <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == '' and '$(UseNativeAOTRuntime)' != 'true'">marshal-ilgen</RuntimeComponents>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == '' and '$(AppleAppBuilderRuntime)' == 'MonoVM'">marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
     <!-- common linker arguments for app and library builds -->
@@ -302,6 +302,7 @@
     </ItemGroup>
 
     <AppleAppBuilderTask
+      Runtime="$(AppleAppBuilderRuntime)"
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
       Assemblies="@(_AssembliesToBundleInternal)"
@@ -328,8 +329,7 @@
       RuntimeComponents="$(RuntimeComponents)"
       StripSymbolTable="$(StripDebugSymbols)"
       TargetOS="$(TargetOS)"
-      UseConsoleUITemplate="$(UseConsoleUITemplate)"
-      UseNativeAOTRuntime="$(UseNativeAOTRuntime)">
+      UseConsoleUITemplate="$(UseConsoleUITemplate)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>

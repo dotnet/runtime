@@ -213,7 +213,7 @@
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
     <_targetOS>$(TargetOS)</_targetOS>
-    <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
+    <AppleAppBuilderRuntime>NativeAOT</AppleAppBuilderRuntime>
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
     <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
