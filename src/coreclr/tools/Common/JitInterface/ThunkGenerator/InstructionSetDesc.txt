@@ -204,7 +204,7 @@ instructionsetgroup  ,armv8-a                    ,ARM64    ,neon
 instructionsetgroup  ,armv8.1-a                  ,ARM64    ,armv8-a lse crc rdma
 instructionsetgroup  ,armv8.2-a                  ,ARM64    ,armv8.1-a
 instructionsetgroup  ,armv8.3-a                  ,ARM64    ,armv8.2-a rcpc
-instructionsetgroup  ,armv8.4-a                  ,ARM64    ,armv8.3-a dotprod
+instructionsetgroup  ,armv8.4-a                  ,ARM64    ,armv8.3-a dotprod rcpc2
 instructionsetgroup  ,armv8.5-a                  ,ARM64    ,armv8.4-a
 instructionsetgroup  ,armv8.6-a                  ,ARM64    ,armv8.5-a
 
