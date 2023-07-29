@@ -1134,13 +1134,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target)
         {
-            if (target is MetadataType mt)
-            {
-                if (mt.DiagnosticNamespace == "System.Runtime.InteropServices" && mt.DiagnosticName == "PInvokeMarshal")
-                {
-                    Console.WriteLine("here");
-                }
-            }
             return _readyToRunHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
         }
 

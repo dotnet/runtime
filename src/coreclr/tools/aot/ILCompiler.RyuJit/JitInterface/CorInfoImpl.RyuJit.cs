@@ -2150,9 +2150,6 @@ namespace Internal.JitInterface
                                 {
                                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
                                 }
-                            } else
-                            {
-                                Console.WriteLine(field.Name);
                             }
                         }
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
