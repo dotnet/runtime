@@ -712,7 +712,7 @@ protected:
         // x86:         17 bits
         // amd64:       17 bits
         // arm:         16 bits
-        // arm64:       17 bits
+        // arm64:       18 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
 
@@ -754,7 +754,7 @@ protected:
         // x86:         38 bits
         // amd64:       38 bits
         // arm:         32 bits
-        // arm64:       31 bits
+        // arm64:       32 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
 
@@ -764,7 +764,9 @@ protected:
         unsigned _idLargeCall : 1; // large call descriptor used
 
         unsigned _idBound : 1;      // jump target / frame offset bound
+#ifndef TARGET_ARMARCH
         unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
+#endif
         unsigned _idCallAddr : 1;   // IL indirect calls: can make a direct call to iiaAddr
         unsigned _idNoGC : 1;       // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
@@ -806,7 +808,7 @@ protected:
         // x86:         47 bits
         // amd64:       47 bits
         // arm:         48 bits
-        // arm64:       50 bits
+        // arm64:       51 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
 
@@ -1509,6 +1511,7 @@ protected:
             _idBound = 1;
         }
 
+#ifndef TARGET_ARMARCH
         bool idIsCallRegPtr() const
         {
             return _idCallRegPtr != 0;
@@ -1517,6 +1520,7 @@ protected:
         {
             _idCallRegPtr = 1;
         }
+#endif
 
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
