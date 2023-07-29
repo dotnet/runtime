@@ -22,7 +22,7 @@ public:
     static bool OSSettingConfigured;
     static bool IsApplePlatform;
 #else
-#if defined(TARGET_OSX)
+#if defined(TARGET_APPLE)
     static const bool IsApplePlatform = true;
 #else
     static const bool IsApplePlatform = false;
