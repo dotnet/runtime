@@ -491,7 +491,7 @@ ep_rt_config_value_get_enable_stackwalk (void)
     if (RhConfig::Environment::TryGetBooleanValue("EventPipeEnableStackwalk", &value))
         return value;
 
-    return true;
+    return false;
 }
 
 /*
@@ -1550,10 +1550,9 @@ ep_rt_thread_handle_t
 ep_rt_thread_get_handle (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return GetThreadNULLOk ();
-    return NULL;
+
+    extern ep_rt_thread_handle_t ep_rt_aot_thread_get_handle (void);
+    return ep_rt_aot_thread_get_handle();
 }
 
 static
@@ -1562,13 +1561,9 @@ ep_rt_thread_id_t
 ep_rt_thread_get_id (ep_rt_thread_handle_t thread_handle)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (thread_handle != NULL);
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return ep_rt_uint64_t_to_thread_id_t (thread_handle->GetOSThreadId64 ());
-    // PalDebugBreak();
-    return 0;
+    extern ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle);
+    return ep_rt_aot_thread_get_id(thread_handle);
 }
 
 static
@@ -1605,11 +1600,7 @@ ep_rt_thread_activity_id_handle_t
 ep_rt_thread_get_activity_id_handle (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return GetThread ();
-    // PalDebugBreak();
-    return NULL;
+    return ep_rt_thread_get_or_create();
 }
 
 static
@@ -1617,13 +1608,7 @@ inline
 const uint8_t *
 ep_rt_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id_handle)
 {
-    STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (activity_id_handle != NULL);
-
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return reinterpret_cast<const uint8_t *>(activity_id_handle->GetActivityId ());
-    // PalDebugBreak();
+    EP_UNREACHABLE ("EP_THREAD_INCLUDE_ACTIVITY_ID should have been defined on NativeAOT");
     return NULL;
 }
 
@@ -1640,7 +1625,7 @@ ep_rt_thread_get_activity_id (
     EP_ASSERT (activity_id != NULL);
     EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-    memcpy (activity_id, ep_rt_thread_get_activity_id_cref (activity_id_handle), EP_ACTIVITY_ID_SIZE);
+    memcpy (activity_id, ep_thread_get_activity_id_cref (activity_id_handle), EP_ACTIVITY_ID_SIZE);
 }
 
 static
@@ -1656,10 +1641,7 @@ ep_rt_thread_set_activity_id (
     EP_ASSERT (activity_id != NULL);
     EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // activity_id_handle->SetActivityId (reinterpret_cast<LPCGUID>(activity_id));
-    // PalDebugBreak();
+    memcpy (ep_thread_get_activity_id_ref (activity_id_handle), activity_id, EP_ACTIVITY_ID_SIZE);
 }
 
 #undef EP_YIELD_WHILE

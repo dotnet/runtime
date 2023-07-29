@@ -7,10 +7,11 @@ import type { AssetEntryInternal, GlobalObjects, LoaderHelpers, RuntimeHelpers }
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
-import { mono_download_assets, resolve_asset_path } from "./assets";
+import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
 import { setup_proxy_console } from "./logging";
-import { hasDebuggingEnabled } from "./blazor/_Polyfill";
 import { invokeLibraryInitializers } from "./libraryInitializers";
+import { hasDebuggingEnabled } from "./config";
+import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB = typeof window == "object";
@@ -91,10 +92,13 @@ export function setLoaderGlobals(
         getPromiseController,
         assertIsControllablePromise,
         mono_download_assets,
-        resolve_asset_path,
+        resolve_asset_path: resolve_single_asset_path,
         setup_proxy_console,
+        logDownloadStatsToConsole,
+        purgeUnusedCacheEntriesAsync,
 
         hasDebuggingEnabled,
+        retrieve_asset_download,
         invokeLibraryInitializers,
 
         // from wasm-feature-detect npm package

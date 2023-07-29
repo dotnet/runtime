@@ -269,12 +269,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
-        if (INTERNAL.resourceLoader) {
-            if (INTERNAL.resourceLoader.bootConfig.debugBuild && INTERNAL.resourceLoader.bootConfig.cacheBootResources) {
-                INTERNAL.resourceLoader.logToConsole();
-            }
-            INTERNAL.resourceLoader.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        if (loaderHelpers.config.debugLevel !== 0 && loaderHelpers.config.cacheBootResources) {
+            loaderHelpers.logDownloadStatsToConsole();
         }
+        loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
 
         // call user code
         try {
