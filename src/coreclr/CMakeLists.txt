@@ -55,7 +55,7 @@ include(components.cmake)
 #---------------------------
 # Build the single file host
 #---------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CROSS_COMPONENTS_BUILD)
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
