@@ -138,7 +138,7 @@ namespace ILCompiler
 
         public override string Name => MetadataType.Name;
 
-        public override DefType[] ExplicitlyImplementedInterfaces => (DefType[])EmptyTypes;
+        public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 
         public override bool IsExplicitLayout => MetadataType.IsExplicitLayout;
 
