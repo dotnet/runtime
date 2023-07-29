@@ -27,7 +27,7 @@ namespace System.Collections.Frozen
         /// operations, then we can select an ASCII-specific case-insensitive comparer which yields faster overall performance.
         /// </remarks>
         public static AnalysisResults Analyze(
-            string[] uniqueStrings, bool ignoreCase, int minLength, int maxLength)
+            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength)
         {
             Debug.Assert(uniqueStrings.Length > 0);
 
@@ -62,7 +62,7 @@ namespace System.Collections.Frozen
 
                         if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                         {
-                            return CreateAnalysisResults(set, ignoreCase, minLength, maxLength, index, count);
+                            return CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, index, count);
                         }
                     }
 
@@ -82,7 +82,7 @@ namespace System.Collections.Frozen
                         {
                             if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                             {
-                                return CreateAnalysisResults(set, ignoreCase, minLength, maxLength, comparer.Index, count);
+                                return CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count);
                             }
                         }
                     }
@@ -94,7 +94,7 @@ namespace System.Collections.Frozen
         }
 
         private static AnalysisResults CreateAnalysisResults(
-            IEnumerable<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count)
+            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count)
         {
             // Start off by assuming all strings are ASCII
             bool allAsciiIfIgnoreCase = true;
@@ -203,13 +203,13 @@ namespace System.Collections.Frozen
 #endif
         }
 
-        private static bool HasSufficientUniquenessFactor(HashSet<string> set, string[] uniqueStrings, int acceptableNonUniqueCount)
+        private static bool HasSufficientUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings, int acceptableNonUniqueCount)
         {
             set.Clear();
 
             foreach (string s in uniqueStrings)
             {
-                if (!set.Add(s) && --acceptableNonUniqueCount < 0)
+                if (!set.Add(s) && acceptableNonUniqueCount-- <= 0)
                 {
                     return false;
                 }
