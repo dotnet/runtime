@@ -160,6 +160,6 @@ namespace System.Diagnostics
             return unchecked((long)(GetRawElapsedTicks() * s_tickFrequency));
         }
 
-        private string DebuggerDisplay => $"{Elapsed}, IsRunning = {_isRunning}";
+        private string DebuggerDisplay => $"{Elapsed} (IsRunning = {_isRunning})";
     }
 }
