@@ -426,12 +426,17 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
     }
     if (asset.buffer) {
         const buffer = asset.buffer;
-        asset.buffer = null as any; // GC
+        if (!asset.resolvedUrl) {
+            asset.resolvedUrl = "undefined://" + asset.name;
+        }
         asset.pendingDownloadInternal = {
-            url: "undefined://" + asset.name,
+            url: asset.resolvedUrl,
             name: asset.name,
             response: Promise.resolve({
+                ok: true,
                 arrayBuffer: () => buffer,
+                json: () => JSON.parse(new TextDecoder("utf-8").decode(buffer)),
+                text: () => { throw new Error("NotImplementedException"); },
                 headers: {
                     get: () => undefined,
                 }
