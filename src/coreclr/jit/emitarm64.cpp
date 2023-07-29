@@ -11804,6 +11804,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= insEncodeReg_Rt(id->idReg1()); // ttttt
             dst += emitOutput_Instr(dst, code);
+
+            // Update gcinfo
+            if (ins == INS_mrs_tpid0)
+            {
+                assert(id->idGCref() == GCT_NONE);
+                emitGCregDeadUpd(id->idReg1(), dst);
+            }
             break;
 
         default:
