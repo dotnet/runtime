@@ -5544,12 +5544,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_stlxrb, EA_4BYTE, REG_R8, REG_R5, REG_R14);
     theEmitter->emitIns_R_R_R(INS_stlxrh, EA_4BYTE, REG_R12, REG_R3, REG_R15);
 
-    // stlur Ws, Rt, [reg]
-    theEmitter->emitIns_R_R_R(INS_stlur, EA_8BYTE, REG_R1, REG_R9, REG_R8);
-    theEmitter->emitIns_R_R_R(INS_stlur, EA_4BYTE, REG_R3, REG_R7, REG_R13);
-    theEmitter->emitIns_R_R_R(INS_stlurb, EA_4BYTE, REG_R8, REG_R5, REG_R14);
-    theEmitter->emitIns_R_R_R(INS_stlurh, EA_4BYTE, REG_R12, REG_R3, REG_R15);
-
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
