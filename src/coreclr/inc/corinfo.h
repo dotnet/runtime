@@ -2809,11 +2809,6 @@ public:
             CORINFO_CLASS_HANDLE cls
             ) = 0;
 
-    virtual void getTlsRootInfo(CORINFO_CONST_LOOKUP* addr) = 0;
-    virtual void getTlsIndexInfo(CORINFO_CONST_LOOKUP* addr) = 0;
-    virtual void getThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* addr) = 0;
-    virtual int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, CORINFO_CONST_LOOKUP* targetSymbol) = 0;
-
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
 

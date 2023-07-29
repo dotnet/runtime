@@ -3232,28 +3232,6 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-
-        private void getTlsRootInfo(ref CORINFO_CONST_LOOKUP addr)
-        {
-            // Implemented for NativeAOT only for now.
-        }
-
-        private void getTlsIndexInfo(ref CORINFO_CONST_LOOKUP addr)
-        {
-            // Implemented for NativeAOT only for now.
-        }
-
-        private void getThreadStaticBaseSlowInfo(ref CORINFO_CONST_LOOKUP addr)
-        {
-            // Implemented for NativeAOT only for now.
-        }
-
-        private int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref CORINFO_CONST_LOOKUP targetSymbol)
-        {
-            // Implemented for NativeAOT only for now.
-            return 0;
-        }
-
         private void getThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_STRUCT_* cls)
         {
             // Implemented for NativeAOT only for now.

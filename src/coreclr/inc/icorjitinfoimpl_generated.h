@@ -400,20 +400,6 @@ void getThreadLocalStaticInfo_ReadyToRun(
           CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo,
           CORINFO_CLASS_HANDLE cls) override;
 
-void getTlsRootInfo(
-          CORINFO_CONST_LOOKUP* addr) override;
-
-void getTlsIndexInfo(
-          CORINFO_CONST_LOOKUP* addr) override;
-
-void getThreadStaticBaseSlowInfo(
-          CORINFO_CONST_LOOKUP* addr) override;
-
-int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_CONST_LOOKUP* addr,
-          CORINFO_CONST_LOOKUP* targetSymbol) override;
-
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 

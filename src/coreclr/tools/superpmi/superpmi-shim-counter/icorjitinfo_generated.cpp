@@ -771,36 +771,6 @@ void interceptor_ICJI::getThreadLocalStaticInfo_ReadyToRun(
     original_ICorJitInfo->getThreadLocalStaticInfo_ReadyToRun(pInfo, cls);
 }
 
-void interceptor_ICJI::getTlsRootInfo(
-          CORINFO_CONST_LOOKUP* addr)
-{
-    mcs->AddCall("getTlsRootInfo");
-    original_ICorJitInfo->getTlsRootInfo(addr);
-}
-
-void interceptor_ICJI::getTlsIndexInfo(
-          CORINFO_CONST_LOOKUP* addr)
-{
-    mcs->AddCall("getTlsIndexInfo");
-    original_ICorJitInfo->getTlsIndexInfo(addr);
-}
-
-void interceptor_ICJI::getThreadStaticBaseSlowInfo(
-          CORINFO_CONST_LOOKUP* addr)
-{
-    mcs->AddCall("getThreadStaticBaseSlowInfo");
-    original_ICorJitInfo->getThreadStaticBaseSlowInfo(addr);
-}
-
-int interceptor_ICJI::getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_CONST_LOOKUP* addr,
-          CORINFO_CONST_LOOKUP* targetSymbol)
-{
-    mcs->AddCall("getEnsureClassCtorRunAndReturnThreadStaticBaseHelper");
-    return original_ICorJitInfo->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(cls, addr, targetSymbol);
-}
-
 bool interceptor_ICJI::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {

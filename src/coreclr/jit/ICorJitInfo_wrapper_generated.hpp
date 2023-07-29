@@ -941,41 +941,6 @@ void WrapICorJitInfo::getThreadLocalStaticInfo_ReadyToRun(
     API_LEAVE(getThreadLocalStaticInfo_ReadyToRun);
 }
 
-void WrapICorJitInfo::getTlsRootInfo(
-          CORINFO_CONST_LOOKUP* addr)
-{
-    API_ENTER(getTlsRootInfo);
-    wrapHnd->getTlsRootInfo(addr);
-    API_LEAVE(getTlsRootInfo);
-}
-
-void WrapICorJitInfo::getTlsIndexInfo(
-          CORINFO_CONST_LOOKUP* addr)
-{
-    API_ENTER(getTlsIndexInfo);
-    wrapHnd->getTlsIndexInfo(addr);
-    API_LEAVE(getTlsIndexInfo);
-}
-
-void WrapICorJitInfo::getThreadStaticBaseSlowInfo(
-          CORINFO_CONST_LOOKUP* addr)
-{
-    API_ENTER(getThreadStaticBaseSlowInfo);
-    wrapHnd->getThreadStaticBaseSlowInfo(addr);
-    API_LEAVE(getThreadStaticBaseSlowInfo);
-}
-
-int WrapICorJitInfo::getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_CONST_LOOKUP* addr,
-          CORINFO_CONST_LOOKUP* targetSymbol)
-{
-    API_ENTER(getEnsureClassCtorRunAndReturnThreadStaticBaseHelper);
-    int temp = wrapHnd->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(cls, addr, targetSymbol);
-    API_LEAVE(getEnsureClassCtorRunAndReturnThreadStaticBaseHelper);
-    return temp;
-}
-
 bool WrapICorJitInfo::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {

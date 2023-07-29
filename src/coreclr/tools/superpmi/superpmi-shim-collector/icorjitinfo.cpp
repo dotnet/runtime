@@ -1055,37 +1055,6 @@ void interceptor_ICJI::getThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC
     mc->recGetThreadLocalStaticInfo_ReadyToRun(pInfo, cls);
 }
 
-void interceptor_ICJI::getTlsRootInfo(CORINFO_CONST_LOOKUP* pInfo)
-{
-    mc->cr->AddCall("getTlsRootInfo");
-    original_ICorJitInfo->getTlsRootInfo(pInfo);
-    mc->recGetTlsRootInfo(pInfo);
-}
-
-void interceptor_ICJI::getTlsIndexInfo(CORINFO_CONST_LOOKUP* pInfo)
-{
-    mc->cr->AddCall("getTlsIndexInfo");
-    original_ICorJitInfo->getTlsIndexInfo(pInfo);
-    mc->recGetTlsIndexInfo(pInfo);
-}
-
-void interceptor_ICJI::getThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* pInfo)
-{
-    mc->cr->AddCall("getThreadStaticBaseSlowInfo");
-    original_ICorJitInfo->getThreadStaticBaseSlowInfo(pInfo);
-    mc->repGetThreadStaticBaseSlowInfo(pInfo);
-}
-
-int interceptor_ICJI::getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_HANDLE  cls,
-                                                                 CORINFO_CONST_LOOKUP* addr,
-                                                                 CORINFO_CONST_LOOKUP* targetSymbol)
-{
-    mc->cr->AddCall("getEnsureClassCtorRunAndReturnThreadStaticBaseHelper");
-    int result = original_ICorJitInfo->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(cls, addr, targetSymbol);
-    mc->recGetEnsureClassCtorRunAndReturnThreadStaticBaseHelper(cls, addr, targetSymbol, result);
-    return result;
-}
-
 // Returns true iff "fldHnd" represents a static field.
 bool interceptor_ICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {

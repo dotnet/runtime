@@ -2417,34 +2417,6 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private void getTlsRootInfo(ref CORINFO_CONST_LOOKUP addr)
-        {
-            addr = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
-        }
-
-        private void getTlsIndexInfo(ref CORINFO_CONST_LOOKUP addr)
-        {
-            addr = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
-        }
-
-        private void getThreadStaticBaseSlowInfo(ref CORINFO_CONST_LOOKUP addr)
-        {
-            addr = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
-        }
-
-        private int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref CORINFO_CONST_LOOKUP targetSymbol)
-        {
-            MetadataType clsType = HandleToObject(cls) as MetadataType;
-            if (clsType == null)
-            {
-                return 0;
-            }
-
-            addr         = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
-            targetSymbol = CreateConstLookupToSymbol(_compilation.NodeFactory.TypeNonGCStaticsSymbol(clsType));
-            return -NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
-        }
-
         private void getThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_STRUCT_* cls)
         {
             pInfo->offsetOfThreadLocalStoragePointer = (uint)(11 * PointerSize); // 0x58 = 0n88

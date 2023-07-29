@@ -106,10 +106,6 @@ struct JitInterfaceCallbacks
     uint32_t (* getThreadLocalFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool isGCtype);
     void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
     void (* getThreadLocalStaticInfo_ReadyToRun)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_HANDLE cls);
-    void (* getTlsRootInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* addr);
-    void (* getTlsIndexInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* addr);
-    void (* getThreadStaticBaseSlowInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* addr);
-    int (* getEnsureClassCtorRunAndReturnThreadStaticBaseHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, CORINFO_CONST_LOOKUP* targetSymbol);
     bool (* isFieldStatic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd);
     int (* getArrayOrStringLength)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objHnd);
     void (* getBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries);
@@ -1127,41 +1123,6 @@ public:
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->getThreadLocalStaticInfo_ReadyToRun(_thisHandle, &pException, pInfo, cls);
     if (pException != nullptr) throw pException;
-}
-
-    virtual void getTlsRootInfo(
-          CORINFO_CONST_LOOKUP* addr)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getTlsRootInfo(_thisHandle, &pException, addr);
-    if (pException != nullptr) throw pException;
-}
-
-    virtual void getTlsIndexInfo(
-          CORINFO_CONST_LOOKUP* addr)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getTlsIndexInfo(_thisHandle, &pException, addr);
-    if (pException != nullptr) throw pException;
-}
-
-    virtual void getThreadStaticBaseSlowInfo(
-          CORINFO_CONST_LOOKUP* addr)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getThreadStaticBaseSlowInfo(_thisHandle, &pException, addr);
-    if (pException != nullptr) throw pException;
-}
-
-    virtual int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_CONST_LOOKUP* addr,
-          CORINFO_CONST_LOOKUP* targetSymbol)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(_thisHandle, &pException, cls, addr, targetSymbol);
-    if (pException != nullptr) throw pException;
-    return temp;
 }
 
     virtual bool isFieldStatic(
