@@ -1765,8 +1765,8 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
         // full memory barriers if mixed with STLR
         bool hasRcpc = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc);
 
-        // On arm64-v8.3+ we can use ldap* instructions with acquire/release semantics to avoid
-        // full memory barriers if address is contained and unscaled
+        // On arm64-v8.3+ we can use ldapur* instructions with acquire/release semantics to
+        // avoid full memory barriers if address is contained and unscaled
         bool hasRcpc2 = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2);
 
         bool handledWithLdapur = false;
