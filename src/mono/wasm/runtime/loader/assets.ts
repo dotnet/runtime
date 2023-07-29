@@ -20,6 +20,7 @@ const jsModulesAssetTypes: {
 } = {
     "js-module-threads": true,
     "js-module-runtime": true,
+    "js-module-dotnet": true,
     "js-module-native": true,
 };
 
@@ -164,8 +165,9 @@ export async function mono_download_assets(): Promise<void> {
                 const asset = await downloadPromise;
                 if (asset.buffer) {
                     if (!skipInstantiateByAssetTypes[asset.behavior]) {
-                        const url = asset.pendingDownloadInternal!.url;
                         mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
+                        mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
+                        const url = asset.resolvedUrl!;
                         const data = new Uint8Array(asset.buffer!);
                         cleanupAsset(asset);
 
@@ -220,8 +222,25 @@ export async function mono_download_assets(): Promise<void> {
 
 function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLoadedAssets: AssetEntryInternal[]) {
     const config = loaderHelpers.config;
-    const resources = loaderHelpers.config.resources;
-    if (resources) {
+
+    // if assets exits, we will assume Net7 legacy and not process resources object
+    if (config.assets) {
+        for (const a of config.assets) {
+            const asset: AssetEntryInternal = a;
+            mono_assert(typeof asset === "object", "asset must be object");
+            mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
+            mono_assert(typeof asset.name === "string", "asset name must be string");
+            mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
+            if (containedInSnapshotByAssetTypes[asset.behavior]) {
+                containedInSnapshotAssets.push(asset);
+            } else {
+                alwaysLoadedAssets.push(asset);
+            }
+        }
+    } else if (config.resources) {
+        const resources = config.resources;
         if (resources.assembly) {
             for (const name in resources.assembly) {
                 containedInSnapshotAssets.push({
@@ -307,31 +326,7 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
         }
     }
 
-    const newAssets = [...containedInSnapshotAssets, ...alwaysLoadedAssets];
-
-    if (loaderHelpers.config.assets) {
-        for (const a of loaderHelpers.config.assets) {
-            const asset: AssetEntryInternal = a;
-            mono_assert(typeof asset === "object", "asset must be object");
-            mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
-            mono_assert(typeof asset.name === "string", "asset name must be string");
-            mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
-            mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
-            mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (containedInSnapshotByAssetTypes[asset.behavior]) {
-                containedInSnapshotAssets.push(asset);
-            } else {
-                alwaysLoadedAssets.push(asset);
-            }
-        }
-    }
-
-    if (!loaderHelpers.config.assets) {
-        loaderHelpers.config.assets = [];
-    }
-
-    loaderHelpers.config.assets = [...loaderHelpers.config.assets, ...newAssets];
-
+    config.assets = [...containedInSnapshotAssets, ...alwaysLoadedAssets];
 }
 
 export function delay(ms: number): Promise<void> {
