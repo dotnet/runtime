@@ -203,7 +203,7 @@ namespace System.Collections.Frozen
 #endif
         }
 
-        private static bool HasSufficientUniquenessFactor(HashSet<string> set, IEnumerable<string> uniqueStrings, int acceptableNonUniqueCount)
+        private static bool HasSufficientUniquenessFactor(HashSet<string> set, string[] uniqueStrings, int acceptableNonUniqueCount)
         {
             set.Clear();
 
