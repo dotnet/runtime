@@ -1607,7 +1607,17 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         }
         else // store into register (i.e move into register)
         {
-            inst_Mov(targetType, targetReg, dataReg, true);
+            if (data->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                assert(data->AsIntCon()->IconValue() == 0);
+                emitAttr attr = emitActualTypeSize(targetType);
+                // need to load the address from thread pointer reg
+                emit->emitIns_R_R(INS_mov, attr, targetReg, REG_TP);
+            }
+            else
+            {
+                inst_Mov(targetType, targetReg, dataReg, true);
+            }
             genProduceReg(lclNode);
         }
     }

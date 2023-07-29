@@ -1277,6 +1277,10 @@ namespace Internal.JitInterface
             }
 
             MethodDesc decl = HandleToObject(info->virtualMethod);
+
+            // Transform from the unboxing thunk to the normal method
+            decl = decl.IsUnboxingThunk() ? decl.GetUnboxedMethod() : decl;
+
             Debug.Assert(!decl.HasInstantiation);
 
             if ((info->context != null) && decl.OwningType.IsInterface)
@@ -1369,7 +1373,6 @@ namespace Internal.JitInterface
 #endif
                         );
                 }
-                info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
             else
             {
@@ -1382,17 +1385,17 @@ namespace Internal.JitInterface
                     , methodWithTokenImpl
 #endif
                     );
+            }
 
-                if (unboxingStub)
-                {
-                    info->resolvedTokenDevirtualizedUnboxedMethod = info->resolvedTokenDevirtualizedMethod;
-                    info->resolvedTokenDevirtualizedUnboxedMethod.tokenContext = contextFromMethod(nonUnboxingImpl);
-                    info->resolvedTokenDevirtualizedUnboxedMethod.hMethod = ObjectToHandle(nonUnboxingImpl);
-                }
-                else
-                {
-                    info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
-                }
+            if (unboxingStub)
+            {
+                info->resolvedTokenDevirtualizedUnboxedMethod = info->resolvedTokenDevirtualizedMethod;
+                info->resolvedTokenDevirtualizedUnboxedMethod.tokenContext = contextFromMethod(nonUnboxingImpl);
+                info->resolvedTokenDevirtualizedUnboxedMethod.hMethod = ObjectToHandle(nonUnboxingImpl);
+            }
+            else
+            {
+                info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
 
 #if READYTORUN
@@ -1400,8 +1403,11 @@ namespace Internal.JitInterface
             // Only generate verification for builds with the stress mode enabled
             if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
             {
-                ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
-                AddPrecodeFixup(virtualResolutionNode);
+                if (!methodWithTokenDecl.Method.OwningType.IsValueType || !methodWithTokenImpl.Method.OwningType.IsValueType)
+                {
+                    ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
+                    AddPrecodeFixup(virtualResolutionNode);
+                }
             }
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;

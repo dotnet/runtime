@@ -31,7 +31,7 @@ BOOL TypeHandle::Verify()
     if (IsNull())
         return(TRUE);
 
-    if (!IsRestored_NoLogging())
+    if (!IsRestored())
         return TRUE;
 
     if (IsArray())

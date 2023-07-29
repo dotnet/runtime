@@ -15,11 +15,13 @@ import { getOptions, applyOptions } from "./jiterpreter-support";
 import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
 import { loadLazyAssembly } from "./lazyLoading";
 import { loadSatelliteAssemblies } from "./satelliteAssemblies";
+import { forceDisposeProxies } from "./gc-handles";
 
 export function export_internal(): any {
     return {
         // tests
         mono_wasm_exit: (exit_code: number) => { Module.err("early exit " + exit_code); },
+        forceDisposeProxies,
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
         logging: undefined,

@@ -974,16 +974,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				var actualMember = origin?.Provider as IMemberDefinition;
 				var expectedOriginMember = expectedOriginProvider as IMemberDefinition;
-				if (actualMember?.FullName == expectedOriginMember.FullName)
-					return true;
-
-				// Compensate for cases where for some reason the OM doesn't preserve the declaring types
-				// on certain things after trimming.
-				if (actualMember != null && actualMember?.DeclaringType == null &&
-					actualMember?.Name == expectedOriginMember.Name)
-					return true;
-
-				return false;
+				return actualMember?.FullName == expectedOriginMember.FullName;
 			}
 		}
 

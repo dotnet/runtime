@@ -61,6 +61,7 @@ internal static class ReflectionTest
         TestVTableOfNullableUnderlyingTypes.Run();
         TestInterfaceLists.Run();
         TestMethodConsistency.Run();
+        TestGenericMethodOnGenericType.Run();
         TestIsValueTypeWithoutTypeHandle.Run();
         TestMdArrayLoad.Run();
         TestByRefTypeLoad.Run();
@@ -2268,6 +2269,40 @@ internal static class ReflectionTest
                 throw new Exception();
 
             static MethodInfo Grab<T>() => typeof(MyGenericType<T>).GetMethod(nameof(MyGenericType<T>.MyMethod));
+        }
+    }
+
+    class TestGenericMethodOnGenericType
+    {
+        class Gen<T, U> { }
+
+        struct Atom1 { }
+        struct Atom2 { }
+
+        class GenericType<T>
+        {
+            public static Gen<T, U> GenericMethod1<U>() => new Gen<T, U>();
+            public static Gen<T, U> GenericMethod2<U>() => new Gen<T, U>();
+        }
+
+        static MethodInfo s_genericMethod2 = typeof(GenericType<>).GetMethod("GenericMethod2");
+
+        static object Make<T>(Type t)
+        {
+            if (t.IsValueType) throw null;
+            // AOT safe because we just checked t is not a valuetype
+            return typeof(GenericType<T>).GetMethod("GenericMethod1").MakeGenericMethod(t).Invoke(null, null);
+        }
+
+        public static void Run()
+        {
+            Make<Atom1>(typeof(object));
+
+            // This is supposed to be all AOT safe because we're instantiating over a reference type
+            // Ideally there would also be no AOT warning.
+            ((MethodInfo)(typeof(GenericType<Atom2>).GetMemberWithSameMetadataDefinitionAs(s_genericMethod2)))
+                .MakeGenericMethod(typeof(object))
+                .Invoke(null, null);
         }
     }
 
