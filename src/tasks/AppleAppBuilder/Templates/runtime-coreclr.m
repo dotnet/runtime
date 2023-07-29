@@ -9,10 +9,11 @@
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <dlfcn.h>
 
 #import "util.h"
 
-#define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
+#define APPLE_RUNTIME_IDENTIFIER "iossimulator-arm64"
 
 const char *
 get_bundle_path (void)
@@ -32,6 +33,51 @@ get_bundle_path (void)
     return bundle_path;
 }
 
+char *
+compute_trusted_platform_assemblies ()
+{
+    const char *bundle_path = get_bundle_path ();
+
+    NSMutableArray<NSString *> *files = [NSMutableArray array];
+    NSMutableArray<NSString *> *exes = [NSMutableArray array];
+
+    NSFileManager *manager = [NSFileManager defaultManager];
+    NSString *dir = [NSString stringWithUTF8String: bundle_path];
+    NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:[NSURL fileURLWithPath: dir]
+                                                 includingPropertiesForKeys:@[NSURLNameKey, NSURLIsDirectoryKey]
+                                                 options:NSDirectoryEnumerationSkipsSubdirectoryDescendants
+                                                 errorHandler:nil];
+    for (NSURL *file in enumerator) {
+        // skip subdirectories
+        NSNumber *isDirectory = nil;
+        if (![file getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:nil] || [isDirectory boolValue])
+            continue;
+
+        NSString *name = nil;
+        if (![file getResourceValue:&name forKey:NSURLNameKey error:nil])
+            continue;
+        if ([name length] < 4)
+            continue;
+       if ([name compare: @".dll" options: NSCaseInsensitiveSearch range: NSMakeRange ([name length] - 4, 4)] == NSOrderedSame) {
+            [files addObject: [dir stringByAppendingPathComponent: name]];
+        }
+    }
+
+    // Join them all together with a colon separating them
+    NSString *joined = [files componentsJoinedByString: @":"];
+    return strdup([joined UTF8String]);
+}
+
+void*
+pinvoke_override (const char *libraryName, const char *entrypointName)
+{
+    if (!strcmp (libraryName, "__Internal"))
+    {
+        return dlsym (RTLD_DEFAULT, entrypointName);
+    }
+    return NULL;
+}
+
 void
 mono_ios_runtime_init (void)
 {
@@ -42,7 +88,6 @@ mono_ios_runtime_init (void)
 #if HYBRID_GLOBALIZATION
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_HYBRID", "1", TRUE);
 #endif
-
 
     // build using DiagnosticPorts property in AppleAppBuilder
     // or set DOTNET_DiagnosticPorts env via mlaunch, xharness when undefined.
@@ -67,11 +112,16 @@ mono_ios_runtime_init (void)
     res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
 #endif
     assert (res > 0);
+    
+    char pinvoke_override_addr [16];
+    sprintf (pinvoke_override_addr, "%p", &pinvoke_override);
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
     const char *appctx_keys [] = {
         "RUNTIME_IDENTIFIER",
         "APP_CONTEXT_BASE_DIRECTORY",
+        "TRUSTED_PLATFORM_ASSEMBLIES",
+        "PINVOKE_OVERRIDE",
 #if !defined(INVARIANT_GLOBALIZATION)
         "ICU_DAT_FILE_PATH"
 #endif
@@ -79,24 +129,27 @@ mono_ios_runtime_init (void)
     const char *appctx_values [] = {
         APPLE_RUNTIME_IDENTIFIER,
         bundle,
+        compute_trusted_platform_assemblies(),
+        pinvoke_override_addr,
 #if !defined(INVARIANT_GLOBALIZATION)
         icu_dat_path
 #endif
     };
 
-    const char* executable = "%EntryPointLibName%";
+    const char* executable = "Program.dll";
     const char *executablePath = [[[[NSBundle mainBundle] executableURL] path] UTF8String];
     unsigned int coreclr_domainId = 0;
     void *coreclr_handle = NULL;
 
-    coreclr_initialize (
-        executablePath, executable,
-        sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values,
-        &coreclr_handle, &coreclr_domainId);
-
     char path [1024];
     res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle, executable);
     assert (res > 0);
+
+    res = coreclr_initialize (
+        executablePath, executable,
+        sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values,
+        &coreclr_handle, &coreclr_domainId);
+    assert (res == 0);
 
     coreclr_execute_assembly (coreclr_handle, coreclr_domainId, argi, managed_argv, path, &res);
     // Print this so apps parsing logs can detect when we exited

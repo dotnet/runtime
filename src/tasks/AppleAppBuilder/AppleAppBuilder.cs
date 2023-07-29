@@ -320,6 +320,11 @@ public class AppleAppBuilderTask : Task
             extraLinkerArgs.Add(item.ItemSpec);
         }
 
+        if (Runtime == "CoreCLR")
+        {
+            extraLinkerArgs.Add("-rpath @executable_path");
+        }
+
         var generator = new Xcode(Log, TargetOS, Arch);
 
         if (GenerateXcodeProject)
