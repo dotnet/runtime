@@ -3006,12 +3006,12 @@ namespace System
 
             if (destination.Length < quotient)
             {
-                source = source.Slice(destination.Length * 2);
+                source = source.Slice(0, destination.Length * 2);
                 successResult = OperationStatus.DestinationTooSmall;
             }
             else if (remainder == 1)
             {
-                source = source.Slice(source.Length - 1);
+                source = source.Slice(0, source.Length - 1);
                 successResult = OperationStatus.NeedMoreData;
             }
 
