@@ -100,7 +100,7 @@ static void appendStrBlob(CQuickBytes *out, CorElementType type, PCCOR_SIGNATURE
             sprintf_s(buff, buffSize, "%s", *(BOOLEAN*)ptr == 1 ? "true" : "false");
             goto APPEND;
         case ELEMENT_TYPE_CHAR         :
-            sprintf_s(buff, buffSize, "%c", *(CHAR*)ptr);
+            sprintf_s(buff, buffSize, "%hX", *(WCHAR*)ptr);
             goto APPEND;
         case ELEMENT_TYPE_I1           :
             sprintf_s(buff, buffSize, "%hhd", *(int8_t*)ptr);
@@ -554,7 +554,7 @@ PCCOR_SIGNATURE PrettyPrintType(
             case ELEMENT_TYPE_BOOLEAN       :
                 str = "bool"; goto APPEND;
             case ELEMENT_TYPE_CHAR          :
-                str = "char"; goto APPEND;
+                str = "wchar"; goto APPEND;
             case ELEMENT_TYPE_I1            :
                 str = "int8"; goto APPEND;
             case ELEMENT_TYPE_U1            :

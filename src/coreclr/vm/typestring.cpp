@@ -1264,7 +1264,7 @@ void TypeString::AppendConstValue(TypeNameBuilder& tnb, CorElementType valueType
             pValueString.Printf("true");
         break;
     case ELEMENT_TYPE_CHAR:
-        pValueString.Printf("%c", *(char*)&value);
+        pValueString.Printf("%hX", *(WCHAR*)&value);
         break;
     case ELEMENT_TYPE_I1:
         pValueString.Printf("%hhd", *(uint8_t*)&value);

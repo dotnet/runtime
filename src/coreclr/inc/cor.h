@@ -1814,10 +1814,10 @@ inline ULONG CorSigUncompressConstTypeArgData(
     switch (*pData++)
     {
         case ELEMENT_TYPE_BOOLEAN      :
-        case ELEMENT_TYPE_CHAR         :
         case ELEMENT_TYPE_I1           :
         case ELEMENT_TYPE_U1           :
             break;
+        case ELEMENT_TYPE_CHAR         :
         case ELEMENT_TYPE_I2           :
         case ELEMENT_TYPE_U2           :
             size = size << 1;
