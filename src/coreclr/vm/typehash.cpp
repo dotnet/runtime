@@ -201,8 +201,11 @@ static DWORD HashConstValueType(TypeHandle valueType, uint64_t value)
 {
     WRAPPER_NO_CONTRACT;
     INT_PTR dwHash = 5381;
+    DWORD lowerPart = (DWORD)(value & 0xFFFFFFFF);
+    DWORD higherPart = (DWORD)((value & 0xFFFFFFFF00000000) >> 32);
     dwHash = ((dwHash << 5) + dwHash) ^ valueType.AsTAddr();
-    dwHash = ((dwHash << 5) + dwHash) ^ value;
+    dwHash = ((dwHash << 5) + dwHash) ^ higherPart;
+    dwHash = ((dwHash << 5) + dwHash) ^ lowerPart;
     return (DWORD)dwHash;
 }
 
