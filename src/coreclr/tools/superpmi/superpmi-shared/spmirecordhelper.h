@@ -250,7 +250,7 @@ inline void SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(
         pResolvedToken->cbMethodSpec = (ULONG)tokenOut.cbMethodSpec;
         pResolvedToken->isConstValue   = (bool)tokenOut.isConstValue;
         pResolvedToken->constValueType = (CorInfoType)tokenOut.constValueType;
-        pResolvedToken->constValue     = (uint64_t)tokenOut.constValue;
+        pResolvedToken->constValue     = tokenOut.constValue;
     }
 }
 

@@ -133,7 +133,7 @@ struct Agnostic_CORINFO_RESOLVED_TOKENout
     DWORD     cbMethodSpec;
     DWORD     isConstValue;
     DWORD     constValueType;
-    DWORDLONG constValue;
+    uint64_t  constValue;
 };
 
 struct Agnostic_GetArgType_Key
