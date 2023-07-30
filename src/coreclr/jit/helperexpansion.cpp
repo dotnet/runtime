@@ -447,7 +447,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
     return isNativeAOT ? fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCallReadyToRun>(
                              false /* expand rarely run blocks for NativeAOT */)
-                               : fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>(true);
+                       : fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>(true);
 }
 
 bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
@@ -541,7 +541,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         lvaTable[targetSymbolLclNum].lvType = TYP_I_IMPL;
         GenTree* tlsRootAddrDef             = gtNewStoreLclVarNode(targetSymbolLclNum, targetSymbolAddr);
         GenTree* tlsRootAddrUse             = gtNewLclVarNode(targetSymbolLclNum);
-        
+
         targetSymbCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtCloneExpr(tlsRootAddrUse), debugInfo);
 
         GenTree* targetSymbolAddrVal = gtNewIndir(TYP_I_IMPL, tlsRootAddrUse);
@@ -605,7 +605,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
 #ifdef TARGET_64BIT
         // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
         GenTree* tlsValue = gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        tlsValue          = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
         CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
 
