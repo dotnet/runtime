@@ -1216,6 +1216,12 @@ namespace System.Globalization.Tests
 
             for (int i = 0; i <= 0xFFFF; i++)
             {
+                // Surrogates are characters in the Unicode range U+D800—U+DFFF
+                if (i >= 0xD800 && i <= 0xDFFF)
+                {
+                    continue;
+                }
+
                 char ch = (char)i;
                 char upper = textInfo.ToUpper(ch);
                 char lower = textInfo.ToLower(ch);
@@ -1227,6 +1233,7 @@ namespace System.Globalization.Tests
 
                     Assert.True(chString.Equals(upperString, StringComparison.OrdinalIgnoreCase), $"Expected {(int)ch:x4} to be equal to {(int)upper:x4}.");
                     Assert.True(chString.IndexOf(upperString, StringComparison.OrdinalIgnoreCase) == 0, $"Expected {(int)ch:x4} exist in {(int)upper:x4}.");
+                    Assert.True(chString.StartsWith(upperString, StringComparison.OrdinalIgnoreCase), $"Expected {(int)ch:x4} start with {(int)upper:x4}.");
                 }
 
                 // String comparisons has been done using ToUpper method, it is possible the lowercased character can be mapped to a different character when it is upper cased.
@@ -1237,6 +1244,7 @@ namespace System.Globalization.Tests
 
                     Assert.True(chString.Equals(lowerString, StringComparison.OrdinalIgnoreCase), $"Expected {(int)ch:x4} to be equal to {(int)lower:x4}.");
                     Assert.True(chString.IndexOf(lowerString, StringComparison.OrdinalIgnoreCase) == 0, $"Expected {(int)ch:x4} exist in {(int)lower:x4}.");
+                    Assert.True(chString.StartsWith(lowerString, StringComparison.OrdinalIgnoreCase), $"Expected {(int)ch:x4} start with {(int)lower:x4}.");
                 }
             }
         }
