@@ -15152,12 +15152,15 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            uint16_t relocationType = IMAGE_REL_BASED_MOFFSET;
             if (emitComp->opts.IsReadyToRun() && id->idAddr()->isSecRel)
             {
-                relocationType = IMAGE_REL_SECREL;
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
             }
-            emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, relocationType);
+            else
+            {
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val,
+                                     IMAGE_REL_BASED_MOFFSET);
+            }
         }
 
         goto DONE;

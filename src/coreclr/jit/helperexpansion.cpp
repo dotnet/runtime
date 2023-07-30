@@ -428,7 +428,9 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
         return result;
     }
 
-    if (opts.OptimizationDisabled())
+    // Always expand for NativeAOT, see
+    const bool isNativeAOT = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    if (!isNativeAOT && opts.OptimizationDisabled())
     {
         JITDUMP("Optimizations aren't allowed - bail out.\n")
         return result;
@@ -443,7 +445,8 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
         return result;
     }
 
-    return opts.IsReadyToRun() ? fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCallReadyToRun>(false)
+    return isNativeAOT ? fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCallReadyToRun>(
+                             false /* expand rarely run blocks for NativeAOT */)
                                : fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>(true);
 }
 
@@ -530,11 +533,18 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
 
         // target symbol
         GenTree* targetSymbolAddr = gtNewIconHandleNode((size_t)lazyCtorTargetSymbol.addr, GTF_ICON_OBJ_HDL);
+
         targetSymbolAddr =
             gtNewOperNode(GT_ADD, TYP_I_IMPL, targetSymbolAddr, gtNewIconNode(classCtorContextSize, TYP_I_IMPL));
-        targetSymbCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtCloneExpr(targetSymbolAddr), debugInfo);
 
-        GenTree* targetSymbolAddrVal = gtNewIndir(TYP_I_IMPL, targetSymbolAddr);
+        unsigned targetSymbolLclNum         = lvaGrabTemp(true DEBUGARG("Target symbol"));
+        lvaTable[targetSymbolLclNum].lvType = TYP_I_IMPL;
+        GenTree* tlsRootAddrDef             = gtNewStoreLclVarNode(targetSymbolLclNum, targetSymbolAddr);
+        GenTree* tlsRootAddrUse             = gtNewLclVarNode(targetSymbolLclNum);
+        
+        targetSymbCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtCloneExpr(tlsRootAddrUse), debugInfo);
+
+        GenTree* targetSymbolAddrVal = gtNewIndir(TYP_I_IMPL, tlsRootAddrUse);
         GenTree* targetSymbolNullCond =
             gtNewOperNode(GT_EQ, TYP_INT, targetSymbolAddrVal, gtNewIconNode(0, TYP_I_IMPL));
         targetSymbolNullCond = gtNewOperNode(GT_JTRUE, TYP_VOID, targetSymbolNullCond);
@@ -550,12 +560,13 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         classCtorRunHelperCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewIconNode(-1)));
 
         // arg2: NonGCStatics targetSymbol
-        classCtorRunHelperCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(targetSymbolAddr)));
+        classCtorRunHelperCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(tlsRootAddrUse)));
 
         fgMorphArgs(classCtorRunHelperCall);
 
         GenTree* lazyCtorValueDef = gtNewStoreLclVarNode(finalLclNum, classCtorRunHelperCall);
         lazyCtorBB = fgNewBBFromTreeAfter(BBJ_ALWAYS, targetSymbCondBB, lazyCtorValueDef, debugInfo, true);
+        fgInsertStmtAfter(targetSymbCondBB, targetSymbCondBB->firstStmt(), fgNewStmtFromTree(tlsRootAddrDef));
 
         fgRemoveRefPred(block, prevBb);
         fgAddRefPred(targetSymbCondBB, prevBb);
@@ -576,6 +587,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
 
         // lazyCtorBB is the new previous block going forward
         prevBb = lazyCtorBB;
+        JITDUMP("lazyCtorBB: " FMT_BB "\n", lazyCtorBB->bbNum);
+        JITDUMP("targetSymbCondBB: " FMT_BB "\n", targetSymbCondBB->bbNum);
     }
 
     // Block ops inserted by the split need to be morphed here since we are after morph.
@@ -590,12 +603,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
     if (TargetOS::IsWindows)
     {
 #ifdef TARGET_64BIT
-        GenTree* tlsValue          = nullptr;
-        unsigned tlsLclNum         = lvaGrabTemp(true DEBUGARG("TLS access"));
-        lvaTable[tlsLclNum].lvType = TYP_I_IMPL;
-
         // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
-        tlsValue = gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+        GenTree* tlsValue = gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
         CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
@@ -707,6 +716,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         assert(BasicBlock::sameEHRegion(prevBb, block));
         assert(BasicBlock::sameEHRegion(prevBb, tlsRootNullCondBB));
         assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
+
+        JITDUMP("tlsRootNullCondBB: " FMT_BB "\n", tlsRootNullCondBB->bbNum);
+        JITDUMP("fastPathBb: " FMT_BB "\n", fastPathBb->bbNum);
+        JITDUMP("fallbackBb: " FMT_BB "\n", fallbackBb->bbNum);
 #else
         assert(!"Unsupported scenario\n");
 
