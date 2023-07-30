@@ -1059,6 +1059,9 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
             assert(emitInsIsLoad(ins));
             return true;
 
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
+            return ins == INS_mrs_tpid0;
+
         default:
             return false;
     }
@@ -11804,13 +11807,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= insEncodeReg_Rt(id->idReg1()); // ttttt
             dst += emitOutput_Instr(dst, code);
-
-            // Update gcinfo
-            if (ins == INS_mrs_tpid0)
-            {
-                assert(id->idGCref() == GCT_NONE);
-                emitGCregDeadUpd(id->idReg1(), dst);
-            }
             break;
 
         default:
