@@ -139,6 +139,8 @@ static void appendStrBlob(CQuickBytes *out, CorElementType type, PCCOR_SIGNATURE
         APPEND:
             appendStr(out, buff);
             break;
+        default:
+            break;
     }
 
     delete []buff;
