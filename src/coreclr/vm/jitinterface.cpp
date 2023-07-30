@@ -417,7 +417,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         CORINFO_TYPE_UNDEF,          // CMOD_OPT
         CORINFO_TYPE_UNDEF,          // INTERNAL
         
-        CORINFO_TYPE_UNDEF,          // CTARG
+        CORINFO_TYPE_CTARG,          // CTARG
         };
 
     _ASSERTE(sizeof(map) == ELEMENT_TYPE_MAX);

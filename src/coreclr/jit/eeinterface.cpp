@@ -274,6 +274,10 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter* printer, CORINFO_CLASS_HANDL
     {
         eePrintType(printer, clsHnd, includeInstantiation);
     }
+    else if (typ == CORINFO_TYPE_CTARG)
+    {
+        eePrintConstValue(printer, info.compCompHnd->getConstValueType(clsHnd), info.compCompHnd->getConstValue(clsHnd));
+    }
     else
     {
         eePrintJitType(printer, JitType2PreciseVarType(typ));

@@ -683,6 +683,7 @@ namespace Internal.JitInterface
         // the JIT in "import only" mode.
 
         CORINFO_TYPE_VAR = 0x16,
+        CORINFO_TYPE_CTARG = 0x17,
         CORINFO_TYPE_COUNT,                         // number of jit types
     }
 
