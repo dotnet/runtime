@@ -1771,7 +1771,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
         bool handledWithLdapur = false;
         if (hasRcpc2 && !addrIsInReg && tree->Addr()->OperIs(GT_LEA) && (tree->Scale() == 1) &&
-            GetEmitter()->emitIns_valid_imm_for_ldst_offset(tree->Offset(), emitTypeSize(type)))
+            emitter::emitIns_valid_imm_for_unscaled_ldst_offset(tree->Offset()))
         {
             if (ins == INS_ldrb)
             {

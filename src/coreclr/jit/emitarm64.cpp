@@ -2381,6 +2381,12 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     return false;
 }
 
+// true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
+/*static*/ bool emitter::emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm)
+{
+    return (imm >= -256) && (imm <= 255);
+}
+
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr attr)
 {
