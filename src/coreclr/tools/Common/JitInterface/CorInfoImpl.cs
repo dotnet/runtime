@@ -1734,6 +1734,9 @@ namespace Internal.JitInterface
             pResolvedToken.hClass = null;
             pResolvedToken.hMethod = null;
             pResolvedToken.hField = null;
+            pResolvedToken.isConstValue = false;
+            pResolvedToken.constValueType = CorInfoType.CORINFO_TYPE_UNDEF;
+            pResolvedToken.constValue = 0;
 
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
