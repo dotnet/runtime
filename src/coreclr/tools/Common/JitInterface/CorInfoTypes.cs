@@ -302,6 +302,11 @@ namespace Internal.JitInterface
         public uint cbTypeSpec;
         public byte* pMethodSpec;
         public uint cbMethodSpec;
+
+        // [Out] Only meaningful if the resolved token is a const value argument.
+        public bool isConstValue;
+        public CorInfoType constValueType;
+        public ulong constValue;
     }
 
     [StructLayout(LayoutKind.Sequential)]

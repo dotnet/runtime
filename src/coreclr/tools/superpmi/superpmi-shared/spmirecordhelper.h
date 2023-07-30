@@ -144,6 +144,10 @@ inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::
 
         tokenOut.cbTypeSpec   = (DWORD)pResolvedToken->cbTypeSpec;
         tokenOut.cbMethodSpec = (DWORD)pResolvedToken->cbMethodSpec;
+
+        tokenOut.isConstValue   = pResolvedToken->isConstValue ? 1 : 0;
+        tokenOut.constValueType = (DWORD)pResolvedToken->constValueType;
+        tokenOut.constValue     = pResolvedToken->constValue;
     }
 
     tokenOut.pTypeSpec_Index   = -1;
@@ -165,6 +169,9 @@ inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::StoreAgnostic_CORIN
             (DWORD)buffers->AddBuffer((unsigned char*)pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
         tokenOut.pMethodSpec_Index =
             (DWORD)buffers->AddBuffer((unsigned char*)pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
+        tokenOut.isConstValue   = pResolvedToken->isConstValue ? 1 : 0;
+        tokenOut.constValueType = pResolvedToken->constValueType;
+        tokenOut.constValue     = pResolvedToken->constValue;
     }
 
     return tokenOut;
@@ -182,6 +189,9 @@ inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::RestoreAgnostic_COR
             (DWORD)buffers->Contains((unsigned char*)pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
         tokenOut.pMethodSpec_Index =
             (DWORD)buffers->Contains((unsigned char*)pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
+        tokenOut.isConstValue   = pResolvedToken->isConstValue ? 1 : 0;
+        tokenOut.constValueType = pResolvedToken->constValueType;
+        tokenOut.constValue     = pResolvedToken->constValue;
     }
     return tokenOut;
 }
@@ -238,6 +248,9 @@ inline void SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(
         pResolvedToken->cbTypeSpec   = (ULONG)tokenOut.cbTypeSpec;
         pResolvedToken->pMethodSpec  = (PCCOR_SIGNATURE)buffers->GetBuffer(tokenOut.pMethodSpec_Index);
         pResolvedToken->cbMethodSpec = (ULONG)tokenOut.cbMethodSpec;
+        pResolvedToken->isConstValue   = (bool)tokenOut.isConstValue;
+        pResolvedToken->constValueType = (CorInfoType)tokenOut.constValueType;
+        pResolvedToken->constValue     = (uint64_t)tokenOut.constValue;
     }
 }
 

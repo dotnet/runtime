@@ -718,7 +718,6 @@ enum CorInfoType
     // the JIT in "import only" mode.
 
     CORINFO_TYPE_VAR             = 0x16,
-    CORINFO_TYPE_CTARG           = 0x17,
     CORINFO_TYPE_COUNT,                         // number of jit types
 };
 
@@ -1576,7 +1575,7 @@ struct CORINFO_RESOLVED_TOKEN
 
     // [Out] Only meaningful if the resolved token is a const value argument.
     bool                    isConstValue;
-    CorElementType          constValueType;
+    CorInfoType             constValueType;
     uint64_t                constValue;
 };
 

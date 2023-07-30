@@ -416,8 +416,6 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         CORINFO_TYPE_UNDEF,          // CMOD_REQD
         CORINFO_TYPE_UNDEF,          // CMOD_OPT
         CORINFO_TYPE_UNDEF,          // INTERNAL
-
-        CORINFO_TYPE_CTARG           // CTARG
         };
 
     _ASSERTE(sizeof(map) == ELEMENT_TYPE_MAX);
@@ -892,7 +890,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     pResolvedToken->pMethodSpec = NULL;
     pResolvedToken->cbMethodSpec = NULL;
     pResolvedToken->isConstValue = false;
-    pResolvedToken->constValueType = ELEMENT_TYPE_END;
+    pResolvedToken->constValueType = CORINFO_TYPE_UNDEF;
     pResolvedToken->constValue = 0;
 
     TypeHandle th;
@@ -1116,7 +1114,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         // This is a const type parameter, we need to load the type and value from TypeDesc.
         pResolvedToken->isConstValue = th.AsTypeDesc()->IsConstValue();
         _ASSERTE(pResolvedToken->isConstValue);
-        pResolvedToken->constValueType = th.AsTypeDesc()->GetConstValueType().GetInternalCorElementType();
+        pResolvedToken->constValueType = asCorInfoType(th.AsTypeDesc()->GetConstValueType().GetInternalCorElementType());
         pResolvedToken->constValue = th.AsTypeDesc()->GetConstValue();
     }
     else

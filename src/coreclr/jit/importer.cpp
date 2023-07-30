@@ -9728,31 +9728,32 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     switch (resolvedToken.constValueType)
                     {
-                        case ELEMENT_TYPE_BOOLEAN:
-                        case ELEMENT_TYPE_CHAR:
-                        case ELEMENT_TYPE_I1:
-                        case ELEMENT_TYPE_U1:
+                        case CORINFO_TYPE_BOOL:
+                        case CORINFO_TYPE_BYTE:
+                        case CORINFO_TYPE_UBYTE:
                             cval.intVal = (int)*(uint8_t*)&resolvedToken.constValue;
                             goto PUSH_I4CON;
-                        case ELEMENT_TYPE_I2:
-                        case ELEMENT_TYPE_U2:
+                        case CORINFO_TYPE_CHAR:
+                        case CORINFO_TYPE_SHORT:
+                        case CORINFO_TYPE_USHORT:
                             cval.intVal = (int)*(uint16_t*)&resolvedToken.constValue;
                             goto PUSH_I4CON;
-                        case ELEMENT_TYPE_I4:
-                        case ELEMENT_TYPE_U4:
+                        case CORINFO_TYPE_INT:
+                        case CORINFO_TYPE_UINT:
                             cval.intVal = (int)*(uint32_t*)&resolvedToken.constValue;
                             goto PUSH_I4CON;
-                        case ELEMENT_TYPE_I8:
-                        case ELEMENT_TYPE_U8:
+                        case CORINFO_TYPE_LONG:
+                        case CORINFO_TYPE_ULONG:
                             cval.lngVal = (long)resolvedToken.constValue;
+                            JITDUMP(" 0x%016llx", cval.lngVal);
                             impPushOnStack(gtNewLconNode(cval.lngVal), typeInfo(TYP_LONG));
                             break;
-                        case ELEMENT_TYPE_R4:
+                        case CORINFO_TYPE_FLOAT:
                             cval.dblVal = *(float*)&resolvedToken.constValue;
                             JITDUMP(" %#.17g", cval.dblVal);
                             impPushOnStack(gtNewDconNode(cval.dblVal, TYP_FLOAT), typeInfo(TYP_DOUBLE));
                             break;
-                        case ELEMENT_TYPE_R8:
+                        case CORINFO_TYPE_DOUBLE:
                             cval.dblVal = *(double*)&resolvedToken.constValue;
                             JITDUMP(" %#.17g", cval.dblVal);
                             impPushOnStack(gtNewDconNode(cval.dblVal), typeInfo(TYP_DOUBLE));

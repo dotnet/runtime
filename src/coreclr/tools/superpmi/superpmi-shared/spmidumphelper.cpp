@@ -23,9 +23,10 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENout(
     const Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut)
 {
     char buffer[MAX_BUFFER_SIZE];
-    sprintf_s(buffer, MAX_BUFFER_SIZE, "cls-%016llX meth-%016llX fld-%016llX ti-%u ts-%u mi-%u ms-%u", tokenOut.hClass,
+    sprintf_s(buffer, MAX_BUFFER_SIZE, "cls-%016llX meth-%016llX fld-%016llX ti-%u ts-%u mi-%u ms-%u ic-%u cvt-%u cv-%016llX", tokenOut.hClass,
               tokenOut.hMethod, tokenOut.hField, tokenOut.pTypeSpec_Index, tokenOut.cbTypeSpec,
-              tokenOut.pMethodSpec_Index, tokenOut.cbMethodSpec);
+              tokenOut.pMethodSpec_Index, tokenOut.cbMethodSpec,
+              tokenOut.isConstValue, tokenOut.constValueType, tokenOut.constValue);
     return std::string(buffer);
 }
 

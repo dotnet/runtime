@@ -1054,20 +1054,6 @@ CorElementType TypeHandle::GetConstValueType() const
     return AsConstValue()->GetConstValueType().GetInternalCorElementType();
 }
 
-BOOL TypeHandle::IsRestored_NoLogging() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (!IsTypeDesc())
-    {
-        return AsMethodTable()->IsRestored_NoLogging();
-    }
-    else
-    {
-        return AsTypeDesc()->IsRestored_NoLogging();
-    }
-}
-
 BOOL TypeHandle::IsRestored() const
 {
     LIMITED_METHOD_DAC_CONTRACT;

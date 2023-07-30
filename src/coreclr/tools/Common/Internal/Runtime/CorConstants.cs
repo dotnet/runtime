@@ -36,6 +36,7 @@ namespace Internal.CorConstants
         ELEMENT_TYPE_MVAR = 30,
         ELEMENT_TYPE_CMOD_REQD = 31,
         ELEMENT_TYPE_CMOD_OPT = 32,
+        ELEMENT_TYPE_CTARG = 34,
 
         // ZapSig encoding for ELEMENT_TYPE_VAR and ELEMENT_TYPE_MVAR. It is always followed
         // by the RID of a GenericParam token, encoded as a compressed integer.

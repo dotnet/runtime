@@ -2984,19 +2984,31 @@ namespace Internal.JitInterface
             return CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private bool isConstValue(CORINFO_CLASS_STRUCT_* cls)
+#pragma warning restore CA1822 // Mark members as static
         {
-            throw new NotImplementedException();
+            // Implemented for JIT only for now.
+
+            return false;
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private ulong getConstValue(CORINFO_CLASS_STRUCT_* cls)
+#pragma warning restore CA1822 // Mark members as static
         {
-            throw new NotImplementedException();
+            // Implemented for JIT only for now.
+
+            return 0;
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private CorInfoType getConstValueType(CORINFO_CLASS_STRUCT_* cls)
+#pragma warning restore CA1822 // Mark members as static
         {
-            throw new NotImplementedException();
+            // Implemented for JIT only for now.
+
+            return (CorInfoType)0;
         }
 
         private nuint printFieldName(CORINFO_FIELD_STRUCT_* fld, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)

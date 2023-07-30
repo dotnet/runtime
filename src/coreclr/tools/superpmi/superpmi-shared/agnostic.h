@@ -131,6 +131,9 @@ struct Agnostic_CORINFO_RESOLVED_TOKENout
     DWORD     cbTypeSpec;
     DWORD     pMethodSpec_Index;
     DWORD     cbMethodSpec;
+    DWORD     isConstValue;
+    DWORD     constValueType;
+    DWORDLONG constValue;
 };
 
 struct Agnostic_GetArgType_Key
