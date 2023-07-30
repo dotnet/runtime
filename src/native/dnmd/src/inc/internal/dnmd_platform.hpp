@@ -14,6 +14,7 @@
 #endif // !BUILD_WINDOWS
 
 #include <cstdlib>
+#include <cstdint>
 
 #include <dncp.h>
 #include <cor.h>

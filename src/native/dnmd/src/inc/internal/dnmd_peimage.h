@@ -1,6 +1,8 @@
 #ifndef _SRC_INC_INTERNAL_DNMD_PEIMAGE_H_
 #define _SRC_INC_INTERNAL_DNMD_PEIMAGE_H_
 
+#include <stdint.h>
+
 //
 // PE image data structures
 //

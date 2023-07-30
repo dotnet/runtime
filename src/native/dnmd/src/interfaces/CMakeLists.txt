@@ -7,7 +7,10 @@ set(SOURCES
 
 set(HEADERS
   ../inc/dnmd_interfaces.hpp
-  ./impl.hpp
+  ./metadataimportro.hpp
+  ./hcorenum.hpp
+  ./controllingiunknown.hpp
+  ./tearoffbase.hpp
   ./pal.hpp
 )
 

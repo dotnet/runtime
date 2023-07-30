@@ -1,6 +1,6 @@
+#include "hcorenum.hpp"
 #include <cassert>
-
-#include "impl.hpp"
+#include <cstring>
 
 #define RETURN_IF_FAILED(exp) \
 { \
