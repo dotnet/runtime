@@ -147,7 +147,7 @@ inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::
 
         tokenOut.isConstValue   = pResolvedToken->isConstValue ? 1 : 0;
         tokenOut.constValueType = (DWORD)pResolvedToken->constValueType;
-        tokenOut.constValue     = pResolvedToken->constValue;
+        tokenOut.constValue     = (DWORDLONG)pResolvedToken->constValue;
     }
 
     tokenOut.pTypeSpec_Index   = -1;
@@ -170,8 +170,8 @@ inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::StoreAgnostic_CORIN
         tokenOut.pMethodSpec_Index =
             (DWORD)buffers->AddBuffer((unsigned char*)pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
         tokenOut.isConstValue   = pResolvedToken->isConstValue ? 1 : 0;
-        tokenOut.constValueType = pResolvedToken->constValueType;
-        tokenOut.constValue     = pResolvedToken->constValue;
+        tokenOut.constValueType = (DWORD)pResolvedToken->constValueType;
+        tokenOut.constValue     = (DWORDLONG)pResolvedToken->constValue;
     }
 
     return tokenOut;
@@ -190,8 +190,8 @@ inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::RestoreAgnostic_COR
         tokenOut.pMethodSpec_Index =
             (DWORD)buffers->Contains((unsigned char*)pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
         tokenOut.isConstValue   = pResolvedToken->isConstValue ? 1 : 0;
-        tokenOut.constValueType = pResolvedToken->constValueType;
-        tokenOut.constValue     = pResolvedToken->constValue;
+        tokenOut.constValueType = (DWORD)pResolvedToken->constValueType;
+        tokenOut.constValue     = (DWORDLONG)pResolvedToken->constValue;
     }
     return tokenOut;
 }
@@ -250,7 +250,7 @@ inline void SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(
         pResolvedToken->cbMethodSpec = (ULONG)tokenOut.cbMethodSpec;
         pResolvedToken->isConstValue   = (bool)tokenOut.isConstValue;
         pResolvedToken->constValueType = (CorInfoType)tokenOut.constValueType;
-        pResolvedToken->constValue     = tokenOut.constValue;
+        pResolvedToken->constValue     = (uint64_t)tokenOut.constValue;
     }
 }
 
