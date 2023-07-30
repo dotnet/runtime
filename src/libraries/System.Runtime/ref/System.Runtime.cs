@@ -1119,9 +1119,9 @@ namespace System
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length) { throw null; }
         public static byte[] FromBase64String(string s) { throw null; }
         public static byte[] FromHexString(System.ReadOnlySpan<char> chars) { throw null; }
-        public static bool TryFromHexString(System.ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus FromHexString(System.ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
         public static byte[] FromHexString(string s) { throw null; }
-        public static bool TryFromHexString(string source, Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus FromHexString(string source, Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
         public static System.TypeCode GetTypeCode(object? value) { throw null; }
         public static bool IsDBNull([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut) { throw null; }

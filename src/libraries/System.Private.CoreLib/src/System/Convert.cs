@@ -2965,13 +2965,14 @@ namespace System
         /// up to the last valid character.
         /// </param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
+        /// <param name="charsConsumed">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
         /// <returns>true if the conversion was successful; otherwise, false.</returns>
         /// <exception cref="ArgumentNullException">Passed string <paramref name="source"/> is null.</exception>
-        public static bool TryFromHexString(string source, Span<byte> destination, out int bytesWritten)
+        public static OperationStatus FromHexString(string source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return TryFromHexString(source.AsSpan(), destination, out bytesWritten);
+            return FromHexString(source.AsSpan(), destination, out charsConsumed, out bytesWritten);
         }
 
         /// <summary>
@@ -2984,34 +2985,46 @@ namespace System
         /// up to the last valid character.
         /// </param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
+        /// <param name="charsConsumed">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
         /// <returns>true if the conversion was successful; otherwise, false.</returns>
-        public static bool TryFromHexString(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
+        public static OperationStatus FromHexString(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
         {
-            int length = source.Length;
+            (int quotient, int remainder) = Math.DivRem(source.Length, 2);
 
-            if (length % 2 != 0)
-                goto FalseResult;
-
-            if (length == 0)
+            if (quotient == 0)
             {
+                charsConsumed = 0;
                 bytesWritten = 0;
-                return true;
+
+                if (remainder == 1)
+                    return OperationStatus.NeedMoreData;
+                else
+                    return OperationStatus.Done;
             }
 
-            int requiredByteCount = length / 2;
+            var successResult = OperationStatus.Done;
 
-            if (destination.Length < requiredByteCount)
-                goto FalseResult;
+            if (destination.Length < quotient)
+            {
+                source = source.Slice(destination.Length * 2);
+                successResult = OperationStatus.DestinationTooSmall;
+            }
+            else if (remainder == 1)
+            {
+                source = source.Slice(source.Length - 1);
+                successResult = OperationStatus.NeedMoreData;
+            }
 
             if (!HexConverter.TryDecodeFromUtf16(source, destination))
-                goto FalseResult;
+            {
+                bytesWritten = 0;
+                charsConsumed = 0;
+                return OperationStatus.InvalidData;
+            }
 
-            bytesWritten = requiredByteCount;
-            return true;
-
-        FalseResult:
-            bytesWritten = 0;
-            return false;
+            bytesWritten = quotient;
+            charsConsumed = source.Length;
+            return successResult;
         }
 
         /// <summary>
