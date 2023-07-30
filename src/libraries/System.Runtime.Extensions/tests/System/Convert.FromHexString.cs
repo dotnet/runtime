@@ -115,5 +115,44 @@ namespace System.Tests
                 Assert.Throws<FormatException>(() => Convert.FromHexString("\uAAAA" + hex));
             }
         }
+
+        [Fact]
+        public static void TooShortDestination()
+        {
+            const int destinationSize = 10;
+            Span<byte> destination = stackalloc byte[destinationSize];
+            byte[] data = Security.Cryptography.RandomNumberGenerator.GetBytes(destinationSize * 2 + 1);
+            string hex = Convert.ToHexString(data);
+
+            OperationStatus result = Convert.FromHexString(hex, destination, out int charsConsumed, out int bytesWritten);
+
+            Assert.Equal(OperationStatus.DestinationTooSmall, result);
+            Assert.Equal(destinationSize * 2, charsConsumed);
+            Assert.Equal(destinationSize, bytesWritten);
+        }
+
+        [Fact]
+        public static void NeedMoreData()
+        {
+            const int destinationSize = 10;
+            byte[] data = Security.Cryptography.RandomNumberGenerator.GetBytes(destinationSize);
+            Span<byte> destination = stackalloc byte[destinationSize];
+            var hex = Convert.ToHexString(data);
+
+            var spanHex = hex.AsSpan(0, 1);
+            var singeResult = Convert.FromHexString(spanHex, destination, out int consumed, out int written);
+
+            Assert.Equal(OperationStatus.NeedMoreData, singeResult);
+            Assert.Equal(0, consumed);
+            Assert.Equal(0, written);
+
+            spanHex = hex.AsSpan(0, hex.Length - 1);
+
+            var oneOffResult = Convert.FromHexString(spanHex, destination, out consumed, out written);
+
+            Assert.Equal(OperationStatus.NeedMoreData, oneOffResult);
+            Assert.Equal(spanHex.Length - 1, consumed);
+            Assert.Equal((spanHex.Length - 1) / 2, written);
+        }
     }
 }
