@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Buffers;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -38,8 +39,9 @@ namespace System.Tests
             Assert.Equal(expected, fromResult);
 
             Span<byte> tryResult = stackalloc byte[actual.Length / 2];
-            Assert.True(Convert.TryFromHexString(actual, tryResult, out int written));
+            Assert.Equal(OperationStatus.Done, Convert.FromHexString(actual, tryResult, out int consumed, out int written));
             Assert.Equal(fromResult.Length, written);
+            Assert.Equal(actual.Length, consumed);
             AssertExtensions.SequenceEqual(expected, tryResult);
 
         }
@@ -48,7 +50,7 @@ namespace System.Tests
         public static void InvalidInputString_Null()
         {
             AssertExtensions.Throws<ArgumentNullException>("s", () => Convert.FromHexString(null));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => Convert.TryFromHexString(null, default, out _));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Convert.FromHexString(null, default, out _, out _));
         }
 
         [Theory]
@@ -66,7 +68,7 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => Convert.FromHexString(invalidInput));
 
             Span<byte> buffer = stackalloc byte[invalidInput.Length / 2];
-            Assert.False(Convert.TryFromHexString(invalidInput.AsSpan(), buffer, out _));
+            Assert.Equal(OperationStatus.InvalidData, Convert.FromHexString(invalidInput.AsSpan(), buffer, out _, out _));
         }
 
         [Fact]
@@ -74,18 +76,19 @@ namespace System.Tests
         {
             Assert.Same(Array.Empty<byte>(), Convert.FromHexString(string.Empty));
 
-            bool tryResult = Convert.TryFromHexString(string.Empty, Span<byte>.Empty, out int written);
+            OperationStatus convertResult = Convert.FromHexString(string.Empty, Span<byte>.Empty, out int consumed, out int written);
 
-            Assert.True(tryResult);
+            Assert.Equal(OperationStatus.Done, convertResult);
             Assert.Equal(0, written);
+            Assert.Equal(0, consumed);
         }
 
         [Fact]
         public static void ToHexFromHexRoundtrip()
         {
-            const int LoopCount = 50;
-            Span<char> buffer = stackalloc char[LoopCount * 2];
-            for (int i = 1; i < LoopCount; i++)
+            const int loopCount = 50;
+            Span<char> buffer = stackalloc char[loopCount * 2];
+            for (int i = 1; i < loopCount; i++)
             {
                 byte[] data = Security.Cryptography.RandomNumberGenerator.GetBytes(i);
                 string hex = Convert.ToHexString(data);
