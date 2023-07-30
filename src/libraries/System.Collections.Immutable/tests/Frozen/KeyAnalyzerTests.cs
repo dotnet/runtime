@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Collections.Frozen.Tests
@@ -211,6 +212,64 @@ namespace System.Collections.Frozen.Tests
             Assert.True(KeyAnalyzer.IsAllAscii("abc".AsSpan()));
             Assert.True(KeyAnalyzer.IsAllAscii("abcdefghij".AsSpan()));
             Assert.False(KeyAnalyzer.IsAllAscii("abcdéfghij".AsSpan()));
+        }
+
+        [Fact]
+        public static void ContainsAnyLetters()
+        {
+            Assert.True(KeyAnalyzer.ContainsAnyLetters("abc".AsSpan()));
+            Assert.True(KeyAnalyzer.ContainsAnyLetters("ABC".AsSpan()));
+            Assert.False(KeyAnalyzer.ContainsAnyLetters("123".AsSpan()));
+            Assert.False(KeyAnalyzer.ContainsAnyLetters("æÉ".AsSpan()));
+        }
+
+        [Fact]
+        public static void HasSufficientUniquenessFactor()
+        {
+            HashSet<string> set = new HashSet<string>(StringComparer.Ordinal);
+
+            set.Clear();
+            Assert.True(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "a", "b", "c" }, 0));
+            Assert.Equal(3, set.Count);
+
+            set.Clear();
+            Assert.False(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "aa", "ab", "aa" }, 0));
+            Assert.Equal(0, set.Count); // if we failed it should empty the set
+        }
+
+        [Fact]
+        public static void HasSufficientUniquenessFactorInsensitive()
+        {
+            HashSet<string> set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            set.Clear();
+            Assert.True(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "a", "B", "c" }, 0));
+            Assert.Equal(3, set.Count);
+
+            set.Clear();
+            Assert.True(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "aa", "AA" }, 1));
+            Assert.Equal(1, set.Count); // set should only have the non-collided ones
+
+            set.Clear();
+            Assert.False(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "aa", "AA" }, 0));
+            Assert.Equal(0, set.Count); // if we failed it should empty the set
+        }
+
+        [Fact]
+        public static void HasSufficientUniquenessFactorLarge()
+        {
+            HashSet<string> set = new HashSet<string>(StringComparer.Ordinal);
+
+            Assert.True(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "a", "b", "c" }, 1));
+            Assert.Equal(3, set.Count);
+
+            set.Clear();
+            Assert.True(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "a", "b", "a" }, 1));
+            Assert.Equal(2, set.Count); // set should only have the non-collided ones
+
+            set.Clear();
+            Assert.False(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "a", "a", "a" }, 1));
+            Assert.Equal(0, set.Count); // if we failed it should empty the set
         }
     }
 }
