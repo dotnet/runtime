@@ -3025,10 +3025,9 @@ namespace System
                 successResult = OperationStatus.NeedMoreData;
             }
 
-            if (!HexConverter.TryDecodeFromUtf16(source, destination))
+            if (!HexConverter.TryDecodeFromUtf16Vectorized(source, destination, out charsConsumed))
             {
-                bytesWritten = 0;
-                charsConsumed = 0;
+                bytesWritten = charsConsumed / 2;
                 return OperationStatus.InvalidData;
             }
 

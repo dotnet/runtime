@@ -233,16 +233,28 @@ namespace System
             if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
                 chars.Length >= Vector128<ushort>.Count * 2)
             {
-                return TryDecodeFromUtf16_Vector128(chars, bytes);
+                return TryDecodeFromUtf16_Vector128(chars, bytes, out _);
             }
 #endif
             return TryDecodeFromUtf16(chars, bytes, out _);
         }
 
+        internal static bool TryDecodeFromUtf16Vectorized(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
+        {
+#if SYSTEM_PRIVATE_CORELIB
+            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
+                chars.Length >= Vector128<ushort>.Count * 2)
+            {
+                return TryDecodeFromUtf16_Vector128(chars, bytes, out charsProcessed);
+            }
+#endif
+            return TryDecodeFromUtf16(chars, bytes, out charsProcessed);
+        }
+
 #if SYSTEM_PRIVATE_CORELIB
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Ssse3))]
-        public static bool TryDecodeFromUtf16_Vector128(ReadOnlySpan<char> chars, Span<byte> bytes)
+        public static bool TryDecodeFromUtf16_Vector128(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
             Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
             Debug.Assert(chars.Length <= bytes.Length * 2);
@@ -309,6 +321,7 @@ namespace System
                 offset += (nuint)Vector128<ushort>.Count * 2;
                 if (offset == (nuint)chars.Length)
                 {
+                    charsProcessed = chars.Length;
                     return true;
                 }
                 // Overlap with the current chunk for trailing elements
@@ -320,7 +333,9 @@ namespace System
             while (true);
 
             // Fall back to the scalar routine in case of invalid input.
-            return TryDecodeFromUtf16(chars.Slice((int)offset), bytes.Slice((int)(offset / 2)), out _);
+            bool fallbackResult = TryDecodeFromUtf16(chars.Slice((int)offset), bytes.Slice((int)(offset / 2)), out int fallbackProcessed);
+            charsProcessed = (int)offset + fallbackProcessed;
+            return fallbackResult;
         }
 #endif
 
