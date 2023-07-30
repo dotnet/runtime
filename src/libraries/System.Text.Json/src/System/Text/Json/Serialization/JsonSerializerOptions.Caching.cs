@@ -183,22 +183,7 @@ namespace System.Text.Json
             get
             {
                 Debug.Assert(IsReadOnly);
-                return _objectTypeInfo ??= GetObjectTypeInfo(this);
-
-                static JsonTypeInfo GetObjectTypeInfo(JsonSerializerOptions options)
-                {
-                    JsonTypeInfo? typeInfo = options.GetTypeInfoInternal(JsonTypeInfo.ObjectType, ensureNotNull: null);
-                    if (typeInfo is null)
-                    {
-                        // If the user-supplied resolver does not provide a JsonTypeInfo<object>,
-                        // use a placeholder value to drive root-level boxed value serialization.
-                        var converter = new ObjectConverterSlim();
-                        typeInfo = new JsonTypeInfo<object>(converter, options);
-                        typeInfo.EnsureConfigured();
-                    }
-
-                    return typeInfo;
-                }
+                return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
             }
         }
 

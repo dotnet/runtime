@@ -1,6 +1,6 @@
 import { MonoConfig } from "../types";
 import { MonoConfigInternal } from "../types/internal";
-import { deep_merge_config } from "./config";
+import { deep_merge_config, normalizeConfig } from "./config";
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 import { mono_log_debug } from "./logging";
 
@@ -30,6 +30,7 @@ function onMonoConfigReceived(config: MonoConfigInternal): void {
     }
 
     deep_merge_config(loaderHelpers.config, config);
+    normalizeConfig();
     mono_log_debug("mono config received");
     workerMonoConfigReceived = true;
     loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
@@ -42,13 +43,13 @@ function onMonoConfigReceived(config: MonoConfigInternal): void {
 export function makePreloadMonoMessage<TPort>(port: TPort): any {
     return {
         [monoSymbol]: {
-            mono_cmd: WorkerMonoCommandType.preload,
+            monoCmd: WorkerMonoCommandType.preload,
             port
         }
     };
 }
 
 const enum WorkerMonoCommandType {
-    channel_created = "channel_created",
+    channelCreated = "channel_created",
     preload = "preload",
 }

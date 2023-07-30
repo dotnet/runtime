@@ -63,6 +63,7 @@ namespace ILCompiler
 
         private readonly HashSet<string> _rootEntireAssembliesModules;
         private readonly HashSet<string> _trimmedAssemblies;
+        private readonly List<string> _satelliteAssemblyFiles;
 
         internal FlowAnnotations FlowAnnotations { get; }
 
@@ -83,7 +84,8 @@ namespace ILCompiler
             IEnumerable<KeyValuePair<string, bool>> featureSwitchValues,
             IEnumerable<string> rootEntireAssembliesModules,
             IEnumerable<string> additionalRootedAssemblies,
-            IEnumerable<string> trimmedAssemblies)
+            IEnumerable<string> trimmedAssemblies,
+            IEnumerable<string> satelliteAssemblyFilePaths)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
         {
             _compilationModuleGroup = group;
@@ -98,6 +100,20 @@ namespace ILCompiler
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
             _rootEntireAssembliesModules.UnionWith(additionalRootedAssemblies);
             _trimmedAssemblies = new HashSet<string>(trimmedAssemblies);
+            _satelliteAssemblyFiles = new List<string>(satelliteAssemblyFilePaths);
+        }
+
+        public IEnumerable<EcmaModule> GetSatelliteAssemblies(EcmaAssembly module)
+        {
+            string expectedSimpleName = module.GetName().Name + ".resources";
+            foreach (string filePath in _satelliteAssemblyFiles)
+            {
+                string simpleName = Path.GetFileNameWithoutExtension(filePath);
+                if (simpleName == expectedSimpleName)
+                {
+                    yield return _typeSystemContext.GetMetadataOnlyModuleFromPath(filePath);
+                }
+            }
         }
 
         protected override void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)

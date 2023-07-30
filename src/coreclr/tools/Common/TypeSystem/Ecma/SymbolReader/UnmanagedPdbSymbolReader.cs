@@ -1298,7 +1298,7 @@ namespace Internal.TypeSystem.Ecma
         //
         // Gather the local details in a scope and then recurse to child scopes
         //
-        private void ProbeScopeForLocals(List<ILLocalVariable> variables, ISymUnmanagedScope scope)
+        private static void ProbeScopeForLocals(List<ILLocalVariable> variables, ISymUnmanagedScope scope)
         {
             int localCount;
             ThrowExceptionForHR(scope.GetLocalCount(out localCount));

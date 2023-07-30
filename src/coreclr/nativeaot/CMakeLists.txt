@@ -45,6 +45,7 @@ endif()
 
 if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DFEATURE_EMULATED_TLS)
+    add_definitions(-DANDROID_FORCE_ICU_DATA_DIR)
 endif()
 
 add_subdirectory(Bootstrap)

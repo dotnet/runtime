@@ -436,11 +436,10 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 //functions exported to be used by JS
 G_BEGIN_DECLS
-EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (void);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_execute_timer (void);
 
 //JS functions imported that we use
-extern void mono_set_timeout (int t);
-extern void mono_wasm_queue_tp_cb (void);
+extern void mono_wasm_schedule_timer (int shortestDueTimeMs);
 G_END_DECLS
 
 void mono_background_exec (void);
@@ -558,6 +557,9 @@ mono_init_native_crash_info (void)
 
 #endif
 
+// this points to System.Threading.TimerQueue.TimerHandler C# method
+static void *timer_handler;
+
 #ifdef HOST_BROWSER
 
 void
@@ -582,102 +584,42 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_set_timeout_exec (void)
+mono_wasm_execute_timer (void)
 {
-	MONO_ENTER_GC_UNSAFE;
-	ERROR_DECL (error);
-
-	static MonoMethod *method = NULL;
-	if (method == NULL) {
-		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
-		g_assert (klass);
-
-		method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
-		mono_error_assert_ok (error);
-		g_assert (method);
-	}
-
-	MonoObject *exc = NULL;
-
-	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
-
-	//YES we swallow exceptions cuz there's nothing much we can do from here.
-	//FIXME Maybe call the unhandled exception function?
-	if (!is_ok (error)) {
-		g_printerr ("timeout callback failed due to %s\n", mono_error_get_message (error));
-		mono_error_cleanup (error);
-	}
-
-	if (exc) {
-		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		g_printerr ("timeout callback threw a %s\n", type_name);
-		g_free (type_name);
-	}
-	MONO_EXIT_GC_UNSAFE;
+	g_assert (timer_handler);
+	background_job_cb cb = timer_handler;
+	cb ();
 }
+
 
 #endif
 
 void
-mono_wasm_set_timeout (int timeout)
+mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 {
+	g_assert (timerHandler);
+	timer_handler = timerHandler;
 #ifdef HOST_BROWSER
 #ifndef DISABLE_THREADS
     if (!mono_threads_wasm_is_browser_thread ()) {
-        mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_wasm_set_timeout, GINT_TO_POINTER(timeout));
+        mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_wasm_schedule_timer, GINT_TO_POINTER(shortestDueTimeMs));
         return;
     }
 #endif
-    mono_set_timeout (timeout);
+    mono_wasm_schedule_timer (shortestDueTimeMs);
 #endif
 }
-
-static void
-tp_cb (void)
-{
-	ERROR_DECL (error);
-
-	static MonoMethod *method = NULL;
-	if (method == NULL) {
-		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
-		g_assert (klass);
-
-		method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
-		mono_error_assert_ok (error);
-		g_assert (method);
-	}
-
-	MonoObject *exc = NULL;
-
-	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
-
-	if (!is_ok (error)) {
-		g_printerr ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
-		mono_error_cleanup (error);
-	}
-
-	if (exc) {
-		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		g_printerr ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
-		g_free (type_name);
-	}
-}
-
-#ifdef HOST_BROWSER
-void
-mono_wasm_queue_tp_cb (void)
-{
-	mono_threads_schedule_background_job (tp_cb);
-}
-#endif
 
 void
 mono_arch_register_icall (void)
 {
 #ifdef HOST_BROWSER
-	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
-	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
-#endif
+	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", mono_wasm_main_thread_schedule_timer);
+	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", mono_main_thread_schedule_background_job);
+#ifndef DISABLE_THREADS
+	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::MainThreadScheduleBackgroundJob", mono_main_thread_schedule_background_job);
+#endif /* DISABLE_THREADS */
+#endif /* HOST_BROWSER */
 }
 
 void

@@ -15,6 +15,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <EventSourceSupport>true</EventSourceSupport>
+    <OptimizationPreference>Speed</OptimizationPreference>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 

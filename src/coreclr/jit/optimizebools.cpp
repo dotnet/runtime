@@ -382,7 +382,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 //      *  JTRUE (NE c,d)
 //
 //      ------------ BB03, preds={BB01, BB02} succs={BB04}
-//      *  ASG (x,y)
+//      *  STORE_LCL_VAR<x>(y)
 //
 //      These operands will be combined into a single AND in the first block (with the first
 //      condition inverted), wrapped by the test condition (NE(...,0)). Giving:
@@ -391,7 +391,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 //      *  JTRUE (NE (AND (LE a,b), (NE c,d)), 0)
 //
 //      ------------ BB03, preds={BB01} succs={BB04}
-//      *  ASG x,y
+//      *  STORE_LCL_VAR<x>(y)
 //
 //
 //      Example 2:
@@ -403,10 +403,10 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 //      *  JTRUE (NE (OR (LE a,b), (NE c,d)), 0)
 //
 //      ------------ BB03, preds={BB01} succs={BB05}
-//      *  ASG x,y
+//      *  STORE_LCL_VAR<x>(y)
 //
 //      ------------ BB04, preds={BB01} succs={BB05}
-//      *  ASG x,z
+//      *  STORE_LCL_VAR<x>(z)
 //
 //
 //      Example 3:
@@ -418,7 +418,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 //      *  JTRUE (NE (OR ((NE (OR (NE c,d), (GE e,f)), 0), (LE a,b))), 0)
 //
 //      ------------ BB03, preds={BB01} succs={BB04}
-//      *  ASG x,y
+//      *  STORE_LCL_VAR<x>(y)
 //
 //
 //     This optimization means that every condition within the IF statement is always evaluated,

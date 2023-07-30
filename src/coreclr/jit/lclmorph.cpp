@@ -55,19 +55,14 @@ public:
         }
         else
         {
-            // In the rare case that the root node becomes part of the linked
-            // list (i.e. top level local) we get a circular linked list here.
-            if (firstNode == rootNode)
+            // Clear the links on the sentinel in case it didn't end up in the list.
+            if (rootNode != lastNode)
             {
-                assert(firstNode == lastNode);
-                lastNode->gtNext = nullptr;
-            }
-            else
-            {
-                assert(lastNode->gtNext == nullptr);
-                assert(lastNode->OperIsAnyLocal());
+                assert(rootNode->gtPrev == nullptr);
+                rootNode->gtNext = nullptr;
             }
 
+            lastNode->gtNext  = nullptr;
             firstNode->gtPrev = nullptr;
         }
 
@@ -81,11 +76,6 @@ public:
         if (node->OperIsAnyLocal())
         {
             SequenceLocal(node->AsLclVarCommon());
-        }
-
-        if (node->OperIs(GT_ASG))
-        {
-            SequenceAssignment(node->AsOp());
         }
 
         if (node->IsCall())
@@ -105,33 +95,8 @@ public:
     void SequenceLocal(GenTreeLclVarCommon* lcl)
     {
         lcl->gtPrev        = m_prevNode;
-        lcl->gtNext        = nullptr;
         m_prevNode->gtNext = lcl;
         m_prevNode         = lcl;
-    }
-
-    //-------------------------------------------------------------------
-    // SequenceAssignment: Post-process an assignment that may have a local on the LHS.
-    //
-    // Arguments:
-    //     asg - the assignment
-    //
-    // Remarks:
-    //     In execution order the LHS of an assignment is normally visited
-    //     before the RHS. However, for our purposes, we would like to see the
-    //     LHS local which is considered the def after the nodes on the RHS, so
-    //     this function corrects where that local appears in the list.
-    //
-    //     This is handled in later liveness by guaranteeing GTF_REVERSE_OPS is
-    //     set for assignments with tracked locals on the LHS.
-    //
-    void SequenceAssignment(GenTreeOp* asg)
-    {
-        if (asg->gtGetOp1()->OperIsLocal())
-        {
-            // Correct the point at which the definition of the local on the LHS appears.
-            MoveNodeToEnd(asg->gtGetOp1());
-        }
     }
 
     //-------------------------------------------------------------------
@@ -141,8 +106,8 @@ public:
     //     call - the call
     //
     // Remarks:
-    //     Like above, but calls may also define a local that we would like to
-    //     see after all other operands of the call have been evaluated.
+    //     calls may also define a local that we would like to see
+    //     after all other operands of the call have been evaluated.
     //
     void SequenceCall(GenTreeCall* call)
     {
@@ -174,14 +139,12 @@ private:
     // Arguments:
     //     node - The node
     //
-    void MoveNodeToEnd(GenTree* node)
+    void MoveNodeToEnd(GenTreeLclVarCommon* node)
     {
-        if (node->gtNext == nullptr)
+        if ((m_prevNode == node) || (node->gtNext == nullptr))
         {
             return;
         }
-
-        assert(m_prevNode != node);
 
         GenTree* prev = node->gtPrev;
         GenTree* next = node->gtNext;
@@ -190,10 +153,7 @@ private:
         prev->gtNext = next;
         next->gtPrev = prev;
 
-        m_prevNode->gtNext = node;
-        node->gtPrev       = m_prevNode;
-        node->gtNext       = nullptr;
-        m_prevNode         = node;
+        SequenceLocal(node);
     }
 };
 
@@ -459,6 +419,8 @@ public:
         {
             case GT_IND:
             case GT_BLK:
+            case GT_STOREIND:
+            case GT_STORE_BLK:
                 if (MorphStructField(node->AsIndir(), user))
                 {
                     goto LOCAL_NODE;
@@ -473,11 +435,13 @@ public:
                 break;
 
             case GT_LCL_FLD:
-                MorphLocalField(node, user);
+            case GT_STORE_LCL_FLD:
+                MorphLocalField(node->AsLclVarCommon(), user);
                 goto LOCAL_NODE;
 
             case GT_LCL_VAR:
             case GT_LCL_ADDR:
+            case GT_STORE_LCL_VAR:
             LOCAL_NODE:
             {
                 unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
@@ -525,10 +489,20 @@ public:
 
         switch (node->OperGet())
         {
-            case GT_LCL_VAR:
-                SequenceLocal(node->AsLclVarCommon());
-                break;
+            case GT_STORE_LCL_FLD:
+                if (node->IsPartialLclFld(m_compiler))
+                {
+                    node->gtFlags |= GTF_VAR_USEASG;
+                }
+                FALLTHROUGH;
 
+            case GT_STORE_LCL_VAR:
+                assert(TopValue(0).Node() == node->AsLclVarCommon()->Data());
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                FALLTHROUGH;
+
+            case GT_LCL_VAR:
             case GT_LCL_FLD:
                 SequenceLocal(node->AsLclVarCommon());
                 break;
@@ -611,6 +585,13 @@ public:
                 }
                 break;
 
+            case GT_STOREIND:
+            case GT_STORE_BLK:
+                assert(TopValue(0).Node() == node->AsIndir()->Data());
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                FALLTHROUGH;
+
             case GT_BLK:
             case GT_IND:
                 assert(TopValue(1).Node() == node);
@@ -659,16 +640,6 @@ public:
                     EscapeValue(TopValue(0), node);
                     PopValue();
                 }
-                break;
-
-            case GT_ASG:
-                EscapeValue(TopValue(0), node);
-                PopValue();
-                EscapeValue(TopValue(0), node);
-                PopValue();
-                assert(TopValue(0).Node() == node);
-
-                SequenceAssignment(node->AsOp());
                 break;
 
             case GT_CALL:
@@ -926,11 +897,11 @@ private:
     void MorphLocalIndir(GenTree** use, unsigned lclNum, unsigned offset, GenTree* user)
     {
         GenTree*             indir     = *use;
-        ClassLayout*         layout    = indir->OperIs(GT_BLK) ? indir->AsBlk()->GetLayout() : nullptr;
+        ClassLayout*         layout    = indir->OperIs(GT_BLK, GT_STORE_BLK) ? indir->AsBlk()->GetLayout() : nullptr;
         IndirTransform       transform = SelectLocalIndirTransform(indir->AsIndir(), lclNum, offset, user);
         LclVarDsc*           varDsc    = m_compiler->lvaGetDesc(lclNum);
         GenTreeLclVarCommon* lclNode   = nullptr;
-        bool                 isDef = (user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir);
+        bool                 isDef     = indir->OperIs(GT_STOREIND, GT_STORE_BLK);
 
         switch (transform)
         {
@@ -942,6 +913,16 @@ private:
             case IndirTransform::BitCast:
                 indir->ChangeOper(GT_BITCAST);
                 lclNode = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
+                break;
+
+            case IndirTransform::NarrowCast:
+                assert(varTypeIsIntegral(indir));
+                assert(varTypeIsIntegral(varDsc));
+                assert(genTypeSize(varDsc) >= genTypeSize(indir));
+                assert(!isDef);
+
+                lclNode = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
+                *use    = m_compiler->gtNewCastNode(genActualType(indir), lclNode, false, indir->TypeGet());
                 break;
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -976,13 +957,10 @@ private:
 
             case IndirTransform::WithElement:
             {
-                assert(user->OperIs(GT_ASG) && (user->gtGetOp1() == indir));
-
                 GenTree*  hwiNode     = nullptr;
                 var_types elementType = indir->TypeGet();
-                lclNode               = indir->BashToLclVar(m_compiler, lclNum);
-                GenTree* simdLclNode  = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-                GenTree* elementNode  = user->gtGetOp2();
+                GenTree*  simdLclNode = m_compiler->gtNewLclVarNode(lclNum);
+                GenTree*  elementNode = indir->AsIndir()->Data();
 
                 if (elementType == TYP_FLOAT)
                 {
@@ -1003,8 +981,11 @@ private:
                                                                    CORINFO_TYPE_FLOAT, 16);
                 }
 
-                user->AsOp()->gtOp2 = hwiNode;
-                user->ChangeType(varDsc->TypeGet());
+                indir->ChangeType(varDsc->TypeGet());
+                indir->ChangeOper(GT_STORE_LCL_VAR);
+                indir->AsLclVar()->SetLclNum(lclNum);
+                indir->AsLclVar()->Data() = hwiNode;
+                lclNode                   = indir->AsLclVarCommon();
             }
             break;
 #endif // FEATURE_HW_INTRINSICS
@@ -1016,23 +997,31 @@ private:
                     assert(genTypeSize(indir) == genTypeSize(varDsc)); // BOOL <-> UBYTE.
                     indir->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
                 }
-                indir->ChangeOper(GT_LCL_VAR);
+                if (isDef)
+                {
+                    GenTree* data = indir->Data();
+                    indir->ChangeOper(GT_STORE_LCL_VAR);
+                    indir->AsLclVar()->Data() = data;
+                }
+                else
+                {
+                    indir->ChangeOper(GT_LCL_VAR);
+                }
                 indir->AsLclVar()->SetLclNum(lclNum);
                 lclNode = indir->AsLclVarCommon();
                 break;
 
-            case IndirTransform::NarrowCast:
-                assert(varTypeIsIntegral(indir));
-                assert(varTypeIsIntegral(varDsc));
-                assert(genTypeSize(varDsc) >= genTypeSize(indir));
-                assert(!isDef);
-
-                lclNode = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
-                *use    = m_compiler->gtNewCastNode(genActualType(indir), lclNode, false, indir->TypeGet());
-                break;
-
             case IndirTransform::LclFld:
-                indir->ChangeOper(GT_LCL_FLD);
+                if (isDef)
+                {
+                    GenTree* data = indir->Data();
+                    indir->ChangeOper(GT_STORE_LCL_FLD);
+                    indir->AsLclFld()->Data() = data;
+                }
+                else
+                {
+                    indir->ChangeOper(GT_LCL_FLD);
+                }
                 indir->AsLclFld()->SetLclNum(lclNum);
                 indir->AsLclFld()->SetLclOffs(offset);
                 indir->AsLclFld()->SetLayout(layout);
@@ -1055,17 +1044,12 @@ private:
 
         if (isDef)
         {
-            lclNodeFlags |= (GTF_VAR_DEF | GTF_DONT_CSE);
+            lclNodeFlags |= (indir->AsLclVarCommon()->Data()->gtFlags & GTF_ALL_EFFECT);
+            lclNodeFlags |= (GTF_ASG | GTF_VAR_DEF);
 
-            if (!indir->OperIs(GT_LCL_VAR))
+            if (indir->IsPartialLclFld(m_compiler))
             {
-                unsigned lhsSize = indir->TypeIs(TYP_STRUCT) ? layout->GetSize() : genTypeSize(indir);
-                unsigned lclSize = m_compiler->lvaLclExactSize(lclNum);
-                if (lhsSize != lclSize)
-                {
-                    assert(lhsSize < lclSize);
-                    lclNodeFlags |= GTF_VAR_USEASG;
-                }
+                lclNodeFlags |= GTF_VAR_USEASG;
             }
         }
 
@@ -1091,7 +1075,8 @@ private:
         // We don't expect indirections that cannot be turned into local nodes here.
         assert((offset <= UINT16_MAX) && !indir->IsVolatile());
 
-        if (IsUnused(indir, user))
+        bool isDef = indir->OperIs(GT_STOREIND, GT_STORE_BLK);
+        if (!isDef && IsUnused(indir, user))
         {
             return IndirTransform::Nop;
         }
@@ -1112,9 +1097,7 @@ private:
                 return IndirTransform::LclVar;
             }
 
-            bool isDef = user->OperIs(GT_ASG) && (user->gtGetOp1() == indir);
-
-            // For small locals on the LHS we can ignore the signed/unsigned diff.
+            // For small stores we can ignore the signed/unsigned diff.
             if (isDef && (varTypeToSigned(indir) == varTypeToSigned(varDsc)))
             {
                 assert(varTypeIsSmall(indir));
@@ -1193,8 +1176,6 @@ private:
     //
     bool MorphStructField(GenTreeIndir* node, GenTree* user)
     {
-        assert(node->OperIs(GT_IND, GT_BLK));
-
         GenTree* addr = node->Addr();
         if (node->IsVolatile() && (!addr->OperIs(GT_FIELD_ADDR) || ((addr->gtFlags & GTF_FLD_DEREFERENCED) == 0)))
         {
@@ -1214,17 +1195,21 @@ private:
 
         if (node->TypeGet() == fieldType)
         {
-            GenTreeFlags lclVarFlags = node->gtFlags & (GTF_NODE_MASK | GTF_DONT_CSE);
-
-            if ((user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtOp1 == node))
+            if (node->OperIs(GT_STOREIND, GT_STORE_BLK))
             {
-                lclVarFlags |= GTF_VAR_DEF;
+                GenTree* data = node->Data();
+                node->ChangeOper(GT_STORE_LCL_VAR);
+                node->AsLclVar()->Data() = data;
+                node->gtFlags |= GTF_VAR_DEF;
             }
-
-            node->ChangeOper(GT_LCL_VAR);
+            else
+            {
+                node->ChangeOper(GT_LCL_VAR);
+                node->gtFlags &= (GTF_NODE_MASK | GTF_DONT_CSE); // TODO-ASG-Cleanup: delete this zero-diff quirk.
+            }
             node->AsLclVar()->SetLclNum(fieldLclNum);
-            node->gtType  = fieldType;
-            node->gtFlags = lclVarFlags;
+            node->gtType = fieldType;
+
             return true;
         }
 
@@ -1298,26 +1283,66 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // MorphLocalField: Replaces a GT_LCL_FLD based promoted struct field access
-    //    with a GT_LCL_VAR that references the struct field.
+    // MorphLocalField: Replaces a local field-based promoted struct field access
+    //    with a GT_LCL_VAR/GT_STORE_LCL_VAR that references the struct field.
     //
     // Arguments:
-    //    node - the GT_LCL_FLD node
+    //    node - the GT_LCL_FLD/GT_STORE_LCL_FLD node
     //    user - the node that uses the field
     //
     // Notes:
     //    This does not do anything if the field access does not denote
     //    involved a promoted struct local.
-    //    If the GT_LCL_FLD offset does not have a corresponding promoted struct
+    //    If the local field offset does not have a corresponding promoted struct
     //    field then no transformation is done and struct local's enregistration
     //    is disabled.
     //
-    void MorphLocalField(GenTree* node, GenTree* user)
+    void MorphLocalField(GenTreeLclVarCommon* node, GenTree* user)
     {
-        assert(node->OperIs(GT_LCL_FLD));
-        // TODO-Cleanup: Move fgMorphLocalField implementation here, it's not used anywhere else.
-        m_compiler->fgMorphLocalField(node, user);
-        m_stmtModified |= node->OperIs(GT_LCL_VAR);
+        assert(node->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD));
+
+        unsigned   lclNum = node->AsLclFld()->GetLclNum();
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        if (varDsc->lvPromoted)
+        {
+            unsigned fldOffset   = node->AsLclFld()->GetLclOffs();
+            unsigned fieldLclNum = m_compiler->lvaGetFieldLocal(varDsc, fldOffset);
+
+            if (fieldLclNum != BAD_VAR_NUM)
+            {
+                LclVarDsc* fldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
+                var_types  fieldType = fldVarDsc->TypeGet();
+
+                if (node->TypeGet() == fieldType)
+                {
+                    // There is an existing sub-field we can use.
+                    node->SetLclNum(fieldLclNum);
+
+                    if (node->OperIs(GT_STORE_LCL_FLD))
+                    {
+                        node->SetOper(GT_STORE_LCL_VAR);
+                        node->gtFlags &= ~GTF_VAR_USEASG;
+                    }
+                    else
+                    {
+                        node->SetOper(GT_LCL_VAR);
+                    }
+
+                    JITDUMP("Replacing the GT_LCL_FLD in promoted struct with local var V%02u\n", fieldLclNum);
+                }
+            }
+        }
+
+        // If we haven't replaced the field, make sure to set DNER on the local.
+        if (!node->OperIsScalarLocal())
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+        }
+        else
+        {
+            m_stmtModified = true;
+        }
     }
 
 public:
@@ -1406,14 +1431,6 @@ private:
         }
     }
 
-    void SequenceAssignment(GenTreeOp* asg)
-    {
-        if (m_sequencer != nullptr)
-        {
-            m_sequencer->SequenceAssignment(asg);
-        }
-    }
-
     void SequenceCall(GenTreeCall* call)
     {
         if (m_sequencer != nullptr)
@@ -1450,9 +1467,9 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
         {
 #ifdef FEATURE_SIMD
             if (opts.OptimizationEnabled() && stmt->GetRootNode()->TypeIs(TYP_FLOAT) &&
-                stmt->GetRootNode()->OperIs(GT_ASG))
+                stmt->GetRootNode()->OperIsStore())
             {
-                madeChanges |= fgMorphCombineSIMDFieldAssignments(block, stmt);
+                madeChanges |= fgMorphCombineSIMDFieldStores(block, stmt);
             }
 #endif
 
@@ -1478,10 +1495,10 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
 
 #ifdef FEATURE_SIMD
 //-----------------------------------------------------------------------------------
-// fgMorphCombineSIMDFieldAssignments:
-//    If the RHS of the input stmt is a read for simd vector X Field, then this
+// fgMorphCombineSIMDFieldStores:
+//    If the store of the input stmt is a read for simd vector X Field, then this
 //    function will keep reading next few stmts based on the vector size(2, 3, 4).
-//    If the next stmts LHS are located contiguous and RHS are also located
+//    If the next stmts stores are located contiguous and values are also located
 //    contiguous, then we replace those statements with one store.
 //
 // Argument:
@@ -1489,91 +1506,93 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
 //    stmt  - Statement*. the stmt node we want to check
 //
 // Return Value:
-//    Whether the assignments were successfully coalesced.
+//    Whether the stores were successfully coalesced.
 //
-bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* stmt)
+bool Compiler::fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt)
 {
-    GenTree* tree = stmt->GetRootNode();
-    assert(tree->OperGet() == GT_ASG);
+    GenTree* store = stmt->GetRootNode();
+    assert(store->OperIsStore());
 
-    GenTree*  originalLHS  = tree->AsOp()->gtOp1;
-    GenTree*  prevLHS      = tree->AsOp()->gtOp1;
-    GenTree*  prevRHS      = tree->AsOp()->gtOp2;
+    GenTree*  prevValue    = store->Data();
     unsigned  index        = 0;
-    var_types simdBaseType = prevRHS->TypeGet();
+    var_types simdBaseType = store->TypeGet();
     unsigned  simdSize     = 0;
-    GenTree*  simdLclAddr  = getSIMDStructFromField(prevRHS, &index, &simdSize, true);
+    GenTree*  simdLclAddr  = getSIMDStructFromField(prevValue, &index, &simdSize, true);
 
     if ((simdLclAddr == nullptr) || (index != 0) || (simdBaseType != TYP_FLOAT))
     {
-        // if the RHS is not from a SIMD vector field X, then there is no need to check further.
+        // if the value is not from a SIMD vector field X, then there is no need to check further.
         return false;
     }
 
-    var_types  simdType             = getSIMDTypeForSize(simdSize);
-    int        assignmentsCount     = simdSize / genTypeSize(simdBaseType) - 1;
-    int        remainingAssignments = assignmentsCount;
-    Statement* curStmt              = stmt->GetNextStmt();
-    Statement* lastStmt             = stmt;
+    var_types  simdType        = getSIMDTypeForSize(simdSize);
+    int        storeCount      = simdSize / genTypeSize(simdBaseType) - 1;
+    int        remainingStores = storeCount;
+    GenTree*   prevStore       = store;
+    Statement* curStmt         = stmt->GetNextStmt();
+    Statement* lastStmt        = stmt;
 
-    while (curStmt != nullptr && remainingAssignments > 0)
+    while (curStmt != nullptr && remainingStores > 0)
     {
-        GenTree* exp = curStmt->GetRootNode();
-        if (exp->OperGet() != GT_ASG)
-        {
-            break;
-        }
-        GenTree* curLHS = exp->gtGetOp1();
-        GenTree* curRHS = exp->gtGetOp2();
-
-        if (!areArgumentsContiguous(prevLHS, curLHS) || !areArgumentsContiguous(prevRHS, curRHS))
+        if (!curStmt->GetRootNode()->OperIsStore())
         {
             break;
         }
 
-        remainingAssignments--;
-        prevLHS = curLHS;
-        prevRHS = curRHS;
+        GenTree* curStore = curStmt->GetRootNode();
+        GenTree* curValue = curStore->Data();
+
+        if (!areArgumentsContiguous(prevStore, curStore) || !areArgumentsContiguous(prevValue, curValue))
+        {
+            break;
+        }
+
+        remainingStores--;
+        prevStore = curStore;
+        prevValue = curValue;
 
         lastStmt = curStmt;
         curStmt  = curStmt->GetNextStmt();
     }
 
-    if (remainingAssignments > 0)
+    if (remainingStores > 0)
     {
-        // if the left assignments number is bigger than zero, then this means
-        // that the assignments are not assigning to the contiguously memory
-        // locations from same vector.
+        // if the left store number is bigger than zero, then this means that the stores
+        // are not assigning to the contiguous memory locations from same vector.
         return false;
     }
 
-    JITDUMP("\nFound contiguous assignments from a SIMD vector to memory.\n");
+    JITDUMP("\nFound contiguous stores from a SIMD vector to memory.\n");
     JITDUMP("From " FMT_BB ", " FMT_STMT " to " FMT_STMT "\n", block->bbNum, stmt->GetID(), lastStmt->GetID());
 
-    for (int i = 0; i < assignmentsCount; i++)
+    for (int i = 0; i < storeCount; i++)
     {
         fgRemoveStmt(block, stmt->GetNextStmt());
     }
 
-    GenTree* dstNode;
-
-    if (originalLHS->OperIs(GT_LCL_FLD))
+    GenTree* fullValue = gtNewLclvNode(simdLclAddr->AsLclVarCommon()->GetLclNum(), simdType);
+    GenTree* fullStore;
+    if (store->OperIs(GT_STORE_LCL_FLD))
     {
-        dstNode         = originalLHS;
-        dstNode->gtType = simdType;
+        store->gtType             = simdType;
+        store->AsLclFld()->Data() = fullValue;
+        if (!store->IsPartialLclFld(this))
+        {
+            store->gtFlags &= ~GTF_VAR_USEASG;
+        }
+
+        fullStore = store;
     }
     else
     {
-        GenTree* copyBlkDst = CreateAddressNodeForSimdHWIntrinsicCreate(originalLHS, TYP_FLOAT, simdSize);
-        dstNode             = gtNewIndir(simdType, copyBlkDst);
+        GenTree* dstAddr = CreateAddressNodeForSimdHWIntrinsicCreate(store, simdBaseType, simdSize);
+        fullStore        = gtNewStoreIndNode(simdType, dstAddr, fullValue);
     }
 
     JITDUMP("\n" FMT_BB " " FMT_STMT " (before):\n", block->bbNum, stmt->GetID());
     DISPSTMT(stmt);
 
-    tree = gtNewAssignNode(dstNode, gtNewLclvNode(simdLclAddr->AsLclVarCommon()->GetLclNum(), simdType));
-
-    stmt->SetRootNode(tree);
+    stmt->SetRootNode(fullStore);
 
     JITDUMP("\nReplaced " FMT_BB " " FMT_STMT " (after):\n", block->bbNum, stmt->GetID());
     DISPSTMT(stmt);

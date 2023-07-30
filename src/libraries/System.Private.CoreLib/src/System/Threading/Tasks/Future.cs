@@ -526,7 +526,27 @@ namespace System.Threading.Tasks
         /// <returns>An object used to await this task.</returns>
         public new ConfiguredTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext)
         {
-            return new ConfiguredTaskAwaitable<TResult>(this, continueOnCapturedContext);
+            return new ConfiguredTaskAwaitable<TResult>(this, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+        }
+
+        /// <summary>Configures an awaiter used to await this <see cref="Task"/>.</summary>
+        /// <param name="options">Options used to configure how awaits on this task are performed.</param>
+        /// <returns>An object used to await this task.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="options"/> argument specifies an invalid value.</exception>
+        public new ConfiguredTaskAwaitable<TResult> ConfigureAwait(ConfigureAwaitOptions options)
+        {
+            if ((options & ~(ConfigureAwaitOptions.ContinueOnCapturedContext |
+                             ConfigureAwaitOptions.ForceYielding)) != 0)
+            {
+                ThrowForInvalidOptions(options);
+            }
+
+            return new ConfiguredTaskAwaitable<TResult>(this, options);
+
+            static void ThrowForInvalidOptions(ConfigureAwaitOptions options) =>
+                throw ((options & ConfigureAwaitOptions.SuppressThrowing) == 0 ?
+                    new ArgumentOutOfRangeException(nameof(options)) :
+                    new ArgumentOutOfRangeException(nameof(options), SR.TaskT_ConfigureAwait_InvalidOptions));
         }
 
         #endregion

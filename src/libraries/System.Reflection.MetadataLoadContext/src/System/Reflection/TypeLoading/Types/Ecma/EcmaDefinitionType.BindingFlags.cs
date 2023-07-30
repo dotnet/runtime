@@ -94,7 +94,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 if (nestedTypeDefinition.Name.Equals(utf8Name, reader))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException();
+                        throw ThrowHelper.GetAmbiguousMatchException(match);
                     match = handle.ResolveTypeDef(GetEcmaModule());
                 }
             }

@@ -191,11 +191,10 @@ ds_rt_transport_get_default_name (
     const ep_char8_t *group_id,
     const ep_char8_t *suffix)
 {
-    STATIC_CONTRACT_NOTHROW;
-    
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: PAL_GetTransportName is defined in coreclr\pal\inc\pal.h
-    return true;
+
+    extern bool ds_rt_aot_transport_get_default_name (ep_char8_t *name, int32_t name_len, const ep_char8_t *prefix, int32_t id, const ep_char8_t *group_id, const ep_char8_t *suffix);
+
+    return ds_rt_aot_transport_get_default_name(name, name_len, prefix, id, group_id, suffix);
 }
 
 /*

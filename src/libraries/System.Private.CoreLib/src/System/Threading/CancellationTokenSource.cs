@@ -1134,28 +1134,16 @@ namespace System.Threading
             /// It is ok to call this method if the callback has already finished.
             /// Calling this method before the target callback has been selected for execution would be an error.
             /// </summary>
-            public ValueTask WaitForCallbackToCompleteAsync(long id)
+            public async ValueTask WaitForCallbackToCompleteAsync(long id)
             {
-                // If the currently executing callback is not the target one, then the target one has already
-                // completed and we can simply return.  This should be the most common case, as the caller
-                // calls if we're currently canceling but doesn't know what callback is running, if any.
-                if (Volatile.Read(ref ExecutingCallbackId) != id)
+                // Employ an async loop that'll poll for the currently executing callback to complete. While such polling isn't
+                // ideal, we expect this to be a rare case (disposing while the associated callback is running), and brief when
+                // it happens (so the polling will be minimal), and making this work with a callback mechanism will add additional
+                // cost to other more common cases.
+                while (Volatile.Read(ref ExecutingCallbackId) == id)
                 {
-                    return default;
+                    await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
                 }
-
-                // The specified callback is actually running: queue an async loop that'll poll for the currently executing
-                // callback to complete. While such polling isn't ideal, we expect this to be a rare case (disposing while
-                // the associated callback is running), and brief when it happens (so the polling will be minimal), and making
-                // this work with a callback mechanism will add additional cost to other more common cases.
-                return new ValueTask(Task.Factory.StartNew(static async s =>
-                {
-                    var state = (TupleSlim<Registrations, long>)s!;
-                    while (Volatile.Read(ref state.Item1.ExecutingCallbackId) == state.Item2)
-                    {
-                        await Task.Yield();
-                    }
-                }, new TupleSlim<Registrations, long>(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap());
             }
 
             /// <summary>Enters the lock for this instance.  The current thread must not be holding the lock, but that is not validated.</summary>

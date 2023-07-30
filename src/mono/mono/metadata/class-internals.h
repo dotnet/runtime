@@ -578,6 +578,7 @@ typedef struct MonoCachedClassInfo {
 	guint no_special_static_fields : 1;
 	guint is_generic_container : 1;
 	guint has_weak_fields : 1;
+	guint has_deferred_failure : 1;
 	guint32 cctor_token;
 	MonoImage *finalize_image;
 	guint32 finalize_token;
@@ -1062,9 +1063,6 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, 
 
 #define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), NULL))
 
-gboolean
-mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
-
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass);
 
@@ -1268,6 +1266,9 @@ mono_error_set_for_class_failure (MonoError *orerror, const MonoClass *klass);
 gboolean
 mono_class_has_failure (const MonoClass *klass);
 
+gboolean
+mono_class_has_deferred_failure (const MonoClass *klass);
+
 /* Kind specific accessors */
 MONO_COMPONENT_API MonoGenericClass*
 mono_class_get_generic_class (MonoClass *klass);
@@ -1428,6 +1429,9 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error);
 
 gboolean
 mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error);
+
+void
+mono_class_set_deferred_failure (MonoClass *klass);
 
 gboolean
 mono_class_set_type_load_failure_causedby_class (MonoClass *klass, const MonoClass *caused_by, const gchar* msg);

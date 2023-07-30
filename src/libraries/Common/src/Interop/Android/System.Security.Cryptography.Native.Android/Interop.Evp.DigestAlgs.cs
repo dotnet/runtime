@@ -47,12 +47,33 @@ internal static partial class Interop
 
         internal static IntPtr HashAlgorithmToEvp(string hashAlgorithmId) => hashAlgorithmId switch
         {
-            nameof(HashAlgorithmName.SHA1) => EvpSha1(),
-            nameof(HashAlgorithmName.SHA256) => EvpSha256(),
-            nameof(HashAlgorithmName.SHA384) => EvpSha384(),
-            nameof(HashAlgorithmName.SHA512) => EvpSha512(),
-            nameof(HashAlgorithmName.MD5) => EvpMd5(),
+            HashAlgorithmNames.SHA1 => EvpSha1(),
+            HashAlgorithmNames.SHA256 => EvpSha256(),
+            HashAlgorithmNames.SHA384 => EvpSha384(),
+            HashAlgorithmNames.SHA512 => EvpSha512(),
+            HashAlgorithmNames.MD5 => EvpMd5(),
+            HashAlgorithmNames.SHA3_256 or HashAlgorithmNames.SHA3_384 or HashAlgorithmNames.SHA3_512 =>
+                throw new PlatformNotSupportedException(),
             _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId))
         };
+
+        internal static bool HashAlgorithmSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                case HashAlgorithmNames.MD5:
+                    return true;
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
+                    return false;
+                default:
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            }
+        }
     }
 }

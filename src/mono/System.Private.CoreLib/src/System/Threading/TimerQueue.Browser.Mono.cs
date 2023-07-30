@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -27,19 +28,28 @@ namespace System.Threading
         {
         }
 
-        [DynamicDependency("TimeoutCallback")]
         // This replaces the current pending setTimeout with shorter one
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void SetTimeout(int timeout);
+        private static extern unsafe void MainThreadScheduleTimer(void* callback, int shortestDueTimeMs);
 
-        // Called by mini-wasm.c:mono_set_timeout_exec
-        private static void TimeoutCallback()
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
+        // this callback will arrive on the main thread, called from mono_wasm_execute_timer
+        private static void TimerHandler ()
         {
-            // always only have one scheduled at a time
-            s_shortestDueTimeMs = long.MaxValue;
+            try
+            {
+                // always only have one scheduled at a time
+                s_shortestDueTimeMs = long.MaxValue;
 
-            long currentTimeMs = TickCount64;
-            ReplaceNextSetTimeout(PumpTimerQueue(currentTimeMs), currentTimeMs);
+                long currentTimeMs = TickCount64;
+                ReplaceNextTimer(PumpTimerQueue(currentTimeMs), currentTimeMs);
+            }
+            catch (Exception e)
+            {
+                Environment.FailFast("TimerQueue.TimerHandler failed", e);
+            }
         }
 
         // this is called with shortest of timers scheduled on the particular TimerQueue
@@ -57,13 +67,13 @@ namespace System.Threading
 
             _scheduledDueTimeMs = currentTimeMs + (int)actualDuration;
 
-            ReplaceNextSetTimeout(ShortestDueTime(), currentTimeMs);
+            ReplaceNextTimer(ShortestDueTime(), currentTimeMs);
 
             return true;
         }
 
         // shortest time of all TimerQueues
-        private static void ReplaceNextSetTimeout(long shortestDueTimeMs, long currentTimeMs)
+        private static unsafe void ReplaceNextTimer(long shortestDueTimeMs, long currentTimeMs)
         {
             if (shortestDueTimeMs == long.MaxValue)
             {
@@ -75,9 +85,8 @@ namespace System.Threading
             {
                 s_shortestDueTimeMs = shortestDueTimeMs;
                 int shortestWait = Math.Max((int)(shortestDueTimeMs - currentTimeMs), 0);
-                // this would cancel the previous schedule and create shorter one
-                // it is expensive call
-                SetTimeout(shortestWait);
+                // this would cancel the previous schedule and create shorter one, it is expensive callback
+                MainThreadScheduleTimer((void*)(delegate* unmanaged[Cdecl]<void>)&TimerHandler, shortestWait);
             }
         }
 

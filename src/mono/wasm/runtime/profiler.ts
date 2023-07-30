@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, runtimeHelpers } from "./globals";
 import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions } from "./types/internal";
 import cwraps from "./cwraps";
+import { utf8ToString } from "./strings";
 
 // Initialize the AOT profiler with OPTIONS.
 // Requires the AOT profiler to be linked into the app.
@@ -91,7 +92,7 @@ export function mono_wasm_profiler_leave(method: MonoMethod): void {
         let methodName = methodNames.get(method as any);
         if (!methodName) {
             const chars = cwraps.mono_wasm_method_get_name(method);
-            methodName = Module.UTF8ToString(chars);
+            methodName = utf8ToString(chars);
             methodNames.set(method as any, methodName);
         }
         globalThis.performance.measure(methodName, options);

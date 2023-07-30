@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System
 {
@@ -615,6 +616,95 @@ namespace System
             }
         }
 
+        private unsafe struct NoGCRegionCallbackFinalizerWorkItem
+        {
+            // FinalizerWorkItem
+            public NoGCRegionCallbackFinalizerWorkItem* next;
+            public delegate* unmanaged<NoGCRegionCallbackFinalizerWorkItem*, void> callback;
+
+            public bool scheduled;
+            public bool abandoned;
+
+            public GCHandle action;
+        }
+
+        internal enum EnableNoGCRegionCallbackStatus
+        {
+            Success,
+            NotStarted,
+            InsufficientBudget,
+            AlreadyRegistered,
+        }
+
+        /// <summary>
+        /// Register a callback to be invoked when we allocated a certain amount of memory in the no GC region.
+        /// <param name="totalSize">The total size of the no GC region. Must be a number > 0 or an ArgumentOutOfRangeException will be thrown.</param>
+        /// <param name="callback">The callback to be executed when we allocated a certain amount of memory in the no GC region..</param>
+        /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="totalSize"/> argument is less than or equal to 0.</exception>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="callback"/> argument is null.</exception>
+        /// <exception cref="InvalidOperationException"><para>The GC is not currently under a NoGC region.</para>
+        /// <para>-or-</para>
+        /// <para>Another callback is already registered.</para>
+        /// <para>-or-</para>
+        /// <para>The <paramref name="totalSize"/> exceeds the size of the No GC region.</para>
+        /// <para>-or-</para>
+        /// <para>We failed to withheld memory for the callback before of already made allocation.</para>
+        /// </exception>
+        /// </summary>
+        public static unsafe void RegisterNoGCRegionCallback(long totalSize, Action callback)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalSize);
+            ArgumentNullException.ThrowIfNull(callback);
+
+            NoGCRegionCallbackFinalizerWorkItem* pWorkItem = null;
+            try
+            {
+                pWorkItem = (NoGCRegionCallbackFinalizerWorkItem*)NativeMemory.AllocZeroed((nuint)sizeof(NoGCRegionCallbackFinalizerWorkItem));
+                pWorkItem->action = GCHandle.Alloc(callback);
+                pWorkItem->callback = &Callback;
+
+                EnableNoGCRegionCallbackStatus status = (EnableNoGCRegionCallbackStatus)_EnableNoGCRegionCallback(pWorkItem, totalSize);
+                if (status != EnableNoGCRegionCallbackStatus.Success)
+                {
+                    switch (status)
+                    {
+                        case EnableNoGCRegionCallbackStatus.NotStarted:
+                            throw new InvalidOperationException(SR.Format(SR.InvalidOperationException_NoGCRegionNotInProgress));
+                        case EnableNoGCRegionCallbackStatus.InsufficientBudget:
+                            throw new InvalidOperationException(SR.Format(SR.InvalidOperationException_NoGCRegionAllocationExceeded));
+                        case EnableNoGCRegionCallbackStatus.AlreadyRegistered:
+                            throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionCallbackAlreadyRegistered);
+                    }
+                    Debug.Assert(false);
+                }
+                pWorkItem = null; // Ownership transferred
+            }
+            finally
+            {
+                if (pWorkItem != null)
+                    Free(pWorkItem);
+            }
+
+            [UnmanagedCallersOnly]
+            static void Callback(NoGCRegionCallbackFinalizerWorkItem* pWorkItem)
+            {
+                Debug.Assert(pWorkItem->scheduled);
+                if (!pWorkItem->abandoned)
+                    ((Action)(pWorkItem->action.Target!))();
+                Free(pWorkItem);
+            }
+
+            static void Free(NoGCRegionCallbackFinalizerWorkItem* pWorkItem)
+            {
+                if (pWorkItem->action.IsAllocated)
+                    pWorkItem->action.Free();
+                NativeMemory.Free(pWorkItem);
+            }
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnableNoGCRegionCallback")]
+        private static unsafe partial EnableNoGCRegionCallbackStatus _EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, long totalSize);
+
         internal static void UnregisterMemoryLoadChangeNotification(Action notification)
         {
             ArgumentNullException.ThrowIfNull(notification);
@@ -720,7 +810,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void Callback(void* configurationContext, void* name, void* publicKey, GCConfigurationType type, long data)
+        private static unsafe void ConfigCallback(void* configurationContext, void* name, void* publicKey, GCConfigurationType type, long data)
         {
             // If the public key is null, it means that the corresponding configuration isn't publicly available
             // and therefore, we shouldn't add it to the configuration dictionary to return to the user.
@@ -768,7 +858,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            _EnumerateConfigurationValues(Unsafe.AsPointer(ref context), &Callback);
+            _EnumerateConfigurationValues(Unsafe.AsPointer(ref context), &ConfigCallback);
             return context.Configurations!;
         }
 
@@ -783,7 +873,42 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
         internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
 
-        private static int _RefreshMemoryLimit()
+        internal enum RefreshMemoryStatus
+        {
+            Succeeded = 0,
+            HardLimitTooLow = 1,
+            HardLimitInvalid = 2,
+        }
+
+        /// <summary>
+        ///
+        /// Instructs the Garbage Collector to reconfigure itself by detecting the various memory limits on the system.
+        ///
+        /// In addition to actual physical memory limit and container limit settings, these configuration settings can be overwritten:
+        ///
+        /// - GCHeapHardLimit
+        /// - GCHeapHardLimitPercent
+        /// - GCHeapHardLimitSOH
+        /// - GCHeapHardLimitLOH
+        /// - GCHeapHardLimitPOH
+        /// - GCHeapHardLimitSOHPercent
+        /// - GCHeapHardLimitLOHPercent
+        /// - GCHeapHardLimitPOHPercent
+        ///
+        /// Instead of updating the environment variable (which will not be read), these are overridden setting a ulong value in the AppContext.
+        ///
+        /// For example, you can use AppContext.SetData("GCHeapHardLimit", (ulong) 100 * 1024 * 1024) to override the GCHeapHardLimit to a 100M.
+        ///
+        /// This API will only handle configs that could be handled when the runtime is loaded, for example, for configs that don't have any effects on 32-bit systems (like the GCHeapHardLimit* ones), this API will not handle it.
+        ///
+        /// As of now, this API is feature preview only and subject to changes as necessary.
+        ///
+        /// <exception cref="InvalidOperationException">If the hard limit is too low. This can happen if the heap hard limit that the refresh will set, either because of new AppData settings or implied by the container memory limit changes, is lower than what is already committed.</exception>"
+        /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>"
+        ///
+        /// </summary>
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        public static void RefreshMemoryLimit()
         {
             ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;
             ulong heapHardLimitPercent = (AppContext.GetData("GCHeapHardLimitPercent") as ulong?) ?? ulong.MaxValue;
@@ -804,11 +929,19 @@ namespace System
                 HeapHardLimitLOHPercent = heapHardLimitLOHPercent,
                 HeapHardLimitPOHPercent = heapHardLimitPOHPercent,
             };
-            return RefreshMemoryLimit(heapHardLimitInfo);
+            RefreshMemoryStatus status = (RefreshMemoryStatus)_RefreshMemoryLimit(heapHardLimitInfo);
+            switch (status)
+            {
+                case RefreshMemoryStatus.HardLimitTooLow:
+                    throw new InvalidOperationException(SR.InvalidOperationException_HardLimitTooLow);
+                case RefreshMemoryStatus.HardLimitInvalid:
+                    throw new InvalidOperationException(SR.InvalidOperationException_HardLimitInvalid);
+            }
+            Debug.Assert(status == RefreshMemoryStatus.Succeeded);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RefreshMemoryLimit")]
-        internal static partial int RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
+        internal static partial int _RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
         internal struct GCHeapHardLimitInfo
         {

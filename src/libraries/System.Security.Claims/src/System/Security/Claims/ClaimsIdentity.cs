@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -12,6 +13,8 @@ namespace System.Security.Claims
     /// <summary>
     /// An Identity that is represented by a set of claims.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ClaimsIdentityDebugProxy))]
     public class ClaimsIdentity : IIdentity
     {
         private enum SerializationMask
@@ -932,6 +935,39 @@ namespace System.Security.Claims
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
+        }
+
+        internal string DebuggerToString()
+        {
+            // DebuggerDisplayAttribute is inherited. Use virtual members instead of private fields to gather data.
+            int claimsCount = 0;
+            foreach (Claim item in Claims)
+            {
+                claimsCount++;
+            }
+
+            return $"Identity Name = {Name ?? "(null)"}, IsAuthenticated = {IsAuthenticated}, Claims Count = {claimsCount}";
+        }
+
+        private sealed class ClaimsIdentityDebugProxy
+        {
+            private readonly ClaimsIdentity _identity;
+
+            public ClaimsIdentityDebugProxy(ClaimsIdentity identity)
+            {
+                _identity = identity;
+            }
+
+            public ClaimsIdentity? Actor => _identity.Actor;
+            public string? AuthenticationType => _identity.AuthenticationType;
+            public object? BootstrapContext => _identity.BootstrapContext;
+            // List type has a friendly debugger view
+            public List<Claim> Claims => new List<Claim>(_identity.Claims);
+            public bool IsAuthenticated => _identity.IsAuthenticated;
+            public string? Label => _identity.Label;
+            public string? Name => _identity.Name;
+            public string NameClaimType => _identity.NameClaimType;
+            public string RoleClaimType => _identity.RoleClaimType;
         }
     }
 }

@@ -188,6 +188,7 @@ public:
 
     static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
     static int  RefreshMemoryLimit();
+    static enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
 
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
@@ -217,6 +218,8 @@ extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configu
 
 extern "C" int  QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
+extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
+
 class COMInterlocked
 {
 public:
@@ -232,9 +235,6 @@ public:
         static FCDECL3(LPVOID, CompareExchangeObject, LPVOID* location, LPVOID value, LPVOID comparand);
         static FCDECL2(INT32, ExchangeAdd32, INT32 *location, INT32 value);
         static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
-
-        static FCDECL0(void, FCMemoryBarrier);
-        static FCDECL0(void, FCMemoryBarrierLoad);
 };
 
 extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();

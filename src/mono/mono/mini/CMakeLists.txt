@@ -70,7 +70,8 @@ if(HAVE_SYS_ICU)
   if (TARGET_DARWIN)
     set(icu_shim_sources_base
         ${icu_shim_sources_base}
-        pal_locale.m)
+        pal_locale.m
+        pal_collation.m)
   endif()
 
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")

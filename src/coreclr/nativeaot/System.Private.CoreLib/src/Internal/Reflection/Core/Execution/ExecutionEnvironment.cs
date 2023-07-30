@@ -27,7 +27,6 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // Access to the underlying execution engine's object allocation routines.
         //==============================================================================================
-        public abstract object NewObject(RuntimeTypeHandle typeHandle);
         public abstract Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count);
         public abstract Array NewMultiDimArray(RuntimeTypeHandle typeHandleForArrayType, int[] lengths, int[] lowerBounds);
 

@@ -17,13 +17,6 @@ if (globalThis.navigator) {
     }
 }
 
-function pump_message() {
-    while (pump_count > 0) {
-        --pump_count;
-        cwraps.mono_background_exec();
-    }
-}
-
 export function prevent_timer_throttling(): void {
     if (!isChromium) {
         return;
@@ -37,28 +30,38 @@ export function prevent_timer_throttling(): void {
     const light_throttling_frequency = 1000;
     for (let schedule = next_reach_time; schedule < desired_reach_time; schedule += light_throttling_frequency) {
         const delay = schedule - now;
-        setTimeout(() => {
-            cwraps.mono_set_timeout_exec();
-            pump_count++;
-            pump_message();
-        }, delay);
+        globalThis.setTimeout(prevent_timer_throttling_tick, delay);
     }
     spread_timers_maximum = desired_reach_time;
 }
 
+function prevent_timer_throttling_tick() {
+    cwraps.mono_wasm_execute_timer();
+    pump_count++;
+    mono_background_exec_until_done();
+}
+
+function mono_background_exec_until_done() {
+    while (pump_count > 0) {
+        --pump_count;
+        cwraps.mono_background_exec();
+    }
+}
+
 export function schedule_background_exec(): void {
     ++pump_count;
-    setTimeout(pump_message, 0);
+    globalThis.setTimeout(mono_background_exec_until_done, 0);
 }
 
 let lastScheduledTimeoutId: any = undefined;
-export function mono_set_timeout(timeout: number): void {
-    function mono_wasm_set_timeout_exec() {
-        cwraps.mono_set_timeout_exec();
-    }
+export function mono_wasm_schedule_timer(shortestDueTimeMs: number): void {
     if (lastScheduledTimeoutId) {
-        clearTimeout(lastScheduledTimeoutId);
+        globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
     }
-    lastScheduledTimeoutId = setTimeout(mono_wasm_set_timeout_exec, timeout);
+    lastScheduledTimeoutId = globalThis.setTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
+}
+
+function mono_wasm_schedule_timer_tick() {
+    cwraps.mono_wasm_execute_timer();
 }

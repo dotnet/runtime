@@ -45,6 +45,8 @@ lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
                 return (int)*result;
 }
 
+// These items need to be in ASCII order, which means alphabetical order where lowercase is after uppercase
+// i.e. all 'get_' and 'op_' need to come after regular title-case names
 static guint16 sri_vector128_methods [] = {
 	SN_AndNot,
 	SN_ConditionalSelect,
@@ -84,12 +86,46 @@ static guint16 sri_vector128_t_methods [] = {
 	SN_op_RightShift,
 	SN_op_Subtraction,
 	SN_op_UnaryNegation,
-	SN_op_UnsignedRightShift
+	SN_op_UnsignedRightShift,
+};
+
+static guint16 sn_vector_t_methods [] = {
+	SN_get_AllBitsSet,
+	SN_get_Count,
+	SN_get_One,
+	SN_get_Zero,
+	SN_op_Addition,
+	SN_op_BitwiseAnd,
+	SN_op_BitwiseOr,
+	SN_op_Division,
+	SN_op_Equality,
+	SN_op_ExclusiveOr,
+	SN_op_Inequality,
+	SN_op_LeftShift,
+	SN_op_Multiply,
+	SN_op_OnesComplement,
+	SN_op_RightShift,
+	SN_op_Subtraction,
+	SN_op_UnaryNegation,
+	SN_op_UnsignedRightShift,
 };
 
 static guint16 sri_packedsimd_methods [] = {
+	SN_Add,
+	SN_And,
+	SN_Bitmask,
+	SN_CompareEqual,
+	SN_CompareNotEqual,
 	SN_ConvertNarrowingSignedSaturate,
 	SN_ConvertNarrowingUnsignedSaturate,
+	SN_Dot,
+	SN_Multiply,
+	SN_Negate,
+	SN_ShiftLeft,
+	SN_ShiftRightArithmetic,
+	SN_ShiftRightLogical,
+	SN_Splat,
+	SN_Subtract,
 	SN_Swizzle,
 	SN_get_IsHardwareAccelerated,
 	SN_get_IsSupported,
@@ -112,9 +148,8 @@ static guint16 sri_packedsimd_methods [] = {
 static int sri_packedsimd_offset_from_atype [] = {
 	-1, // MONO_TYPE_END        = 0x00,
 	-1, // MONO_TYPE_VOID       = 0x01,
-	// FIXME: Should this be 2, for I4?
-	0, // MONO_TYPE_BOOLEAN    = 0x02,
-	1, // MONO_TYPE_CHAR       = 0x03,
+	-1, // MONO_TYPE_BOOLEAN    = 0x02,
+	-1, // MONO_TYPE_CHAR       = 0x03,
 	0, // MONO_TYPE_I1         = 0x04,
 	0, // MONO_TYPE_U1         = 0x05,
 	1, // MONO_TYPE_I2         = 0x06,
@@ -126,7 +161,7 @@ static int sri_packedsimd_offset_from_atype [] = {
 	4, // MONO_TYPE_R4         = 0x0c,
 	5, // MONO_TYPE_R8         = 0x0d,
 	-1, // MONO_TYPE_STRING     = 0x0e,
-	2, // MONO_TYPE_PTR        = 0x0f,
+	-1, // MONO_TYPE_PTR        = 0x0f,
 	-1, // MONO_TYPE_BYREF      = 0x10,
 	-1, // MONO_TYPE_VALUETYPE  = 0x11,
 	-1, // MONO_TYPE_CLASS      = 0x12,
@@ -141,22 +176,154 @@ static int sri_packedsimd_offset_from_atype [] = {
 static const int sri_packedsimd_offset_from_atype_length = sizeof(sri_packedsimd_offset_from_atype) / sizeof(sri_packedsimd_offset_from_atype[0]);
 #endif // HOST_BROWSER
 
+// Returns if opcode was added
 static gboolean
-emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+emit_common_simd_operations (TransformData *td, int id, int atype, int vector_size, int arg_size, int scalar_arg, gint16 *simd_opcode, gint16 *simd_intrins)
 {
-	int id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod);
-	if (id == -1)
-		return FALSE;
-
-	MonoClass *vector_klass = mono_class_from_mono_type_internal (csignature->ret);
-	if (id == SN_get_IsHardwareAccelerated) {
-		interp_add_ins (td, MINT_LDC_I4_1);
-		goto opcode_added;
+	switch (id) {
+		case SN_get_AllBitsSet: {
+			interp_add_ins (td, MINT_SIMD_V128_LDC);
+			guint16 *data = &td->last_ins->data [0];
+			for (int i = 0; i < vector_size / sizeof (guint16); i++)
+				data [i] = 0xffff;
+			return TRUE;
+		}
+		case SN_get_Count:
+			interp_add_ins (td, MINT_LDC_I4_S);
+			td->last_ins->data [0] = vector_size / arg_size;
+			return TRUE;
+		case SN_get_One:
+			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) {
+				interp_add_ins (td, MINT_SIMD_V128_LDC);
+				gint8 *data = (gint8*)&td->last_ins->data [0];
+				for (int i = 0; i < vector_size / arg_size; i++)
+					data [i] = 1;
+				return TRUE;
+			} else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) {
+				interp_add_ins (td, MINT_SIMD_V128_LDC);
+				gint16 *data = (gint16*)&td->last_ins->data [0];
+				for (int i = 0; i < vector_size / arg_size; i++)
+					data [i] = 1;
+				return TRUE;
+			} else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) {
+				interp_add_ins (td, MINT_SIMD_V128_LDC);
+				gint32 *data = (gint32*)&td->last_ins->data [0];
+				for (int i = 0; i < vector_size / arg_size; i++)
+					data [i] = 1;
+				return TRUE;
+			} else if (atype == MONO_TYPE_I8 || atype == MONO_TYPE_U8) {
+				interp_add_ins (td, MINT_SIMD_V128_LDC);
+				gint64 *data = (gint64*)&td->last_ins->data [0];
+				for (int i = 0; i < vector_size / arg_size; i++)
+					data [i] = 1;
+				return TRUE;
+			}
+			break;
+		case SN_get_Zero:
+			interp_add_ins (td, MINT_INITLOCAL);
+			td->last_ins->data [0] = SIZEOF_V128;
+			return TRUE;
+		case SN_op_Addition:
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_ADD;
+			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_ADD;
+			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_ADD;
+			else if (atype == MONO_TYPE_R4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_ADD;
+			break;
+		case SN_op_BitwiseAnd:
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_AND;
+			break;
+		case SN_op_BitwiseOr:
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_OR;
+			break;
+		case SN_op_Equality:
+			if (atype != MONO_TYPE_R4 && atype != MONO_TYPE_R8) {
+				*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_EQUALITY;
+			}
+			break;
+		case SN_op_ExclusiveOr:
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			*simd_intrins = INTERP_SIMD_INTRINSIC_V128_EXCLUSIVE_OR;
+			break;
+		case SN_op_Inequality:
+			if (atype != MONO_TYPE_R4 && atype != MONO_TYPE_R8) {
+				*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_INEQUALITY;
+			}
+			break;
+		case SN_op_LeftShift:
+			if (scalar_arg != 1)
+				break;
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			if (arg_size == 1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_LEFT_SHIFT;
+			else if (arg_size == 2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_LEFT_SHIFT;
+			else if (arg_size == 4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_LEFT_SHIFT;
+			else if (arg_size == 8) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_LEFT_SHIFT;
+			break;
+		case SN_op_Division:
+			if (scalar_arg != -1)
+				break;
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			if (atype == MONO_TYPE_R4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_DIVISION;
+			break;
+		case SN_op_Multiply:
+			if (scalar_arg != -1)
+				break;
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_MULTIPLY;
+			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_MULTIPLY;
+			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_MULTIPLY;
+			else if (atype == MONO_TYPE_R4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_MULTIPLY;
+			break;
+		case SN_op_OnesComplement:
+			*simd_opcode = MINT_SIMD_INTRINS_P_P;
+			*simd_intrins = INTERP_SIMD_INTRINSIC_V128_ONES_COMPLEMENT;
+			break;
+		case SN_op_RightShift:
+			if (scalar_arg != 1)
+				break;
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			if (atype == MONO_TYPE_I1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_RIGHT_SHIFT;
+			else if (atype == MONO_TYPE_I2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_RIGHT_SHIFT;
+			else if (atype == MONO_TYPE_I4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_RIGHT_SHIFT;
+			else if (atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_URIGHT_SHIFT;
+			else if (atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_URIGHT_SHIFT;
+			else if (atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
+			break;
+		case SN_op_Subtraction:
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_SUB;
+			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_SUB;
+			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_SUB;
+			else if (atype == MONO_TYPE_R4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_SUB;
+			break;
+		case SN_op_UnaryNegation:
+			*simd_opcode = MINT_SIMD_INTRINS_P_P;
+			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_NEGATION;
+			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_NEGATION;
+			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_NEGATION;
+			break;
+		case SN_op_UnsignedRightShift:
+			if (scalar_arg != 1)
+				break;
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			if (arg_size == 1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_URIGHT_SHIFT;
+			else if (arg_size == 2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_URIGHT_SHIFT;
+			else if (arg_size == 4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
+			else if (arg_size == 8) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_URIGHT_SHIFT;
+			break;
 	}
 
-	gint16 simd_opcode = -1;
-	gint16 simd_intrins = -1;
-	if (!m_class_is_simd_type (vector_klass))
+	return FALSE;
+}
+
+static gboolean
+get_common_simd_info (MonoClass *vector_klass, MonoMethodSignature *csignature, MonoTypeEnum *atype, int *vector_size, int *arg_size, int *scalar_arg)
+{
+	if (!m_class_is_simd_type (vector_klass) && csignature->param_count)
 		vector_klass = mono_class_from_mono_type_internal (csignature->params [0]);
 	if (!m_class_is_simd_type (vector_klass))
 		return FALSE;
@@ -164,18 +331,66 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 	MonoType *arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
 	if (!mono_type_is_primitive (arg_type))
 		return FALSE;
-	MonoTypeEnum atype = arg_type->type;
-	if (atype == MONO_TYPE_BOOLEAN)
+	*atype = arg_type->type;
+	if (*atype == MONO_TYPE_BOOLEAN)
 		return FALSE;
-	int vector_size = mono_class_value_size (vector_klass, NULL);
-	int arg_size = mono_class_value_size (mono_class_from_mono_type_internal (arg_type), NULL);
-	g_assert (vector_size == SIZEOF_V128);
+	*vector_size = mono_class_value_size (vector_klass, NULL);
+	g_assert (*vector_size == SIZEOF_V128);
+	if (arg_size)
+		*arg_size = mono_class_value_size (mono_class_from_mono_type_internal (arg_type), NULL);
 
-	int scalar_arg = -1;
+	*scalar_arg = -1;
 	for (int i = 0; i < csignature->param_count; i++) {
 		if (csignature->params [i]->type != MONO_TYPE_GENERICINST)
-			scalar_arg = i;
+			*scalar_arg = i;
 	}
+
+	return TRUE;
+}
+
+static void
+emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMethodSignature *csignature, int vector_size)
+{
+	td->sp -= csignature->param_count;
+	for (int i = 0; i < csignature->param_count; i++)
+		td->last_ins->sregs [i] = td->sp [i].local;
+
+	g_assert (csignature->ret->type != MONO_TYPE_VOID);
+	int ret_mt = mono_mint_type (csignature->ret);
+	if (ret_mt == MINT_TYPE_VT) {
+		// For these intrinsics, if we return a VT then it is a V128
+		push_type_vt (td, vector_klass, vector_size);
+	} else {
+		push_simple_type (td, stack_type [ret_mt]);
+	}
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+	td->ip += 5;
+}
+
+static gboolean
+emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+{
+	int id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod);
+	if (id == -1)
+		return FALSE;
+
+	MonoClass *vector_klass = NULL;
+	int vector_size = 0;
+
+	if (id == SN_get_IsHardwareAccelerated) {
+		interp_add_ins (td, MINT_LDC_I4_1);
+		goto opcode_added;
+	}
+
+	gint16 simd_opcode = -1;
+	gint16 simd_intrins = -1;
+
+	vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+
+	MonoTypeEnum atype;
+	int arg_size, scalar_arg;
+	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
+		return FALSE;
 
 	switch (id) {
 		case SN_AndNot:
@@ -232,6 +447,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_EQUALS;
 			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_EQUALS;
 			else if (atype == MONO_TYPE_I8 || atype == MONO_TYPE_U8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_EQUALS;
+			else if (atype == MONO_TYPE_R4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_EQUALS;
 			break;
 		case SN_ExtractMostSignificantBits:
 			simd_opcode = MINT_SIMD_INTRINS_P_P;
@@ -311,20 +527,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 	td->last_ins->data [0] = simd_intrins;
 
 opcode_added:
-	td->sp -= csignature->param_count;
-	for (int i = 0; i < csignature->param_count; i++)
-		td->last_ins->sregs [i] = td->sp [i].local;
-
-	g_assert (csignature->ret->type != MONO_TYPE_VOID);
-	int ret_mt = mono_mint_type (csignature->ret);
-	if (ret_mt == MINT_TYPE_VT) {
-		// For these intrinsics, if we return a VT then it is a V128
-		push_type_vt (td, vector_klass, vector_size);
-	} else {
-		push_simple_type (td, stack_type [ret_mt]);
-	}
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->ip += 5;
+	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size);
 	return TRUE;
 }
 
@@ -340,179 +543,55 @@ emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 
 	// First argument is always vector
 	MonoClass *vector_klass = cmethod->klass;
-	MonoType *arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
-	if (!mono_type_is_primitive (arg_type))
-		return FALSE;
-	MonoTypeEnum atype = arg_type->type;
-	if (atype == MONO_TYPE_BOOLEAN)
-		return FALSE;
-	int vector_size = mono_class_value_size (vector_klass, NULL);
-	int arg_size = mono_class_value_size (mono_class_from_mono_type_internal (arg_type), NULL);
-	g_assert (vector_size == SIZEOF_V128);
 
-	int scalar_arg = -1;
-	for (int i = 0; i < csignature->param_count; i++) {
-		if (csignature->params [i]->type != MONO_TYPE_GENERICINST)
-			scalar_arg = i;
-	}
-
-	switch (id) {
-		case SN_get_AllBitsSet: {
-			interp_add_ins (td, MINT_SIMD_V128_LDC);
-			guint16 *data = &td->last_ins->data [0];
-			for (int i = 0; i < vector_size / sizeof (guint16); i++)
-				data [i] = 0xffff;
-			goto opcode_added;
-		}
-		case SN_get_Count:
-			interp_add_ins (td, MINT_LDC_I4_S);
-			td->last_ins->data [0] = vector_size / arg_size;
-			goto opcode_added;
-		case SN_get_One:
-			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) {
-				interp_add_ins (td, MINT_SIMD_V128_LDC);
-				gint8 *data = (gint8*)&td->last_ins->data [0];
-				for (int i = 0; i < vector_size / arg_size; i++)
-					data [i] = 1;
-				goto opcode_added;
-			} else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) {
-				interp_add_ins (td, MINT_SIMD_V128_LDC);
-				gint16 *data = (gint16*)&td->last_ins->data [0];
-				for (int i = 0; i < vector_size / arg_size; i++)
-					data [i] = 1;
-				goto opcode_added;
-			} else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) {
-				interp_add_ins (td, MINT_SIMD_V128_LDC);
-				gint32 *data = (gint32*)&td->last_ins->data [0];
-				for (int i = 0; i < vector_size / arg_size; i++)
-					data [i] = 1;
-				goto opcode_added;
-			} else if (atype == MONO_TYPE_I8 || atype == MONO_TYPE_U8) {
-				interp_add_ins (td, MINT_SIMD_V128_LDC);
-				gint64 *data = (gint64*)&td->last_ins->data [0];
-				for (int i = 0; i < vector_size / arg_size; i++)
-					data [i] = 1;
-				goto opcode_added;
-			}
-			break;
-		case SN_get_Zero:
-			interp_add_ins (td, MINT_INITLOCAL);
-			td->last_ins->data [0] = SIZEOF_V128;
-			goto opcode_added;
-		case SN_op_Addition:
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_ADD;
-			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_ADD;
-			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_ADD;
-			break;
-		case SN_op_BitwiseAnd:
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_AND;
-			break;
-		case SN_op_BitwiseOr:
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_OR;
-			break;
-		case SN_op_Equality:
-			if (atype != MONO_TYPE_R4 && atype != MONO_TYPE_R8) {
-				simd_opcode = MINT_SIMD_INTRINS_P_PP;
-				simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_EQUALITY;
-			}
-			break;
-		case SN_op_ExclusiveOr:
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			simd_intrins = INTERP_SIMD_INTRINSIC_V128_EXCLUSIVE_OR;
-			break;
-		case SN_op_Inequality:
-			if (atype != MONO_TYPE_R4 && atype != MONO_TYPE_R8) {
-				simd_opcode = MINT_SIMD_INTRINS_P_PP;
-				simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_INEQUALITY;
-			}
-			break;
-		case SN_op_LeftShift:
-			if (scalar_arg != 1)
-				return FALSE;
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (arg_size == 1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_LEFT_SHIFT;
-			else if (arg_size == 2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_LEFT_SHIFT;
-			else if (arg_size == 4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_LEFT_SHIFT;
-			else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_LEFT_SHIFT;
-			break;
-		case SN_op_Division:
-			if (scalar_arg != -1)
-				return FALSE;
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (atype == MONO_TYPE_R4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_DIVISION;
-			break;
-		case SN_op_Multiply:
-			if (scalar_arg != -1)
-				return FALSE;
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_MULTIPLY;
-			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_MULTIPLY;
-			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_MULTIPLY;
-			else if (atype == MONO_TYPE_R4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_MULTIPLY;
-			break;
-		case SN_op_OnesComplement:
-			simd_opcode = MINT_SIMD_INTRINS_P_P;
-			simd_intrins = INTERP_SIMD_INTRINSIC_V128_ONES_COMPLEMENT;
-			break;
-		case SN_op_RightShift:
-			if (scalar_arg != 1)
-				return FALSE;
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (atype == MONO_TYPE_I1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_RIGHT_SHIFT;
-			else if (atype == MONO_TYPE_I2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_RIGHT_SHIFT;
-			else if (atype == MONO_TYPE_I4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_RIGHT_SHIFT;
-			else if (atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_URIGHT_SHIFT;
-			else if (atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_URIGHT_SHIFT;
-			else if (atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
-			break;
-		case SN_op_Subtraction:
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_SUB;
-			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_SUB;
-			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_SUB;
-			break;
-		case SN_op_UnaryNegation:
-			simd_opcode = MINT_SIMD_INTRINS_P_P;
-			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_NEGATION;
-			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_NEGATION;
-			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_NEGATION;
-			break;
-		case SN_op_UnsignedRightShift:
-			if (scalar_arg != 1)
-				return FALSE;
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (arg_size == 1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_URIGHT_SHIFT;
-			else if (arg_size == 2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_URIGHT_SHIFT;
-			else if (arg_size == 4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
-			else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_URIGHT_SHIFT;
-			break;
-	}
-
-	if (simd_opcode == -1 || simd_intrins == -1) {
+	MonoTypeEnum atype;
+	int vector_size, arg_size, scalar_arg;
+	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
 		return FALSE;
-	}
+
+	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins))
+		goto opcode_added;
+
+	if (simd_opcode == -1 || simd_intrins == -1)
+		return FALSE;
 
 	interp_add_ins (td, simd_opcode);
 	td->last_ins->data [0] = simd_intrins;
 
 opcode_added:
-	td->sp -= csignature->param_count;
-	for (int i = 0; i < csignature->param_count; i++)
-		td->last_ins->sregs [i] = td->sp [i].local;
+	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size);
+	return TRUE;
+}
 
-	g_assert (csignature->ret->type != MONO_TYPE_VOID);
-	int ret_mt = mono_mint_type (csignature->ret);
-	if (ret_mt == MINT_TYPE_VT) {
-		// For these intrinsics, if we return a VT then it is a V128
-		push_type_vt (td, vector_klass, vector_size);
-	} else {
-		push_simple_type (td, stack_type [ret_mt]);
-	}
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->ip += 5;
+static gboolean
+emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+{
+	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod);
+	if (id == -1)
+		return FALSE;
+
+	gint16 simd_opcode = -1;
+	gint16 simd_intrins = -1;
+
+	// First argument is always vector
+	MonoClass *vector_klass = cmethod->klass;
+
+	MonoTypeEnum atype;
+	int vector_size, arg_size, scalar_arg;
+	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
+		return FALSE;
+
+	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins))
+		goto opcode_added;
+
+	if (simd_opcode == -1 || simd_intrins == -1)
+		return FALSE;
+
+	interp_add_ins (td, simd_opcode);
+	td->last_ins->data [0] = simd_intrins;
+
+opcode_added:
+	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size);
 	return TRUE;
 }
 
@@ -534,12 +613,12 @@ static gboolean
 emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod);
-	if (id == -1)
-		return FALSE;
+	// We don't early-out for an unrecognized method, we will generate an NIY later
 
 	MonoClass *vector_klass = mono_class_from_mono_type_internal (csignature->ret);
 	int vector_size = -1;
 
+	// NOTE: Linker substitutions (used in AOT) will prevent this from running.
 	if ((id == SN_get_IsSupported) || (id == SN_get_IsHardwareAccelerated)) {
 #if HOST_BROWSER
 		interp_add_ins (td, MINT_LDC_I4_1);
@@ -550,28 +629,30 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	}
 
 #if HOST_BROWSER
+	if (id < 0) {
+		g_print ("MONO interpreter: Unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
+
+		// If we're missing a packedsimd method but the packedsimd method was AOT'd, we can
+		//  just let the interpreter generate a native call to the AOT method instead of
+		//  generating an NIY that will halt execution
+		ERROR_DECL (error);
+		gpointer addr = mono_aot_get_method (cmethod, error);
+		if (addr)
+			return FALSE;
+
+		// The packedsimd method implementations recurse infinitely and cause a stack overflow,
+		//  so replace them with a NIY opcode instead that will assert
+		interp_add_ins (td, MINT_NIY);
+		goto opcode_added;
+	}
+
 	gint16 simd_opcode = -1;
 	gint16 simd_intrins = -1;
-	if (!m_class_is_simd_type (vector_klass))
-		vector_klass = mono_class_from_mono_type_internal (csignature->params [0]);
-	if (!m_class_is_simd_type (vector_klass))
-		return FALSE;
 
-	vector_size = mono_class_value_size (vector_klass, NULL);
-	g_assert (vector_size == SIZEOF_V128);
-
-	MonoType *arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
-	if (!mono_type_is_primitive (arg_type))
+	MonoTypeEnum atype;
+	int scalar_arg;
+	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, NULL, &scalar_arg))
 		return FALSE;
-	MonoTypeEnum atype = arg_type->type;
-	if (atype == MONO_TYPE_BOOLEAN)
-		return FALSE;
-
-	int scalar_arg = -1;
-	for (int i = 0; i < csignature->param_count; i++) {
-		if (csignature->params [i]->type != MONO_TYPE_GENERICINST)
-			scalar_arg = i;
-	}
 
 	switch (id) {
 		case SN_Splat: {
@@ -675,20 +756,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 #endif // HOST_BROWSER
 
 opcode_added:
-	td->sp -= csignature->param_count;
-	for (int i = 0; i < csignature->param_count; i++)
-		td->last_ins->sregs [i] = td->sp [i].local;
-
-	g_assert (csignature->ret->type != MONO_TYPE_VOID);
-	int ret_mt = mono_mint_type (csignature->ret);
-	if (ret_mt == MINT_TYPE_VT) {
-		// For these intrinsics, if we return a VT then it is a V128
-		push_type_vt (td, vector_klass, vector_size);
-	} else {
-		push_simple_type (td, stack_type [ret_mt]);
-	}
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->ip += 5;
+	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size);
 	return TRUE;
 }
 
@@ -705,21 +773,17 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 	class_ns = m_class_get_name_space (cmethod->klass);
 	class_name = m_class_get_name (cmethod->klass);
 
-	if (mono_opt_interp_simd_v128 && !strcmp (class_ns, "System.Runtime.Intrinsics")) {
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128"))
 			return emit_sri_vector128 (td, cmethod, csignature);
 		else if (!strcmp (class_name, "Vector128`1"))
 			return emit_sri_vector128_t (td, cmethod, csignature);
-	} else if (mono_opt_interp_simd_packedsimd && !strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
-		if (!strcmp (class_name, "PackedSimd")) {
-			gboolean res = emit_sri_packedsimd (td, cmethod, csignature);
-#if HOST_BROWSER
-			if (!res)
-				g_print ("MONO interpreter: Unsupported method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
-			g_assert (res);
-#endif
-			return res;
-		}
+	} else if (!strcmp (class_ns, "System.Numerics")) {
+		if (!strcmp (class_name, "Vector`1"))
+			return emit_sn_vector_t (td, cmethod, csignature);
+	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
+		if (!strcmp (class_name, "PackedSimd"))
+			return emit_sri_packedsimd (td, cmethod, csignature);
 	}
 	return FALSE;
 }

@@ -193,16 +193,22 @@
       <EmccExportedRuntimeMethod Include="getValue" />
       <EmccExportedRuntimeMethod Include="UTF8ToString" />
       <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
+      <EmccExportedRuntimeMethod Include="stringToUTF8Array" />
       <EmccExportedRuntimeMethod Include="FS_createPath" />
       <EmccExportedRuntimeMethod Include="FS_createDataFile" />
       <EmccExportedRuntimeMethod Include="removeRunDependency" />
       <EmccExportedRuntimeMethod Include="addRunDependency" />
       <EmccExportedRuntimeMethod Include="addFunction" />
 
+      <EmccExportedFunction Include="_free" />
+      <EmccExportedFunction Include="_htons" />
       <EmccExportedFunction Include="_malloc" />
       <EmccExportedFunction Include="_memalign" />
-      <EmccExportedFunction Include="_htons" />
+      <EmccExportedFunction Include="_memset" />
       <EmccExportedFunction Include="_ntohs" />
+      <EmccExportedFunction Include="stackAlloc" />
+      <EmccExportedFunction Include="stackRestore" />
+      <EmccExportedFunction Include="stackSave"  />
     </ItemGroup>
     <!-- for the jiterpreter -->
     <ItemGroup>
@@ -251,23 +257,8 @@
       <EmccExportedFunction Include="_tanf" />
       <EmccExportedFunction Include="_tanhf" />
     </ItemGroup>
-    <!-- after 3.0 -->
-    <ItemGroup Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))">
-      <EmccExportedFunction Include="_memset" />
-    </ItemGroup>
-    <!-- before 3.1.7 see https://github.com/dotnet/runtime/issues/64724 -->
-    <ItemGroup Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.1.7'))">
-      <EmccExportedFunction Include="__get_daylight" />
-      <EmccExportedFunction Include="__get_timezone" />
-      <EmccExportedFunction Include="__get_tzname" />
-      <EmccExportedFunction Include="g_free" />
-    </ItemGroup>
-    <!-- after 3.1.7 -->
-    <ItemGroup Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))">
-      <EmccExportedFunction Include="stackSave"  />
-      <EmccExportedFunction Include="stackRestore" />
-      <EmccExportedFunction Include="stackAlloc" />
-      <EmccExportedFunction Include="_free" />
+    <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
+      <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
     </ItemGroup>
     <PropertyGroup>
       <_EmccExportedLibraryFunction>&quot;[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedLibraryFunction>
@@ -305,6 +296,9 @@
 
     <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
       <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
+
+      <!-- workaround for https://github.com/emscripten-core/emscripten/issues/18034 -->
+      <_EmccLinkFlags Include="-s TEXTDECODER=0"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">

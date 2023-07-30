@@ -356,5 +356,23 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, expectedWarningDiagnostics, sort: false);
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
         }
+
+        [Fact]
+        public void PolymorphicClassWarnsOnFastPath()
+        {
+            Compilation compilation = CompilationHelper.CreatePolymorphicClassOnFastPathContext();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Location myBaseClassLocation = compilation.GetSymbolsWithName("MyBaseClass").First().Locations[0];
+
+            (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
+            {
+                (myBaseClassLocation, "Type 'HelloWorld.MyBaseClass' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'."),
+            };
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, expectedWarningDiagnostics, sort: false);
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
+        }
     }
 }

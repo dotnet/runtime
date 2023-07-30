@@ -74,12 +74,12 @@ namespace System.Threading
 
         public static long CompletedWorkItemCount => 0;
 
-        internal static void RequestWorkerThread()
+        internal static unsafe void RequestWorkerThread()
         {
             if (_callbackQueued)
                 return;
             _callbackQueued = true;
-            QueueCallback();
+            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         internal static void NotifyWorkItemProgress()
@@ -110,14 +110,24 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
-        [DynamicDependency("Callback")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void QueueCallback();
+        internal static extern unsafe void MainThreadScheduleBackgroundJob(void* callback);
 
-        private static void Callback()
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
+        // this callback will arrive on the bound thread, called from mono_background_exec
+        private static void BackgroundJobHandler ()
         {
-            _callbackQueued = false;
-            ThreadPoolWorkQueue.Dispatch();
+            try
+            {
+                _callbackQueued = false;
+                ThreadPoolWorkQueue.Dispatch();
+            }
+            catch (Exception e)
+            {
+                Environment.FailFast("ThreadPool.BackgroundJobHandler failed", e);
+            }
         }
 
         private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>

@@ -102,7 +102,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (state.IsPropertyOrderSpecified)
             {
-                typeInfo.SortProperties();
+                typeInfo.PropertyList.SortProperties();
             }
         }
 
@@ -210,7 +210,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             Debug.Assert(jsonPropertyInfo.Name != null);
-            typeInfo.AddProperty(jsonPropertyInfo, ref state);
+            typeInfo.PropertyList.AddPropertyWithConflictResolution(jsonPropertyInfo, ref state);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

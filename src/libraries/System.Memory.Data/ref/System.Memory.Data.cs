@@ -30,6 +30,8 @@ namespace System
         public static System.BinaryData FromString(string data) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
         public static implicit operator System.ReadOnlyMemory<byte> (System.BinaryData? data) { throw null; }
         public static implicit operator System.ReadOnlySpan<byte> (System.BinaryData? data) { throw null; }
         public byte[] ToArray() { throw null; }

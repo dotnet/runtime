@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import BuildConfiguration from "consts:configuration";
+
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol } from "./marshal";
-import { setI32_unchecked } from "./memory";
-import { conv_string_root, js_string_to_mono_string_root } from "./strings";
+import { setI32, setI32_unchecked, receiveWorkerHeapViews } from "./memory";
+import { monoStringToString, stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import { INTERNAL, Module } from "./globals";
@@ -14,10 +16,12 @@ import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
+import { assert_synchronization_context } from "./pthreads/shared";
 
 const fn_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, we never free bound functions
 
 export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    assert_synchronization_context();
     const function_name_root = mono_wasm_new_external_root<MonoString>(function_name),
         module_name_root = mono_wasm_new_external_root<MonoString>(module_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -25,10 +29,10 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         const version = get_signature_version(signature);
         mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
 
-        const js_function_name = conv_string_root(function_name_root)!;
+        const js_function_name = monoStringToString(function_name_root)!;
         const mark = startMeasure();
-        const js_module_name = conv_string_root(module_name_root)!;
-        mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name}`);
+        const js_module_name = monoStringToString(module_name_root)!;
+        mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
 
         const fn = mono_wasm_lookup_function(js_function_name, js_module_name);
         const args_count = get_signature_argument_count(signature);
@@ -81,14 +85,21 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
             bound_fn = bind_fn(closure);
         }
 
+        // this is just to make debugging easier. 
+        // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
+        // in Release configuration, it would be a trimmed by rollup
+        if (BuildConfiguration === "Debug") {
+            bound_fn = new Function("fn", "return (function JSImport_" + js_function_name.replaceAll(".", "_") + "(){ return fn.apply(this, arguments)});")(bound_fn);
+        }
+
         (<any>bound_fn)[imported_js_function_symbol] = true;
         const fn_handle = fn_wrapper_by_fn_handle.length;
         fn_wrapper_by_fn_handle.push(bound_fn);
-        setI32_unchecked(function_js_handle, <any>fn_handle);
+        setI32(function_js_handle, <any>fn_handle);
         wrap_no_error_root(is_exception, resultRoot);
         endMeasure(mark, MeasuredBlock.bindJsFunction, js_function_name);
     } catch (ex: any) {
-        setI32_unchecked(function_js_handle, 0);
+        setI32(function_js_handle, 0);
         Module.err(ex.toString());
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
@@ -315,6 +326,7 @@ export const importedModules: Map<string, Promise<any>> = new Map();
 export function dynamic_import(module_name: string, module_url: string): Promise<any> {
     mono_assert(module_name, "Invalid module_name");
     mono_assert(module_url, "Invalid module_name");
+    assert_synchronization_context();
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;
     if (newPromise) {
@@ -350,6 +362,7 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
         res = mono_wasm_symbolicate_string(res);
     }
     if (is_exception) {
+        receiveWorkerHeapViews();
         setI32_unchecked(is_exception, 1);
     }
     return res;
@@ -357,12 +370,13 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
 
 export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
     const res = _wrap_error_flag(is_exception, ex);
-    js_string_to_mono_string_root(res, <any>result);
+    stringToMonoStringRoot(res, <any>result);
 }
 
 // to set out parameters of icalls
 export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmRoot<MonoObject>): void {
     if (is_exception) {
+        receiveWorkerHeapViews();
         setI32_unchecked(is_exception, 0);
     }
     if (result) {

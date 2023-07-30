@@ -63,9 +63,10 @@ CreateDump(const CreateDumpOptions& options)
         printf_error("Invalid dump path '%s' - %s\n", dumpPath.c_str(), GetLastErrorString().c_str());
         goto exit;
     }
-
+    
+    int retryCount = 10;
     // Retry the write dump on ERROR_PARTIAL_COPY
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i <= retryCount; i++)
     {
         if (MiniDumpWriteDump(hProcess, pid, hFile, GetMiniDumpType(options.DumpType), NULL, NULL, NULL))
         {
@@ -75,10 +76,14 @@ CreateDump(const CreateDumpOptions& options)
         else
         {
             int err = GetLastError();
-            if (err != ERROR_PARTIAL_COPY)
+            if (err != ERROR_PARTIAL_COPY || i == retryCount)
             {
                 printf_error("MiniDumpWriteDump - %s\n", GetLastErrorString().c_str());
                 break;
+            }
+            else
+            {
+                 printf_error("Retry %d of MiniDumpWriteDump due to - %s\n", i, GetLastErrorString().c_str());
             }
         }
     }

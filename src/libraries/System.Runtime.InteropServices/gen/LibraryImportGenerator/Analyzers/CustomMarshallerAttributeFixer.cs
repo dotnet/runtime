@@ -184,7 +184,7 @@ namespace Microsoft.Interop.Analyzers
         // Get the managed type from the CustomMarshallerAttribute located at the provided location in source on the provided type.
         // As we only get fixable diagnostics for types that have valid non-null managed types in the CustomMarshallerAttribute applications,
         // we do not need to worry about the returned symbol being null.
-        private static ITypeSymbol GetManagedTypeInAttributeSyntax(Location locationInAttribute, INamedTypeSymbol attributedTypeSymbol)
+        private static ITypeSymbol GetManagedTypeInAttributeSyntax(CodeAnalysis.Location locationInAttribute, INamedTypeSymbol attributedTypeSymbol)
             => (ITypeSymbol)attributedTypeSymbol.GetAttributes().First(attr =>
                     attr.ApplicationSyntaxReference.SyntaxTree == locationInAttribute.SourceTree
                     && attr.ApplicationSyntaxReference.Span.Contains(locationInAttribute.SourceSpan)).ConstructorArguments[0].Value!;

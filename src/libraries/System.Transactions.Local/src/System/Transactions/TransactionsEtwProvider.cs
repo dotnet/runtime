@@ -73,8 +73,7 @@ namespace System.Transactions
     /// <summary>Provides an event source for tracing Transactions information.</summary>
     [EventSource(
         Name = "System.Transactions.TransactionsEventSource",
-        Guid = "8ac2d80a-1f1a-431b-ace4-bff8824aef0b",
-        LocalizationResources = "FxResources.System.Transactions.Local.SR")]
+        Guid = "8ac2d80a-1f1a-431b-ace4-bff8824aef0b")]
     internal sealed class TransactionsEtwProvider : EventSource
     {
         /// <summary>

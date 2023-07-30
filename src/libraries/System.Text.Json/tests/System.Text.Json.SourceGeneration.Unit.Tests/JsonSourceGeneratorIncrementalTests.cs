@@ -21,17 +21,18 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(factory());
             JsonSourceGeneratorResult result2 = CompilationHelper.RunJsonSourceGenerator(factory());
 
-            if (result1.SourceGenModel is null)
-            {
-                Assert.Null(result2.SourceGenModel);
-            }
-            else
-            {
-                Assert.NotSame(result1.SourceGenModel, result2.SourceGenModel);
-                AssertStructurallyEqual(result1.SourceGenModel, result2.SourceGenModel);
+            Assert.Equal(result1.ContextGenerationSpecs.Length, result2.ContextGenerationSpecs.Length);
 
-                Assert.Equal(result1.SourceGenModel, result2.SourceGenModel);
-                Assert.Equal(result1.SourceGenModel.GetHashCode(), result2.SourceGenModel.GetHashCode());
+            for (int i = 0; i < result1.ContextGenerationSpecs.Length; i++)
+            {
+                ContextGenerationSpec ctx1 = result1.ContextGenerationSpecs[i];
+                ContextGenerationSpec ctx2 = result2.ContextGenerationSpecs[i];
+
+                Assert.NotSame(ctx1, ctx2);
+                AssertStructurallyEqual(ctx1, ctx2);
+
+                Assert.Equal(ctx1, ctx2);
+                Assert.Equal(ctx1.GetHashCode(), ctx2.GetHashCode());
             }
         }
 
@@ -81,11 +82,17 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Empty(result1.Diagnostics);
             Assert.Empty(result2.Diagnostics);
 
-            Assert.NotSame(result1.SourceGenModel, result2.SourceGenModel);
-            AssertStructurallyEqual(result1.SourceGenModel, result2.SourceGenModel);
+            Assert.Equal(1, result1.ContextGenerationSpecs.Length);
+            Assert.Equal(1, result2.ContextGenerationSpecs.Length);
 
-            Assert.Equal(result1.SourceGenModel, result2.SourceGenModel);
-            Assert.Equal(result1.SourceGenModel.GetHashCode(), result2.SourceGenModel.GetHashCode());
+            ContextGenerationSpec ctx1 = result1.ContextGenerationSpecs[0];
+            ContextGenerationSpec ctx2 = result2.ContextGenerationSpecs[0];
+
+            Assert.NotSame(ctx1, ctx2);
+            AssertStructurallyEqual(ctx1, ctx2);
+
+            Assert.Equal(ctx1, ctx2);
+            Assert.Equal(ctx1.GetHashCode(), ctx2.GetHashCode());
         }
 
         [Fact]
@@ -128,7 +135,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Empty(result1.Diagnostics);
             Assert.Empty(result2.Diagnostics);
 
-            Assert.NotEqual(result1.SourceGenModel, result2.SourceGenModel);
+            Assert.Equal(1, result1.ContextGenerationSpecs.Length);
+            Assert.Equal(1, result2.ContextGenerationSpecs.Length);
+
+            ContextGenerationSpec ctx1 = result1.ContextGenerationSpecs[0];
+            ContextGenerationSpec ctx2 = result2.ContextGenerationSpecs[0];
+            Assert.NotEqual(ctx1, ctx2);
         }
 
         [Theory]
@@ -136,7 +148,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static void SourceGenModelDoesNotEncapsulateSymbolsOrCompilationData(Func<Compilation> factory)
         {
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(factory());
-            WalkObjectGraph(result.SourceGenModel);
+            WalkObjectGraph(result.ContextGenerationSpecs);
 
             static void WalkObjectGraph(object obj)
             {
@@ -187,26 +199,50 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             driver = driver.RunGenerators(compilation);
             GeneratorRunResult runResult = driver.GetRunResult().Results[0];
-            Assert.Collection(runResult.TrackedSteps[JsonSourceGenerator.SourceGenerationSpecTrackingName],
-                step =>
-                {
-                    Assert.Collection(step.Inputs,
-                        source => Assert.Equal(IncrementalStepRunReason.New, source.Source.Outputs[source.OutputIndex].Reason));
-                    Assert.Collection(step.Outputs,
-                        output => Assert.Equal(IncrementalStepRunReason.New, output.Reason));
-                });
+
+            IncrementalGeneratorRunStep[] runSteps = GetSourceGenRunStep(runResult);
+            if (runSteps != null)
+            {
+                Assert.Collection(runSteps,
+                    step =>
+                    {
+                        Assert.Collection(step.Inputs,
+                            source => Assert.Equal(IncrementalStepRunReason.New, source.Source.Outputs[source.OutputIndex].Reason));
+                        Assert.Collection(step.Outputs,
+                            output => Assert.Equal(IncrementalStepRunReason.New, output.Reason));
+                    });
+            }
 
             // run the same compilation through again, and confirm the output wasn't called
             driver = driver.RunGenerators(compilation);
             runResult = driver.GetRunResult().Results[0];
-            Assert.Collection(runResult.TrackedSteps[JsonSourceGenerator.SourceGenerationSpecTrackingName],
-                step =>
+            IncrementalGeneratorRunStep[] runSteps2 = GetSourceGenRunStep(runResult);
+
+            if (runSteps != null)
+            {
+                Assert.Collection(runSteps2,
+                    step =>
+                    {
+                        Assert.Collection(step.Inputs,
+                            source => Assert.Equal(IncrementalStepRunReason.Cached, source.Source.Outputs[source.OutputIndex].Reason));
+                        Assert.Collection(step.Outputs,
+                            output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
+                    });
+            }
+            else
+            {
+                Assert.Null(runSteps2);
+            }
+
+            static IncrementalGeneratorRunStep[]? GetSourceGenRunStep(GeneratorRunResult runResult)
+            {
+                if (!runResult.TrackedSteps.TryGetValue(JsonSourceGenerator.SourceGenerationSpecTrackingName, out var runSteps))
                 {
-                    Assert.Collection(step.Inputs,
-                        source => Assert.Equal(IncrementalStepRunReason.Cached, source.Source.Outputs[source.OutputIndex].Reason));
-                    Assert.Collection(step.Outputs,
-                        output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
-                });
+                    return null;
+                }
+
+                return runSteps.ToArray();
+            }
         }
 
         [Fact]

@@ -868,7 +868,7 @@ namespace System.Data
                 }
         }
 
-        internal XmlSchemaObjectCollection? GetParticleItems(XmlSchemaParticle? pt)
+        internal static XmlSchemaObjectCollection? GetParticleItems(XmlSchemaParticle? pt)
         {
             if (pt is XmlSchemaSequence)
                 return ((XmlSchemaSequence)pt).Items;

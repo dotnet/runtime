@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Collections.Frozen
 {
@@ -31,25 +32,35 @@ namespace System.Collections.Frozen
             _ignoreCase = ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase);
         }
 
-        internal static LengthBucketsFrozenSet? CreateLengthBucketsFrozenSetIfAppropriate(string[] entries, IEqualityComparer<string> comparer)
+        internal static LengthBucketsFrozenSet? CreateLengthBucketsFrozenSetIfAppropriate(string[] entries, IEqualityComparer<string> comparer, int minLength, int maxLength)
         {
             Debug.Assert(entries.Length != 0);
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
+            Debug.Assert(minLength >= 0 && maxLength >= minLength);
+
+            // If without even looking at the keys we know that some bucket will exceed the max per-bucket
+            // limit (pigeon hole principle), we can early-exit out without doing any further work.
+            int spread = maxLength - minLength + 1;
+            if (entries.Length / spread > MaxPerLength)
+            {
+                return null;
+            }
 
             // Iterate through all of the inputs, bucketing them based on the length of the string.
             var groupedByLength = new Dictionary<int, List<string>>();
-            int minLength = int.MaxValue, maxLength = int.MinValue;
             foreach (string s in entries)
             {
                 Debug.Assert(s is not null, "This implementation should not be used with null source values.");
+                Debug.Assert(s.Length >= minLength && s.Length <= maxLength);
 
-                if (s.Length < minLength) minLength = s.Length;
-                if (s.Length > maxLength) maxLength = s.Length;
-
+#if NET6_0_OR_GREATER
+                List<string> list = CollectionsMarshal.GetValueRefOrAddDefault(groupedByLength, s.Length, out _) ??= new List<string>(MaxPerLength);
+#else
                 if (!groupedByLength.TryGetValue(s.Length, out List<string>? list))
                 {
                     groupedByLength[s.Length] = list = new List<string>(MaxPerLength);
                 }
+#endif
 
                 // If we've already hit the max per-bucket limit, bail.
                 if (list.Count == MaxPerLength)
@@ -61,13 +72,12 @@ namespace System.Collections.Frozen
             }
 
             // If there would be too much empty space in the lookup array, bail.
-            int spread = maxLength - minLength + 1;
             if (groupedByLength.Count / (double)spread < EmptyLengthsRatio)
             {
                 return null;
             }
 
-            var lengthBuckets = new KeyValuePair<string, int>[maxLength - minLength + 1][];
+            var lengthBuckets = new KeyValuePair<string, int>[spread][];
 
             // Iterate through each bucket, filling the items array, and creating a lookup array such that
             // given a string length we can index into that array to find the array of string,int pairs: the string

@@ -868,6 +868,16 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
+                if (!GlobalizationMode.PredefinedCulturesOnly)
+                {
+                    if (culture is < 1 or > 0xf_ffff)
+                    {
+                        throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+                    }
+
+                    return Invariant;
+                }
+
                 // LCID is not supported in the InvariantMode
                 throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupportedInInvariantMode);
             }

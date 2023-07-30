@@ -22,10 +22,12 @@ Param(
     [string] $LogicalMachine="",
     [switch] $AndroidMono,
     [switch] $iOSMono,
+    [switch] $iOSNativeAOT,
     [switch] $NoPGO,
     [switch] $DynamicPGO,
     [switch] $FullPGO,
     [switch] $iOSLlvmBuild,
+    [switch] $iOSStripSymbols,
     [string] $MauiVersion,
     [switch] $UseLocalCommitTime
 )
@@ -98,6 +100,11 @@ elseif($FullPGO)
 
 if ($iOSMono) {
     $Configurations += " iOSLlvmBuild=$iOSLlvmBuild"
+    $Configurations += " iOSStripSymbols=$iOSStripSymbols"
+}
+
+if ($iOSNativeAOT) {
+    $Configurations += " iOSStripSymbols=$iOSStripSymbols"
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
@@ -196,6 +203,7 @@ Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRep
 Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iOSLlvmBuild" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iOSStripSymbols" -IsMultiJobVariable $false
 
 # Helix Arguments
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false

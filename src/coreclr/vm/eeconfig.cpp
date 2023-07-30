@@ -771,24 +771,24 @@ HRESULT EEConfig::sync()
             tieredCompilation_CallCountingDelayMs = 0;
         }
 
+    #if defined(FEATURE_PGO)
+        fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
+
+        // Also, consider DynamicPGO enabled if WritePGOData is set
+        fTieredPGO |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) != 0;
+        tieredPGO_InstrumentOnlyHotCode = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode) == 1;
+
+        // We need quick jit for TieredPGO
+        if (!fTieredCompilation_QuickJit)
+        {
+            fTieredPGO = false;
+        }
+    #endif
+
         if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
         {
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
-    }
-#endif
-
-#if defined(FEATURE_PGO)
-    fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
-
-    // Also, consider DynamicPGO enabled if WritePGOData is set
-    fTieredPGO |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) != 0;
-    tieredPGO_InstrumentOnlyHotCode = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode) == 1;
-
-    // We need quick jit for TieredPGO
-    if (!fTieredCompilation_QuickJit)
-    {
-        fTieredPGO = false;
     }
 #endif
 

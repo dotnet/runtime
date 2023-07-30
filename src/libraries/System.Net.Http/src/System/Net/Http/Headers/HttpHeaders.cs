@@ -1318,11 +1318,6 @@ namespace System.Net.Http.Headers
 
         #region Low-level implementation details that work with _headerStore directly
 
-        // Used to store the CollectionsMarshal.GetValueRefOrAddDefault out parameter.
-        // This is a workaround for the Roslyn bug where we can't use a discard instead:
-        // https://github.com/dotnet/roslyn/issues/56587#issuecomment-934955526
-        private static bool s_dictionaryGetValueRefOrAddDefaultExistsDummy;
-
         private const int InitialCapacity = 4;
         internal const int ArrayThreshold = 64; // Above this threshold, header ordering will not be preserved
 
@@ -1456,13 +1451,13 @@ namespace System.Net.Http.Headers
                     dictionary.Add(entry.Key, entry.Value);
                 }
                 Debug.Assert(dictionary.Count == _count - 1);
-                return ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out s_dictionaryGetValueRefOrAddDefaultExistsDummy);
+                return ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out _);
             }
 
             ref object? DictionaryGetValueRefOrAddDefault(HeaderDescriptor key)
             {
                 var dictionary = (Dictionary<HeaderDescriptor, object>)_headerStore!;
-                ref object? value = ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out s_dictionaryGetValueRefOrAddDefaultExistsDummy);
+                ref object? value = ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out _);
                 if (value is null)
                 {
                     _count++;

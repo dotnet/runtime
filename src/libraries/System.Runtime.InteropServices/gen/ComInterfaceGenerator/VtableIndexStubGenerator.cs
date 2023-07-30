@@ -75,7 +75,7 @@ namespace Microsoft.Interop
                 .WithTrackingName(StepNames.CalculateStubInformation);
 
             // Generate the code for the managed-to-unmangaed stubs and the diagnostics from code-generation.
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateManagedToNativeStub = generateStubInformation
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateManagedToNativeStub = generateStubInformation
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                 .Select(
                     static (data, ct) => GenerateManagedToNativeStub(data)
@@ -93,7 +93,7 @@ namespace Microsoft.Interop
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional);
 
             // Generate the code for the unmanaged-to-managed stubs and the diagnostics from code-generation.
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateNativeToManagedStub = nativeToManagedStubContexts
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateNativeToManagedStub = nativeToManagedStubContexts
                 .Select(
                     static (data, ct) => GenerateNativeToManagedStub(data)
                 )
@@ -311,7 +311,7 @@ namespace Microsoft.Interop
                 VtableIndexStubGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
                 interfaceType,
                 interfaceType,
-                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
+                new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
                 new ObjectUnwrapperInfo(unwrapperSyntax));
         }
 
@@ -356,7 +356,7 @@ namespace Microsoft.Interop
             return NoMarshallingInfo.Instance;
         }
 
-        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateManagedToNativeStub(
+        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
             var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(methodStub);
@@ -369,7 +369,7 @@ namespace Microsoft.Interop
                 methodStub.Diagnostics.Array.AddRange(diagnostics));
         }
 
-        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateNativeToManagedStub(
+        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
             var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(methodStub);

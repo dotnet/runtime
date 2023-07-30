@@ -222,6 +222,7 @@ class EHSuccessorIterPosition
     // successor of BB1.  This captures the iteration over the successors of BB1
     // for this purpose.  (In reverse order; we're done when this field is 0).
     unsigned m_remainingRegSuccs;
+    unsigned m_numRegSuccs;
 
     // The current "regular" successor of "m_block" that we're considering.
     BasicBlock* m_curRegSucc;
@@ -245,7 +246,7 @@ public:
     EHSuccessorIterPosition(Compiler* comp, BasicBlock* block);
 
     // Constructs a position that "points" past the last EH successor of `block` ("end" position).
-    EHSuccessorIterPosition() : m_remainingRegSuccs(0), m_curTry(nullptr)
+    EHSuccessorIterPosition() : m_remainingRegSuccs(0), m_numRegSuccs(0), m_curTry(nullptr)
     {
     }
 
@@ -613,6 +614,12 @@ inline BasicBlockFlags& operator &=(BasicBlockFlags& a, BasicBlockFlags b)
 {
     return a = (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
 }
+
+enum class BasicBlockVisit
+{
+    Continue,
+    Abort,
+};
 
 // clang-format on
 
@@ -1110,7 +1117,7 @@ struct BasicBlock : private LIR::Range
                                   // BAD_IL_OFFSET.
 #endif                            // DEBUG
 
-    VARSET_TP bbVarUse; // variables used     by block (before an assignment)
+    VARSET_TP bbVarUse; // variables used     by block (before a definition)
     VARSET_TP bbVarDef; // variables assigned by block (before a use)
 
     VARSET_TP bbLiveIn;  // variables live on entry
@@ -1165,17 +1172,17 @@ struct BasicBlock : private LIR::Range
 
     union {
         EXPSET_TP bbCseGen;       // CSEs computed by block
-        ASSERT_TP bbAssertionGen; // value assignments computed by block
+        ASSERT_TP bbAssertionGen; // assertions computed by block
     };
 
     union {
         EXPSET_TP bbCseIn;       // CSEs available on entry
-        ASSERT_TP bbAssertionIn; // value assignments available on entry
+        ASSERT_TP bbAssertionIn; // assertions available on entry
     };
 
     union {
         EXPSET_TP bbCseOut;       // CSEs available on exit
-        ASSERT_TP bbAssertionOut; // value assignments available on exit
+        ASSERT_TP bbAssertionOut; // assertions available on exit
     };
 
     void* bbEmitCookie;
@@ -1273,9 +1280,9 @@ struct BasicBlock : private LIR::Range
     bool endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall) const;
 
     // Returns the first statement in the statement list of "this" that is
-    // not an SSA definition (a lcl = phi(...) assignment).
+    // not an SSA definition (a lcl = phi(...) store).
     Statement* FirstNonPhiDef() const;
-    Statement* FirstNonPhiDefOrCatchArgAsg() const;
+    Statement* FirstNonPhiDefOrCatchArgStore() const;
 
     BasicBlock() : bbStmtList(nullptr), bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
     {
@@ -1349,6 +1356,9 @@ struct BasicBlock : private LIR::Range
     {
         return Successors<AllSuccessorIterPosition>(comp, this);
     }
+
+    template <typename TFunc>
+    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
 
     // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
     // normally used via BasicBlock::Succs(), e.g.:

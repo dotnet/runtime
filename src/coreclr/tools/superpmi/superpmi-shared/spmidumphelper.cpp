@@ -259,7 +259,6 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(PUBLISH_SECRET_PARAM);
 
-    AddFlag(SAMPLING_JIT_BACKGROUND);
     AddFlag(USE_PINVOKE_HELPERS);
     AddFlag(REVERSE_PINVOKE);
     AddFlag(TRACK_TRANSITIONS);

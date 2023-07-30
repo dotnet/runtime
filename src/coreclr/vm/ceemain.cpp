@@ -170,10 +170,6 @@
 #include "stringarraylist.h"
 #include "stubhelpers.h"
 
-#ifdef FEATURE_STACK_SAMPLING
-#include "stacksampler.h"
-#endif
-
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #include "mngstdinterfaces.h"
@@ -931,10 +927,6 @@ void EEStartupHelper()
         SystemDomain::System()->DefaultDomain()->LoadSystemAssemblies();
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
-
-#ifdef FEATURE_STACK_SAMPLING
-        StackSampler::Init();
-#endif
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)

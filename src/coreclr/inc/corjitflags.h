@@ -70,7 +70,7 @@ public:
         CORJIT_FLAG_BBINSTR_IF_LOOPS        = 32, // JIT must instrument current method if it has loops
         CORJIT_FLAG_PUBLISH_SECRET_PARAM    = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
         CORJIT_FLAG_UNUSED14                = 34,
-        CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
+        CORJIT_FLAG_UNUSED37                = 35,
         CORJIT_FLAG_USE_PINVOKE_HELPERS     = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE         = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
         CORJIT_FLAG_TRACK_TRANSITIONS       = 38, // The JIT should insert the REVERSE_PINVOKE helper variants that track transitions.
@@ -87,7 +87,9 @@ public:
 
 #if defined(TARGET_ARM)
         CORJIT_FLAG_SOFTFP_ABI              = 43, // On ARM should enable armel calling convention
-#else // !defined(TARGET_ARM)
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+        CORJIT_FLAG_VECTOR512_THROTTLING    = 43, // On Xarch, 512-bit vector usage may incur CPU frequency throttling
+#else
         CORJIT_FLAG_UNUSED16                = 43,
 #endif // !defined(TARGET_ARM)
 

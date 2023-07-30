@@ -32,7 +32,7 @@ namespace System.Collections.Generic
 
             /////////////////////////////////////////////////
             // KEEP THIS IN SYNC WITH THE DEVIRT CODE
-            // IN METHOD-TO-IR.C
+            // IN mini_handle_call_res_devirt
             /////////////////////////////////////////////////
 
             if (t == typeof(byte))

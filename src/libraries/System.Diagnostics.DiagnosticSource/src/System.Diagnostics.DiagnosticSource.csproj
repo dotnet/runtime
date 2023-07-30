@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -51,12 +52,14 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\Histogram.cs" />
     <Compile Include="System\Diagnostics\Metrics\Instrument.cs" />
     <Compile Include="System\Diagnostics\Metrics\Instrument.common.cs" />
+    <Compile Include="System\Diagnostics\Metrics\InstrumentRecorder.cs" />
     <Compile Include="System\Diagnostics\Metrics\InstrumentState.cs" />
     <Compile Include="System\Diagnostics\Metrics\LastValueAggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\Measurement.cs" />
     <Compile Include="System\Diagnostics\Metrics\Meter.cs" />
     <Compile Include="System\Diagnostics\Metrics\MeterListener.cs" />
     <Compile Include="System\Diagnostics\Metrics\MetricsEventSource.cs" />
+    <Compile Include="System\Diagnostics\Metrics\MeterOptions.cs" />
     <Compile Include="System\Diagnostics\Metrics\ObjectSequence.cs" />
     <Compile Include="System\Diagnostics\Metrics\ObservableCounter.cs" />
     <Compile Include="System\Diagnostics\Metrics\ObservableGauge.cs" />
@@ -68,6 +71,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\UpDownCounter.cs" />
 
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Diagnostics\DiagnosticsHelper.cs" Link="Common\System\Diagnostics\DiagnosticsHelper.cs" />
 
     <None Include="DiagnosticSourceUsersGuide.md" />
     <None Include="ActivityUserGuide.md" />

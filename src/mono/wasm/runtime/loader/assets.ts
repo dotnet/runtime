@@ -195,7 +195,7 @@ export async function mono_download_assets(): Promise<void> {
 }
 
 export function delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => globalThis.setTimeout(resolve, ms));
 }
 
 // FIXME: Connection reset is probably the only good one for which we should retry

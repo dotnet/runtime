@@ -132,7 +132,7 @@ export function createMockEnvironment(): MockEnvironment {
         postMessageToBrowser,
         addEventListenerFromBrowser,
         createPromiseController,
-        delay: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
+        delay: (ms: number) => new Promise(resolve => globalThis.setTimeout(resolve, ms)),
         command,
         reply,
         expectAdvertise

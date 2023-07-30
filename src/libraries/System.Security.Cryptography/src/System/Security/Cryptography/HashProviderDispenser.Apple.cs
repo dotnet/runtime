@@ -21,6 +21,23 @@ namespace System.Security.Cryptography
             return new AppleHmacProvider(hashAlgorithmId, key);
         }
 
+        internal static bool HashSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.MD5:
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
+
         internal static class OneShotHashProvider
         {
             public static unsafe int MacData(

@@ -1,8 +1,8 @@
 import {
-    WasmOpcode, JiterpSpecialOpcode
+    WasmOpcode, WasmSimdOpcode, JiterpSpecialOpcode
 } from "./jiterpreter-opcodes";
 import {
-    MintOpcode, SimdIntrinsic3
+    MintOpcode, SimdIntrinsic2, SimdIntrinsic3
 } from "./mintops";
 
 export const ldcTable: { [opcode: number]: [WasmOpcode, number] } = {
@@ -356,3 +356,17 @@ export const simdShiftTable = new Set<SimdIntrinsic3>([
     SimdIntrinsic3.V128_I4_URIGHT_SHIFT,
     SimdIntrinsic3.V128_I8_URIGHT_SHIFT,
 ]);
+
+export const bitmaskTable : { [intrinsic: number]: WasmSimdOpcode } = {
+    [SimdIntrinsic2.V128_I1_EXTRACT_MSB]: WasmSimdOpcode.i8x16_bitmask,
+    [SimdIntrinsic2.V128_I2_EXTRACT_MSB]: WasmSimdOpcode.i16x8_bitmask,
+    [SimdIntrinsic2.V128_I4_EXTRACT_MSB]: WasmSimdOpcode.i32x4_bitmask,
+    [SimdIntrinsic2.V128_I8_EXTRACT_MSB]: WasmSimdOpcode.i64x2_bitmask,
+};
+
+export const createScalarTable : { [intrinsic: number]: [WasmOpcode, WasmSimdOpcode] } = {
+    [SimdIntrinsic2.V128_I1_CREATE_SCALAR]: [WasmOpcode.i32_load8_s, WasmSimdOpcode.i8x16_replace_lane],
+    [SimdIntrinsic2.V128_I2_CREATE_SCALAR]: [WasmOpcode.i32_load16_s, WasmSimdOpcode.i16x8_replace_lane],
+    [SimdIntrinsic2.V128_I4_CREATE_SCALAR]: [WasmOpcode.i32_load, WasmSimdOpcode.i32x4_replace_lane],
+    [SimdIntrinsic2.V128_I8_CREATE_SCALAR]: [WasmOpcode.i64_load, WasmSimdOpcode.i64x2_replace_lane],
+};

@@ -52,11 +52,12 @@ struct _MonoDllMap {
 #endif
 
 typedef struct {
+	GHashTable *delegate_invoke_cache;
+	GHashTable *delegate_invoke_virtual_cache;
 	/*
 	 * indexed by MonoMethodSignature
 	 * Protected by the marshal lock
 	 */
-	GHashTable *delegate_invoke_cache;
 	GHashTable *delegate_begin_invoke_cache;
 	GHashTable *delegate_end_invoke_cache;
 	GHashTable *runtime_invoke_signature_cache;

@@ -3,6 +3,9 @@
   <PropertyGroup>
     <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs</NativeBuildPartitionPropertiesToRemove>
     <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
+
+    <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
+    <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,7 +31,7 @@
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
       <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />
       <_CoreClrBuildArg Condition="'$(KeepNativeSymbols)' != 'false'" Include="-keepnativesymbols" />
-      <_CoreClrBuildArg Include="-os $(TargetOS)" />
+      <_CoreClrBuildArg Include="-os $(_BuildNativeTargetOS)" />
 
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and
                                    ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and
@@ -59,6 +62,21 @@
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <_CoreClrBuildArg Include="-cmakeargs -DCMAKE_ICU_DIR=&quot;$(_IcuDir)&quot;" />
+    </ItemGroup>
+
+    <ItemGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(ANDROID_NDK_ROOT)' != ''">
+      <_CoreClrBuildArg Include="-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_ROOT)/build/cmake/android.toolchain.cmake"/>
+      <_CoreClrBuildArg Include="-DANDROID_NDK=$(ANDROID_NDK_ROOT)"/>
+      <_CoreClrBuildArg Include="-DANDROID_STL=none"/>
+      <_CoreClrBuildArg Include="-DANDROID_CPP_FEATURES=&quot;no-rtti no-exceptions&quot;"/>
+      <_CoreClrBuildArg Include="-DANDROID_PLATFORM=android-$(AndroidApiLevelMin)"/>
+      <_CoreClrBuildArg Condition="'$(Platform)' == 'arm64'" Include="-DANDROID_ABI=arm64-v8a" />
+      <_CoreClrBuildArg Condition="'$(Platform)' == 'arm'" Include="-DANDROID_ABI=armeabi-v7a" />
+      <_CoreClrBuildArg Condition="'$(Platform)' == 'x86'" Include="-DANDROID_ABI=x86" />
+      <_CoreClrBuildArg Condition="'$(Platform)' == 'x64'" Include="-DANDROID_ABI=x86_64" />
+
+      <!-- No LTTNG on Android -->
+      <_CoreClrBuildArg Include="-cmakeargs -DFEATURE_EVENT_TRACE=0"/>
     </ItemGroup>
 
     <PropertyGroup>

@@ -88,7 +88,7 @@ namespace Microsoft.Interop
                     return s_delegate;
 
                 case { MarshallingAttributeInfo: SafeHandleMarshallingInfo(_, bool isAbstract) }:
-                    if (!context.AdditionalTemporaryStateLivesAcrossStages)
+                    if (!context.AdditionalTemporaryStateLivesAcrossStages || context.Direction != MarshalDirection.ManagedToUnmanaged)
                     {
                         throw new MarshallingNotSupportedException(info, context);
                     }

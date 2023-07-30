@@ -2079,7 +2079,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					mini_emit_init_rvar (cfg, dreg, t);
 					ins = cfg->cbb->last_ins;
 				} else {
-					MONO_INST_NEW (cfg, ins, MONO_CLASS_IS_SIMD (cfg, arg0) ? OP_XZERO : OP_VZERO);
+					MONO_INST_NEW (cfg, ins, mini_class_is_simd (cfg, arg0) ? OP_XZERO : OP_VZERO);
 					ins->dreg = mono_alloc_dreg (cfg, STACK_VTYPE);
 					ins->type = STACK_VTYPE;
 					ins->klass = arg0;

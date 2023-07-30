@@ -19,6 +19,7 @@ using Microsoft.CodeAnalysis.CSharp;
 // Most changes made to this file should be kept in sync, so far as bug fixes and relevant optimizations
 // are concerned.
 
+#pragma warning disable CA1861 // Avoid constant arrays as arguments.
 namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator

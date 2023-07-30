@@ -84,6 +84,8 @@ build_native()
             exit 1
         fi
 
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
+
         # keep ANDROID_PLATFORM in sync with SetOSTargetMinVersions in the root Directory.Build.props
         cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-21 $cmakeArgs"
 

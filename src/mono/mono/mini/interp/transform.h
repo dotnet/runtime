@@ -50,6 +50,7 @@ typedef struct
 #define LOCAL_VALUE_LOCAL 1
 #define LOCAL_VALUE_I4 2
 #define LOCAL_VALUE_I8 3
+#define LOCAL_VALUE_NON_NULL 4
 
 // LocalValue contains data to construct an InterpInst that is equivalent with the contents
 // of the stack slot / local / argument.

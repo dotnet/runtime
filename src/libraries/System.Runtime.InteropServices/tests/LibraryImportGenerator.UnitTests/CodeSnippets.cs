@@ -426,7 +426,7 @@ namespace LibraryImportGenerator.UnitTests
                 static class Marshaller
                 {
                     public static nint ConvertToUnmanaged({{typeName}} s) => default;
-                
+
                     public static {{typeName}} ConvertToManaged(nint i) => default;
                 }
                 """;
@@ -754,10 +754,18 @@ namespace LibraryImportGenerator.UnitTests
             class MySafeHandle : SafeHandle
             {
                 {{(privateCtor ? "private" : "public")}} MySafeHandle() : base(System.IntPtr.Zero, true) { }
-            
+
                 public override bool IsInvalid => handle == System.IntPtr.Zero;
-            
+
                 protected override bool ReleaseHandle() => true;
+            }
+            """;
+
+        public static string GeneratedComInterface => BasicParametersAndModifiers("MyInterfaceType", "using System.Runtime.InteropServices.Marshalling;") + """
+            [GeneratedComInterface]
+            interface MyInterfaceType
+            {
+                void Method();
             }
             """;
 

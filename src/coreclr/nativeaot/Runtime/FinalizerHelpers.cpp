@@ -149,6 +149,16 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
         {
         case WAIT_OBJECT_0:
             // At least one object is ready for finalization.
+            {
+                // Process pending finalizer work items from the GC first.
+                FinalizerWorkItem* pWork = pHeap->GetExtraWorkForFinalization();
+                while (pWork != NULL)
+                {
+                    FinalizerWorkItem* pNext = pWork->next;
+                    pWork->callback(pWork);
+                    pWork = pNext;
+                }
+            }
             return TRUE;
 
         case WAIT_OBJECT_0 + 1:

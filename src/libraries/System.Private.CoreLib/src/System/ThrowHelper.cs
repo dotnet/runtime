@@ -40,6 +40,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
+using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -603,6 +605,22 @@ namespace System
         internal static void ThrowFormatIndexOutOfRange()
         {
             throw new FormatException(SR.Format_IndexOutOfRange);
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(MemberInfo memberInfo)
+        {
+            Type? declaringType = memberInfo.DeclaringType;
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_MemberInfo, declaringType, memberInfo));
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(Attribute attribute)
+        {
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_Attribute, attribute));
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(CustomAttributeData customAttributeData)
+        {
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_CustomAttributeData, customAttributeData));
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)

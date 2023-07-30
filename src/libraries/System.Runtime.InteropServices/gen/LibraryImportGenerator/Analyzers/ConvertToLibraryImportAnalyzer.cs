@@ -136,7 +136,7 @@ namespace Microsoft.Interop.Analyzers
             properties.Add(ExactSpelling, dllImportData.ExactSpelling.ToString());
             properties.Add(MayRequireAdditionalWork, mayRequireAdditionalWork.ToString());
 
-            context.ReportDiagnostic(method.CreateDiagnostic(ConvertToLibraryImport, properties.ToImmutable(), method.Name));
+            context.ReportDiagnostic(method.CreateDiagnosticInfo(ConvertToLibraryImport, properties.ToImmutable(), method.Name).ToDiagnostic());
         }
 
         private static bool HasUnsupportedMarshalAsInfo(TypePositionInfo info)

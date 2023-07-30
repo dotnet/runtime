@@ -6563,16 +6563,20 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 else
                 {
                     tempReg1 = REG_RA;
-                    tempReg2 = codeGen->rsGetRsvdReg();
+                    tempReg2 = dst->GetSingleTempReg();
                     assert(tempReg1 != tempReg2);
                     assert(tempReg1 != saveOperReg1);
                     assert(tempReg2 != saveOperReg2);
 
                     ssize_t ui6 = (attr == EA_4BYTE) ? 31 : 63;
                     if (dst->OperGet() == GT_ADD)
+                    {
                         emitIns_R_R_I(INS_srli_d, attr, tempReg1, saveOperReg1, ui6);
+                    }
                     else
+                    {
                         emitIns_R_R_I(INS_srli_d, attr, tempReg1, dst->GetRegNum(), ui6);
+                    }
                     emitIns_R_R_I(INS_srli_d, attr, tempReg2, saveOperReg2, ui6);
 
                     emitIns_R_R_R(INS_xor, attr, tempReg1, tempReg1, tempReg2);

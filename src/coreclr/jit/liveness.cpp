@@ -231,14 +231,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
-        case GT_ASG:
-            // An indirect store defines a memory location.
-            if (!tree->AsOp()->gtGetOp1()->OperIsLocal())
-            {
-                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
-            }
-            break;
-
         // We'll assume these are use-then-defs of memory.
         case GT_LOCKADD:
         case GT_XORR:
@@ -973,15 +965,13 @@ void Compiler::fgExtendDbgLifetimes()
             // If we haven't already done this ...
             if (!fgLocalVarLivenessDone)
             {
-                // Create a "zero" node
-                GenTree* zero = gtNewZeroConNode(type);
+                // Create the initializer.
+                GenTree* zero     = gtNewZeroConNode(type);
+                GenTree* initNode = gtNewStoreLclVarNode(varNum, zero);
 
-                // Create initialization node
+                // Insert initialization node.
                 if (!block->IsLIR())
                 {
-                    GenTree* varNode  = gtNewLclvNode(varNum, type);
-                    GenTree* initNode = gtNewAssignNode(varNode, zero);
-
                     // Create a statement for the initializer, sequence it, and append it to the current BB.
                     Statement* initStmt = gtNewStmt(initNode);
                     gtSetStmtInfo(initStmt);
@@ -990,12 +980,8 @@ void Compiler::fgExtendDbgLifetimes()
                 }
                 else
                 {
-                    GenTree* store       = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, type, varNum);
-                    store->AsOp()->gtOp1 = zero;
-                    store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
-
                     LIR::Range initRange = LIR::EmptyRange();
-                    initRange.InsertBefore(nullptr, zero, store);
+                    initRange.InsertAfter(nullptr, zero, initNode);
 
 #if !defined(TARGET_64BIT)
                     DecomposeLongs::DecomposeRange(this, initRange);
@@ -1263,15 +1249,16 @@ class LiveVarAnalysis
         }
 
         // Additionally, union in all the live-in tracked vars of successors.
-        for (BasicBlock* succ : block->GetAllSuccs(m_compiler))
-        {
+        block->VisitAllSuccs(m_compiler, [=](BasicBlock* succ) {
             VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
             m_memoryLiveOut |= succ->bbMemoryLiveIn;
             if (succ->bbNum <= block->bbNum)
             {
                 m_hasPossibleBackEdge = true;
             }
-        }
+
+            return BasicBlockVisit::Continue;
+        });
 
         /* For lvaKeepAliveAndReportThis methods, "this" has to be kept alive everywhere
            Note that a function may end in a throw on an infinite loop (as opposed to a return).
@@ -1784,7 +1771,7 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
 //
 GenTree* Compiler::fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommon* cur)
 {
-    if (!stmt->GetRootNode()->OperIs(GT_ASG) || (stmt->GetRootNode()->gtGetOp1() != cur))
+    if (!stmt->GetRootNode()->OperIsLocalStore() || (stmt->GetRootNode() != cur))
     {
         return cur->gtPrev;
     }
@@ -1794,7 +1781,7 @@ GenTree* Compiler::fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommo
     assert(stmt->GetTreeListEnd() == cur);
 
     GenTree* sideEffects = nullptr;
-    gtExtractSideEffList(stmt->GetRootNode()->gtGetOp2(), &sideEffects);
+    gtExtractSideEffList(stmt->GetRootNode()->AsLclVarCommon()->Data(), &sideEffects);
 
     if (sideEffects == nullptr)
     {

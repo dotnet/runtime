@@ -124,10 +124,19 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPUTF8Str) };
             yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPStr) };
             yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.BStr) };
+            yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<object>(UnmanagedType.Interface) };
+            // TODO: Do we want to limit support of UnmanagedType.Interface to a subset of types?
+            // TODO: Should we block delegate types as they use to have special COM interface marshalling that we have since
+            // blocked? Blocking it would help .NET Framework->.NET migration as there wouldn't be a silent behavior change.
+            yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.Interface) };
+            yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<Action>(UnmanagedType.Interface) };
+
+            // MarshalAs with array element UnmanagedType
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPWStr) };
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPUTF8Str) };
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPStr) };
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.BStr) };
+
 
             // [In, Out] attributes
             // By value non-blittable array
@@ -236,6 +245,9 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<IntPtr>() };
             yield return new[] { ID(), CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<UIntPtr>() };
             yield return new[] { ID(), CodeSnippets.GenericsStress };
+
+            // Type-level interop generator trigger attributes
+            yield return new[] { ID(), CodeSnippets.GeneratedComInterface };
         }
 
         public static IEnumerable<object[]> CustomCollections()

@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import monoWasmThreads from "consts:monoWasmThreads";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import type {
     DiagnosticOptions,
 } from "./shared/types";
@@ -14,7 +15,7 @@ import { mono_log_warn } from "../logging";
 
 // called from C on the main thread
 export function mono_wasm_event_pipe_early_startup_callback(): void {
-    if (monoWasmThreads) {
+    if (MonoWasmThreads) {
         return;
     }
 }
@@ -37,7 +38,7 @@ let diagnosticsInitialized = false;
 export async function mono_wasm_init_diagnostics(): Promise<void> {
     if (diagnosticsInitialized)
         return;
-    if (!monoWasmThreads) {
+    if (!MonoWasmThreads) {
         mono_log_warn("ignoring diagnostics options because this runtime does not support diagnostics");
         return;
     } else {

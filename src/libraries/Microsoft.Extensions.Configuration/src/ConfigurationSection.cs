@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
@@ -10,6 +11,8 @@ namespace Microsoft.Extensions.Configuration
     /// <summary>
     /// Represents a section of application configuration values.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ConfigurationSectionDebugView))]
     public class ConfigurationSection : IConfigurationSection
     {
         private readonly IConfigurationRoot _root;
@@ -96,5 +99,43 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <returns>The <see cref="IChangeToken"/>.</returns>
         public IChangeToken GetReloadToken() => _root.GetReloadToken();
+
+        private string DebuggerToString()
+        {
+            var s = $"Path = {Path}";
+            var childCount = Configuration.ConfigurationSectionDebugView.FromConfiguration(this, _root).Count;
+            if (childCount > 0)
+            {
+                s += $", Sections = {childCount}";
+            }
+            if (Value is not null)
+            {
+                s += $", Value = {Value}";
+                IConfigurationProvider? provider = Configuration.ConfigurationSectionDebugView.GetValueProvider(_root, Path);
+                if (provider != null)
+                {
+                    s += $", Provider = {provider}";
+                }
+            }
+            return s;
+        }
+
+        private sealed class ConfigurationSectionDebugView
+        {
+            private readonly ConfigurationSection _current;
+            private readonly IConfigurationProvider? _provider;
+
+            public ConfigurationSectionDebugView(ConfigurationSection current)
+            {
+                _current = current;
+                _provider = Configuration.ConfigurationSectionDebugView.GetValueProvider(_current._root, _current.Path);
+            }
+
+            public string Path => _current.Path;
+            public string Key => _current.Key;
+            public string? Value => _current.Value;
+            public IConfigurationProvider? Provider => _provider;
+            public List<Configuration.ConfigurationSectionDebugView> Sections => Configuration.ConfigurationSectionDebugView.FromConfiguration(_current, _current._root);
+        }
     }
 }

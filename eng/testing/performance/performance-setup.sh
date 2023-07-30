@@ -37,6 +37,8 @@ logical_machine=
 javascript_engine="v8"
 iosmono=false
 iosllvmbuild=""
+iosstripsymbols=""
+iosnativeaot=false
 maui_version=""
 use_local_commit_time=false
 only_sanity=false
@@ -171,8 +173,16 @@ while (($# > 0)); do
       iosmono=true
       shift 1
       ;;
+    --iosnativeaot)
+      iosnativeaot=true
+      shift 1
+      ;;
     --iosllvmbuild)
       iosllvmbuild=$2
+      shift 2
+      ;;
+    --iosstripsymbols)
+      iosstripsymbols=$2
       shift 2
       ;;
     --mauiversion)
@@ -222,7 +232,9 @@ while (($# > 0)); do
       echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
+      echo "  --iosnativeaot                 Set for ios Native AOT runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
+      echo "  --iosstripsymbols              Set STRIP_DEBUG_SYMBOLS for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
       echo "  --nopgo                        Set for No PGO runs"
@@ -329,16 +341,23 @@ if [[ "$monoaot" == "true" ]]; then
 fi
 
 if [[ "$iosmono" == "true" ]]; then
-    configurations="$configurations iOSLlvmBuild=$iosllvmbuild"
+    configurations="$configurations iOSLlvmBuild=$iosllvmbuild iOSStripSymbols=$iosstripsymbols"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
+fi
+
+if [[ "$iosnativeaot" == "true" ]]; then
+    configurations="$configurations iOSStripSymbols=$iosstripsymbols"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
 fi
 
 if [[ "$nopgo" == "true" ]]; then
     configurations="$configurations PGOType=nopgo"
 fi
+
 if [[ "$dynamicpgo" == "true" ]]; then
     configurations="$configurations PGOType=dynamicpgo"
 fi
+
 if [[ "$fullpgo" == "true" ]]; then
     configurations="$configurations PGOType=fullpgo"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
@@ -436,14 +455,38 @@ fi
 
 if [[ "$iosmono" == "true" ]]; then
     if [[ "$iosllvmbuild" == "True" ]]; then
-        # LLVM Mono .app
-        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
-        mkdir -p $payload_directory/iosHelloWorldZip/llvmzip && cp -rv $source_directory/iosHelloWorldZip/llvmzip $payload_directory/iosHelloWorldZip
+      if [[ "$iosstripsymbols" == "True" ]]; then
+          # LLVM NoSymbols Mono .app
+          mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvmnosymbols $payload_directory/iosHelloWorld
+          mkdir -p $payload_directory/iosHelloWorldZip/llvmnosymbolszip && cp -rv $source_directory/iosHelloWorldZip/llvmnosymbolszip $payload_directory/iosHelloWorldZip
+      else
+          # LLVM Symbols Mono .app
+          mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvmsymbols $payload_directory/iosHelloWorld
+          mkdir -p $payload_directory/iosHelloWorldZip/llvmsymbolszip && cp -rv $source_directory/iosHelloWorldZip/llvmsymbolszip $payload_directory/iosHelloWorldZip
+      fi
     else
-        # NoLLVM Mono .app
-        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
-        mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
+      if [[ "$iosstripsymbols" == "True" ]]; then
+        # NoLLVM NoSymbols Mono .app
+        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvmnosymbols $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorldZip/nollvmnosymbolszip && cp -rv $source_directory/iosHelloWorldZip/nollvmnosymbolszip $payload_directory/iosHelloWorldZip
+      else
+        # NoLLVM Symbols Mono .app
+        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvmsymbols $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorldZip/nollvmsymbolszip && cp -rv $source_directory/iosHelloWorldZip/nollvmsymbolszip $payload_directory/iosHelloWorldZip
+      fi
     fi
+fi
+
+if [[ "$iosnativeaot" == "true" ]]; then
+  if [[ "$iosstripsymbols" == "True" ]]; then
+    # NoSymbols Mono .app
+    mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nosymbols $payload_directory/iosHelloWorld
+    mkdir -p $payload_directory/iosHelloWorldZip/nosymbolszip && cp -rv $source_directory/iosHelloWorldZip/nosymbolszip $payload_directory/iosHelloWorldZip
+  else
+    # NoSymbols Mono .app
+    mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/symbols $payload_directory/iosHelloWorld
+    mkdir -p $payload_directory/iosHelloWorldZip/symbolszip && cp -rv $source_directory/iosHelloWorldZip/symbolszip $payload_directory/iosHelloWorldZip
+  fi
 fi
 
 ci=true
@@ -477,6 +520,7 @@ Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variab
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
+Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iosstripsymbols" -is_multi_job_variable false
 Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
 
 # Put it back to what was set on top of this script

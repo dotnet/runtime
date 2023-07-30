@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -24,70 +25,67 @@ namespace System.Text.Json.SourceGeneration
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
 #if LAUNCH_DEBUGGER
-            Diagnostics.Debugger.Launch();
+            System.Diagnostics.Debugger.Launch();
 #endif
-            IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
+            IncrementalValueProvider<KnownTypeSymbols> knownTypeSymbols = context.CompilationProvider
+                .Select((compilation, _) => new KnownTypeSymbols(compilation));
+
+            IncrementalValuesProvider<(ContextGenerationSpec?, ImmutableEquatableArray<DiagnosticInfo>)> contextGenerationSpecs = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
                     context,
 #endif
                     Parser.JsonSerializableAttributeFullName,
                     (node, _) => node is ClassDeclarationSyntax,
-                    (context, _) => (ClassDeclarationSyntax)context.TargetNode);
-
-            IncrementalValueProvider<SourceGenerationSpec?> sourceGenSpec = context.CompilationProvider
-                .Combine(classDeclarations.Collect())
+                    (context, _) => (ContextClass: (ClassDeclarationSyntax)context.TargetNode, context.SemanticModel))
+                .Combine(knownTypeSymbols)
                 .Select(static (tuple, cancellationToken) =>
                 {
-                    Parser parser = new(tuple.Left);
-                    return parser.GetGenerationSpec(tuple.Right, cancellationToken);
+                    Parser parser = new(tuple.Right);
+                    ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(tuple.Left.ContextClass, tuple.Left.SemanticModel, cancellationToken);
+                    ImmutableEquatableArray<DiagnosticInfo> diagnostics = parser.Diagnostics.ToImmutableEquatableArray();
+                    return (contextGenerationSpec, diagnostics);
                 })
 #if ROSLYN4_4_OR_GREATER
-                .WithTrackingName(SourceGenerationSpecTrackingName);
-#else
-                ;
+                .WithTrackingName(SourceGenerationSpecTrackingName)
 #endif
+                ;
 
-            context.RegisterSourceOutput(sourceGenSpec, EmitSource);
+            context.RegisterSourceOutput(contextGenerationSpecs, ReportDiagnosticsAndEmitSource);
         }
 
-        private void EmitSource(SourceProductionContext sourceProductionContext, SourceGenerationSpec? sourceGenSpec)
+        private void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (ContextGenerationSpec? ContextGenerationSpec, ImmutableEquatableArray<DiagnosticInfo> Diagnostics) input)
         {
-            OnSourceEmitting?.Invoke(sourceGenSpec);
+            // Report any diagnostics ahead of emitting.
+            foreach (DiagnosticInfo diagnostic in input.Diagnostics)
+            {
+                sourceProductionContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
+            }
 
-            if (sourceGenSpec is null)
+            if (input.ContextGenerationSpec is null)
             {
                 return;
             }
 
-            JsonSourceGenerationContext context = new JsonSourceGenerationContext(sourceProductionContext);
-            Emitter emitter = new(context, sourceGenSpec);
-            emitter.Emit();
+            OnSourceEmitting?.Invoke(ImmutableArray.Create(input.ContextGenerationSpec));
+            Emitter emitter = new(sourceProductionContext);
+            emitter.Emit(input.ContextGenerationSpec);
         }
 
         /// <summary>
         /// Instrumentation helper for unit tests.
         /// </summary>
-        public Action<SourceGenerationSpec?>? OnSourceEmitting { get; init; }
-    }
+        public Action<ImmutableArray<ContextGenerationSpec>>? OnSourceEmitting { get; init; }
 
-    internal readonly struct JsonSourceGenerationContext
-    {
-        private readonly SourceProductionContext _context;
-
-        public JsonSourceGenerationContext(SourceProductionContext context)
+        private partial class Emitter
         {
-            _context = context;
-        }
+            private readonly SourceProductionContext _context;
 
-        public void ReportDiagnostic(Diagnostic diagnostic)
-        {
-            _context.ReportDiagnostic(diagnostic);
-        }
+            public Emitter(SourceProductionContext context)
+                => _context = context;
 
-        public void AddSource(string hintName, SourceText sourceText)
-        {
-            _context.AddSource(hintName, sourceText);
+            private partial void AddSource(string hintName, SourceText sourceText)
+                => _context.AddSource(hintName, sourceText);
         }
     }
 }

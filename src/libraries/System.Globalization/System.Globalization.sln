@@ -1,5 +1,5 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", "..\..\coreclr\System.Private.CoreLib\System.Private.CoreLib.csproj", "{E269F8BB-F629-4C96-B9B2-03A00D8B1BFB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities.Unicode", "..\Common\tests\TestUtilities.Unicode\TestUtilities.Unicode.csproj", "{79613DED-481D-44EF-BB89-7AC6BD53026B}"
@@ -34,9 +34,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{A93AFF96-DB2
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{0378EF1C-9838-4AD0-867D-506FB02F8BBB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hybrid.IOS.Tests", "tests\Hybrid\Hybrid.IOS.Tests.csproj", "{16D9996B-A4E1-440B-8D74-C9ED3715158D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Globalization.Hybrid.IOS.Tests", "tests\Hybrid\System.Globalization.Hybrid.IOS.Tests.csproj", "{16D9996B-A4E1-440B-8D74-C9ED3715158D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hybrid.WASM.Tests", "tests\Hybrid\Hybrid.WASM.Tests.csproj", "{CAA35471-75A3-41A8-B09D-0CC9822A8E3B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Globalization.Hybrid.WASM.Tests", "tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj", "{CAA35471-75A3-41A8-B09D-0CC9822A8E3B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

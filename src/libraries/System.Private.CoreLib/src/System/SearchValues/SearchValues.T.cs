@@ -14,13 +14,14 @@ namespace System.Buffers
     /// <remarks>
     /// <see cref="SearchValues{T}"/> are optimized for situations where the same set of values is frequently used for searching at runtime.
     /// </remarks>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     [DebuggerTypeProxy(typeof(SearchValuesDebugView<>))]
     public class SearchValues<T> where T : IEquatable<T>?
     {
         // Only CoreLib can create derived types
         private protected SearchValues() { }
 
-        /// <summary>Used by <see cref="SearchValuesDebugView{T}"/>.</summary>
+        /// <summary>Used by <see cref="DebuggerDisplay"/>s and <see cref="DebuggerTypeProxyAttribute"/>s for <see cref="SearchValues{T}"/>.</summary>
         internal virtual T[] GetValues() => throw new UnreachableException();
 
         /// <summary>
@@ -79,6 +80,25 @@ namespace System.Buffers
             }
 
             return values.LastIndexOfAnyExcept(span);
+        }
+
+        private string DebuggerDisplay
+        {
+            get
+            {
+                T[] values = GetValues();
+
+                string display = $"{GetType().Name}, Count={values.Length}";
+                if (values.Length > 0)
+                {
+                    display += ", Values=";
+                    display += typeof(T) == typeof(char) ?
+                        "\"" + new string(Unsafe.As<T[], char[]>(ref values)) + "\"" :
+                        string.Join(",", values);
+                }
+
+                return display;
+            }
         }
     }
 }

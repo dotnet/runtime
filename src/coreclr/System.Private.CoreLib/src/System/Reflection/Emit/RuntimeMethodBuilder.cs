@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
         private int[]? m_mdMethodFixups;              // The location of all of the token fixups. Null means no fixups.
         private byte[]? m_localSignature;             // Local signature if set explicitly via DefineBody. Null otherwise.
         internal LocalSymInfo? m_localSymInfo;        // keep track debugging local information
-        internal ILGenerator? m_ilGenerator;          // Null if not used.
+        internal RuntimeILGenerator? m_ilGenerator;   // Null if not used.
         private byte[]? m_ubBody;                     // The IL for the method
         private ExceptionHandler[]? m_exceptions; // Exception handlers or null if there are none.
         private const int DefaultMaxStack = 16;
@@ -130,7 +130,7 @@ namespace System.Reflection.Emit
 
         #region Internal Members
 
-        internal void CreateMethodBodyHelper(ILGenerator il)
+        internal void CreateMethodBodyHelper(RuntimeILGenerator il)
         {
             ArgumentNullException.ThrowIfNull(il);
 
@@ -668,7 +668,7 @@ namespace System.Reflection.Emit
             ThrowIfGeneric();
             ThrowIfShouldNotHaveBody();
 
-            return m_ilGenerator ??= new ILGenerator(this, size);
+            return m_ilGenerator ??= new RuntimeILGenerator(this, size);
         }
 
         private void ThrowIfShouldNotHaveBody()

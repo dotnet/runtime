@@ -2173,6 +2173,8 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
         }
 
+        private static ReadOnlyCollection<string>? s_errorPayloadNames;
+
         /// <summary>
         /// Since this is a means of reporting errors (see ReportoutOfBandMessage) any failure encountered
         /// while writing the message to any one of the listeners will be silently ignored.
@@ -2184,7 +2186,7 @@ namespace System.Diagnostics.Tracing
                 EventName = eventName,
                 Message = msg,
                 Payload = new ReadOnlyCollection<object?>(new object[] { msg }),
-                PayloadNames = new ReadOnlyCollection<string>(new string[] { "message" })
+                PayloadNames = s_errorPayloadNames ??= new ReadOnlyCollection<string>(new string[] { "message" })
             };
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)

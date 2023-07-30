@@ -7,7 +7,9 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+#if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
+#endif
 using Microsoft.Extensions.Configuration.Test;
 using Xunit;
 
@@ -19,7 +21,7 @@ namespace Microsoft.Extensions
 {
     public partial class ConfigurationBinderTests
     {
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for records.
+        [Fact]
         public void BindWithNestedTypesWithReadOnlyProperties()
         {
             IConfiguration configuration = new ConfigurationBuilder()
@@ -41,6 +43,8 @@ namespace Microsoft.Extensions
             result = (RootConfig)configuration.Get(typeof(RootConfig), options => { });
             Assert.Equal("Dummy", result.Nested.MyProp);
         }
+
+        // Add test for type with parameterless ctor + init-only properties.
 
         [Fact]
         public void EnumBindCaseInsensitiveNotThrows()
@@ -901,7 +905,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
+        [Fact]
         public void ExceptionWhenTryingToBindClassWithoutParameterlessConstructor()
         {
             var input = new Dictionary<string, string>
@@ -920,8 +924,8 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
-        public void ExceptionWhenTryingToBindClassWherePropertiesDoMatchConstructorParameters()
+        [Fact]
+        public void ExceptionWhenTryingToBindClassWherePropertiesDoNotMatchConstructorParameters()
         {
             var input = new Dictionary<string, string>
             {
@@ -941,7 +945,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void ExceptionWhenTryingToBindToConstructorWithMissingConfig()
         {
             var input = new Dictionary<string, string>
@@ -961,7 +965,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor()
         {
             var input = new Dictionary<string, string>
@@ -982,7 +986,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void BindsToClassConstructorParametersWithDefaultValues()
         {
             var input = new Dictionary<string, string>
@@ -1003,7 +1007,7 @@ namespace Microsoft.Extensions
             Assert.Equal(42, testOptions.ClassWhereParametersHaveDefaultValueProperty.Age);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void FieldsNotSupported_ExceptionBindingToConstructorWithParameterMatchingAField()
         {
             var input = new Dictionary<string, string>
@@ -1025,7 +1029,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void BindsToRecordPrimaryConstructorParametersWithDefaultValues()
         {
             var input = new Dictionary<string, string>
@@ -1101,7 +1105,7 @@ namespace Microsoft.Extensions
             Assert.Equal("hello world", options.MyString);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindImmutableClass()
         {
             var dic = new Dictionary<string, string>
@@ -1118,7 +1122,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Green", options.Color);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindMutableClassWitNestedImmutableObject()
         {
             var dic = new Dictionary<string, string>
@@ -1139,7 +1143,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has multiple public parameterized constructors, then throw
         // an exception.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindImmutableClass_ThrowsOnMultipleParameterizedConstructors()
         {
             var dic = new Dictionary<string, string>
@@ -1153,7 +1157,7 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_MultipleParameterizedConstructors, "Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+ImmutableClassWithMultipleParameterizedConstructors");
+            string expectedMessage = SR.Format(SR.Error_MultipleParameterizedConstructors, typeof(ImmutableClassWithMultipleParameterizedConstructors));
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithMultipleParameterizedConstructors>());
 
@@ -1162,7 +1166,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a parameterized constructor, then throw
         // that constructor has an 'in' parameter
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnInParameter()
         {
             var dic = new Dictionary<string, string>
@@ -1176,7 +1180,7 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithInParameter", "string1");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, typeof(ImmutableClassWithOneParameterizedConstructorButWithInParameter), "string1");
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithInParameter>());
 
@@ -1185,7 +1189,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a parameterized constructors, then throw
         // that constructor has a 'ref' parameter
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithARefParameter()
         {
             var dic = new Dictionary<string, string>
@@ -1199,7 +1203,7 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithRefParameter", "int1");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, typeof(ImmutableClassWithOneParameterizedConstructorButWithRefParameter), "int1");
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithRefParameter>());
 
@@ -1208,7 +1212,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a parameterized constructors, then throw
         // if the constructor has an 'out' parameter
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnOutParameter()
         {
             var dic = new Dictionary<string, string>
@@ -1222,14 +1226,14 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithOutParameter", "int2");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, typeof(ImmutableClassWithOneParameterizedConstructorButWithOutParameter), "int2");
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithOutParameter>());
 
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindMutableStruct_UnmatchedConstructorsAreIgnored()
         {
             var dic = new Dictionary<string, string>
@@ -1248,7 +1252,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a public parameterized constructor,
         // then pick it.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindImmutableClass_PicksParameterizedConstructorIfNoParameterlessConstructorExists()
         {
             var dic = new Dictionary<string, string>
@@ -1269,7 +1273,7 @@ namespace Microsoft.Extensions
             Assert.Equal(2, options.Int2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindSemiImmutableClass()
         {
             var dic = new Dictionary<string, string>
@@ -1288,7 +1292,7 @@ namespace Microsoft.Extensions
             Assert.Equal(1.23m, options.Thickness);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindSemiImmutableClass_WithInitProperties()
         {
             var dic = new Dictionary<string, string>
@@ -1307,7 +1311,7 @@ namespace Microsoft.Extensions
             Assert.Equal(1.23m, options.Thickness);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindRecordOptions()
         {
             var dic = new Dictionary<string, string>
@@ -1324,7 +1328,24 @@ namespace Microsoft.Extensions
             Assert.Equal("Green", options.Color);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
+        public void CanBindClassWithPrimaryCtor()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ClassWithPrimaryCtor>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
         public void CanBindRecordStructOptions()
         {
             var dic = new Dictionary<string, string>
@@ -1341,7 +1362,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Green", options.Color);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindNestedRecordOptions()
         {
             var dic = new Dictionary<string, string>
@@ -1364,7 +1385,7 @@ namespace Microsoft.Extensions
             Assert.Equal(24, options.Nested2.ValueB);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindOnParametersAndProperties_PropertiesAreSetAfterTheConstructor()
         {
             var dic = new Dictionary<string, string>
@@ -1381,7 +1402,7 @@ namespace Microsoft.Extensions
             Assert.Equal("the color is Green", options.Color);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindReadonlyRecordStructOptions()
         {
             var dic = new Dictionary<string, string>
@@ -1626,6 +1647,51 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        public void EnsureSuccessfullyBind()
+        {
+            var json = @"{
+                ""queueConfig"": {
+                    ""Namespaces"": [
+                        {
+                            ""Namespace"": ""devnortheurope"",
+                            ""Queues"": {
+                                ""q1"": {
+                                    ""DequeueOnlyMarkedDate"": ""2022-01-20T12:49:03.395150-08:00""
+                                },
+                                ""q2"": {
+                                    ""DequeueOnlyMarkedDate"": ""2022-01-20T12:49:03.395150-08:00""
+                                }
+                            }
+                        },
+                        {
+                            ""Namespace"": ""devnortheurope2"",
+                            ""Queues"": {
+                                ""q3"": {
+                                    ""DequeueOnlyMarkedDate"": ""2022-01-20T12:49:03.395150-08:00""
+                                },
+                                ""q4"": {
+                                }
+                            }
+                        }
+                    ]
+                }
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                .AddJsonStream(TestStreamHelpers.StringToStream(json))
+                .Build();
+
+            DistributedQueueConfig options = new DistributedQueueConfig();
+            configuration.GetSection("queueConfig").Bind(options);
+
+            Assert.NotNull(options);
+            Assert.Equal(2, options.Namespaces.Count);
+            Assert.Equal(2, options.Namespaces.First().Queues.Count);
+            Assert.Equal(2, options.Namespaces.Skip(1).First().Queues.Count);
+            Assert.NotNull(options.Namespaces.Skip(1).First().Queues.Last().Value);
+        }
+
+        [Fact]
         public void RecursiveTypeGraphs_DirectRef()
         {
             var data = @"{
@@ -1759,6 +1825,50 @@ namespace Microsoft.Extensions
             Assert.Equal(DateOnly.Parse("2002-03-22"), obj.Prop18);
             Assert.Equal(TimeOnly.Parse("18:26:38.7327436"), obj.Prop22);
 #endif
+        }
+
+        [Fact]
+        public void ForClasses_ParameterlessConstructorIsPickedOverParameterized()
+        {
+            string data = """
+                {
+                    "MyInt": 9,
+                }
+                """;
+
+            var configuration = TestHelpers.GetConfigurationFromJsonString(data);
+            var obj = configuration.Get<ClassWithParameterlessAndParameterizedCtor>();
+            Assert.Equal(1, obj.MyInt);
+        }
+
+        [Fact]
+        public void ForStructs_ParameterlessConstructorIsPickedOverParameterized()
+        {
+            string data = """
+                {
+                    "MyInt": 10,
+                }
+                """;
+
+            var configuration = TestHelpers.GetConfigurationFromJsonString(data);
+            var obj = configuration.Get<ClassWithParameterlessAndParameterizedCtor>();
+            Assert.Equal(1, obj.MyInt);
+        }
+
+        [Fact]
+        public void BindRootStructIsNoOp()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "Int32": 9,
+                    "Boolean": true,
+                }
+                """);
+
+            StructWithNestedStructs.DeeplyNested obj = new();
+            configuration.Bind(obj);
+            Assert.Equal(0, obj.Int32);
+            Assert.False(obj.Boolean);
         }
     }
 }

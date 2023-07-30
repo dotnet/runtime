@@ -390,7 +390,7 @@ namespace System.Net.Http
                     _writeBuffer.EnsureAvailableSpace(6);
                     Span<byte> buffer = _writeBuffer.AvailableSpan;
                     buffer[0] = (byte)':';
-                    bool success = Utf8Formatter.TryFormat(requestUri.Port, buffer.Slice(1), out int bytesWritten);
+                    bool success = ((uint)requestUri.Port).TryFormat(buffer.Slice(1), out int bytesWritten);
                     Debug.Assert(success);
                     _writeBuffer.Commit(bytesWritten + 1);
                 }
@@ -1493,7 +1493,7 @@ namespace System.Net.Http
         private ValueTask WriteHexInt32Async(int value, bool async)
         {
             // Try to format into our output buffer directly.
-            if (Utf8Formatter.TryFormat(value, _writeBuffer.AvailableSpan, out int bytesWritten, 'X'))
+            if (value.TryFormat(_writeBuffer.AvailableSpan, out int bytesWritten, "X"))
             {
                 _writeBuffer.Commit(bytesWritten);
                 return default;
@@ -1502,7 +1502,10 @@ namespace System.Net.Http
             // If we don't have enough room, do it the slow way.
             if (async)
             {
-                return WriteAsync(Encoding.ASCII.GetBytes(value.ToString("X", CultureInfo.InvariantCulture)));
+                Span<byte> temp = stackalloc byte[8]; // max length of Int32 as hex
+                bool formatted = value.TryFormat(temp, out bytesWritten, "X");
+                Debug.Assert(formatted);
+                return WriteAsync(temp.Slice(0, bytesWritten).ToArray());
             }
             else
             {

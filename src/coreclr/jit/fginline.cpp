@@ -111,11 +111,11 @@ public:
         // do not check if there is a series of COMMAs. See above.
         // Importer and FlowGraph will not generate such a tree, so just
         // leaving an assert in here. This can be fixed by looking ahead
-        // when we visit GT_ASG similar to AttachStructInlineeToAsg.
+        // when we visit stores similar to AttachStructInlineeToStore.
         //
-        if (tree->OperGet() == GT_ASG)
+        if (tree->OperIsStore())
         {
-            GenTree* value = tree->AsOp()->gtOp2;
+            GenTree* value = tree->Data();
 
             if (value->OperGet() == GT_COMMA)
             {
@@ -275,21 +275,23 @@ private:
             {
 #if FEATURE_MULTIREG_RET
                 // Force multi-reg nodes into the "lcl = node()" form if necessary.
+                // TODO-ASG: this code could be improved substantially. There is no need
+                // to introduce temps if the inlinee is not actually a multi-reg node.
                 //
                 case Compiler::SPK_ByValue:
                 case Compiler::SPK_ByValueAsHfa:
                 {
-                    // See assert below, we only look one level above for an asg parent.
-                    if (parent->OperIs(GT_ASG))
+                    // See assert below, we only look one level above for a store parent.
+                    if (parent->OperIsStore())
                     {
-                        // The inlinee can only be the RHS.
-                        assert(parent->gtGetOp2() == *use);
-                        AttachStructInlineeToAsg(parent->AsOp(), retClsHnd);
+                        // The inlinee can only be the value.
+                        assert(parent->Data() == *use);
+                        AttachStructInlineeToStore(parent, retClsHnd);
                     }
                     else
                     {
-                        // Just assign the inlinee to a variable to keep it simple.
-                        *use = AssignStructInlineeToVar(*use, retClsHnd);
+                        // Just store the inlinee to a variable to keep it simple.
+                        *use = StoreStructInlineeToVar(*use, retClsHnd);
                     }
                     m_madeChanges = true;
                 }
@@ -316,51 +318,50 @@ private:
 
 #if FEATURE_MULTIREG_RET
     //------------------------------------------------------------------------
-    // AttachStructInlineeToAsg: Update an "ASG(..., inlinee)" tree.
+    // AttachStructInlineeToStore: Update a "STORE(..., inlinee)" tree.
     //
     // Morphs inlinees that are multi-reg nodes into the (only) supported shape
-    // of "lcl = node()", either by marking the LHS local "lvIsMultiRegRet" or
-    // assigning the node into a temp and using that as the RHS.
+    // of "lcl = node()", either by marking the store local "lvIsMultiRegRet" or
+    // storing the node into a temp and using that as the new value.
     //
     // Arguments:
-    //    asg       - The assignment with the inlinee on the RHS
+    //    store     - The store with the inlinee as value
     //    retClsHnd - The struct handle for the inlinee
     //
-    void AttachStructInlineeToAsg(GenTreeOp* asg, CORINFO_CLASS_HANDLE retClsHnd)
+    void AttachStructInlineeToStore(GenTree* store, CORINFO_CLASS_HANDLE retClsHnd)
     {
-        assert(asg->OperIs(GT_ASG));
-
-        GenTree* dst     = asg->gtGetOp1();
-        GenTree* inlinee = asg->gtGetOp2();
+        assert(store->OperIsStore());
+        GenTree* dst     = store;
+        GenTree* inlinee = store->Data();
 
         // We need to force all assignments from multi-reg nodes into the "lcl = node()" form.
         if (inlinee->IsMultiRegNode())
         {
             // Special case: we already have a local, the only thing to do is mark it appropriately. Except
-            // if it may turn into an indirection.
-            if (dst->OperIs(GT_LCL_VAR) && !m_compiler->lvaIsImplicitByRefLocal(dst->AsLclVar()->GetLclNum()))
+            // if it may turn into an indirection. TODO-Bug: this does not account for x86 varargs args.
+            if (store->OperIs(GT_STORE_LCL_VAR) && !m_compiler->lvaIsImplicitByRefLocal(store->AsLclVar()->GetLclNum()))
             {
-                m_compiler->lvaGetDesc(dst->AsLclVar())->lvIsMultiRegRet = true;
+                m_compiler->lvaGetDesc(store->AsLclVar())->lvIsMultiRegRet = true;
             }
             else
             {
-                // Here, we assign our node into a fresh temp and then use that temp as the new value.
-                asg->gtOp2 = AssignStructInlineeToVar(inlinee, retClsHnd);
+                // Here, we store our node into a fresh temp and then use that temp as the new value.
+                store->Data() = StoreStructInlineeToVar(inlinee, retClsHnd);
             }
         }
     }
 
     //------------------------------------------------------------------------
-    // AssignStructInlineeToVar: Assign the struct inlinee to a temp local.
+    // AssignStructInlineeToVar: Store the struct inlinee to a temp local.
     //
     // Arguments:
     //    inlinee   - The inlinee of the RET_EXPR node
     //    retClsHnd - The struct class handle of the type of the inlinee.
     //
     // Return Value:
-    //    Value representing the freshly assigned temp.
+    //    Value representing the freshly defined temp.
     //
-    GenTree* AssignStructInlineeToVar(GenTree* inlinee, CORINFO_CLASS_HANDLE retClsHnd)
+    GenTree* StoreStructInlineeToVar(GenTree* inlinee, CORINFO_CLASS_HANDLE retClsHnd)
     {
         assert(!inlinee->OperIs(GT_MKREFANY, GT_RET_EXPR));
 
@@ -368,7 +369,7 @@ private:
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         m_compiler->lvaSetStruct(lclNum, retClsHnd, false);
 
-        // Sink the assignment below any COMMAs: this is required for multi-reg nodes.
+        // Sink the store below any COMMAs: this is required for multi-reg nodes.
         GenTree* src       = inlinee;
         GenTree* lastComma = nullptr;
         while (src->OperIs(GT_COMMA))
@@ -377,24 +378,23 @@ private:
             src       = src->AsOp()->gtOp2;
         }
 
-        // When assigning a multi-register value to a local var, make sure the variable is marked as lvIsMultiRegRet.
+        // When storing a multi-register value to a local var, make sure the variable is marked as lvIsMultiRegRet.
         if (src->IsMultiRegNode())
         {
             varDsc->lvIsMultiRegRet = true;
         }
 
-        GenTree* dst = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
+        GenTree* store = m_compiler->gtNewStoreLclVarNode(lclNum, src);
 
         // If inlinee was comma, new inlinee is (, , , lcl = inlinee).
         if (inlinee->OperIs(GT_COMMA))
         {
-            lastComma->AsOp()->gtOp2 = asg;
-            asg                      = inlinee;
+            lastComma->AsOp()->gtOp2 = store;
+            store                    = inlinee;
         }
 
         GenTree* lcl = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-        return m_compiler->gtNewOperNode(GT_COMMA, lcl->TypeGet(), asg, lcl);
+        return m_compiler->gtNewOperNode(GT_COMMA, lcl->TypeGet(), store, lcl);
     }
 #endif // FEATURE_MULTIREG_RET
 
@@ -478,23 +478,22 @@ private:
                 m_madeChanges = true;
             }
         }
-        else if (tree->OperGet() == GT_ASG)
+        else if (tree->OperIs(GT_STORE_LCL_VAR))
         {
-            // If we're assigning to a ref typed local that has one definition,
-            // we may be able to sharpen the type for the local.
-            GenTree* const effLhs = tree->gtGetOp1()->gtEffectiveVal();
+            const unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+            GenTree* const value  = tree->AsLclVarCommon()->Data();
 
-            if ((effLhs->OperGet() == GT_LCL_VAR) && (effLhs->TypeGet() == TYP_REF))
+            // If we're storing to a ref typed local that has one definition,
+            // we may be able to sharpen the type for the local.
+            if (tree->TypeGet() == TYP_REF)
             {
-                const unsigned lclNum = effLhs->AsLclVarCommon()->GetLclNum();
-                LclVarDsc*     lcl    = m_compiler->lvaGetDesc(lclNum);
+                LclVarDsc* lcl = m_compiler->lvaGetDesc(lclNum);
 
                 if (lcl->lvSingleDef)
                 {
-                    GenTree*             rhs       = tree->gtGetOp2();
                     bool                 isExact   = false;
                     bool                 isNonNull = false;
-                    CORINFO_CLASS_HANDLE newClass  = m_compiler->gtGetClassHandle(rhs, &isExact, &isNonNull);
+                    CORINFO_CLASS_HANDLE newClass  = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
 
                     if (newClass != NO_CLASS_HANDLE)
                     {
@@ -504,15 +503,10 @@ private:
                 }
             }
 
-            // If we created a self-assignment (say because we are sharing return spill temps)
-            // we can remove it.
+            // If we created a self-store (say because we are sharing return spill temps) we can remove it.
             //
-            GenTree* const lhs = tree->gtGetOp1();
-            GenTree* const rhs = tree->gtGetOp2();
-            if (lhs->OperIs(GT_LCL_VAR) && GenTree::Compare(lhs, rhs))
+            if (value->OperIs(GT_LCL_VAR) && (value->AsLclVar()->GetLclNum() == lclNum))
             {
-                m_compiler->gtUpdateNodeSideEffects(tree);
-                assert((tree->gtFlags & GTF_SIDE_EFFECT) == GTF_ASG);
                 JITDUMP("... removing self-assignment\n");
                 DISPTREE(tree);
                 tree->gtBashToNOP();
@@ -752,7 +746,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
 {
     bool inliningFailed = false;
 
-    InlineCandidateInfo* inlCandInfo = call->gtInlineCandidateInfo;
+    InlineCandidateInfo* inlCandInfo = call->GetSingleInlineCandidateInfo();
 
     // Is this call an inline candidate?
     if (call->IsInlineCandidate())
@@ -777,8 +771,8 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             {
 #ifdef DEBUG
                 // In debug we always put all inline attempts into the inline tree.
-                InlineContext* ctx =
-                    m_inlineStrategy->NewContext(call->gtInlineCandidateInfo->inlinersContext, fgMorphStmt, call);
+                InlineContext* ctx = m_inlineStrategy->NewContext(call->GetSingleInlineCandidateInfo()->inlinersContext,
+                                                                  fgMorphStmt, call);
                 ctx->SetFailed(inlineResult);
 #endif
             }
@@ -1045,7 +1039,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
 
-    InlineCandidateInfo* inlineCandidateInfo = call->gtInlineCandidateInfo;
+    InlineCandidateInfo* inlineCandidateInfo = call->GetSingleInlineCandidateInfo();
     noway_assert(inlineCandidateInfo);
     // Store the link to inlineCandidateInfo into inlineInfo
     inlineInfo.inlineCandidateInfo = inlineCandidateInfo;
@@ -1647,7 +1641,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 else
                 {
                     // We're going to assign the argument value to the temp we use for it in the inline body.
-                    GenTree* store = gtNewTempAssign(argInfo.argTmpNum, argNode);
+                    GenTree* store = gtNewTempStore(argInfo.argTmpNum, argNode);
 
                     newStmt = gtNewStmt(store, callDI);
                     fgInsertStmtAfter(block, afterStmt, newStmt);
@@ -1845,7 +1839,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 var_types lclTyp = tmpDsc->TypeGet();
                 noway_assert(lclTyp == lclVarInfo[lclNum + inlineInfo->argCnt].lclTypeInfo);
 
-                tree = gtNewTempAssign(tmpNum, (lclTyp == TYP_STRUCT) ? gtNewIconNode(0) : gtNewZeroConNode(lclTyp));
+                tree = gtNewTempStore(tmpNum, (lclTyp == TYP_STRUCT) ? gtNewIconNode(0) : gtNewZeroConNode(lclTyp));
 
                 newStmt = gtNewStmt(tree, callDI);
                 fgInsertStmtAfter(block, afterStmt, newStmt);
@@ -1940,7 +1934,7 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
         }
 
         // Assign null to the local.
-        GenTree*   nullExpr = gtNewTempAssign(tmpNum, gtNewZeroConNode(lclTyp));
+        GenTree*   nullExpr = gtNewTempStore(tmpNum, gtNewZeroConNode(lclTyp));
         Statement* nullStmt = gtNewStmt(nullExpr, callDI);
 
         if (stmtAfter == nullptr)

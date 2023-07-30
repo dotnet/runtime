@@ -5,16 +5,20 @@ import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
 import {
-    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked
+    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
     _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
-    recordFailure, getOptions, bytesFromHex
+    recordFailure, getOptions
 } from "./jiterpreter-support";
+import {
+    compileDoJitCall
+} from "./jiterpreter-feature-detect";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
+import { utf8ToString } from "./strings";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;
@@ -95,6 +99,8 @@ class TrampolineInfo {
         method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
         arg_offsets: VoidPtr, catch_exceptions: boolean
     ) {
+        mono_assert(arg_offsets, "Expected nonzero arg_offsets pointer");
+
         this.method = method;
         this.rmethod = rmethod;
         this.catchExceptions = catch_exceptions;
@@ -144,7 +150,7 @@ class TrampolineInfo {
         if (useFullNames) {
             const pMethodName = method ? cwraps.mono_wasm_method_get_full_name(method) : <any>0;
             try {
-                suffix = Module.UTF8ToString(pMethodName);
+                suffix = utf8ToString(pMethodName);
             } finally {
                 if (pMethodName)
                     Module._free(<any>pMethodName);
@@ -180,6 +186,7 @@ export function mono_interp_invoke_wasm_jit_call_trampoline(
     try {
         thunk(ret_sp, sp, ftndesc, thrown);
     } catch (exc) {
+        receiveWorkerHeapViews();
         setU32_unchecked(thrown, 1);
     }
 }
@@ -225,9 +232,6 @@ export function mono_interp_jit_wasm_jit_call_trampoline(
         mono_interp_flush_jitcall_queue();
 }
 
-// pure wasm implementation of do_jit_call_indirect (using wasm EH). see do-jit-call.wat / do-jit-call.wasm
-const doJitCall16 =
-    "0061736d01000000010b0260017f0060037f7f7f00021d020169066d656d6f727902000001690b6a69745f63616c6c5f636200000302010107180114646f5f6a69745f63616c6c5f696e64697265637400010a1301110006402001100019200241013602000b0b";
 let doJitCallModule: WebAssembly.Module | undefined = undefined;
 
 function getIsWasmEhSupported(): boolean {
@@ -236,11 +240,7 @@ function getIsWasmEhSupported(): boolean {
 
     // Probe whether the current environment can handle wasm exceptions
     try {
-        // Load and compile the wasm version of do_jit_call_indirect. This serves as a way to probe for wasm EH
-        const bytes = bytesFromHex(doJitCall16);
-
-        counters.bytesGenerated += bytes.length;
-        doJitCallModule = new WebAssembly.Module(bytes);
+        doJitCallModule = compileDoJitCall();
         wasmEhSupported = true;
     } catch (exc) {
         mono_log_info("Disabling WASM EH support due to JIT failure", exc);
@@ -266,6 +266,7 @@ export function mono_jiterp_do_jit_call_indirect(
         try {
             jitCallCb(_cb_data);
         } catch (exc) {
+            receiveWorkerHeapViews();
             setU32_unchecked(_thrown, 1);
         }
     };
@@ -278,8 +279,10 @@ export function mono_jiterp_do_jit_call_indirect(
             const instance = new WebAssembly.Instance(doJitCallModule!, {
                 i: {
                     jit_call_cb: jitCallCb,
-                    memory: (<any>Module).asm.memory
-                }
+                },
+                m: {
+                    h: (<any>Module).asm.memory
+                },
             });
             const impl = instance.exports.do_jit_call_indirect;
             if (typeof (impl) !== "function")

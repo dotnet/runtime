@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -860,6 +861,20 @@ namespace System.IO.Compression.Tests
             Assert.Equal(6, entry.CompressedLength); // it should have used 32-bit size
         }
 
+        /// <summary>
+        /// This test checks behavior of ZipArchive when the startDiskNumber in the extraField is greater than IntMax
+        /// </summary>
+        [Fact]
+        public void ReadArchive_WithDiskStartNumberGreaterThanIntMax()
+        {
+            byte[] input = (byte[])s_zip64WithBigStartDiskNumber.Clone();
+            using var archive = new ZipArchive(new MemoryStream(input));
+
+            var exception = Record.Exception(() => archive.Entries.First());
+
+            Assert.Null(exception);
+        }
+
         private static readonly byte[] s_slightlyIncorrectZip64 =
         {
             // ===== Local file header signature 0x04034b50
@@ -997,6 +1012,155 @@ namespace System.IO.Compression.Tests
             0x7a, 0x00, 0x00, 0x00,
             // offset of start of CD wrt start disk (-1 indicates refer to Zip64 extra field)
             0x64, 0x00, 0x00, 0x00,
+            // comment length
+            0x00, 0x00
+        };
+
+        private static readonly byte[] s_zip64WithBigStartDiskNumber =
+        {
+            // ===== Local file header signature 0x04034b50
+            0x50, 0x4b, 0x03, 0x04,
+            // version to extract 4.5
+            0x2d, 0x00,
+            // general purpose flags
+            0x00, 0x08,   // 0000_1000 'for enhanced deflating'
+            // Deflate
+            0x08, 0x00,
+            // Last mod file time
+            0x17, 0x9b,
+            // Last mod date
+            0x6d, 0x52,
+            // CRC32
+            0x0c, 0x7e, 0x7f, 0xd8,
+            // compressed size
+            0xff, 0xff, 0xff, 0xff,
+            // UNcompressed size
+            0xff, 0xff, 0xff, 0xff,
+            // file name length
+            
+            0x08, 0x00,
+            // extra field length
+            0x20, 0x00,
+            // filename
+            0x66, 0x69, 0x6c, 0x65, 0x2e, 0x74, 0x78, 0x74,
+            // -----Zip64 extra field tag
+            0x01, 0x00,
+            // size of extra field block
+            0x20, 0x00,
+                    // 8 byte Zip64 UNcompressed size, index 42
+                    0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    // 8 byte Zip64 compressed size, index 50
+                    0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    // 8 byte Relative Header Offset 
+                    0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    // Disk Start Number
+                    0xff, 0xff, 0xff, 0xfe, 
+            // ----- NTFS extra field tag
+            0x0a, 0x00,
+            // size of extra field block
+            0x20, 0x00,
+                    // reserved
+                    0x00, 0x00, 0x00, 0x00,
+                    // tag #1
+                    0x01, 0x00,
+                    // size of tag #1
+                    0x18, 0x00,
+                            // Mtime, CTime, Atime
+                            0xa8, 0xb1, 0xf6, 0x61, 0x25, 0x18, 0xd7, 0x01,
+                            0xa8, 0xb1, 0xf6, 0x61, 0x25, 0x18, 0xd7, 0x01,
+                            0xa8, 0xb1, 0xf6, 0x61, 0x25, 0x18, 0xd7, 0x01,
+            // -------------
+            // Data!
+            0x2b, 0x49, 0x2d, 0x2e, 0x01, 0x00,
+            // -------- Central directory signature 0x02014b50
+            0x50, 0x4b, 0x01, 0x02,
+            // version made by 4.5
+            0x2d, 0x00,
+            // version to extract 4.5
+            0x2d, 0x00,
+            // general purpose flags
+            0x00, 0x08,
+            // Deflate
+            0x08, 0x00,
+            // Last mod file time
+            0x17, 0x9b,
+            // Last mod date
+            0x6d, 0x52,
+            // CRC32
+            0x0c, 0x7e, 0x7f, 0xd8,
+            // 4 byte compressed size, index 120 (-1 indicates refer to Zip64 extra field)
+            0xff, 0xff, 0xff, 0xff,
+            // 4 byte UNcompressed size, index 124 (-1 indicates refer to Zip64 extra field)
+            0xff, 0xff, 0xff, 0xff,
+            // file name length
+            0x08, 0x00,
+            // extra field length
+            0x44, 0x00,
+            // file comment length
+            0x00, 0x00,
+            // disk number start (-1 indicates refer to Zip64 extra field)
+            0xff, 0xff,
+            // internal file attributes
+            0x00, 0x00,
+            // external file attributes
+            0x00, 0x00, 0x00, 0x00,
+            // relative offset of local header (-1 indicates refer to Zip64 extra field)
+            0x00, 0x00, 0x00, 0x00,
+            // file name
+            0x66, 0x69, 0x6c, 0x65, 0x2e, 0x74, 0x78, 0x74,
+            // extra field, content similar to before
+            0x01, 0x00,
+            0x1c, 0x00,
+                    0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    // Disk start number
+                    0xff, 0xff, 0xff, 0xfe,
+            0x0a, 0x00,
+            0x20, 0x00,
+                    0x00, 0x00, 0x00, 0x00,
+                    0x01, 0x00, 0x18, 0x00,
+                    0xa8, 0xb1, 0xf6, 0x61, 0x25, 0x18, 0xd7, 0x01,
+                    0xa8, 0xb1, 0xf6, 0x61, 0x25, 0x18, 0xd7, 0x01,
+                    0xa8, 0xb1, 0xf6, 0x61, 0x25, 0x18, 0xd7, 0x01,
+            // == 'end of zip64 central directory record' signature 0x06064b50
+            0x50, 0x4b, 0x06, 0x06,
+            // size
+            0x2c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    // version made by, version needed
+                    0x2d, 0x00, 0x2d, 0x00,
+                    // disk number, disk number with CD
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    // total number of CD records
+                    0x01, 0x00, 0x00, 0x00,
+                    // size of CD
+                    0x00, 0x00, 0x00, 0x00,
+                    // offset of start of CD wrt starting disk
+                    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    // zip64 extensible data sector
+                    0x7a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    // offset of start cd
+                    0x70, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            // == 'zip64 end of CD locator' signature 0x07064b50
+            0x50, 0x4b, 0x06, 0x07,
+            // number of disk with zip64 CD
+            0x00, 0x00, 0x00, 0x00,
+            // relative offset of zip64 ECD
+            0xea, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            // total number of disks
+            0x01, 0x00, 0x00, 0x00,
+            // == 'end of CD' signature 0x06054b50
+            0x50, 0x4b, 0x05, 0x06,
+            // disk number, disk number with CD (-1 indicates refer to Zip64 extra field)
+            0x00, 0x00,
+            0x00, 0x00,
+            // total number of entries in CD on this disk, and overall  (-1 indicates refer to Zip64 extra fields)
+            0xff, 0xff,
+            0xff, 0xff,
+            // size of CD (-1 indicates refer to Zip64 extra field)
+            0x7a, 0x00, 0x00, 0x00,
+            // offset of start of CD wrt start disk (-1 indicates refer to Zip64 extra field)
+            0x70, 0x00, 0x00, 0x00,
             // comment length
             0x00, 0x00
         };

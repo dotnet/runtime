@@ -255,7 +255,7 @@ namespace System.Text.Json.Serialization
             {
                 // Special case object converters since they don't
                 // require the expensive ReadStack.Push()/Pop() operations.
-                Debug.Assert(this is ObjectConverter or ObjectConverterSlim);
+                Debug.Assert(this is ObjectConverter);
                 success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
                 Debug.Assert(success);
                 isPopulatedValue = false;

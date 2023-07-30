@@ -44,7 +44,7 @@
   <PropertyGroup>
     <!-- To use a specific version, set ChromeFindLatestAvailableVersion=false,
          and set the version, and revisions in the propertygroup below -->
-    <ChromeFindLatestAvailableVersion>true</ChromeFindLatestAvailableVersion>
+    <ChromeFindLatestAvailableVersion>false</ChromeFindLatestAvailableVersion>
   </PropertyGroup>
 
   <PropertyGroup Label="Use specific version of chrome" Condition="'$(ChromeFindLatestAvailableVersion)' != 'true' and $([MSBuild]::IsOSPlatform('linux'))">

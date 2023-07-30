@@ -3,9 +3,9 @@
 
 import { assertNever } from "../../types/internal";
 import { VoidPtr } from "../../types/emscripten";
-import { Module } from "../../globals";
 import type { CommonSocket } from "./common-socket";
 import { mono_log_debug, mono_log_warn } from "../../logging";
+import { localHeapViewU8 } from "../../memory";
 enum ListenerState {
     Sending,
     Closed,
@@ -21,7 +21,7 @@ class SocketGuts {
         const buf = new ArrayBuffer(size);
         const view = new Uint8Array(buf);
         // Can we avoid this copy?
-        view.set(new Uint8Array(Module.HEAPU8.buffer, data as unknown as number, size));
+        view.set(new Uint8Array(localHeapViewU8().buffer, data as unknown as number, size));
         this.socket.send(buf);
     }
 }

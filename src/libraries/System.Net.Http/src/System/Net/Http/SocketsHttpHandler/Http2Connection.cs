@@ -368,7 +368,7 @@ namespace System.Net.Http
 
         // Returns true to indicate at least one stream is available
         // Returns false to indicate that the connection is shutting down and cannot be used anymore
-        public ValueTask<bool> WaitForAvailableStreamsAsync()
+        public Task<bool> WaitForAvailableStreamsAsync()
         {
             lock (SyncObject)
             {
@@ -379,17 +379,17 @@ namespace System.Net.Http
 
                 if (_shutdown)
                 {
-                    return ValueTask.FromResult(false);
+                    return Task.FromResult(false);
                 }
 
                 if (_streamsInUse < _maxConcurrentStreams)
                 {
-                    return ValueTask.FromResult(true);
+                    return Task.FromResult(true);
                 }
 
                 // Need to wait for streams to become available.
                 _availableStreamsWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                return new ValueTask<bool>(_availableStreamsWaiter.Task);
+                return _availableStreamsWaiter.Task;
             }
         }
 

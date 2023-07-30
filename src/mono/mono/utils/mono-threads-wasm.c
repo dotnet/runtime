@@ -345,27 +345,61 @@ mono_memory_barrier_process_wide (void)
 G_EXTERN_C
 extern void schedule_background_exec (void);
 
-/* jobs is not protected by a mutex, only access from a single thread! */
-static GSList *jobs;
-
+// when this is called from ThreadPool, the cb would be System.Threading.ThreadPool.BackgroundJobHandler
+// when this is called from JSSynchronizationContext, the cb would be System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.BackgroundJobHandler
+// when this is called from sgen it would be wrapper of sgen_perform_collection_inner
+// when this is called from gc, it would be mono_runtime_do_background_work
 void
-mono_threads_schedule_background_job (background_job_cb cb)
+mono_main_thread_schedule_background_job (background_job_cb cb)
 {
+	g_assert (cb);
 #ifndef DISABLE_THREADS
 	if (!mono_threads_wasm_is_browser_thread ()) {
-		THREADS_DEBUG ("worker %p queued job %p\n", (gpointer)pthread_self(), (gpointer) cb);
-		mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_threads_schedule_background_job, cb);
+		THREADS_DEBUG ("mono_main_thread_schedule_background_job1: thread %p queued job %p to main thread\n", (gpointer)pthread_self(), (gpointer) cb);
+		mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_current_thread_schedule_background_job, cb);
 		return;
 	}
-#endif
+#endif /*DISABLE_THREADS*/
+	THREADS_DEBUG ("mono_main_thread_schedule_background_job2: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
+	mono_current_thread_schedule_background_job (cb);
+}
 
-	THREADS_DEBUG ("main thread queued job %p\n", (gpointer) cb);
+#ifndef DISABLE_THREADS
+MonoNativeTlsKey jobs_key;
+#else /* DISABLE_THREADS */
+GSList *jobs;
+#endif /* DISABLE_THREADS */
+
+void
+mono_current_thread_schedule_background_job (background_job_cb cb)
+{
+	g_assert (cb);
+#ifdef DISABLE_THREADS
 
 	if (!jobs)
 		schedule_background_exec ();
 
 	if (!g_slist_find (jobs, (gconstpointer)cb))
 		jobs = g_slist_prepend (jobs, (gpointer)cb);
+
+#else /*DISABLE_THREADS*/
+
+	GSList *jobs = mono_native_tls_get_value (jobs_key);
+	THREADS_DEBUG ("mono_current_thread_schedule_background_job1: thread %p queuing job %p into %p\n", (gpointer)pthread_self(), (gpointer) cb, (gpointer) jobs);
+	if (!jobs)
+	{
+		THREADS_DEBUG ("mono_current_thread_schedule_background_job2: thread %p calling schedule_background_exec before job %p\n", (gpointer)pthread_self(), (gpointer) cb);
+		schedule_background_exec ();
+	}
+
+	if (!g_slist_find (jobs, (gconstpointer)cb))
+	{
+		jobs = g_slist_prepend (jobs, (gpointer)cb);
+		mono_native_tls_set_value (jobs_key, jobs);
+		THREADS_DEBUG ("mono_current_thread_schedule_background_job3: thread %p queued job %p\n", (gpointer)pthread_self(), (gpointer) cb);
+	}
+
+#endif /*DISABLE_THREADS*/
 }
 
 G_EXTERN_C
@@ -377,15 +411,22 @@ EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void)
 {
 	MONO_ENTER_GC_UNSAFE;
-#ifndef DISABLE_THREADS
-	g_assert (mono_threads_wasm_is_browser_thread ());
-#endif
+#ifdef DISABLE_THREADS
 	GSList *j = jobs, *cur;
 	jobs = NULL;
+#else /* DISABLE_THREADS */
+	THREADS_DEBUG ("mono_background_exec on thread %p started\n", (gpointer)pthread_self());
+	GSList *jobs = mono_native_tls_get_value (jobs_key);
+	GSList *j = jobs, *cur;
+	mono_native_tls_set_value (jobs_key, NULL);
+#endif /* DISABLE_THREADS */
 
 	for (cur = j; cur; cur = cur->next) {
 		background_job_cb cb = (background_job_cb)cur->data;
+		g_assert (cb);
+		THREADS_DEBUG ("mono_background_exec on thread %p running job %p \n", (gpointer)pthread_self(), (gpointer)cb);
 		cb ();
+		THREADS_DEBUG ("mono_background_exec on thread %p done job %p \n", (gpointer)pthread_self(), (gpointer)cb);
 	}
 	g_slist_free (j);
 	MONO_EXIT_GC_UNSAFE;
@@ -463,6 +504,17 @@ mono_threads_wasm_async_run_in_main_thread_vii (void (*func) (gpointer, gpointer
 	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VII, func, user_data1, user_data2);
 }
 
+void
+mono_threads_wasm_async_run_in_target_thread (pthread_t target_thread, void (*func) (void))
+{
+	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_V, func, NULL);
+}
+
+void
+mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_thread, void (*func) (gpointer), gpointer user_data)
+{
+	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VI, func, NULL, user_data);
+}
 
 #endif /* DISABLE_THREADS */
 

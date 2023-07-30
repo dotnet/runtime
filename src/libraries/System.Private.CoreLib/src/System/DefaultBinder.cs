@@ -383,8 +383,10 @@ namespace System
 #endregion
             }
 
+            MethodBase bestMatch = candidates[currentMin]!;
+
             if (ambig)
-                throw new AmbiguousMatchException();
+                throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
 
             // Reorder (if needed)
             if (names != null)
@@ -395,7 +397,7 @@ namespace System
 
             // If the parameters and the args are not the same length or there is a paramArray
             //  then we need to create a argument array.
-            ParameterInfo[] parameters = candidates[currentMin]!.GetParametersNoCopy();
+            ParameterInfo[] parameters = bestMatch.GetParametersNoCopy();
             if (parameters.Length == args.Length)
             {
                 if (paramArrayTypes[currentMin] != null)
@@ -431,7 +433,7 @@ namespace System
             }
             else
             {
-                if ((candidates[currentMin]!.CallingConvention & CallingConventions.VarArgs) == 0)
+                if ((bestMatch.CallingConvention & CallingConventions.VarArgs) == 0)
                 {
                     object[] objs = new object[parameters.Length];
                     int paramArrayPos = parameters.Length - 1;
@@ -442,7 +444,7 @@ namespace System
                 }
             }
 
-            return candidates[currentMin]!;
+            return bestMatch;
         }
 
         // Given a set of fields that match the base criteria, select a field.
@@ -526,9 +528,10 @@ namespace System
                     }
                 }
             }
+            FieldInfo bestMatch = candidates[currentMin];
             if (ambig)
-                throw new AmbiguousMatchException();
-            return candidates[currentMin];
+                throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
+            return bestMatch;
         }
 
         // Given a set of methods that match the base criteria, select a method based
@@ -620,9 +623,10 @@ namespace System
                     }
                 }
             }
+            MethodBase bestMatch = candidates[currentMin];
             if (ambig)
-                throw new AmbiguousMatchException();
-            return candidates[currentMin];
+                throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
+            return bestMatch;
         }
 
         // Given a set of properties that match the base criteria, select one.
@@ -734,10 +738,10 @@ namespace System
                     currentMin = i;
                 }
             }
-
+            PropertyInfo bestMatch = candidates[currentMin];
             if (ambig)
-                throw new AmbiguousMatchException();
-            return candidates[currentMin];
+                throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
+            return bestMatch;
         }
 
         // ChangeType
@@ -850,7 +854,7 @@ namespace System
                     continue;
 
                 if (bestMatch != null)
-                    throw new AmbiguousMatchException();
+                    throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
 
                 bestMatch = match[i];
             }
@@ -1137,7 +1141,7 @@ namespace System
                 // This can only happen if at least one is vararg or generic.
                 if (currentHierarchyDepth == deepestHierarchy)
                 {
-                    throw new AmbiguousMatchException();
+                    throw ThrowHelper.GetAmbiguousMatchException(methWithDeepestHierarchy!);
                 }
 
                 // Check to see if this method is on the most derived class.

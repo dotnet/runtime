@@ -44,10 +44,11 @@ const SimdAsHWIntrinsicInfo& SimdAsHWIntrinsicInfo::lookup(NamedIntrinsic id)
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //
 // Arguments:
+//    comp               -- The compiler
+//    sig                -- The signature of the intrinsic
 //    className          -- The name of the class associated with the SimdIntrinsic to lookup
 //    methodName         -- The name of the method associated with the SimdIntrinsic to lookup
 //    enclosingClassName -- The name of the enclosing class
-//    sizeOfVectorT      -- The size of Vector<T> in bytes
 //
 // Return Value:
 //    The NamedIntrinsic associated with methodName and classId
@@ -55,10 +56,9 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(Compiler*         comp,
                                                CORINFO_SIG_INFO* sig,
                                                const char*       className,
                                                const char*       methodName,
-                                               const char*       enclosingClassName,
-                                               int               sizeOfVectorT)
+                                               const char*       enclosingClassName)
 {
-    SimdAsHWIntrinsicClassId classId = lookupClassId(className, enclosingClassName, sizeOfVectorT);
+    SimdAsHWIntrinsicClassId classId = lookupClassId(comp, className, enclosingClassName);
 
     if (classId == SimdAsHWIntrinsicClassId::Unknown)
     {
@@ -74,10 +74,45 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(Compiler*         comp,
         isInstanceMethod = true;
     }
 
-    if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+    if (classId == SimdAsHWIntrinsicClassId::Vector)
     {
-        return comp->IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
+        // We want to avoid doing anything that would unnecessarily trigger a recorded dependency against Vector<T>
+        // so we duplicate a few checks here to ensure this works smoothly for the static Vector class.
+
+        assert(!isInstanceMethod);
+
+        if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+        {
+            return comp->IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
+        }
+
+        var_types            retType         = JITtype2varType(sig->retType);
+        CorInfoType          simdBaseJitType = CORINFO_TYPE_UNDEF;
+        CORINFO_CLASS_HANDLE argClass        = NO_CLASS_HANDLE;
+
+        if (retType == TYP_STRUCT)
+        {
+            argClass = sig->retTypeSigClass;
+        }
+        else
+        {
+            assert(numArgs != 0);
+            argClass = comp->info.compCompHnd->getArgClass(sig, sig->args);
+        }
+
+        const char* argNamespaceName;
+        const char* argClassName = comp->getClassNameFromMetadata(argClass, &argNamespaceName);
+
+        classId = lookupClassId(comp, argClassName, nullptr);
+
+        if (classId == SimdAsHWIntrinsicClassId::Unknown)
+        {
+            return NI_Illegal;
+        }
+        assert(classId != SimdAsHWIntrinsicClassId::Vector);
     }
+
+    assert(strcmp(methodName, "get_IsHardwareAccelerated") != 0);
 
     for (int i = 0; i < (NI_SIMD_AS_HWINTRINSIC_END - NI_SIMD_AS_HWINTRINSIC_START - 1); i++)
     {
@@ -113,19 +148,17 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(Compiler*         comp,
 // lookupClassId: Gets the SimdAsHWIntrinsicClassId for a given class name and enclsoing class name
 //
 // Arguments:
+//    comp               -- The compiler
 //    className          -- The name of the class associated with the SimdAsHWIntrinsicClassId to lookup
 //    enclosingClassName -- The name of the enclosing class
-//    sizeOfVectorT      -- The size of Vector<T> in bytes
 //
 // Return Value:
 //    The SimdAsHWIntrinsicClassId associated with className and enclosingClassName
-SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(const char* className,
-                                                              const char* enclosingClassName,
-                                                              int         sizeOfVectorT)
+SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(Compiler*   comp,
+                                                              const char* className,
+                                                              const char* enclosingClassName)
 {
-    assert(className != nullptr);
-
-    if (enclosingClassName != nullptr)
+    if ((className == nullptr) || (enclosingClassName != nullptr))
     {
         return SimdAsHWIntrinsicClassId::Unknown;
     }
@@ -159,7 +192,11 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(const char* classN
 
             className += 6;
 
-            if (strcmp(className, "2") == 0)
+            if (className[0] == '\0')
+            {
+                return SimdAsHWIntrinsicClassId::Vector;
+            }
+            else if (strcmp(className, "2") == 0)
             {
                 return SimdAsHWIntrinsicClassId::Vector2;
             }
@@ -171,16 +208,18 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(const char* classN
             {
                 return SimdAsHWIntrinsicClassId::Vector4;
             }
-            else if ((className[0] == '\0') || (strcmp(className, "`1") == 0))
+            else if (strcmp(className, "`1") == 0)
             {
+                uint32_t vectorTByteLength = comp->getVectorTByteLength();
+
 #if defined(TARGET_XARCH)
-                if (sizeOfVectorT == 32)
+                if (vectorTByteLength == 32)
                 {
                     return SimdAsHWIntrinsicClassId::VectorT256;
                 }
 #endif // TARGET_XARCH
 
-                assert(sizeOfVectorT == 16);
+                assert(vectorTByteLength == 16);
                 return SimdAsHWIntrinsicClassId::VectorT128;
             }
             break;
@@ -655,6 +694,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             break;
         }
 
+        case NI_Quaternion_WithElement:
+        case NI_Vector2_WithElement:
+        case NI_Vector3_WithElement:
+        case NI_Vector4_WithElement:
         case NI_VectorT128_WithElement:
         case NI_VectorT256_WithElement:
         {
@@ -736,6 +779,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             break;
         }
 
+        case NI_Quaternion_WithElement:
+        case NI_Vector2_WithElement:
+        case NI_Vector3_WithElement:
+        case NI_Vector4_WithElement:
         case NI_VectorT128_WithElement:
         {
             assert(numArgs == 3);
@@ -1484,9 +1531,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
 
                 case NI_Quaternion_get_Item:
+                case NI_Quaternion_GetElement:
                 case NI_Vector2_get_Item:
+                case NI_Vector2_GetElement:
                 case NI_Vector3_get_Item:
+                case NI_Vector3_GetElement:
                 case NI_Vector4_get_Item:
+                case NI_Vector4_GetElement:
                 case NI_VectorT128_get_Item:
                 case NI_VectorT128_GetElement:
 #if defined(TARGET_XARCH)
@@ -1986,6 +2037,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
+                case NI_Quaternion_WithElement:
+                case NI_Vector2_WithElement:
+                case NI_Vector3_WithElement:
+                case NI_Vector4_WithElement:
                 case NI_VectorT128_WithElement:
 #if defined(TARGET_XARCH)
                 case NI_VectorT256_WithElement:
@@ -2222,8 +2277,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     if (copyBlkDst != nullptr)
     {
         assert(copyBlkSrc != nullptr);
-        GenTree* dest    = gtNewLoadValueNode(simdType, copyBlkDst);
-        GenTree* retNode = gtNewAssignNode(dest, copyBlkSrc);
+        GenTree* retNode = gtNewStoreValueNode(simdType, copyBlkDst, copyBlkSrc);
 
         return retNode;
     }

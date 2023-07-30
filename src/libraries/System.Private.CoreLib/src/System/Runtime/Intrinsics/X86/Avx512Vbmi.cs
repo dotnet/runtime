@@ -9,6 +9,7 @@ using System.Runtime.Intrinsics;
 namespace System.Runtime.Intrinsics.X86
 {
     /// <summary>This class provides access to X86 AVX512VBMI hardware instructions via intrinsics</summary>
+    [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Avx512Vbmi : Avx512BW
     {
@@ -16,6 +17,7 @@ namespace System.Runtime.Intrinsics.X86
 
         public static new bool IsSupported { get => IsSupported; }
 
+        [Intrinsic]
         public new abstract class VL : Avx512BW.VL
         {
             internal VL() { }
@@ -71,6 +73,7 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<sbyte> PermuteVar32x8x2(Vector256<sbyte> lower, Vector256<sbyte> indices, Vector256<sbyte> upper) => PermuteVar32x8x2(lower, indices, upper);
         }
 
+        [Intrinsic]
         public new abstract class X64 : Avx512BW.X64
         {
             internal X64() { }

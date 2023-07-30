@@ -82,6 +82,8 @@ target_link_libraries(
 if(%UseNativeAOTRuntime%)
 target_link_libraries(
     %ProjectName%
+    PRIVATE
     "-Wl,-u,_NativeAOT_StaticInitialization"
+    "-Wl,-segprot,__THUNKS,rx,rx"
 )
 endif()

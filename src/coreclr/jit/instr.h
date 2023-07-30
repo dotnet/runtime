@@ -180,8 +180,18 @@ enum insFlags : uint64_t
 
     KInstruction = 1ULL << 41,
 
+    // EVEX feature: embedded broadcast
+    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 42,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
+};
+
+enum insOpts: unsigned
+{
+    INS_OPTS_NONE,
+
+    INS_OPTS_EVEX_b
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -350,7 +360,7 @@ enum insOpts : unsigned
     INS_OPTS_JALR,   // see ::emitIns_J_R().
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
-    INS_OPTS_I,      // see ::emitIns_I_la().
+    INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
 };

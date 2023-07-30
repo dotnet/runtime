@@ -4683,32 +4683,49 @@ void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
 }
 
 //------------------------------------------------------------------------
-// genCodeForSelect: Produce code for a GT_SELECT node.
+// genCodeForSelect: Produce code for a GT_SELECT/GT_SELECT_INV/GT_SELECT_NEG node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForSelect(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_SELECT, GT_SELECTCC));
-    GenTree* opcond = nullptr;
-    if (tree->OperIs(GT_SELECT))
+    assert(tree->OperIs(GT_SELECT, GT_SELECTCC, GT_SELECT_INC, GT_SELECT_INCCC, GT_SELECT_INV, GT_SELECT_INVCC,
+                        GT_SELECT_NEG, GT_SELECT_NEGCC));
+    GenTree*    opcond = nullptr;
+    instruction ins    = INS_csel;
+    GenTree*    op1    = tree->gtOp1;
+    GenTree*    op2    = tree->gtOp2;
+
+    if (tree->OperIs(GT_SELECT_INV, GT_SELECT_INVCC))
+    {
+        ins = (op2 == nullptr) ? INS_cinv : INS_csinv;
+    }
+    else if (tree->OperIs(GT_SELECT_NEG, GT_SELECT_NEGCC))
+    {
+        ins = (op2 == nullptr) ? INS_cneg : INS_csneg;
+    }
+    else if (tree->OperIs(GT_SELECT_INC, GT_SELECT_INCCC))
+    {
+        ins = (op2 == nullptr) ? INS_cinc : INS_csinc;
+    }
+
+    if (tree->OperIs(GT_SELECT, GT_SELECT_INV, GT_SELECT_NEG))
     {
         opcond = tree->AsConditional()->gtCond;
         genConsumeRegs(opcond);
     }
 
-    emitter* emit = GetEmitter();
-
-    GenTree*  op1     = tree->gtOp1;
-    GenTree*  op2     = tree->gtOp2;
-    var_types op1Type = genActualType(op1);
-    var_types op2Type = genActualType(op2);
-    emitAttr  attr    = emitActualTypeSize(tree);
+    if (op2 != nullptr)
+    {
+        var_types op1Type = genActualType(op1);
+        var_types op2Type = genActualType(op2);
+        assert(genTypeSize(op1Type) == genTypeSize(op2Type));
+    }
 
     assert(!op1->isUsedFromMemory());
-    assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
+    emitter*     emit = GetEmitter();
     GenCondition cond;
 
     if (opcond != nullptr)
@@ -4719,92 +4736,62 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
     }
     else
     {
-        assert(tree->OperIs(GT_SELECTCC));
+        assert(tree->OperIs(GT_SELECTCC, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC));
         cond = tree->AsOpCC()->gtCondition;
     }
 
     assert(!op1->isContained() || op1->IsIntegralConst(0));
-    assert(!op2->isContained() || op2->IsIntegralConst(0));
+    assert(op2 == nullptr || !op2->isContained() || op2->IsIntegralConst(0));
 
     regNumber               targetReg = tree->GetRegNum();
     regNumber               srcReg1   = op1->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op1);
-    regNumber               srcReg2   = op2->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op2);
     const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
+    emitAttr                attr      = emitActualTypeSize(tree);
+    regNumber               srcReg2;
 
-    emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
-
-    // Some conditions require an additional condition check.
-    if (prevDesc.oper == GT_OR)
+    if (op2 == nullptr)
     {
-        emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, targetReg, JumpKindToInsCond(prevDesc.jumpKind2));
+        srcReg2 = srcReg1;
+        emit->emitIns_R_R_COND(ins, attr, targetReg, srcReg1, JumpKindToInsCond(prevDesc.jumpKind1));
     }
-    else if (prevDesc.oper == GT_AND)
+    else
     {
-        emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, targetReg, srcReg2, JumpKindToInsCond(prevDesc.jumpKind2));
+        srcReg2 = (op2->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op2));
+        emit->emitIns_R_R_R_COND(ins, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
+    }
+
+    // Some floating point comparision conditions require an additional condition check.
+    // These checks are emitted as a subsequent check using GT_AND or GT_OR nodes.
+    // e.g., using  GT_OR   => `dest = (cond1 || cond2) ? src1 : src2`
+    //              GT_AND  => `dest = (cond1 && cond2) ? src1 : src2`
+    // The GT_OR case results in emitting the following sequence of two csel instructions.
+    // csel  dest, src1, src2, cond1    # emitted previously
+    // csel  dest, src1, dest, cond2
+    //
+    if (prevDesc.oper == GT_AND)
+    {
+        // To ensure correctness with invert and negate variants of conditional select, the second instruction needs to
+        // be csinv or csneg respectively.
+        // dest = (cond1 && cond2) ? src1 : ~src2
+        // csinv  dest, src1, src2, cond1
+        // csinv  dest, dest, src2, cond2
+        //
+        // However, the other variants - increment and select, the second instruction needs to be csel.
+        // dest = (cond1 && cond2) ? src1 : src2++
+        // csinc  dest, src1, src2, cond1
+        // csel  dest, dest, src1 cond2
+        ins = ((ins == INS_csinv) || (ins == INS_csneg)) ? ins : INS_csel;
+        emit->emitIns_R_R_R_COND(ins, attr, targetReg, targetReg, srcReg2, JumpKindToInsCond(prevDesc.jumpKind2));
+    }
+    else if (prevDesc.oper == GT_OR)
+    {
+        // Similarly, the second instruction needs to be csinc while emitting conditional increment.
+        ins = (ins == INS_csinc) ? ins : INS_csel;
+        emit->emitIns_R_R_R_COND(ins, attr, targetReg, srcReg1, targetReg, JumpKindToInsCond(prevDesc.jumpKind2));
     }
 
     regSet.verifyRegUsed(targetReg);
     genProduceReg(tree);
-}
-
-//------------------------------------------------------------------------
-// genCodeForCinc: Produce code for a GT_CINC/GT_CINCCC node.
-//
-// Arguments:
-//    tree - the node
-//
-void CodeGen::genCodeForCinc(GenTreeOp* cinc)
-{
-    assert(cinc->OperIs(GT_CINC, GT_CINCCC));
-
-    GenTree* opcond = nullptr;
-    GenTree* op     = cinc->gtOp1;
-    if (cinc->OperIs(GT_CINC))
-    {
-        opcond = cinc->gtOp1;
-        op     = cinc->gtOp2;
-        genConsumeRegs(opcond);
-    }
-
-    emitter*  emit   = GetEmitter();
-    var_types opType = genActualType(op->TypeGet());
-    emitAttr  attr   = emitActualTypeSize(cinc->TypeGet());
-
-    assert(!op->isUsedFromMemory());
-    genConsumeRegs(op);
-
-    GenCondition cond;
-
-    if (cinc->OperIs(GT_CINC))
-    {
-        assert(!opcond->isContained());
-        // Condition has been generated into a register - move it into flags.
-        emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
-        cond = GenCondition::NE;
-    }
-    else
-    {
-        assert(cinc->OperIs(GT_CINCCC));
-        cond = cinc->AsOpCC()->gtCondition;
-    }
-    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
-    regNumber               targetReg = cinc->GetRegNum();
-    regNumber               srcReg;
-
-    if (op->isContained())
-    {
-        assert(op->IsIntegralConst(0));
-        srcReg = REG_ZR;
-    }
-    else
-    {
-        srcReg = op->GetRegNum();
-    }
-
-    assert(prevDesc.oper != GT_OR && prevDesc.oper != GT_AND);
-    emit->emitIns_R_R_COND(INS_cinc, attr, targetReg, srcReg, JumpKindToInsCond(prevDesc.jumpKind1));
-    regSet.verifyRegUsed(targetReg);
-    genProduceReg(cinc);
 }
 
 //------------------------------------------------------------------------
@@ -10361,53 +10348,6 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
     const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
     GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
                                   (int)shiftByImm, (int)srcBits);
-
-    genProduceReg(tree);
-}
-
-//------------------------------------------------------------------------
-// genCodeForCond: Generates the code sequence for a GenTree node that
-// represents a conditional instruction.
-//
-// Arguments:
-//    tree - conditional op
-//
-void CodeGen::genCodeForCond(GenTreeOp* tree)
-{
-    assert(tree->OperIs(GT_CSNEG_MI, GT_CNEG_LT));
-    assert(!(tree->gtFlags & GTF_SET_FLAGS));
-    genConsumeOperands(tree);
-
-    switch (tree->OperGet())
-    {
-        case GT_CSNEG_MI:
-        {
-            instruction ins  = INS_csneg;
-            insCond     cond = INS_COND_MI;
-
-            regNumber dstReg = tree->GetRegNum();
-            regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
-            regNumber op2Reg = tree->gtGetOp2()->GetRegNum();
-
-            GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cond);
-            break;
-        }
-
-        case GT_CNEG_LT:
-        {
-            instruction ins  = INS_cneg;
-            insCond     cond = INS_COND_LT;
-
-            regNumber dstReg = tree->GetRegNum();
-            regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
-
-            GetEmitter()->emitIns_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, cond);
-            break;
-        }
-
-        default:
-            unreached();
-    }
 
     genProduceReg(tree);
 }

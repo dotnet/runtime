@@ -60,7 +60,7 @@ namespace System.Linq
             return m;
         }
 
-        private ReadOnlyCollection<Expression> FixupQuotedArgs(MethodInfo mi, ReadOnlyCollection<Expression> argList)
+        private static ReadOnlyCollection<Expression> FixupQuotedArgs(MethodInfo mi, ReadOnlyCollection<Expression> argList)
         {
             ParameterInfo[] pis = mi.GetParameters();
             if (pis.Length > 0)
@@ -88,7 +88,7 @@ namespace System.Linq
             return argList;
         }
 
-        private Expression FixupQuotedExpression(Type type, Expression expression)
+        private static Expression FixupQuotedExpression(Type type, Expression expression)
         {
             Expression expr = expression;
             while (true)

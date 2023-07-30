@@ -1442,6 +1442,11 @@ UnwindOutOfCurrentManagedFrame:
         unwindFlags |= USFF_StopUnwindOnTransitionFrame;
     }
 
+    if ((m_dwFlags & GcStackWalkFlags) == GcStackWalkFlags)
+    {
+        unwindFlags |= USFF_GcUnwind;
+    }
+
     FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, unwindFlags, &m_RegDisplay,
                                                             &m_pPreviousTransitionFrame));
 

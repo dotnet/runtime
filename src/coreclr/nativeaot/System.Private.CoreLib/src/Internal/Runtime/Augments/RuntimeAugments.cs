@@ -67,33 +67,8 @@ namespace Internal.Runtime.Augments
         //==============================================================================================
 
         //
-        // Perform the equivalent of a "newobj", but without invoking any constructors. Other than the MethodTable, the result object is zero-initialized.
-        //
-        // Special cases:
-        //
-        //    Strings: The .ctor performs both the construction and initialization
-        //      and compiler special cases these.
-        //
-        //    Nullable<T>: the boxed result is the underlying type rather than Nullable so the constructor
-        //      cannot truly initialize it.
-        //
-        //    In these cases, this helper returns "null" and ConstructorInfo.Invoke() must deal with these specially.
-        //
-        public static object NewObject(RuntimeTypeHandle typeHandle)
-        {
-            EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (eeType.IsNullable
-                || eeType == EETypePtr.EETypePtrOf<string>()
-               )
-                return null;
-            if (eeType.IsByRefLike)
-                throw new System.Reflection.TargetException();
-            return RuntimeImports.RhNewObject(eeType);
-        }
-
-        //
         // Helper API to perform the equivalent of a "newobj" for any MethodTable.
-        // Unlike the NewObject API, this is the raw version that does not special case any MethodTable, and should be used with
+        // This is the raw version that does not special case any MethodTable, and should be used with
         // caution for very specific scenarios.
         //
         public static object RawNewObject(RuntimeTypeHandle typeHandle)

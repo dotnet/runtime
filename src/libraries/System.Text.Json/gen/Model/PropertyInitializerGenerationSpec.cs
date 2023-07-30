@@ -22,7 +22,9 @@ namespace System.Text.Json.SourceGeneration
     /// </remarks>
     public sealed record PropertyInitializerGenerationSpec
     {
-        public required PropertyGenerationSpec Property { get; init; }
+        public required string Name { get; init; }
+
+        public required TypeRef ParameterType { get; init; }
 
         public required int ParameterIndex { get; init; }
 

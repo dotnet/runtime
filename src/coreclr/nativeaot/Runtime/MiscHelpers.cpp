@@ -38,6 +38,7 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
+#include "RhConfig.h"
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
@@ -420,6 +421,13 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
 COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
 {
     return PalGetProcessCpuCount();
+}
+
+COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (char *** pResultKeys, char *** pResultValues))
+{
+    *pResultKeys = g_pRhConfig->GetKnobNames();
+    *pResultValues = g_pRhConfig->GetKnobValues();
+    return g_pRhConfig->GetKnobCount();
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)

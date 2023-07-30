@@ -1608,14 +1608,14 @@ namespace System.Xml.Schema
             return -1;
         }
 
-        private bool IsParticleEmptiable(XmlSchemaParticle particle)
+        private static bool IsParticleEmptiable(XmlSchemaParticle particle)
         {
             decimal minOccurs;
             CalculateEffectiveTotalRange(particle, out minOccurs, out _);
             return minOccurs == decimal.Zero;
         }
 
-        private void CalculateEffectiveTotalRange(XmlSchemaParticle particle, out decimal minOccurs, out decimal maxOccurs)
+        private static void CalculateEffectiveTotalRange(XmlSchemaParticle particle, out decimal minOccurs, out decimal maxOccurs)
         {
             if (particle is XmlSchemaElement || particle is XmlSchemaAny)
             {
@@ -2423,14 +2423,14 @@ namespace System.Xml.Schema
         }
 
 #if DEBUG
-        private string DumpContentModel(XmlSchemaParticle particle)
+        private static string DumpContentModel(XmlSchemaParticle particle)
         {
             StringBuilder sb = new StringBuilder();
             DumpContentModelTo(sb, particle);
             return sb.ToString();
         }
 
-        private void DumpContentModelTo(StringBuilder sb, XmlSchemaParticle particle)
+        private static void DumpContentModelTo(StringBuilder sb, XmlSchemaParticle particle)
         {
             if (particle is XmlSchemaElement)
             {
@@ -2512,7 +2512,7 @@ namespace System.Xml.Schema
         }
 #endif
 
-        private void BuildParticleContentModel(ParticleContentValidator contentValidator, XmlSchemaParticle particle)
+        private static void BuildParticleContentModel(ParticleContentValidator contentValidator, XmlSchemaParticle particle)
         {
             if (particle is XmlSchemaElement element)
             {

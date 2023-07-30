@@ -121,88 +121,8 @@ namespace System
             return result;
         }
 
-        public static string Concat<T>(IEnumerable<T> values)
-        {
-            ArgumentNullException.ThrowIfNull(values);
-
-            if (typeof(T) == typeof(char))
-            {
-                // Special-case T==char, as we can handle that case much more efficiently,
-                // and string.Concat(IEnumerable<char>) can be used as an efficient
-                // enumerable-based equivalent of new string(char[]).
-                using (IEnumerator<char> en = Unsafe.As<IEnumerable<char>>(values).GetEnumerator())
-                {
-                    if (!en.MoveNext())
-                    {
-                        // There weren't any chars.  Return the empty string.
-                        return Empty;
-                    }
-
-                    char c = en.Current; // save the first char
-
-                    if (!en.MoveNext())
-                    {
-                        // There was only one char.  Return a string from it directly.
-                        return CreateFromChar(c);
-                    }
-
-                    // Create the StringBuilder, add the chars we've already enumerated,
-                    // add the rest, and then get the resulting string.
-                    var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
-                    result.Append(c); // first value
-                    do
-                    {
-                        c = en.Current;
-                        result.Append(c);
-                    }
-                    while (en.MoveNext());
-                    return result.ToString();
-                }
-            }
-            else
-            {
-                using (IEnumerator<T> en = values.GetEnumerator())
-                {
-                    if (!en.MoveNext())
-                        return string.Empty;
-
-                    // We called MoveNext once, so this will be the first item
-                    T currentValue = en.Current;
-
-                    // Call ToString before calling MoveNext again, since
-                    // we want to stay consistent with the below loop
-                    // Everything should be called in the order
-                    // MoveNext-Current-ToString, unless further optimizations
-                    // can be made, to avoid breaking changes
-                    string? firstString = currentValue?.ToString();
-
-                    // If there's only 1 item, simply call ToString on that
-                    if (!en.MoveNext())
-                    {
-                        // We have to handle the case of either currentValue
-                        // or its ToString being null
-                        return firstString ?? string.Empty;
-                    }
-
-                    var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
-
-                    result.Append(firstString);
-
-                    do
-                    {
-                        currentValue = en.Current;
-
-                        if (currentValue != null)
-                        {
-                            result.Append(currentValue.ToString());
-                        }
-                    }
-                    while (en.MoveNext());
-
-                    return result.ToString();
-                }
-            }
-        }
+        public static string Concat<T>(IEnumerable<T> values) =>
+            JoinCore(ReadOnlySpan<char>.Empty, values);
 
         public static string Concat(IEnumerable<string?> values)
         {
@@ -891,48 +811,102 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
-            using (IEnumerator<T> en = values.GetEnumerator())
+            using (IEnumerator<T> e = values.GetEnumerator())
             {
-                if (!en.MoveNext())
+                if (!e.MoveNext())
                 {
+                    // If the enumerator is empty, just return an empty string.
                     return Empty;
                 }
 
-                // We called MoveNext once, so this will be the first item
-                T currentValue = en.Current;
-
-                // Call ToString before calling MoveNext again, since
-                // we want to stay consistent with the below loop
-                // Everything should be called in the order
-                // MoveNext-Current-ToString, unless further optimizations
-                // can be made, to avoid breaking changes
-                string? firstString = currentValue?.ToString();
-
-                // If there's only 1 item, simply call ToString on that
-                if (!en.MoveNext())
+                if (typeof(T) == typeof(char))
                 {
-                    // We have to handle the case of either currentValue
-                    // or its ToString being null
-                    return firstString ?? Empty;
-                }
+                    // Special-case T==char, as we can handle that case much more efficiently,
+                    // and string.Concat(IEnumerable<char>) can be used as an efficient
+                    // enumerable-based equivalent of new string(char[]).
 
-                var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
+                    IEnumerator<char> en = Unsafe.As<IEnumerator<char>>(e);
 
-                result.Append(firstString);
-
-                do
-                {
-                    currentValue = en.Current;
-
-                    result.Append(separator);
-                    if (currentValue != null)
+                    char c = en.Current; // save the first value
+                    if (!en.MoveNext())
                     {
-                        result.Append(currentValue.ToString());
+                        // There was only one char.  Return a string from it directly.
+                        return CreateFromChar(c);
                     }
-                }
-                while (en.MoveNext());
 
-                return result.ToString();
+                    // Create the builder, add the char we already enumerated,
+                    // add the rest, and then get the resulting string.
+                    var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
+                    result.Append(c); // first value
+                    do
+                    {
+                        if (!separator.IsEmpty)
+                        {
+                            result.Append(separator);
+                        }
+
+                        c = en.Current;
+                        result.Append(c);
+                    }
+                    while (en.MoveNext());
+                    return result.ToString();
+                }
+                else if (typeof(T).IsValueType && default(T) is ISpanFormattable)
+                {
+                    // Special-case value types that are ISpanFormattable, as we can implement those to avoid
+                    // all string allocations for the individual values.  We only do this for value types because
+                    // a) value types are much more likely to implement ISpanFormattable, and b) we can use
+                    // DefaultInterpolatedStringHandler to do all the heavy lifting, and it's more efficient
+                    // for value types as the checks it does for interface implementations are all elided.
+
+                    T value = e.Current; // save the first value
+                    if (!e.MoveNext())
+                    {
+                        // There was only one value. Return a string from it directly.
+                        return value!.ToString() ?? Empty;
+                    }
+
+                    var result = new DefaultInterpolatedStringHandler(0, 0, CultureInfo.CurrentCulture, stackalloc char[StackallocCharBufferSizeLimit]);
+                    result.AppendFormatted(value); // first value
+                    do
+                    {
+                        if (!separator.IsEmpty)
+                        {
+                            result.AppendFormatted(separator);
+                        }
+
+                        result.AppendFormatted(e.Current);
+                    }
+                    while (e.MoveNext());
+                    return result.ToStringAndClear();
+                }
+                else
+                {
+                    // For all other Ts, fall back to calling ToString on each and appending the resulting
+                    // string to a builder.
+
+                    string? firstString = e.Current?.ToString();  // save the first value
+                    if (!e.MoveNext())
+                    {
+                        return firstString ?? Empty;
+                    }
+
+                    var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
+
+                    result.Append(firstString);
+                    do
+                    {
+                        if (!separator.IsEmpty)
+                        {
+                            result.Append(separator);
+                        }
+
+                        result.Append(e.Current?.ToString());
+                    }
+                    while (e.MoveNext());
+
+                    return result.ToString();
+                }
             }
         }
 
@@ -963,6 +937,11 @@ namespace System
                         ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
                     }
                 }
+            }
+
+            if (totalLength == 0)
+            {
+                return Empty;
             }
 
             // Copy each of the strings into the result buffer, interleaving with the separator.

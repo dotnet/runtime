@@ -72,7 +72,7 @@ extends:
               runKind: micro_mono
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
-              timeoutInMinutes: 720 
+              timeoutInMinutes: 720
 
         # build mono on wasm
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -170,7 +170,7 @@ extends:
               runKind: micro_mono
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
-              timeoutInMinutes: 500 
+              timeoutInMinutes: 780
 
       # run coreclr Linux arm64 ampere microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -187,7 +187,7 @@ extends:
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
-              timeoutInMinutes: 500 
+              timeoutInMinutes: 780
 
       # run coreclr Linux arm64 ampere microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -204,7 +204,7 @@ extends:
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
-              timeoutInMinutes: 500 
+              timeoutInMinutes: 780
               pgoRunType: --dynamicpgo
 
       # run coreclr Windows arm64 microbenchmarks perf job
@@ -221,7 +221,7 @@ extends:
               projectFile: microbenchmarks.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-              logicalmachine: 'perfsurf' 
+              logicalmachine: 'perfsurf'
 
       # run coreclr Windows arm64 ampere microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -238,6 +238,7 @@ extends:
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
+              timeoutInMinutes: 500
 
       # run coreclr Windows arm64 ampere dynamic Pgo microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -255,6 +256,7 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               pgoRunType: -DynamicPgo
+              timeoutInMinutes: 500
 
         # run coreclr cloudvm microbenchmarks perf job
         # this run is added temporarily for measuring AVX-512 performance

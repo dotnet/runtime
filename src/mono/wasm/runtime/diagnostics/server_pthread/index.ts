@@ -6,7 +6,7 @@
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 import { PromiseAndController, assertNever } from "../../types/internal";
 import { pthread_self } from "../../pthreads/worker";
-import { Module, createPromiseController } from "../../globals";
+import { createPromiseController } from "../../globals";
 import cwraps from "../../cwraps";
 import { EventPipeSessionIDImpl } from "../shared/types";
 import { CharPtr } from "../../types/emscripten";
@@ -47,6 +47,7 @@ import {
     createBinaryCommandOKReply,
 } from "./ipc-protocol/serializer";
 import { mono_log_error, mono_log_info, mono_log_debug, mono_log_warn } from "../../logging";
+import { utf8ToString } from "../../strings";
 
 function addOneShotProtocolCommandEventListener(src: EventTarget): Promise<ProtocolCommandEvent> {
     return new Promise((resolve) => {
@@ -283,7 +284,7 @@ function parseProtocolCommand(data: ArrayBuffer | BinaryProtocolCommand): ParseC
 
 /// Called by the runtime  to initialize the diagnostic server workers
 export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUrlPtr: CharPtr): void {
-    const websocketUrl = Module.UTF8ToString(websocketUrlPtr);
+    const websocketUrl = utf8ToString(websocketUrlPtr);
     mono_log_debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
     let mock: PromiseAndController<Mock> | undefined = undefined;
     if (monoDiagnosticsMock && websocketUrl.startsWith("mock:")) {

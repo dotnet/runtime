@@ -232,7 +232,7 @@ typedef enum {
 #define MINT_IS_SIMD_CREATE(op) ((op) >= MINT_SIMD_V128_I1_CREATE && (op) <= MINT_SIMD_V128_I8_CREATE)
 
 // TODO Add more
-#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDPTR)
+#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDPTR || op == MINT_BOX)
 
 #define MINT_CALL_ARGS 2
 #define MINT_CALL_ARGS_SREG -2

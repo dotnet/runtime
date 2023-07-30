@@ -5,7 +5,7 @@ import type { MonoConfig, APIType } from "./types";
 
 import { mono_wasm_get_assembly_exports } from "./invoke-cs";
 import { mono_wasm_set_module_imports } from "./invoke-js";
-import { getB32, getF32, getF64, getI16, getI32, getI52, getI64Big, getI8, getU16, getU32, getU52, getU8, setB32, setF32, setF64, setI16, setI32, setI52, setI64Big, setI8, setU16, setU32, setU52, setU8 } from "./memory";
+import { getB32, getF32, getF64, getI16, getI32, getI52, getI64Big, getI8, getU16, getU32, getU52, getU8, localHeapViewF32, localHeapViewF64, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewI8, localHeapViewU16, localHeapViewU32, localHeapViewU8, setB32, setF32, setF64, setI16, setI32, setI52, setI64Big, setI8, setU16, setU32, setU52, setU8 } from "./memory";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
 import { mono_wasm_setenv } from "./startup";
 import { runtimeHelpers } from "./globals";
@@ -44,6 +44,15 @@ export function export_api(): any {
         getHeapI64Big: getI64Big,
         getHeapF32: getF32,
         getHeapF64: getF64,
+        localHeapViewU8: localHeapViewU8,
+        localHeapViewU16: localHeapViewU16,
+        localHeapViewU32: localHeapViewU32,
+        localHeapViewI8: localHeapViewI8,
+        localHeapViewI16: localHeapViewI16,
+        localHeapViewI32: localHeapViewI32,
+        localHeapViewI64Big: localHeapViewI64Big,
+        localHeapViewF32: localHeapViewF32,
+        localHeapViewF64: localHeapViewF64,
     };
     return api;
 }

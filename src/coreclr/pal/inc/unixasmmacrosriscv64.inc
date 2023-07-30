@@ -4,7 +4,7 @@
 .macro NESTED_ENTRY Name, Section, Handler
     LEAF_ENTRY \Name, \Section
     .ifnc \Handler, NoHandler
-        .cfi_personality 0x1c, C_FUNC(\Handler) // 0x1c == DW_EH_PE_pcrel | DW_EH_PE_sdata8
+        .cfi_personality 0x1B, C_FUNC(\Handler) // 0x1B == DW_EH_PE_pcrel | DW_EH_PE_sdata4
     .endif
 .endm
 

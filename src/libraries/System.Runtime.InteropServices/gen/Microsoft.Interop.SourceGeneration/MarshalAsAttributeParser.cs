@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 
@@ -96,6 +95,18 @@ namespace Microsoft.Interop
                         elementUnmanagedType = (UnmanagedType)namedArg.Value.Value!;
                         break;
                 }
+            }
+
+            // We'll support the UnmanagedType.Interface option, but we'll explicitly
+            // exclude ComImport types as they will not work as expected
+            // unless they are migrated to [GeneratedComInterface].
+            if (unmanagedType == UnmanagedType.Interface)
+            {
+                if (type is INamedTypeSymbol { IsComImport: true })
+                {
+                    return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+                }
+                return ComInterfaceMarshallingInfoProvider.CreateComInterfaceMarshallingInfo(_compilation, type);
             }
 
             if (isArrayType)

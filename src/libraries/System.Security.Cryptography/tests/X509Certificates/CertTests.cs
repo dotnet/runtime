@@ -587,6 +587,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void CertificateSha3Signed()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.RsaSha3_256SignedCertificate))
+            {
+                Assert.Equal("CN=potato", cert.Subject);
+
+                using (RSA rsa = cert.PublicKey.GetRSAPublicKey())
+                {
+                    Assert.NotNull(rsa);
+                }
+            }
+        }
+
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()

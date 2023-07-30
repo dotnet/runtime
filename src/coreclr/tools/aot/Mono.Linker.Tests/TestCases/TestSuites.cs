@@ -74,6 +74,20 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData (nameof (TestDatabase.UnreachableBlock), MemberType = typeof (TestDatabase))]
+		public void UnreachableBlock (string t)
+		{
+			switch (t) {
+			case "TryCatchBlocks":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.Warnings), MemberType = typeof (TestDatabase))]
 		public void Warnings (string t)
 		{

@@ -13,48 +13,48 @@ namespace System.Reflection.Emit
         public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.PropertyInfo[] namedProperties, object?[] propertyValues) { }
         public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.PropertyInfo[] namedProperties, object?[] propertyValues, System.Reflection.FieldInfo[] namedFields, object?[] fieldValues) { }
     }
-    public partial class ILGenerator
+    public abstract class ILGenerator
     {
-        internal ILGenerator() { }
-        public virtual int ILOffset { get { throw null; } }
-        public virtual void BeginCatchBlock(System.Type? exceptionType) { }
-        public virtual void BeginExceptFilterBlock() { }
-        public virtual System.Reflection.Emit.Label BeginExceptionBlock() { throw null; }
-        public virtual void BeginFaultBlock() { }
-        public virtual void BeginFinallyBlock() { }
-        public virtual void BeginScope() { }
+        protected ILGenerator() { }
+        public abstract int ILOffset { get; }
+        public abstract void BeginCatchBlock(System.Type? exceptionType);
+        public abstract void BeginExceptFilterBlock();
+        public abstract System.Reflection.Emit.Label BeginExceptionBlock();
+        public abstract void BeginFaultBlock();
+        public abstract void BeginFinallyBlock();
+        public abstract void BeginScope();
         public virtual System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType) { throw null; }
-        public virtual System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType, bool pinned) { throw null; }
-        public virtual System.Reflection.Emit.Label DefineLabel() { throw null; }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, byte arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, double arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, short arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, int arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, long arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.ConstructorInfo con) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.Label label) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.Label[] labels) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.LocalBuilder local) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.SignatureHelper signature) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.FieldInfo field) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.MethodInfo meth) { }
+        public abstract System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType, bool pinned);
+        public abstract System.Reflection.Emit.Label DefineLabel();
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, byte arg);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, double arg);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, short arg);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, int arg);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, long arg);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.ConstructorInfo con);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.Label label);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.Label[] labels);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.LocalBuilder local);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.SignatureHelper signature);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.FieldInfo field);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.MethodInfo meth);
         [System.CLSCompliantAttribute(false)]
         public void Emit(System.Reflection.Emit.OpCode opcode, sbyte arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, float arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, string str) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Type cls) { }
-        public virtual void EmitCall(System.Reflection.Emit.OpCode opcode, System.Reflection.MethodInfo methodInfo, System.Type[]? optionalParameterTypes) { }
-        public virtual void EmitCalli(System.Reflection.Emit.OpCode opcode, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Type[]? optionalParameterTypes) { }
-        public virtual void EmitCalli(System.Reflection.Emit.OpCode opcode, System.Runtime.InteropServices.CallingConvention unmanagedCallConv, System.Type? returnType, System.Type[]? parameterTypes) { }
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, float arg);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, string str);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Type cls);
+        public abstract void EmitCall(System.Reflection.Emit.OpCode opcode, System.Reflection.MethodInfo methodInfo, System.Type[]? optionalParameterTypes);
+        public abstract void EmitCalli(System.Reflection.Emit.OpCode opcode, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Type[]? optionalParameterTypes);
+        public abstract void EmitCalli(System.Reflection.Emit.OpCode opcode, System.Runtime.InteropServices.CallingConvention unmanagedCallConv, System.Type? returnType, System.Type[]? parameterTypes);
         public virtual void EmitWriteLine(System.Reflection.Emit.LocalBuilder localBuilder) { }
         public virtual void EmitWriteLine(System.Reflection.FieldInfo fld) { }
         public virtual void EmitWriteLine(string value) { }
-        public virtual void EndExceptionBlock() { }
-        public virtual void EndScope() { }
-        public virtual void MarkLabel(System.Reflection.Emit.Label loc) { }
+        public abstract void EndExceptionBlock();
+        public abstract void EndScope();
+        public abstract void MarkLabel(System.Reflection.Emit.Label loc);
         public virtual void ThrowException([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type excType) { }
-        public virtual void UsingNamespace(string usingNamespace) { }
+        public abstract void UsingNamespace(string usingNamespace);
     }
     public readonly partial struct Label : System.IEquatable<System.Reflection.Emit.Label>
     {

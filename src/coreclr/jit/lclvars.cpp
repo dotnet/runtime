@@ -1756,8 +1756,8 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     structPromotionInfo = lvaStructPromotionInfo(typeHnd);
 
 #if defined(FEATURE_SIMD)
-    // maxSIMDStructBytes() represents the size of the largest primitive type that we can struct promote.
-    const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * compiler->maxSIMDStructBytes();
+    // getMaxVectorByteLength() represents the size of the largest primitive type that we can struct promote.
+    const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * compiler->getMaxVectorByteLength();
 #else  // !FEATURE_SIMD
     // sizeof(double) represents the size of the largest primitive type that we can struct promote.
     const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
@@ -2599,11 +2599,8 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
 //    that escape to calls leave the local in question address-exposed. For this very special case of
 //    a return buffer, however, it is known that the callee will not do anything with it except write
 //    to it, once. As such, we handle addresses of locals that represent return buffers specially: we
-//    *do not* mark the local address-exposed, instead saving the address' "Use*" in the call node, and
-//    treat the call much like an "ASG(IND(addr), ...)" node throughout the compilation. A complicating
-//    factor here is that the address can be moved to the late args list, and we have to fetch it from
-//    the ASG setup node in that case. In the future, we should make it such that these addresses do
-//    not ever need temps (currently they may because of conservative GLOB_REF setting on FIELD nodes).
+//    *do not* mark the local address-exposed and treat the call much like a local store node throughout
+//    the compilation.
 //
 //    TODO-ADDR-Bug: currently, we rely on these locals not being present in call argument lists,
 //    outside of the buffer address argument itself, as liveness - currently - treats the location node
@@ -2611,7 +2608,6 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
 //    rather arbitrarily. We should fix liveness to treat the call as the definition point instead and
 //    enable this optimization for "!lvIsTemp" locals.
 //
-
 void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
@@ -3564,6 +3560,7 @@ void Compiler::lvaSortByRefCount()
 
         // Start by assuming that the variable will be tracked.
         varDsc->lvTracked = 1;
+        INDEBUG(varDsc->lvTrackedWithoutIndex = 0);
 
         if (varDsc->lvRefCnt(lvaRefCountState) == 0)
         {
@@ -5289,7 +5286,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
     if (opts.IsOSR())
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // Stack offset includes Tier0 frame.
         //
         JITDUMP("--- delta bump %d for OSR + Tier0 frame\n", info.compPatchpointInfo->TotalFrameSize());
@@ -5394,7 +5391,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64) || defined(TARGET_RISCV64)
     // We normally add alignment below the locals between them and the outgoing
     // arg space area. When we store fp/lr(ra) at the bottom, however, this will
     // be below the alignment. So we should not apply the alignment adjustment to
@@ -5406,7 +5403,14 @@ void Compiler::lvaFixVirtualFrameOffsets()
     {
         lvaTable[lvaRetAddrVar].SetStackOffset(REGSIZE_BYTES);
     }
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#elif defined(TARGET_LOONGARCH64)
+    assert(codeGen->isFramePointerUsed());
+    if (lvaRetAddrVar != BAD_VAR_NUM)
+    {
+        // For LoongArch64, the RA is below the fp. see the `genPushCalleeSavedRegisters`
+        lvaTable[lvaRetAddrVar].SetStackOffset(-REGSIZE_BYTES);
+    }
+#endif // !TARGET_LOONGARCH64
 }
 
 #ifdef TARGET_ARM
@@ -6192,13 +6196,17 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
     }
 
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_LOONGARCH64)
+
+    assert(compCalleeRegsPushed >= 2);
+
+#elif defined(TARGET_RISCV64)
 
     // Subtract off FP and RA.
     assert(compCalleeRegsPushed >= 2);
     stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
 
-#else // !TARGET_LOONGARCH64 !TARGET_RISCV64
+#else // !TARGET_RISCV64
 #ifdef TARGET_ARM
     // On ARM32 LR is part of the pushed registers and is always stored at the
     // top.
@@ -6209,7 +6217,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif
 
     stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
-#endif // !TARGET_LOONGARCH64 !TARGET_RISCV64
+#endif // !TARGET_RISCV64
 
     // (2) Account for the remainder of the frame
     //
@@ -6931,10 +6939,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_ARM64
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64)
     assert(isFramePointerUsed()); // Note that currently we always have a frame pointer
     stkOffs -= 2 * REGSIZE_BYTES;
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_RISCV64
 
 #if FEATURE_FIXED_OUT_ARGS
     if (lvaOutgoingArgSpaceSize > 0)
@@ -6952,9 +6960,14 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
+#ifdef TARGET_LOONGARCH64
+    // For LoongArch64, CalleeSavedRegs are at bottom.
+    int pushedCount = 0;
+#else
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address
     // and the pushed frame pointer register which for some strange reason isn't part of 'compCalleeRegsPushed'.
     int pushedCount = compCalleeRegsPushed;
+#endif
 
 #ifdef TARGET_ARM64
     if (info.compIsVarArgs)
@@ -7806,7 +7819,7 @@ unsigned Compiler::lvaFrameSize(FrameLayoutState curState)
     if (compFloatingPointUsed)
         compCalleeRegsPushed += CNT_CALLEE_SAVED_FLOAT;
 
-    compCalleeRegsPushed++; // we always push LR/RA.  See genPushCalleeSavedRegisters
+    compCalleeRegsPushed++; // we always push LR or RA. See genPushCalleeSavedRegisters
 #elif defined(TARGET_AMD64)
     if (compFloatingPointUsed)
     {
@@ -7843,7 +7856,7 @@ unsigned Compiler::lvaFrameSize(FrameLayoutState curState)
     {
         calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;
     }
-    calleeSavedRegMaxSz += REGSIZE_BYTES; // we always push LR/RA.  See genPushCalleeSavedRegisters
+    calleeSavedRegMaxSz += REGSIZE_BYTES; // we always push LR or RA. See genPushCalleeSavedRegisters
 #endif
 
     result = compLclFrameSize + calleeSavedRegMaxSz;
@@ -7930,7 +7943,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         offset += codeGen->genCallerSPtoInitialSPdelta();
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     if (forRootFrame && opts.IsOSR())
     {
         const PatchpointInfo* const ppInfo = info.compPatchpointInfo;
@@ -7949,7 +7962,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         //
         const int adjustment = ppInfo->TotalFrameSize() + REGSIZE_BYTES;
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
         const int adjustment = ppInfo->TotalFrameSize();
 #endif

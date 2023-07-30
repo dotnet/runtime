@@ -697,14 +697,14 @@ namespace System.Threading
             Debug.Assert(asyncWaiter is not null, "Waiter should have been constructed");
             Debug.Assert(Monitor.IsEntered(m_lockObjAndDisposed), "Requires the lock be held");
 
-            await new ConfiguredNoThrowAwaiter<bool>(asyncWaiter.WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout), cancellationToken));
+            await ((Task)asyncWaiter.WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout), cancellationToken)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
             if (cancellationToken.IsCancellationRequested)
             {
                 // If we might be running as part of a cancellation callback, force the completion to be asynchronous
                 // so as to maintain semantics similar to when no token is passed (neither Release nor Cancel would invoke
                 // continuations off of this task).
-                await TaskScheduler.Default;
+                await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
             }
 
             if (asyncWaiter.IsCompleted)
@@ -731,20 +731,6 @@ namespace System.Threading
             // The waiter had already been removed, which means it's already completed or is about to
             // complete, so let it, and don't return until it does.
             return await asyncWaiter.ConfigureAwait(false);
-        }
-
-        // TODO https://github.com/dotnet/runtime/issues/22144: Replace with official nothrow await solution once available.
-        /// <summary>Awaiter used to await a task.ConfigureAwait(false) but without throwing any exceptions for faulted or canceled tasks.</summary>
-        private readonly struct ConfiguredNoThrowAwaiter<T> : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
-        {
-            private readonly Task<T> _task;
-            public ConfiguredNoThrowAwaiter(Task<T> task) => _task = task;
-            public ConfiguredNoThrowAwaiter<T> GetAwaiter() => this;
-            public bool IsCompleted => _task.IsCompleted;
-            public void GetResult() => _task.MarkExceptionsAsHandled();
-            public void OnCompleted(Action continuation) => TaskAwaiter.OnCompletedInternal(_task, continuation, continueOnCapturedContext: false, flowExecutionContext: true);
-            public void UnsafeOnCompleted(Action continuation) => TaskAwaiter.OnCompletedInternal(_task, continuation, continueOnCapturedContext: false, flowExecutionContext: false);
-            public void AwaitUnsafeOnCompleted(IAsyncStateMachineBox box) => TaskAwaiter.UnsafeOnCompletedInternal(_task, box, continueOnCapturedContext: false);
         }
 
         /// <summary>

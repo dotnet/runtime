@@ -3,8 +3,8 @@
 
 // Keep this file in sync with mintops.def. The order and values need to match exactly.
 
-import { Module } from "./globals";
 import cwraps from "./cwraps";
+import { utf8ToString } from "./strings";
 
 export const enum MintOpArgType {
     MintOpNoArgs = 0,
@@ -56,7 +56,7 @@ export function getOpcodeName(opcode: number): string {
     let result = opcodeNameCache[opcode];
     if (typeof (result) !== "string") {
         const pName = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Name);
-        opcodeNameCache[opcode] = result = Module.UTF8ToString(<any>pName);
+        opcodeNameCache[opcode] = result = utf8ToString(<any>pName);
     }
     return result;
 }

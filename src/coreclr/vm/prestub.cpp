@@ -30,10 +30,6 @@
 #include "clrtocomcall.h"
 #endif
 
-#ifdef FEATURE_STACK_SAMPLING
-#include "stacksampler.h"
-#endif
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif
@@ -857,10 +853,6 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         }
 
     }
-
-#ifdef FEATURE_STACK_SAMPLING
-    StackSampler::RecordJittingInfo(this, flags);
-#endif // FEATURE_STACK_SAMPLING
 
 #ifdef PROFILING_SUPPORTED
     {

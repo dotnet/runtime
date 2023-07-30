@@ -125,7 +125,7 @@ namespace System
             return new ReadOnlySpan<string>(ret).ToArray();
         }
 
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use Enum.GetValues<T> or the GetEnumValuesAsUnderlyingType method instead.")]
         public override Array GetEnumValues()
         {
             if (!IsActualEnum)
@@ -731,7 +731,7 @@ namespace System
 
         private static void ThrowIfTypeNeverValidGenericArgument(RuntimeType type)
         {
-            if (type.IsPointer || type.IsByRef || type == typeof(void))
+            if (type.IsPointer || type.IsFunctionPointer || type.IsByRef || type == typeof(void))
                 throw new ArgumentException(
                     SR.Format(SR.Argument_NeverValidGenericArgument, type));
         }

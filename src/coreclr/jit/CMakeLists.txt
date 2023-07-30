@@ -160,6 +160,7 @@ set( JIT_SOURCES
   phase.cpp
   promotion.cpp
   promotiondecomposition.cpp
+  promotionliveness.cpp
   rangecheck.cpp
   rationalize.cpp
   redundantbranchopts.cpp
