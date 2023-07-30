@@ -242,12 +242,12 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
-        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageContentsOutParam"/>
-        internal static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallContentsOutParam =
+        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue"/>
+        public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallReturnValue =
             new DiagnosticDescriptor(
                 Ids.InvalidLibraryImportAttributeUsage,
                 GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
-                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageContentsOutParam)),
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);

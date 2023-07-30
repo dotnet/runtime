@@ -304,49 +304,12 @@ namespace Microsoft.Interop
                         })
                 };
             }
+
             // Ensure the size of collections are known at marshal / unmarshal in time.
             // A collection that is marshalled in cannot have a size that is an 'out' parameter.
-            foreach (var parameter in signatureContext.ManagedParameters)
+            foreach (TypePositionInfo parameter in signatureContext.ManagedParameters)
             {
-                if (parameter.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
-                    && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo
-                    && !(parameter.RefKind is RefKind.Out
-                        || parameter.ByValueContentsMarshalKind is ByValueContentsMarshalKind.Out
-                        || parameter.ManagedIndex is TypePositionInfo.ReturnIndex))
-                {
-                    if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is RefKind.Out)
-                    {
-                        Location location = TypePositionInfo.GetLocation(parameter, symbol);
-                        generatorDiagnostics.ReportDiagnostic(
-                            DiagnosticInfo.Create(
-                                GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam,
-                                location,
-                                parameter.InstanceIdentifier,
-                                countInfo.ElementInfo.InstanceIdentifier));
-                        continue;
-                    }
-                    else if (countInfo.ElementInfo.ByValueContentsMarshalKind is ByValueContentsMarshalKind.Out)
-                    {
-                        Location location = TypePositionInfo.GetLocation(parameter, symbol);
-                        generatorDiagnostics.ReportDiagnostic(
-                            DiagnosticInfo.Create(
-                                GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallContentsOutParam,
-                                location,
-                                parameter.InstanceIdentifier,
-                                countInfo.ElementInfo.InstanceIdentifier));
-                        continue;
-                    }
-                    else if (countInfo.ElementInfo.ManagedIndex is TypePositionInfo.ReturnIndex)
-                    {
-                        Location location = TypePositionInfo.GetLocation(parameter, symbol);
-                        generatorDiagnostics.ReportDiagnostic(
-                            DiagnosticInfo.Create(
-                                GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue,
-                                location,
-                                parameter.InstanceIdentifier));
-                        continue;
-                    }
-                }
+                ValidateCountInfoAvailableAtCall(parameter, generatorDiagnostics, symbol);
             }
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
@@ -376,6 +339,41 @@ namespace Microsoft.Interop
                 declaringType,
                 generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
                 ComInterfaceDispatchMarshallingInfo.Instance);
+        }
+
+        /// <summary>
+        /// Ensure that the count of a collection is available at call time if the parameter is not an out parameter.
+        /// It only looks at an indirection level of 0 (the size of the outer array), so there are some holes in
+        /// analysis if the parameter is a multidimensional array, but that case seems very unlikely to be hit.
+        /// </summary>
+        private static void ValidateCountInfoAvailableAtCall(TypePositionInfo info, GeneratorDiagnosticsBag generatorDiagnostics, IMethodSymbol symbol)
+        {
+            if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
+                && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo
+                && !(info.RefKind is RefKind.Out
+                    || info.ManagedIndex is TypePositionInfo.ReturnIndex))
+            {
+                if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is RefKind.Out)
+                {
+                    Location location = TypePositionInfo.GetLocation(info, symbol);
+                    generatorDiagnostics.ReportDiagnostic(
+                        DiagnosticInfo.Create(
+                            GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam,
+                            location,
+                            info.InstanceIdentifier,
+                            countInfo.ElementInfo.InstanceIdentifier));
+                }
+                else if (countInfo.ElementInfo.ManagedIndex is TypePositionInfo.ReturnIndex)
+                {
+                    Location location = TypePositionInfo.GetLocation(info, symbol);
+                    generatorDiagnostics.ReportDiagnostic(
+                        DiagnosticInfo.Create(
+                            GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue,
+                            location,
+                            info.InstanceIdentifier));
+                }
+                // If the parameter is multidimensional and a higher indirection level parameter is ByValue [Out], then we should warn.
+            }
         }
 
         private static MarshalDirection GetDirectionFromOptions(ComInterfaceOptions options)

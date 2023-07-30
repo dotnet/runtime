@@ -445,7 +445,7 @@ namespace Microsoft.Interop
                 });
 
         /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam"/>
-        internal static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallOutParam =
+        public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallOutParam =
             new DiagnosticDescriptor(
                 Ids.InvalidGeneratedComInterfaceAttributeUsage,
                 GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
@@ -455,17 +455,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true);
 
         /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageContentsOutParam"/>
-        internal static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallContentsOutParam =
-            new DiagnosticDescriptor(
-                Ids.InvalidGeneratedComInterfaceAttributeUsage,
-                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
-                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageContentsOutParam)),
-                Category,
-                DiagnosticSeverity.Warning,
-                isEnabledByDefault: true);
-
-        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageContentsOutParam"/>
-        internal static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallReturnValue =
+        public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallReturnValue =
             new DiagnosticDescriptor(
                 Ids.InvalidGeneratedComInterfaceAttributeUsage,
                 GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),

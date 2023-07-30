@@ -68,10 +68,13 @@ namespace ComInterfaceGenerator.Tests
             public int GetInt() => data;
 
             public string GetName() => myName;
-
+            [return: MarshalUsing(typeof(Utf16StringMarshaller))]
+            public string asdfasdf([MarshalUsing(CountElementName = "size2", ElementIndirectionDepth = 2), MarshalUsing(CountElementName = "size11", ElementIndirectionDepth = 1), MarshalUsing(CountElementName = "size", ElementIndirectionDepth = 0)] int[][][] asdf, [MarshalUsing(CountElementName = "size1", ElementIndirectionDepth = 1), MarshalUsing(CountElementName = "size0")] int[][] size2, [MarshalUsing(CountElementName = "size")] int[] size1, [MarshalUsing(CountElementName = "size0")] int[] size11, int size, int size0) => throw new NotImplementedException();
             public void SetInt(int n) => data = n;
 
             public void SetName(string name) => myName = name;
+            [return: MarshalUsing(typeof(Utf16StringMarshaller))]
+            public string asdfasdf([MarshalUsing(CountElementName = "size2", ElementIndirectionDepth = 2), MarshalUsing(CountElementName = "size11", ElementIndirectionDepth = 1), MarshalUsing(CountElementName = "size", ElementIndirectionDepth = 0)] ref int[][][] asdf, [MarshalUsing(CountElementName = "size1", ElementIndirectionDepth = 1), MarshalUsing(CountElementName = "size0")] ref int[][] size2, [MarshalUsing(CountElementName = "size")] ref int[] size1, [MarshalUsing(CountElementName = "size0")] ref int[] size11, ref int size, ref int size0) => throw new NotImplementedException();
         }
 
         /// <summary>

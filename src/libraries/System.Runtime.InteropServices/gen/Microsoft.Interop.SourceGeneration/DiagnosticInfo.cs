@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -58,5 +59,7 @@ namespace Microsoft.Interop
                 MessageArgs = messageArgs.Select(o => o.ToString()).ToSequenceEqualImmutableArray()
             };
         }
+
+        internal static DiagnosticInfo Create(object sizeOfInCollectionMustBeDefinedAtCallOutParam, Location location, string instanceIdentifier1, string instanceIdentifier2) => throw new NotImplementedException();
     }
 }

@@ -706,9 +706,6 @@
   <data name="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam" xml:space="preserve">
     <value>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</value>
   </data>
-  <data name="SizeOfCollectionMustBeKnownAtMarshalTimeMessageContentsOutParam" xml:space="preserve">
-    <value>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' has 'OutAttribute'.</value>
-  </data>
   <data name="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue" xml:space="preserve">
     <value>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</value>
   </data>

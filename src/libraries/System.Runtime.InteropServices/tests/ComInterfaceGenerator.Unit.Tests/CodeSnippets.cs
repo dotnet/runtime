@@ -89,7 +89,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [CustomMarshaller(typeof(IntStruct), MarshalMode.Default, typeof(IntStructMarshaller))]
             internal static class IntStructMarshaller
             {
-                public static nint ConvertToUnmanaged(int managed) => (nint)0;
+                public static nint ConvertToUnmanaged(IntStruct managed) => (nint)0;
                 public static IntStruct ConvertToManaged(nint unmanaged) => default;
             }
             """;
@@ -271,13 +271,15 @@ namespace ComInterfaceGenerator.Unit.Tests
         public string CollectionTypeMarshallingBasic((string parameterType, string parameterModifiers, string[] countNames) returnType, params (string parameterType, string parameterModifiers, string parameterName, string[] countNames)[] parameters)
         {
             List<string> parameterSources = new();
-            int i = 0;
+            int i = 1;
             foreach (var (parameterType, parameterModifiers, parameterName, countNames) in parameters)
             {
                 List<string> marshalUsings = new();
+                int j = 0;
                 foreach (var countName in countNames)
                 {
-                    marshalUsings.Add($"[MarshalUsing(ElementCountName = nameof({countName}))]");
+                    marshalUsings.Add($"[MarshalUsing(CountElementName = {countName}, ElementIndirectionDepth = {j})]");
+                    j++;
                 }
                 parameterSources.Add($$"""
                     {{string.Join(' ', marshalUsings)}} {{parameterModifiers}} {{parameterType}} {|#{{i}}:{{parameterName}}|}
@@ -290,7 +292,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 var (parameterType, parameterModifiers, countNames) = returnType;
                 foreach (var countName in countNames)
                 {
-                    marshalUsings.Add($"[return: MarshalUsing(ElementCountName = nameof({countName}))]");
+                    marshalUsings.Add($"[return: MarshalUsing(CountElementName = nameof({countName}))]");
                 }
                 returnTypeSource = $"{string.Join(' ', marshalUsings)} {parameterModifiers} {parameterType}";
             }
@@ -306,7 +308,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 partial interface INativeAPI
                 {
                     {{VirtualMethodIndex(0)}}
-                    {{returnTypeSource}} Method({{parametersSource}});
+                    {{returnTypeSource}} {|#0:Method|}({{parametersSource}});
                 }
             """;
         }

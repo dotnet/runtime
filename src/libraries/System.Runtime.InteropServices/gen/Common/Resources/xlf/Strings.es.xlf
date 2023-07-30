@@ -987,11 +987,6 @@
         <target state="translated">Un tipo abstracto derivado de “SafeHandle” no se puede serializar por referencia. El tipo proporcionado debe ser concreto.</target>
         <note />
       </trans-unit>
-      <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageContentsOutParam">
-        <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' has 'OutAttribute'.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' has 'OutAttribute'.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
         <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</target>
