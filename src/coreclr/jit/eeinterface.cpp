@@ -276,7 +276,8 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter* printer, CORINFO_CLASS_HANDL
     }
     else if (typ == CORINFO_TYPE_CTARG)
     {
-        eePrintConstValue(printer, info.compCompHnd->getConstValueType(clsHnd), info.compCompHnd->getConstValue(clsHnd));
+        eePrintConstValue(printer, info.compCompHnd->getConstValueType(clsHnd),
+                          info.compCompHnd->getConstValue(clsHnd));
     }
     else
     {
