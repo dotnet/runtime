@@ -2965,8 +2965,13 @@ namespace System
         /// up to the last valid character.
         /// </param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
-        /// <param name="charsConsumed">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
+        /// <param name="charsConsumed">When this method returns, contains the number of bytes that were consumed in <paramref name="source"/>.</param>
         /// <returns>true if the conversion was successful; otherwise, false.</returns>
+        /// <remarks> The return value can be as follows:
+        /// - <see cref="System.Buffers.OperationStatus.Done" />: <paramref name="source" /> was successfully and completely converted into <paramref name="destination" />.
+        /// - <see cref="System.Buffers.OperationStatus.DestinationTooSmall" />: There is not enough space in <paramref name="destination" /> to decompress <paramref name="source" />.
+        /// - <see cref="System.Buffers.OperationStatus.NeedMoreData" />: The converting action is partially done. At least one (or any odd) more byte is required to complete the converting task. This method should be called again with more input to convert.
+        /// - <see cref="System.Buffers.OperationStatus.InvalidData" />: The data in <paramref name="source" /> is invalid and could not be converted.</remarks>
         /// <exception cref="ArgumentNullException">Passed string <paramref name="source"/> is null.</exception>
         public static OperationStatus FromHexString(string source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
         {
@@ -2985,8 +2990,13 @@ namespace System
         /// up to the last valid character.
         /// </param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
-        /// <param name="charsConsumed">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
-        /// <returns>true if the conversion was successful; otherwise, false.</returns>
+        /// <param name="charsConsumed">When this method returns, contains the number of chars that were consumed from <paramref name="source"/>.</param>
+        /// <returns>One of the enumeration values that indicates the status of the decompression operation.</returns>
+        /// <remarks> The return value can be as follows:
+        /// - <see cref="System.Buffers.OperationStatus.Done" />: <paramref name="source" /> was successfully and completely converted into <paramref name="destination" />.
+        /// - <see cref="System.Buffers.OperationStatus.DestinationTooSmall" />: There is not enough space in <paramref name="destination" /> to decompress <paramref name="source" />.
+        /// - <see cref="System.Buffers.OperationStatus.NeedMoreData" />: The converting action is partially done. At least one (or any odd) more byte is required to complete the converting task. This method should be called again with more input to convert.
+        /// - <see cref="System.Buffers.OperationStatus.InvalidData" />: The data in <paramref name="source" /> is invalid and could not be converted.</remarks>
         public static OperationStatus FromHexString(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
         {
             (int quotient, int remainder) = Math.DivRem(source.Length, 2);
