@@ -77,8 +77,15 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(data, value);
             obj.SwapArray(ref data, data.Length);
             obj.PassIn(in data, data.Length);
-            // https://github.com/dotnet/runtime/issues/89265
-            //obj.Double(data, data.Length);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89265")]
+        public void IIntArray_Failing()
+        {
+            var obj = CreateWrapper<IIntArrayImpl, IIntArray>();
+            int[] data = new int[] { 1, 2, 3 };
+            obj.Double(data, data.Length);
         }
 
         [Fact]
@@ -109,6 +116,7 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88111")]
         public void ICollectionMarshallingFails()
         {
             var obj = CreateWrapper<ICollectionMarshallingFailsImpl, ICollectionMarshallingFails>();
@@ -118,21 +126,16 @@ namespace ComInterfaceGenerator.Tests
             );
 
             Assert.Throws<ArgumentException>(() =>
+                _ = obj.Get(out _)
+            );
+
+            Assert.Throws<ArgumentException>(() =>
                 obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 }, 10)
             );
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/88111")]
-        public void ICollectionMarshallingFails2()
-        {
-            var obj = CreateWrapper<ICollectionMarshallingFailsImpl, ICollectionMarshallingFails>();
-            Assert.Throws<ArgumentException>(() =>
-                _ = obj.Get(out _)
-            );
-        }
-
-        [Fact]
         public void IJaggedArrayMarshallingFails()
         {
             var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
@@ -140,22 +143,15 @@ namespace ComInterfaceGenerator.Tests
             Assert.Throws<ArgumentException>(() =>
                 _ = obj.GetConstSize()
             );
+
+            Assert.Throws<ArgumentException>(() =>
+                _ = obj.Get(out _, out _)
+            );
             var array = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5, }, new int[] { 6, 7, 8, 9 } };
             var widths = new int[] { 3, 2, 4 };
             var length = 3;
             Assert.Throws<ArgumentException>(() =>
                 obj.Set(array, widths, length)
-            );
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/88111")]
-        public void IJaggedArrayMarshallingFails2()
-        {
-            var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
-
-            Assert.Throws<ArgumentException>(() =>
-                _ = obj.Get(out _, out _)
             );
         }
 
@@ -183,11 +179,6 @@ namespace ComInterfaceGenerator.Tests
             {
                 obj.OutParam(out strings);
             });
-            // https://github.com/dotnet/runtime/issues/87845
-            //Assert.Throws<ArgumentException>(() =>
-            //{
-            //    obj.ByValueOutParam(strings);
-            //});
             Assert.Throws<ArgumentException>(() =>
             {
                 obj.ByValueInOutParam(strings);
@@ -195,6 +186,18 @@ namespace ComInterfaceGenerator.Tests
             Assert.Throws<ArgumentException>(() =>
             {
                 _ = obj.ReturnValue();
+            });
+        }
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/87845")]
+        [Fact]
+        public void IStringArrayMarshallingFails_Failing()
+        {
+            var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
+
+            var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.ByValueOutParam(strings);
             });
         }
     }
