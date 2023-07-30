@@ -649,9 +649,9 @@ public:
     void dmpIsConstValue(DWORDLONG key, DWORD value);
     bool repIsConstValue(CORINFO_CLASS_HANDLE cls);
 
-    void recGetConstValue(CORINFO_CLASS_HANDLE cls, uint64_t result);
-    void dmpGetConstValue(DWORDLONG key, uint64_t value);
-    uint64_t repGetConstValue(CORINFO_CLASS_HANDLE cls);
+    void recGetConstValue(CORINFO_CLASS_HANDLE cls, DWORDLONG result);
+    void dmpGetConstValue(DWORDLONG key, DWORDLONG value);
+    DWORDLONG repGetConstValue(CORINFO_CLASS_HANDLE cls);
 
     void recGetConstValueType(CORINFO_CLASS_HANDLE cls, CorInfoType result);
     void dmpGetConstValueType(DWORDLONG key, DWORD value);

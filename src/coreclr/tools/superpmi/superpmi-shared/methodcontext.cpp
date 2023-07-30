@@ -5169,25 +5169,25 @@ bool MethodContext::repIsConstValue(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
-void MethodContext::recGetConstValue(CORINFO_CLASS_HANDLE cls, uint64_t result)
+void MethodContext::recGetConstValue(CORINFO_CLASS_HANDLE cls, DWORDLONG result)
 {
     if (GetConstValue == nullptr)
-        GetConstValue = new LightWeightMap<DWORDLONG, uint64_t>();
+        GetConstValue = new LightWeightMap<DWORDLONG, DWORDLONG>();
 
     DWORDLONG key = CastHandle(cls);
     GetConstValue->Add(key, result);
     DEBUG_REC(dmpGetConstValue(key, result));
 }
 
-void MethodContext::dmpGetConstValue(DWORDLONG key, uint64_t value)
+void MethodContext::dmpGetConstValue(DWORDLONG key, DWORDLONG value)
 {
-    printf("GetConstValue key cls-%016" PRIX64 ", value res-0x%016llx", key, value);
+    printf("GetConstValue key cls-%016" PRIX64 ", value res-0x%016" PRIX64, key, value);
 }
 
-uint64_t MethodContext::repGetConstValue(CORINFO_CLASS_HANDLE cls)
+DWORDLONG MethodContext::repGetConstValue(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    uint64_t  value = LookupByKeyOrMissNoMessage(GetConstValue, key);
+    DWORDLONG value = LookupByKeyOrMissNoMessage(GetConstValue, key);
 
     DEBUG_REP(dmpGetConstValue(key, value));
     return value;
