@@ -962,7 +962,7 @@ void MulticoreJitProfilePlayer::CompileMethodInfoRecord(Module *pModule, MethodD
                     return;
                 }
 
-                pModule = pMethod->GetModule_NoLogging();
+                pModule = pMethod->GetModule();
             }
         }
 

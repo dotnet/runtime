@@ -395,7 +395,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
                 default:
                     LogError("Unknown target architecture");
-                break;
+                    break;
             }
 
             // If the target architecture doesn't match the expected target architecture
@@ -405,9 +405,9 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             {
                 jitResult = CORJIT_OK;
             }
-
         }
-        if (jitResult == CORJIT_OK)
+
+        if ((jitResult == CORJIT_OK) || (jitResult == CORJIT_BADCODE))
         {
             // capture the results of compilation
             pParam->pThis->mc->cr->recCompileMethod(&NEntryBlock, &NCodeSizeBlock, jitResult);
