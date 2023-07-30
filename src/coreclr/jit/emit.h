@@ -808,7 +808,7 @@ protected:
         // x86:         47 bits
         // amd64:       47 bits
         // arm:         48 bits
-        // arm64:       51 bits
+        // arm64:       50 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
 
