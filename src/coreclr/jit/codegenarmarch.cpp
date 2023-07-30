@@ -1770,7 +1770,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
         bool hasRcpc2 = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2);
 
         bool handledWithLdapur = false;
-        if (hasRcpc2 && !addrIsInReg && tree->Addr()->OperIs(GT_LEA) && (tree->Scale() == 1) &&
+        if (hasRcpc2 && !addrIsInReg && tree->Addr()->OperIs(GT_LEA) && !tree->HasIndex() && (tree->Scale() == 1) &&
             emitter::emitIns_valid_imm_for_unscaled_ldst_offset(tree->Offset()))
         {
             if (ins == INS_ldrb)

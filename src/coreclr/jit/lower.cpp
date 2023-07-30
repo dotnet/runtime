@@ -6064,7 +6064,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // ldar/stlr instead of ldr/str + dmb. Although, with Arm 8.4+'s RCPC2 we can handle unscaled
         // addressing modes (if the offset fits into 9 bits)
         assert(hasRcpc2);
-        if ((scale > 1) || !emitter::emitIns_valid_imm_for_unscaled_ldst_offset(offset))
+        if ((scale > 1) || !emitter::emitIns_valid_imm_for_unscaled_ldst_offset(offset) && (index == nullptr))
         {
             return false;
         }
