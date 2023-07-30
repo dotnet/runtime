@@ -3814,6 +3814,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED)
                 {
                     op1->AsCall()->SetExpTLSFieldAccess();
+                    op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
                 }
                 else if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY)
                 {
