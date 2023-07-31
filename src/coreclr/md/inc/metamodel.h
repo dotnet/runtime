@@ -2010,7 +2010,7 @@ public:
     
     BOOL SupportsConstGenerics()
     {
-        // Only 2.1 of the metadata support const generics
+        // Only 3.0 of the metadata support const generics
         return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V3_0 ||
                 (m_Schema.m_major == METAMODEL_MAJOR_VER_V3_0 && m_Schema.m_minor >= METAMODEL_MINOR_VER_V3_0));
     }// SupportsConstGenerics

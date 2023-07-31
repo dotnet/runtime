@@ -556,7 +556,7 @@ PCCOR_SIGNATURE PrettyPrintType(
             case ELEMENT_TYPE_BOOLEAN       :
                 str = "bool"; goto APPEND;
             case ELEMENT_TYPE_CHAR          :
-                str = "wchar"; goto APPEND;
+                str = "char"; goto APPEND;
             case ELEMENT_TYPE_I1            :
                 str = "int8"; goto APPEND;
             case ELEMENT_TYPE_U1            :
