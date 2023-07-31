@@ -312,7 +312,7 @@
 
     <PropertyGroup>
       <_HasMscorlib Condition="'%(_WasmAssembliesInternal.FileName)%(_WasmAssembliesInternal.Extension)' == 'mscorlib.dll'">true</_HasMscorlib>
-      <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(TargetFramework)\mscorlib.dll</_MscorlibPath>
+      <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">@(RuntimePackAsset->WithMetadataValue('Filename', 'mscorlib'))</_MscorlibPath>
     </PropertyGroup>
 
     <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
@@ -628,7 +628,10 @@
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
 
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
-      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(TargetFramework)" />
+
+      <!-- find the path with the assemblies, so we don't have to hardcode the tfm -->
+      <_SystemIOPath Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\lib\*\System.IO.dll" />
+      <_WasmAOTSearchPaths Include="%(_SystemIOPath.Identity)" />
     </ItemGroup>
 
     <ItemGroup>
