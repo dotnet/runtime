@@ -148,7 +148,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         Contexts.ClearContexts(sessionId);
                         return false;
                     }
-
+                case "Debugger.scriptParsed":
+                    {
+                        if (args["url"]?.ToString()?.Contains("/_framework/") == true) //is from dotnet runtime framework
+                        {
+                            if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
+                                context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
+                        }
+                        return false;
+                    }
                 case "Debugger.paused":
                     {
                         return await OnDebuggerPaused(sessionId, args, token);
@@ -237,6 +245,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 default:
                     {
+                        //avoid pausing when justMyCode is enabled and it's a framework function
+                        if (JustMyCode)
+                        {
+                            if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
+                                return false;
+                            var scriptId = args?["callFrames"]?[0]?["location"]?["scriptId"]?.Value<int>();
+                            if (scriptId is not null && context.FrameworkScriptList.Contains(scriptId.Value))
+                            {
+                                await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                                return true;
+                            }
+                        }
                         //avoid pausing when justMyCode is enabled and it's a wasm function
                         if (JustMyCode && args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
                         {
