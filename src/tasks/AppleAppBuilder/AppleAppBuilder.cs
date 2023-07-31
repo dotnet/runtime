@@ -216,7 +216,7 @@ public class AppleAppBuilderTask : Task
             if (EnableRuntimeLogging)
                 throw new ArgumentException($"Property \"{nameof(EnableRuntimeLogging)}\" is not supported with {Runtime} runtime and will be ignored.");
         }
-        else if (Runtime == "MonoVM" || Runtime == "")
+        else if (Runtime == "MonoVM" || string.IsNullOrEmpty(Runtime))
         {
             if (string.IsNullOrEmpty(MonoRuntimeHeaders))
                 throw new ArgumentException($"The \"{nameof(AppleAppBuilderTask)}\" task was not given a value for the required parameter \"{nameof(MonoRuntimeHeaders)}\" when using Mono runtime.");
