@@ -16,7 +16,7 @@
   <ItemGroup>
     <KnownFrameworkReference Update="Microsoft.NETCore.App"
                              RuntimePackRuntimeIdentifiers="%(KnownFrameworkReference.RuntimePackRuntimeIdentifiers);iossimulator-arm64;iossimulator-x64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-arm64;maccatalyst-x64"
-                             Condition="'$(AppleAppBuilderRuntime)' == 'CoreCLR'" />
+                             Condition="'$(UseMonoRuntime)' == 'false'" />
   </ItemGroup>
 
   <!-- Use local runtime pack -->
