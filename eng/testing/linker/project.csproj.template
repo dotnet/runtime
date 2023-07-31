@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <!-- Needed for PublishTrimmed -->
+    <NetCoreAppToolCurrent>{NetCoreAppToolCurrent}</NetCoreAppToolCurrent>
     <ToolsILLinkDir>{ToolsILLinkDir}</ToolsILLinkDir>
   </PropertyGroup>
 

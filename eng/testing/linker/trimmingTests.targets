@@ -109,6 +109,7 @@
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)')
                                                  .Replace('{ProductVersion}', '$(ProductVersion)')
                                                  .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
+                                                 .Replace('{NetCoreAppToolCurrent}', '$(NetCoreAppToolCurrent)')
                                                  .Replace('{NetCoreAppCurrentVersion}', '$(NetCoreAppCurrentVersion)')
                                                  .Replace('{MicrosoftNetCoreAppFrameworkName}', '$(MicrosoftNetCoreAppFrameworkName)')
                                                  .Replace('{MicrosoftNetCoreAppRefPackDir}', '$(MicrosoftNetCoreAppRefPackDir)')
