@@ -47,6 +47,20 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public static IMetricsBuilder AddListener(this IMetricsBuilder builder, IMetricsListener listener) { throw null!; }
         public static IMetricsBuilder ClearListeners(this IMetricsBuilder builder) { throw null!; }
     }
+    public static class MetricsBuilderEnableExtensions
+    {
+        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder) => throw null!;
+        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName) => throw null!;
+        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName) => throw null!;
+        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName, string? listenerName) => throw null!;
+        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName, string? listenerName, MeterScope scopes) => throw null!;
+        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options) => throw null!;
+        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName) => throw null!;
+        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, string? instrumentName) => throw null!;
+        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, string? instrumentName, string? listenerName) => throw null!;
+        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, string? instrumentName, string? listenerName, MeterScope scopes) => throw null!;
+        public static MetricsEnableOptions DisableMetrics(this MetricsEnableOptions options, string? meterName, string? instrumentName, string? listenerName, MeterScope scopes) => throw null!;
+    }
     public class MetricsEnableOptions
     {
         public IList<InstrumentEnableRule> Rules { get; } = null!;
