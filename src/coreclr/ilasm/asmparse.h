@@ -314,7 +314,7 @@ private:
     friend char* nextBlank(_In_ __nullterminated char*);
     friend int ProcessEOF();
     friend unsigned __int8* skipType(unsigned __int8* ptr, BOOL fFixupType);
-    friend static unsigned corCountArgs(BinStr* args);
+    friend unsigned corCountArgs(BinStr* args);
     friend void FixupConstraints();
 
 	Assembler* assem;			// This does most of the semantic processing
