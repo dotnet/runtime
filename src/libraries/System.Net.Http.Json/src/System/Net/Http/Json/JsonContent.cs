@@ -25,6 +25,7 @@ namespace System.Net.Http.Json
             MediaTypeHeaderValue? mediaType)
         {
             Debug.Assert(jsonTypeInfo is not null);
+            Debug.Assert(inputValue is null || jsonTypeInfo.Type.IsAssignableFrom(inputValue.GetType()));
 
             Value = inputValue;
             _typeInfo = jsonTypeInfo;
