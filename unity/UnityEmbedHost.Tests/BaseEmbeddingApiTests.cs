@@ -835,6 +835,15 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(isInflated, Is.EqualTo(expectedResult));
     }
 
+    [TestCase(typeof(Cat),    0)]
+    [TestCase(typeof(int[]),  1)]
+    [TestCase(typeof(int[,]), 2)]
+    public void ClassGetRankReturnsProperValue(Type klass, int expectedResult)
+    {
+        int rank = ClrHost.class_get_rank(klass);
+        Assert.That(rank, Is.EqualTo(expectedResult));
+    }
+
     [Test]
     [Timeout(50000)]
     public void GcGetHeapSizeReturnsProperValue()

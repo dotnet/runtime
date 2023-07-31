@@ -687,6 +687,15 @@ static unsafe partial class CoreCLRHost
         return metBase.IsConstructedGenericMethod || parentClassIsInflated;
     }
 
+    [return: NativeCallbackType("int")]
+    public static int class_get_rank(
+        [NativeCallbackType("MonoClass*")] IntPtr klass)
+    {
+        Type tClass = klass.TypeFromHandleIntPtr();
+        return tClass.IsArray ? tClass.GetArrayRank() : 0;
+    }
+
+
     [return: NativeCallbackType("gint64")]
     public static long gc_get_heap_size()
     {
