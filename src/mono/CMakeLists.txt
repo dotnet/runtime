@@ -71,6 +71,7 @@ if(ENABLE_MINIMAL)
 endif()
 
 set(DISABLE_COM 1)
+set(DISABLE_DLLMAP 1)
 
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
@@ -936,12 +937,6 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 # OS SPECIFIC CHECKS
 ######################################
-if(HOST_IOS OR HOST_TVOS OR HOST_ANDROID OR HOST_MACCAT)
-  # FIXME: the mobile products use mono_dllmap_insert so allow this
-  unset(DISABLE_DLLMAP)
-else()
-  set(DISABLE_DLLMAP 1)
-endif()
 
 if(CLR_CMAKE_HOST_ALPINE_LINUX)
   # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason

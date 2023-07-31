@@ -98,18 +98,27 @@ namespace System.Diagnostics.Tracing
 
             // Determine the keywords and level that should be used based on the set of enabled EventListeners.
             EventKeywords aggregatedKeywords = EventKeywords.None;
-            EventLevel highestLevel = EventLevel.LogAlways;
+            EventLevel enableLevel = EventLevel.Critical;
 
             foreach (EventListenerSubscription subscription in m_subscriptions.Values)
             {
                 aggregatedKeywords |= subscription.MatchAnyKeywords;
-                highestLevel = (subscription.Level > highestLevel) ? subscription.Level : highestLevel;
+
+                if (enableLevel is EventLevel.LogAlways)
+                {
+                    continue;
+                }
+                if ((enableLevel < subscription.Level) ||
+                    (subscription.Level is EventLevel.LogAlways))
+                {
+                    enableLevel = subscription.Level;
+                }
             }
 
             // Enable the EventPipe session.
             EventPipeProviderConfiguration[] providerConfiguration = new EventPipeProviderConfiguration[]
             {
-                new EventPipeProviderConfiguration(NativeRuntimeEventSource.EventSourceName, (ulong)aggregatedKeywords, (uint)highestLevel, null)
+                new EventPipeProviderConfiguration(NativeRuntimeEventSource.EventSourceName, (ulong)aggregatedKeywords, (uint)enableLevel, null)
             };
 
             m_sessionID = EventPipeInternal.Enable(null, EventPipeSerializationFormat.NetTrace, DefaultEventListenerCircularMBSize, providerConfiguration);
