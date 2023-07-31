@@ -222,14 +222,16 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => queue.TrimExcess(newCapacity));
         }
 
-        public void Queue_TrimAccessCurrentCapacity_DoesNothing()
+        [Fact]
+        public void Queue_TrimAccessCurrentCount_DoesNothing()
         {
-            var queue = new Queue<T>(10);
-            var initialCapacity = queue.Capacity;
-            queue.TrimExcess(initialCapacity);
-            var afterTrimCapacity = queue.Capacity;
-
-            Assert.Equal(initialCapacity, afterTrimCapacity);
+            var queue = new Queue<T>();
+            queue.Enqueue(CreateT(85877));
+            queue.TrimExcess(queue.Count);
+            int capacity = queue.Capacity;
+            queue.TrimExcess(queue.Count);
+            int capacityAgain = queue.Capacity;
+            Assert.Equal(capacity, capacityAgain);
         }
 
         [Theory]
@@ -494,6 +496,18 @@ namespace System.Collections.Tests
             {
                 Assert.Equal(copiedList[i], queue.Dequeue());
             }
+        }
+
+        [Fact]
+        public void QueueResized_CapacityUpdates()
+        {
+            var queue = GenericQueueFactory(1);
+
+            int initialCapacity = queue.Capacity;
+
+            queue.Enqueue(CreateT(85877));
+
+            Assert.True(initialCapacity < queue.Capacity);
         }
     }
 }

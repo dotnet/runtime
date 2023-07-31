@@ -129,10 +129,31 @@ namespace System.Collections.Tests
         [Theory]
         [InlineData(1)]
         [InlineData(100)]
-        public void HashSet_CreateWithCapacity_EqualsCapacityProperty(int capacity)
+        public void HashSet_CreateWithCapacity_CapacityAtLeastPassedValue(int capacity)
         {
             var hashSet = new HashSet<T>(capacity);
-            Assert.Equal(capacity, hashSet.Capacity);
+            Assert.True(capacity <= hashSet.Capacity);
+        }
+
+        #endregion
+
+        #region Properties
+
+        [Fact]
+        public void HashSetResized_CapacityChanged()
+        {
+            var hashSet = (HashSet<T>)GenericISetFactory(10);
+            int initialCapacity = hashSet.Capacity;
+
+            int seed = 85877;
+            for (int i = 0; i < hashSet.Capacity; i++)
+            {
+                hashSet.Add(CreateT(seed++));
+            }
+
+            int afterCapacity = hashSet.Capacity;
+
+            Assert.True(afterCapacity > initialCapacity);
         }
 
         #endregion
@@ -194,14 +215,12 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => hashSet.TrimExcess(newCapacity));
         }
 
-        public void HashSet_TrimAccessCurrentCapacity_DoesNothing()
+        [Fact]
+        public void TrimExcess_Generic_LargeInitialCapacity_TrimReducesSize()
         {
-            var hashSet = new HashSet<T>(10);
-            var initialCapacity = hashSet.Capacity;
-            hashSet.TrimExcess(initialCapacity);
-            var afterTrimCapacity = hashSet.Capacity;
-
-            Assert.Equal(initialCapacity, afterTrimCapacity);
+            var dictionary = new HashSet<T>(20);
+            dictionary.TrimExcess(7);
+            Assert.Equal(7, dictionary.EnsureCapacity(0));
         }
 
         [Theory]

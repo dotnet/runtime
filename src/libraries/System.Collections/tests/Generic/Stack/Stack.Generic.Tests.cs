@@ -186,14 +186,15 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => stack.TrimExcess(newCapacity));
         }
 
-        public void Stack_TrimAccessCurrentCapacity_DoesNothing()
+        [Fact]
+        public void Stack_TrimAccessCurrentCount_DoesNothing()
         {
-            var stack = new Stack<T>(10);
-            var initialCapacity = stack.Capacity;
-            stack.TrimExcess(initialCapacity);
-            var afterTrimCapacity = stack.Capacity;
+            var stack = GenericStackFactory(10);
+            stack.TrimExcess(stack.Count);
+            int capacity = stack.Capacity;
+            stack.TrimExcess(stack.Count);
 
-            Assert.Equal(initialCapacity, afterTrimCapacity);
+            Assert.Equal(capacity, stack.Capacity);
         }
 
         [Theory]
@@ -423,6 +424,17 @@ namespace System.Collections.Tests
             {
                 Assert.Equal(copiedList[i], stack.Pop());
             }
+        }
+
+        [Fact]
+        public void StackResized_CapacityUpdates()
+        {
+            Stack<T> stack = GenericStackFactory(10);
+            int initialCapacity = stack.Capacity;
+
+            stack.Push(CreateT(85877));
+
+            Assert.True(initialCapacity < stack.Capacity);
         }
     }
 }
