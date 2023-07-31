@@ -32,13 +32,12 @@ namespace Amd64InstrDecode
     //      L        // Flags depend on L bit in encoding.  L_<flagsLTrue>_or_<flagsLFalse>
     //      W        // Flags depend on W bit in encoding.  W_<flagsWTrue>_or_<flagsWFalse>
     //      P        // Flags depend on OpSize prefix for encoding.  P_<flagsNoOpSizePrefix>_or_<flagsOpSizePrefix>
-    //      WP       // Flags depend on W bit in encoding and OpSize prefix.  WP_<flagsWTrue>_or__<flagsNoOpSizePrefix>_or_<flagsOpSizePrefix>
+    //      WP       // Flags depend on W bit in encoding and OpSize prefix.  WP_<flagsWTrue>_or_<flagsNoOpSizePrefix>_or_<flagsOpSizePrefix>
     //      or       // Flag option separator used in W, L, P, and WP above
     enum InstrForm : uint8_t
     {
        None,
        I1B,
-       I1B_W_None_or_MOp_M16B,
        I2B,
        I3B,
        I4B,
@@ -92,7 +91,6 @@ namespace Amd64InstrDecode
        MOp_M32B_I1B,
        MOp_M4B,
        MOp_M4B_I1B,
-       MOp_M4B_I4B,
        MOp_M6B,
        MOp_M8B,
        MOp_M8B_I1B,
@@ -123,7 +121,7 @@ namespace Amd64InstrDecode
     // Instruction which change forms based on modrm.reg are encoded in this extension table.
     // Since there are 8 modrm.reg values, they occur is groups of 8.
     // Each group is referenced from the other tables below using Extension|(index >> 3).
-    static const InstrForm instrFormExtension[153]
+    static const InstrForm instrFormExtension[217]
     {
         MOnly_M4B,                               // Primary:0xd90/0 fld
         None,
@@ -158,7 +156,7 @@ namespace Amd64InstrDecode
         MOnly_M10B,                              // Primary:0xdf0/6 fbstp
         MOnly_M8B,                               // Primary:0xdf0/7 fistp
         M1st_M1B_I1B,                            // Primary:0xf60/0 test
-        None,
+        M1st_M1B_I1B,                            // Primary:0xf60/1 test
         MOnly_M1B,                               // Primary:0xf60/2 not
         MOnly_M1B,                               // Primary:0xf60/3 neg
         MOnly_M1B,                               // Primary:0xf60/4 mul
@@ -166,7 +164,7 @@ namespace Amd64InstrDecode
         MOnly_M1B,                               // Primary:0xf60/6 div
         MOnly_M1B,                               // Primary:0xf60/7 idiv
         M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B,   // Primary:0xf70/0 test
-        None,
+        M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B,   // Primary:0xf70/1 test
         MOnly_WP_M8B_or_M4B_or_M2B,              // Primary:0xf70/2 not
         MOnly_WP_M8B_or_M4B_or_M2B,              // Primary:0xf70/3 neg
         MOnly_WP_M8B_or_M4B_or_M2B,              // Primary:0xf70/4 mul
@@ -202,7 +200,7 @@ namespace Amd64InstrDecode
         MOnly_M10B,                              // Secondary:0x012/2 lgdt
         MOnly_M10B,                              // Secondary:0x012/3 lidt
         MOnly_M2B,                               // Secondary:0x012/4 smsw
-        None,
+        MOnly_M8B,                               // Secondary:0x012/5 rstorssp
         MOnly_M2B,                               // Secondary:0x012/6 lmsw
         MOnly_M1B,                               // Secondary:0x012/7 invlpg
         MOnly_M10B,                              // Secondary:0x013/0 sgdt
@@ -213,6 +211,70 @@ namespace Amd64InstrDecode
         None,
         MOnly_M2B,                               // Secondary:0x013/6 lmsw
         MOnly_M1B,                               // Secondary:0x013/7 invlpg
+        MOnly_M1B,                               // Secondary:0x180/0 prefetchnta
+        MOnly_M1B,                               // Secondary:0x180/1 prefetcht0
+        MOnly_M1B,                               // Secondary:0x180/2 prefetcht1
+        MOnly_M1B,                               // Secondary:0x180/3 prefetcht2
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x180/4 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x180/5 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x180/6 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x180/7 nop
+        MOnly_M1B,                               // Secondary:0x181/0 prefetchnta
+        MOnly_M1B,                               // Secondary:0x181/1 prefetcht0
+        MOnly_M1B,                               // Secondary:0x181/2 prefetcht1
+        MOnly_M1B,                               // Secondary:0x181/3 prefetcht2
+        MOnly_M2B,                               // Secondary:0x181/4 nop
+        MOnly_M2B,                               // Secondary:0x181/5 nop
+        MOnly_M2B,                               // Secondary:0x181/6 nop
+        MOnly_M2B,                               // Secondary:0x181/7 nop
+        MOnly_M1B,                               // Secondary:0x182/0 prefetchnta
+        MOnly_M1B,                               // Secondary:0x182/1 prefetcht0
+        MOnly_M1B,                               // Secondary:0x182/2 prefetcht1
+        MOnly_M1B,                               // Secondary:0x182/3 prefetcht2
+        MOnly_M4B,                               // Secondary:0x182/4 nop
+        MOnly_M4B,                               // Secondary:0x182/5 nop
+        MOnly_M4B,                               // Secondary:0x182/6 nop
+        MOnly_M4B,                               // Secondary:0x182/7 nop
+        MOnly_M1B,                               // Secondary:0x183/0 prefetchnta
+        MOnly_M1B,                               // Secondary:0x183/1 prefetcht0
+        MOnly_M1B,                               // Secondary:0x183/2 prefetcht1
+        MOnly_M1B,                               // Secondary:0x183/3 prefetcht2
+        MOnly_M4B,                               // Secondary:0x183/4 nop
+        MOnly_M4B,                               // Secondary:0x183/5 nop
+        MOnly_M4B,                               // Secondary:0x183/6 nop
+        MOnly_M4B,                               // Secondary:0x183/7 nop
+        MOnly_M1B,                               // Secondary:0x1c0/0 cldemote
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/1 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/2 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/3 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/4 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/5 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/6 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/7 nop
+        MOnly_M2B,                               // Secondary:0x1c1/0 nop
+        MOnly_M2B,                               // Secondary:0x1c1/1 nop
+        MOnly_M2B,                               // Secondary:0x1c1/2 nop
+        MOnly_M2B,                               // Secondary:0x1c1/3 nop
+        MOnly_M2B,                               // Secondary:0x1c1/4 nop
+        MOnly_M2B,                               // Secondary:0x1c1/5 nop
+        MOnly_M2B,                               // Secondary:0x1c1/6 nop
+        MOnly_M2B,                               // Secondary:0x1c1/7 nop
+        MOnly_M4B,                               // Secondary:0x1c2/0 nop
+        MOnly_M4B,                               // Secondary:0x1c2/1 nop
+        MOnly_M4B,                               // Secondary:0x1c2/2 nop
+        MOnly_M4B,                               // Secondary:0x1c2/3 nop
+        MOnly_M4B,                               // Secondary:0x1c2/4 nop
+        MOnly_M4B,                               // Secondary:0x1c2/5 nop
+        MOnly_M4B,                               // Secondary:0x1c2/6 nop
+        MOnly_M4B,                               // Secondary:0x1c2/7 nop
+        MOnly_M4B,                               // Secondary:0x1c3/0 nop
+        MOnly_M4B,                               // Secondary:0x1c3/1 nop
+        MOnly_M4B,                               // Secondary:0x1c3/2 nop
+        MOnly_M4B,                               // Secondary:0x1c3/3 nop
+        MOnly_M4B,                               // Secondary:0x1c3/4 nop
+        MOnly_M4B,                               // Secondary:0x1c3/5 nop
+        MOnly_M4B,                               // Secondary:0x1c3/6 nop
+        MOnly_M4B,                               // Secondary:0x1c3/7 nop
         MOnly_MUnknown,                          // Secondary:0xae0/0 fxsave,fxsave64
         MOnly_MUnknown,                          // Secondary:0xae0/1 fxrstor,fxrstor64
         MOnly_M4B,                               // Secondary:0xae0/2 ldmxcsr
@@ -225,24 +287,24 @@ namespace Amd64InstrDecode
         MOnly_MUnknown,                          // Secondary:0xae1/1 fxrstor
         MOnly_M4B,                               // Secondary:0xae1/2 ldmxcsr
         MOnly_M4B,                               // Secondary:0xae1/3 stmxcsr
-        MOnly_MUnknown,                          // Secondary:0xae1/4 xsave
-        MOnly_MUnknown,                          // Secondary:0xae1/5 xrstor
+        None,
+        None,
         MOnly_M1B,                               // Secondary:0xae1/6 clwb
         MOnly_M1B,                               // Secondary:0xae1/7 clflushopt
         MOnly_MUnknown,                          // Secondary:0xae2/0 fxsave
         MOnly_MUnknown,                          // Secondary:0xae2/1 fxrstor
         MOnly_M4B,                               // Secondary:0xae2/2 ldmxcsr
         MOnly_M4B,                               // Secondary:0xae2/3 stmxcsr
-        MOnly_MUnknown,                          // Secondary:0xae2/4 xsave
-        MOnly_MUnknown,                          // Secondary:0xae2/5 xrstor
+        MOnly_M4B,                               // Secondary:0xae2/4 ptwrite
         None,
+        MOnly_M8B,                               // Secondary:0xae2/6 clrssbsy
         None,
         MOnly_MUnknown,                          // Secondary:0xae3/0 fxsave
         MOnly_MUnknown,                          // Secondary:0xae3/1 fxrstor
         MOnly_M4B,                               // Secondary:0xae3/2 ldmxcsr
         MOnly_M4B,                               // Secondary:0xae3/3 stmxcsr
-        MOnly_MUnknown,                          // Secondary:0xae3/4 xsave
-        MOnly_MUnknown,                          // Secondary:0xae3/5 xrstor
+        None,
+        None,
         None,
         None,
         None,
@@ -483,8 +545,8 @@ namespace Amd64InstrDecode
         M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B,   // 0xc70 mov
         I3B,                                     // 0xc80 enter,enterw
         None,                                    // 0xc90 leave,leavew
-        I2B,                                     // 0xca0 retf,retfw
-        None,                                    // 0xcb0 retf,retfw
+        I2B,                                     // 0xca0 retf,retfq,retfw
+        None,                                    // 0xcb0 retf,retfq,retfw
         None,                                    // 0xcc0 int3
         I1B,                                     // 0xcd0 int
         None,                                    // 0xce0
@@ -513,8 +575,8 @@ namespace Amd64InstrDecode
         I1B,                                     // 0xe50 in
         I1B,                                     // 0xe60 out
         I1B,                                     // 0xe70 out
-        WP_I4B_or_I4B_or_I2B,                    // 0xe80 call
-        WP_I4B_or_I4B_or_I2B,                    // 0xe90 jmp
+        WP_I4B_or_I4B_or_I2B,                    // 0xe80 call,callw
+        WP_I4B_or_I4B_or_I2B,                    // 0xe90 jmp,jmpw
         None,                                    // 0xea0
         I1B,                                     // 0xeb0 jmp
         None,                                    // 0xec0 in
@@ -522,7 +584,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xee0 out
         None,                                    // 0xef0 out
         None,                                    // 0xf00
-        None,                                    // 0xf10 icebp
+        None,                                    // 0xf10 int1
         None,                                    // 0xf20
         None,                                    // 0xf30
         None,                                    // 0xf40 hlt
@@ -829,18 +891,18 @@ namespace Amd64InstrDecode
         None,                                    // 0x061 clts
         None,                                    // 0x062 clts
         None,                                    // 0x063 clts
-        None,                                    // 0x070 sysret,sysretq
-        None,                                    // 0x071 sysretw
-        None,                                    // 0x072 sysret
-        None,                                    // 0x073 sysret
+        None,                                    // 0x070 sysretd,sysretq
+        None,                                    // 0x071 sysretd
+        None,                                    // 0x072 sysretd
+        None,                                    // 0x073 sysretd
         None,                                    // 0x080 invd
         None,                                    // 0x081 invd
         None,                                    // 0x082 invd
         None,                                    // 0x083 invd
         None,                                    // 0x090 wbinvd
-        None,                                    // 0x091 wbinvd
-        None,                                    // 0x092 wbinvd
-        None,                                    // 0x093 wbinvd
+        None,                                    // 0x091
+        None,                                    // 0x092 wbnoinvd
+        None,                                    // 0x093
         None,                                    // 0x0a0
         None,                                    // 0x0a1
         None,                                    // 0x0a2
@@ -897,26 +959,26 @@ namespace Amd64InstrDecode
         M1st_M8B,                                // 0x171 movhpd
         None,                                    // 0x172
         None,                                    // 0x173
-        MOnly_M1B,                               // 0x180 nop/reserved,prefetchnta,prefetcht0,prefetcht1,prefetcht2
-        MOnly_M1B,                               // 0x181 nop/reserved,prefetchnta,prefetcht0,prefetcht1,prefetcht2
-        MOnly_M1B,                               // 0x182 nop/reserved,prefetchnta,prefetcht0,prefetcht1,prefetcht2
-        MOnly_M1B,                               // 0x183 nop/reserved,prefetchnta,prefetcht0,prefetcht1,prefetcht2
+        InstrForm(int(Extension)|0x0b),          // 0x180
+        InstrForm(int(Extension)|0x0c),          // 0x181
+        InstrForm(int(Extension)|0x0d),          // 0x182
+        InstrForm(int(Extension)|0x0e),          // 0x183
         MOnly_W_M8B_or_M4B,                      // 0x190 nop
         MOnly_M2B,                               // 0x191 nop
         MOnly_M4B,                               // 0x192 nop
         MOnly_M4B,                               // 0x193 nop
-        MOp_MUnknown,                            // 0x1a0 bndldx
+        None,                                    // 0x1a0
         MOp_MUnknown,                            // 0x1a1 bndmov
         MOp_MUnknown,                            // 0x1a2 bndcl
         MOp_MUnknown,                            // 0x1a3 bndcu
-        M1st_MUnknown,                           // 0x1b0 bndstx
+        None,                                    // 0x1b0
         M1st_MUnknown,                           // 0x1b1 bndmov
-        MOp_MUnknown,                            // 0x1b2 bndmk
+        None,                                    // 0x1b2
         MOp_MUnknown,                            // 0x1b3 bndcn
-        MOnly_W_M8B_or_M4B,                      // 0x1c0 nop
-        MOnly_M2B,                               // 0x1c1 nop
-        MOnly_M4B,                               // 0x1c2 nop
-        MOnly_M4B,                               // 0x1c3 nop
+        InstrForm(int(Extension)|0x0f),          // 0x1c0
+        InstrForm(int(Extension)|0x10),          // 0x1c1
+        InstrForm(int(Extension)|0x11),          // 0x1c2
+        InstrForm(int(Extension)|0x12),          // 0x1c3
         MOnly_W_M8B_or_M4B,                      // 0x1d0 nop
         MOnly_M2B,                               // 0x1d1 nop
         MOnly_M4B,                               // 0x1d2 nop
@@ -1013,10 +1075,10 @@ namespace Amd64InstrDecode
         None,                                    // 0x341 sysenter
         None,                                    // 0x342 sysenter
         None,                                    // 0x343 sysenter
-        None,                                    // 0x350 sysexit
-        None,                                    // 0x351 sysexit
-        None,                                    // 0x352 sysexit
-        None,                                    // 0x353 sysexit
+        None,                                    // 0x350 sysexitd,sysexitq
+        None,                                    // 0x351 sysexitd
+        None,                                    // 0x352 sysexitd
+        None,                                    // 0x353 sysexitd
         None,                                    // 0x360
         None,                                    // 0x361
         None,                                    // 0x362
@@ -1497,10 +1559,10 @@ namespace Amd64InstrDecode
         M1st_M2B,                                // 0xad1 shrd
         M1st_M4B,                                // 0xad2 shrd
         M1st_M4B,                                // 0xad3 shrd
-        InstrForm(int(Extension)|0x0b),          // 0xae0
-        InstrForm(int(Extension)|0x0c),          // 0xae1
-        InstrForm(int(Extension)|0x0d),          // 0xae2
-        InstrForm(int(Extension)|0x0e),          // 0xae3
+        InstrForm(int(Extension)|0x13),          // 0xae0
+        InstrForm(int(Extension)|0x14),          // 0xae1
+        InstrForm(int(Extension)|0x15),          // 0xae2
+        InstrForm(int(Extension)|0x16),          // 0xae3
         MOp_W_M8B_or_M4B,                        // 0xaf0 imul
         MOp_M2B,                                 // 0xaf1 imul
         MOp_M4B,                                 // 0xaf2 imul
@@ -1541,10 +1603,10 @@ namespace Amd64InstrDecode
         None,                                    // 0xb81
         MOp_M4B,                                 // 0xb82 popcnt
         None,                                    // 0xb83
-        None,                                    // 0xb90 ud1
-        None,                                    // 0xb91 ud1
-        None,                                    // 0xb92 ud1
-        None,                                    // 0xb93 ud1
+        MOp_W_M8B_or_M4B,                        // 0xb90 ud1
+        MOp_M2B,                                 // 0xb91 ud1
+        MOp_M4B,                                 // 0xb92 ud1
+        MOp_M4B,                                 // 0xb93 ud1
         M1st_I1B_W_M8B_or_M4B,                   // 0xba0 bt,btc,btr,bts
         M1st_M2B_I1B,                            // 0xba1 bt,btc,btr,bts
         M1st_M4B_I1B,                            // 0xba2 bt,btc,btr,bts
@@ -1597,10 +1659,10 @@ namespace Amd64InstrDecode
         MOp_M16B_I1B,                            // 0xc61 shufpd
         None,                                    // 0xc62
         None,                                    // 0xc63
-        InstrForm(int(Extension)|0x0f),          // 0xc70
-        InstrForm(int(Extension)|0x10),          // 0xc71
-        InstrForm(int(Extension)|0x11),          // 0xc72
-        InstrForm(int(Extension)|0x12),          // 0xc73
+        InstrForm(int(Extension)|0x17),          // 0xc70
+        InstrForm(int(Extension)|0x18),          // 0xc71
+        InstrForm(int(Extension)|0x19),          // 0xc72
+        InstrForm(int(Extension)|0x1a),          // 0xc73
         None,                                    // 0xc80 bswap
         None,                                    // 0xc81 bswap
         None,                                    // 0xc82 bswap
@@ -1821,10 +1883,10 @@ namespace Amd64InstrDecode
         MOp_M16B,                                // 0xfe1 paddd
         None,                                    // 0xfe2
         None,                                    // 0xfe3
-        None,                                    // 0xff0
-        None,                                    // 0xff1
-        None,                                    // 0xff2
-        None,                                    // 0xff3
+        MOp_W_M8B_or_M4B,                        // 0xff0 ud0
+        MOp_M2B,                                 // 0xff1 ud0
+        MOp_M4B,                                 // 0xff2 ud0
+        MOp_M4B,                                 // 0xff3 ud0
     };
 
     static const InstrForm instrFormF38[1024]
@@ -2658,7 +2720,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xce2
         None,                                    // 0xce3
         None,                                    // 0xcf0
-        None,                                    // 0xcf1
+        MOp_M16B,                                // 0xcf1 gf2p8mulb
         None,                                    // 0xcf2
         None,                                    // 0xcf3
         None,                                    // 0xd00
@@ -2792,11 +2854,11 @@ namespace Amd64InstrDecode
         MOp_W_M8B_or_M4B,                        // 0xf00 movbe
         MOp_W_M8B_or_M2B,                        // 0xf01 movbe
         None,                                    // 0xf02
-        None,                                    // 0xf03
+        MOp_M1B,                                 // 0xf03 crc32
         M1st_W_M8B_or_M4B,                       // 0xf10 movbe
         M1st_W_M8B_or_M2B,                       // 0xf11 movbe
         None,                                    // 0xf12
-        None,                                    // 0xf13
+        MOp_WP_M8B_or_M4B_or_M2B,                // 0xf13 crc32
         None,                                    // 0xf20
         None,                                    // 0xf21
         None,                                    // 0xf22
@@ -2810,22 +2872,22 @@ namespace Amd64InstrDecode
         None,                                    // 0xf42
         None,                                    // 0xf43
         None,                                    // 0xf50
-        None,                                    // 0xf51
+        M1st_MUnknown,                           // 0xf51 wrussd,wrussq
         None,                                    // 0xf52
         None,                                    // 0xf53
-        None,                                    // 0xf60
+        M1st_MUnknown,                           // 0xf60 wrssd,wrssq
         MOp_W_M8B_or_M4B,                        // 0xf61 adcx
-        None,                                    // 0xf62
+        MOp_W_M8B_or_M4B,                        // 0xf62 adox
         None,                                    // 0xf63
         None,                                    // 0xf70
         None,                                    // 0xf71
         None,                                    // 0xf72
         None,                                    // 0xf73
         None,                                    // 0xf80
-        None,                                    // 0xf81
-        None,                                    // 0xf82
-        None,                                    // 0xf83
-        None,                                    // 0xf90
+        MOp_MUnknown,                            // 0xf81 movdir64b
+        MOp_MUnknown,                            // 0xf82 enqcmds
+        MOp_MUnknown,                            // 0xf83 enqcmd
+        M1st_W_M8B_or_M4B,                       // 0xf90 movdiri
         None,                                    // 0xf91
         None,                                    // 0xf92
         None,                                    // 0xf93
@@ -3242,11 +3304,11 @@ namespace Amd64InstrDecode
         None,                                    // 0x5f2
         None,                                    // 0x5f3
         None,                                    // 0x600
-        MOp_M16B_I1B,                            // 0x601 pcmpestrm
+        MOp_M16B_I1B,                            // 0x601 pcmpestrm,pcmpestrmq
         None,                                    // 0x602
         None,                                    // 0x603
         None,                                    // 0x610
-        MOp_M16B_I1B,                            // 0x611 pcmpestri
+        MOp_M16B_I1B,                            // 0x611 pcmpestri,pcmpestriq
         None,                                    // 0x612
         None,                                    // 0x613
         None,                                    // 0x620
@@ -3682,11 +3744,11 @@ namespace Amd64InstrDecode
         None,                                    // 0xcd2
         None,                                    // 0xcd3
         None,                                    // 0xce0
-        None,                                    // 0xce1
+        MOp_M16B_I1B,                            // 0xce1 gf2p8affineqb
         None,                                    // 0xce2
         None,                                    // 0xce3
         None,                                    // 0xcf0
-        None,                                    // 0xcf1
+        MOp_M16B_I1B,                            // 0xcf1 gf2p8affineinvqb
         None,                                    // 0xcf2
         None,                                    // 0xcf3
         None,                                    // 0xd00
@@ -3963,24 +4025,24 @@ namespace Amd64InstrDecode
         MOp_L_M32B_or_M8B,                       // 0x123 vmovddup
         M1st_M8B,                                // 0x130 vmovlps
         M1st_M8B,                                // 0x131 vmovlpd
-        M1st_M8B,                                // 0x132 vmovlps
-        M1st_M8B,                                // 0x133 vmovlps
+        None,                                    // 0x132
+        None,                                    // 0x133
         MOp_L_M32B_or_M16B,                      // 0x140 vunpcklps
         MOp_L_M32B_or_M16B,                      // 0x141 vunpcklpd
-        MOp_L_M32B_or_M16B,                      // 0x142 vunpcklps
-        MOp_L_M32B_or_M16B,                      // 0x143 vunpcklps
+        None,                                    // 0x142
+        None,                                    // 0x143
         MOp_L_M32B_or_M16B,                      // 0x150 vunpckhps
         MOp_L_M32B_or_M16B,                      // 0x151 vunpckhpd
-        MOp_L_M32B_or_M16B,                      // 0x152 vunpckhps
-        MOp_L_M32B_or_M16B,                      // 0x153 vunpckhps
+        None,                                    // 0x152
+        None,                                    // 0x153
         MOp_M8B,                                 // 0x160 vmovhps
         MOp_M8B,                                 // 0x161 vmovhpd
         MOp_L_M32B_or_M16B,                      // 0x162 vmovshdup
         None,                                    // 0x163
         M1st_M8B,                                // 0x170 vmovhps
         M1st_M8B,                                // 0x171 vmovhpd
-        M1st_M8B,                                // 0x172 vmovhps
-        M1st_M8B,                                // 0x173 vmovhps
+        None,                                    // 0x172
+        None,                                    // 0x173
         None,                                    // 0x180
         None,                                    // 0x181
         None,                                    // 0x182
@@ -4047,20 +4109,20 @@ namespace Amd64InstrDecode
         None,                                    // 0x273
         MOp_L_M32B_or_M16B,                      // 0x280 vmovaps
         MOp_L_M32B_or_M16B,                      // 0x281 vmovapd
-        MOp_L_M32B_or_M16B,                      // 0x282 vmovaps
-        MOp_L_M32B_or_M16B,                      // 0x283 vmovaps
+        None,                                    // 0x282
+        None,                                    // 0x283
         M1st_L_M32B_or_M16B,                     // 0x290 vmovaps
         M1st_L_M32B_or_M16B,                     // 0x291 vmovapd
-        M1st_L_M32B_or_M16B,                     // 0x292 vmovaps
-        M1st_L_M32B_or_M16B,                     // 0x293 vmovaps
+        None,                                    // 0x292
+        None,                                    // 0x293
         None,                                    // 0x2a0
         None,                                    // 0x2a1
         MOp_W_M8B_or_M4B,                        // 0x2a2 vcvtsi2ss
         MOp_W_M8B_or_M4B,                        // 0x2a3 vcvtsi2sd
         M1st_L_M32B_or_M16B,                     // 0x2b0 vmovntps
         M1st_L_M32B_or_M16B,                     // 0x2b1 vmovntpd
-        M1st_L_M32B_or_M16B,                     // 0x2b2 vmovntps
-        M1st_L_M32B_or_M16B,                     // 0x2b3 vmovntps
+        None,                                    // 0x2b2
+        None,                                    // 0x2b3
         None,                                    // 0x2c0
         None,                                    // 0x2c1
         MOp_M4B,                                 // 0x2c2 vcvttss2si
@@ -4223,20 +4285,20 @@ namespace Amd64InstrDecode
         None,                                    // 0x533
         MOp_L_M32B_or_M16B,                      // 0x540 vandps
         MOp_L_M32B_or_M16B,                      // 0x541 vandpd
-        MOp_L_M32B_or_M16B,                      // 0x542 vandps
-        MOp_L_M32B_or_M16B,                      // 0x543 vandps
+        None,                                    // 0x542
+        None,                                    // 0x543
         MOp_L_M32B_or_M16B,                      // 0x550 vandnps
         MOp_L_M32B_or_M16B,                      // 0x551 vandnpd
-        MOp_L_M32B_or_M16B,                      // 0x552 vandnps
-        MOp_L_M32B_or_M16B,                      // 0x553 vandnps
+        None,                                    // 0x552
+        None,                                    // 0x553
         MOp_L_M32B_or_M16B,                      // 0x560 vorps
         MOp_L_M32B_or_M16B,                      // 0x561 vorpd
-        MOp_L_M32B_or_M16B,                      // 0x562 vorps
-        MOp_L_M32B_or_M16B,                      // 0x563 vorps
+        None,                                    // 0x562
+        None,                                    // 0x563
         MOp_L_M32B_or_M16B,                      // 0x570 vxorps
         MOp_L_M32B_or_M16B,                      // 0x571 vxorpd
-        MOp_L_M32B_or_M16B,                      // 0x572 vxorps
-        MOp_L_M32B_or_M16B,                      // 0x573 vxorps
+        None,                                    // 0x572
+        None,                                    // 0x573
         MOp_L_M32B_or_M16B,                      // 0x580 vaddps
         MOp_L_M32B_or_M16B,                      // 0x581 vaddpd
         MOp_M4B,                                 // 0x582 vaddss
@@ -4362,9 +4424,9 @@ namespace Amd64InstrDecode
         None,                                    // 0x762
         None,                                    // 0x763
         None,                                    // 0x770 vzeroall,vzeroupper
-        None,                                    // 0x771
-        None,                                    // 0x772
-        None,                                    // 0x773
+        None,                                    // 0x771 vzeroall,vzeroupper
+        None,                                    // 0x772 vzeroall,vzeroupper
+        None,                                    // 0x773 vzeroall,vzeroupper
         None,                                    // 0x780
         None,                                    // 0x781
         None,                                    // 0x782
@@ -4679,8 +4741,8 @@ namespace Amd64InstrDecode
         None,                                    // 0xc53
         MOp_I1B_L_M32B_or_M16B,                  // 0xc60 vshufps
         MOp_I1B_L_M32B_or_M16B,                  // 0xc61 vshufpd
-        MOp_I1B_L_M32B_or_M16B,                  // 0xc62 vshufps
-        MOp_I1B_L_M32B_or_M16B,                  // 0xc63 vshufps
+        None,                                    // 0xc62
+        None,                                    // 0xc63
         None,                                    // 0xc70
         None,                                    // 0xc71
         None,                                    // 0xc72
@@ -5205,8 +5267,8 @@ namespace Amd64InstrDecode
         None,                                    // 0x481
         None,                                    // 0x482
         None,                                    // 0x483
-        None,                                    // 0x490
-        None,                                    // 0x491
+        MOnly_MUnknown,                          // 0x490 ldtilecfg
+        MOnly_MUnknown,                          // 0x491 sttilecfg
         None,                                    // 0x492
         None,                                    // 0x493
         None,                                    // 0x4a0
@@ -5233,22 +5295,22 @@ namespace Amd64InstrDecode
         None,                                    // 0x4f1
         None,                                    // 0x4f2
         None,                                    // 0x4f3
-        None,                                    // 0x500
-        None,                                    // 0x501
-        None,                                    // 0x502
-        None,                                    // 0x503
-        None,                                    // 0x510
-        None,                                    // 0x511
-        None,                                    // 0x512
-        None,                                    // 0x513
-        None,                                    // 0x520
-        None,                                    // 0x521
-        None,                                    // 0x522
-        None,                                    // 0x523
-        None,                                    // 0x530
-        None,                                    // 0x531
-        None,                                    // 0x532
-        None,                                    // 0x533
+        MOp_L_M32B_or_M16B,                      // 0x500 vpdpbusd
+        MOp_L_M32B_or_M16B,                      // 0x501 vpdpbusd
+        MOp_L_M32B_or_M16B,                      // 0x502 vpdpbusd
+        MOp_L_M32B_or_M16B,                      // 0x503 vpdpbusd
+        MOp_L_M32B_or_M16B,                      // 0x510 vpdpbusds
+        MOp_L_M32B_or_M16B,                      // 0x511 vpdpbusds
+        MOp_L_M32B_or_M16B,                      // 0x512 vpdpbusds
+        MOp_L_M32B_or_M16B,                      // 0x513 vpdpbusds
+        MOp_L_M32B_or_M16B,                      // 0x520 vpdpwssd
+        MOp_L_M32B_or_M16B,                      // 0x521 vpdpwssd
+        MOp_L_M32B_or_M16B,                      // 0x522 vpdpwssd
+        MOp_L_M32B_or_M16B,                      // 0x523 vpdpwssd
+        MOp_L_M32B_or_M16B,                      // 0x530 vpdpwssds
+        MOp_L_M32B_or_M16B,                      // 0x531 vpdpwssds
+        MOp_L_M32B_or_M16B,                      // 0x532 vpdpwssds
+        MOp_L_M32B_or_M16B,                      // 0x533 vpdpwssds
         None,                                    // 0x540
         None,                                    // 0x541
         None,                                    // 0x542
@@ -5490,19 +5552,19 @@ namespace Amd64InstrDecode
         None,                                    // 0x8f2
         None,                                    // 0x8f3
         None,                                    // 0x900
-        MOp_W_M8B_or_M4B,                        // 0x901 vpgatherdd,vpgatherdq
+        None,                                    // 0x901
         None,                                    // 0x902
         None,                                    // 0x903
         None,                                    // 0x910
-        MOp_W_M8B_or_M4B,                        // 0x911 vpgatherqd,vpgatherqq
+        None,                                    // 0x911
         None,                                    // 0x912
         None,                                    // 0x913
         None,                                    // 0x920
-        MOp_W_M8B_or_M4B,                        // 0x921 vgatherdpd,vgatherdps
+        None,                                    // 0x921
         None,                                    // 0x922
         None,                                    // 0x923
         None,                                    // 0x930
-        MOp_W_M8B_or_M4B,                        // 0x931 vgatherqpd,vgatherqps
+        None,                                    // 0x931
         None,                                    // 0x932
         None,                                    // 0x933
         None,                                    // 0x940
@@ -5742,7 +5804,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xce2
         None,                                    // 0xce3
         None,                                    // 0xcf0
-        None,                                    // 0xcf1
+        MOp_L_M32B_or_M16B,                      // 0xcf1 vgf2p8mulb
         None,                                    // 0xcf2
         None,                                    // 0xcf3
         None,                                    // 0xd00
@@ -5794,19 +5856,19 @@ namespace Amd64InstrDecode
         None,                                    // 0xdb2
         None,                                    // 0xdb3
         None,                                    // 0xdc0
-        MOp_M16B,                                // 0xdc1 vaesenc
+        MOp_L_M32B_or_M16B,                      // 0xdc1 vaesenc
         None,                                    // 0xdc2
         None,                                    // 0xdc3
         None,                                    // 0xdd0
-        MOp_M16B,                                // 0xdd1 vaesenclast
+        MOp_L_M32B_or_M16B,                      // 0xdd1 vaesenclast
         None,                                    // 0xdd2
         None,                                    // 0xdd3
         None,                                    // 0xde0
-        MOp_M16B,                                // 0xde1 vaesdec
+        MOp_L_M32B_or_M16B,                      // 0xde1 vaesdec
         None,                                    // 0xde2
         None,                                    // 0xde3
         None,                                    // 0xdf0
-        MOp_M16B,                                // 0xdf1 vaesdeclast
+        MOp_L_M32B_or_M16B,                      // 0xdf1 vaesdeclast
         None,                                    // 0xdf2
         None,                                    // 0xdf3
         None,                                    // 0xe00
@@ -6214,7 +6276,7 @@ namespace Amd64InstrDecode
         None,                                    // 0x432
         None,                                    // 0x433
         None,                                    // 0x440
-        MOp_M16B_I1B,                            // 0x441 vpclmulqdq
+        MOp_I1B_L_M32B_or_M16B,                  // 0x441 vpclmulqdq
         None,                                    // 0x442
         None,                                    // 0x443
         None,                                    // 0x450
@@ -6238,15 +6300,15 @@ namespace Amd64InstrDecode
         None,                                    // 0x492
         None,                                    // 0x493
         None,                                    // 0x4a0
-        None,                                    // 0x4a1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x4a1 vblendvps
         None,                                    // 0x4a2
         None,                                    // 0x4a3
         None,                                    // 0x4b0
-        None,                                    // 0x4b1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x4b1 vblendvpd
         None,                                    // 0x4b2
         None,                                    // 0x4b3
         None,                                    // 0x4c0
-        None,                                    // 0x4c1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x4c1 vpblendvb
         None,                                    // 0x4c2
         None,                                    // 0x4c3
         None,                                    // 0x4d0
@@ -6310,27 +6372,27 @@ namespace Amd64InstrDecode
         None,                                    // 0x5b2
         None,                                    // 0x5b3
         None,                                    // 0x5c0
-        None,                                    // 0x5c1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x5c1 vfmaddsubps
         None,                                    // 0x5c2
         None,                                    // 0x5c3
         None,                                    // 0x5d0
-        None,                                    // 0x5d1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x5d1 vfmaddsubpd
         None,                                    // 0x5d2
         None,                                    // 0x5d3
         None,                                    // 0x5e0
-        None,                                    // 0x5e1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x5e1 vfmsubaddps
         None,                                    // 0x5e2
         None,                                    // 0x5e3
         None,                                    // 0x5f0
-        None,                                    // 0x5f1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x5f1 vfmsubaddpd
         None,                                    // 0x5f2
         None,                                    // 0x5f3
         None,                                    // 0x600
-        MOp_M16B_I1B,                            // 0x601 vpcmpestrm
+        MOp_M16B_I1B,                            // 0x601 vpcmpestrm,vpcmpestrmq
         None,                                    // 0x602
         None,                                    // 0x603
         None,                                    // 0x610
-        MOp_M16B_I1B,                            // 0x611 vpcmpestri
+        MOp_M16B_I1B,                            // 0x611 vpcmpestri,vpcmpestriq
         None,                                    // 0x612
         None,                                    // 0x613
         None,                                    // 0x620
@@ -6358,35 +6420,35 @@ namespace Amd64InstrDecode
         None,                                    // 0x672
         None,                                    // 0x673
         None,                                    // 0x680
-        None,                                    // 0x681
+        MOp_I1B_L_M32B_or_M16B,                  // 0x681 vfmaddps
         None,                                    // 0x682
         None,                                    // 0x683
         None,                                    // 0x690
-        None,                                    // 0x691
+        MOp_I1B_L_M32B_or_M16B,                  // 0x691 vfmaddpd
         None,                                    // 0x692
         None,                                    // 0x693
         None,                                    // 0x6a0
-        None,                                    // 0x6a1
+        MOp_M4B_I1B,                             // 0x6a1 vfmaddss
         None,                                    // 0x6a2
         None,                                    // 0x6a3
         None,                                    // 0x6b0
-        None,                                    // 0x6b1
+        MOp_M8B_I1B,                             // 0x6b1 vfmaddsd
         None,                                    // 0x6b2
         None,                                    // 0x6b3
         None,                                    // 0x6c0
-        None,                                    // 0x6c1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x6c1 vfmsubps
         None,                                    // 0x6c2
         None,                                    // 0x6c3
         None,                                    // 0x6d0
-        None,                                    // 0x6d1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x6d1 vfmsubpd
         None,                                    // 0x6d2
         None,                                    // 0x6d3
         None,                                    // 0x6e0
-        None,                                    // 0x6e1
+        MOp_M4B_I1B,                             // 0x6e1 vfmsubss
         None,                                    // 0x6e2
         None,                                    // 0x6e3
         None,                                    // 0x6f0
-        None,                                    // 0x6f1
+        MOp_M8B_I1B,                             // 0x6f1 vfmsubsd
         None,                                    // 0x6f2
         None,                                    // 0x6f3
         None,                                    // 0x700
@@ -6422,35 +6484,35 @@ namespace Amd64InstrDecode
         None,                                    // 0x772
         None,                                    // 0x773
         None,                                    // 0x780
-        None,                                    // 0x781
+        MOp_I1B_L_M32B_or_M16B,                  // 0x781 vfnmaddps
         None,                                    // 0x782
         None,                                    // 0x783
         None,                                    // 0x790
-        None,                                    // 0x791
+        MOp_I1B_L_M32B_or_M16B,                  // 0x791 vfnmaddpd
         None,                                    // 0x792
         None,                                    // 0x793
         None,                                    // 0x7a0
-        None,                                    // 0x7a1
+        MOp_M4B_I1B,                             // 0x7a1 vfnmaddss
         None,                                    // 0x7a2
         None,                                    // 0x7a3
         None,                                    // 0x7b0
-        None,                                    // 0x7b1
+        MOp_M8B_I1B,                             // 0x7b1 vfnmaddsd
         None,                                    // 0x7b2
         None,                                    // 0x7b3
         None,                                    // 0x7c0
-        None,                                    // 0x7c1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x7c1 vfnmsubps
         None,                                    // 0x7c2
         None,                                    // 0x7c3
         None,                                    // 0x7d0
-        None,                                    // 0x7d1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x7d1 vfnmsubpd
         None,                                    // 0x7d2
         None,                                    // 0x7d3
         None,                                    // 0x7e0
-        None,                                    // 0x7e1
+        MOp_M4B_I1B,                             // 0x7e1 vfnmsubss
         None,                                    // 0x7e2
         None,                                    // 0x7e3
         None,                                    // 0x7f0
-        None,                                    // 0x7f1
+        MOp_M8B_I1B,                             // 0x7f1 vfnmsubsd
         None,                                    // 0x7f2
         None,                                    // 0x7f3
         None,                                    // 0x800
@@ -6766,11 +6828,11 @@ namespace Amd64InstrDecode
         None,                                    // 0xcd2
         None,                                    // 0xcd3
         None,                                    // 0xce0
-        None,                                    // 0xce1
+        MOp_I1B_L_M32B_or_M16B,                  // 0xce1 vgf2p8affineqb
         None,                                    // 0xce2
         None,                                    // 0xce3
         None,                                    // 0xcf0
-        None,                                    // 0xcf1
+        MOp_I1B_L_M32B_or_M16B,                  // 0xcf1 vgf2p8affineinvqb
         None,                                    // 0xcf2
         None,                                    // 0xcf3
         None,                                    // 0xd00
@@ -7501,15 +7563,15 @@ namespace Amd64InstrDecode
         None,                                    // 0x841
         None,                                    // 0x842
         None,                                    // 0x843
-        None,                                    // 0x850
+        MOp_M16B_I1B,                            // 0x850 vpmacssww
         None,                                    // 0x851
         None,                                    // 0x852
         None,                                    // 0x853
-        None,                                    // 0x860
+        MOp_M16B_I1B,                            // 0x860 vpmacsswd
         None,                                    // 0x861
         None,                                    // 0x862
         None,                                    // 0x863
-        None,                                    // 0x870
+        MOp_M16B_I1B,                            // 0x870 vpmacssdql
         None,                                    // 0x871
         None,                                    // 0x872
         None,                                    // 0x873
@@ -7537,11 +7599,11 @@ namespace Amd64InstrDecode
         None,                                    // 0x8d1
         None,                                    // 0x8d2
         None,                                    // 0x8d3
-        None,                                    // 0x8e0
+        MOp_M16B_I1B,                            // 0x8e0 vpmacssdd
         None,                                    // 0x8e1
         None,                                    // 0x8e2
         None,                                    // 0x8e3
-        None,                                    // 0x8f0
+        MOp_M16B_I1B,                            // 0x8f0 vpmacssdqh
         None,                                    // 0x8f1
         None,                                    // 0x8f2
         None,                                    // 0x8f3
@@ -7565,15 +7627,15 @@ namespace Amd64InstrDecode
         None,                                    // 0x941
         None,                                    // 0x942
         None,                                    // 0x943
-        None,                                    // 0x950
+        MOp_M16B_I1B,                            // 0x950 vpmacsww
         None,                                    // 0x951
         None,                                    // 0x952
         None,                                    // 0x953
-        None,                                    // 0x960
+        MOp_M16B_I1B,                            // 0x960 vpmacswd
         None,                                    // 0x961
         None,                                    // 0x962
         None,                                    // 0x963
-        None,                                    // 0x970
+        MOp_M16B_I1B,                            // 0x970 vpmacsdql
         None,                                    // 0x971
         None,                                    // 0x972
         None,                                    // 0x973
@@ -7601,11 +7663,11 @@ namespace Amd64InstrDecode
         None,                                    // 0x9d1
         None,                                    // 0x9d2
         None,                                    // 0x9d3
-        None,                                    // 0x9e0
+        MOp_M16B_I1B,                            // 0x9e0 vpmacsdd
         None,                                    // 0x9e1
         None,                                    // 0x9e2
         None,                                    // 0x9e3
-        None,                                    // 0x9f0
+        MOp_M16B_I1B,                            // 0x9f0 vpmacsdqh
         None,                                    // 0x9f1
         None,                                    // 0x9f2
         None,                                    // 0x9f3
@@ -7617,11 +7679,11 @@ namespace Amd64InstrDecode
         None,                                    // 0xa11
         None,                                    // 0xa12
         None,                                    // 0xa13
-        None,                                    // 0xa20
+        MOp_I1B_L_M32B_or_M16B,                  // 0xa20 vpcmov
         None,                                    // 0xa21
         None,                                    // 0xa22
         None,                                    // 0xa23
-        None,                                    // 0xa30
+        MOp_M16B_I1B,                            // 0xa30 vpperm
         None,                                    // 0xa31
         None,                                    // 0xa32
         None,                                    // 0xa33
@@ -7633,7 +7695,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xa51
         None,                                    // 0xa52
         None,                                    // 0xa53
-        None,                                    // 0xa60
+        MOp_M16B_I1B,                            // 0xa60 vpmadcsswd
         None,                                    // 0xa61
         None,                                    // 0xa62
         None,                                    // 0xa63
@@ -7697,7 +7759,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xb51
         None,                                    // 0xb52
         None,                                    // 0xb53
-        None,                                    // 0xb60
+        MOp_M16B_I1B,                            // 0xb60 vpmadcswd
         None,                                    // 0xb61
         None,                                    // 0xb62
         None,                                    // 0xb63
@@ -7737,22 +7799,22 @@ namespace Amd64InstrDecode
         None,                                    // 0xbf1
         None,                                    // 0xbf2
         None,                                    // 0xbf3
-        I1B_W_None_or_MOp_M16B,                  // 0xc00 vprotb
-        I1B_W_None_or_MOp_M16B,                  // 0xc01 vprotb
-        I1B_W_None_or_MOp_M16B,                  // 0xc02 vprotb
-        I1B_W_None_or_MOp_M16B,                  // 0xc03 vprotb
-        I1B_W_None_or_MOp_M16B,                  // 0xc10 vprotw
-        I1B_W_None_or_MOp_M16B,                  // 0xc11 vprotw
-        I1B_W_None_or_MOp_M16B,                  // 0xc12 vprotw
-        I1B_W_None_or_MOp_M16B,                  // 0xc13 vprotw
-        I1B_W_None_or_MOp_M16B,                  // 0xc20 vprotd
-        I1B_W_None_or_MOp_M16B,                  // 0xc21 vprotd
-        I1B_W_None_or_MOp_M16B,                  // 0xc22 vprotd
-        I1B_W_None_or_MOp_M16B,                  // 0xc23 vprotd
-        I1B_W_None_or_MOp_M16B,                  // 0xc30 vprotq
-        I1B_W_None_or_MOp_M16B,                  // 0xc31 vprotq
-        I1B_W_None_or_MOp_M16B,                  // 0xc32 vprotq
-        I1B_W_None_or_MOp_M16B,                  // 0xc33 vprotq
+        MOp_M16B_I1B,                            // 0xc00 vprotb
+        None,                                    // 0xc01
+        None,                                    // 0xc02
+        None,                                    // 0xc03
+        MOp_M16B_I1B,                            // 0xc10 vprotw
+        None,                                    // 0xc11
+        None,                                    // 0xc12
+        None,                                    // 0xc13
+        MOp_M16B_I1B,                            // 0xc20 vprotd
+        None,                                    // 0xc21
+        None,                                    // 0xc22
+        None,                                    // 0xc23
+        MOp_M16B_I1B,                            // 0xc30 vprotq
+        None,                                    // 0xc31
+        None,                                    // 0xc32
+        None,                                    // 0xc33
         None,                                    // 0xc40
         None,                                    // 0xc41
         None,                                    // 0xc42
@@ -7786,21 +7848,21 @@ namespace Amd64InstrDecode
         None,                                    // 0xcb2
         None,                                    // 0xcb3
         MOp_M16B_I1B,                            // 0xcc0 vpcomb
-        MOp_M16B_I1B,                            // 0xcc1 vpcomb
-        MOp_M16B_I1B,                            // 0xcc2 vpcomb
-        MOp_M16B_I1B,                            // 0xcc3 vpcomb
+        None,                                    // 0xcc1
+        None,                                    // 0xcc2
+        None,                                    // 0xcc3
         MOp_M16B_I1B,                            // 0xcd0 vpcomw
-        MOp_M16B_I1B,                            // 0xcd1 vpcomw
-        MOp_M16B_I1B,                            // 0xcd2 vpcomw
-        MOp_M16B_I1B,                            // 0xcd3 vpcomw
+        None,                                    // 0xcd1
+        None,                                    // 0xcd2
+        None,                                    // 0xcd3
         MOp_M16B_I1B,                            // 0xce0 vpcomd
-        MOp_M16B_I1B,                            // 0xce1 vpcomd
-        MOp_M16B_I1B,                            // 0xce2 vpcomd
-        MOp_M16B_I1B,                            // 0xce3 vpcomd
+        None,                                    // 0xce1
+        None,                                    // 0xce2
+        None,                                    // 0xce3
         MOp_M16B_I1B,                            // 0xcf0 vpcomq
-        MOp_M16B_I1B,                            // 0xcf1 vpcomq
-        MOp_M16B_I1B,                            // 0xcf2 vpcomq
-        MOp_M16B_I1B,                            // 0xcf3 vpcomq
+        None,                                    // 0xcf1
+        None,                                    // 0xcf2
+        None,                                    // 0xcf3
         None,                                    // 0xd00
         None,                                    // 0xd01
         None,                                    // 0xd02
@@ -7914,21 +7976,21 @@ namespace Amd64InstrDecode
         None,                                    // 0xeb2
         None,                                    // 0xeb3
         MOp_M16B_I1B,                            // 0xec0 vpcomub
-        MOp_M16B_I1B,                            // 0xec1 vpcomub
-        MOp_M16B_I1B,                            // 0xec2 vpcomub
-        MOp_M16B_I1B,                            // 0xec3 vpcomub
+        None,                                    // 0xec1
+        None,                                    // 0xec2
+        None,                                    // 0xec3
         MOp_M16B_I1B,                            // 0xed0 vpcomuw
-        MOp_M16B_I1B,                            // 0xed1 vpcomuw
-        MOp_M16B_I1B,                            // 0xed2 vpcomuw
-        MOp_M16B_I1B,                            // 0xed3 vpcomuw
+        None,                                    // 0xed1
+        None,                                    // 0xed2
+        None,                                    // 0xed3
         MOp_M16B_I1B,                            // 0xee0 vpcomud
-        MOp_M16B_I1B,                            // 0xee1 vpcomud
-        MOp_M16B_I1B,                            // 0xee2 vpcomud
-        MOp_M16B_I1B,                            // 0xee3 vpcomud
+        None,                                    // 0xee1
+        None,                                    // 0xee2
+        None,                                    // 0xee3
         MOp_M16B_I1B,                            // 0xef0 vpcomuq
-        MOp_M16B_I1B,                            // 0xef1 vpcomuq
-        MOp_M16B_I1B,                            // 0xef2 vpcomuq
-        MOp_M16B_I1B,                            // 0xef3 vpcomuq
+        None,                                    // 0xef1
+        None,                                    // 0xef2
+        None,                                    // 0xef3
         None,                                    // 0xf00
         None,                                    // 0xf01
         None,                                    // 0xf02
@@ -8002,13 +8064,13 @@ namespace Amd64InstrDecode
         None,                                    // 0x002
         None,                                    // 0x003
         MOp_W_M8B_or_M4B,                        // 0x010 blcfill,blcic,blcs,blsfill,blsic,t1mskc,tzmsk
-        MOp_W_M8B_or_M4B,                        // 0x011 blcfill,blcic,blcs,blsfill,blsic,t1mskc,tzmsk
-        MOp_W_M8B_or_M4B,                        // 0x012 blcfill,blcic,blcs,blsfill,blsic,t1mskc,tzmsk
-        MOp_W_M8B_or_M4B,                        // 0x013 blcfill,blcic,blcs,blsfill,blsic,t1mskc,tzmsk
+        None,                                    // 0x011
+        None,                                    // 0x012
+        None,                                    // 0x013
         MOp_W_M8B_or_M4B,                        // 0x020 blci,blcmsk
-        MOp_W_M8B_or_M4B,                        // 0x021 blci,blcmsk
-        MOp_W_M8B_or_M4B,                        // 0x022 blci,blcmsk
-        MOp_W_M8B_or_M4B,                        // 0x023 blci,blcmsk
+        None,                                    // 0x021
+        None,                                    // 0x022
+        None,                                    // 0x023
         None,                                    // 0x030
         None,                                    // 0x031
         None,                                    // 0x032
@@ -8069,10 +8131,10 @@ namespace Amd64InstrDecode
         None,                                    // 0x111
         None,                                    // 0x112
         None,                                    // 0x113
-        I1B,                                     // 0x120 llwpcb,slwpcb
-        I1B,                                     // 0x121 llwpcb,slwpcb
-        I1B,                                     // 0x122 llwpcb,slwpcb
-        I1B,                                     // 0x123 llwpcb,slwpcb
+        None,                                    // 0x120
+        None,                                    // 0x121
+        None,                                    // 0x122
+        None,                                    // 0x123
         None,                                    // 0x130
         None,                                    // 0x131
         None,                                    // 0x132
@@ -8510,21 +8572,21 @@ namespace Amd64InstrDecode
         None,                                    // 0x7f2
         None,                                    // 0x7f3
         MOp_L_M32B_or_M16B,                      // 0x800 vfrczps
-        MOp_L_M32B_or_M16B,                      // 0x801 vfrczps
-        MOp_L_M32B_or_M16B,                      // 0x802 vfrczps
-        MOp_L_M32B_or_M16B,                      // 0x803 vfrczps
+        None,                                    // 0x801
+        None,                                    // 0x802
+        None,                                    // 0x803
         MOp_L_M32B_or_M16B,                      // 0x810 vfrczpd
-        MOp_L_M32B_or_M16B,                      // 0x811 vfrczpd
-        MOp_L_M32B_or_M16B,                      // 0x812 vfrczpd
-        MOp_L_M32B_or_M16B,                      // 0x813 vfrczpd
+        None,                                    // 0x811
+        None,                                    // 0x812
+        None,                                    // 0x813
         MOp_M4B,                                 // 0x820 vfrczss
-        MOp_M4B,                                 // 0x821 vfrczss
-        MOp_M4B,                                 // 0x822 vfrczss
-        MOp_M4B,                                 // 0x823 vfrczss
+        None,                                    // 0x821
+        None,                                    // 0x822
+        None,                                    // 0x823
         MOp_M8B,                                 // 0x830 vfrczsd
-        MOp_M8B,                                 // 0x831 vfrczsd
-        MOp_M8B,                                 // 0x832 vfrczsd
-        MOp_M8B,                                 // 0x833 vfrczsd
+        None,                                    // 0x831
+        None,                                    // 0x832
+        None,                                    // 0x833
         None,                                    // 0x840
         None,                                    // 0x841
         None,                                    // 0x842
@@ -8574,53 +8636,53 @@ namespace Amd64InstrDecode
         None,                                    // 0x8f2
         None,                                    // 0x8f3
         MOp_M16B,                                // 0x900 vprotb
-        MOp_M16B,                                // 0x901 vprotb
-        MOp_M16B,                                // 0x902 vprotb
-        MOp_M16B,                                // 0x903 vprotb
+        None,                                    // 0x901
+        None,                                    // 0x902
+        None,                                    // 0x903
         MOp_M16B,                                // 0x910 vprotw
-        MOp_M16B,                                // 0x911 vprotw
-        MOp_M16B,                                // 0x912 vprotw
-        MOp_M16B,                                // 0x913 vprotw
+        None,                                    // 0x911
+        None,                                    // 0x912
+        None,                                    // 0x913
         MOp_M16B,                                // 0x920 vprotd
-        MOp_M16B,                                // 0x921 vprotd
-        MOp_M16B,                                // 0x922 vprotd
-        MOp_M16B,                                // 0x923 vprotd
+        None,                                    // 0x921
+        None,                                    // 0x922
+        None,                                    // 0x923
         MOp_M16B,                                // 0x930 vprotq
-        MOp_M16B,                                // 0x931 vprotq
-        MOp_M16B,                                // 0x932 vprotq
-        MOp_M16B,                                // 0x933 vprotq
+        None,                                    // 0x931
+        None,                                    // 0x932
+        None,                                    // 0x933
         MOp_M16B,                                // 0x940 vpshlb
-        MOp_M16B,                                // 0x941 vpshlb
-        MOp_M16B,                                // 0x942 vpshlb
-        MOp_M16B,                                // 0x943 vpshlb
+        None,                                    // 0x941
+        None,                                    // 0x942
+        None,                                    // 0x943
         MOp_M16B,                                // 0x950 vpshlw
-        MOp_M16B,                                // 0x951 vpshlw
-        MOp_M16B,                                // 0x952 vpshlw
-        MOp_M16B,                                // 0x953 vpshlw
+        None,                                    // 0x951
+        None,                                    // 0x952
+        None,                                    // 0x953
         MOp_M16B,                                // 0x960 vpshld
-        MOp_M16B,                                // 0x961 vpshld
-        MOp_M16B,                                // 0x962 vpshld
-        MOp_M16B,                                // 0x963 vpshld
+        None,                                    // 0x961
+        None,                                    // 0x962
+        None,                                    // 0x963
         MOp_M16B,                                // 0x970 vpshlq
-        MOp_M16B,                                // 0x971 vpshlq
-        MOp_M16B,                                // 0x972 vpshlq
-        MOp_M16B,                                // 0x973 vpshlq
+        None,                                    // 0x971
+        None,                                    // 0x972
+        None,                                    // 0x973
         MOp_M16B,                                // 0x980 vpshab
-        MOp_M16B,                                // 0x981 vpshab
-        MOp_M16B,                                // 0x982 vpshab
-        MOp_M16B,                                // 0x983 vpshab
+        None,                                    // 0x981
+        None,                                    // 0x982
+        None,                                    // 0x983
         MOp_M16B,                                // 0x990 vpshaw
-        MOp_M16B,                                // 0x991 vpshaw
-        MOp_M16B,                                // 0x992 vpshaw
-        MOp_M16B,                                // 0x993 vpshaw
+        None,                                    // 0x991
+        None,                                    // 0x992
+        None,                                    // 0x993
         MOp_M16B,                                // 0x9a0 vpshad
-        MOp_M16B,                                // 0x9a1 vpshad
-        MOp_M16B,                                // 0x9a2 vpshad
-        MOp_M16B,                                // 0x9a3 vpshad
+        None,                                    // 0x9a1
+        None,                                    // 0x9a2
+        None,                                    // 0x9a3
         MOp_M16B,                                // 0x9b0 vpshaq
-        MOp_M16B,                                // 0x9b1 vpshaq
-        MOp_M16B,                                // 0x9b2 vpshaq
-        MOp_M16B,                                // 0x9b3 vpshaq
+        None,                                    // 0x9b1
+        None,                                    // 0x9b2
+        None,                                    // 0x9b3
         None,                                    // 0x9c0
         None,                                    // 0x9c1
         None,                                    // 0x9c2
@@ -8770,17 +8832,17 @@ namespace Amd64InstrDecode
         None,                                    // 0xc02
         None,                                    // 0xc03
         MOp_M16B,                                // 0xc10 vphaddbw
-        MOp_M16B,                                // 0xc11 vphaddbw
-        MOp_M16B,                                // 0xc12 vphaddbw
-        MOp_M16B,                                // 0xc13 vphaddbw
+        None,                                    // 0xc11
+        None,                                    // 0xc12
+        None,                                    // 0xc13
         MOp_M16B,                                // 0xc20 vphaddbd
-        MOp_M16B,                                // 0xc21 vphaddbd
-        MOp_M16B,                                // 0xc22 vphaddbd
-        MOp_M16B,                                // 0xc23 vphaddbd
+        None,                                    // 0xc21
+        None,                                    // 0xc22
+        None,                                    // 0xc23
         MOp_M16B,                                // 0xc30 vphaddbq
-        MOp_M16B,                                // 0xc31 vphaddbq
-        MOp_M16B,                                // 0xc32 vphaddbq
-        MOp_M16B,                                // 0xc33 vphaddbq
+        None,                                    // 0xc31
+        None,                                    // 0xc32
+        None,                                    // 0xc33
         None,                                    // 0xc40
         None,                                    // 0xc41
         None,                                    // 0xc42
@@ -8790,13 +8852,13 @@ namespace Amd64InstrDecode
         None,                                    // 0xc52
         None,                                    // 0xc53
         MOp_M16B,                                // 0xc60 vphaddwd
-        MOp_M16B,                                // 0xc61 vphaddwd
-        MOp_M16B,                                // 0xc62 vphaddwd
-        MOp_M16B,                                // 0xc63 vphaddwd
+        None,                                    // 0xc61
+        None,                                    // 0xc62
+        None,                                    // 0xc63
         MOp_M16B,                                // 0xc70 vphaddwq
-        MOp_M16B,                                // 0xc71 vphaddwq
-        MOp_M16B,                                // 0xc72 vphaddwq
-        MOp_M16B,                                // 0xc73 vphaddwq
+        None,                                    // 0xc71
+        None,                                    // 0xc72
+        None,                                    // 0xc73
         None,                                    // 0xc80
         None,                                    // 0xc81
         None,                                    // 0xc82
@@ -8810,9 +8872,9 @@ namespace Amd64InstrDecode
         None,                                    // 0xca2
         None,                                    // 0xca3
         MOp_M16B,                                // 0xcb0 vphadddq
-        MOp_M16B,                                // 0xcb1 vphadddq
-        MOp_M16B,                                // 0xcb2 vphadddq
-        MOp_M16B,                                // 0xcb3 vphadddq
+        None,                                    // 0xcb1
+        None,                                    // 0xcb2
+        None,                                    // 0xcb3
         None,                                    // 0xcc0
         None,                                    // 0xcc1
         None,                                    // 0xcc2
@@ -8834,17 +8896,17 @@ namespace Amd64InstrDecode
         None,                                    // 0xd02
         None,                                    // 0xd03
         MOp_M16B,                                // 0xd10 vphaddubw
-        MOp_M16B,                                // 0xd11 vphaddubw
-        MOp_M16B,                                // 0xd12 vphaddubw
-        MOp_M16B,                                // 0xd13 vphaddubw
+        None,                                    // 0xd11
+        None,                                    // 0xd12
+        None,                                    // 0xd13
         MOp_M16B,                                // 0xd20 vphaddubd
-        MOp_M16B,                                // 0xd21 vphaddubd
-        MOp_M16B,                                // 0xd22 vphaddubd
-        MOp_M16B,                                // 0xd23 vphaddubd
+        None,                                    // 0xd21
+        None,                                    // 0xd22
+        None,                                    // 0xd23
         MOp_M16B,                                // 0xd30 vphaddubq
-        MOp_M16B,                                // 0xd31 vphaddubq
-        MOp_M16B,                                // 0xd32 vphaddubq
-        MOp_M16B,                                // 0xd33 vphaddubq
+        None,                                    // 0xd31
+        None,                                    // 0xd32
+        None,                                    // 0xd33
         None,                                    // 0xd40
         None,                                    // 0xd41
         None,                                    // 0xd42
@@ -8854,13 +8916,13 @@ namespace Amd64InstrDecode
         None,                                    // 0xd52
         None,                                    // 0xd53
         MOp_M16B,                                // 0xd60 vphadduwd
-        MOp_M16B,                                // 0xd61 vphadduwd
-        MOp_M16B,                                // 0xd62 vphadduwd
-        MOp_M16B,                                // 0xd63 vphadduwd
+        None,                                    // 0xd61
+        None,                                    // 0xd62
+        None,                                    // 0xd63
         MOp_M16B,                                // 0xd70 vphadduwq
-        MOp_M16B,                                // 0xd71 vphadduwq
-        MOp_M16B,                                // 0xd72 vphadduwq
-        MOp_M16B,                                // 0xd73 vphadduwq
+        None,                                    // 0xd71
+        None,                                    // 0xd72
+        None,                                    // 0xd73
         None,                                    // 0xd80
         None,                                    // 0xd81
         None,                                    // 0xd82
@@ -8874,9 +8936,9 @@ namespace Amd64InstrDecode
         None,                                    // 0xda2
         None,                                    // 0xda3
         MOp_M16B,                                // 0xdb0 vphaddudq
-        MOp_M16B,                                // 0xdb1 vphaddudq
-        MOp_M16B,                                // 0xdb2 vphaddudq
-        MOp_M16B,                                // 0xdb3 vphaddudq
+        None,                                    // 0xdb1
+        None,                                    // 0xdb2
+        None,                                    // 0xdb3
         None,                                    // 0xdc0
         None,                                    // 0xdc1
         None,                                    // 0xdc2
@@ -8898,17 +8960,17 @@ namespace Amd64InstrDecode
         None,                                    // 0xe02
         None,                                    // 0xe03
         MOp_M16B,                                // 0xe10 vphsubbw
-        MOp_M16B,                                // 0xe11 vphsubbw
-        MOp_M16B,                                // 0xe12 vphsubbw
-        MOp_M16B,                                // 0xe13 vphsubbw
+        None,                                    // 0xe11
+        None,                                    // 0xe12
+        None,                                    // 0xe13
         MOp_M16B,                                // 0xe20 vphsubwd
-        MOp_M16B,                                // 0xe21 vphsubwd
-        MOp_M16B,                                // 0xe22 vphsubwd
-        MOp_M16B,                                // 0xe23 vphsubwd
+        None,                                    // 0xe21
+        None,                                    // 0xe22
+        None,                                    // 0xe23
         MOp_M16B,                                // 0xe30 vphsubdq
-        MOp_M16B,                                // 0xe31 vphsubdq
-        MOp_M16B,                                // 0xe32 vphsubdq
-        MOp_M16B,                                // 0xe33 vphsubdq
+        None,                                    // 0xe31
+        None,                                    // 0xe32
+        None,                                    // 0xe33
         None,                                    // 0xe40
         None,                                    // 0xe41
         None,                                    // 0xe42
@@ -9090,16 +9152,16 @@ namespace Amd64InstrDecode
         None,                                    // 0x0f2
         None,                                    // 0x0f3
         MOp_I4B_W_M8B_or_M4B,                    // 0x100 bextr
-        MOp_I4B_W_M8B_or_M4B,                    // 0x101 bextr
-        MOp_I4B_W_M8B_or_M4B,                    // 0x102 bextr
-        MOp_I4B_W_M8B_or_M4B,                    // 0x103 bextr
+        None,                                    // 0x101
+        None,                                    // 0x102
+        None,                                    // 0x103
         None,                                    // 0x110
         None,                                    // 0x111
         None,                                    // 0x112
         None,                                    // 0x113
-        MOp_M4B_I4B,                             // 0x120 lwpins,lwpval
-        MOp_M4B_I4B,                             // 0x121 lwpins,lwpval
-        MOp_M4B_I4B,                             // 0x122 lwpins,lwpval
+        None,                                    // 0x120
+        None,                                    // 0x121
+        None,                                    // 0x122
         None,                                    // 0x123
         None,                                    // 0x130
         None,                                    // 0x131
