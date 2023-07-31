@@ -4165,6 +4165,9 @@ calculate_live_keywords (
 	ep_requires_lock_held ();
 }
 
+// TODO: If/when we can unload vtables, we would need to temporary
+// root the vtable pointers currently stored in buffered gc events.
+// Once all events are fired, we can remove root from GC.
 static
 void
 gc_event_callback (
@@ -4199,7 +4202,6 @@ gc_event_callback (
 		if (is_gc_heap_dump_enabled (context)) {
 			EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 			gc_heap_dump_context_build_roots (context);
-			fire_buffered_gc_events (context);
 		}
 		break;
 	}
@@ -4289,6 +4291,7 @@ gc_heap_dump_trigger_callback (MonoProfiler *prof)
 				mono_profiler_set_gc_event_callback (_ep_rt_mono_default_profiler_provider, gc_event_callback);
 				mono_gc_collect (mono_gc_max_generation ());
 				mono_profiler_set_gc_event_callback (_ep_rt_mono_default_profiler_provider, NULL);
+				fire_buffered_gc_events (heap_dump_context);
 			}
 
 			heap_dump_context->state = GC_HEAP_DUMP_CONTEXT_STATE_END;
