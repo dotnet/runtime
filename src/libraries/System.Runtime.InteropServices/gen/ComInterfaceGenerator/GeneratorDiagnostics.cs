@@ -453,7 +453,6 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: true);
 
-
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
         /// </summary>
