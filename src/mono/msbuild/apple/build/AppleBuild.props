@@ -12,7 +12,7 @@
   <PropertyGroup>
     <iOSLikeDedup Condition="'$(iOSLikeDedup)' == '' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</iOSLikeDedup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
-    <UseMonoRuntime>true</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == ''">true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
     <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''" >false</StripDebugSymbols>
