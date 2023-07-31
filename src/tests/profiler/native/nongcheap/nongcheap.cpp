@@ -84,7 +84,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
         firstObj = nongc_segments[0].rangeStart;
 
         printf("\nGetNonGCHeapBounds (segCount = %u):\n", (uint32_t)segCount);
-        for (uint64_t i = 0; i < segCount; i++)
+        for (uint32_t i = 0; i < (uint32_t)segCount; i++)
         {
             printf("\tseg#%u, rangeStart=%p, rangeLength=%u, rangeLengthReserved=%u\n",
                 i, (void*)nongc_segments[i].rangeStart, (uint32_t)nongc_segments[i].rangeLength, (uint32_t)nongc_segments[i].rangeLengthReserved);
@@ -122,7 +122,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
         for (uint64_t i = 0; i < segCount; i++)
         {
             printf("\tseg#%u, rangeStart=%p, rangeLength=%u, rangeLengthReserved=%u\n",
-                i, (void*)gc_segments[i].rangeStart, (uint32_t)gc_segments[i].rangeLength, (uint32_t)gc_segments[i].rangeLengthReserved);
+                (uint32_t)i, (void*)gc_segments[i].rangeStart, (uint32_t)gc_segments[i].rangeLength, (uint32_t)gc_segments[i].rangeLengthReserved);
 
             if (gc_segments[i].rangeLength > gc_segments[i].rangeLengthReserved)
             {
