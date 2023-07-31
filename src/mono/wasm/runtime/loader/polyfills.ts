@@ -54,13 +54,12 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
         if (isPathAbsolute(path)) return path;
         return loaderHelpers.scriptDirectory + path;
     };
-    loaderHelpers.downloadResource = module.downloadResource;
     loaderHelpers.fetch_like = fetch_like;
     // eslint-disable-next-line no-console
     loaderHelpers.out = console.log;
     // eslint-disable-next-line no-console
     loaderHelpers.err = console.error;
-    loaderHelpers.getApplicationEnvironment = module.getApplicationEnvironment;
+    loaderHelpers.onDownloadResourceProgress = module.onDownloadResourceProgress;
 
     if (ENVIRONMENT_IS_WEB && globalThis.navigator) {
         const navigator: any = globalThis.navigator;

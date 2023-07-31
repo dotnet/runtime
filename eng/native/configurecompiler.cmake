@@ -222,7 +222,7 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
 
     # set the CLANG sanitizer flags for debug build
     if(CLR_CMAKE_ENABLE_UBSAN)
-      list(APPEND CLR_CMAKE_BUILD_SANITIZE_OPTIONS -fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/sanitizerblacklist.txt)
+      list(APPEND CLR_CMAKE_BUILD_SANITIZE_OPTIONS -fsanitize-ignorelist=${CMAKE_CURRENT_SOURCE_DIR}/sanitizer-ignorelist.txt)
       # all sanitizer flags are enabled except alignment (due to heavy use of __unaligned modifier)
       list(APPEND CLR_CMAKE_BUILD_SANITIZERS
         "bool"

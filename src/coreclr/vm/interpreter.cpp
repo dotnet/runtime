@@ -9637,7 +9637,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             {
                 TypeHandle th = ms.GetLastTypeHandleThrowing(ClassLoader::LoadTypes);
                 CONSISTENCY_CHECK(th.CheckFullyLoaded());
-                CONSISTENCY_CHECK(th.IsRestored_NoLogging());
+                CONSISTENCY_CHECK(th.IsRestored());
             }
         }
     }
