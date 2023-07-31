@@ -278,10 +278,11 @@ namespace Microsoft.Interop
                         }
                         else
                         {
-                            if (returnSwappedSignatureElements[i].ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Int32 or SpecialType.System_Enum } or EnumTypeInfo
-                                && returnSwappedSignatureElements[i].MarshallingAttributeInfo.Equals(NoMarshallingInfo.Instance))
+                            if ((returnSwappedSignatureElements[i].ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Int32 or SpecialType.System_Enum } or EnumTypeInfo
+                                    && returnSwappedSignatureElements[i].MarshallingAttributeInfo.Equals(NoMarshallingInfo.Instance))
+                                || (returnSwappedSignatureElements[i].ManagedType.FullTypeName.Split('.', ':').LastOrDefault()?.ToLowerInvariant() is "hr" or "hresult"))
                             {
-                                generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.ComMethodReturningIntWillBeOutVariable, symbol.Locations[0]));
+                                generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable, symbol.Locations[0]));
                             }
                             // Convert the current element into an out parameter on the native signature
                             // while keeping it at the return position in the managed signature.

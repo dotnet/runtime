@@ -977,16 +977,30 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static IEnumerable<object[]> IntAndEnumReturnTypeSnippets()
         {
-            var diagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ComMethodReturningIntWillBeOutVariable).WithLocation(0);
+            var diagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable).WithLocation(0);
             var enumDecl = $$"""
-                internal enum HR
+                internal enum Err
                 {
                     Val1, Val2
                 }
                 """;
-            var enumReturn = Template("HR", enumDecl, "");
+            var structDeclHR = $$"""
+                internal struct HR
+                {
+                    int hr;
+                }
+                """;
+            var structDeclHResult = $$"""
+                internal struct HResult
+                {
+                    int hr;
+                }
+                """;
+            var enumReturn = Template("Err", enumDecl, "");
             var intReturn = Template("int", "", "");
             var floatReturn = Template("float", "", "");
+            var structHrReturn = Template("HR", structDeclHR, "");
+            var structHResultReturn= Template("HResult", structDeclHResult, "");
             yield return new object[] {
                 ID(),
                 enumReturn,
@@ -999,12 +1013,24 @@ namespace ComInterfaceGenerator.Unit.Tests
             };
             yield return new object[] {
                 ID(),
+                structHrReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                structHResultReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
                 floatReturn,
                 new DiagnosticResult[] {  }
             };
 
-            var enumReturnPreserveSig = Template("HR", enumDecl, "[PreserveSig]");
+            var enumReturnPreserveSig = Template("Err", enumDecl, "[PreserveSig]");
             var intReturnPreserveSig = Template("int", "", "[PreserveSig]");
+            var structHrPreserveSig = Template("HR", structDeclHR, "[PreserveSig]");
+            var structHResultPreserveSig= Template("HResult", structDeclHResult, "[PreserveSig]");
             yield return new object[] {
                 ID(),
                 enumReturnPreserveSig,
@@ -1015,6 +1041,17 @@ namespace ComInterfaceGenerator.Unit.Tests
                 intReturnPreserveSig,
                 new DiagnosticResult[] {  }
             };
+            yield return new object[] {
+                ID(),
+                structHrPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+            yield return new object[] {
+                ID(),
+                structHResultPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+
             var intReturnMarshalAs = Template("int", "", "[return: MarshalAs(UnmanagedType.I4)]");
             yield return new object[] {
                 ID(),

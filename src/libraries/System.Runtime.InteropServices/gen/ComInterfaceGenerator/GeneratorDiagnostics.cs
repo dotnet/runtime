@@ -444,7 +444,8 @@ namespace Microsoft.Interop
                     WellKnownDiagnosticTags.Unnecessary
                 });
 
-        public static readonly DiagnosticDescriptor ComMethodReturningIntWillBeOutVariable =
+        /// <inheritdoc cref="SR.ComMethodReturningIntWillBeOutParameterMessage"/>
+        public static readonly DiagnosticDescriptor ComMethodManagedReturnWillBeOutVariable =
             new DiagnosticDescriptor(
                 Ids.UnrecommendedGeneratedComInterfaceUsage,
                 GetResourceString(nameof(SR.ComMethodReturningIntWillBeOutParameterTitle)),
