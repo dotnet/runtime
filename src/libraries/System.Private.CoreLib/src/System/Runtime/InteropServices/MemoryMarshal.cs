@@ -508,7 +508,7 @@ namespace System.Runtime.InteropServices
         /// Writes a structure of type T into a span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void Write<T>(Span<byte> destination, ref T value)
+        public static unsafe void Write<T>(Span<byte> destination, in T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -527,7 +527,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool TryWrite<T>(Span<byte> destination, ref T value)
+        public static unsafe bool TryWrite<T>(Span<byte> destination, in T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
