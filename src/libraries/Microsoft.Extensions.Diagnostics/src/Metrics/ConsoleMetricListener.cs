@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.IO;
 using System.Threading;
@@ -21,15 +22,16 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
         public string Name => ConsoleMetrics.ListenerName;
 
-        public object? InstrumentPublished(Instrument instrument)
+        public bool InstrumentPublished(Instrument instrument, out object? userState)
         {
             WriteLine($"{instrument.Meter.Name}-{instrument.Name} Started; Description: {instrument.Description}.");
-            return this;
+            userState = this;
+            return true;
         }
 
         public void MeasurementsCompleted(Instrument instrument, object? userState)
         {
-            // Debug.Assert(userState == this); TODO: State isn't flowing through
+            Debug.Assert(userState == this);
             WriteLine($"{instrument.Meter.Name}-{instrument.Name} Stopped.");
         }
 

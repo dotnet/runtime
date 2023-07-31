@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         private readonly IMetricsListener _metricsListener;
         private readonly HashSet<Instrument> _instruments = new();
         private readonly HashSet<Instrument> _enabled = new();
+        private readonly Dictionary<Instrument, (bool, object?)> _published = new();
         private IList<InstrumentEnableRule> _rules = Array.Empty<InstrumentEnableRule>();
         private bool _disposed;
 
@@ -59,6 +60,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             }
         }
 
+        // Called when we call DisableMeasurementEvents, like when a rule is disabled.
+        // TODO: When should we remove an Instrument from _instruments?
         private void MeasurementsCompleted(Instrument instrument, object? state)
         {
             lock (_instruments)
@@ -68,17 +71,17 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     return;
                 }
 
-                if (_instruments.Remove(instrument))
+                _enabled.Remove(instrument);
+
+                if (_published.TryGetValue(instrument, out var localState))
                 {
-                    if (_enabled.Remove(instrument))
+                    _published.Remove(instrument);
+                    var listenerEnabled = localState.Item1;
+                    var userState = localState.Item2;
+                    if (listenerEnabled)
                     {
-                        _meterListener.DisableMeasurementEvents(instrument);
-                        _metricsListener.MeasurementsCompleted(instrument, state);
+                        _metricsListener.MeasurementsCompleted(instrument, userState);
                     }
-                }
-                else
-                {
-                    Debug.Assert(false, "InstrumentPublished was not called for this instrument");
                 }
             }
         }
@@ -116,15 +119,28 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             {
                 _enabled.Remove(instrument);
                 _meterListener.DisableMeasurementEvents(instrument);
-                // TODO: State?
-                _metricsListener.MeasurementsCompleted(instrument, userState: null);
             }
             else if (enable && !alreadyEnabled)
             {
-                _meterListener.EnableMeasurementEvents(instrument);
-                _enabled.Add(instrument);
-                // TODO: should this returned state flow somewhere?
-                _metricsListener.InstrumentPublished(instrument);
+                // The first time we enable an instrument, we need to call InstrumentPublished.
+                bool listenerEnabled;
+                if (_published.TryGetValue(instrument, out var metadata))
+                {
+                    listenerEnabled = metadata.Item1;
+                }
+                else
+                {
+                    listenerEnabled = _metricsListener.InstrumentPublished(instrument, out var state);
+
+                    // However, a listener might decline to enable the instrument, remember that.
+                    _published.Add(instrument, (listenerEnabled, state));
+                }
+
+                if (listenerEnabled)
+                {
+                    _meterListener.EnableMeasurementEvents(instrument);
+                    _enabled.Add(instrument);
+                }
             }
         }
 

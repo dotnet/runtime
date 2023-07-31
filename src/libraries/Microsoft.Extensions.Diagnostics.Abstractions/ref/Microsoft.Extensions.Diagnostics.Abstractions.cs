@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         public string Name { get; }
         public void SetSource(IMetricsSource source);
-        public object? InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument);
+        public bool InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument, out object? userState);
         public void MeasurementsCompleted(System.Diagnostics.Metrics.Instrument instrument, object? userState);
         public System.Diagnostics.Metrics.MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct;
     }

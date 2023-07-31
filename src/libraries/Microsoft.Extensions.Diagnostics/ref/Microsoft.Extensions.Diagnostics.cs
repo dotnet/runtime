@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -41,14 +42,23 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         internal TextWriter _textWriter;
         public string Name { get; }
         public System.Diagnostics.Metrics.MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct => throw null!;
-        public object? InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument) => throw null!;
+        public bool InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument, out object? userState) => throw null!;
         public void MeasurementsCompleted(System.Diagnostics.Metrics.Instrument instrument, object? userState) => throw null!;
         public void SetSource(IMetricsSource source) => throw null!;
         public void Dispose() => throw null!;
     }
     internal sealed class ListenerSubscription
     {
+        internal ListenerSubscription(Microsoft.Extensions.Diagnostics.Metrics.IMetricsListener listener) { }
+        public void Start() { }
+        internal void UpdateRules(IList<InstrumentEnableRule> rules) { }
         internal static bool RuleMatches(InstrumentEnableRule rule, System.Diagnostics.Metrics.Instrument instrument, string listenerName) => throw null!;
         internal static bool IsMoreSpecific(InstrumentEnableRule rule, InstrumentEnableRule? best) => throw null!;
+    }
+    internal sealed class DefaultMeterFactory : System.Diagnostics.Metrics.IMeterFactory
+    {
+        public DefaultMeterFactory() { }
+        public System.Diagnostics.Metrics.Meter Create(System.Diagnostics.Metrics.MeterOptions options) => throw null!;
+        public void Dispose() { }
     }
 }

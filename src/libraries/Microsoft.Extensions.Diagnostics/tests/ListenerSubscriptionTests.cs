@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Diagnostics.Metrics;
 using Xunit;
@@ -12,6 +13,202 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 {
     public class ListenerSubscriptionTests
     {
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SubscriptionReceivesNewGlobalMetersAndInstruments()
+        {
+            // RemoteExecutor.Invoke(() =>
+            {
+                var publishedTcs = new TaskCompletionSource<Instrument>();
+                var completedTcs = new TaskCompletionSource<Instrument>();
+                var measurementTcs = new TaskCompletionSource<int>();
+
+                var fakeListener = new FakeMetricListener();
+                fakeListener.OnPublished = (instrument) =>
+                {
+                    Assert.Null(instrument.Meter.Scope); // Global
+                    publishedTcs.TrySetResult(instrument);
+                    return (true, null);
+                };
+                fakeListener.OnCompleted = (instrument, state) =>
+                {
+                    completedTcs.TrySetResult(instrument);
+                };
+                fakeListener.OnMeasurement = (instrument, measurement, tags, state) =>
+                {
+                    measurementTcs.TrySetResult((int)measurement);
+                };
+
+                var subscription = new ListenerSubscription(fakeListener);
+                Assert.Null(fakeListener.Source);
+
+                subscription.Start();
+                Assert.Same(subscription, fakeListener.Source);
+
+                // No rules yet, so we shouldn't get any notifications.
+                var meter = new Meter("TestMeter");
+                var counter = meter.CreateCounter<int>("counter", "blip", "I count blips");
+                counter.Add(1);
+
+                Assert.False(publishedTcs.Task.IsCompleted);
+                Assert.False(measurementTcs.Task.IsCompleted);
+
+                // Add a rule that matches the counter.
+                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Global, enable: true) });
+
+                Assert.True(publishedTcs.Task.IsCompleted);
+
+                counter.Add(2);
+                Assert.True(measurementTcs.Task.IsCompleted);
+                Assert.Equal(2, measurementTcs.Task.Result);
+
+                Assert.False(completedTcs.Task.IsCompleted);
+
+                // Disable
+                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Global, enable: false) });
+
+                Assert.True(completedTcs.Task.IsCompleted);
+
+            }//).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SubscriptionReceivesNewLocalMetersAndInstruments()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                var publishedTcs = new TaskCompletionSource<Instrument>();
+                var completedTcs = new TaskCompletionSource<Instrument>();
+                var measurementTcs = new TaskCompletionSource<int>();
+
+                var factory = new DefaultMeterFactory();
+
+                var fakeListener = new FakeMetricListener();
+                fakeListener.OnPublished = (instrument) =>
+                {
+                    Assert.Equal(factory, instrument.Meter.Scope); // Local
+                    publishedTcs.TrySetResult(instrument);
+                    return (true, null);
+                };
+                fakeListener.OnCompleted = (instrument, state) =>
+                {
+                    completedTcs.TrySetResult(instrument);
+                };
+                fakeListener.OnMeasurement = (instrument, measurement, tags, state) =>
+                {
+                    measurementTcs.TrySetResult((int)measurement);
+                };
+
+                var subscription = new ListenerSubscription(fakeListener);
+                Assert.Null(fakeListener.Source);
+
+                subscription.Start();
+                Assert.Same(subscription, fakeListener.Source);
+
+                // No rules yet, so we shouldn't get any notifications.
+                var meter = factory.Create("TestMeter");
+                var counter = meter.CreateCounter<int>("counter", "blip", "I count blips");
+                counter.Add(1);
+
+                Assert.False(publishedTcs.Task.IsCompleted);
+                Assert.False(measurementTcs.Task.IsCompleted);
+
+                // Add a rule that matches the counter.
+                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Local, enable: true) });
+
+                Assert.True(publishedTcs.Task.IsCompleted);
+
+                counter.Add(2);
+                Assert.True(measurementTcs.Task.IsCompleted);
+                Assert.Equal(2, measurementTcs.Task.Result);
+
+                Assert.False(completedTcs.Task.IsCompleted);
+
+                // Disable
+                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Local, enable: false) });
+
+                Assert.True(completedTcs.Task.IsCompleted);
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RuleCanBeTurnedOffAndOnAgain()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                var publishCalled = 0;
+                var publishedTcs = new TaskCompletionSource<Instrument>();
+                var onCompletedCalled = 0;
+                var completedTcs = new TaskCompletionSource<Instrument>();
+                var measurements = new List<int>();
+
+                var factory = new DefaultMeterFactory();
+
+                var fakeListener = new FakeMetricListener();
+                fakeListener.OnPublished = (instrument) =>
+                {
+                    publishCalled++;
+                    Assert.Equal(factory, instrument.Meter.Scope); // Local
+                    publishedTcs.TrySetResult(instrument);
+                    return (true, null);
+                };
+                fakeListener.OnCompleted = (instrument, state) =>
+                {
+                    onCompletedCalled++;
+                    Assert.Equal(1, onCompletedCalled);
+                    completedTcs.TrySetResult(instrument);
+                };
+                fakeListener.OnMeasurement = (instrument, measurement, tags, state) =>
+                {
+                    measurements.Add((int)measurement);
+                };
+
+                var subscription = new ListenerSubscription(fakeListener);
+                Assert.Null(fakeListener.Source);
+
+                subscription.Start();
+                Assert.Same(subscription, fakeListener.Source);
+
+                // No rules yet, so we shouldn't get any notifications.
+                var meter = factory.Create("TestMeter");
+                var counter = meter.CreateCounter<int>("counter", "blip", "I count blips");
+                counter.Add(1);
+
+                Assert.False(publishedTcs.Task.IsCompleted);
+                Assert.Equal(0, measurements.Count);
+                Assert.Equal(0, publishCalled);
+
+                // Add a rule that matches the counter.
+                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Local, enable: true) });
+
+                Assert.True(publishedTcs.Task.IsCompleted);
+                Assert.Equal(1, publishCalled);
+
+                counter.Add(2);
+                Assert.Equal(1, measurements.Count);
+                Assert.Equal(2, measurements[0]);
+
+                Assert.False(completedTcs.Task.IsCompleted);
+
+                // Disable
+                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Local, enable: false) });
+
+                Assert.True(completedTcs.Task.IsCompleted);
+                counter.Add(3);
+                // Not received
+                Assert.Equal(1, measurements.Count);
+
+                // Re-enable
+                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Local, enable: true) });
+                Assert.Equal(2, publishCalled);
+
+                counter.Add(4);
+                Assert.Equal(2, measurements.Count);
+                Assert.Equal(4, measurements[1]);
+
+            }).Dispose();
+        }
+
         // TODO: Scopes
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -133,5 +330,28 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
             // TODO: Scopes
         };
+
+        public delegate void FakeMeasurementCallback(Instrument instrument, object measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state);
+        private class FakeMetricListener : IMetricsListener
+        {
+            public string Name => "FakeListener";
+
+            public Func<Instrument, (bool, object?)> OnPublished { get; set; } = (_) => (true, null);
+            public Action<Instrument, object?> OnCompleted { get; set; } = (_, _) => { };
+            public IMetricsSource? Source { get; set; }
+            public FakeMeasurementCallback OnMeasurement { get; set; }
+
+            public MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct
+                => (instrument, value, tags, state) => OnMeasurement(instrument, value, tags, state);
+
+            public bool InstrumentPublished(Instrument instrument, out object? userState)
+            {
+                (var published, userState) = OnPublished(instrument);
+                return published;
+            }
+
+            public void MeasurementsCompleted(Instrument instrument, object? userState) => OnCompleted(instrument, userState);
+            public void SetSource(IMetricsSource source) => Source = source;
+        }
     }
 }
