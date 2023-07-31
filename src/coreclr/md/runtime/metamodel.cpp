@@ -620,6 +620,13 @@ CMiniMdBase::SchemaPopulate(
             m_TableDefs[TBL_GenericParam] = g_Table_GenericParamV1_1.m_Def;
             m_TableDefs[TBL_GenericParam].m_pColDefs = BYTEARRAY_TO_COLDES(s_GenericParamCol);
         }
+        else if ((m_Schema.m_major == METAMODEL_MAJOR_VER_V2_0) &&
+                 (m_Schema.m_minor == METAMODEL_MINOR_VER_V2_0))
+        {
+            // 2.0 had a different type of GenericParam table
+            m_TableDefs[TBL_GenericParam] = g_Table_GenericParamV2_0.m_Def;
+            m_TableDefs[TBL_GenericParam].m_pColDefs = BYTEARRAY_TO_COLDES(s_GenericParamCol);
+        }
         // Is it a supported old version?  This should never fail!
         else
         {
