@@ -41,9 +41,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			Options.FeatureSwitches.Add ("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", false);
 			Options.FeatureSwitches.Add ("System.Resources.ResourceManager.AllowCustomResourceTypes", false);
-			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanCompileToIL", false);
 			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanEmitObjectArrayDelegate", false);
-			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanCreateArbitraryDelegates", false);
+			Options.FeatureSwitches.Add ("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", false);
 			Options.FeatureSwitches.Add ("System.Diagnostics.Debugger.IsSupported", false);
 			Options.FeatureSwitches.Add ("System.Text.Encoding.EnableUnsafeUTF7Encoding", false);
 			Options.FeatureSwitches.Add ("System.Diagnostics.Tracing.EventSource.IsSupported", false);

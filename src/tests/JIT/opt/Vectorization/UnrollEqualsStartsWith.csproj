@@ -3,7 +3,7 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="UnrollEqualsStartsWIth.cs" />
-    <Compile Include="UnrollEqualsStartsWIth_Tests.cs" />
+    <Compile Include="UnrollEqualsStartsWith.cs" />
+    <Compile Include="UnrollEqualsStartsWith_Tests.cs" />
   </ItemGroup>
 </Project>
