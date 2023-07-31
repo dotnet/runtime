@@ -70,12 +70,12 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     HRESULT hr = pCorProfilerInfo->GetNonGCHeapBounds(MAX_SEGMENTS, &segCount, nongc_segments);
     if (FAILED(hr))
     {
-        printf("GetNonGCHeapBounds returned an error\n!");
+        printf("FAIL: GetNonGCHeapBounds returned an error\n!");
         _failures++;
     }
     else if (segCount == 0 || segCount > MAX_SEGMENTS)
     {
-        printf("GetNonGCHeapBounds: invalid segCount (%u)\n!", segCount);
+        printf("FAIL: GetNonGCHeapBounds: invalid segCount (%u)\n!", segCount);
         _failures++;
     }
     else
@@ -91,13 +91,13 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
             if ((ULONG)nongc_segments[i].rangeLength > (ULONG)nongc_segments[i].rangeLengthReserved)
             {
-                printf("GetNonGCHeapBounds: rangeLength > rangeLengthReserved");
+                printf("FAIL: GetNonGCHeapBounds: rangeLength > rangeLengthReserved");
                 _failures++;
             }
 
             if (!nongc_segments[i].rangeStart)
             {
-                printf("GetNonGCHeapBounds: rangeStart is null");
+                printf("FAIL: GetNonGCHeapBounds: rangeStart is null");
                 _failures++;
             }
             segment_starts.emplace_back((ULONG)nongc_segments[i].rangeStart);
@@ -108,12 +108,12 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     hr = pCorProfilerInfo->GetGenerationBounds(MAX_SEGMENTS, &segCount, gc_segments);
     if (FAILED(hr))
     {
-        printf("GetGenerationBounds returned an error\n!");
+        printf("FAIL: GetGenerationBounds returned an error\n!");
         _failures++;
     }
     else if (segCount == 0 || segCount > MAX_SEGMENTS)
     {
-        printf("GetGenerationBounds: invalid segCount (%u)\n!", segCount);
+        printf("FAIL: GetGenerationBounds: invalid segCount (%u)\n!", segCount);
         _failures++;
     }
     else
@@ -126,13 +126,13 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
             if ((ULONG)gc_segments[i].rangeLength > (ULONG)gc_segments[i].rangeLengthReserved)
             {
-                printf("GetGenerationBounds: rangeLength > rangeLengthReserved");
+                printf("FAIL: GetGenerationBounds: rangeLength > rangeLengthReserved");
                 _failures++;
             }
 
             if (!gc_segments[i].rangeStart)
             {
-                printf("GetGenerationBounds: rangeStart is null");
+                printf("FAIL: GetGenerationBounds: rangeStart is null");
                 _failures++;
             }
             segment_starts.emplace_back((ULONG)gc_segments[i].rangeStart);
@@ -142,22 +142,29 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     }
     sort(segment_starts.begin(), segment_starts.end());
     sort(segment_ends.begin(), segment_ends.end());
-    for (size_t i = 0; i < segment_starts.size() - 1; i++)
+
+    // Do segments overlap?
+    if (segment_starts.size() > 1)
     {
-        if (segment_starts[i] == segment_starts[i+1])
+        for (size_t i = 0; i < segment_starts.size() - 1; i++)
         {
-            printf("Duplicated segment starts");
-            _failures++;
-        }
-        if (segment_ends[i] == segment_ends[i+1])
-        {
-            printf("Duplicated segment ends");
-            _failures++;
-        }
-        if (segment_ends[i] > segment_starts[i+1])
-        {
-            printf("Overlapping segments\n");
-            _failures++;
+            printf("inspecting segment %d [rangeStart=%p rangeEnd=%p]\n", (int)i, (void*)segment_starts[i], (void*)segment_ends[i]);
+
+            if (segment_starts[i] == segment_starts[i+1])
+            {
+                printf("FAIL: Duplicated segment starts");
+                _failures++;
+            }
+            if (segment_ends[i] == segment_ends[i+1])
+            {
+                printf("FAIL: Duplicated segment ends");
+                _failures++;
+            }
+            if (segment_ends[i] > segment_starts[i+1])
+            {
+                printf("FAIL: Overlapping segments\n");
+                _failures++;
+            }
         }
     }
 
@@ -167,7 +174,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     hr = pCorProfilerInfo->EnumerateNonGCObjects(&pEnum);
     if (FAILED(hr))
     {
-        printf("EnumerateNonGCObjects returned an error\n!");
+        printf("FAIL: EnumerateNonGCObjects returned an error\n!");
         _failures++;
     }
     else
@@ -181,7 +188,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
             {
                 if (firstObj != obj)
                 {
-                    printf("EnumerateNonGCObjects: firstObj != obj\n!");
+                    printf("FAIL: EnumerateNonGCObjects: firstObj != obj\n!");
                     _failures++;
                 }
             }
@@ -192,7 +199,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
             hr = pCorProfilerInfo->IsFrozenObject(obj, &isFrozen);
             if (FAILED(hr) || !isFrozen)
             {
-                printf("EnumerateNonGCObjects: IsFrozenObject failed\n!");
+                printf("FAIL: EnumerateNonGCObjects: IsFrozenObject failed\n!");
                 _failures++;
             }
 
@@ -202,7 +209,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
         if (nonGcObjectsEnumerated != _nonGcHeapObjects)
         {
-            printf("objectAllocated(%d) != _nonGcHeapObjects(%d)\n!", nonGcObjectsEnumerated, (int)_nonGcHeapObjects);
+            printf("FAIL: objectAllocated(%d) != _nonGcHeapObjects(%d)\n!", nonGcObjectsEnumerated, (int)_nonGcHeapObjects);
             _failures++;
         }
     }
