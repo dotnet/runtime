@@ -430,9 +430,6 @@ static bool InstructionHasModRMByte(Amd64InstrDecode::InstrForm form, bool W)
     case Amd64InstrDecode::InstrForm::WP_I8B_or_I4B_or_I2B:
         modrm = false;
         break;
-    case Amd64InstrDecode::InstrForm::I1B_W_None_or_MOp_M16B:
-        modrm = W ? false : true;
-        break;
     default:
         if (form & Amd64InstrDecode::InstrForm::Extension)
             modrm = true;
@@ -521,10 +518,6 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
     case Amd64InstrDecode::InstrForm::MOnly_W_M16B_or_M8B:
         opSize = W ? 16 : 8;
         break;
-    // W_None_or_MOp_M16B
-    case Amd64InstrDecode::InstrForm::I1B_W_None_or_MOp_M16B:
-        opSize = W ? 0 : 16;
-        break;
     // M10B
     case Amd64InstrDecode::InstrForm::MOnly_M10B:
         opSize = 10;
@@ -543,7 +536,6 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
     case Amd64InstrDecode::InstrForm::M1st_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::MOnly_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::MOp_I1B_W_M8B_or_M4B:
-    case Amd64InstrDecode::InstrForm::MOp_I4B_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::MOp_W_M8B_or_M4B:
         opSize = W ? 8 : 4;
         break;
@@ -585,7 +577,6 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
     case Amd64InstrDecode::InstrForm::MOnly_M4B:
     case Amd64InstrDecode::InstrForm::MOp_M4B:
     case Amd64InstrDecode::InstrForm::MOp_M4B_I1B:
-    case Amd64InstrDecode::InstrForm::MOp_M4B_I4B:
         opSize = 4;
         break;
     // L_M4B_or_M2B
@@ -659,8 +650,6 @@ static int immSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, boo
         immSize = 3;
         break;
     case Amd64InstrDecode::InstrForm::I4B:
-    case Amd64InstrDecode::InstrForm::MOp_I4B_W_M8B_or_M4B:
-    case Amd64InstrDecode::InstrForm::MOp_M4B_I4B:
         immSize = 4;
         break;
     case Amd64InstrDecode::InstrForm::I8B:
@@ -673,7 +662,6 @@ static int immSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, boo
         break;
     case Amd64InstrDecode::InstrForm::WP_I8B_or_I4B_or_I2B:
         immSize = W ? 8 : P ? 4 : 2;
-        break;
         break;
     default:
         break;
@@ -954,6 +942,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 
             default:
                 LOG((LF_CORDB, LL_INFO10000, "NORMAL:%0.2x\n", opcode0));
+                break;
         }
     }
 }
