@@ -1025,11 +1025,11 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> LoadUnsafe<T>(ref T source)
+        public static Vector<T> LoadUnsafe<T>(ref readonly T source)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            ref byte address = ref Unsafe.As<T, byte>(ref source);
-            return Unsafe.ReadUnaligned<Vector<T>>(ref address);
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
+            return Unsafe.ReadUnaligned<Vector<T>>(in address);
         }
 
         /// <summary>Loads a vector from the given source and element offset.</summary>
@@ -1041,11 +1041,11 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
+        public static Vector<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            source = ref Unsafe.Add(ref source, (nint)elementOffset);
-            return Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref source));
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
+            return Unsafe.ReadUnaligned<Vector<T>>(in address);
         }
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>

@@ -244,7 +244,7 @@ namespace System.Runtime.InteropServices
         /// of the returned span will not be validated for safety, even by span-aware languages.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref T reference, int length) =>
+        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) =>
             new ReadOnlySpan<T>(ref Unsafe.AsRef(in reference), length);
 
         /// <summary>Creates a new read-only span for a null-terminated string.</summary>

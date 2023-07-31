@@ -13211,7 +13211,7 @@ namespace System.Runtime.CompilerServices
         public static ref T Add<T>(ref T source, System.IntPtr elementOffset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ref T Add<T>(ref T source, nuint elementOffset) { throw null; }
-        public static bool AreSame<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref T right) { throw null; }
+        public static bool AreSame<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe static void* AsPointer<T>(ref T value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -13221,17 +13221,17 @@ namespace System.Runtime.CompilerServices
         public static T? As<T>(object? o) where T : class? { throw null; }
         public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
         public static TTo BitCast<TFrom, TTo>(TFrom source) where TFrom : struct where TTo : struct { throw null; }
-        public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref T target) { throw null; }
+        public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T target) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void CopyBlock(ref byte destination, ref byte source, uint byteCount) { }
+        public static void CopyBlock(ref byte destination, ref readonly byte source, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe static void CopyBlock(void* destination, void* source, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
-        public static void CopyBlockUnaligned(ref byte destination, ref byte source, uint byteCount) { }
+        public static void CopyBlockUnaligned(ref byte destination, ref readonly byte source, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe static void CopyBlockUnaligned(void* destination, void* source, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void Copy<T>(void* destination, ref T source) { }
+        public unsafe static void Copy<T>(void* destination, ref readonly T source) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe static void Copy<T>(ref T destination, void* source) { }
         [System.CLSCompliantAttribute(false)]
@@ -13242,11 +13242,11 @@ namespace System.Runtime.CompilerServices
         public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount) { }
-        public static bool IsAddressGreaterThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref T right) { throw null; }
-        public static bool IsAddressLessThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref T right) { throw null; }
-        public static bool IsNullRef<T>(ref T source) { throw null; }
+        public static bool IsAddressGreaterThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) { throw null; }
+        public static bool IsAddressLessThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) { throw null; }
+        public static bool IsNullRef<T>(ref readonly T source) { throw null; }
         public static ref T NullRef<T>() { throw null; }
-        public static T ReadUnaligned<T>(ref byte source) { throw null; }
+        public static T ReadUnaligned<T>(ref readonly byte source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe static T ReadUnaligned<T>(void* source) { throw null; }
         [System.CLSCompliantAttribute(false)]

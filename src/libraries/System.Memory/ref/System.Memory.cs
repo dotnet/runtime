@@ -693,7 +693,7 @@ namespace System.Runtime.InteropServices
         public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Memory<T> CreateFromPinnedArray<T>(T[]? array, int start, int length) { throw null; }
-        public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref T reference, int length) { throw null; }
+        public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) { throw null; }
         [System.CLSCompliant(false)]
         public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) { throw null; }
         [System.CLSCompliant(false)]
