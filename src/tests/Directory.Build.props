@@ -214,7 +214,8 @@
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
     <_targetOS>$(TargetOS)</_targetOS>
     <_targetArchitecture>$(TargetArchitecture)</_targetArchitecture>
-    <AppleAppBuilderRuntime>NativeAOT</AppleAppBuilderRuntime>
+    <AppleAppBuilderRuntime Condition="'$(TestBuildMode)' == 'nativeaot'">NativeAOT</AppleAppBuilderRuntime>
+    <AppleAppBuilderRuntime Condition="'$(TestBuildMode)' != 'nativeaot'">CoreCLR</AppleAppBuilderRuntime>
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
     <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
