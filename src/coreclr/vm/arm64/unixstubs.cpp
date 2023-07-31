@@ -3,15 +3,3 @@
 
 #include "common.h"
 
-extern "C"
-{
-    void RedirectForThrowControl()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void RedirectForThreadAbort()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-};
