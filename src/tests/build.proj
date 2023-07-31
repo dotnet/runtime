@@ -418,8 +418,7 @@
   </Task>
 </UsingTask>
 
-  <!-- This target builds a Native AOT iOS App -->
-  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="SetupOSSpecificProps">
+  <Target Name="BuildCoreCLRiOSApp">
     <PropertyGroup>
       <CategoryPath>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CategoryPath>
       <CategoryName>$([System.IO.Path]::GetFileName($(CategoryPath)))</CategoryName>
@@ -438,7 +437,10 @@
       <RunAOTCompilation>false</RunAOTCompilation>
       <MonoForceInterpreter>false</MonoForceInterpreter>
     </PropertyGroup>
+  </Target>
 
+  <!-- This target builds a Native AOT iOS App -->
+  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="BuildCoreCLRiOSApp;SetupOSSpecificProps">
     <ItemGroup>
       <NativeDependencies Include="$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o" />
     </ItemGroup>
@@ -448,6 +450,10 @@
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
     </ItemGroup>
+
+    <PropertyGroup>
+      <NativeDependencies>$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o</NativeDependencies>
+    </PropertyGroup>
 
     <RemoveDir Directories="$(AppleBuildDir)" />
     <RemoveDir Directories="$(AppDir)" />
@@ -482,14 +488,21 @@
       Projects="@(RunProj)"
       Targets="BuildMonoiOSApp"
       BuildInParallel="true"
-      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' != 'nativeaot'"
+      Condition="'@(TestDirectories)' != '' and '$(RuntimeFlavor)' != 'coreclr'"
+    />
+
+    <MSBuild
+      Projects="@(RunProj)"
+      Targets="BuildCoreCLRiOSApp;_AppleGenerateAppBundle;AfterAppleBuild"
+      BuildInParallel="true"
+      Condition="'@(TestDirectories)' != '' and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot'"
     />
 
     <MSBuild
       Projects="@(RunProj)"
       Targets="BuildNativeAOTiOSApp;_AppleGenerateAppBundle;AfterAppleBuild"
       BuildInParallel="true"
-      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' == 'nativeaot'"
+      Condition="'@(TestDirectories)' != '' and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' == 'nativeaot'"
     />
   </Target>
 
@@ -613,7 +626,6 @@
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcUseServerGc)' == 'false'">$(GroupBuildCmd) "/p:IlcUseServerGc=false"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(UseMonoRuntime)' != ''">$(GroupBuildCmd) "/p:UseMonoRuntime=$(UseMonoRuntime)"</GroupBuildCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
