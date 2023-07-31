@@ -51,6 +51,7 @@ static char* newString(_In_ __nullterminated const char* str1);
 static void corEmitInt(BinStr* buff, unsigned data);
 static void AppendStringWithLength(BinStr* pbs, _In_ __nullterminated char* sz);
 static void AppendFieldToCustomBlob(BinStr* pBlob, _In_ BinStr* pField);
+static unsigned corCountArgs(BinStr* args);
 bool bParsingByteArray = FALSE;
 int iOpcodeLen = 0;
 int iCallConv = 0;

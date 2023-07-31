@@ -1557,7 +1557,7 @@ void FixupTyPars(BinStr* pbstype)
     FixupTyPars((PCOR_SIGNATURE)(pbstype->ptr()),(ULONG)(pbstype->length()));
 }
 /**************************************************************************/
-unsigned corCountArgs(BinStr* args)
+static unsigned corCountArgs(BinStr* args)
 {
     unsigned __int8* ptr = args->ptr();
     unsigned __int8* end = &args->ptr()[args->length()];
