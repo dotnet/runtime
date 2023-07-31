@@ -121,11 +121,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			using AssemblyDefinition caseAssemblyDefinition = AssemblyDefinition.ReadAssembly (caseAssemblyPath.ToString ());
 
 			var potentialCase = new TestCase (sourceFile, _rootDirectory, caseAssemblyPath);
-			if (sourceFile.ToString().Contains("FileScope"))
-			{
-				Console.WriteLine("FileScope");
-			}
-
 			var typeDefinition = potentialCase.TryFindTypeDefinition (caseAssemblyDefinition);
 
 			testCase = null;
