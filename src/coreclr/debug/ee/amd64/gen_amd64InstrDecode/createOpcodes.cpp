@@ -201,53 +201,6 @@ int main(int argc, char*argv[])
         printf("\n");
     }
 
-    printf("// XOP8\n");
-    for (int i = 0; i < 256; ++i)
-    {
-        for (int pp = 0; pp < 4; ++pp)
-        {
-            for (int modrm = 0x5; modrm < 64; modrm += 8)
-            {
-                for (int c = 0; c < sizeof(byte3cases)/sizeof(byte3cases[0]); ++c)
-                {
-                    printf( "0x8f, 0x08, 0x%02x, 0x%02x, 0x%02x, %s", pp + byte3cases[c],   i, modrm, postamble);
-                }
-            }
-        }
-        printf("\n");
-    }
-
-    printf("// XOP9\n");
-    for (int i = 0; i < 256; ++i)
-    {
-        for (int pp = 0; pp < 4; ++pp)
-        {
-            for (int modrm = 0x5; modrm < 64; modrm += 8)
-            {
-                for (int c = 0; c < sizeof(byte3cases)/sizeof(byte3cases[0]); ++c)
-                {
-                    printf( "0x8f, 0x09, 0x%02x, 0x%02x, 0x%02x, %s", pp + byte3cases[c],   i, modrm, postamble);
-                }
-            }
-        }
-        printf("\n");
-    }
-
-    printf("// XOPA\n");
-    for (int i = 0; i < 256; ++i)
-    {
-        for (int pp = 0; pp < 4; ++pp)
-        {
-            for (int modrm = 0x5; modrm < 64; modrm += 8)
-            {
-                for (int c = 0; c < sizeof(byte3cases)/sizeof(byte3cases[0]); ++c)
-                {
-                    printf( "0x8f, 0x0A, 0x%02x, 0x%02x, 0x%02x, %s", pp + byte3cases[c],   i, modrm, postamble);
-                }
-            }
-        }
-        printf("\n");
-    }
     printf("0\n");
     printf("};\n");
     printf("\n");

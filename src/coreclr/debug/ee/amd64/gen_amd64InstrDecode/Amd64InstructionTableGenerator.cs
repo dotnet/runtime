@@ -65,9 +65,6 @@ namespace Amd64InstructionTableGenerator
         Vex1, // mmmmm = 00001 (0F)
         Vex2, // mmmmm = 00010 (0F 38)
         Vex3, // mmmmm = 00011 (0F 3A)
-        XOP8, // TODO: remove
-        XOP9, // TODO: remove
-        XOPA, // TODO: remove
     }
 
     internal sealed partial class Amd64InstructionSample
@@ -153,9 +150,6 @@ namespace Amd64InstructionTableGenerator
                     case Map.Vex1:
                     case Map.Vex2:
                     case Map.Vex3:
-                    case Map.XOP8:
-                    case Map.XOP9:
-                    case Map.XOPA:
                         return (((int)encoding[opIndex]) << 4) + (encoding[opIndex - 1] & BytePP);
                     default:
                         return 0;
@@ -246,7 +240,6 @@ namespace Amd64InstructionTableGenerator
             GS = 0x65,
             OpSize = 0x66,
             AddSize = 0x67,
-            Xop = 0x8f,
             Vex = 0xc4,
             VexShort = 0xc5,
             Lock = 0xf0,
@@ -343,69 +336,27 @@ namespace Amd64InstructionTableGenerator
                     }
                     break;
                 case Prefixes.Vex:
-                case Prefixes.Xop:
                     {
-                        if (Debug.debug) Console.WriteLine($"  P:VEX3/XOP");
+                        if (Debug.debug) Console.WriteLine($"  P:VEX3");
+                        switch (encoding[operandIndex + 1] & 0x1f)
+                        {
+                            case 0x1:
+                                map = Map.Vex1;
+                                if (Debug.debug) Console.WriteLine($"  map: Vex1");
+                                break;
+                            case 0x2:
+                                map = Map.Vex2;
+                                if (Debug.debug) Console.WriteLine($"  map: Vex2");
+                                break;
+                            case 0x3:
+                                map = Map.Vex3;
+                                if (Debug.debug) Console.WriteLine($"  map: Vex3");
+                                break;
+                            default:
+                                throw new Exception($"Unexpected VEX map {encoding}");
+                        }
+
                         var byte2 = encoding[operandIndex + 2];
-                        if ((Prefixes)encoding[operandIndex] == Prefixes.Vex)
-                        {
-                            switch (encoding[operandIndex + 1] & 0x1f)
-                            {
-                                case 0x1:
-                                    map = Map.Vex1;
-                                    if (Debug.debug) Console.WriteLine($"  map: Vex1");
-                                    break;
-                                case 0x2:
-                                    map = Map.Vex2;
-                                    if (Debug.debug) Console.WriteLine($"  map: Vex2");
-                                    break;
-                                case 0x3:
-                                    map = Map.Vex3;
-                                    if (Debug.debug) Console.WriteLine($"  map: Vex3");
-                                    break;
-                                default:
-                                    throw new Exception($"Unexpected VEX map {encoding}");
-                            }
-                        }
-                        else
-                        {
-                            switch (encoding[operandIndex + 1] & 0x1f)
-                            {
-                                case 0x0:
-                                case 0x1:
-                                case 0x2:
-                                case 0x3:
-                                case 0x4:
-                                case 0x5:
-                                case 0x6:
-                                case 0x7:
-                                    map = Map.Primary;
-                                    break;
-                                case 0x8:
-                                    map = Map.XOP8;
-                                    break;
-                                case 0x9:
-                                    map = Map.XOP9;
-                                    break;
-                                case 0xA:
-                                    map = Map.XOPA;
-                                    break;
-                                default:
-                                    {
-                                        string encodingString = new string("");
-
-                                        foreach (var b in encoding)
-                                        {
-                                            encodingString += $"{b:x} ";
-                                        }
-
-                                        throw new Exception($"Unexpected XOP map \noperandIndex:{operandIndex}\nflags:{flags}\nencoding:{encodingString}");
-                                    }
-                            }
-                            if (map == Map.Primary)
-                                goto default;
-                        }
-
                         if ((byte2 & ByteW) != 0)
                         {
                             flags |= EncodingFlags.W;
@@ -577,9 +528,6 @@ namespace Amd64InstructionTableGenerator
                 { Map.Vex1,      new Dictionary<int, string>() },
                 { Map.Vex2,      new Dictionary<int, string>() },
                 { Map.Vex3,      new Dictionary<int, string>() },
-                { Map.XOP8,      new Dictionary<int, string>() },
-                { Map.XOP9,      new Dictionary<int, string>() },
-                { Map.XOPA,      new Dictionary<int, string>() },
             };
 
             ParseSamples();
@@ -916,7 +864,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("    // The following instrForm maps correspond to the amd64 instr maps");
             Console.WriteLine("    // The comments are for debugging convenience.  The comments use a packed opcode followed by a list of observed mnemonics");
             Console.WriteLine("    // The opcode is packed to be human readable.  PackedOpcode = opcode << 4 + pp");
-            Console.WriteLine("    //   - For Vex* and Xop* the pp is directly included in the encoding");
+            Console.WriteLine("    //   - For Vex* the pp is directly included in the encoding");
             Console.WriteLine("    //   - For the Secondary, F38, and F3A pages the pp is not defined in the encoding, but affects instr form.");
             Console.WriteLine("    //          - pp = 0 implies no prefix.");
             Console.WriteLine("    //          - pp = 1 implies 0x66 OpSize prefix only.");
@@ -959,10 +907,7 @@ namespace Amd64InstructionTableGenerator
                     ("F3A", Map.F3A),
                     ("Vex1", Map.Vex1),
                     ("Vex2", Map.Vex2),
-                    ("Vex3", Map.Vex3),
-                    ("XOP8", Map.XOP8),
-                    ("XOP9", Map.XOP9),
-                    ("XOPA", Map.XOPA)
+                    ("Vex3", Map.Vex3)
                 };
 
             foreach ((string name, Map map) in mapTuples)
