@@ -107,18 +107,6 @@ namespace Amd64InstructionTableGenerator
             ["sgdt"] = _ => SuffixFlags.M10B,
             ["sidt"] = _ => SuffixFlags.M10B,
             ["vlddqu"] = e => Amd64InstructionTableGenerator.Amd64L(SuffixFlags.M32B, SuffixFlags.M16B, e),
-            ["vprotb"] = _ => SuffixFlags.M16B,
-            ["vprotd"] = _ => SuffixFlags.M16B,
-            ["vprotq"] = _ => SuffixFlags.M16B,
-            ["vprotw"] = _ => SuffixFlags.M16B,
-            ["vpshab"] = _ => SuffixFlags.M16B,
-            ["vpshad"] = _ => SuffixFlags.M16B,
-            ["vpshaq"] = _ => SuffixFlags.M16B,
-            ["vpshaw"] = _ => SuffixFlags.M16B,
-            ["vpshlb"] = _ => SuffixFlags.M16B,
-            ["vpshld"] = _ => SuffixFlags.M16B,
-            ["vpshlq"] = _ => SuffixFlags.M16B,
-            ["vpshlw"] = _ => SuffixFlags.M16B,
         };
 
         public readonly string disassembly;
