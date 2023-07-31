@@ -604,7 +604,8 @@ function fetchResource(request: ResourceRequest): Promise<Response> {
         // there's anything they don't like about it.
         fetchOptions.integrity = isCacheAvailable() ? (request.hash ?? "") : undefined;
     }
-
+    console.log("hey thays 1 - " + url);
+    console.log("hey thays 2 - " + JSON.stringify(fetchOptions));
     return loaderHelpers.fetch_like(url, fetchOptions);
 }
 
