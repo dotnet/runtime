@@ -800,7 +800,11 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
     {
         CopyOSContext(pThread->m_OSContext, pContextRecord);
         SetIP(pThread->m_OSContext, (PCODE)uResumePC);
+#if defined(TARGET_UNIX) && !(defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM))
+        uAbortAddr = NULL;
+#else
         uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(uResumePC);
+#endif
     }
 
     if (uAbortAddr)
