@@ -256,10 +256,16 @@ void FireDynamicEvent(const char* name, EventArgument... arguments)
       }                                                           \
   }
 
-#define DYNAMIC_EVENT(name, level, keyword, ...)                                                                   \
+#define DYNAMIC_EVENT(name, level, keyword, ...)                  \
   inline bool GCEventEnabled##name() { return GCEventStatus::IsEnabled(GCEventProvider_Default, keyword, level); } \
-  template<typename... EventActualArgument>                                                                        \
-  inline void GCEventFire##name(EventActualArgument... arguments) { FireDynamicEvent<__VA_ARGS__>(#name, arguments...); }
+  template<typename... EventActualArgument>                       \
+  inline void GCEventFire##name(EventActualArgument... arguments) \
+  {                                                               \
+      if (GCEventEnabled##name())                                 \
+      {                                                           \
+          FireDynamicEvent<__VA_ARGS__>(#name, arguments...);     \
+      }                                                           \
+  }
 
 #include "gcevents.h"
 

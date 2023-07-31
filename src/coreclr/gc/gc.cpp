@@ -3228,35 +3228,6 @@ void gc_heap::fire_pevents()
     {
         time_info_32[i] = limit_time_to_uint32 (time_info[i]);
     }
-#ifdef DYNAMIC_HEAP_COUNT
-    if ((GCConfig::GetHeapCount() == 0) && (GCConfig::GetGCDynamicAdaptationMode() != 0))
-    {
-        uint32_t prev_sample_index = (dynamic_heap_count_data.sample_index + dynamic_heap_count_data_t::sample_size - 1) % dynamic_heap_count_data_t::sample_size;
-        assert (prev_sample_index < dynamic_heap_count_data_t::sample_size);
-        dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[prev_sample_index];
-        uint64_t gc_elapsed_time     = sample.gc_elapsed_time;
-        uint64_t soh_msl_wait_time   = sample.soh_msl_wait_time;
-        uint64_t uoh_msl_wait_time   = sample.uoh_msl_wait_time;
-        uint64_t elapsed_between_gcs = sample.elapsed_between_gcs;
-
-        // TODO, AndrewAu, is this the right time to fire these events?
-        //
-        // I get it, we need to reuse the existing GCGlobalHeapHistory_V4 event, so we had no choice
-        // but to fire it now, but now we have an option to do something different.
-        //
-        // GCEventFireDynamicHeapCountData is also computed once across all heaps - so this is not
-        // more global than that one
-        //
-        // Right now, this is fired more frequently than GCEventFireDynamicHeapCountData
-        // 
-        GCEventFireGlobalDynamicHeapCountData(
-            gc_elapsed_time,
-            soh_msl_wait_time,
-            uoh_msl_wait_time,
-            elapsed_between_gcs
-        );
-    }
-#endif //DYNAMIC_HEAP_COUNT
 
     FIRE_EVENT(GCGlobalHeapHistory_V4,
                current_gc_data_global->final_youngest_desired,
@@ -3302,7 +3273,7 @@ void gc_heap::fire_pevents()
 // This fires the amount of total committed in use, in free and on the decommit list.
 // It's fired on entry and exit of each blocking GC and on entry of each BGC (not firing this on exit of a GC
 // because EE is not suspended then. On entry it's fired after the GCStart event, on exit it's fire before the GCStop event.
-void gc_heap::fire_committed_usage_events()
+void gc_heap::fire_committed_usage_event()
 {
 #if defined(FEATURE_EVENT_TRACE) && defined(USE_REGIONS)
     if (!EVENT_ENABLED (GCMarkWithType)) return;
@@ -3314,7 +3285,9 @@ void gc_heap::fire_committed_usage_events()
     size_t new_current_total_committed;
     size_t new_current_total_committed_bookkeeping;
     size_t new_committed_by_oh[recorded_committed_bucket_counts];
-    compute_committed_bytes(total_committed, committed_decommit, committed_free, committed_bookkeeping, new_current_total_committed, new_current_total_committed_bookkeeping, new_committed_by_oh);
+    compute_committed_bytes(total_committed, committed_decommit, committed_free,
+                            committed_bookkeeping, new_current_total_committed, new_current_total_committed_bookkeeping,
+                            new_committed_by_oh);
 
     size_t total_committed_in_use = new_committed_by_oh[soh] + new_committed_by_oh[loh] + new_committed_by_oh[poh];
     size_t total_committed_in_global_decommit = committed_decommit;
@@ -3323,6 +3296,7 @@ void gc_heap::fire_committed_usage_events()
     size_t total_bookkeeping_committed = committed_bookkeeping;
 
     GCEventFireCommittedUsage (
+        (uint16_t)1,
         (uint64_t)total_committed_in_use,
         (uint64_t)total_committed_in_global_decommit,
         (uint64_t)total_committed_in_free,
@@ -25091,6 +25065,14 @@ void gc_heap::check_heap_count ()
 
     dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
 
+    GCEventFireDynamicHeapCountSample(
+        (uint16_t)1,
+        sample.gc_elapsed_time,
+        sample.soh_msl_wait_time,
+        sample.uoh_msl_wait_time,
+        sample.elapsed_between_gcs
+    );
+
     if (settings.gc_index < prev_change_heap_count_gc_index + 3)
     {
         // reconsider the decision every few gcs
@@ -25240,8 +25222,12 @@ void gc_heap::check_heap_count ()
         dynamic_heap_count_data.space_cost_increase_per_step_up   = space_cost_increase_per_step_up;
         dynamic_heap_count_data.space_cost_decrease_per_step_down = space_cost_decrease_per_step_down;
 
-        GCEventFireDynamicHeapCountData(
+        GCEventFireDynamicHeapCountTuning(
+            (uint16_t)1,
+            (uint16_t)dynamic_heap_count_data.new_n_heaps,
+            (uint64_t)VolatileLoad(&settings.gc_index),
             dynamic_heap_count_data.median_percent_overhead,
+            dynamic_heap_count_data.smoothed_median_percent_overhead,
             dynamic_heap_count_data.overhead_reduction_per_step_up,
             dynamic_heap_count_data.overhead_increase_per_step_down,
             dynamic_heap_count_data.space_cost_increase_per_step_up,
@@ -49478,7 +49464,7 @@ void gc_heap::do_pre_gc()
 #endif //TRACE_GC
 
     GCHeap::UpdatePreGCCounters();
-    fire_committed_usage_events();
+    fire_committed_usage_event();
 
 #if defined(__linux__)
     GCToEEInterface::UpdateGCEventStatus(static_cast<int>(GCEventStatus::GetEnabledLevel(GCEventProvider_Default)),
@@ -50014,7 +50000,7 @@ void gc_heap::do_post_gc()
 
     if (!settings.concurrent)
     {
-        fire_committed_usage_events ();
+        fire_committed_usage_event ();
     }
     GCHeap::UpdatePostGCCounters();
 
@@ -52291,7 +52277,9 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
 }
 
 #ifdef USE_REGIONS
-void gc_heap::compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, size_t* new_committed_by_oh)
+void gc_heap::compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free,
+                                      size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping,
+                                      size_t* new_committed_by_oh)
 {
     // Accounting for the bytes committed for the regions
     for (int oh = soh; oh < total_oh_count; oh++)
@@ -52414,7 +52402,9 @@ int gc_heap::refresh_memory_limit()
     size_t new_current_total_committed;
     size_t new_current_total_committed_bookkeeping;
     size_t new_committed_by_oh[recorded_committed_bucket_counts];
-    compute_committed_bytes(total_committed, committed_decommit, committed_free, committed_bookkeeping, new_current_total_committed, new_current_total_committed_bookkeeping, new_committed_by_oh);
+    compute_committed_bytes(total_committed, committed_decommit, committed_free,
+                            committed_bookkeeping, new_current_total_committed, new_current_total_committed_bookkeeping,
+                            new_committed_by_oh);
 #endif //USE_REGIONS
 
     uint32_t nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
