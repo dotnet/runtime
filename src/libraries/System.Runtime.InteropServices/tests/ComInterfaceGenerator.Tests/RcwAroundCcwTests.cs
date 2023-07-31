@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using SharedTypes.ComInterfaces;
@@ -86,6 +85,7 @@ namespace ComInterfaceGenerator.Tests
             var obj = CreateWrapper<IIntArrayImpl, IIntArray>();
             int[] data = new int[] { 1, 2, 3 };
             obj.Double(data, data.Length);
+            Assert.True(data is [2, 4, 6]);
         }
 
         [Fact]
@@ -121,15 +121,15 @@ namespace ComInterfaceGenerator.Tests
         {
             var obj = CreateWrapper<ICollectionMarshallingFailsImpl, ICollectionMarshallingFails>();
 
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
                 _ = obj.GetConstSize()
             );
 
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
                 _ = obj.Get(out _)
             );
 
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
                 obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 }, 10)
             );
         }
@@ -140,17 +140,17 @@ namespace ComInterfaceGenerator.Tests
         {
             var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
 
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
                 _ = obj.GetConstSize()
             );
 
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
                 _ = obj.Get(out _, out _)
             );
             var array = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5, }, new int[] { 6, 7, 8, 9 } };
             var widths = new int[] { 3, 2, 4 };
             var length = 3;
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
                 obj.Set(array, widths, length)
             );
         }
@@ -163,31 +163,32 @@ namespace ComInterfaceGenerator.Tests
             var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
 
             // All of these will marshal either to COM or the CCW will marshal on the return
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.Param(strings);
             });
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.RefParam(ref strings);
             });
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.InParam(in strings);
             });
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.OutParam(out strings);
             });
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.ByValueInOutParam(strings);
             });
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 _ = obj.ReturnValue();
             });
         }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/87845")]
         [Fact]
         public void IStringArrayMarshallingFails_Failing()
@@ -195,7 +196,7 @@ namespace ComInterfaceGenerator.Tests
             var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
 
             var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.ByValueOutParam(strings);
             });

@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Runtime.InteropServices.Marshalling;
 
 namespace SharedTypes.ComInterfaces.MarshallingFails
@@ -18,7 +17,7 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
             if (_marshalledCount++ == 3)
             {
                 _marshalledCount = 0;
-                throw new ArgumentException("The element was the 4th element (with 0-based index 3)");
+                throw new MarshallingFailureException("The element was the 4th element (with 0-based index 3)");
             }
             return managed;
         }
@@ -28,7 +27,7 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
             if (_unmarshalledCount++ == 3)
             {
                 _unmarshalledCount = 0;
-                throw new ArgumentException("The element was the 4th element (with 0-based index 3)");
+                throw new MarshallingFailureException("The element was the 4th element (with 0-based index 3)");
             }
             return (int)unmanaged;
         }
