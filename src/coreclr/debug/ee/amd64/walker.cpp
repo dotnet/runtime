@@ -624,7 +624,6 @@ static int immSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, boo
     switch (form)
     {
     case Amd64InstrDecode::InstrForm::I1B:
-    case Amd64InstrDecode::InstrForm::I1B_W_None_or_MOp_M16B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_L_M16B_or_M8B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_WP_M8B_or_M4B_or_M2B:
