@@ -97,8 +97,7 @@ namespace System.Globalization.Tests
 
             for (int i = 0; i <= 0xFFFF; i++)
             {
-                if ((i >= 0xD800 && i <= 0xDFFF) || // Surrogates are characters in the Unicode range U+D800—U+DFFF
-                    i == 0x0130 || // We special case Turkish uppercase i
+                if (i == 0x0130 || // We special case Turkish uppercase i
                     i == 0x0131 || // and Turkish lowercase i
                     i == 0x017f)   // and LATIN SMALL LETTER LONG S
                 {

@@ -1216,12 +1216,6 @@ namespace System.Globalization.Tests
 
             for (int i = 0; i <= 0xFFFF; i++)
             {
-                // Surrogates are characters in the Unicode range U+D800—U+DFFF
-                if (i >= 0xD800 && i <= 0xDFFF)
-                {
-                    continue;
-                }
-
                 char ch = (char)i;
                 char upper = textInfo.ToUpper(ch);
                 char lower = textInfo.ToLower(ch);
