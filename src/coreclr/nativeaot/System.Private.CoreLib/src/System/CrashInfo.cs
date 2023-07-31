@@ -365,7 +365,7 @@ namespace System
 
         private bool WriteSeparator() => _isCommaNeeded ? WriteChar(',') : true;
 
-        private bool WriteChar(char source) => WriteChars(new ReadOnlySpan<char>(source));
+        private bool WriteChar(char source) => WriteChars(new ReadOnlySpan<char>(in source));
 
         private bool WriteChars(ReadOnlySpan<char> chars)
         {

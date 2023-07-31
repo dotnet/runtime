@@ -4440,7 +4440,7 @@ namespace System
         public static int Compare<T>(T? n1, T? n2) where T : struct { throw null; }
         public static bool Equals<T>(T? n1, T? n2) where T : struct { throw null; }
         public static System.Type? GetUnderlyingType(System.Type nullableType) { throw null; }
-        public static ref readonly T GetValueRefOrDefaultRef<T>(in T? nullable) where T : struct { throw null; }
+        public static ref readonly T GetValueRefOrDefaultRef<T>(ref readonly T? nullable) where T : struct { throw null; }
     }
     public partial struct Nullable<T> where T : struct
     {
@@ -4691,7 +4691,7 @@ namespace System
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
         public ReadOnlySpan(T[]? array) { throw null; }
         public ReadOnlySpan(T[]? array, int start, int length) { throw null; }
-        public ReadOnlySpan(in T reference) { throw null; }
+        public ReadOnlySpan(ref readonly T reference) { throw null; }
         public static System.ReadOnlySpan<T> Empty { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public ref readonly T this[int index] { get { throw null; } }
@@ -13216,7 +13216,7 @@ namespace System.Runtime.CompilerServices
         public unsafe static void* AsPointer<T>(ref T value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe static ref T AsRef<T>(void* source) { throw null; }
-        public static ref T AsRef<T>(scoped in T source) { throw null; }
+        public static ref T AsRef<T>(scoped ref readonly T source) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
         public static T? As<T>(object? o) where T : class? { throw null; }
         public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
