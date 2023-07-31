@@ -312,7 +312,7 @@ namespace Microsoft.Extensions.DependencyInjection
             if (constructorParameters.Length == 0)
             {
                 return (IServiceProvider serviceProvider, object?[]? arguments) =>
-                    invoker.Invoke()!;
+                    invoker.Invoke();
             }
 
             // Gather some metrics to determine what fast path to take, if any.

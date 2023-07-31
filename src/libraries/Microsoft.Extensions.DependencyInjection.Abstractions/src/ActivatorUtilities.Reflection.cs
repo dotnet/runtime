@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     break;
             }
 
-            return invoker.Invoke(arg1, arg2, arg3, arg4)!;
+            return invoker.Invoke(arg1, arg2, arg3, arg4);
         }
 
         private static object ReflectionFactoryServiceOnlySpan(
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 arguments[i] = GetService(serviceProvider, parameterTypes[i], declaringType, false);
             }
 
-            return invoker.Invoke(arguments.AsSpan())!;
+            return invoker.Invoke(arguments.AsSpan());
         }
 
         private static object ReflectionFactoryCanonicalFixed(
@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     break;
             }
 
-            return invoker.Invoke(arg1, arg2, arg3, arg4)!;
+            return invoker.Invoke(arg1, arg2, arg3, arg4);
         }
 
         private static object ReflectionFactoryCanonicalSpan(
@@ -151,7 +151,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         parameter.HasDefaultValue)) ?? parameter.DefaultValue;
             }
 
-            return invoker.Invoke(constructorArguments.AsSpan())!;
+            return invoker.Invoke(constructorArguments.AsSpan());
         }
 
         private static object ReflectionFactoryDirect(
@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.DependencyInjection
             if (arguments is null)
                 ThrowHelperNullReferenceException(); //AsSpan() will not throw NullReferenceException.
 
-            return invoker.Invoke(arguments.AsSpan())!;
+            return invoker.Invoke(arguments.AsSpan());
         }
 
         /// <summary>
