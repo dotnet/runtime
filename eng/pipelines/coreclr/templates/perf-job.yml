@@ -93,7 +93,7 @@ jobs:
         - ${{ 'build_ios_arm64_release_iOSNativeAOT' }}
 
     ${{ if eq(parameters.hybridGlobalization, true) }}:
-      hybridGlobalizationParameter: --hybridglobalization
+      hybridGlobalizationParameter: '--hybridglobalization'
     ${{ else }}:
       hybridGlobalizationParameter: ''
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'iOSNativeAOT'))) }}:
