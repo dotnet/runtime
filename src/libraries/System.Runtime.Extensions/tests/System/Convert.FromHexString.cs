@@ -62,7 +62,6 @@ namespace System.Tests
         [InlineData("0\u0308")]
         [InlineData("0x")]
         [InlineData("x0")]
-        [InlineData("ABC")] // HalfByte
         public static void InvalidInputString_FormatException_Or_FalseResult(string invalidInput)
         {
             Assert.Throws<FormatException>(() => Convert.FromHexString(invalidInput));
@@ -132,7 +131,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void NeedMoreData()
+        public static void NeedMoreData_OrFormatException()
         {
             const int destinationSize = 10;
             byte[] data = Security.Cryptography.RandomNumberGenerator.GetBytes(destinationSize);
@@ -142,6 +141,7 @@ namespace System.Tests
             var spanHex = hex.AsSpan(0, 1);
             var singeResult = Convert.FromHexString(spanHex, destination, out int consumed, out int written);
 
+            Assert.Throws<FormatException>(() => Convert.FromHexString(hex.Substring(0, 1)));
             Assert.Equal(OperationStatus.NeedMoreData, singeResult);
             Assert.Equal(0, consumed);
             Assert.Equal(0, written);
@@ -150,6 +150,7 @@ namespace System.Tests
 
             var oneOffResult = Convert.FromHexString(spanHex, destination, out consumed, out written);
 
+            Assert.Throws<FormatException>(() => Convert.FromHexString(hex.Substring(0, hex.Length - 1)));
             Assert.Equal(OperationStatus.NeedMoreData, oneOffResult);
             Assert.Equal(spanHex.Length - 1, consumed);
             Assert.Equal((spanHex.Length - 1) / 2, written);

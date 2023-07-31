@@ -3017,6 +3017,7 @@ namespace System
             if (destination.Length < quotient)
             {
                 source = source.Slice(0, destination.Length * 2);
+                quotient = destination.Length;
                 successResult = OperationStatus.DestinationTooSmall;
             }
             else if (remainder == 1)
