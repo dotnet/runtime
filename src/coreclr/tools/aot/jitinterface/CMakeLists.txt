@@ -5,9 +5,13 @@ set(NATIVE_SOURCES
     jitinterface.cpp
     jitwrapper.cpp
     corinfoexception.cpp
-
-    ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
 )
+
+if(NOT CLR_CROSS_COMPONENTS_BUILD)
+  list(APPEND NATIVE_SOURCES
+       ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
+  )
+endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
   set(JITINTERFACE_RESOURCES Native.rc)
