@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static partial class ActivatorUtilities
     {
 #if NET8_0_OR_GREATER // Use the faster ConstructorInvoker which also has alloc-free APIs when <= 4 parameters.
-        private static object ReflectionFactory_ServiceOnly_Fixed(
+        private static object ReflectionFactoryServiceOnlyFixed(
             ConstructorInvoker invoker,
             Type[] parameterTypes,
             Type declaringType,
@@ -20,8 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Debug.Assert(parameterTypes.Length >= 1 && parameterTypes.Length <= FixedArgumentThreshold);
             Debug.Assert(FixedArgumentThreshold == 4);
 
-            if (serviceProvider is null)
-                ThrowHelper_ArgumentNullException_serviceProvider();
+            ArgumentNullException.ThrowIfNull(nameof(serviceProvider));
 
             object? arg1 = null;
             object? arg2 = null;
@@ -47,7 +46,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return invoker.Invoke(arg1, arg2, arg3, arg4)!;
         }
 
-        private static object ReflectionFactory_ServiceOnly_Span(
+        private static object ReflectionFactoryServiceOnlySpan(
             ConstructorInvoker invoker,
             Type[] parameterTypes,
             Type declaringType,
@@ -64,7 +63,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return invoker.Invoke(arguments.AsSpan())!;
         }
 
-        private static object ReflectionFactory_Canonical_Fixed(
+        private static object ReflectionFactoryCanonicalFixed(
             ConstructorInvoker invoker,
             FactoryParameterContext[] parameters,
             Type declaringType,
@@ -74,8 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Debug.Assert(parameters.Length >= 1 && parameters.Length <= FixedArgumentThreshold);
             Debug.Assert(FixedArgumentThreshold == 4);
 
-            if (serviceProvider is null)
-                ThrowHelper_ArgumentNullException_serviceProvider();
+            ArgumentNullException.ThrowIfNull(nameof(serviceProvider));
 
             object? arg1 = null;
             object? arg2 = null;
@@ -130,15 +128,14 @@ namespace Microsoft.Extensions.DependencyInjection
             return invoker.Invoke(arg1, arg2, arg3, arg4)!;
         }
 
-        private static object ReflectionFactory_Canonical_Span(
+        private static object ReflectionFactoryCanonicalSpan(
             ConstructorInvoker invoker,
             FactoryParameterContext[] parameters,
             Type declaringType,
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
-            if (serviceProvider is null)
-                ThrowHelper_ArgumentNullException_serviceProvider();
+            ArgumentNullException.ThrowIfNull(nameof(serviceProvider));
 
             object?[] constructorArguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -157,16 +154,19 @@ namespace Microsoft.Extensions.DependencyInjection
             return invoker.Invoke(constructorArguments.AsSpan())!;
         }
 
-        private static object ReflectionFactory_Direct(
+        private static object ReflectionFactoryDirect(
             ConstructorInvoker invoker,
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
             if (serviceProvider is null)
-                ThrowHelper_ArgumentNullException_serviceProvider();
+            {
+                // Cannot use ArgumentNullException.ThrowIfNull here since that causes a compile error since serviceProvider is not used.
+                ThrowHelperArgumentNullExceptionServiceProvider();
+            }
 
             if (arguments is null)
-                ThrowHelper_NullReferenceException(); //AsSpan() will not throw NullReferenceException.
+                ThrowHelperNullReferenceException(); //AsSpan() will not throw NullReferenceException.
 
             return invoker.Invoke(arguments.AsSpan())!;
         }
@@ -175,12 +175,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// For consistency with the expression-based factory, throw NullReferenceException.
         /// </summary>
         [DoesNotReturn]
-        private static void ThrowHelper_NullReferenceException()
+        private static void ThrowHelperNullReferenceException()
         {
             throw new NullReferenceException();
         }
 #elif NETSTANDARD2_1_OR_GREATER || NETCOREAPP
-        private static object ReflectionFactory_Canonical(
+        private static object ReflectionFactoryCanonical(
             ConstructorInfo constructor,
             FactoryParameterContext[] parameters,
             Type declaringType,
@@ -188,7 +188,7 @@ namespace Microsoft.Extensions.DependencyInjection
             object?[]? arguments)
         {
             if (serviceProvider is null)
-                ThrowHelper_ArgumentNullException_serviceProvider();
+                ThrowHelperArgumentNullExceptionServiceProvider();
 
             object?[] constructorArguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -210,7 +210,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
         [DoesNotReturn]
-        private static void ThrowHelper_ArgumentNullException_serviceProvider()
+        private static void ThrowHelperArgumentNullExceptionServiceProvider()
         {
             throw new ArgumentNullException("serviceProvider");
         }
