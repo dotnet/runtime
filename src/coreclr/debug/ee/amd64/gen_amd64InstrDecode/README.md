@@ -23,14 +23,14 @@ cat opcodes.intel | dotnet run > ../amd64InstrDecode.h
 
 ## Technical design
 
-`amd64InstrDecode.h`'s primary purpose is to provide a reliable
-and accurately mechanism to implement
-`Amd64 NativeWalker::DecodeInstructionForPatchSkip(..)`.
+The primary purpose of `amd64InstrDecode.h` is to provide a reliable
+and accurate mechanism to implement the `amd64`
+`NativeWalker::DecodeInstructionForPatchSkip(..)` function.
 
 This function needs to be able to decode an arbitrary `amd64`
 instruction.  The decoder currently must be able to identify:
 
-- Whether the instruction includes an instruction pointer relative memory access
+- Whether the instruction includes an instruction pointer relative memory access (RIP relative addressing)
 - The location of the memory displacement within the instruction
 - The instruction length in bytes
 - The size of the memory operation in bytes
@@ -39,9 +39,7 @@ To get this right is complicated, because the `amd64` instruction set is
 complicated.
 
 A high level view of the `amd64` instruction set can be seen by looking at
-`AMD64 Architecture Programmer’s
- Manual Volume 3:
- General-Purpose and System Instructions`
+`AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions`
  `Section 1.1 Instruction Encoding Overview`
  `Figure 1-1.  Instruction Encoding Syntax`
 
@@ -60,7 +58,7 @@ The process entails
 
 #### The necessary set
 
-- All instruction forms which use instruction pointer relative memory accesses.
+- All instruction forms which use RIP relative memory accesses.
 - All combinations of modifier bits which affect the instruction form
     - presence and/or size of the memory access
     - size or presence of immediates
@@ -109,7 +107,7 @@ This meets the padding consistency needs.
 #### Ordering
 
 As a convenience to the parser the encoded instructions are logically
-ordered.  The ordering is generally, but can vary slightly depending on
+ordered.  The ordering is generally as follows, but can vary slightly depending on
 the needs of the particular opcode map:
 
 - map
@@ -177,7 +175,7 @@ gdb opcodes -batch -ex "set disassembly-flavor intel" -ex "disass /r opcodes" > 
 
 #### Alternative disassemblers
 
-It seems `objdump` could provide similar results. Untested, the parser may need to
+It seems `objdump` could provide similar results. This is untested. The parser may need to
 be modified for subtle differences.
 ```bash
 objdump -D -M intel -b --insn-width=15 -j .data opcodes
@@ -186,13 +184,15 @@ objdump -D -M intel -b --insn-width=15 -j .data opcodes
 The lldb parser aborts parsing when it observes bad instruction. It
 might be usable with additional python scripts.
 
-Windows disassembler may also work.  Not attempted.
+Windows disassembler may also work. It has not been tried.
 
 ### Parsing the disassembly
+
 ```bash
 # Parse disassembly and generate code
 cat opcodes.intel | dotnet run > ../amd64InstrDecode.h
 ```
+
 #### Finding relevant disassembly lines
 
 We are not interested in all lines in the disassembly. The disassembler
@@ -202,11 +202,10 @@ We filter out and ignore non-disassembly lines using a `Regex` for a
 disassembly line.
 
 We expect the generated instruction samples to be in a group.  The first
-instruction in the group is the only one we are interested in.  This is
-the one we are interested in.
+instruction in the group is the only one we are interested in.
 
 The group is terminated by a pair of instructions.  The first terminal
-instruction must have `0x58` as the last byte in it encoding. The final
+instruction must have `0x58` as the last byte in its encoding. The final
 terminal instruction must be a `0x59\tpop`.
 
 We continue parsing the first line of each group.
@@ -216,7 +215,7 @@ We continue parsing the first line of each group.
 Many encodings are not valid.  For `gdb`, these instructions are marked
 `(bad)`.  We filter and ignore these.
 
-#### Parsing the disassambly for each instruction sample
+#### Parsing the disassembly for each instruction sample
 
 For each sample, we need to calculate the important properties:
 - mnemonic
@@ -228,7 +227,7 @@ For each sample, we need to calculate the important properties:
 - Encoding Flags
     - pp, W, L, prefix and encoding flags
 - `SuffixFlags`
-    - presence of instruction relative accesses
+    - presence of RIP relative accesses
         - size of operation
         - position in the list of operands
         - number of immediate bytes
@@ -250,29 +249,27 @@ shifted left by 4 bits.
 For the 3D Now `NOW3D` map this is simply the encoded immediate from the
 instruction shifted left by 4 bits.
 
-For the `Secondary` `F38`, and `F39` maps this is the encoded opcode from
-the instruction shifted left by 4 bits orred with a synthetic `pp`. The
+For the `Secondary`, `F38`, and `F39` maps this is the encoded opcode from
+the instruction shifted left by 4 bits or'ed with a synthetic `pp`. The
 synthetic `pp` is constructed to match the rules of
 `Table 1-22. VEX/XOP.pp Encoding` from the
-`AMD64 Architecture Programmer’s
- Manual Volume 3:
- General-Purpose and System Instructions`.  For the case where the opSize
- 0x66 prefix is present with a `rep*` prefix, the `rep*` prefix is used
- to encode `pp`.
+`AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions`.
+For the case where the opSize 0x66 prefix is present with a `rep*` prefix, the `rep*` prefix is used
+to encode `pp`.
 
 For the `VEX*` and `XOP*` maps this is the encoded opcode from
-the instruction shifted left by 4 bits orred with `pp`.
+the instruction shifted left by 4 bits or'ed with `pp`.
 
 #### Identifying sets of instructions
 
-For most instructions, the opCodeExt will uniquely identify the instruction.
+For most instructions, the `opCodeExt` will uniquely identify the instruction.
 
 For many instructions, `modrm.reg` is used to uniquely identify the instruction.
 These instruction typically change mnemonic and behavior as `modrm.reg`
 changes. These become problematic, when the form of these instructions vary.
 
-For a few other instructions the `L`, `W`, `vvvv` value may the instruction
-change behavior. Usually these do not change mnemonic.
+For a few other instructions the `L`, `W`, `vvvv` values may change the instruction
+behavior. Usually these do not change mnemonic.
 
 The set of instructions is therefore usually grouped by the opcode map and
 `opCodeExt` generated above.  For these a change in `opCodeExt` or `map`
@@ -328,7 +325,7 @@ samples, is restricted to a max compilation/link unit size. Early drafts
 were generating more instructions, and couldn't be compiled.
 
 However, there is no restriction that all the samples must come from
-single executable.  These could easily be separated by opcode map...
+single executable.  These could easily be separated by opcode map.
 
 ## Risks
 
@@ -342,7 +339,7 @@ Until a reasonably featured disassembler is created, the new instruction
 set can not be supported by this methodology.
 
 The previous methodology of manually encoding these new instruction set
-would still be possible....
+would still be possible.
 
 ### Disassembler errors
 
@@ -351,6 +348,7 @@ of the disassembler may have disassembly bugs.  Using newer disassemblers
 would mitigate this to some extent.
 
 ### Bugs
+
 - Inadequate samples.  Are there other bits which modify instruction
 behavior which we missed?
 - Parser/Table generator implementation bugs. Does the parser do what it
@@ -368,4 +366,5 @@ Regenerate and compare.
 
 ### New debugger feature requires more metadata
 
-Add new feature code, regenerate
+Add new feature code, regenerate.
+

@@ -414,7 +414,7 @@ struct ModRMByte
     BYTE mod:2;
 };
 
-static bool IsModRm(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
+static bool InstructionHasModRMByte(Amd64InstrDecode::InstrForm form, bool W)
 {
     bool modrm = true;
 
@@ -441,7 +441,7 @@ static bool IsModRm(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bo
     return modrm;
 }
 
-static bool IsWrite(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
+static bool IsWrite(Amd64InstrDecode::InstrForm form)
 {
     bool isWrite = false;
     switch (form)
@@ -484,7 +484,7 @@ static bool IsWrite(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bo
     return isWrite;
 }
 
-static uint8_t opSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
+static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
 {
     uint8_t opSize = 0;
     bool P = !((pp == 1) || fPrefix66);
@@ -755,6 +755,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         case 0x45:
         case 0x46:
         case 0x47:
+            done = true;
             break;
 
         // REX register extension prefixes with W
@@ -767,6 +768,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         case 0x4e:
         case 0x4f:
             W = true;
+            done = true;
             break;
 
         default:
@@ -785,38 +787,32 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
     {
         Primary = 0x0,
         Secondary = 0xF,
-        Escape0F_0F = 0x0F0F, // 3D Now
         Escape0F_38 = 0x0F38,
         Escape0F_3A = 0x0F3A,
-        VexMap1 = 0xc401,
-        VexMap2 = 0xc402,
-        VexMap3 = 0xc403,
-        XopMap8 = 0x8f08,
-        XopMap9 = 0x8f09,
-        XopMapA = 0x8f0A
+        VexMapC40F = 0xc401,
+        VexMapC40F38 = 0xc402,
+        VexMapC40F3A = 0xc403
     } opCodeMap;
 
     switch (*address)
     {
         case 0xf:
-           switch (address[1])
-           {
-           case 0xF:
-               opCodeMap = Escape0F_0F;
-               address += 2;
-               break;
+            switch (address[1])
+            {
             case 0x38:
-               opCodeMap = Escape0F_38;
-               address += 2;
-               break;
+                opCodeMap = Escape0F_38;
+                address += 2;
+                break;
             case 0x3A:
-               opCodeMap = Escape0F_3A;
-               address += 2;
-               break;
+                opCodeMap = Escape0F_3A;
+                address += 2;
+                break;
             default:
                 opCodeMap = Secondary;
                 address += 1;
+                break;
             }
+
             if (fPrefix66)
                 pp = 0x1;
 
@@ -826,13 +822,6 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
                 pp = 0x2;
             break;
 
-        case 0x8f: // XOP
-            if ((address[1] & 0x38) == 0)
-            {
-                opCodeMap = Primary;
-                break;
-            }
-            FALLTHROUGH;
         case 0xc4: // Vex 3-byte
             opCodeMap = (OpcodeMap)(int(address[0]) << 8 | (address[1] & 0x1f));
             // W is the top bit of opcode2.
@@ -848,8 +837,9 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
             pp = address[2] & 0x3;
             address += 3;
             break;
+
         case 0xc5: // Vex 2-byte
-            opCodeMap = VexMap1;
+            opCodeMap = VexMapC40F;
             W = true;
             if ((address[1] & 0x04) != 0)
             {
@@ -859,8 +849,10 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
             pp = address[1] & 0x3;
             address += 2;
             break;
+
         default:
             opCodeMap = Primary;
+            break;
     }
 
     Amd64InstrDecode::InstrForm form = Amd64InstrDecode::InstrForm::None;
@@ -872,38 +864,26 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
     case Secondary:
         form = Amd64InstrDecode::instrFormSecondary[(size_t(*address) << 2)| pp];
         break;
-    case Escape0F_0F: // 3DNow
-        form = Amd64InstrDecode::InstrForm::MOp_M8B_I1B;
-        break;
     case Escape0F_38:
         form = Amd64InstrDecode::instrFormF38[(size_t(*address) << 2)| pp];
         break;
     case Escape0F_3A:
         form = Amd64InstrDecode::instrFormF3A[(size_t(*address) << 2)| pp];
         break;
-    case VexMap1:
+    case VexMapC40F:
         form = Amd64InstrDecode::instrFormVex1[(size_t(*address) << 2)| pp];
         break;
-    case VexMap2:
+    case VexMapC40F38:
         form = Amd64InstrDecode::instrFormVex2[(size_t(*address) << 2)| pp];
         break;
-    case VexMap3:
+    case VexMapC40F3A:
         form = Amd64InstrDecode::instrFormVex3[(size_t(*address) << 2)| pp];
-        break;
-    case XopMap8:
-        form = Amd64InstrDecode::instrFormXOP8[(size_t(*address) << 2)| pp];
-        break;
-    case XopMap9:
-        form = Amd64InstrDecode::instrFormXOP9[(size_t(*address) << 2)| pp];
-        break;
-    case XopMapA:
-        form = Amd64InstrDecode::instrFormXOPA[(size_t(*address) << 2)| pp];
         break;
     default:
         _ASSERTE(false);
     }
 
-    bool fModRM = IsModRm(form, pp, W, L, fPrefix66);
+    bool fModRM = InstructionHasModRMByte(form, W);
     ModRMByte modrm = ModRMByte(address[1]);
 
     if (fModRM && (modrm.mod == 0x0) && (modrm.rm == 0x5))
@@ -923,8 +903,8 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         pInstrAttrib->m_cbInstr = pInstrAttrib->m_dwOffsetToDisp + dispBytes + immBytes;
         _ASSERTE(pInstrAttrib->m_cbInstr <= MAX_INSTRUCTION_LENGTH);
 
-        pInstrAttrib->m_fIsWrite = IsWrite(form, pp, W, L, fPrefix66);
-        pInstrAttrib->m_cOperandSize = opSize(form, pp, W, L, fPrefix66);
+        pInstrAttrib->m_fIsWrite = IsWrite(form);
+        pInstrAttrib->m_cOperandSize = InstructionOperandSize(form, pp, W, L, fPrefix66);
     }
 
     if (opCodeMap == Primary)

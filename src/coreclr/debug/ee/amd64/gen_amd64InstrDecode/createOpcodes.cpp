@@ -3,12 +3,11 @@
 
 #include <stdio.h>
 
-int main(int argc, char*argv[])
+int main(int argc, char* argv[])
 {
     printf("#include <stdio.h>\n");
     printf("#include <inttypes.h>\n");
 
-    // TODO: for EVEX will we ever need 16-byte postamble?
     const char* postamble = "0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59,\n";
 
     printf("uint8_t opcodes[] = {\n");
@@ -16,7 +15,6 @@ int main(int argc, char*argv[])
     printf("// Primary Opcode\n");
     for (int i = 0; i < 256; ++i)
     {
-        int last = 64; // REVIEW: this is unused
         switch(i)
         {
             case 0x0f: // Secondary Escape
@@ -51,9 +49,6 @@ int main(int argc, char*argv[])
             case 0xf2: // Repne
             case 0xf3: // Rep
                 continue;
-            case 0x8f: // XOP except modrm.reg == 0
-                last = 8;
-                break;
             default:
                 break;
         }
@@ -77,8 +72,6 @@ int main(int argc, char*argv[])
     printf("// Secondary Opcode\n");
     for (int i = 0; i < 256; ++i)
     {
-        if (i == 0xf) // extension: 0F 0F (XOP)
-            continue;
         if (i == 0x38) // extension: 0F 38
             continue;
         if (i == 0x3A) // extension: 0F 3A
