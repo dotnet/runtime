@@ -30,4 +30,5 @@ public class ProxyOptions
     public bool RunningForBlazor { get; set; }
     public bool IgnoreProxyForLocalAddress { get; set; }
     public bool IsFirefoxDebugging { get; set; }
+    public bool JustMyCode { get; set; }
 }

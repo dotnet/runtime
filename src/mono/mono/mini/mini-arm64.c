@@ -367,7 +367,7 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-#if defined(TARGET_IOS) || defined(TARGET_WATCHOS) || defined(TARGET_OSX)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WATCHOS) || defined(TARGET_OSX)
 	ios_abi = TRUE;
 #endif
 #ifdef MONO_ARCH_ENABLE_PTRAUTH
@@ -1097,7 +1097,7 @@ mono_arm_emit_aotconst (gpointer ji, guint8 *code, guint8 *code_start, int dreg,
 gboolean
 mono_arch_have_fast_tls (void)
 {
-#ifdef TARGET_IOS
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 	return FALSE;
 #else
 	return TRUE;
@@ -3870,6 +3870,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case INTRINS_AARCH64_ADV_SIMD_TBL1:
 				arm_neon_tbl1_16b (code, dreg, sreg1, sreg2);
 				break;
+			case INTRINS_AARCH64_ADV_SIMD_USHL:
+				arm_neon_ushl (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+				break;
 			default:
 				g_assert_not_reached ();
 				break;
@@ -4137,17 +4140,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			arm_neon_ins_e (code, SIZE_8, dreg, sreg2, 1, 0); 
 		 	break;
-		}
-		case OP_ARM64_USHL: {
-			arm_neon_ushl (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
-			break;
-		}
-		case OP_ARM64_EXT_IMM: {
-			if (get_vector_size_macro (ins) == VREG_LOW)
-				arm_neon_ext_8b (code, dreg, sreg1, sreg2, ins->inst_c0);
-			else
-				arm_neon_ext_16b (code, dreg, sreg1, sreg2, ins->inst_c0);
-			break;
 		}
 		case OP_XLOWER: {
 			if (dreg == sreg1) {

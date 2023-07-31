@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
 
         public override void SetHashAlgorithm(string strName)
         {
-            if (strName.ToUpperInvariant() != HashAlgorithmNames.SHA1)
+            if (!strName.Equals(HashAlgorithmNames.SHA1, StringComparison.InvariantCultureIgnoreCase))
             {
                 // To match desktop, throw here
                 throw new CryptographicUnexpectedOperationException(SR.Cryptography_InvalidOperation);

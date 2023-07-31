@@ -590,13 +590,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) sze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) asze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -747,6 +747,10 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 #if defined(TARGET_AMD64)
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
 #endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    rbmMskCalleeTrash = emitComp->rbmMskCalleeTrash;
+#endif // TARGET_XARCH
 }
 
 void emitter::emitEndCG()
@@ -8050,7 +8054,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
     if (attr == EA_4BYTE)
     {
-        f        = forceCastToFloat(constValue);
+        f        = FloatingPointUtils::convertToSingle(constValue);
         cnsAddr  = &f;
         dataType = TYP_FLOAT;
     }

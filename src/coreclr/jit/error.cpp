@@ -251,6 +251,8 @@ void debugError(const char* msg, const char* file, unsigned line)
 
     LogEnv* env = JitTls::GetLogEnv();
 
+    JITDUMP("\nCOMPILATION FAILED: %s (%s:%d)\n", msg, tail, line);
+
     logf(LL_ERROR, "COMPILATION FAILED: file: %s:%d compiling method %s reason %s\n", tail, line,
          env->compiler->info.compFullName, msg);
 

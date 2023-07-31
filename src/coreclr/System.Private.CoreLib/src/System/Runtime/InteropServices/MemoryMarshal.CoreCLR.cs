@@ -33,6 +33,7 @@ namespace System.Runtime.InteropServices
         /// This technique does not perform array variance checks. The caller must manually perform any array variance checks
         /// if the caller wishes to write to the returned reference.
         /// </remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref byte GetArrayDataReference(Array array)
         {

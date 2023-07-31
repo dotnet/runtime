@@ -302,6 +302,9 @@ namespace System.Reflection.Metadata
 
                 string result = x.GetField;
                 Assert.Equal("4567", result);
+
+                int aa = System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField2.Test();
+                Assert.Equal(22, aa);
             });
         }
 
@@ -834,7 +837,6 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/87574", TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestGenericAddStaticField()
         {

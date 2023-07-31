@@ -365,18 +365,9 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
 
         if (pFD->IsStatic() && pMT->HasGenericsStaticsInfo())
         {
-            //
-            // <NICE> this is duplicated logic GetFieldDescByIndex </NICE>
-            //
-            INDEBUG(mdFieldDef token = pFD->GetMemberDef();)
-
-            DWORD pos = static_cast<DWORD>(pFD - (pMT->GetApproxFieldDescListRaw() + pMT->GetNumIntroducedInstanceFields()));
-            _ASSERTE(pos >= 0 && pos < pMT->GetNumStaticFields());
-
-            pFD = pMT->GetGenericsStaticFieldDescs() + pos;
-            _ASSERTE(pFD->GetMemberDef() == token);
-            _ASSERTE(!pFD->IsSharedByGenericInstantiations());
-            _ASSERTE(pFD->GetEnclosingMethodTable() == pMT);
+           MethodTable* pFieldMT = pFD->GetApproxEnclosingMethodTable();
+           DWORD index = pFieldMT->GetIndexForFieldDesc(pFD);
+           pFD = pMT->GetFieldDescByIndex(index);
         }
 
         *ppFD = pFD;
