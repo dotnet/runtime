@@ -273,7 +273,7 @@ namespace System.Globalization
 
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
 
-            // The mapped casing for the codePoint is usually existed in the same plane as codePoint.
+            // The mapped casing for the codePoint usually exists in the same plane as codePoint.
             // This is why we use 16-bit offsets to calculate the delta value from the codePoint.
 
             ref ushort rsStart = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(UppercaseValues));
@@ -308,7 +308,7 @@ namespace System.Globalization
 
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
 
-            // The mapped casing for the codePoint is usually existed in the same plane as codePoint.
+            // The mapped casing for the codePoint usually exists in the same plane as codePoint.
             // This is why we use 16-bit offsets to calculate the delta value from the codePoint.
 
             ref ushort rsStart = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(LowercaseValues));
