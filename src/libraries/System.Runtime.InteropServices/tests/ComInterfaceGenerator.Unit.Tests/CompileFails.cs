@@ -1093,7 +1093,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
             };
             test.ExpectedDiagnostics.AddRange(diagnostics);
-            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.UnrecommendedGeneratedComInterfaceUsage);
+            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
             await test.RunAsync();
         }
     }
