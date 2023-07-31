@@ -245,13 +245,13 @@ LOCAL_LABEL(ShadowUpdateDisabled):
     ld  t6, 0(t6)
     beq  t6, zero, LOCAL_LABEL(CheckCardTable)
 
-    srli  t4, t3, 0xc
-    add  t6, t6, t4  // SoftwareWriteWatch::AddressToTableByteIndexShift
-    lb  t4, 0(t6)
-    bne  t4, zero, LOCAL_LABEL(CheckCardTable)
+    srli  t0, t3, 0xc
+    add  t6, t6, t0  // SoftwareWriteWatch::AddressToTableByteIndexShift
+    lb  t0, 0(t6)
+    bne  t0, zero, LOCAL_LABEL(CheckCardTable)
 
-    ori  t4, zero, 0xFF
-    sb  t4, 0(t6)
+    ori  t0, zero, 0xFF
+    sb  t0, 0(t6)
 
 LOCAL_LABEL(CheckCardTable):
 #endif
