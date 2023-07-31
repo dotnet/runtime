@@ -213,8 +213,12 @@ namespace
         _X("any"),
     };
 
-    // Returns the RID determined (computed or fallback) for the platform the host is running on.
-    pal::string_t get_computed_current_rid(const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
+    // Returns the RID determined (computed or fallback) for the machine the host is running on.
+    // This RID is discoved at run-time from OS APIs and/or files. It may be distro-specific and/or
+    // version-specific. This usage of the machine RID is for a backwards-compat option that relies
+    // on the computed RID. All other parts of the host use the compile-time RID corresponding to the
+    // platform for which the runtime was built.
+    pal::string_t get_current_machine_rid(const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
     {
         pal::string_t current_rid;
         if (!try_get_runtime_id_from_env(current_rid))
@@ -331,7 +335,7 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
     pal::string_t host_rid;
     if (m_rid_resolution_options.use_fallback_graph)
     {
-        host_rid = get_computed_current_rid(m_rid_resolution_options.rid_fallback_graph);
+        host_rid = get_current_machine_rid(m_rid_resolution_options.rid_fallback_graph);
     }
     else
     {

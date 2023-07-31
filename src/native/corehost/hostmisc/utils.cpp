@@ -249,17 +249,12 @@ const pal::char_t* get_current_arch_name()
     return _STRINGIFY(CURRENT_ARCH_NAME);
 }
 
-pal::string_t get_current_runtime_id()
+pal::string_t get_runtime_id()
 {
     pal::string_t rid;
     if (try_get_runtime_id_from_env(rid))
         return rid;
 
-    return get_host_runtime_id();
-}
-
-const pal::char_t* get_host_runtime_id()
-{
     return _STRINGIFY(HOST_RID_PLATFORM) _X("-") _STRINGIFY(CURRENT_ARCH_NAME);
 }
 
@@ -464,7 +459,7 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
     url.append(_X("&arch="));
     url.append(arch);
     url.append(_X("&rid="));
-    url.append(get_host_runtime_id());
+    url.append(get_runtime_id());
 
     pal::string_t os = pal::get_current_os_rid_platform();
     if (os.empty())
