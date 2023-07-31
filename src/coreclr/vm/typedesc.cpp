@@ -556,17 +556,6 @@ BOOL TypeDesc::IsRestored()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SUPPORTS_DAC;
 
-    return IsRestored_NoLogging();
-}
-
-BOOL TypeDesc::IsRestored_NoLogging()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    SUPPORTS_DAC;
-
     return (m_typeAndFlags & TypeDesc::enum_flag_Unrestored) == 0;
 }
 

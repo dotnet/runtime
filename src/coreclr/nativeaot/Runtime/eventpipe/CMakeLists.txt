@@ -26,22 +26,28 @@ list(APPEND MINIPAL_SOURCES
 
 if(CLR_CMAKE_HOST_WIN32)
   list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
-      ds-ipc-pal-namedpipe.c
+    ds-ipc-pal-namedpipe.c
   )
 
   list(APPEND SHARED_DIAGNOSTIC_SERVER_HEADERS
-  ds-ipc-pal-namedpipe.h
+    ds-ipc-pal-namedpipe.h
   )
 endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
   list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
-      ds-ipc-pal-socket.c
+    ds-ipc-pal-socket.c
   )
 
   list(APPEND SHARED_DIAGNOSTIC_SERVER_HEADERS
-      ds-ipc-pal-socket.h
+    ds-ipc-pal-socket.h
   )
+
+  include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
+  list(APPEND MINIPAL_SOURCES
+    random.c
+  )
+
 endif(CLR_CMAKE_HOST_UNIX)
 
 list(APPEND EVENTPIPE_SOURCES

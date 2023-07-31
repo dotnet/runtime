@@ -28,17 +28,17 @@ namespace System.Reflection
             return new ConstructorInvoker(runtimeConstructor);
         }
 
-        public object? Invoke()
+        public object Invoke()
         {
             return _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>());
         }
 
-        public object? Invoke(object? arg1)
+        public object Invoke(object? arg1)
         {
             return _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>(ref arg1));
         }
 
-        public object? Invoke(object? arg1, object? arg2)
+        public object Invoke(object? arg1, object? arg2)
         {
             StackAllocatedArguments argStorage = default;
             argStorage._args.Set(0, arg1);
@@ -46,7 +46,7 @@ namespace System.Reflection
             return _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(2));
         }
 
-        public object? Invoke(object? arg1, object? arg2, object? arg3)
+        public object Invoke(object? arg1, object? arg2, object? arg3)
         {
             StackAllocatedArguments argStorage = default;
             argStorage._args.Set(0, arg1);
@@ -55,7 +55,7 @@ namespace System.Reflection
             return _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(3));
         }
 
-        public object? Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
+        public object Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
         {
             StackAllocatedArguments argStorage = default;
             argStorage._args.Set(0, arg1);
@@ -65,7 +65,7 @@ namespace System.Reflection
             return _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(4));
         }
 
-        public object? Invoke(Span<object?> arguments)
+        public object Invoke(Span<object?> arguments)
         {
 
             return _methodBaseInvoker.CreateInstance(arguments);

@@ -42,6 +42,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             RuntimeId = runtimeId;
             _options = options;
             _defaultPauseOnExceptions = PauseOnExceptionsKind.Unset;
+            JustMyCode = options?.JustMyCode ?? false;
         }
 
         internal virtual Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
@@ -1277,7 +1278,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
 
             if (context.CallStack.Count <= 1 && kind == StepKind.Out)
-                return false;
+            {
+                Frame scope = context.CallStack.FirstOrDefault<Frame>();
+                if (scope is null || !(await context.SdbAgent.IsAsyncMethod(scope.Method.DebugId, token)))
+                    return false;
+            }
             var ret = await TryStepOnManagedCodeAndStepOutIfNotPossible(msgId, context, kind, token);
             if (ret)
                 SendResponse(msgId, Result.Ok(new JObject()), token);

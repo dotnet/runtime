@@ -554,6 +554,8 @@ MONO_RESTORE_WARNING
 
 		t = ctx->method_inst->type_argv [0];
 		t = mini_get_underlying_type (t);
+		if (cfg->gshared && t != ctx->method_inst->type_argv [0] && MONO_TYPE_ISSTRUCT (t) && mono_class_check_context_used (mono_class_from_mono_type_internal (t)))
+			cfg->prefer_instances = TRUE;
 		return mini_emit_memory_load (cfg, t, args [0], 0, MONO_INST_UNALIGNED);
 	} else if (!strcmp (cmethod->name, "WriteUnaligned")) {
 		g_assert (ctx);
@@ -562,7 +564,10 @@ MONO_RESTORE_WARNING
 		g_assert (fsig->param_count == 2);
 
 		t = ctx->method_inst->type_argv [0];
+
 		t = mini_get_underlying_type (t);
+		if (cfg->gshared && t != ctx->method_inst->type_argv [0] && MONO_TYPE_ISSTRUCT (t) && mono_class_check_context_used (mono_class_from_mono_type_internal (t)))
+			cfg->prefer_instances = TRUE;
 		mini_emit_memory_store (cfg, t, args [0], args [1], MONO_INST_UNALIGNED);
 		MONO_INST_NEW (cfg, ins, OP_NOP);
 		MONO_ADD_INS (cfg->cbb, ins);

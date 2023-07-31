@@ -3258,6 +3258,26 @@ emit_convert (TransformData *td, StackInfo *sp, MonoType *target_type)
 		}
 		break;
 	}
+	case MONO_TYPE_R4: {
+		switch (stype) {
+		case STACK_TYPE_R8:
+			interp_add_conv (td, sp, NULL, STACK_TYPE_R4, MINT_CONV_R4_R8);
+			break;
+		default:
+			break;
+		}
+		break;
+	}
+	case MONO_TYPE_R8: {
+		switch (stype) {
+		case STACK_TYPE_R4:
+			interp_add_conv (td, sp, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+			break;
+		default:
+			break;
+		}
+		break;
+	}
 #if SIZEOF_VOID_P == 8
 	case MONO_TYPE_U: {
 		switch (stype) {
@@ -3275,9 +3295,9 @@ emit_convert (TransformData *td, StackInfo *sp, MonoType *target_type)
 }
 
 static void
-interp_emit_arg_conv (TransformData *td, MonoMethodSignature *csignature)
+interp_emit_arg_conv (TransformData *td, MonoMethodSignature *csignature, int arg_start_offset)
 {
-	StackInfo *arg_start = td->sp - csignature->param_count;
+	StackInfo *arg_start = td->sp - arg_start_offset - csignature->param_count;
 
 	for (int i = 0; i < csignature->param_count; i++)
 		emit_convert (td, &arg_start [i], csignature->params [i]);
@@ -3623,6 +3643,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		interp_ins_set_dreg (td->last_ins, sp->local);
 	}
 
+	/* Offset the function pointer when emitting convert instructions */
+	int arg_start_offset = calli ? 1 : 0;
+	interp_emit_arg_conv (td, csignature, arg_start_offset);
+
 	g_assert (csignature->call_convention != MONO_CALL_FASTCALL);
 	if ((mono_interp_opt & INTERP_OPT_INLINE) && op == -1 && !is_virtual && target_method && interp_method_check_inlining (td, target_method, csignature)) {
 		MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
@@ -3678,8 +3702,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		--td->sp;
 		fp_sreg = td->sp [0].local;
 	}
-
-	interp_emit_arg_conv (td, csignature);
 
 	int param_end_offset = 0;
 	if (!td->optimized && op == -1)

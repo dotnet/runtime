@@ -50,6 +50,7 @@ typedef struct {
 	mword promoted_size;
 	mword major_size;
 	mword major_size_in_use;
+	mword major_empty_reserved_size;
 	mword los_size;
 	mword los_size_in_use;
 } SgenLogEntry;

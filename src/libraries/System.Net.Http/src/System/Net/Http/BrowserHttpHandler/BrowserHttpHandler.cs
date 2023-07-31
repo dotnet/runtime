@@ -233,12 +233,17 @@ namespace System.Net.Http
 
                 cancellationToken.ThrowIfCancellationRequested();
                 JSObject fetchResponse = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, abortController, null).ConfigureAwait(true);
-                return new WasmFetchResponse(fetchResponse, abortRegistration.Value);
+                return new WasmFetchResponse(fetchResponse, abortController, abortRegistration.Value);
+            }
+            catch (JSException jse)
+            {
+                throw new HttpRequestException(jse.Message, jse);
             }
             catch (Exception)
             {
                 // this would also trigger abort
                 abortRegistration?.Dispose();
+                abortController?.Dispose();
                 throw;
             }
         }
@@ -313,15 +318,18 @@ namespace System.Net.Http
         public readonly object ThisLock = new object();
 #endif
         public JSObject? FetchResponse;
+        private readonly JSObject _abortController;
         private readonly CancellationTokenRegistration _abortRegistration;
         private bool _isDisposed;
 
-        public WasmFetchResponse(JSObject fetchResponse, CancellationTokenRegistration abortRegistration)
+        public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenRegistration abortRegistration)
         {
             ArgumentNullException.ThrowIfNull(fetchResponse);
+            ArgumentNullException.ThrowIfNull(abortController);
 
             FetchResponse = fetchResponse;
             _abortRegistration = abortRegistration;
+            _abortController = abortController;
         }
 
         public void ThrowIfDisposed()
@@ -350,6 +358,7 @@ namespace System.Net.Http
                         return;
                     self._isDisposed = true;
                     self._abortRegistration.Dispose();
+                    self._abortController.Dispose();
                     if (!self.FetchResponse!.IsDisposed)
                     {
                         BrowserHttpInterop.AbortResponse(self.FetchResponse);
@@ -362,6 +371,7 @@ namespace System.Net.Http
 #else
             _isDisposed = true;
             _abortRegistration.Dispose();
+            _abortController.Dispose();
             if (FetchResponse != null)
             {
                 if (!FetchResponse.IsDisposed)

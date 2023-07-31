@@ -3,24 +3,30 @@
 
 import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
-import type { DotnetModuleConfig } from "../types";
+import type { AssetBehaviors, DotnetModuleConfig, MonoConfig, ResourceGroups } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
-import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
-import { BootConfigResult } from "./blazor/BootConfig";
-import { BootJsonData } from "../types/blazor";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
+    // If source has collection fields set to null (produced by boot config for example), we should maintain the target values
     const providedConfig: MonoConfigInternal = { ...source };
-    if (providedConfig.assets) {
+    if (providedConfig.assets !== undefined) {
         providedConfig.assets = [...(target.assets || []), ...(providedConfig.assets || [])];
     }
-    if (providedConfig.environmentVariables) {
+    if (providedConfig.resources !== undefined) {
+        providedConfig.resources = deep_merge_resources(target.resources || {
+            assembly: {},
+            jsModuleNative: {},
+            jsModuleRuntime: {},
+            wasmNative: {}
+        }, providedConfig.resources);
+    }
+    if (providedConfig.environmentVariables !== undefined) {
         providedConfig.environmentVariables = { ...(target.environmentVariables || {}), ...(providedConfig.environmentVariables || {}) };
     }
-    if (providedConfig.runtimeOptions) {
+    if (providedConfig.runtimeOptions !== undefined) {
         providedConfig.runtimeOptions = [...(target.runtimeOptions || []), ...(providedConfig.runtimeOptions || [])];
     }
     return Object.assign(target, providedConfig);
@@ -35,6 +41,53 @@ export function deep_merge_module(target: DotnetModuleInternal, source: DotnetMo
     return Object.assign(target, providedConfig);
 }
 
+function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): ResourceGroups {
+    const providedResources: ResourceGroups = { ...source };
+    if (providedResources.assembly !== undefined) {
+        providedResources.assembly = { ...(target.assembly || {}), ...(providedResources.assembly || {}) };
+    }
+    if (providedResources.lazyAssembly !== undefined) {
+        providedResources.lazyAssembly = { ...(target.lazyAssembly || {}), ...(providedResources.lazyAssembly || {}) };
+    }
+    if (providedResources.pdb !== undefined) {
+        providedResources.pdb = { ...(target.pdb || {}), ...(providedResources.pdb || {}) };
+    }
+    if (providedResources.jsModuleWorker !== undefined) {
+        providedResources.jsModuleWorker = { ...(target.jsModuleWorker || {}), ...(providedResources.jsModuleWorker || {}) };
+    }
+    if (providedResources.jsModuleNative !== undefined) {
+        providedResources.jsModuleNative = { ...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {}) };
+    }
+    if (providedResources.jsModuleRuntime !== undefined) {
+        providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
+    }
+    if (providedResources.jsSymbols !== undefined) {
+        providedResources.jsSymbols = { ...(target.jsSymbols || {}), ...(providedResources.jsSymbols || {}) };
+    }
+    if (providedResources.wasmNative !== undefined) {
+        providedResources.wasmNative = { ...(target.wasmNative || {}), ...(providedResources.wasmNative || {}) };
+    }
+    if (providedResources.icu !== undefined) {
+        providedResources.icu = { ...(target.icu || {}), ...(providedResources.icu || {}) };
+    }
+    if (providedResources.satelliteResources !== undefined) {
+        providedResources.satelliteResources = { ...(target.satelliteResources || {}), ...(providedResources.satelliteResources || {}) };
+    }
+    if (providedResources.modulesAfterConfigLoaded !== undefined) {
+        providedResources.modulesAfterConfigLoaded = { ...(target.modulesAfterConfigLoaded || {}), ...(providedResources.modulesAfterConfigLoaded || {}) };
+    }
+    if (providedResources.modulesAfterRuntimeReady !== undefined) {
+        providedResources.modulesAfterRuntimeReady = { ...(target.modulesAfterRuntimeReady || {}), ...(providedResources.modulesAfterRuntimeReady || {}) };
+    }
+    if (providedResources.extensions !== undefined) {
+        providedResources.extensions = { ...(target.extensions || {}), ...(providedResources.extensions || {}) };
+    }
+    if (providedResources.vfs !== undefined) {
+        providedResources.vfs = { ...(target.vfs || {}), ...(providedResources.vfs || {}) };
+    }
+    return Object.assign(target, providedResources);
+}
+
 // NOTE: this is called before setRuntimeGlobals
 export function normalizeConfig() {
     // normalize
@@ -43,14 +96,33 @@ export function normalizeConfig() {
     config.environmentVariables = config.environmentVariables || {};
     config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];
+    config.resources = config.resources || {
+        assembly: {},
+        jsModuleNative: {},
+        jsModuleRuntime: {},
+        wasmNative: {}
+    };
     loaderHelpers.assertAfterExit = config.assertAfterExit = config.assertAfterExit || !ENVIRONMENT_IS_WEB;
 
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;
     }
+
+    // Default values (when WasmDebugLevel is not set)
+    // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
+    // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
+    // - Publish (debug)    => debugBuild=false & debugLevel=-1 => 0
+    // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
+    config.debugLevel = hasDebuggingEnabled(config) ? config.debugLevel : 0;
+
     if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
         config.diagnosticTracing = true;
     }
+    if (config.applicationCulture) {
+        // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
+        config.environmentVariables!["LANG"] = `${config.applicationCulture}.UTF-8`;
+    }
+
     runtimeHelpers.diagnosticTracing = loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
     config.startupMemoryCache = !!config.startupMemoryCache;
@@ -62,7 +134,6 @@ export function normalizeConfig() {
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
         && typeof globalThis.performance.measure === "function";
-
 }
 
 let configLoaded = false;
@@ -80,30 +151,11 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     }
     mono_log_debug("mono_wasm_load_config");
     try {
-        if (loaderHelpers.loadBootResource) {
-            // If we have custom loadBootResource
-            await loadBootConfig(loaderHelpers.config, module);
-        } else {
-            // Otherwise load using fetch_like
-            const resolveSrc = loaderHelpers.locateFile(configFilePath);
-            const configResponse = await loaderHelpers.fetch_like(resolveSrc);
-            const loadedAnyConfig: any = (await configResponse.json()) || {};
-            if (loadedAnyConfig.resources) {
-                // If we found boot config schema
-                normalizeConfig();
-                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.loadBootResource);
-            } else {
-                // Otherwise we found mono config schema
-                const loadedConfig = loadedAnyConfig as MonoConfigInternal;
-                if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
-                    throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
-                deep_merge_config(loaderHelpers.config, loadedConfig);
-            }
-        }
+        await loadBootConfig(module);
 
         normalizeConfig();
 
-        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config], "onRuntimeConfigLoaded");
+        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config], "modulesAfterConfigLoaded");
 
         if (module.onConfigLoaded) {
             try {
@@ -122,4 +174,69 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         mono_exit(1, new Error(errMessage));
         throw err;
     }
+}
+
+export function hasDebuggingEnabled(config: MonoConfigInternal): boolean {
+    // Copied from blazor MonoDebugger.ts/attachDebuggerHotkey
+    if (!globalThis.navigator) {
+        return false;
+    }
+
+    const hasReferencedPdbs = !!config.resources!.pdb;
+    return (hasReferencedPdbs || config.debugLevel != 0) && (loaderHelpers.isChromium || loaderHelpers.isFirefox);
+}
+
+async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
+    const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
+
+    const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
+        loaderHelpers.loadBootResource("manifest" as AssetBehaviors, "blazor.boot.json", defaultConfigSrc, "") :
+        defaultLoadBootConfig(defaultConfigSrc);
+
+    let loadConfigResponse: Response;
+
+    if (!loaderResponse) {
+        loadConfigResponse = await defaultLoadBootConfig(defaultConfigSrc);
+    } else if (typeof loaderResponse === "string") {
+        loadConfigResponse = await defaultLoadBootConfig(loaderResponse);
+    } else {
+        loadConfigResponse = await loaderResponse;
+    }
+
+    const loadedConfig: MonoConfig = await readBootConfigResponse(loadConfigResponse);
+    deep_merge_config(loaderHelpers.config, loadedConfig);
+
+    function defaultLoadBootConfig(url: string): Promise<Response> {
+        return loaderHelpers.fetch_like(url, {
+            method: "GET",
+            credentials: "include",
+            cache: "no-cache",
+        });
+    }
+}
+
+async function readBootConfigResponse(loadConfigResponse: Response): Promise<MonoConfig> {
+    const config = loaderHelpers.config;
+    const loadedConfig: MonoConfig = await loadConfigResponse.json();
+
+    if (!config.applicationEnvironment) {
+        loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || "Production";
+    }
+
+    if (!loadedConfig.environmentVariables)
+        loadedConfig.environmentVariables = {};
+
+    const modifiableAssemblies = loadConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
+    if (modifiableAssemblies) {
+        // Configure the app to enable hot reload in Development.
+        loadedConfig.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = modifiableAssemblies;
+    }
+
+    const aspnetCoreBrowserTools = loadConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
+    if (aspnetCoreBrowserTools) {
+        // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
+        loadedConfig.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = aspnetCoreBrowserTools;
+    }
+
+    return loadedConfig;
 }

@@ -393,7 +393,11 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_I4:
 		return OP_LOADI4_MEMBASE;
 	case MONO_TYPE_U4:
+#ifdef TARGET_RISCV64
+		return OP_LOADI4_MEMBASE;
+#else
 		return OP_LOADU4_MEMBASE;
+#endif
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
