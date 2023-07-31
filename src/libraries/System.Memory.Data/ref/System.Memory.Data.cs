@@ -6,7 +6,7 @@
 
 namespace System
 {
-    [System.Text.Json.Serialization.JsonConverter(typeof(BinaryDataConverter))]
+    [System.Text.Json.Serialization.JsonConverterAttribute(typeof(System.Text.Json.Serialization.BinaryDataJsonConverter))]
     public partial class BinaryData
     {
         public BinaryData(byte[] data) { }
@@ -17,6 +17,8 @@ namespace System
         public BinaryData(System.ReadOnlyMemory<byte> data) { }
         public BinaryData(string data) { }
         public static System.BinaryData Empty { get { throw null; } }
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.BinaryData FromBytes(byte[] data) { throw null; }
@@ -30,8 +32,6 @@ namespace System
         public static System.BinaryData FromString(string data) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
-        public bool IsEmpty { get { throw null; } }
-        public int Length { get { throw null; } }
         public static implicit operator System.ReadOnlyMemory<byte> (System.BinaryData? data) { throw null; }
         public static implicit operator System.ReadOnlySpan<byte> (System.BinaryData? data) { throw null; }
         public byte[] ToArray() { throw null; }
@@ -43,10 +43,13 @@ namespace System
         public System.IO.Stream ToStream() { throw null; }
         public override string ToString() { throw null; }
     }
-
-    internal sealed class BinaryDataConverter : System.Text.Json.Serialization.JsonConverter<BinaryData>
+}
+namespace System.Text.Json.Serialization
+{
+    public sealed partial class BinaryDataJsonConverter : System.Text.Json.Serialization.JsonConverter<System.BinaryData>
     {
-        public sealed override BinaryData? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
-        public sealed override void Write(System.Text.Json.Utf8JsonWriter writer, BinaryData value, System.Text.Json.JsonSerializerOptions options) { }
+        public BinaryDataJsonConverter() { }
+        public override System.BinaryData? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+        public override void Write(System.Text.Json.Utf8JsonWriter writer, System.BinaryData value, System.Text.Json.JsonSerializerOptions options) { }
     }
 }

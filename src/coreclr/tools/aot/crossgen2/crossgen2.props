@@ -13,11 +13,10 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
-    <ServerGarbageCollection>true</ServerGarbageCollection>
-    <EventSourceSupport>true</EventSourceSupport>
-    <OptimizationPreference>Speed</OptimizationPreference>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
+
+  <Import Project="../AotCompilerCommon.props" />
 
   <ItemGroup Label="Embedded Resources">
     <EmbeddedResource Include="Properties\Resources.resx">

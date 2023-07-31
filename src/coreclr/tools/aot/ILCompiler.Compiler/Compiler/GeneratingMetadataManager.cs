@@ -49,7 +49,7 @@ namespace ILCompiler
             out List<MetadataMapping<MetadataType>> typeMappings,
             out List<MetadataMapping<MethodDesc>> methodMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
-            out List<MetadataMapping<MethodDesc>> stackTraceMapping) where TPolicy : struct, IMetadataPolicy
+            out List<StackTraceMapping> stackTraceMapping) where TPolicy : struct, IMetadataPolicy
         {
             var transformed = MetadataTransform.Run(policy, GetCompilationModulesWithMetadata());
             MetadataTransform transform = transformed.Transform;
@@ -59,7 +59,7 @@ namespace ILCompiler
             writer.ScopeDefinitions.AddRange(transformed.Scopes);
 
             // Generate entries in the blob for methods that will be necessary for stack trace purposes.
-            var stackTraceRecords = new List<KeyValuePair<MethodDesc, MetadataRecord>>();
+            var stackTraceRecords = new List<StackTraceRecordData>();
             foreach (var methodBody in GetCompiledMethodBodies())
             {
                 MethodDesc method = methodBody.Method;
@@ -76,13 +76,14 @@ namespace ILCompiler
                 if (!_stackTraceEmissionPolicy.ShouldIncludeMethod(method))
                     continue;
 
-                MetadataRecord record = CreateStackTraceRecord(transform, method);
+                StackTraceRecordData record = CreateStackTraceRecord(transform, method);
 
-                stackTraceRecords.Add(new KeyValuePair<MethodDesc, MetadataRecord>(
-                    method,
-                    record));
+                stackTraceRecords.Add(record);
 
-                writer.AdditionalRootRecords.Add(record);
+                writer.AdditionalRootRecords.Add(record.OwningType);
+                writer.AdditionalRootRecords.Add(record.MethodName);
+                writer.AdditionalRootRecords.Add(record.MethodSignature);
+                writer.AdditionalRootRecords.Add(record.MethodInstantiationArgumentCollection);
             }
 
             var ms = new MemoryStream();
@@ -108,7 +109,7 @@ namespace ILCompiler
             typeMappings = new List<MetadataMapping<MetadataType>>();
             methodMappings = new List<MetadataMapping<MethodDesc>>();
             fieldMappings = new List<MetadataMapping<FieldDesc>>();
-            stackTraceMapping = new List<MetadataMapping<MethodDesc>>();
+            stackTraceMapping = new List<StackTraceMapping>();
 
             // Generate type definition mappings
             foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
@@ -177,7 +178,13 @@ namespace ILCompiler
             // Generate stack trace metadata mapping
             foreach (var stackTraceRecord in stackTraceRecords)
             {
-                stackTraceMapping.Add(new MetadataMapping<MethodDesc>(stackTraceRecord.Key, writer.GetRecordHandle(stackTraceRecord.Value)));
+                StackTraceMapping mapping = new StackTraceMapping(
+                    stackTraceRecord.Method,
+                    writer.GetRecordHandle(stackTraceRecord.OwningType),
+                    writer.GetRecordHandle(stackTraceRecord.MethodSignature),
+                    writer.GetRecordHandle(stackTraceRecord.MethodName),
+                    stackTraceRecord.MethodInstantiationArgumentCollection != null ? writer.GetRecordHandle(stackTraceRecord.MethodInstantiationArgumentCollection) : 0);
+                stackTraceMapping.Add(mapping);
             }
         }
 

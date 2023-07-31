@@ -122,9 +122,8 @@ namespace Microsoft.Android.Build
                 string rootPath = Path.GetDirectoryName(lib)!;
                 string libName = Path.GetFileName(lib);
 
-                if (!libDirs.Contains(rootPath))
+                if (libDirs.Add(rootPath))
                 {
-                    libDirs.Add(rootPath);
                     ret.Append($"-L {rootPath} ");
                 }
                 ret.Append($"-l:{libName} ");

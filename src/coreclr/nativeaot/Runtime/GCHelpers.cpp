@@ -324,6 +324,12 @@ EXTERN_C NATIVEAOT_API void __cdecl RhRefreshMemoryLimit(GCHeapHardLimitInfo hea
     pHeap->RefreshMemoryLimit();
 }
 
+EXTERN_C NATIVEAOT_API uint64_t __cdecl RhGetGenerationBudget(int generation)
+{
+    IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
+    return pHeap->GetGenerationBudget(generation);
+}
+
 EXTERN_C NATIVEAOT_API void __cdecl RhEnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();

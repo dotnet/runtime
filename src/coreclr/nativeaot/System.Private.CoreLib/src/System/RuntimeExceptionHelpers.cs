@@ -175,6 +175,27 @@ namespace System
             }
         }
 
+        internal const uint EXCEPTION_NONCONTINUABLE = 0x1;
+        internal const uint FAIL_FAST_GENERATE_EXCEPTION_ADDRESS = 0x1;
+        internal const uint STATUS_STACK_BUFFER_OVERRUN = 0xC0000409;
+        internal const uint FAST_FAIL_EXCEPTION_DOTNET_AOT = 0x48;
+
+#pragma warning disable 649
+        internal unsafe struct EXCEPTION_RECORD
+        {
+            internal uint ExceptionCode;
+            internal uint ExceptionFlags;
+            internal IntPtr ExceptionRecord;
+            internal IntPtr ExceptionAddress;
+            internal uint NumberParameters;
+#if TARGET_64BIT
+            internal fixed ulong ExceptionInformation[15];
+#else
+            internal fixed uint ExceptionInformation[15];
+#endif
+        }
+#pragma warning restore 649
+
         private static ulong s_crashingThreadId;
 
         [DoesNotReturn]
@@ -252,9 +273,26 @@ namespace System
                 }
             }
 
-#if TARGET_WINDOWS
-            Interop.Kernel32.RaiseFailFastException(errorCode, pExAddress, pExContext, triageBufferAddress, triageBufferSize);
+            EXCEPTION_RECORD exceptionRecord;
+            // STATUS_STACK_BUFFER_OVERRUN is a "transport" exception code required by Watson to trigger the proper analyzer/provider for bucketing
+            exceptionRecord.ExceptionCode = STATUS_STACK_BUFFER_OVERRUN;
+            exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE;
+            exceptionRecord.ExceptionRecord = IntPtr.Zero;
+            exceptionRecord.ExceptionAddress = pExAddress;
+            exceptionRecord.NumberParameters = 4;
+            exceptionRecord.ExceptionInformation[0] = FAST_FAIL_EXCEPTION_DOTNET_AOT;
+            exceptionRecord.ExceptionInformation[1] = (uint)errorCode;
+#if TARGET_64BIT
+            exceptionRecord.ExceptionInformation[2] = (ulong)triageBufferAddress;
 #else
+            exceptionRecord.ExceptionInformation[2] = (uint)triageBufferAddress;
+#endif
+            exceptionRecord.ExceptionInformation[3] = (uint)triageBufferSize;
+
+#if TARGET_WINDOWS
+            Interop.Kernel32.RaiseFailFastException(new IntPtr(&exceptionRecord), pExContext, pExAddress == IntPtr.Zero ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0);
+#else
+            RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord), pExContext);
             Interop.Sys.Abort();
 #endif
         }

@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="UnrollEqualsStartsWIth.cs" />
-    <Compile Include="UnrollEqualsStartsWIth_Tests.cs" />
+    <Compile Include="CompareVectorWithZero.cs" />
   </ItemGroup>
 </Project>

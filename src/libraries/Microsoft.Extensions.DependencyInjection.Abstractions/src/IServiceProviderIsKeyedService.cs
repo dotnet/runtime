@@ -5,10 +5,15 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// Optional service used to determine if the specified type with the specified service key is available
+    /// from the <see cref="IServiceProvider"/>.
+    /// </summary>
     public interface IServiceProviderIsKeyedService : IServiceProviderIsService
     {
         /// <summary>
-        /// Determines if the specified service type is available from the <see cref="IServiceProvider"/>.
+        /// Determines if the specified service type with the specified service key is available from the
+        /// <see cref="IServiceProvider"/>.
         /// </summary>
         /// <param name="serviceType">An object that specifies the type of service object to test.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>

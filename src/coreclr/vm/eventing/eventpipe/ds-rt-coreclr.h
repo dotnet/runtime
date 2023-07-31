@@ -10,6 +10,7 @@
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
 #include <clrconfignocache.h>
+#include <generatedumpflags.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
