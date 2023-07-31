@@ -98,17 +98,6 @@ int main(int argc, char*argv[])
         printf("\n");
     }
 
-    printf("// 3D Now\n");
-    for (int i = 0; i < 256; ++i)
-    {
-        printf( "0x0f, 0x0f, 0x05, 0x50, 0x51, 0x52, 0x53, 0x%02x, %s", i, postamble);
-        // REX
-        printf( "0x40, 0x0f, 0x0f, 0x05, 0x50, 0x51, 0x52, 0x53, 0x%02x, %s", i, postamble);
-        // REX.WRXB
-        printf( "0x4f, 0x0f, 0x0f, 0x05, 0x50, 0x51, 0x52, 0x53, 0x%02x, %s", i, postamble);
-        printf("\n");
-    }
-
     printf("// 0F 38\n");
     for (int i = 0; i < 256; ++i)
     {

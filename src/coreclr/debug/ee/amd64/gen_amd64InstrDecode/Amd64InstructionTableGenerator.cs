@@ -62,7 +62,6 @@ namespace Amd64InstructionTableGenerator
         Secondary,
         F38,
         F3A,
-        NOW3D, // TODO: remove
         Vex1, // mmmmm = 00001 (0F)
         Vex2, // mmmmm = 00010 (0F 38)
         Vex3, // mmmmm = 00011 (0F 3A)
@@ -151,8 +150,6 @@ namespace Amd64InstructionTableGenerator
                                 (encodingFlags.HasFlag(EncodingFlags.F2) ? 0x3 :
                                     (encodingFlags.HasFlag(EncodingFlags.P) ? 0x1 :
                                         (encodingFlags.HasFlag(EncodingFlags.F3) ? 0x2 : 0)));
-                    case Map.NOW3D:
-                        return encoding[opIndex + 6] << 4;
                     case Map.Vex1:
                     case Map.Vex2:
                     case Map.Vex3:
@@ -326,12 +323,6 @@ namespace Amd64InstructionTableGenerator
                     if (Debug.debug) Console.WriteLine($"  P:0F");
                     switch ((Prefixes)encoding[operandIndex + 1])
                     {
-                        case Prefixes.Secondary:
-                            if (Debug.debug) Console.WriteLine($"  P:0F");
-                            map = Map.NOW3D;
-                            if (Debug.debug) Console.WriteLine($"  map: 3DNow");
-                            operandIndex += 1;
-                            break;
                         case Prefixes.F38:
                             if (Debug.debug) Console.WriteLine($"  P:38");
                             map = Map.F38;
@@ -583,7 +574,6 @@ namespace Amd64InstructionTableGenerator
                 { Map.Secondary, new Dictionary<int, string>() },
                 { Map.F38,       new Dictionary<int, string>() },
                 { Map.F3A,       new Dictionary<int, string>() },
-                { Map.NOW3D,     new Dictionary<int, string>() },
                 { Map.Vex1,      new Dictionary<int, string>() },
                 { Map.Vex2,      new Dictionary<int, string>() },
                 { Map.Vex3,      new Dictionary<int, string>() },
@@ -873,8 +863,6 @@ namespace Amd64InstructionTableGenerator
         private void WriteCode()
         {
             string none = "None";
-            string none3dnow = "MOp_M8B_I1B"; // All 3DNow instructions include a memOp.  All current 3DNow instructions encode the operand as I1B
-            rules.Add(none3dnow);
 
             Console.WriteLine("// Licensed to the .NET Foundation under one or more agreements.");
             Console.WriteLine("// The .NET Foundation licenses this file to you under the MIT license.");
@@ -934,7 +922,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("    //          - pp = 1 implies 0x66 OpSize prefix only.");
             Console.WriteLine("    //          - pp = 2 implies 0xF3 prefix.");
             Console.WriteLine("    //          - pp = 3 implies 0xF2 prefix.");
-            Console.WriteLine("    //   - For the primary and 3DNow pp is not used. And is always 0 in the comments");
+            Console.WriteLine("    //   - For the primary map, pp is not used and is always 0 in the comments.");
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine("    // Instruction which change forms based on modrm.reg are encoded in this extension table.");
@@ -961,18 +949,6 @@ namespace Amd64InstructionTableGenerator
                     Console.WriteLine(value);
                 else
                     Console.WriteLine($"        {none + ",",-40} // 0x{i:x3}");
-            }
-            Console.WriteLine("    };");
-
-            Console.WriteLine();
-            Console.WriteLine($"    static const InstrForm instrForm3DNow[256]");
-            Console.WriteLine("    {");
-            for (int i = 0; i < 4096; i += 16)
-            {
-                if (opcodes[Map.NOW3D].TryGetValue(i, out string value))
-                    Console.WriteLine(value);
-                else
-                    Console.WriteLine($"        {none3dnow + ",",-40} // 0x{i:x3}");
             }
             Console.WriteLine("    };");
 
