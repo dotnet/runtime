@@ -116,7 +116,7 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/88111")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89747")]
         public void ICollectionMarshallingFails()
         {
             var obj = CreateWrapper<ICollectionMarshallingFailsImpl, ICollectionMarshallingFails>();
@@ -135,7 +135,7 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/88111")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89747")]
         public void IJaggedArrayMarshallingFails()
         {
             var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
