@@ -26,6 +26,8 @@
         _InitializeCommonProperties;
         _BeforeAppleBuild;
         _AppleResolveReferences;
+        _ScanAssembliesDecideLightweightMarshaler;
+        $(_ProcessRuntimeComponentsForLibraryMode);
         _AppleAotCompile;
         _BuildNativeLibrary;
         _AppleGenerateAppBundle;

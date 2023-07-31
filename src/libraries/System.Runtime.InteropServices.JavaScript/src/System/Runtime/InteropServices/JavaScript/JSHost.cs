@@ -21,6 +21,9 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
+#if FEATURE_WASM_THREADS
+                JSSynchronizationContext.AssertWebWorkerContext();
+#endif
                 return JavaScriptImports.GetGlobalThis();
             }
         }
@@ -32,6 +35,9 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
+#if FEATURE_WASM_THREADS
+                JSSynchronizationContext.AssertWebWorkerContext();
+#endif
                 return JavaScriptImports.GetDotnetInstance();
             }
         }
@@ -47,6 +53,9 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken = default)
         {
+#if FEATURE_WASM_THREADS
+            JSSynchronizationContext.AssertWebWorkerContext();
+#endif
             return JSHostImplementation.ImportAsync(moduleName, moduleUrl, cancellationToken);
         }
 

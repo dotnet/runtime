@@ -699,5 +699,17 @@ namespace DebuggerTests
                    ("instance.str[3]", TChar('c'))
                 );
            });
+        
+        [Fact]
+        public async Task EvaluateStaticGetterInValueType() => await CheckInspectLocalsAtBreakpointSite(
+             $"DebuggerTests.TypeProperties", "Run", 3, "DebuggerTests.TypeProperties.Run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.TypeProperties:Run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("EvaluateStaticGetterInValueType.A", TNumber(5))
+                );
+           });
     }
 }
