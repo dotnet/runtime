@@ -1012,16 +1012,22 @@ namespace System.Collections.Generic
         /// </summary>
         public void TrimExcess() => SetCapacity(Count);
 
+        /// <summary>
+        /// Sets the capacity of a <see cref="HashSet{T}"/> object to the specified number of entries.
+        /// </summary>
+        /// <param name="capacity">The new capacity.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than entries count.</exception>
         public void TrimExcess(int capacity)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _count);
+            var currentCount = Count;
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, currentCount);
 
-            if (capacity == _count)
+            if (capacity == currentCount)
                 return;
 
             SetCapacity(capacity);
         }
+
         private void SetCapacity(int capacity)
         {
             int newSize = HashHelpers.GetPrime(capacity);

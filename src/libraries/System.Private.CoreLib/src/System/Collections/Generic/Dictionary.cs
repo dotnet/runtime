@@ -1185,6 +1185,7 @@ namespace System.Collections.Generic
         /// This method can be used to minimize the memory overhead
         /// once it is known that no new elements will be added.
         /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than entries count.</exception>
         public void TrimExcess(int capacity)
         {
             if (capacity < Count)

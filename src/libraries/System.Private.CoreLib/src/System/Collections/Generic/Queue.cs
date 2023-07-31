@@ -361,12 +361,13 @@ namespace System.Collections.Generic
         /// Sets the capacity of a <see cref="Queue{T}"/> object to the specified number of entries.
         /// </summary>
         /// <param name="capacity">The new capacity.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than entries count.</exception>
         public void TrimExcess(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _array.Length);
 
-            if (capacity == _size)
+            if (capacity == _array.Length)
                 return;
 
             SetCapacity(capacity);

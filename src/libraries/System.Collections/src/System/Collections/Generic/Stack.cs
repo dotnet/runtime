@@ -174,12 +174,13 @@ namespace System.Collections.Generic
         /// Sets the capacity of a <see cref="Stack{T}"/> object to a specified number of entries.
         /// </summary>
         /// <param name="capacity">The new capacity.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than 0 or entries count.</exception>
         public void TrimExcess(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _array.Length);
 
-            if (capacity == _size)
+            if (capacity == _array.Length)
                 return;
 
             Array.Resize(ref _array, capacity);
