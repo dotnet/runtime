@@ -1575,7 +1575,11 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 
     // We have accurate ref counts when running late liveness so we can eliminate
     // some stores if the lhs local has a ref count of 1.
-    if (isDef && compRationalIRForm && (varDsc.lvRefCnt() == 1) && !varDsc.lvPinned)
+    //
+    // For OSR locals we can't rely on ref counts this way, since some of the appearances
+    // of the local may be in the now-unseen Tier0 portion.
+    //
+    if (isDef && compRationalIRForm && (varDsc.lvRefCnt() == 1) && !varDsc.lvPinned && !varDsc.lvIsOSRLocal)
     {
         if (varDsc.lvIsStructField)
         {
