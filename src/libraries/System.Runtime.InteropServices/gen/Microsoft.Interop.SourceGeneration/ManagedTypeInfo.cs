@@ -41,7 +41,6 @@ namespace Microsoft.Interop
         {
             string typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             string diagnosticFormattedName = type.ToDisplayString();
-
             if (type.SpecialType != SpecialType.None)
             {
                 return new SpecialTypeInfo(typeName, diagnosticFormattedName, type.SpecialType);

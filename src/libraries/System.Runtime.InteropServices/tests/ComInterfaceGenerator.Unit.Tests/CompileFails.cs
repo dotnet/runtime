@@ -1000,7 +1000,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             var intReturn = Template("int", "", "");
             var floatReturn = Template("float", "", "");
             var structHrReturn = Template("HR", structDeclHR, "");
-            var structHResultReturn= Template("HResult", structDeclHResult, "");
+            var structHResultReturn = Template("HResult", structDeclHResult, "");
             yield return new object[] {
                 ID(),
                 enumReturn,
@@ -1030,7 +1030,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             var enumReturnPreserveSig = Template("Err", enumDecl, "[PreserveSig]");
             var intReturnPreserveSig = Template("int", "", "[PreserveSig]");
             var structHrPreserveSig = Template("HR", structDeclHR, "[PreserveSig]");
-            var structHResultPreserveSig= Template("HResult", structDeclHResult, "[PreserveSig]");
+            var structHResultPreserveSig = Template("HResult", structDeclHResult, "[PreserveSig]");
             yield return new object[] {
                 ID(),
                 enumReturnPreserveSig,
@@ -1093,7 +1093,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
             };
             test.ExpectedDiagnostics.AddRange(diagnostics);
-            //test.CompilerDiagnostics = CompilerDiagnostics.All;
             test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.UnrecommendedGeneratedComInterfaceUsage);
             await test.RunAsync();
         }
