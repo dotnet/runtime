@@ -35,7 +35,7 @@ namespace System.Net.Http.Json
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
-            => Create(inputValue, GetJsonTypeInfo(typeof(T), options), mediaType);
+            => Create(inputValue, JsonHelpers.GetJsonTypeInfo(typeof(T), options), mediaType);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
@@ -44,7 +44,7 @@ namespace System.Net.Http.Json
             ThrowHelper.ThrowIfNull(inputType);
             EnsureTypeCompatibility(inputValue, inputType);
 
-            return new JsonContent(inputValue, GetJsonTypeInfo(inputType, options), mediaType);
+            return new JsonContent(inputValue, JsonHelpers.GetJsonTypeInfo(inputType, options), mediaType);
         }
 
         public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo,
@@ -134,20 +134,6 @@ namespace System.Net.Http.Json
 #endif
                 }
             }
-        }
-
-        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        private static JsonTypeInfo GetJsonTypeInfo(Type inputType, JsonSerializerOptions? options)
-        {
-            Debug.Assert(inputType is not null);
-
-            // Ensure the options supports the call to GetTypeInfo
-            options ??= JsonHelpers.s_defaultSerializerOptions;
-            options.TypeInfoResolver ??= JsonSerializerOptions.Default.TypeInfoResolver;
-            options.MakeReadOnly();
-
-            return options.GetTypeInfo(inputType);
         }
 
         private static void EnsureTypeCompatibility(object? inputValue, Type inputType)
