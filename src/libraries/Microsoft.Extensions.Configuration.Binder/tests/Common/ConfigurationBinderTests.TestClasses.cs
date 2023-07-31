@@ -9,7 +9,6 @@ using System.Text.Json;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Xunit;
-using System.Collections.Immutable;
 
 namespace Microsoft.Extensions
 #if BUILDING_SOURCE_GENERATOR_TESTS
