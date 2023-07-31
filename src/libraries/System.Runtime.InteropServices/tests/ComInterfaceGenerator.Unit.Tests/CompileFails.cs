@@ -1057,7 +1057,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             };
             test.ExpectedDiagnostics.AddRange(diagnostics);
             //test.CompilerDiagnostics = CompilerDiagnostics.All;
-            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.GeneratedComInterfaceInfo);
+            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.UnrecommendedGeneratedComInterfaceUsage);
             await test.RunAsync();
         }
     }

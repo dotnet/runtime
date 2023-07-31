@@ -46,7 +46,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
-            test.DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.GeneratedComInterfaceInfo);
+            test.DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.UnrecommendedGeneratedComInterfaceUsage);
             test.ExpectedDiagnostics.AddRange(expected);
             await test.RunAsync(CancellationToken.None);
         }
@@ -110,7 +110,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 {
                     TestState.AdditionalReferences.Add(TestUtils.GetAncillaryReference());
                 }
-                DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.GeneratedComInterfaceInfo);
+                DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.UnrecommendedGeneratedComInterfaceUsage);
 
                 SolutionTransforms.Add(CSharpVerifierHelper.GetAllDiagonsticsEnabledTransform(GetDiagnosticAnalyzers()));
             }
