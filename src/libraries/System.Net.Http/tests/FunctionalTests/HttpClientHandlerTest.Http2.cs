@@ -511,6 +511,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 sendTasks.Add(extraSendTask);
+
                 await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 foreach (Task<HttpResponseMessage> sendTask in sendTasks)
