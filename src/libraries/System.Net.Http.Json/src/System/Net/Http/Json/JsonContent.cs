@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if !NETCOREAPP
 using System.Diagnostics;
-#endif
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
@@ -26,12 +24,7 @@ namespace System.Net.Http.Json
             JsonTypeInfo jsonTypeInfo,
             MediaTypeHeaderValue? mediaType)
         {
-            ThrowHelper.ThrowIfNull(jsonTypeInfo);
-
-            if (inputValue != null && !jsonTypeInfo.Type.IsAssignableFrom(inputValue.GetType()))
-            {
-                throw new ArgumentException(SR.Format(SR.SerializeWrongType, jsonTypeInfo.Type, inputValue.GetType()));
-            }
+            Debug.Assert(jsonTypeInfo is not null);
 
             Value = inputValue;
             _typeInfo = jsonTypeInfo;
@@ -46,13 +39,29 @@ namespace System.Net.Http.Json
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
-            => Create(inputValue, GetJsonTypeInfo(inputType, options), mediaType);
+        {
+            ThrowHelper.ThrowIfNull(inputType);
+            EnsureTypeCompatibility(inputValue, inputType);
 
-        public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
-            => new JsonContent(inputValue, jsonTypeInfo, mediaType);
+            return new JsonContent(inputValue, GetJsonTypeInfo(inputType, options), mediaType);
+        }
 
-        public static JsonContent Create(object? inputValue, JsonTypeInfo jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
-            => new JsonContent(inputValue, jsonTypeInfo, mediaType);
+        public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo,
+            MediaTypeHeaderValue? mediaType = null)
+        {
+            ThrowHelper.ThrowIfNull(jsonTypeInfo);
+
+            return new JsonContent(inputValue, jsonTypeInfo, mediaType);
+        }
+
+        public static JsonContent Create(object? inputValue, JsonTypeInfo jsonTypeInfo,
+            MediaTypeHeaderValue? mediaType = null)
+        {
+            ThrowHelper.ThrowIfNull(jsonTypeInfo);
+            EnsureTypeCompatibility(inputValue, jsonTypeInfo.Type);
+
+            return new JsonContent(inputValue, jsonTypeInfo, mediaType);
+        }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             => SerializeToStreamAsyncCore(stream, async: true, CancellationToken.None);
@@ -130,7 +139,7 @@ namespace System.Net.Http.Json
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         private static JsonTypeInfo GetJsonTypeInfo(Type inputType, JsonSerializerOptions? options)
         {
-            ThrowHelper.ThrowIfNull(inputType);
+            Debug.Assert(inputType is not null);
 
             // Ensure the options supports the call to GetTypeInfo
             options ??= JsonHelpers.s_defaultSerializerOptions;
@@ -138,6 +147,14 @@ namespace System.Net.Http.Json
             options.MakeReadOnly();
 
             return options.GetTypeInfo(inputType);
+        }
+
+        private static void EnsureTypeCompatibility(object? inputValue, Type inputType)
+        {
+            if (inputValue is not null && !inputType.IsAssignableFrom(inputValue.GetType()))
+            {
+                throw new ArgumentException(SR.Format(SR.SerializeWrongType, inputType, inputValue.GetType()));
+            }
         }
     }
 }

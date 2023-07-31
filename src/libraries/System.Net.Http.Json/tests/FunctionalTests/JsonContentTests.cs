@@ -20,6 +20,7 @@ namespace System.Net.Http.Json.Functional.Tests
         private class Bar { }
 
         [JsonSerializable(typeof(Foo))]
+        [JsonSerializable(typeof(Bar))]
         private partial class FooContext : JsonSerializerContext { }
 
         [Fact]
@@ -185,13 +186,20 @@ namespace System.Net.Http.Json.Functional.Tests
             {
                 var foo = new Foo();
                 Type typeOfBar = typeof(Bar);
-
-                Exception ex = Assert.Throws<ArgumentException>(() => JsonContent.Create(foo, typeOfBar));
-
                 string strTypeOfBar = typeOfBar.ToString();
+
+                // Validate for reflection
+                Exception ex = Assert.Throws<ArgumentException>(() => JsonContent.Create(foo, typeOfBar));
                 Assert.Contains(strTypeOfBar, ex.Message);
 
                 string afterInputTypeMessage = ex.Message.Split(strTypeOfBar.ToCharArray())[1];
+                Assert.Contains(afterInputTypeMessage, ex.Message);
+
+                // Validate for weakly-typed JsonTypeInfo
+                ex = Assert.Throws<ArgumentException>(() => JsonContent.Create((object) foo, FooContext.Default.Bar));
+                Assert.Contains(strTypeOfBar, ex.Message);
+
+                afterInputTypeMessage = ex.Message.Split(strTypeOfBar.ToCharArray())[1];
                 Assert.Contains(afterInputTypeMessage, ex.Message);
             }
         }
