@@ -734,11 +734,14 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(fp->fprs, lpContext->Fpr, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
-        native->uc_mcontext.__fcsr = lpContext->Fcsr;
-        for (int i = 0; i < 32; i++)
-        {
-            native->uc_mcontext.__fpregs[i].__val64[0] = lpContext->F[i];
-        }
+        struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
+        // TODO-LoongArch: supports SIMD128 and SIMD256.
+        _ASSERTE(FPU_CTX_MAGIC == info->magic);
+
+        struct fpu_context* fpr = (struct fpu_context*) ++info;
+        fpr->fcsr = lpContext->Fcsr;
+        fpr->fcc  = lpContext->Fcc;
+        memcpy(fpr->regs, lpContext->F, sizeof(lpContext->F));
 #elif defined(HOST_RISCV64)
         native->uc_mcontext.__fpregs.__d.__fcsr = lpContext->Fcsr;
         for (int i = 0; i < 32; i++)
@@ -928,11 +931,14 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(lpContext->Fpr, fp->fprs, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
-        lpContext->Fcsr = native->uc_mcontext.__fcsr;
-        for (int i = 0; i < 32; i++)
-        {
-            lpContext->F[i] = native->uc_mcontext.__fpregs[i].__val64[0];
-        }
+        struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
+        // TODO-LoongArch: supports SIMD128 and SIMD256.
+        _ASSERTE(FPU_CTX_MAGIC == info->magic);
+
+        struct fpu_context* fpr = (struct fpu_context*) ++info;
+        lpContext->Fcsr = fpr->fcsr;
+        lpContext->Fcc  = fpr->fcc;
+        memcpy(lpContext->F, fpr->regs, sizeof(lpContext->F));
 #elif defined(HOST_RISCV64)
         lpContext->Fcsr = native->uc_mcontext.__fpregs.__d.__fcsr;
         for (int i = 0; i < 32; i++)

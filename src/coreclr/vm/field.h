@@ -165,15 +165,9 @@ public:
         return m_dwOffset;
     }
 
-    DWORD GetOffset()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetOffset_NoLogging();
-    }
-
     // During class load m_pMTOfEnclosingClass has the field size in it, so it has to use this version of
     // GetOffset during that time
-    DWORD GetOffset_NoLogging()
+    DWORD GetOffset()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -191,7 +185,7 @@ public:
             //
             // As of 4/11/2012 I could repro this by turning on the COMPLUS log and
             // the LOG() at line methodtablebuilder.cpp:7845
-            // MethodTableBuilder::PlaceRegularStaticFields() calls GetOffset_NoLogging()
+            // MethodTableBuilder::PlaceRegularStaticFields() calls GetOffset()
             if((DWORD)(DWORD_PTR&)m_pMTOfEnclosingClass > 16)
             {
                 _ASSERTE(!this->IsRVA() || (m_dwOffset == OutOfLine_BigRVAOffset()));
@@ -353,16 +347,10 @@ public:
     __int64 GetValue64(OBJECTREF o);
     VOID    SetValue64(OBJECTREF o, __int64 value);
 
-    PTR_MethodTable GetApproxEnclosingMethodTable_NoLogging()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pMTOfEnclosingClass;
-    }
-
     PTR_MethodTable GetApproxEnclosingMethodTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetApproxEnclosingMethodTable_NoLogging();
+        return m_pMTOfEnclosingClass;
     }
 
     PTR_MethodTable GetEnclosingMethodTable()

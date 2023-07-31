@@ -2186,12 +2186,6 @@ mb_skip_visibility_ilgen (MonoMethodBuilder *mb)
 }
 
 static void
-mb_set_dynamic_ilgen (MonoMethodBuilder *mb)
-{
-	mb->dynamic = 1;
-}
-
-static void
 emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method)
 {
 	int i, pos, pos2, this_local, taken_local, ret_local = 0;
@@ -2452,7 +2446,10 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
 	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
-		emit_missing_method_error (mb, find_method_error, "constructor");
+		if (mono_error_get_error_code (find_method_error) == MONO_ERROR_GENERIC)
+			mono_mb_emit_exception_for_error (mb, find_method_error);
+		else
+			emit_missing_method_error (mb, find_method_error, "constructor");
 		mono_error_cleanup (find_method_error);
 		return;
 	}
@@ -2497,7 +2494,10 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	else
 		target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
-		emit_missing_method_error (mb, find_method_error, member_name);
+		if (mono_error_get_error_code (find_method_error) == MONO_ERROR_GENERIC)
+			mono_mb_emit_exception_for_error (mb, find_method_error);
+		else
+			emit_missing_method_error (mb, find_method_error, member_name);
 		mono_error_cleanup (find_method_error);
 		return;
 	}
@@ -3392,7 +3392,6 @@ mono_marshal_lightweight_init (void)
 	cb.emit_return = emit_return_ilgen;
 	cb.emit_vtfixup_ftnptr = emit_vtfixup_ftnptr_ilgen;
 	cb.mb_skip_visibility = mb_skip_visibility_ilgen;
-	cb.mb_set_dynamic = mb_set_dynamic_ilgen;
 	cb.mb_emit_exception = mb_emit_exception_ilgen;
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_ilgen;
 	cb.mb_emit_byte = mb_emit_byte_ilgen;

@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Tests
                 double @double => @double.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture),
                 float @float => @float.ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture),
                 decimal @decimal => @decimal.ToString(CultureInfo.InvariantCulture),
-                _ => number.ToString()
+                _ => Convert.ToString(number, CultureInfo.InvariantCulture)
             };
         }
 
@@ -873,7 +873,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("\u0020Inf\u0069ni\u0074y")] // " Infinity"
         [InlineData("\u002BInf\u0069nity")] // "+Infinity"
 #pragma warning restore xUnit1025
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/89094", TestPlatforms.OSX)]
         public async Task FloatingPointConstants_Fail(string testString)
         {
             string testStringAsJson = $@"""{testString}""";

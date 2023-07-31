@@ -1,34 +1,37 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { exceptions, simd } from "wasm-feature-detect";
+
 import type { AssetEntryInternal, GlobalObjects, LoaderHelpers, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
-import { mono_download_assets, resolve_asset_path } from "./assets";
-import { mono_log_error, setup_proxy_console } from "./logging";
-import { hasDebuggingEnabled } from "./blazor/_Polyfill";
+import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
+import { setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
+import { hasDebuggingEnabled } from "./config";
+import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB = typeof window == "object";
 export const ENVIRONMENT_IS_WORKER = typeof importScripts == "function";
 export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
 
-export let runtimeHelpers: RuntimeHelpers = null as any;
-export let loaderHelpers: LoaderHelpers = null as any;
-export let exportedRuntimeAPI: RuntimeAPI = null as any;
-export let INTERNAL: any;
+export let runtimeHelpers: RuntimeHelpers = {} as any;
+export let loaderHelpers: LoaderHelpers = {} as any;
+export let exportedRuntimeAPI: RuntimeAPI = {} as any;
+export let INTERNAL: any = {};
 export let _loaderModuleLoaded = false; // please keep it in place also as rollup guard
 
 export const globalObjectsRoot: GlobalObjects = {
     mono: {},
     binding: {},
-    internal: {},
+    internal: INTERNAL,
     module: {},
-    loaderHelpers: {},
-    runtimeHelpers: {},
-    api: {}
+    loaderHelpers,
+    runtimeHelpers,
+    api: exportedRuntimeAPI,
 } as any;
 
 setLoaderGlobals(globalObjectsRoot);
@@ -57,7 +60,8 @@ export function setLoaderGlobals(
         mono_wasm_bindings_is_ready: false,
         javaScriptExports: {} as any,
         config: globalObjects.module.config,
-        diagnosticTracing: false
+        diagnosticTracing: false,
+        abort: (reason: any) => { throw reason; },
     });
     Object.assign(loaderHelpers, {
         config: globalObjects.module.config,
@@ -88,11 +92,18 @@ export function setLoaderGlobals(
         getPromiseController,
         assertIsControllablePromise,
         mono_download_assets,
-        resolve_asset_path,
+        resolve_asset_path: resolve_single_asset_path,
         setup_proxy_console,
+        logDownloadStatsToConsole,
+        purgeUnusedCacheEntriesAsync,
 
         hasDebuggingEnabled,
+        retrieve_asset_download,
         invokeLibraryInitializers,
+
+        // from wasm-feature-detect npm package
+        exceptions,
+        simd,
 
     } as Partial<LoaderHelpers>);
 }
@@ -105,10 +116,6 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()
         : messageFactory);
-    const abort = globalObjectsRoot.runtimeHelpers.mono_wasm_abort;
-    if (abort) {
-        mono_log_error(message);
-        abort();
-    }
-    throw new Error(message);
+    const error = new Error(message);
+    runtimeHelpers.abort(error);
 }

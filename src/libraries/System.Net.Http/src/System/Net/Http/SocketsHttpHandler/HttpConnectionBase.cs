@@ -164,7 +164,7 @@ namespace System.Net.Http
                 !IsDigit(status2 = value[1]) ||
                 !IsDigit(status3 = value[2]))
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, System.Text.Encoding.ASCII.GetString(value)), httpRequestError: HttpRequestError.InvalidResponse);
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(value)));
             }
 
             return 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');

@@ -69,7 +69,7 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
       - name: liveRuntimeBuildParams
-        value: 'libs.sfx+libs.oob+clr.iltools -c Release -ci'
+        value: 'libs+clr.iltools -c Release -ci'
       - name: compilerArg
         value: ''
 

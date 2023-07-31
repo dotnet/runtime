@@ -57,8 +57,8 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
     protected async Task<RunResult> RunSdkStyleApp(RunOptions options)
     {
-        string runArgs = $"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files";
-        string workingDirectory = Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(options.Configuration, forPublish: options.ForPublish), ".."));
+        string runArgs = $"run -c {options.Configuration}";
+        string workingDirectory = _projectDir;
 
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
             .WithWorkingDirectory(workingDirectory);
@@ -77,7 +77,12 @@ public abstract class AppTestBase : BlazorWasmTestBase
         if (options.BrowserQueryString != null)
             queryString += "&" + string.Join("&", options.BrowserQueryString.Select(kvp => $"{kvp.Key}={kvp.Value}"));
 
-        page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, modifyBrowserUrl: url => url + queryString);
+        page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, modifyBrowserUrl: url => 
+        {
+            url += queryString;
+            _testOutput.WriteLine($"Opening browser at {url}");
+            return url;
+        });
 
         void OnConsoleMessage(IConsoleMessage msg)
         {
@@ -118,7 +123,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string Configuration,
         string TestScenario,
         Dictionary<string, string> BrowserQueryString = null,
-        bool ForPublish = false,
         Action<IConsoleMessage, IPage> OnConsoleMessage = null,
         int? ExpectedExitCode = 0
     );
