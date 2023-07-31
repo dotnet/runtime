@@ -12,9 +12,9 @@ using System.Collections.Generic;
 
 namespace Wasm.Build.Tests;
 
-public class IcuShardingTests : TestMainJsTestBase
+public class IcuTests : TestMainJsTestBase
 {
-    public IcuShardingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public IcuTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
     // custom file contains only locales "cy-GB", "is-IS", "bs-BA", "lb-LU" and fallback locale: "en-US":
@@ -232,7 +232,7 @@ public class IcuShardingTests : TestMainJsTestBase
     }
 
     [Theory]
-    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })] 
     [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
     public void FullIcuFromRuntimePackWithCustomIcu(BuildArgs buildArgs, bool fullIcu, RunHost host, string id)
     {
@@ -240,7 +240,11 @@ public class IcuShardingTests : TestMainJsTestBase
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName };
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{s_customIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
+        string customFile = fullIcu ? "icudt_nonexisting.dat" : s_customIcuPath;
+        buildArgs = ExpandBuildArgs(
+            buildArgs, 
+            extraProperties: 
+                $"<WasmIcuDataFileName>{customFile}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
         string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
         string programText = GetProgramText(testedLocales);
@@ -259,18 +263,27 @@ public class IcuShardingTests : TestMainJsTestBase
     }
 
     [Theory]
-    [BuildAndRun(host: RunHost.None)]
-    public void NonExistingCustomFileAssertError(BuildArgs buildArgs, string id)
+    [BuildAndRun(host: RunHost.None, parameters: new object[] { "icudtNonExisting.dat", true })]
+    [BuildAndRun(host: RunHost.None, parameters: new object[] { "incorrectName.dat", false })]
+    public void NonExistingCustomFileAssertError(BuildArgs buildArgs, string customFileName, bool isFilenameCorrect, string id)
     {
         string projectName = $"invalidCustomIcu_{buildArgs.Config}_{buildArgs.AOT}";
         buildArgs = buildArgs with { ProjectName = projectName };
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>nonexisting.dat</WasmIcuDataFileName>");
+        string customIcu = Path.Combine(BuildEnvironment.TestAssetsPath, customFileName);
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{customIcu}</WasmIcuDataFileName>");
 
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
                             ExpectSuccess: false));
-        Assert.Contains("File in location $(WasmIcuDataFileName)=nonexisting.dat cannot be found neither when used as absolute path nor a relative runtime pack path.", output);
+        if (isFilenameCorrect)
+        {
+            Assert.Contains($"File in location $(WasmIcuDataFileName)={customIcu} cannot be found neither when used as absolute path nor a relative runtime pack path.", output);
+        }
+        else
+        {
+            Assert.Contains($"Custom ICU file name in path $(WasmIcuDataFileName)={customIcu} has to start with 'icudt'.", output);
+        }
     }
 }
