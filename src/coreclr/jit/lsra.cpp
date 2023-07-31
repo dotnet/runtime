@@ -4869,6 +4869,7 @@ void LinearScan::allocateRegisters()
 
         if (spillAlways() && lastAllocatedRefPosition != nullptr && !lastAllocatedRefPosition->IsPhysRegRef() &&
             !lastAllocatedRefPosition->getInterval()->isInternal &&
+            (!lastAllocatedRefPosition->RegOptional() || (lastAllocatedRefPosition->registerAssignment != RBM_NONE)) &&
             (RefTypeIsDef(lastAllocatedRefPosition->refType) || lastAllocatedRefPosition->getInterval()->isLocalVar))
         {
             assert(lastAllocatedRefPosition->registerAssignment != RBM_NONE);
@@ -5013,7 +5014,7 @@ void LinearScan::allocateRegisters()
                     {
                         // Available registers should not hold constants
                         assert(isRegAvailable(reg, physRegRecord->registerType));
-                        assert(!isRegConstant(reg, physRegRecord->registerType));
+                        assert(!isRegConstant(reg, physRegRecord->registerType) || spillAlways());
                         assert(nextIntervalRef[reg] == MaxLocation);
                         assert(spillCost[reg] == 0);
                     }
