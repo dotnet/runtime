@@ -154,6 +154,7 @@
 %type <binstr> sigArgs0 sigArgs1 sigArg type bound bounds1 bytes hexbytes nativeType marshalBlob initOpt compQstring caValue
 %type <binstr> marshalClause
 %type <binstr> fieldInit serInit fieldSerInit
+%type <binstr> constTypeArg
 %type <binstr> f32seq f64seq i8seq i16seq i32seq i64seq boolSeq sqstringSeq classSeq objSeq
 %type <binstr> simpleType
 %type <binstr> tyArgs0 tyArgs1 tyArgs2 typeList typeListNotEmpty tyBound
@@ -1263,6 +1264,45 @@ serInit                 : fieldSerInit                       { $$ = $1; }
                                                                $$->insertInt8(ELEMENT_TYPE_SZARRAY); }
                         ;
 
+constTypeArg            : FLOAT32_ '(' float64 ')'           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R4);
+                                                               float f = (float)(*$3);
+                                                               $$->appendInt32(*((__int32*)&f)); delete $3; }
+                        | FLOAT64_ '(' float64 ')'           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R8);
+                                                               $$->appendInt64((__int64 *)$3); delete $3; }
+                        | FLOAT32_ '(' int32 ')'             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R4);
+                                                               $$->appendInt32($3); }
+                        | FLOAT64_ '(' int64 ')'             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R8);
+                                                               $$->appendInt64((__int64 *)$3); delete $3; }
+                        | INT64_ '(' int64 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I8);
+                                                               $$->appendInt64((__int64 *)$3); delete $3; }
+                        | INT32_ '(' int32 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I4);
+                                                               $$->appendInt32($3); }
+                        | INT16_ '(' int32 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I2);
+                                                               $$->appendInt16($3); }
+                        | INT8_ '(' int32 ')'                { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I1);
+                                                               $$->appendInt8($3); }
+                        | UNSIGNED_ INT64_ '(' int64 ')'     { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U8);
+                                                               $$->appendInt64((__int64 *)$4); delete $4; }
+                        | UNSIGNED_ INT32_ '(' int32 ')'     { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U4);
+                                                               $$->appendInt32($4); }
+                        | UNSIGNED_ INT16_ '(' int32 ')'     { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U2);
+                                                               $$->appendInt16($4); }
+                        | UNSIGNED_ INT8_ '(' int32 ')'      { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U1);
+                                                               $$->appendInt8($4); }
+                        | UINT64_ '(' int64 ')'              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U8);
+                                                               $$->appendInt64((__int64 *)$3); delete $3; }
+                        | UINT32_ '(' int32 ')'              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U4);
+                                                               $$->appendInt32($3); }
+                        | UINT16_ '(' int32 ')'              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U2);
+                                                               $$->appendInt16($3); }
+                        | UINT8_ '(' int32 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U1);
+                                                               $$->appendInt8($3); }
+                        | CHAR_ '(' int32 ')'                { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_CHAR);
+                                                               $$->appendInt16($3); }
+                        | BOOL_ '(' truefalse ')'            { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_BOOLEAN);
+                                                               $$->appendInt8($3);}
+                        ;
+
 
 f32seq                  : /* EMPTY */                        { $$ = new BinStr(); }
                         | f32seq float64                     { $$ = $1;
@@ -1686,7 +1726,7 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                         | OBJECT_                             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_OBJECT); }
                         | VALUE_ CLASS_ className             { $$ = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, $3); }
                         | VALUETYPE_ className                { $$ = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, $2); }
-                        | CONST_ fieldInit                    { $$ = $2; $$->insertInt8(ELEMENT_TYPE_CTARG); }
+                        | CONST_ constTypeArg                 { $$ = $2; $$->insertInt8(ELEMENT_TYPE_CTARG); }
                         | type '[' ']'                        { $$ = $1; $$->insertInt8(ELEMENT_TYPE_SZARRAY); }
                         | type '[' bounds1 ']'                { $$ = parser->MakeTypeArray(ELEMENT_TYPE_ARRAY, $1, $3); }
                         | type '&'                            { $$ = $1; $$->insertInt8(ELEMENT_TYPE_BYREF); }
