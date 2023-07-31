@@ -29,6 +29,9 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #endif
 #include <errno.h>
 #include <unistd.h>
+#if defined(HOST_APPLE) && !defined(HOST_OSX)
+#include <libkern/OSCacheControl.h>
+#endif
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
@@ -1912,6 +1915,8 @@ DBG_FlushInstructionCache(
 #endif
 
     syscall(__NR_riscv_flush_icache, (char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize), 0 /* all harts */);
+#elif defined(HOST_APPLE) && !defined(HOST_OSX)
+    sys_icache_invalidate((void *)lpBaseAddress, dwSize);
 #else
     __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
 #endif
