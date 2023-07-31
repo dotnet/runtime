@@ -6,8 +6,8 @@ Lexical tokens
     DOTTEDNAME - Sequence of dot-separated IDs (e.g. System.Object)
     QSTRING  - C style quoted string (e.g.  "hi\n")
     SQSTRING - C style singlely quoted string(e.g.  'hi')
-    INT32    - C style 32 bit integer (e.g.  235,  03423, 0x34FFF)
-    INT64    - C style 64 bit integer (e.g.  -2353453636235234,  0x34FFFFFFFFFF)
+    INT32_V  - C style 32 bit integer (e.g.  235,  03423, 0x34FFF)
+    INT64_V  - C style 64 bit integer (e.g.  -2353453636235234,  0x34FFFFFFFFFF)
     FLOAT64  - C style floating point number (e.g.  -0.2323, 354.3423, 3435.34E-5)
     INSTR_*  - IL instructions of a particular class (see opcode.def).
     HEXBYTE  - 1- or 2-digit hexadecimal number (e.g., A2, F0).
@@ -76,11 +76,11 @@ dottedName              : id
                         | dottedName '.' dottedName 
                         ;
 
-int32                   : INT32 
+int32                   : INT32_V 
                         ;
 
-int64                   : INT64 
-                        | INT32 
+int64                   : INT64_V 
+                        | INT32_V 
                         ;
 
 float64                 : FLOAT64 

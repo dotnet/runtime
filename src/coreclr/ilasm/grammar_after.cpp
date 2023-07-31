@@ -1209,13 +1209,13 @@ Its_An_Id:
             if ((i64 & mask64) && (i64 != largestNegVal32))
             {
                 yylval.int64 = new __int64(i64);
-                tok = INT64;
+                tok = INT64_V;
                 if (neg) *yylval.int64 = -*yylval.int64;
             }
             else
             {
                 yylval.int32 = (__int32)i64;
-                tok = INT32;
+                tok = INT32_V;
                 if(neg) yylval.int32 = -yylval.int32;
             }
         }
@@ -1280,7 +1280,7 @@ Just_A_Character:
     }
     dbprintf(("    Line %d token %d (%c) val = %s\n", PENV->curLine, tok,
             (tok < 128 && isprint(tok)) ? tok : ' ',
-            (tok > 255 && tok != INT32 && tok != INT64 && tok!= FLOAT64) ? yylval.string : ""));
+            (tok > 255 && tok != INT32_V && tok != INT64_V && tok!= FLOAT64) ? yylval.string : ""));
 
     PENV->curPos = curPos;
     PENV->curTok = curTok;
