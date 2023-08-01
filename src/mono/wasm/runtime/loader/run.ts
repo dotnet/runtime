@@ -473,6 +473,8 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
     const wasmModuleAsset = resolve_single_asset_path("dotnetwasm");
     start_asset_download(wasmModuleAsset).then(asset => {
         loaderHelpers.wasmDownloadPromise.promise_control.resolve(asset);
+    }).catch(err => {
+        mono_exit(1, err);
     });
 
     init_globalization();

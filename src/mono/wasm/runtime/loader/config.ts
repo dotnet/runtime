@@ -81,7 +81,7 @@ function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): R
         providedResources.icu = { ...(target.icu || {}), ...(providedResources.icu || {}) };
     }
     if (providedResources.satelliteResources !== undefined) {
-        providedResources.satelliteResources = deep_merge_dict(target.satelliteResources || {}, providedResources.vfs || {});
+        providedResources.satelliteResources = deep_merge_dict(target.satelliteResources || {}, providedResources.satelliteResources || {});
     }
     if (providedResources.modulesAfterConfigLoaded !== undefined) {
         providedResources.modulesAfterConfigLoaded = { ...(target.modulesAfterConfigLoaded || {}), ...(providedResources.modulesAfterConfigLoaded || {}) };
