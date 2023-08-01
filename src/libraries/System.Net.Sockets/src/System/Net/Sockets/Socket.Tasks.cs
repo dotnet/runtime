@@ -677,8 +677,8 @@ namespace System.Net.Sockets
 
             if (!IsConnectionOriented)
             {
-                var nsex = new NotSupportedException(SR.net_notconnected);
-                return ValueTask.FromException(nsex);
+                var ex = new NotSupportedException(SR.net_notconnected);
+                return ValueTask.FromException(ex);
             }
 
             int packetsCount = 0;
