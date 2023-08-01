@@ -13,6 +13,7 @@ using Microsoft.Build.Utilities;
 public class AppleAppBuilderTask : Task
 {
     private string targetOS = TargetNames.iOS;
+    private TargetRuntime targetRuntime;
 
     /// <summary>
     /// The Apple OS we are targeting (ios, tvos, iossimulator, tvossimulator)
@@ -193,7 +194,12 @@ public class AppleAppBuilderTask : Task
 
     public void ValidateRuntimeSelection()
     {
-        if (Runtime == "NativeAOT" || Runtime == "CoreCLR")
+        if (!Enum.TryParse<TargetRuntime>(Runtime, out targetRuntime))
+        {
+            throw new ArgumentException($"The \"{nameof(AppleAppBuilderTask)}\" task was not given an invalid value for parameter \"{nameof(Runtime)}\".");
+        }
+
+        if (targetRuntime == TargetRuntime.NativeAOT || targetRuntime == TargetRuntime.CoreCLR)
         {
             if (!string.IsNullOrEmpty(MonoRuntimeHeaders))
                 throw new ArgumentException($"Property \"{nameof(MonoRuntimeHeaders)}\" is not supported with {Runtime} runtime and will be ignored.");
@@ -216,21 +222,16 @@ public class AppleAppBuilderTask : Task
             if (EnableRuntimeLogging)
                 throw new ArgumentException($"Property \"{nameof(EnableRuntimeLogging)}\" is not supported with {Runtime} runtime and will be ignored.");
         }
-        else if (Runtime == "MonoVM" || string.IsNullOrEmpty(Runtime))
+        else
         {
             if (string.IsNullOrEmpty(MonoRuntimeHeaders))
                 throw new ArgumentException($"The \"{nameof(AppleAppBuilderTask)}\" task was not given a value for the required parameter \"{nameof(MonoRuntimeHeaders)}\" when using Mono runtime.");
-            Runtime = "MonoVM";
-        }
-        else
-        {
-            throw new ArgumentException($"The \"{nameof(AppleAppBuilderTask)}\" task was not given an invalid value for parameter \"{nameof(Runtime)}\".");
         }
     }
 
     public override bool Execute()
     {
-        bool shouldStaticLink = Runtime != "CoreCLR" && !EnableAppSandbox;
+        bool shouldStaticLink = !EnableAppSandbox;
         bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
 
         ValidateRuntimeSelection();
@@ -293,7 +294,7 @@ public class AppleAppBuilderTask : Task
                 }
             }
 
-            if (!ForceInterpreter && (shouldStaticLink || ForceAOT) && (assemblerFiles.Count == 0 && Runtime == "MonoVM"))
+            if (!ForceInterpreter && (shouldStaticLink || ForceAOT) && (assemblerFiles.Count == 0 && targetRuntime == TargetRuntime.MonoVM))
             {
                 throw new InvalidOperationException("Need list of AOT files for static linked builds.");
             }
@@ -330,9 +331,10 @@ public class AppleAppBuilderTask : Task
             extraLinkerArgs.Add(item.ItemSpec);
         }
 
-        if (Runtime == "CoreCLR")
+        if (targetRuntime == TargetRuntime.CoreCLR)
         {
             extraLinkerArgs.Add("-rpath @executable_path");
+            shouldStaticLink = false;
         }
 
         var generator = new Xcode(Log, TargetOS, Arch);
@@ -340,7 +342,7 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs, excludes,
-                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, Runtime, IsLibraryMode);
+                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, targetRuntime, IsLibraryMode);
 
             if (BuildAppBundle)
             {
@@ -366,7 +368,7 @@ public class AppleAppBuilderTask : Task
         else if (GenerateCMakeProject)
         {
              generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs, excludes,
-                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, Runtime, IsLibraryMode);
+                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, targetRuntime, IsLibraryMode);
         }
 
         return true;

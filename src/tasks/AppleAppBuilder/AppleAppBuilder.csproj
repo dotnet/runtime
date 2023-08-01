@@ -18,6 +18,7 @@
     <Compile Include="AppleAppBuilder.cs" />
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="TargetOS.cs" />
+    <Compile Include="TargetRuntime.cs" />
     <Compile Include="Xcode.cs" />
   </ItemGroup>
 
