@@ -104,14 +104,6 @@ namespace Internal.IL.Stubs
                 return context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")
                     .MakeInstantiatedType(type);
             }
-            else if (IsMultipleCanonInstantiation(type))
-            {
-                // These are difficult to disambiguate so don't try. We could restrict this if
-                // we really want in the future because not everything is like below:
-                // struct Foo<T, U> : IEquatable<Foo<U, U>> { }
-                // struct Foo<T, U> : IEquatable<Foo<T, T>> { }
-                return null;
-            }
             else if (ImplementsInterfaceOfSelf(type, interfaceName))
             {
                 return context.SystemModule.GetKnownType("System.Collections.Generic", $"Generic{flavor}`1")
@@ -120,25 +112,6 @@ namespace Internal.IL.Stubs
 
             return context.SystemModule.GetKnownType("System.Collections.Generic", $"Object{flavor}`1")
                     .MakeInstantiatedType(type);
-
-            static bool IsMultipleCanonInstantiation(TypeDesc type)
-            {
-                if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    return false;
-
-                TypeSystemContext context = type.Context;
-                bool foundCanon = false;
-                foreach (TypeDesc instArg in type.Instantiation)
-                {
-                    if (instArg == context.CanonType || instArg == context.UniversalCanonType)
-                    {
-                        if (foundCanon)
-                            return true;
-                        foundCanon = true;
-                    }
-                }
-                return false;
-            }
         }
 
         public static TypeDesc[] GetPotentialComparersForType(TypeDesc type)
@@ -228,11 +201,14 @@ namespace Internal.IL.Stubs
         {
             MetadataType interfaceType = null;
 
-            foreach (TypeDesc implementedInterface in type.RuntimeInterfaces)
+            TypeDesc typeDefinition = type.GetTypeDefinition();
+            TypeDesc openInstantiation = typeDefinition.InstantiateAsOpen();
+
+            foreach (TypeDesc implementedInterface in typeDefinition.RuntimeInterfaces)
             {
                 Instantiation interfaceInstantiation = implementedInterface.Instantiation;
                 if (interfaceInstantiation.Length == 1 &&
-                    interfaceInstantiation[0] == type)
+                    interfaceInstantiation[0] == openInstantiation)
                 {
                     interfaceType ??= interfaceType = type.Context.SystemModule.GetKnownType("System", interfaceName);
 
