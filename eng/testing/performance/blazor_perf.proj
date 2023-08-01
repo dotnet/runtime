@@ -12,7 +12,7 @@
     <PublishArgs>--has-workload --readonly-dotnet --msbuild "/p:_TrimmerDumpDependencies=true;/p:HybridGlobalization=$(hybridGlobalization);" --msbuild /warnaserror:NU1602,NU1604 --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27 --binlog $(LogDirectory)blazor_publish.binlog</PublishArgs>
     <PublishCommand>$(EnvVars) $(Python) pre.py publish $(PublishArgs)</PublishCommand>
     <HybridGlobalizationPath></HybridGlobalizationPath>
-    <HybridGlobalizationPath Condition="'$(hybridGlobalization)' == 'true'"> - HybridGlobalization</HybridGlobalizationPath>
+    <HybridGlobalizationPath Condition="'$(hybridGlobalization)' == 'True'"> - HybridGlobalization</HybridGlobalizationPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">

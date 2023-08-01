@@ -40,7 +40,7 @@ iosnativeaot=false
 runtimetype=""
 iosllvmbuild=""
 iosstripsymbols=""
-hybridglobalization=false
+hybridglobalization=""
 maui_version=""
 use_local_commit_time=false
 only_sanity=false
@@ -184,8 +184,8 @@ while (($# > 0)); do
       shift 2
       ;;
     --hybridglobalization)
-      hybridglobalization=true
-      shift 1
+      hybridglobalization=$2
+      shift 2
       ;;
     --mauiversion)
       maui_version=$2
@@ -364,8 +364,8 @@ if [[ "$physicalpromotion" == "true" ]]; then
     configurations="$configurations PhysicalPromotionType=physicalpromotion"
 fi
 
-if [[ $hybridglobalization ]]; then
-    configurations="$configurations HybridGlobalization=true"
+if [[ "$hybridglobalization" == "True" ]]; then
+    configurations="$configurations HybridGlobalization=True"
 fi
 
 

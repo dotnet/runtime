@@ -16,7 +16,7 @@ parameters:
   archiveExtension: ''
   archiveType: ''
   tarCompression: ''
-  hybridGlobalization: false
+  hybridGlobalization: False
 
 steps:
 # Build Android sample app
@@ -37,7 +37,7 @@ steps:
       workingDirectory: $(Build.SourcesDirectory)/artifacts/bin
       displayName: clean bindir
 
-  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSMono'), eq(parameters.hybridGlobalization, false)) }}:
+  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSMono'), eq(parameters.hybridGlobalization, False)) }}:
     - script: make build-appbundle TARGET=ios MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false
       env:
         DevTeamProvisioning: '-'
@@ -124,7 +124,7 @@ steps:
         archiveExtension: '.zip'
         archiveType: zip
 
-  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSNativeAOT'), eq(parameters.hybridGlobalization, false)) }}:
+  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSNativeAOT'), eq(parameters.hybridGlobalization, False)) }}:
     - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false
       env:
         DevTeamProvisioning: '-'
@@ -167,7 +167,7 @@ steps:
         archiveExtension: '.zip'
         archiveType: zip
 
-  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSMono'), eq(parameters.hybridGlobalization, true)) }}:
+  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSMono'), eq(parameters.hybridGlobalization, True)) }}:
     - script: make build-appbundle TARGET=ios MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=true
       env:
         DevTeamProvisioning: '-'
@@ -254,7 +254,7 @@ steps:
         archiveExtension: '.zip'
         archiveType: zip
 
-  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSNativeAOT'), eq(parameters.hybridGlobalization, true)) }}:
+  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSNativeAOT'), eq(parameters.hybridGlobalization, True)) }}:
     - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=true
       env:
         DevTeamProvisioning: '-'

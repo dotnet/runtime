@@ -20,7 +20,7 @@
     <SymbolsPath>symbols</SymbolsPath>
     <SymbolsPath Condition="'$(iOSStripSymbols)' == 'True'">nosymbols</SymbolsPath>
     <HybridGlobalizationPath></HybridGlobalizationPath>
-    <HybridGlobalizationPath Condition="'$(hybridGlobalization)' == 'true'"> HybridGlobalization</HybridGlobalizationPath>
+    <HybridGlobalizationPath Condition="'$(hybridGlobalization)' == 'True'"> HybridGlobalization</HybridGlobalizationPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">

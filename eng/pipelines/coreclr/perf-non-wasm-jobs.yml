@@ -26,7 +26,7 @@ jobs:
           archiveExtension: '.tar.gz'
           archiveType: tar
           tarCompression: gz
-          hybridGlobalization: true
+          hybridGlobalization: True
 
   # build NativeAOT iOS scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -49,7 +49,7 @@ jobs:
           archiveExtension: '.tar.gz'
           archiveType: tar
           tarCompression: gz
-          hybridGlobalization: true
+          hybridGlobalization: True
 
   # run mono iOS scenarios scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -68,7 +68,7 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: False
         iOSStripSymbols: False
-        hybridGlobalization: true
+        hybridGlobalization: True
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -86,7 +86,7 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: False
         iOSStripSymbols: True
-        hybridGlobalization: true
+        hybridGlobalization: True
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -104,7 +104,7 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: True
         iOSStripSymbols: False
-        hybridGlobalization: true
+        hybridGlobalization: True
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -122,7 +122,7 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: True
         iOSStripSymbols: True
-        hybridGlobalization: true
+        hybridGlobalization: True
 
   # run NativeAOT iOS scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -140,7 +140,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSStripSymbols: False
-        hybridGlobalization: true
+        hybridGlobalization: True
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -157,7 +157,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSStripSymbols: True
-        hybridGlobalization: true
+        hybridGlobalization: True
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule'), eq(parameters.TestHybridGlobalization, false)) }}:
 
