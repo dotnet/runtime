@@ -397,12 +397,12 @@ namespace Microsoft.Interop
         public static bool CleansUpInStage(TypePositionInfo info, StubCodeContext context)
         {
             if (context.Direction is MarshalDirection.UnmanagedToManaged)
-                return context.CurrentStage is StubCodeContext.Stage.CleanupIn;
+                return context.CurrentStage is StubCodeContext.Stage.CleanupCallerAllocated;
 
             if (GetMarshalDirection(info, context) is MarshalDirection.UnmanagedToManaged)
-                return context.CurrentStage is StubCodeContext.Stage.CleanupOut;
+                return context.CurrentStage is StubCodeContext.Stage.CleanupCalleeAllocated;
 
-            return context.CurrentStage is StubCodeContext.Stage.CleanupIn;
+            return context.CurrentStage is StubCodeContext.Stage.CleanupCallerAllocated;
         }
     }
 }

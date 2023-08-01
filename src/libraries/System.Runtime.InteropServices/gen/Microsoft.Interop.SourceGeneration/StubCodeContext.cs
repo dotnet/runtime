@@ -66,12 +66,12 @@ namespace Microsoft.Interop
             /// <summary>
             /// Perform any cleanup required on caller allocated resources
             /// </summary>
-            CleanupIn,
+            CleanupCallerAllocated,
 
             /// <summary>
             /// Perform any cleanup required on callee allocated resources
             /// </summary>
-            CleanupOut,
+            CleanupCalleeAllocated,
 
             /// <summary>
             /// Convert native data to managed data even in the case of an exception during

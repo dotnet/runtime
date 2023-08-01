@@ -440,8 +440,8 @@ namespace Microsoft.Interop
                 indexConstraintName,
                 _elementInfo,
                 _elementMarshaller,
-                StubCodeContext.Stage.CleanupIn,
-                StubCodeContext.Stage.CleanupOut);
+                StubCodeContext.Stage.CleanupCallerAllocated,
+                StubCodeContext.Stage.CleanupCalleeAllocated);
 
             if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
             {
@@ -544,8 +544,8 @@ namespace Microsoft.Interop
                     new FreeAlwaysOwnedOriginalValueGenerator(_elementMarshaller),
                     StubCodeContext.Stage.Marshal,
                     StubCodeContext.Stage.PinnedMarshal,
-                    StubCodeContext.Stage.CleanupIn,
-                    StubCodeContext.Stage.CleanupOut));
+                    StubCodeContext.Stage.CleanupCallerAllocated,
+                    StubCodeContext.Stage.CleanupCalleeAllocated));
         }
 
         private static List<StatementSyntax> GenerateElementStages(

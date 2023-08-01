@@ -55,11 +55,11 @@ namespace Microsoft.Interop
                 _marshallers,
                 _context,
                 methodToInvoke);
-            Debug.Assert(statements.CleanupOut.IsEmpty);
+            Debug.Assert(statements.CleanupCalleeAllocated.IsEmpty);
 
             bool shouldInitializeVariables =
                 !statements.GuaranteedUnmarshal.IsEmpty
-                || !statements.CleanupIn.IsEmpty
+                || !statements.CleanupCallerAllocated.IsEmpty
                 || !statements.ManagedExceptionCatchClauses.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
 
@@ -97,7 +97,7 @@ namespace Microsoft.Interop
 
             SyntaxList<CatchClauseSyntax> catchClauses = List(statements.ManagedExceptionCatchClauses);
 
-            finallyStatements.AddRange(statements.CleanupIn);
+            finallyStatements.AddRange(statements.CleanupCallerAllocated);
             if (finallyStatements.Count > 0)
             {
                 allStatements.Add(

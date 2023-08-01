@@ -78,7 +78,7 @@ namespace Microsoft.Interop
 
     /// <summary>
     /// Marshalling strategy that uses the tracking variables introduced by <see cref="UnmanagedToManagedOwnershipTrackingStrategy"/> to cleanup the original value if the original value is owned
-    /// in the <see cref="StubCodeContext.Stage.CleanupIn"/> stage.
+    /// in the <see cref="StubCodeContext.Stage.CleanupCallerAllocated"/> stage.
     /// </summary>
     internal sealed class CleanupOwnedOriginalValueMarshalling : ICustomTypeMarshallingStrategy
     {
@@ -119,7 +119,7 @@ namespace Microsoft.Interop
 
     /// <summary>
     /// Marshalling strategy to cache the initial value of a given <see cref="TypePositionInfo"/> in a local variable and cleanup that value in the cleanup stage.
-    /// Useful in scenarios where the value is always owned in all code-paths that reach the <see cref="StubCodeContext.Stage.CleanupIn"/> stage, so additional ownership tracking is extraneous.
+    /// Useful in scenarios where the value is always owned in all code-paths that reach the <see cref="StubCodeContext.Stage.CleanupCallerAllocated"/> stage, so additional ownership tracking is extraneous.
     /// </summary>
     internal sealed class FreeAlwaysOwnedOriginalValueGenerator : IMarshallingGenerator
     {
@@ -138,7 +138,7 @@ namespace Microsoft.Interop
                 return GenerateSetupStatements();
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.CleanupIn)
+            if (context.CurrentStage == StubCodeContext.Stage.CleanupCallerAllocated)
             {
                 return GenerateStatementsFromInner(new OwnedValueCodeContext(context));
             }
