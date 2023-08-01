@@ -250,64 +250,64 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-type SingleAssetBehaviors =
-    /**
-     * The binary of the dotnet runtime.
-     */
-    "dotnetwasm"
-    /**
-     * The javascript module for loader.
-     */
-    | "js-module-dotnet"
-    /**
-     * The javascript module for threads.
-     */
-    | "js-module-threads"
-    /**
-     * The javascript module for runtime.
-     */
-    | "js-module-runtime"
-    /**
-     * The javascript module for emscripten.
-     */
-    | "js-module-native"
-    /**
-     * Typically blazor.boot.json
-     */
-    | "manifest";
-type AssetBehaviors = SingleAssetBehaviors |
-    /**
-     * Load asset as a managed resource assembly.
-     */
-    "resource"
-    /**
-     * Load asset as a managed assembly.
-     */
-    | "assembly"
-    /**
-     * Load asset as a managed debugging information.
-     */
-    | "pdb"
-    /**
-     * Store asset into the native heap.
-     */
-    | "heap"
-    /**
-     * Load asset as an ICU data archive.
-     */
-    | "icu"
-    /**
-     * Load asset into the virtual filesystem (for fopen, File.Open, etc).
-     */
-    | "vfs"
-    /**
-     * The javascript module that came from nuget package .
-     */
-    | "js-module-library-initializer"
-    /**
-     * The javascript module for threads.
-     */
-    | "symbols";
+type SingleAssetBehaviors = 
+/**
+ * The binary of the dotnet runtime.
+ */
+"dotnetwasm"
+/**
+ * The javascript module for loader.
+ */
+ | "js-module-dotnet"
+/**
+ * The javascript module for threads.
+ */
+ | "js-module-threads"
+/**
+ * The javascript module for runtime.
+ */
+ | "js-module-runtime"
+/**
+ * The javascript module for emscripten.
+ */
+ | "js-module-native"
+/**
+ * Typically blazor.boot.json
+ */
+ | "manifest";
+type AssetBehaviors = SingleAssetBehaviors | 
+/**
+ * Load asset as a managed resource assembly.
+ */
+"resource"
+/**
+ * Load asset as a managed assembly.
+ */
+ | "assembly"
+/**
+ * Load asset as a managed debugging information.
+ */
+ | "pdb"
+/**
+ * Store asset into the native heap.
+ */
+ | "heap"
+/**
+ * Load asset as an ICU data archive.
+ */
+ | "icu"
+/**
+ * Load asset into the virtual filesystem (for fopen, File.Open, etc).
+ */
+ | "vfs"
+/**
+ * The javascript module that came from nuget package .
+ */
+ | "js-module-library-initializer"
+/**
+ * The javascript module for threads.
+ */
+ | "symbols";
 declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
