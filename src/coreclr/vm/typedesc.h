@@ -115,7 +115,6 @@ public:
     void DoRestoreTypeKey();
     void Restore();
     BOOL IsRestored();
-    BOOL IsRestored_NoLogging();
     void SetIsRestored();
 
     inline BOOL HasUnrestoredTypeKey() const
