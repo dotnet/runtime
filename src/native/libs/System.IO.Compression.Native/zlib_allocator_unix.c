@@ -24,6 +24,40 @@
  * If any of these checks fails, the application raises SIGABRT.
  */
 
+static bool IsMitigationDisabled()
+{
+    enum _MitigationEnablementTristate
+    {
+        MITIGATION_NOT_YET_QUERIED = 0,
+        MITIGATION_DISABLED = 1,
+        MITIGATION_ENABLED = 2 // really, anything other than 0 or 1
+    };
+    static int s_fMitigationEnablementState = MITIGATION_NOT_YET_QUERIED;
+
+    // If already initialized, return immediately.
+    // We don't need a volatile read here since the publish is performed with release semantics.
+    if (s_fMitigationEnablementState != MITIGATION_NOT_YET_QUERIED)
+    {
+        return (s_fMitigationEnablementState == MITIGATION_DISABLED);
+    }
+
+    // Initialize the tri-state now.
+    // It's ok for multiple threads to do this simultaneously. Only one thread will win.
+    // Valid env var values to disable mitigation: "true" and "1"
+    // All other env var values (or error) leaves mitigation enabled.
+
+    char* pchEnvVar = getenv("DOTNET_SYSTEM_IO_COMPRESSION_DISABLEZLIBMITIGATIONS");
+    bool fMitigationDisabled = (pchEnvVar && (strcmp(pchEnvVar, "1") == 0 || strcmp(pchEnvVar, "true") == 0));
+    
+    // We really don't care about the return value of the ICE operation. If another thread
+    // beat us to it, so be it. The recursive call will figure it out.
+    __sync_val_compare_and_swap(
+        /* destination: */ &s_fMitigationEnablementState,
+        /* comparand:   */ MITIGATION_NOT_YET_QUERIED,
+        /* exchange:    */ fMitigationDisabled ? MITIGATION_DISABLED : MITIGATION_ENABLED);
+    return IsMitigationDisabled();
+}
+
 #ifndef MEMORY_ALLOCATION_ALIGNMENT
 // malloc() returns an address suitably aligned for any built-in data type.
 // Historically, this has been twice the arch's natural word size.
@@ -77,6 +111,13 @@ voidpf ZLIB_INTERNAL zcalloc(opaque, items, size)
 {
     (void)opaque; // unreferenced formal parameter
 
+    if (IsMitigationDisabled())
+    {
+        // fallback logic copied from zutil.c
+        return sizeof(uInt) > 2 ? (voidpf)malloc(items * size) :
+                                  (voidpf)calloc(items, size);
+    }
+
     // If initializing a fixed-size structure, zero the memory.
     bool fZeroMemory = (items == 1);
     
@@ -124,6 +165,13 @@ void ZLIB_INTERNAL zcfree(opaque, ptr)
     voidpf ptr;
 {
     (void)opaque; // unreferenced formal parameter
+
+    if (IsMitigationDisabled())
+    {
+        // fallback logic copied from zutil.c
+        free(ptr);
+        return;
+    }
 
     if (ptr == NULL) { return; } // ok to free nullptr
 
