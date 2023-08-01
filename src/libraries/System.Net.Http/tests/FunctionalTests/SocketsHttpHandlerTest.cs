@@ -15,6 +15,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -3481,7 +3482,97 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new[] { 1, 2, 3 }, requestsSeen);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectCallback_UseNamedPipe_Success(bool useSsl)
+        {
+            string guid = $"{Guid.NewGuid():N}";
+
+            Task clientTask = Task.Run(async () =>
+            {
+                await using NamedPipeClientStream clientStream = new(".", pipeName: guid, PipeDirection.InOut, PipeOptions.WriteThrough | PipeOptions.Asynchronous, TokenImpersonationLevel.Anonymous);
+                await clientStream.ConnectAsync(TestHelper.PassingTestTimeoutMilliseconds);
+
+                using HttpClientHandler handler = CreateHttpClientHandler(UseVersion);
+                using HttpClient client = CreateHttpClient(handler);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = (_, _) => new ValueTask<Stream>(clientStream);
+
+                string url = $"{(useSsl ? "https" : "http")}://{guid}/foo";
+                Assert.Equal("foo", await client.GetStringAsync(url).WaitAsync(TestHelper.PassingTestTimeoutMilliseconds));
+            });
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using NamedPipeServerStream serverStream = new(pipeName: guid, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.WriteThrough | PipeOptions.Asynchronous);
+                await serverStream.WaitForConnectionAsync().WaitAsync(TestHelper.PassingTestTimeoutMilliseconds);
+
+                // HTTP/1.1 doesn't work over named pipes when going through SslStream as it runs into a deadlock while performing the handshake.
+                // The client is trying to write the request headers while the server is trying to write the end of its handshake.
+                // As neither side is reading, the writes never complete.
+                // We workaround that in tests by always having a pending read on the connection.
+                await using Stream serverStreamWrapper = useSsl && UseVersion.Major == 1
+                    ? new ReadAheadStream(serverStream, _output)
+                    : serverStream;
+
+                var options = new GenericLoopbackOptions { UseSsl = useSsl };
+                await using GenericLoopbackConnection connection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStreamWrapper, options);
+                await connection.InitializeConnectionAsync();
+
+                HttpRequestData requestData = await connection.HandleRequestAsync(content: "foo").WaitAsync(TestHelper.PassingTestTimeoutMilliseconds);
+                Assert.Equal("/foo", requestData.Path);
+            });
+
+            await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(GenericLoopbackServer.LoopbackServerTimeoutMilliseconds, clientTask, serverTask);
+        }
+
         private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
+
+        private sealed class ReadAheadStream : DelegatingStream
+        {
+            private readonly ITestOutputHelper _output;
+            private readonly IO.Pipelines.Pipe _pipe;
+            private readonly Stream _pipeReaderStream;
+
+            public ReadAheadStream(Stream innerStream, ITestOutputHelper output) : base(innerStream)
+            {
+                _output = output;
+
+                _pipe = new IO.Pipelines.Pipe();
+                _pipeReaderStream = _pipe.Reader.AsStream();
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await IO.Pipelines.StreamPipeExtensions.CopyToAsync(innerStream, _pipe.Writer);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"ReadAheadStream ignored exception: {ex}");
+                    }
+                });
+            }
+
+            public override bool CanSeek => false;
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+                _pipeReaderStream.ReadAsync(buffer, offset, count, cancellationToken);
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+                _pipeReaderStream.ReadAsync(buffer, cancellationToken);
+
+            public override int Read(byte[] buffer, int offset, int count) =>
+                _pipeReaderStream.Read(buffer, offset, count);
+
+            public override int Read(Span<byte> buffer) =>
+                _pipeReaderStream.Read(buffer);
+
+            public override int ReadByte() =>
+                _pipeReaderStream.ReadByte();
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
@@ -3495,49 +3586,6 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_ConnectCallback_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73772", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNativeAot))]
-        public async Task ConnectCallback_UseNamedPipe_Success(bool useSsl)
-        {
-            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
-
-            string guid = $"{Guid.NewGuid():N}";
-            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
-            {
-                var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-                using (NamedPipeServerStream serverStream = new NamedPipeServerStream(pipeName: guid, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.WriteThrough | PipeOptions.Asynchronous))
-                using (NamedPipeClientStream clientStream = new NamedPipeClientStream(".", pipeName: guid, PipeDirection.InOut, PipeOptions.WriteThrough | PipeOptions.Asynchronous, System.Security.Principal.TokenImpersonationLevel.Anonymous))
-                {
-                    await Task.WhenAll(serverStream.WaitForConnectionAsync(), clientStream.ConnectAsync());
-                    socketsHandler.ConnectCallback = (context, token) =>
-                    {
-                        return new ValueTask<Stream>(clientStream);
-                    };
-
-                    using (HttpClient client = CreateHttpClient(handler))
-                    {
-                        client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-                        Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
-                        await using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options))
-                        {
-                            await loopbackConnection.InitializeConnectionAsync();
-
-                            HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-                            Assert.Equal("/foo", requestData.Path);
-
-                            await loopbackConnection.SendResponseAsync(content: "foo");
-
-                            string response = await clientTask;
-                            Assert.Equal("foo", response);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     public abstract class SocketsHttpHandlerTest_PlaintextStreamFilter : HttpClientHandlerTestBase
