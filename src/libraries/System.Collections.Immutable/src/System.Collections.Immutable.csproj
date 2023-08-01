@@ -10,8 +10,8 @@ The System.Collections.Immutable library is built-in as part of the shared frame
 
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
-    <Compile Include="System\Collections\Frozen\String\SubstringComparers\SubstringComparer.cs" />
-    <Compile Include="System\Collections\Frozen\String\SubstringComparers\SubstringComparerBase.cs" />
+    <Compile Include="System\Collections\Frozen\String\SubstringEquality\SubstringEqualityComparers.cs" />
+    <Compile Include="System\Collections\Frozen\String\SubstringEquality\SubstringEqualityComparerBase.cs" />
 
     <Compile Include="System\Polyfills.cs" />
     <Compile Include="System\Collections\ThrowHelper.cs" />

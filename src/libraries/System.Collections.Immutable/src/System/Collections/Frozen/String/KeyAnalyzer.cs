@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Frozen.String.SubstringEquality;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Collections.Frozen.String.SubstringComparers;
 
 namespace System.Collections.Frozen
 {
@@ -41,11 +41,11 @@ namespace System.Collections.Frozen
                 // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
                 int acceptableNonUniqueCount = uniqueStringsLength / 20;
 
-                ISubstringComparer leftComparer = ignoreCase ? new LeftSubstringCaseInsensitiveComparer() : new LeftSubstringOrdinalComparer();
+                ISubstringEqualityComparer leftComparer = ignoreCase ? new LeftSubstringCaseInsensitiveComparer() : new LeftSubstringOrdinalComparer();
                 HashSet<string> leftSet = MakeHashSet(uniqueStringsLength, leftComparer);
 
                 // we lazily spin up the right comparators when/if needed
-                ISubstringComparer? rightComparer = null;
+                ISubstringEqualityComparer? rightComparer = null;
                 HashSet<string>? rightSet = null;
 
                 // For each substring length...preferring the shortest length that provides
@@ -95,7 +95,7 @@ namespace System.Collections.Frozen
             }
 
             // Could not find a substring index/length that was good enough, use the entire string.
-            return CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, s_FullStringComparer);
+            return CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, s_FullComparer);
         }
 
         private static HashSet<string> MakeHashSet(int length, IEqualityComparer<string> comparer)
@@ -108,7 +108,7 @@ namespace System.Collections.Frozen
         }
 
         private static AnalysisResults CreateAnalysisResults(
-            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, ISubstringComparer comparer)
+            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, ISubstringEqualityComparer comparer)
         {
             // Start off by assuming all strings are ASCII
             bool allAsciiIfIgnoreCase = true;
@@ -254,6 +254,6 @@ namespace System.Collections.Frozen
             public bool RightJustifiedSubstring => HashIndex < 0;
         }
 
-        private static FullStringComparer s_FullStringComparer = new FullStringComparer();
+        private static FullStringEqualityComparer s_FullComparer = new FullStringEqualityComparer();
     }
 }

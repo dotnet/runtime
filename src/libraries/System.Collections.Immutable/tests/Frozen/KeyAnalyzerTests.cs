@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Collections.Frozen.Tests
@@ -220,7 +220,8 @@ namespace System.Collections.Frozen.Tests
             Assert.True(KeyAnalyzer.ContainsAnyLetters("abc".AsSpan()));
             Assert.True(KeyAnalyzer.ContainsAnyLetters("ABC".AsSpan()));
             Assert.False(KeyAnalyzer.ContainsAnyLetters("123".AsSpan()));
-            Assert.False(KeyAnalyzer.ContainsAnyLetters("æÉ".AsSpan()));
+            // note, must only pass ASCII to ContainsAnyLetters, anything else is a Debug.Assert
+            // and it would not have been called in the actual implementation
         }
 
         [Fact]
@@ -231,6 +232,10 @@ namespace System.Collections.Frozen.Tests
             set.Clear();
             Assert.True(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "a", "b", "c" }, 0));
             Assert.Equal(3, set.Count);
+
+            set.Clear();
+            Assert.True(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "a", "b", "a" }, 1));
+            Assert.Equal(2, set.Count); // set should only have the non-collided ones
 
             set.Clear();
             Assert.False(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "aa", "ab", "aa" }, 0));
@@ -255,21 +260,23 @@ namespace System.Collections.Frozen.Tests
             Assert.Equal(0, set.Count); // if we failed it should empty the set
         }
 
-        [Fact]
-        public static void HasSufficientUniquenessFactorLarge()
+        // reuse the typical data declared in the FrozenFromKnownValuesTests
+        public static IEnumerable<object[]> TypicalData() => FrozenFromKnownValuesTests.StringStringData();
+
+        [Theory]
+        [MemberData(nameof(TypicalData))]
+        public static void HasSufficientUniquenessKnownData(Dictionary<string, string> source)
         {
-            HashSet<string> set = new HashSet<string>(StringComparer.Ordinal);
+            string[] keys = source.Keys.ToArray();
+            HashSet<string> set = new HashSet<string>(source.Comparer);
 
-            Assert.True(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "a", "b", "c" }, 1));
-            Assert.Equal(3, set.Count);
+            int allowedCollisions = keys.Length / 20;
+            bool passable = KeyAnalyzer.HasSufficientUniquenessFactor(set, keys.AsSpan(), allowedCollisions);
 
-            set.Clear();
-            Assert.True(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "a", "b", "a" }, 1));
-            Assert.Equal(2, set.Count); // set should only have the non-collided ones
-
-            set.Clear();
-            Assert.False(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "a", "a", "a" }, 1));
-            Assert.Equal(0, set.Count); // if we failed it should empty the set
+            if (passable)
+                Assert.InRange(set.Count, keys.Length - allowedCollisions, keys.Length);
+            else
+                Assert.Equal(0, set.Count);
         }
     }
 }

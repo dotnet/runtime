@@ -4,37 +4,58 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace System.Collections.Frozen.String.SubstringComparers
+namespace System.Collections.Frozen.String.SubstringEquality
 {
-    internal interface ISubstringComparer : IEqualityComparer<string>
+    internal interface ISubstringEqualityComparer : IEqualityComparer<string>
     {
-        public int Index { get; set; }   // offset from left side (if positive) or right side (if negative) of the string
-        public int Count { get; set; }   // number of characters in the span
+        /// <summary>
+        /// The index at which to begin this slice
+        /// </summary>
+        /// <remarks>Offset from the left side (if zero or positive) or right side (if negative)</remarks>
+        public int Index { get; set; }
 
+        /// <summary>
+        /// The desired length for the slice (exclusive).
+        /// </summary>
+        public int Count { get; set; }
+
+        /// <summary>
+        /// Creates a new readonly span over the portion of the target string.
+        /// </summary>
+        /// <param name="s">The target string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="s"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the specified Index or Count is not in range.
+        /// </exception>
         public abstract ReadOnlySpan<char> Slice(string s);
     }
 
-    internal abstract class SubstringComparerBase<TThisWrapper> : ISubstringComparer
-    where TThisWrapper : struct, SubstringComparerBase<TThisWrapper>.IGenericSpecializedWrapper
+    internal abstract class SubstringEqualityComparerBase<TThisWrapper> : ISubstringEqualityComparer
+    where TThisWrapper : struct, SubstringEqualityComparerBase<TThisWrapper>.IGenericSpecializedWrapper
     {
         /// <summary>A wrapper around this that enables access to important members without making virtual calls.</summary>
         private readonly TThisWrapper _this;
 
-        protected SubstringComparerBase()
+        protected SubstringEqualityComparerBase()
         {
             _this = default;
             _this.Store(this);
         }
 
+        /// <inheritdoc />
         public int Index { get; set; }
+        /// <inheritdoc />
         public int Count { get; set; }
 
+        /// <inheritdoc />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan<char> Slice(string s) => _this.Slice(s);
 
+        /// <inheritdoc />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(string? x, string? y) => _this.Equals(x, y);
 
+        /// <inheritdoc />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetHashCode(string s) => _this.GetHashCode(s);
 
@@ -42,11 +63,11 @@ namespace System.Collections.Frozen.String.SubstringComparers
         /// <remarks>
         /// To avoid each of those incurring virtual dispatch to the derived type, the derived
         /// type hands down a struct wrapper through which all calls are performed.  This base
-        /// class uses that generic struct wrapper to specialize and devirtualize.
+        /// class uses that generic struct wrapper to specialize and de-virtualize.
         /// </remarks>
         internal interface IGenericSpecializedWrapper
         {
-            void Store(ISubstringComparer @this);
+            void Store(ISubstringEqualityComparer @this);
             public ReadOnlySpan<char> Slice(string s);
             public bool Equals(string? x, string? y);
             public int GetHashCode(string s);
