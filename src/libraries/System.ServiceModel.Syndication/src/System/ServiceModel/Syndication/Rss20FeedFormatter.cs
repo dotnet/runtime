@@ -378,12 +378,7 @@ namespace System.ServiceModel.Syndication
                             {
                                 bool isPermalink = true;
                                 string permalinkString = reader.GetAttribute(Rss20Constants.IsPermaLinkTag, Rss20Constants.Rss20Namespace);
-                                if (permalinkString != null &&
-#if NET5_0_OR_GREATER
-                                    permalinkString.Equals("FALSE", StringComparison.InvariantCultureIgnoreCase))
-#else
-                                    permalinkString.ToUpperInvariant() == "FALSE")
-#endif
+                                if (permalinkString != null && permalinkString.Equals("FALSE", StringComparison.InvariantCultureIgnoreCase))
                                 {
                                     isPermalink = false;
                                 }
