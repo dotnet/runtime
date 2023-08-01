@@ -604,7 +604,9 @@ function fetchResource(request: ResourceRequest): Promise<Response> {
         // there's anything they don't like about it.
         fetchOptions.integrity = isCacheAvailable() ? (request.hash ?? "") : undefined;
     }
+    // eslint-disable-next-line no-console
     console.log("hey thays 1 - " + url);
+    // eslint-disable-next-line no-console
     console.log("hey thays 2 - " + JSON.stringify(fetchOptions));
     return loaderHelpers.fetch_like(url, fetchOptions);
 }
