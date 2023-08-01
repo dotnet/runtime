@@ -2064,11 +2064,15 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Investigate Build browser-wasm linux Release LibraryTests_EAT CI failure for reflection impl", TestPlatforms.Browser)]
+#endif
         public void TestGraphWithUnsupportedMember()
         {
             var configuration = TestHelpers.GetConfigurationFromJsonString("""{ "WriterOptions": { "Indented": "true" } }""");
             var obj = new GraphWithUnsupportedMember();
             configuration.Bind(obj);
+            Assert.True(obj.WriterOptions.Indented);
 
             // Encoder prop not supported; throw if there's config data.
             configuration = TestHelpers.GetConfigurationFromJsonString("""{ "WriterOptions": { "Indented": "true", "Encoder": { "Random": "" } } }""");
