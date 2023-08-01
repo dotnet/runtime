@@ -762,7 +762,8 @@ namespace ILCompiler
         public static TypeDesc? GetType(ModuleDesc assembly, string fullName)
         {
             Debug.Assert(!string.IsNullOrEmpty(fullName));
-            if (fullName.Contains('/'))
+            var position = fullName.IndexOf('/');
+            if (position > 0)
                 return GetNestedType(assembly, fullName);
             string @namespace, name;
             SplitFullName(fullName, out @namespace, out name);
