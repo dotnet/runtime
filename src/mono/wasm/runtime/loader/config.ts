@@ -126,7 +126,7 @@ export function normalizeConfig() {
     };
 
     if (config.assets) {
-        mono_log_debug("assets are deprecated, use resources instead");
+        mono_log_debug("config.assets is deprecated, use config.resources instead");
         for (const asset of config.assets) {
             const resource = {} as ResourceList;
             resource[asset.name] = asset.hash || "";

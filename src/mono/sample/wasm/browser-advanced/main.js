@@ -54,7 +54,7 @@ try {
         })
         .withResourceLoader((type, name, defaultUri, integrity, behavior) => {
             // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
-            return `${name}`;
+            return name;
         })
         .create();
 

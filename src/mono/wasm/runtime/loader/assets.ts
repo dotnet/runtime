@@ -83,7 +83,7 @@ function getSingleAssetWithResolvedUrl(resources: ResourceList | undefined, beha
     if (typeof (customSrc) === "string") {
         asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customSrc);
     } else if (customSrc) {
-        mono_log_warn(`For a ${behavior} resource, custom loaders must supply a URI string.`);
+        mono_log_warn(`For ${behavior} resource: ${name}, custom loaders must supply a URI string.`);
         // we apply a default URL
     }
 
@@ -229,7 +229,7 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
     if (config.assets) {
         for (const a of config.assets) {
             const asset: AssetEntryInternal = a;
-            mono_assert(typeof asset === "object", "asset must be object");
+            mono_assert(typeof asset === "object", () => `asset must be object, it was ${typeof asset} : ${asset}`);
             mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
             mono_assert(typeof asset.name === "string", "asset name must be string");
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
