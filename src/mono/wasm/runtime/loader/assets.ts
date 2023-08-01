@@ -350,22 +350,32 @@ export async function start_asset_download(asset: AssetEntryInternal): Promise<A
         return await start_asset_download_with_throttle(asset);
     } catch (err: any) {
         if (!loaderHelpers.enableDownloadRetry) {
+            // eslint-disable-next-line no-console
+            console.log("hey thays loaderHelpers.enableDownloadRetry - " + asset.name);
             // we will not re-try if disabled
             throw err;
         }
         if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
+            // eslint-disable-next-line no-console
+            console.log("hey thays ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE - " + asset.name);
             // we will not re-try on shell
             throw err;
         }
         if (asset.pendingDownload && asset.pendingDownloadInternal == asset.pendingDownload) {
+            // eslint-disable-next-line no-console
+            console.log("hey thays asset.pendingDownload && asset.pendingDownloadInternal == asset.pendingDownload - " + asset.name);
             // we will not re-try with external source
             throw err;
         }
         if (asset.resolvedUrl && asset.resolvedUrl.indexOf("file://") != -1) {
+            // eslint-disable-next-line no-console
+            console.log("hey thays asset.resolvedUrl && asset.resolvedUrl.indexOf(file://) - " + asset.name);
             // we will not re-try with local file
             throw err;
         }
         if (err && err.status == 404) {
+            // eslint-disable-next-line no-console
+            console.log("hey thays err && err.status == 404 - " + asset.name);
             // we will not re-try with 404
             throw err;
         }
