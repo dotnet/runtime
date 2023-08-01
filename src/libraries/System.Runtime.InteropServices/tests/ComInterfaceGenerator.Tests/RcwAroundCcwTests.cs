@@ -180,10 +180,6 @@ namespace ComInterfaceGenerator.Tests
             {
                 obj.ByValueInOutParam(strings);
             });
-            Assert.Throws<MarshallingFailureException>(() =>
-            {
-                _ = obj.ReturnValue();
-            });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
@@ -196,6 +192,10 @@ namespace ComInterfaceGenerator.Tests
             {
                 obj.OutParam(out strings);
             });
+            Assert.Throws<MarshallingFailureException>(() =>
+            {
+                _ = obj.ReturnValue();
+            });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
@@ -207,6 +207,10 @@ namespace ComInterfaceGenerator.Tests
             Assert.Throws<Exception>(() =>
             {
                 obj.OutParam(out strings);
+            });
+            Assert.Throws<Exception>(() =>
+            {
+                _ = obj.ReturnValue();
             });
         }
 
