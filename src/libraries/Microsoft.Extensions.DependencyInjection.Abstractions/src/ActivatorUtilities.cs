@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Helper code for the various activator services.
     /// </summary>
-    public static partial class ActivatorUtilities
+    public static class ActivatorUtilities
     {
 #if NET8_0_OR_GREATER
         // Maximum number of fixed arguments for ConstructorInvoker.Invoke(arg1, etc).
@@ -298,6 +298,12 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+        [DoesNotReturn]
+        private static void ThrowHelperArgumentNullExceptionServiceProvider()
+        {
+            throw new ArgumentNullException("serviceProvider");
+        }
+
         private static ObjectFactory CreateFactoryReflection(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes)
@@ -909,14 +915,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, constructorArguments, culture: null);
         }
-#endif
-
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
-        [DoesNotReturn]
-        private static void ThrowHelperArgumentNullExceptionServiceProvider()
-        {
-            throw new ArgumentNullException("serviceProvider");
-        }
-#endif
+#endif // NET8_0_OR_GREATER
     }
 }
