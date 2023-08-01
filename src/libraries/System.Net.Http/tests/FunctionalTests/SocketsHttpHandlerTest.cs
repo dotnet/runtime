@@ -4374,9 +4374,9 @@ namespace System.Net.Http.Functional.Tests
             // Also, System.Net.Quic does not report DNS resolution errors yet.
             if (ex.InnerException is SocketException socketException)
             {
-                Assert.Equal(socketException.SocketErrorCode, SocketError.HostNotFound);
+                Assert.Equal(SocketError.HostNotFound, socketException.SocketErrorCode);
             }
-            Assert.Equal(ex.HttpRequestError, HttpRequestError.NameResolutionError);
+            Assert.Equal(HttpRequestError.NameResolutionError, ex.HttpRequestError);
         }
 
         [Fact]
