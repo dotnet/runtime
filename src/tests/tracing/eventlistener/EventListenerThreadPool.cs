@@ -21,7 +21,7 @@ namespace Tracing.Tests
         {
             if (source.Name.Equals("Microsoft-Windows-DotNETRuntime"))
             {
-                EnableEvents(source, EventLevel.Informational, (EventKeywords)0x10000);
+                EnableEvents(source, EventLevel.Verbose, (EventKeywords)0x10000);
             }
         }
 
