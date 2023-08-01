@@ -257,6 +257,11 @@
       <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
       <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
 
+      <!-- find the path with the assemblies, so we don't have to hardcode the tfm.
+           Cannot use System.Private.Corelib since that is in a different directory -->
+      <_SystemRuntimePath Condition="'%(RuntimePackAsset.Filename)%(RuntimePackAsset.Extension)' == 'System.Runtime.dll'">@(RuntimePackAsset)</_SystemRuntimePath>
+      <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([System.IO.Path]::GetDirectoryName('$(_SystemRuntimePath)'))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
+
       <_WasmRuntimePackIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmRuntimePackIncludeDir>
       <_WasmRuntimePackSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmRuntimePackSrcDir>
 
@@ -268,6 +273,8 @@
       <_WasmShouldAOT Condition="'$(RunAOTCompilationAfterBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</_WasmShouldAOT>
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
     </PropertyGroup>
+
+    <Error Condition="'$(_SystemRuntimePath)' == ''" Text="Could not find System.Runtime.dll in %40(RuntimePackAsset). This is likely a setup issue." />
 
     <MakeDir Directories="$(WasmCachePath)" Condition="'$(WasmCachePath)' != '' and !Exists($(WasmCachePath))" />
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
