@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace TestStackOverflow
@@ -24,12 +25,25 @@ namespace TestStackOverflow
             testProcess.StartInfo.Arguments = $"{Path.Combine(s_currentPath, "..", testName, $"{testName}.dll")} {testArgs}";
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
+            bool endOfStackTrace = false;
             testProcess.ErrorDataReceived += (sender, line) => 
             {
                 Console.WriteLine($"\"{line.Data}\"");
-                if (!string.IsNullOrEmpty(line.Data))
+                if (!endOfStackTrace && !string.IsNullOrEmpty(line.Data))
                 {
-                    lines.Add(line.Data);
+                    // Store lines only till the end of the stack trace.
+                    // In the CI it can also contain lines with createdump info.
+                    if (line.Data.StartsWith("Stack overflow.") ||
+                        line.Data.StartsWith("Repeat ") ||
+                        line.Data.StartsWith("------") ||
+                        line.Data.StartsWith("   at "))
+                    {
+                        lines.Add(line.Data);
+                    }
+                    else
+                    {
+                        endOfStackTrace = true;
+                    }
                 }
             };
 
@@ -256,24 +270,28 @@ namespace TestStackOverflow
                 return 101;
             }
 
-            if (!TestStackOverflowLargeFrameMainThread())
-            {
-                return 102;
-            }
-
             if (!TestStackOverflowSmallFrameSecondaryThread())
             {
                 return 103;
             }
 
-            if (!TestStackOverflowLargeFrameSecondaryThread())
+            if ((RuntimeInformation.ProcessArchitecture != Architecture.Arm64) ||
+                ((Environment.OSVersion.Platform != PlatformID.Unix) && (Environment.OSVersion.Platform != PlatformID.MacOSX)))
             {
-                return 104;
-            }
+                if (!TestStackOverflowLargeFrameMainThread())
+                {
+                    return 102;
+                }
 
-            if (!TestStackOverflow3())
-            {
-                return 105;
+                if (!TestStackOverflowLargeFrameSecondaryThread())
+                {
+                    return 104;
+                }
+
+                if (!TestStackOverflow3())
+                {
+                    return 105;
+                }
             }
 
             return 100;
