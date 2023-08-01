@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 var subscription = new ListenerSubscription(fakeListener);
                 Assert.Null(fakeListener.Source);
 
-                subscription.Start();
+                subscription.Initialize();
                 Assert.Same(subscription, fakeListener.Source);
 
                 // No rules yet, so we shouldn't get any notifications.
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 Assert.False(measurementTcs.Task.IsCompleted);
 
                 // Add a rule that matches the counter.
-                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Global, enable: true) });
+                subscription.UpdateRules(new[] { new InstrumentRule("TestMeter", "counter", null, MeterScope.Global, enable: true) });
 
                 Assert.True(publishedTcs.Task.IsCompleted);
 
@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 Assert.False(completedTcs.Task.IsCompleted);
 
                 // Disable
-                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Global, enable: false) });
+                subscription.UpdateRules(new[] { new InstrumentRule("TestMeter", "counter", null, MeterScope.Global, enable: false) });
 
                 Assert.True(completedTcs.Task.IsCompleted);
 
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 var subscription = new ListenerSubscription(fakeListener);
                 Assert.Null(fakeListener.Source);
 
-                subscription.Start();
+                subscription.Initialize();
                 Assert.Same(subscription, fakeListener.Source);
 
                 // No rules yet, so we shouldn't get any notifications.
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 Assert.False(measurementTcs.Task.IsCompleted);
 
                 // Add a rule that matches the counter.
-                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Local, enable: true) });
+                subscription.UpdateRules(new[] { new InstrumentRule("TestMeter", "counter", null, MeterScope.Local, enable: true) });
 
                 Assert.True(publishedTcs.Task.IsCompleted);
 
@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 Assert.False(completedTcs.Task.IsCompleted);
 
                 // Disable
-                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Local, enable: false) });
+                subscription.UpdateRules(new[] { new InstrumentRule("TestMeter", "counter", null, MeterScope.Local, enable: false) });
 
                 Assert.True(completedTcs.Task.IsCompleted);
 
@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 var subscription = new ListenerSubscription(fakeListener);
                 Assert.Null(fakeListener.Source);
 
-                subscription.Start();
+                subscription.Initialize();
                 Assert.Same(subscription, fakeListener.Source);
 
                 // No rules yet, so we shouldn't get any notifications.
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 Assert.Equal(0, publishCalled);
 
                 // Add a rule that matches the counter.
-                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Local, enable: true) });
+                subscription.UpdateRules(new[] { new InstrumentRule("TestMeter", "counter", null, MeterScope.Local, enable: true) });
 
                 Assert.True(publishedTcs.Task.IsCompleted);
                 Assert.Equal(1, publishCalled);
@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 Assert.False(completedTcs.Task.IsCompleted);
 
                 // Disable
-                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Local, enable: false) });
+                subscription.UpdateRules(new[] { new InstrumentRule("TestMeter", "counter", null, MeterScope.Local, enable: false) });
 
                 Assert.True(completedTcs.Task.IsCompleted);
                 counter.Add(3);
@@ -199,7 +199,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 Assert.Equal(1, measurements.Count);
 
                 // Re-enable
-                subscription.UpdateRules(new[] { new InstrumentEnableRule("TestMeter", "counter", null, MeterScope.Local, enable: true) });
+                subscription.UpdateRules(new[] { new InstrumentRule("TestMeter", "counter", null, MeterScope.Local, enable: true) });
                 Assert.Equal(2, publishCalled);
 
                 counter.Add(4);
@@ -230,7 +230,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         public void RuleMatchesTest(string meterName, string instrumentName, string listenerName)
         {
             RemoteExecutor.Invoke((string m, string i, string l) => {
-                var rule = new InstrumentEnableRule(m, i, l, MeterScope.Global, enable: true);
+                var rule = new InstrumentRule(m, i, l, MeterScope.Global, enable: true);
                 var meter = new Meter("Long.Silly.Meter.Name");
                 var instrument = meter.CreateCounter<int>("InstrumentName");
                 Assert.True(ListenerSubscription.RuleMatches(rule, instrument, "ListenerName"));
@@ -254,7 +254,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         public void RuleMatchesNegativeTest(string meterName, string instrumentName, string listenerName)
         {
             RemoteExecutor.Invoke((string m, string i, string l) => {
-                var rule = new InstrumentEnableRule(m, i, l, MeterScope.Global, enable: true);
+                var rule = new InstrumentRule(m, i, l, MeterScope.Global, enable: true);
                 var meter = new Meter("Long.Silly.Meter.Name");
                 var instrument = meter.CreateCounter<int>("InstrumentName");
                 Assert.False(ListenerSubscription.RuleMatches(rule, instrument, "ListenerName"));
@@ -263,7 +263,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
         [Theory]
         [MemberData(nameof(IsMoreSpecificTestData))]
-        public void IsMoreSpecificTest(InstrumentEnableRule rule, InstrumentEnableRule? best)
+        public void IsMoreSpecificTest(InstrumentRule rule, InstrumentRule? best)
         {
             Assert.True(ListenerSubscription.IsMoreSpecific(rule, best));
 
@@ -276,57 +276,57 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         public static IEnumerable<object[]> IsMoreSpecificTestData() => new object[][]
         {
             // Anything is better than null
-            new object[] { new InstrumentEnableRule(null, null, null, MeterScope.Global, true), null },
+            new object[] { new InstrumentRule(null, null, null, MeterScope.Global, true), null },
 
             // Any field is better than empty
-            new object[] { new InstrumentEnableRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentEnableRule(null, null, null, MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule(null, "instrumentName", null, MeterScope.Global, true),
-                new InstrumentEnableRule(null, null, null, MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule(null, null, "listenerName", MeterScope.Global, true),
-                new InstrumentEnableRule(null, null, null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
+                new InstrumentRule(null, null, null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true),
+                new InstrumentRule(null, null, null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule(null, null, "listenerName", MeterScope.Global, true),
+                new InstrumentRule(null, null, null, MeterScope.Global, true) },
 
             // Meter > Instrument > Listener
-            new object[] { new InstrumentEnableRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentEnableRule(null, "instrumentName", null, MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentEnableRule(null, null, "listenerName", MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentEnableRule(null, "instrumentName", "listenerName", MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule(null, "instrumentName", null, MeterScope.Global, true),
-                new InstrumentEnableRule(null, null, "listenerName", MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
+                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
+                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
+                new InstrumentRule(null, "instrumentName", "listenerName", MeterScope.Global, true) },
+            new object[] { new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true),
+                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true) },
 
             // Multiple fields are better than one.
-            new object[] { new InstrumentEnableRule("meterName", "instrumentName", null, MeterScope.Global, true),
-                new InstrumentEnableRule("meterName", null, null, MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meterName", null, "listenerName", MeterScope.Global, true),
-                new InstrumentEnableRule("meterName", null, null, MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),
-                new InstrumentEnableRule("meterName", null, null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", "instrumentName", null, MeterScope.Global, true),
+                new InstrumentRule("meterName", null, null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", null, "listenerName", MeterScope.Global, true),
+                new InstrumentRule("meterName", null, null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),
+                new InstrumentRule("meterName", null, null, MeterScope.Global, true) },
 
-            new object[] { new InstrumentEnableRule("meterName", "instrumentName", null, MeterScope.Global, true),
-                new InstrumentEnableRule(null, "instrumentName", null, MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meterName", null, "listenerName", MeterScope.Global, true),
-                new InstrumentEnableRule(null, "instrumentName", null, MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),
-                new InstrumentEnableRule(null, "instrumentName", null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", "instrumentName", null, MeterScope.Global, true),
+                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", null, "listenerName", MeterScope.Global, true),
+                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),
+                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true) },
 
-            new object[] { new InstrumentEnableRule("meterName", "instrumentName", null, MeterScope.Global, true),
-                new InstrumentEnableRule(null, null, "listenerName", MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meterName", null, "listenerName", MeterScope.Global, true),
-                new InstrumentEnableRule(null, null, "listenerName", MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),
-                new InstrumentEnableRule(null, null, "listenerName", MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", "instrumentName", null, MeterScope.Global, true),
+                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", null, "listenerName", MeterScope.Global, true),
+                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),
+                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true) },
 
             // Longer Meter Name is better
-            new object[] { new InstrumentEnableRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentEnableRule("*", null, null, MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meterName.*", null, null, MeterScope.Global, true),
-                new InstrumentEnableRule("meterName", null, null, MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meter.Name", null, null, MeterScope.Global, true),
-                new InstrumentEnableRule("meter", null, null, MeterScope.Global, true) },
-            new object[] { new InstrumentEnableRule("meter.Name", null, null, MeterScope.Global, true),
-                new InstrumentEnableRule("meter.*", null, null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
+                new InstrumentRule("*", null, null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meterName.*", null, null, MeterScope.Global, true),
+                new InstrumentRule("meterName", null, null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meter.Name", null, null, MeterScope.Global, true),
+                new InstrumentRule("meter", null, null, MeterScope.Global, true) },
+            new object[] { new InstrumentRule("meter.Name", null, null, MeterScope.Global, true),
+                new InstrumentRule("meter.*", null, null, MeterScope.Global, true) },
 
             // TODO: Scopes
         };
@@ -338,7 +338,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
             public Func<Instrument, (bool, object?)> OnPublished { get; set; } = (_) => (true, null);
             public Action<Instrument, object?> OnCompleted { get; set; } = (_, _) => { };
-            public IMetricsSource? Source { get; set; }
+            public IObservableInstrumentsSource? Source { get; set; }
             public FakeMeasurementCallback OnMeasurement { get; set; }
 
             public MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct
@@ -351,7 +351,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             }
 
             public void MeasurementsCompleted(Instrument instrument, object? userState) => OnCompleted(instrument, userState);
-            public void SetSource(IMetricsSource source) => Source = source;
+            public void Initialize(IObservableInstrumentsSource source) => Source = source;
         }
     }
 }

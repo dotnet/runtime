@@ -7,6 +7,7 @@ using System.Diagnostics.Metrics;
 using System.IO;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
@@ -25,7 +26,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
                     builder.EnableMetrics("TestMeter", null, ConsoleMetrics.ListenerName);
                 });
                 using var sp = services.BuildServiceProvider();
-                sp.GetRequiredService<IMetricsSubscriptionManager>().Start();
+                sp.GetRequiredService<IStartupValidator>().Validate();
 
                 var listener = sp.GetRequiredService<IMetricsListener>();
                 var consoleListener = Assert.IsType<ConsoleMetricListener>(listener);

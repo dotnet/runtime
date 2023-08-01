@@ -30,16 +30,16 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public System.Diagnostics.Metrics.MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct => throw null!;
         public bool InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument, out object? userState) => throw null!;
         public void MeasurementsCompleted(System.Diagnostics.Metrics.Instrument instrument, object? userState) => throw null!;
-        public void SetSource(IMetricsSource source) => throw null!;
+        public void Initialize(IObservableInstrumentsSource source) => throw null!;
         public void Dispose() => throw null!;
     }
     internal sealed class ListenerSubscription
     {
         internal ListenerSubscription(Microsoft.Extensions.Diagnostics.Metrics.IMetricsListener listener) { }
-        public void Start() { }
-        internal void UpdateRules(IList<InstrumentEnableRule> rules) { }
-        internal static bool RuleMatches(InstrumentEnableRule rule, System.Diagnostics.Metrics.Instrument instrument, string listenerName) => throw null!;
-        internal static bool IsMoreSpecific(InstrumentEnableRule rule, InstrumentEnableRule? best) => throw null!;
+        public void Initialize() { }
+        internal void UpdateRules(IList<InstrumentRule> rules) { }
+        internal static bool RuleMatches(InstrumentRule rule, System.Diagnostics.Metrics.Instrument instrument, string listenerName) => throw null!;
+        internal static bool IsMoreSpecific(InstrumentRule rule, InstrumentRule? best) => throw null!;
     }
     internal sealed class DefaultMeterFactory : System.Diagnostics.Metrics.IMeterFactory
     {

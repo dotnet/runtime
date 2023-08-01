@@ -8,6 +8,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     [Flags]
     public enum MeterScope
     {
+        None = 0,
         Global,
         Local
     }

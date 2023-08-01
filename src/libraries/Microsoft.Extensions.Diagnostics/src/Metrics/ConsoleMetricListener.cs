@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         private readonly Timer _timer;
         internal TextWriter _textWriter = Console.Out;
-        private IMetricsSource? _source;
+        private IObservableInstrumentsSource? _source;
 
         public ConsoleMetricListener()
         {
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             WriteLine($"{instrument.Meter.Name}-{instrument.Name} Stopped.");
         }
 
-        public void SetSource(IMetricsSource source) => _source = source;
+        public void Initialize(IObservableInstrumentsSource source) => _source = source;
         public MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct => MeasurementHandler;
 
         private void MeasurementHandler<T>(Instrument instrument, T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags, object? state) where T : struct

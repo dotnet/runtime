@@ -16,27 +16,28 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     public interface IMetricsListener
     {
         public string Name { get; }
-        public void SetSource(IMetricsSource source);
+        public void Initialize(IObservableInstrumentsSource source);
         public bool InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument, out object? userState);
         public void MeasurementsCompleted(System.Diagnostics.Metrics.Instrument instrument, object? userState);
         public System.Diagnostics.Metrics.MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct;
     }
-    public interface IMetricsSource
+    public interface IObservableInstrumentsSource
     {
         public void RecordObservableInstruments();
     }
-    public class InstrumentEnableRule
+    public class InstrumentRule
     {
-        public InstrumentEnableRule(string? meterName, string? instrumentName, string? listenerName, MeterScope scopes, bool enable) { }
-        public string? ListenerName { get; }
+        public InstrumentRule(string? meterName, string? instrumentName, string? listenerName, MeterScope scopes, bool enable) { }
         public string? MeterName { get; }
-        public MeterScope Scopes { get; }
         public string? InstrumentName { get; }
+        public string? ListenerName { get; }
+        public MeterScope Scopes { get; }
         public bool Enable { get; }
     }
     [Flags]
     public enum MeterScope
     {
+        None = 0,
         Global,
         Local
     }
@@ -46,28 +47,19 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             (this IMetricsBuilder builder) where T : class, IMetricsListener { throw null!; }
         public static IMetricsBuilder AddListener(this IMetricsBuilder builder, IMetricsListener listener) { throw null!; }
         public static IMetricsBuilder ClearListeners(this IMetricsBuilder builder) { throw null!; }
-    }
-    public static class MetricsBuilderEnableExtensions
-    {
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder) => throw null!;
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName) => throw null!;
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName) => throw null!;
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName, string? listenerName) => throw null!;
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName, string? listenerName, MeterScope scopes) => throw null!;
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options) => throw null!;
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName) => throw null!;
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, string? instrumentName) => throw null!;
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, string? instrumentName, string? listenerName) => throw null!;
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, string? instrumentName, string? listenerName, MeterScope scopes) => throw null!;
-        public static MetricsEnableOptions DisableMetrics(this MetricsEnableOptions options, string? meterName, string? instrumentName, string? listenerName, MeterScope scopes) => throw null!;
-    }
-    public class MetricsEnableOptions
-    {
-        public IList<InstrumentEnableRule> Rules { get; } = null!;
-    }
 
-    public interface IMetricsSubscriptionManager
+        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName) => throw null!;
+        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName = null, string? instrumentName = null, string? listenerName = null, MeterScope scopes = MeterScope.Global | MeterScope.Local) => throw null!;
+        public static MetricsOptions EnableMetrics(this MetricsOptions options, string? meterName) => throw null!;
+        public static MetricsOptions EnableMetrics(this MetricsOptions options, string? meterName = null, string? instrumentName = null, string? listenerName = null, MeterScope scopes = MeterScope.Global | MeterScope.Local) => throw null!;
+
+        public static IMetricsBuilder DisableMetrics(this IMetricsBuilder builder, string? meterName) => throw null!;
+        public static IMetricsBuilder DisableMetrics(this IMetricsBuilder builder, string? meterName = null, string? instrumentName = null, string? listenerName = null, MeterScope scopes = MeterScope.Global | MeterScope.Local) => throw null!;
+        public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName) => throw null!;
+        public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName = null, string? instrumentName = null, string? listenerName = null, MeterScope scopes = MeterScope.Global | MeterScope.Local) => throw null!;
+    }
+    public class MetricsOptions
     {
-        public void Start();
+        public IList<InstrumentRule> Rules { get; } = null!;
     }
 }

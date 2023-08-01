@@ -28,7 +28,10 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddOptions();
 
             services.TryAddSingleton<IMeterFactory, DefaultMeterFactory>();
-            services.TryAddSingleton<IMetricsSubscriptionManager, MetricsSubscriptionManager>();
+            services.TryAddSingleton<MetricsSubscriptionManager>();
+            // Make sure the subscription manager is started when the host starts.
+            // The host will trigger options validation.
+            services.AddOptions<NoOpOptions>().Configure<MetricsSubscriptionManager>((_, manager) => manager.Initialize()).ValidateOnStart();
 
             return services;
         }
@@ -58,5 +61,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             public IServiceCollection Services { get; } = services;
         }
+
+        private sealed class NoOpOptions { }
     }
 }

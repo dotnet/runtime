@@ -8,14 +8,14 @@ using System.Diagnostics.Metrics;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
-    internal class ListenerSubscription : IMetricsSource, IDisposable
+    internal class ListenerSubscription : IObservableInstrumentsSource, IDisposable
     {
         private readonly MeterListener _meterListener;
         private readonly IMetricsListener _metricsListener;
         private readonly HashSet<Instrument> _instruments = new();
         private readonly HashSet<Instrument> _enabled = new();
         private readonly Dictionary<Instrument, (bool, object?)> _published = new();
-        private IList<InstrumentEnableRule> _rules = Array.Empty<InstrumentEnableRule>();
+        private IList<InstrumentRule> _rules = Array.Empty<InstrumentRule>();
         private bool _disposed;
 
         internal ListenerSubscription(IMetricsListener metricsListener)
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             _meterListener = new MeterListener();
         }
 
-        public void Start()
+        public void Initialize()
         {
             _meterListener.InstrumentPublished = InstrumentPublished;
             _meterListener.MeasurementsCompleted = MeasurementsCompleted;
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<double>());
             _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<decimal>());
             _meterListener.Start();
-            _metricsListener.SetSource(this);
+            _metricsListener.Initialize(this);
         }
 
         private void InstrumentPublished(Instrument instrument, MeterListener _)
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             }
         }
 
-        internal void UpdateRules(IList<InstrumentEnableRule> rules)
+        internal void UpdateRules(IList<InstrumentRule> rules)
         {
             lock (_instruments)
             {
@@ -144,9 +144,9 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             }
         }
 
-        private InstrumentEnableRule? GetMostSpecificRule(Instrument instrument)
+        private InstrumentRule? GetMostSpecificRule(Instrument instrument)
         {
-            InstrumentEnableRule? best = null;
+            InstrumentRule? best = null;
             foreach (var rule in _rules)
             {
                 if (RuleMatches(rule, instrument, _metricsListener.Name) && IsMoreSpecific(rule, best))
@@ -159,7 +159,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         }
 
         // internal for testing
-        internal static bool RuleMatches(InstrumentEnableRule rule, Instrument instrument, string listenerName)
+        internal static bool RuleMatches(InstrumentRule rule, Instrument instrument, string listenerName)
         {
             // Exact match or empty
             if (!string.IsNullOrEmpty(rule.ListenerName)
@@ -221,7 +221,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         // Everything must already match the Instrument and listener, or be blank.
         // Which rule has more non-blank fields? Or longer Meter name?
         // internal for testing
-        internal static bool IsMoreSpecific(InstrumentEnableRule rule, InstrumentEnableRule? best)
+        internal static bool IsMoreSpecific(InstrumentRule rule, InstrumentRule? best)
         {
             if (best == null)
             {

@@ -8,13 +8,13 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
-    internal partial class MetricsSubscriptionManager : IMetricsSubscriptionManager
+    internal partial class MetricsSubscriptionManager
     {
         private readonly ListenerSubscription[] _listeners;
         private readonly IDisposable? _changeTokenRegistration;
         private bool _disposed;
 
-        public MetricsSubscriptionManager(IEnumerable<IMetricsListener> listeners, IOptionsMonitor<MetricsEnableOptions> options)
+        public MetricsSubscriptionManager(IEnumerable<IMetricsListener> listeners, IOptionsMonitor<MetricsOptions> options)
         {
             var list = listeners.ToList();
             _listeners = new ListenerSubscription[list.Count];
@@ -26,15 +26,15 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             UpdateRules(options.CurrentValue);
         }
 
-        public void Start()
+        public void Initialize()
         {
             foreach (var listener in _listeners)
             {
-                listener.Start();
+                listener.Initialize();
             }
         }
 
-        private void UpdateRules(MetricsEnableOptions options)
+        private void UpdateRules(MetricsOptions options)
         {
             if (_disposed)
             {

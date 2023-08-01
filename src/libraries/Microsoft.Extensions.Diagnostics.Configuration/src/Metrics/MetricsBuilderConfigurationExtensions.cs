@@ -7,6 +7,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     public static class MetricsBuilderConfigurationExtensions
     {
-        public static IMetricsBuilder AddConfiguration(this IMetricsBuilder builder, IConfiguration configuration) => throw null!;
+        // TODO:
+        public static IMetricsBuilder AddConfiguration(this IMetricsBuilder builder, IConfiguration configuration) => builder;
     }
 }

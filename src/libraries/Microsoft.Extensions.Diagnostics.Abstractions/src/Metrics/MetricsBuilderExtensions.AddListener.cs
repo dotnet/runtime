@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
-    public static class MetricsBuilderExtensions
+    public static partial class MetricsBuilderExtensions
     {
         public static IMetricsBuilder AddListener<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IMetricsBuilder builder) where T : class, IMetricsListener
         {
