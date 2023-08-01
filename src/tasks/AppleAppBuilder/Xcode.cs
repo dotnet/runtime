@@ -486,23 +486,23 @@ internal sealed class Xcode
             File.WriteAllText(Path.Combine(binDir, "runtime.h"),
                 Utils.GetEmbeddedResource("runtime.h"));
 
-            // forward pinvokes to "__Internal"
-            var dllMap = new StringBuilder();
+            // lookup statically linked libraries via dlsym(), see handle_pinvoke_override() in runtime.m
+            var pinvokeOverrides = new StringBuilder();
             foreach (string aFile in Directory.GetFiles(workspace, "*.a"))
             {
                 string aFileName = Path.GetFileNameWithoutExtension(aFile);
-                dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+                pinvokeOverrides.AppendLine($"        \"{aFileName}\",");
 
                 // also register with or without "lib" prefix
                 aFileName = aFileName.StartsWith("lib") ? aFileName.Remove(0, 3) : "lib" + aFileName;
-                dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+                pinvokeOverrides.AppendLine($"        \"{aFileName}\",");
             }
 
-            dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"System.Globalization.Native\", NULL, \"__Internal\", NULL);");
+            pinvokeOverrides.AppendLine($"        \"System.Globalization.Native\",");
 
             File.WriteAllText(Path.Combine(binDir, "runtime.m"),
                 Utils.GetEmbeddedResource("runtime.m")
-                    .Replace("//%DllMap%", dllMap.ToString())
+                    .Replace("//%PInvokeOverrideLibraries%", pinvokeOverrides.ToString())
                     .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                     .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
         }

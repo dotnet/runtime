@@ -721,9 +721,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfig/*">
             <Issue>Test expects being run with corerun</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/callconvs/TestCallingConventions/**">
-            <Issue>https://github.com/dotnet/runtime/issues/81677</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester/*">
             <Issue>Just-in-time compilation test</Issue>
         </ExcludeList>

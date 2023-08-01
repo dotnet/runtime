@@ -7,12 +7,12 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class UnrollEqualsStartsWIth
+public class UnrollEqualsStartsWith
 {
     [Fact]
     public static int TestEntryPoint()
     {
-        var testTypes = typeof(UnrollEqualsStartsWIth).Assembly
+        var testTypes = typeof(UnrollEqualsStartsWith).Assembly
             .GetTypes()
             .Where(t => t.Name.StartsWith("Tests_len"))
             .ToArray();
