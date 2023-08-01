@@ -2594,24 +2594,6 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled2()
-        {
-            await Parallel.ForAsync(0, 100, new ParallelOptions { MaxDegreeOfParallelism = 4 }, async (_, _) =>
-            {
-                await Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled();
-            });
-        }
-
-        [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemainingRequestsAreHandledByNewConnection2()
-        {
-            await Parallel.ForAsync(0, 100, new ParallelOptions { MaxDegreeOfParallelism = 4 }, async (_, _) =>
-            {
-                await Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemainingRequestsAreHandledByNewConnection();
-            });
-        }
-
-        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
         {
             const int MaxConcurrentStreams = 2;
@@ -3478,7 +3460,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73772", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNativeAot))]
-        [ActiveIssue("Temp")]
         public async Task ConnectCallback_UseNamedPipe_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -4273,7 +4254,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("Temp")]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task Https_MultipleRequests_TlsResumed(bool useSocketHandler)
         {
@@ -4338,7 +4318,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("Temp")]
         public async Task NameResolutionError()
         {
             using HttpClient client = CreateHttpClient();

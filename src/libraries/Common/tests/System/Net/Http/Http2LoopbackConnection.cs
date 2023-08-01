@@ -33,6 +33,7 @@ namespace System.Net.Test.Common
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
         public bool IsInvalid => _connectionSocket == null;
         public Stream Stream => _connectionStream;
+        public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
 
         private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, bool transparentPingResponse)
         {
