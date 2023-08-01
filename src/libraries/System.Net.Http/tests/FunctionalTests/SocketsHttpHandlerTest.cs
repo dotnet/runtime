@@ -3509,11 +3509,19 @@ namespace System.Net.Http.Functional.Tests
                 await using NamedPipeServerStream serverStream = new(pipeName: guid, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.WriteThrough | PipeOptions.Asynchronous);
                 await serverStream.WaitForConnectionAsync().WaitAsync(TestHelper.PassingTestTimeoutMilliseconds);
 
-                var options = new GenericLoopbackOptions { UseSsl = useSsl };
-                await using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
-                await loopbackConnection.InitializeConnectionAsync();
+                // HTTP/1.1 doesn't work over named pipes when going through SslStream as it runs into a deadlock while performing the handshake.
+                // The client is trying to write the request headers while the server is trying to write the end of its handshake.
+                // As neither side is reading, the writes never complete.
+                // We workaround that in tests by always having a pending read on the connection.
+                await using Stream serverStreamWrapper = useSsl && UseVersion.Major == 1
+                    ? new ReadAheadStream(serverStream, _output)
+                    : serverStream;
 
-                HttpRequestData requestData = await loopbackConnection.HandleRequestAsync(content: "foo").WaitAsync(TestHelper.PassingTestTimeoutMilliseconds);
+                var options = new GenericLoopbackOptions { UseSsl = useSsl };
+                await using GenericLoopbackConnection connection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStreamWrapper, options);
+                await connection.InitializeConnectionAsync();
+
+                HttpRequestData requestData = await connection.HandleRequestAsync(content: "foo").WaitAsync(TestHelper.PassingTestTimeoutMilliseconds);
                 Assert.Equal("/foo", requestData.Path);
             });
 
@@ -3521,6 +3529,50 @@ namespace System.Net.Http.Functional.Tests
         }
 
         private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
+
+        private sealed class ReadAheadStream : DelegatingStream
+        {
+            private readonly ITestOutputHelper _output;
+            private readonly IO.Pipelines.Pipe _pipe;
+            private readonly Stream _pipeReaderStream;
+
+            public ReadAheadStream(Stream innerStream, ITestOutputHelper output) : base(innerStream)
+            {
+                _output = output;
+
+                _pipe = new IO.Pipelines.Pipe();
+                _pipeReaderStream = _pipe.Reader.AsStream();
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await IO.Pipelines.StreamPipeExtensions.CopyToAsync(innerStream, _pipe.Writer);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"ReadAheadStream ignored exception: {ex}");
+                    }
+                });
+            }
+
+            public override bool CanSeek => false;
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+                _pipeReaderStream.ReadAsync(buffer, offset, count, cancellationToken);
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+                _pipeReaderStream.ReadAsync(buffer, cancellationToken);
+
+            public override int Read(byte[] buffer, int offset, int count) =>
+                _pipeReaderStream.Read(buffer, offset, count);
+
+            public override int Read(Span<byte> buffer) =>
+                _pipeReaderStream.Read(buffer);
+
+            public override int ReadByte() =>
+                _pipeReaderStream.ReadByte();
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
