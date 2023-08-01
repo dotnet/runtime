@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.Metrics;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.Metrics;
 using Moq;
 using Xunit;
 
@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Http
         // Testing this because it's an important design detail. If someone wants to globally replace the handler
         // they can do so by replacing this service. It's important that the Factory isn't the one to instantiate
         // the handler. The factory has no defaults - it only applies options.
-        [Fact] 
+        [Fact]
         public void Ctor_SetsPrimaryHandler()
         {
             // Arrange & Act
@@ -33,6 +33,39 @@ namespace Microsoft.Extensions.Http
             // Act
             Assert.IsType<HttpClientHandler>(builder.PrimaryHandler);
         }
+
+#if NET8_0_OR_GREATER
+        [Fact]
+        public void Build_HttpClientHandler_MeterFactorySet()
+        {
+            // Arrange & Act
+            var builder = new DefaultHttpMessageHandlerBuilder(Services, MeterFactory);
+
+            // Act
+            var handler = builder.Build();
+
+            // Assert
+            var primaryHandler = Assert.IsType<HttpClientHandler>(handler);
+            Assert.Equal(MeterFactory, primaryHandler.MeterFactory);
+        }
+
+        [Fact]
+        public void Build_SocketsHttpHandler_MeterFactorySet()
+        {
+            // Arrange & Act
+            var builder = new DefaultHttpMessageHandlerBuilder(Services, MeterFactory)
+            {
+                PrimaryHandler = new SocketsHttpHandler()
+            };
+
+            // Act
+            var handler = builder.Build();
+
+            // Assert
+            var primaryHandler = Assert.IsType<SocketsHttpHandler>(handler);
+            Assert.Equal(MeterFactory, primaryHandler.MeterFactory);
+        }
+#endif
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]

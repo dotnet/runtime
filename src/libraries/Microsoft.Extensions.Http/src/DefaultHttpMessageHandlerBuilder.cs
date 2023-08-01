@@ -4,15 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.Net.Http;
-using Microsoft.Extensions.Diagnostics.Metrics;
 
 namespace Microsoft.Extensions.Http
 {
     internal sealed class DefaultHttpMessageHandlerBuilder : HttpMessageHandlerBuilder
     {
-        private const string MeterName = "System.Net.Http";
-
         public DefaultHttpMessageHandlerBuilder(IServiceProvider services, IMeterFactory meterFactory)
         {
             Services = services;
@@ -47,20 +45,15 @@ namespace Microsoft.Extensions.Http
                 throw new InvalidOperationException(message);
             }
 
+#if NET8_0_OR_GREATER
+            // The MeterFactory property is available on handlers in .NET 8 or later.
             if (PrimaryHandler is HttpClientHandler httpClientHandler)
             {
-                _ = _meterFactory.Create(MeterName);
-
-                // TODO: Waiting for HttpClientHandler.Meter API.
-                // httpClientHandler.Meter = _meterFactory.Create(MeterName);
+                httpClientHandler.MeterFactory = _meterFactory;
             }
-#if NET8_0_OR_GREATER
-            else if (PrimaryHandler is SocketsHttpHandler socketsHttpHandler)
+            else if (!OperatingSystem.IsBrowser() && PrimaryHandler is SocketsHttpHandler socketsHttpHandler)
             {
-                _ = _meterFactory.Create(MeterName);
-
-                // TODO: Waiting for SocketsHttpHandler.Meter API.
-                //socketsHttpHandler.Meter = _meterFactory.Create(MeterName);
+                socketsHttpHandler.MeterFactory = _meterFactory;
             }
 #endif
 
