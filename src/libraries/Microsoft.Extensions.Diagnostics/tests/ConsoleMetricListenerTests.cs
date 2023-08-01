@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
                 services.AddMetrics(builder =>
                 {
                     builder.AddDebugConsole();
-                    builder.EnableMetrics("TestMeter", null, ConsoleMetrics.ListenerName);
+                    builder.EnableMetrics("TestMeter", listenerName: ConsoleMetrics.ListenerName);
                 });
                 using var sp = services.BuildServiceProvider();
                 sp.GetRequiredService<IStartupValidator>().Validate();

@@ -8,31 +8,31 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     public static partial class MetricsBuilderExtensions
     {
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName)
+        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName = null)
             => builder.ConfigureRule(options => options.EnableMetrics(meterName));
 
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName = null, string? instrumentName = null, string? listenerName = null,
+        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName = null, string? listenerName = null,
             MeterScope scopes = MeterScope.Global | MeterScope.Local)
             => builder.ConfigureRule(options => options.EnableMetrics(meterName, instrumentName, listenerName, scopes));
 
-        public static MetricsOptions EnableMetrics(this MetricsOptions options, string? meterName)
+        public static MetricsOptions EnableMetrics(this MetricsOptions options, string? meterName = null)
             => options.EnableMetrics(meterName: meterName, instrumentName: null);
 
-        public static MetricsOptions EnableMetrics(this MetricsOptions options, string? meterName = null, string? instrumentName = null, string? listenerName = null,
+        public static MetricsOptions EnableMetrics(this MetricsOptions options, string? meterName, string? instrumentName = null, string? listenerName = null,
             MeterScope scopes = MeterScope.Global | MeterScope.Local)
             => options.AddRule(meterName, instrumentName, listenerName, scopes, enable: true);
 
-        public static IMetricsBuilder DisableMetrics(this IMetricsBuilder builder, string? meterName)
+        public static IMetricsBuilder DisableMetrics(this IMetricsBuilder builder, string? meterName = null)
             => builder.ConfigureRule(options => options.DisableMetrics(meterName));
 
-        public static IMetricsBuilder DisableMetrics(this IMetricsBuilder builder, string? meterName = null, string? instrumentName = null, string? listenerName = null,
+        public static IMetricsBuilder DisableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName = null, string? listenerName = null,
             MeterScope scopes = MeterScope.Global | MeterScope.Local)
             => builder.ConfigureRule(options => options.DisableMetrics(meterName, instrumentName, listenerName, scopes));
 
-        public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName)
+        public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName = null)
             => options.DisableMetrics(meterName: meterName, instrumentName: null);
 
-        public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName = null, string? instrumentName = null, string? listenerName = null,
+        public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName, string? instrumentName = null, string? listenerName = null,
             MeterScope scopes = MeterScope.Global | MeterScope.Local)
             => options.AddRule(meterName, instrumentName, listenerName, scopes, enable: false);
 
