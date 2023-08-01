@@ -22,9 +22,10 @@ internal sealed class CommonConfiguration
     public WasmHostProperties HostProperties { get; init; }
     public IEnumerable<string> HostArguments { get; init; }
     public bool Silent { get; private set; } = true;
+    public bool UseStaticWebAssets { get; private set; }
+    public string? RuntimeConfigPath { get; private set; }
 
     private string? hostArg;
-    private string? _runtimeConfigPath;
 
     public static CommonConfiguration FromCommandLineArguments(string[] args) => new CommonConfiguration(args);
 
@@ -35,13 +36,14 @@ internal sealed class CommonConfiguration
         {
             { "debug|d", "Start debug server", _ => Debugging = true },
             { "host|h=", "Host config name", v => hostArg = v },
-            { "runtime-config|r=", "runtimeconfig.json path for the app", v => _runtimeConfigPath = v },
+            { "runtime-config|r=", "runtimeconfig.json path for the app", v => RuntimeConfigPath = v },
             { "extra-host-arg=", "Extra argument to be passed to the host", hostArgsList.Add },
-            { "no-silent", "Verbose output from WasmAppHost", _ => Silent = false }
+            { "no-silent", "Verbose output from WasmAppHost", _ => Silent = false },
+            { "use-staticwebassets", "Use static web assets, needed for projects targeting WebAssembly SDK", _ => UseStaticWebAssets = true }
         };
 
         RemainingArgs = options.Parse(args);
-        if (string.IsNullOrEmpty(_runtimeConfigPath))
+        if (string.IsNullOrEmpty(RuntimeConfigPath))
         {
             string[] configs = Directory.EnumerateFiles(Environment.CurrentDirectory, "*.runtimeconfig.json").ToArray();
             if (configs.Length == 0)
@@ -50,16 +52,16 @@ internal sealed class CommonConfiguration
             if (configs.Length > 1)
                 throw new CommandLineException($"Found multiple runtimeconfig.json files: {string.Join(", ", configs)}. Use --runtime-config= to specify one");
 
-            _runtimeConfigPath = Path.GetFullPath(configs[0]);
+            RuntimeConfigPath = Path.GetFullPath(configs[0]);
         }
 
-        AppPath = Path.GetDirectoryName(_runtimeConfigPath) ?? ".";
+        AppPath = Path.GetDirectoryName(RuntimeConfigPath) ?? ".";
 
-        if (string.IsNullOrEmpty(_runtimeConfigPath) || !File.Exists(_runtimeConfigPath))
-            throw new CommandLineException($"Cannot find runtime config at {_runtimeConfigPath}");
+        if (string.IsNullOrEmpty(RuntimeConfigPath) || !File.Exists(RuntimeConfigPath))
+            throw new CommandLineException($"Cannot find runtime config at {RuntimeConfigPath}");
 
         RuntimeConfig? rconfig = JsonSerializer.Deserialize<RuntimeConfig>(
-                                                File.ReadAllText(_runtimeConfigPath),
+                                                File.ReadAllText(RuntimeConfigPath),
                                                 new JsonSerializerOptions(JsonSerializerDefaults.Web)
                                                 {
                                                     AllowTrailingCommas = true,
@@ -67,14 +69,14 @@ internal sealed class CommonConfiguration
                                                     PropertyNameCaseInsensitive = true
                                                 });
         if (rconfig == null)
-            throw new CommandLineException($"Failed to deserialize {_runtimeConfigPath}");
+            throw new CommandLineException($"Failed to deserialize {RuntimeConfigPath}");
 
         if (rconfig.RuntimeOptions == null)
-            throw new CommandLineException($"Failed to deserialize {_runtimeConfigPath} - rconfig.RuntimeOptions");
+            throw new CommandLineException($"Failed to deserialize {RuntimeConfigPath} - rconfig.RuntimeOptions");
 
         HostProperties = rconfig.RuntimeOptions.WasmHostProperties;
         if (HostProperties == null)
-            throw new CommandLineException($"Could not find any {nameof(RuntimeOptions.WasmHostProperties)} in {_runtimeConfigPath}");
+            throw new CommandLineException($"Could not find any {nameof(RuntimeOptions.WasmHostProperties)} in {RuntimeConfigPath}");
 
         if (HostProperties.HostConfigs is null || HostProperties.HostConfigs.Count == 0)
             throw new CommandLineException($"no perHostConfigs found");

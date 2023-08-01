@@ -486,12 +486,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             var fixture = sharedTestState.HostApiInvokerAppFixture;
 
-            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
+            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "RUNTIME_IDENTIFIER", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(fixture.TestProject.AppDll)}")
+                .And.HaveStdOutContaining($"RUNTIME_IDENTIFIER = {RepoDirectoriesProvider.Default.BuildRID}")
                 .And.HaveStdOutContaining($"DOES_NOT_EXIST = <none>")
                 .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {fixture.TestProject.AssemblyName}");
         }

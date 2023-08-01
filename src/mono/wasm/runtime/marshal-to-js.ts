@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
 import cwraps from "./cwraps";
-import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
+import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
 import { Module, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import {
     ManagedObject, ManagedError,
@@ -197,7 +197,10 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, re
             return runtimeHelpers.javaScriptExports.call_delegate(gc_handle, arg1_js, arg2_js, arg3_js, res_converter, arg1_converter, arg2_converter, arg3_converter);
         };
         result.dispose = () => {
-            result.isDisposed = true;
+            if (!result.isDisposed) {
+                result.isDisposed = true;
+                teardown_managed_proxy(result, gc_handle);
+            }
         };
         result.isDisposed = false;
         if (BuildConfiguration === "Debug") {

@@ -330,6 +330,10 @@ public class Managed
     [DllImport("MarshalStructAsParam")]
     static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(FixedArrayClassificationTest str, float f);
     [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(InlineArrayClassificationTest str, float f);
+    [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(InlineArrayWithWrappedIntClassificationTest str, float f);
+    [DllImport("MarshalStructAsParam")]
     static extern bool MarshalStructAsParam_AsSeqByValUnicodeCharArrayClassification(UnicodeCharArrayClassification str, float f);
     [DllImport("MarshalStructAsParam")]
     static extern int GetStringLength(AutoString str);
@@ -688,10 +692,45 @@ public class Managed
                         },
                         f = 56.789f
                     };
+
                     if (!MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(fixedArrayTest, fixedArrayTest.f))
                     {
                         Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest. Expected:True;Actual:False");
                         failures++;
+                    }
+
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest with inline array...");
+                    {
+                        InlineArrayClassificationTest inlineArrayTest = new()
+                        {
+                            f = 56.789f
+                        };
+                        inlineArrayTest.arr[0] = 123456;
+                        inlineArrayTest.arr[1] = 78910;
+                        inlineArrayTest.arr[2] = 1234;
+
+                        if (!MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(inlineArrayTest, inlineArrayTest.f))
+                        {
+                            Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest. Expected:True;Actual:False");
+                            failures++;
+                        }
+                    }
+
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest with inline array...");
+                    {
+                        InlineArrayWithWrappedIntClassificationTest inlineArrayTest = new()
+                        {
+                            f = 56.789f
+                        };
+                        inlineArrayTest.arr[0] = new(123456);
+                        inlineArrayTest.arr[1] = new(78910);
+                        inlineArrayTest.arr[2] = new(1234);
+
+                        if (!MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(inlineArrayTest, inlineArrayTest.f))
+                        {
+                            Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest. Expected:True;Actual:False");
+                            failures++;
+                        }
                     }
                     break;
                 case StructID.UnicodeCharArrayClassificationId:
@@ -2574,6 +2613,7 @@ public class Managed
         HFA hfa = GetHFA(12.34f, 52.12f, 64.124f, 675.452351322f);
         if (hfa.f1 != 12.34f || hfa.f2 != 52.12f || hfa.f3 != 64.124f || hfa.f4 != 675.452351322f)
         {
+            failures++;
             Console.WriteLine("4-float structure returned from native to managed failed.");
         }
 
@@ -2585,14 +2625,23 @@ public class Managed
             if (multiple != 2 * i)
             {
                 Console.WriteLine("Structure of 20 ints returned from native to managed failed.");
+                failures++;
             }
             i++;
         }
 
         MultipleBool bools = GetBools(true, true);
-        if (!bools.b1 || !bools.b2)
+        if (!bools[0] || !bools[1])
         {
             Console.WriteLine("Structure of two bools marshalled to BOOLs returned from native to managed failed");
+            failures++;
+        }
+
+        bools = GetBools(true, false);
+        if (!bools[0] || bools[1])
+        {
+            Console.WriteLine("Structure of two bools marshalled to BOOLs returned from native to managed failed");
+            failures++;
         }
     }
 

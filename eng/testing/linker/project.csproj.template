@@ -1,4 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+
+  <PropertyGroup>
+    <!-- Needed for PublishTrimmed -->
+    <NetCoreAppToolCurrent>{NetCoreAppToolCurrent}</NetCoreAppToolCurrent>
+    <ToolsILLinkDir>{ToolsILLinkDir}</ToolsILLinkDir>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <TargetFramework>{TargetFramework}</TargetFramework>
@@ -53,15 +61,6 @@
     {AdditionalProjectReferences}
   </ItemGroup>
 
-  <!-- Logic to override the default IlLink tasks that come from the SDK and use the one
-  we use in dotnet/runtime repo -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.ILLink.Tasks"
-                      Version="{MicrosoftNETILLinkTasksVersion}"
-                      PrivateAssets="all"
-                      IsImplicitlyDefined="true" />
-  </ItemGroup>
-
   <Target Name="LocateNativeCompiler"
           Condition="'$(PublishAot)' == 'true' and '$(_hostOS)' != 'win'"
           BeforeTargets="SetupOSSpecificProps">
@@ -84,4 +83,7 @@
   </Target>
 
   <Import Project="{NativeSanitizersTargets}" />
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
 </Project>
