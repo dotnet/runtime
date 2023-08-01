@@ -73,7 +73,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(ep);
             unsafe
             {
-                fixed (byte* bufferPtr = socketAddress.Buffer)
+                fixed (byte* bufferPtr = socketAddress.InternalBuffer)
                 fixed (int* sizePtr = &socketAddress.InternalSize)
                 {
                     errorCode = SocketPal.GetSockName(_handle, bufferPtr, sizePtr);

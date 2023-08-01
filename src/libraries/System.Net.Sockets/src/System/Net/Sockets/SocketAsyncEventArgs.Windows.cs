@@ -284,7 +284,7 @@ namespace System.Net.Sockets
         internal SocketError DoOperationConnect(SafeSocketHandle handle)
         {
             // Called for connectionless protocols.
-            SocketError socketError = SocketPal.Connect(handle, _socketAddress!.Buffer, _socketAddress.Size);
+            SocketError socketError = SocketPal.Connect(handle, _socketAddress!.Buffer);
             FinishOperationSync(socketError, 0, SocketFlags.None);
             return socketError;
         }
@@ -303,7 +303,7 @@ namespace System.Net.Sockets
                 {
                     bool success = socket.ConnectEx(
                         handle,
-                        _socketAddress!.Buffer.AsSpan(),
+                        _socketAddress!.InternalBuffer.AsSpan(),
                         (IntPtr)(bufferPtr + _offset),
                         _count,
                         out int bytesTransferred,
@@ -763,7 +763,7 @@ namespace System.Net.Sockets
                         1,
                         out int bytesTransferred,
                         _socketFlags,
-                        _socketAddress!.Buffer.AsSpan(),
+                        _socketAddress!.InternalBuffer.AsSpan(),
                         overlapped,
                         IntPtr.Zero);
 
@@ -790,7 +790,7 @@ namespace System.Net.Sockets
                     _bufferListInternal!.Count,
                     out int bytesTransferred,
                     _socketFlags,
-                    _socketAddress!.Buffer.AsSpan(),
+                    _socketAddress!.InternalBuffer.AsSpan(),
                     overlapped,
                     IntPtr.Zero);
 
@@ -873,7 +873,7 @@ namespace System.Net.Sockets
             }
 
             // Pin down the new one.
-            _socketAddressGCHandle = GCHandle.Alloc(_socketAddress!.Buffer, GCHandleType.Pinned);
+            _socketAddressGCHandle = GCHandle.Alloc(_socketAddress!.InternalBuffer, GCHandleType.Pinned);
             _socketAddress.CopyAddressSizeIntoBuffer();
             _pinnedSocketAddress = _socketAddress;
         }
@@ -883,11 +883,11 @@ namespace System.Net.Sockets
             get
             {
                 Debug.Assert(_pinnedSocketAddress != null);
-                Debug.Assert(_pinnedSocketAddress.Buffer != null);
-                Debug.Assert(_pinnedSocketAddress.Buffer.Length > 0);
+                Debug.Assert(_pinnedSocketAddress.InternalBuffer != null);
+                Debug.Assert(_pinnedSocketAddress.InternalBuffer.Length > 0);
                 Debug.Assert(_socketAddressGCHandle.IsAllocated);
-                Debug.Assert(_socketAddressGCHandle.Target == _pinnedSocketAddress.Buffer);
-                fixed (void* ptrSocketAddressBuffer = &_pinnedSocketAddress.Buffer[0])
+                Debug.Assert(_socketAddressGCHandle.Target == _pinnedSocketAddress.InternalBuffer);
+                fixed (void* ptrSocketAddressBuffer = &_pinnedSocketAddress.InternalBuffer[0])
                 {
                     return (IntPtr)ptrSocketAddressBuffer;
                 }
@@ -1075,7 +1075,7 @@ namespace System.Net.Sockets
                         out remoteSocketAddress.InternalSize
                     );
 
-                    Marshal.Copy(remoteAddr, remoteSocketAddress.Buffer, 0, remoteSocketAddress.Size);
+                    Marshal.Copy(remoteAddr, remoteSocketAddress.InternalBuffer, 0, remoteSocketAddress.Size);
                 }
 
                 socketError = Interop.Winsock.setsockopt(

@@ -275,20 +275,6 @@ namespace System.Runtime.InteropServices.JavaScript
                             jso.Dispose();
                         }
                     }
-                    foreach (var gch in ThreadJsOwnedObjects.Values)
-                    {
-                        GCHandle gcHandle = (GCHandle)gch;
-
-                        // if this is pending promise we reject it
-                        if (gcHandle.Target is TaskCallback holder)
-                        {
-                            unsafe
-                            {
-                                holder.Callback!.Invoke(null);
-                            }
-                        }
-                        gcHandle.Free();
-                    }
                     SynchronizationContext.SetSynchronizationContext(ctx!.previousSynchronizationContext);
                     JSSynchronizationContext.CurrentJSSynchronizationContext = null;
                     ctx.isDisposed = true;
@@ -309,9 +295,36 @@ namespace System.Runtime.InteropServices.JavaScript
                     Environment.FailFast($"There should be no JS proxies of managed objects on this thread, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}");
                 }
             }
+
+            Interop.Runtime.UninstallWebWorkerInterop(uninstallJSSynchronizationContext);
+
+            if (uninstallJSSynchronizationContext)
+            {
+                try
+                {
+                    foreach (var gch in ThreadJsOwnedObjects.Values)
+                    {
+                        GCHandle gcHandle = (GCHandle)gch;
+
+                        // if this is pending promise we reject it
+                        if (gcHandle.Target is TaskCallback holder)
+                        {
+                            unsafe
+                            {
+                                holder.Callback!.Invoke(null);
+                            }
+                        }
+                        gcHandle.Free();
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
+                }
+            }
+
             ThreadCsOwnedObjects.Clear();
             ThreadJsOwnedObjects.Clear();
-            Interop.Runtime.UninstallWebWorkerInterop(uninstallJSSynchronizationContext);
         }
 
         private static FieldInfo? thread_id_Field;
