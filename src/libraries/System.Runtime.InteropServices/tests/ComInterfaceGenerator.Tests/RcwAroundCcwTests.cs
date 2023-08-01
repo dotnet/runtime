@@ -176,11 +176,6 @@ namespace ComInterfaceGenerator.Tests
             {
                 obj.InParam(in strings);
             });
-            // ThrowForHR will throw an untyped Exception
-            Assert.Throws<Exception>(() =>
-            {
-                obj.OutParam(out strings);
-            });
             Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.ByValueInOutParam(strings);
@@ -188,6 +183,30 @@ namespace ComInterfaceGenerator.Tests
             Assert.Throws<MarshallingFailureException>(() =>
             {
                 _ = obj.ReturnValue();
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        public void IStringArrayMarshallingFailsOutWindows()
+        {
+            var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
+            var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
+            // This will fail in the native side and throw for HR on the managed to unmanaged stub. In Windows environments, this is will unwrap the exception.
+            Assert.Throws<MarshallingFailureException>(() =>
+            {
+                obj.OutParam(out strings);
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
+        public void IStringArrayMarshallingFailsOutNonWindows()
+        {
+            var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
+            var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
+            // This will fail in the native side and throw for HR on the managed to unmanaged stub. In non-Windows environments, this is a plain Exception.
+            Assert.Throws<Exception>(() =>
+            {
+                obj.OutParam(out strings);
             });
         }
 
