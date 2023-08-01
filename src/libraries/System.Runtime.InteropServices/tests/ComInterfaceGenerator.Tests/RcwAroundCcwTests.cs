@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using SharedTypes.ComInterfaces;
@@ -175,7 +176,8 @@ namespace ComInterfaceGenerator.Tests
             {
                 obj.InParam(in strings);
             });
-            Assert.Throws<MarshallingFailureException>(() =>
+            // ThrowForHR will throw an untyped Exception
+            Assert.Throws<Exception>(() =>
             {
                 obj.OutParam(out strings);
             });
