@@ -18,18 +18,18 @@ public static class Program
         MyPoco valueToSerialize = new MyPoco { Value = 42 };
 
         // The default resolver should not surface DefaultJsonTypeInfoResolver.
-        if (JsonSerializerOptions.Default.TypeInfoResolver is not IList<IJsonTypeInfoResolver> { Count: 0 })
+        if (JsonSerializerOptions.Default.TypeInfoResolver is DefaultJsonTypeInfoResolver)
         {
             return -1;
         }
 
-        // Serializing with options unset should throw NotSupportedException.
+        // Serializing with options unset should throw InvalidOperationException.
         try
         {
             JsonSerializer.Serialize(valueToSerialize);
             return -2;
         }
-        catch (NotSupportedException)
+        catch (InvalidOperationException)
         {
         }
 

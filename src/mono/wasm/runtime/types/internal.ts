@@ -150,6 +150,10 @@ export type LoaderHelpers = {
 
     isChromium: boolean,
     isFirefox: boolean
+
+    // from wasm-feature-detect npm package
+    exceptions: () => Promise<boolean>,
+    simd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
     config: MonoConfigInternal;
@@ -266,6 +270,8 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
 export type EmscriptenInternals = {
     isPThread: boolean,
     linkerDisableLegacyJsInterop: boolean,
+    linkerWasmEnableSIMD: boolean,
+    linkerWasmEnableEH: boolean,
     linkerEnableAotProfiler: boolean,
     linkerEnableBrowserProfiler: boolean,
     quit_: Function,

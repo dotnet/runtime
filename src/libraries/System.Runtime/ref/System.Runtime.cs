@@ -11315,12 +11315,12 @@ namespace System.Reflection
     public sealed partial class ConstructorInvoker
     {
         internal ConstructorInvoker() { }
-        public object? Invoke(System.Span<object?> arguments) { throw null; }
-        public object? Invoke() { throw null; }
-        public object? Invoke(object? arg1) { throw null; }
-        public object? Invoke(object? arg1, object? arg2) { throw null; }
-        public object? Invoke(object? arg1, object? arg2, object? arg3) { throw null; }
-        public object? Invoke(object? arg1, object? arg2, object? arg3, object? arg4) { throw null; }
+        public object Invoke(System.Span<object?> arguments) { throw null; }
+        public object Invoke() { throw null; }
+        public object Invoke(object? arg1) { throw null; }
+        public object Invoke(object? arg1, object? arg2) { throw null; }
+        public object Invoke(object? arg1, object? arg2, object? arg3) { throw null; }
+        public object Invoke(object? arg1, object? arg2, object? arg3, object? arg4) { throw null; }
         public static System.Reflection.ConstructorInvoker Create(System.Reflection.ConstructorInfo constructor) { throw null; }
     }
     public partial class CustomAttributeData
