@@ -59,8 +59,9 @@ namespace System.Net.Http
                     remoteEndPoint?.Address?.ToString());
 
                 _connectionMetrics.ConnectionEstablished();
-                _idleSinceTickCount = Environment.TickCount64;
             }
+
+            _idleSinceTickCount = _creationTickCount;
 
             if (HttpTelemetry.Log.IsEnabled())
             {
