@@ -62,7 +62,7 @@
 // straightforward.
 LEAF_ENTRY \stub\()_FixRsp, _TEXT
 
-        call            C_FUNC(\stub\()_RspAligned)
+        call           \stub\()_RspAligned
 
         // Target should not return.
         int             3
