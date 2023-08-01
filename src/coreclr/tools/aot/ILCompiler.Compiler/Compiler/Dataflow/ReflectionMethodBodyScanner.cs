@@ -479,7 +479,8 @@ namespace ILCompiler.Dataflow
                                         && systemTypeValue.RepresentedType.Type.GetParameterlessConstructor() is MethodDesc ctorMethod
                                         && !reflectionMarker.Factory.MetadataManager.IsReflectionBlocked(ctorMethod))
                                     {
-                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedMethod(ctorMethod), "Marshal API");
+                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.MaximallyConstructableType(systemTypeValue.RepresentedType.Type), "Marshal API");
+                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedMethod(ctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Marshal API");
                                     }
                                 }
                             }
