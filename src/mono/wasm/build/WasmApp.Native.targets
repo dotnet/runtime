@@ -600,6 +600,10 @@
     <PropertyGroup>
       <!-- FIXME: do it once -->
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
+
+      <!-- find the path with the assemblies, so we don't have to hardcode the tfm.
+           Cannot use System.Private.Corelib since that is in a different directory -->
+      <_SystemIOPath>@(RuntimePackAsset->WithMetadataValue('Filename', 'System.IO'))</_SystemIOPath>
     </PropertyGroup>
 
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
@@ -628,10 +632,7 @@
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
 
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
-
-      <!-- find the path with the assemblies, so we don't have to hardcode the tfm -->
-      <_SystemIOPath Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\lib\*\System.IO.dll" />
-      <_WasmAOTSearchPaths Include="%(_SystemIOPath.Identity)" />
+      <_WasmAOTSearchPaths Include="$([System.IO.Path]::GetDirectoryName('$(_SystemIOPath)'))" />
     </ItemGroup>
 
     <ItemGroup>
