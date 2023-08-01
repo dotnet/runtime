@@ -254,8 +254,7 @@ Function :
     Restore default signal handlers
 
 Parameters :
-    None
-
+    isChildProcess - indicates that it is called from a child process fork
     (no return value)
 
 note :
@@ -263,7 +262,7 @@ reason for this function is that during PAL_Terminate, we reach a point where
 SEH isn't possible anymore (handle manager is off, etc). Past that point,
 we can't avoid crashing on a signal.
 --*/
-void SEHCleanupSignals()
+void SEHCleanupSignals(bool isChildProcess)
 {
     TRACE("Restoring default signal handlers\n");
 
@@ -276,7 +275,14 @@ void SEHCleanupSignals()
         restore_signal(SIGFPE, &g_previous_sigfpe);
         restore_signal(SIGBUS, &g_previous_sigbus);
         restore_signal(SIGABRT, &g_previous_sigabrt);
-        restore_signal(SIGSEGV, &g_previous_sigsegv);
+        // Do not restore the sigsegv when stack overflow was hit on a thread,
+        // since all other sigsegvs have to wait in the handler until the process
+        // dies.
+        // If it is called by a forked child though, restore the sigsegv unconditionally
+        if (isChildProcess || (g_stackOverflowHandlerStack != 0)) 
+        {
+            restore_signal(SIGSEGV, &g_previous_sigsegv);
+        }
         restore_signal(SIGINT, &g_previous_sigint);
         restore_signal(SIGQUIT, &g_previous_sigquit);
     }
