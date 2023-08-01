@@ -711,6 +711,12 @@ static unsafe partial class CoreCLRHost
         return heapSz - info.FragmentedBytes;
     }
 
+    [return: NativeCallbackType("int")]
+    public static int gc_max_generation()
+    {
+        return GC.MaxGeneration;
+    }
+
     static void Log(string message)
     {
         var bytes = System.Text.Encoding.UTF8.GetBytes(message);

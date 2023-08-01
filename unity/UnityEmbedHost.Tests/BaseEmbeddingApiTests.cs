@@ -889,6 +889,13 @@ public abstract class BaseEmbeddingApiTests
         GC.KeepAlive(data);
     }
 
+    [Test]
+    public void GcMaxGenerationReturnsProperValue()
+    {
+        var maxGen = ClrHost.gc_max_generation();
+        Assert.Greater(maxGen, -1);
+    }
+
     static List<object?> FlattenedArray(Array arr)
     {
         var result = new List<object?>();
