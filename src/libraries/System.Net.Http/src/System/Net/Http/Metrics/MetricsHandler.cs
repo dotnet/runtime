@@ -186,7 +186,7 @@ namespace System.Net.Http.Metrics
 
         internal static KeyValuePair<string, object?> GetMethodTag(HttpMethod method)
         {
-            // The OTel spec requires us to return canonical names for known methods and "_OTHER" for unknown ones.
+            // Return canonical names for known methods and "_OTHER" for unknown ones.
             HttpMethod? known = HttpMethod.GetKnownMethod(method.Method);
             return new KeyValuePair<string, object?>("http.request.method", known?.Method ?? "_OTHER");
         }
