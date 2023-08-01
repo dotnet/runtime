@@ -3749,6 +3749,24 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
             regs = (int)REG_RA << 5;
         }
+        else
+        {
+            if (cmpSize == EA_4BYTE)
+            {
+                regNumber tmpRegOp1 = rsGetRsvdReg();
+                assert(regOp1 != tmpRegOp1);
+                if (cond.IsUnsigned())
+                {
+                    emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
+                    emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_addiw, EA_8BYTE, tmpRegOp1, regOp1, 0);
+                }
+                regOp1 = tmpRegOp1;
+            }
+        }
 
         switch (cond.GetCode())
         {
