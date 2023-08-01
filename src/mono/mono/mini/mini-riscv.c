@@ -1674,9 +1674,6 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		}
 		break;
 	case ArgVtypeByRef: {
-		MONO_INST_NEW (cfg, load, OP_NOP);
-		MONO_ADD_INS (cfg->cbb, load);
-		return;
 		MonoInst *vtaddr, *arg;
 		/* Pass the vtype address in a reg/on the stack */
 		// if (ainfo->gsharedvt) {
@@ -1692,7 +1689,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		load->klass = vtaddr->klass;
 		load->dreg = mono_alloc_ireg (cfg);
 		MONO_ADD_INS (cfg->cbb, load);
-		mini_emit_memcpy (cfg, load->dreg, 0, src->dreg, 0, ainfo->size, 8);
+		mini_emit_memcpy (cfg, load->dreg, 0, src->dreg, 0, ins->backend.size, TARGET_SIZEOF_VOID_P);
 		// }
 
 		if (ainfo->storage == ArgVtypeByRef) {
