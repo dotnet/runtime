@@ -55,7 +55,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         // icu
         if (assertOptions.AssertIcuAssets)
         {
-            _testOutput.WriteLine("Skipping asserting icu assets");
+            _testOutput.WriteLine("Starting icu assets assert");
             AssertIcuAssets(assertOptions);
         }
 
@@ -348,6 +348,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public void AssertIcuAssets(AssertBundleOptionsBase assertOptions)
     {
         List<string> expected = new();
+        _testOutput.WriteLine($"AssertIcuAssets: {assertOptions.GlobalizationMode}");
         switch (assertOptions.GlobalizationMode)
         {
             case GlobalizationMode.Invariant:
@@ -374,6 +375,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             default:
                 throw new NotImplementedException($"Unknown {nameof(assertOptions.GlobalizationMode)} = {assertOptions.GlobalizationMode}");
         }
+        foreach (var e in expected)
+            _testOutput.WriteLine($"e: {e}");
 
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
         AssertFilesOnDisk(expected, actual);
