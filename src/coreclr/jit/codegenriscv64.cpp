@@ -5219,8 +5219,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             }
 
             // Pick a register to store intermediate values in for the to-stack
-            // copy. It must not conflict with addrReg. We try to prefer an
-            // argument register since those can always use thumb encoding.
+            // copy. It must not conflict with addrReg.
             valueReg = treeNode->GetRegNumByIdx(0);
             if (valueReg == addrReg)
             {
@@ -5230,7 +5229,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 }
                 else
                 {
-                    // Prefer argument register that can always use thumb encoding.
                     valueReg = treeNode->GetRegNumByIdx(1);
                 }
             }
@@ -7210,7 +7208,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     }
 #endif
 
-    // On LA we push the FP (frame-pointer) here along with all other callee saved registers
+    // On RISCV64 we push the FP (frame-pointer) here along with all other callee saved registers
     if (isFramePointerUsed())
     {
         rsPushRegs |= RBM_FPBASE;
@@ -7884,7 +7882,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     // the struct is a split struct.
                     assert(varDsc->GetArgReg() == REG_ARG_LAST && varDsc->GetOtherArgReg() == REG_STK);
 
-                    // For the LA's ABI, the split struct arg will be passed via `A7` and a stack slot on caller.
+                    // For the RISCV64's ABI, the split struct arg will be passed via `A7` and a stack slot on caller.
                     // But if the `A7` is stored on stack on the callee side, the whole split struct should be
                     // stored continuous on the stack on the callee side.
                     // So, after we save `A7` on the stack in prolog, it has to copy the stack slot of the split struct
