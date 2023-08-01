@@ -4368,7 +4368,7 @@ namespace System.Net.Http.Functional.Tests
             };
 
             HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
-
+            throw ex;
             // TODO: Some platforms fail to detect NameResolutionError reliably, we should investigate this.
             // Also, System.Net.Quic does not report DNS resolution errors yet.
             Assert.True(ex.HttpRequestError is HttpRequestError.NameResolutionError);
@@ -4445,7 +4445,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
 
         [Fact]
-        public async Task VersionNegitioationError()
+        public async Task VersionNegotiationError()
         {
             await Http11LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
             {
