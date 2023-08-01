@@ -31,7 +31,7 @@ BOOL TypeHandle::Verify()
     if (IsNull())
         return(TRUE);
 
-    if (!IsRestored_NoLogging())
+    if (!IsRestored())
         return TRUE;
 
     if (IsArray())
@@ -1028,20 +1028,6 @@ BOOL TypeHandle::IsFnPtrType() const
 
     return (IsTypeDesc() &&
             (GetSignatureCorElementType() == ELEMENT_TYPE_FNPTR));
-}
-
-BOOL TypeHandle::IsRestored_NoLogging() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (!IsTypeDesc())
-    {
-        return AsMethodTable()->IsRestored_NoLogging();
-    }
-    else
-    {
-        return AsTypeDesc()->IsRestored_NoLogging();
-    }
 }
 
 BOOL TypeHandle::IsRestored() const
