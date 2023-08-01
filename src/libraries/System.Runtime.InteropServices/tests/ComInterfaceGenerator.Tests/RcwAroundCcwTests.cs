@@ -338,7 +338,7 @@ namespace ComInterfaceGenerator.Tests
         [GeneratedComClass]
         public partial class ICollectionMarshallingFailsImpl : ICollectionMarshallingFails
         {
-            int[] _data = new[] { 1, 2, 3 };
+            int[] _data = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
             public int[] Get() => _data;
             public void Set(int[] value) => _data = value;
         }
