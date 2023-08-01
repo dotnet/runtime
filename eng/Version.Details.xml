@@ -314,6 +314,10 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>8470b87bcb366cc06486c6f7aa23ae6de3259eba</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.ILCompiler" Version="8.0.0-rc.1.23374.1">
+      <Uri>https://github.com/dotnet/runtime</Uri>
+      <Sha>5b4bbda1c1c8a5cc4ced9facdacb4e531dfc8b3c</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="8.0.0-prerelease.23377.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
       <Sha>437aa378e900dbfd179b5552e71b81bc99e1e746</Sha>

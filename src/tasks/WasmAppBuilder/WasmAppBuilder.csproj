@@ -30,7 +30,9 @@
   </ItemGroup>
 
   <ItemGroup>
-      <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.NET.WebAssembly.Webcil\src\Microsoft.NET.WebAssembly.Webcil.csproj" Private="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.NET.WebAssembly.Webcil\src\Microsoft.NET.WebAssembly.Webcil.csproj"
+                      Private="true"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
