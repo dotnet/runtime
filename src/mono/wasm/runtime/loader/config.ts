@@ -11,6 +11,9 @@ import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
+    // no need to merge the same object
+    if (target === source) return target;
+
     // If source has collection fields set to null (produced by boot config for example), we should maintain the target values
     const providedConfig: MonoConfigInternal = { ...source };
     if (providedConfig.assets !== undefined && providedConfig.assets !== target.assets) {
@@ -34,6 +37,9 @@ export function deep_merge_config(target: MonoConfigInternal, source: MonoConfig
 }
 
 export function deep_merge_module(target: DotnetModuleInternal, source: DotnetModuleConfig): DotnetModuleInternal {
+    // no need to merge the same object
+    if (target === source) return target;
+
     const providedConfig: DotnetModuleConfig = { ...source };
     if (providedConfig.config) {
         if (!target.config) target.config = {};
@@ -43,6 +49,9 @@ export function deep_merge_module(target: DotnetModuleInternal, source: DotnetMo
 }
 
 function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): ResourceGroups {
+    // no need to merge the same object
+    if (target === source) return target;
+
     const providedResources: ResourceGroups = { ...source };
     if (providedResources.assembly !== undefined) {
         providedResources.assembly = { ...(target.assembly || {}), ...(providedResources.assembly || {}) };
@@ -90,6 +99,9 @@ function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): R
 }
 
 function deep_merge_dict(target: { [key: string]: ResourceList }, source: { [key: string]: ResourceList }) {
+    // no need to merge the same object
+    if (target === source) return target;
+
     for (const key in source) {
         target[key] = { ...target[key], ...source[key] };
     }
