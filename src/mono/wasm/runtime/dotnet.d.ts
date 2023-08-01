@@ -207,6 +207,7 @@ type ResourceList = {
  * @param name The name of the resource to be loaded.
  * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
  * @param integrity The integrity string representing the expected content in the response.
+ * @param behavior The detailed behavior/type of the resource to be loaded.
  * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
  * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */

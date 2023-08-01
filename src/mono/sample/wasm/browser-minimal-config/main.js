@@ -66,4 +66,5 @@ const config = {
 await dotnet
     .withConfig(config)
     .withElementOnExit()
+    .withExitCodeLogging()
     .run();

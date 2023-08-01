@@ -35,7 +35,10 @@ switch (testCase) {
             ];
             dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity) => {
                 if (type !== "assembly")
-                    return defaultUri;
+                    // loadBootResource could return string with unqualified name of resource. 
+                    // It assumes that we resolve it with document.baseURI
+                    // we test it here
+                    return `_framework/${name}`;
 
                 assemblyCounter++;
                 if (!failAtAssemblyNumbers.includes(assemblyCounter))
@@ -55,10 +58,6 @@ switch (testCase) {
                 }
             }
         });
-        dotnet.withResourceLoader(() => {
-            // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
-            return `_framework/${name}`;
-        })
         break;
 }
 
