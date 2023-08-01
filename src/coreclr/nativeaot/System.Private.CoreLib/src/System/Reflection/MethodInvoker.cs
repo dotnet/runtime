@@ -41,6 +41,7 @@ namespace System.Reflection
             throw new ArgumentException(SR.Argument_MustBeRuntimeMethod, nameof(method));
         }
 
+        [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj)
         {
             object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, new Span<object?>());
@@ -48,6 +49,7 @@ namespace System.Reflection
             return result;
         }
 
+        [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1)
         {
             object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, new Span<object?>(ref arg1));
@@ -55,6 +57,7 @@ namespace System.Reflection
             return result;
         }
 
+        [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1, object? arg2)
         {
             StackAllocatedArguments argStorage = default;
@@ -66,6 +69,7 @@ namespace System.Reflection
             return result;
         }
 
+        [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3)
         {
             StackAllocatedArguments argStorage = default;
@@ -78,6 +82,7 @@ namespace System.Reflection
             return result;
         }
 
+        [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3, object? arg4)
         {
             StackAllocatedArguments argStorage = default;
