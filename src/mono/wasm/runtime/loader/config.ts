@@ -147,11 +147,13 @@ export function normalizeConfig() {
                     toMerge.jsModuleWorker = resource;
                     break;
                 case "js-module-runtime":
-                case "js-module-dotnet":
                     toMerge.jsModuleRuntime = resource;
                     break;
                 case "js-module-native":
                     toMerge.jsModuleNative = resource;
+                    break;
+                case "js-module-dotnet":
+                    // don't merge loader
                     break;
                 default:
                     throw new Error(`Unexpected behavior ${asset.behavior} of asset ${asset.name}`);

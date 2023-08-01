@@ -258,7 +258,7 @@ type SingleAssetBehaviors =
 /**
  * The javascript module for loader.
  */
- | "js-module-loader"
+ | "js-module-dotnet"
 /**
  * The javascript module for threads.
  */

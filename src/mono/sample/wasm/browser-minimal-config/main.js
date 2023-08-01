@@ -10,8 +10,12 @@ const assets = [
         behavior: "js-module-native"
     },
     {
-        name: "dotnet.runtime.js",
+        name: "dotnet.js",
         behavior: "js-module-dotnet"
+    },
+    {
+        name: "dotnet.runtime.js",
+        behavior: "js-module-runtime"
     },
     {
         name: "dotnet.native.wasm",

@@ -617,6 +617,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "vfs": "configuration",
     "manifest": "manifest",
     "dotnetwasm": "dotnetwasm",
+    "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
     "js-module-runtime": "dotnetjs",
     "js-module-threads": "dotnetjs"
