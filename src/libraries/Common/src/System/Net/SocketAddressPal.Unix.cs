@@ -30,9 +30,9 @@ namespace System.Net
             Debug.Assert(uds > 0);
             Debug.Assert(max >= ipv4 && max >= ipv6 && max >= uds);
             IPv4AddressSize = ipv4;
-            IPv6AddressSize =ipv6;
+            IPv6AddressSize = ipv6;
             UdsAddressSize = uds;
-            MaxAddressSize =max;
+            MaxAddressSize = max;
         }
 #pragma warning restore CA1810
 

@@ -192,7 +192,6 @@ namespace System.Net.Sockets
             SocketError errorCode = Interop.Winsock.WSAConnect(
                 handle,
                 peerAddress.Span,
-                peerAddress.Length,
                 IntPtr.Zero,
                 IntPtr.Zero,
                 IntPtr.Zero,
