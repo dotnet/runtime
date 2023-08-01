@@ -97,9 +97,9 @@ namespace Microsoft.Interop
                         return _nativeTypeMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
                     }
                     break;
-                case StubCodeContext.Stage.CleanupCallerAllocated when MarshallerHelpers.CleansUpInStage(info, context):
+                case StubCodeContext.Stage.CleanupCallerAllocated when MarshallerHelpers.ShouldCleanupInCurrentStage(info, context):
                     return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
-                case StubCodeContext.Stage.CleanupCalleeAllocated when MarshallerHelpers.CleansUpInStage(info, context):
+                case StubCodeContext.Stage.CleanupCalleeAllocated when MarshallerHelpers.ShouldCleanupInCurrentStage(info, context):
                     return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
                 default:
                     break;

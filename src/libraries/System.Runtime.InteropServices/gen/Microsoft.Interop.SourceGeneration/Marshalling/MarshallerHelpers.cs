@@ -394,7 +394,8 @@ namespace Microsoft.Interop
             }
             throw new UnreachableException("An element is either a return value or passed by value or by ref.");
         }
-        public static bool CleansUpInStage(TypePositionInfo info, StubCodeContext context)
+
+        public static bool ShouldCleanupInCurrentStage(TypePositionInfo info, StubCodeContext context)
         {
             if (context.Direction is MarshalDirection.UnmanagedToManaged)
                 return context.CurrentStage is StubCodeContext.Stage.CleanupCallerAllocated;
