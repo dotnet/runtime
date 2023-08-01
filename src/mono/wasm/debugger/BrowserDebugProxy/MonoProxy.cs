@@ -249,15 +249,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                                 return false;
-                            //avoid pausing when justMyCode is enabled and it's a framework function
-                            var scriptId = args?["callFrames"]?[0]?["location"]?["scriptId"]?.Value<int>();
-                            if (scriptId is not null && context.FrameworkScriptList.Contains(scriptId.Value))
+                            //avoid pausing when justMyCode is enabled and it's a wasm function
+                            if (args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
                             {
                                 await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
                                 return true;
                             }
-                            //avoid pausing when justMyCode is enabled and it's a wasm function
-                            if (args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
+                            //avoid pausing when justMyCode is enabled and it's a framework function
+                            var scriptId = args?["callFrames"]?[0]?["location"]?["scriptId"]?.Value<int>();
+                            if (!context.IsSkippingHiddenMethod && !context.IsSteppingThroughMethod && scriptId is not null && context.FrameworkScriptList.Contains(scriptId.Value))
                             {
                                 await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
                                 return true;
