@@ -5,25 +5,17 @@
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
-    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">tvos</TargetOS>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
     <SelfContained>true</SelfContained>
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
-    <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <MonoEnableLLVM>true</MonoEnableLLVM>
-    <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
-    <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
-    <MainLibraryFileName>iOS.Device.Aot-Llvm.Test.dll</MainLibraryFileName>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
-    <IlcCompileDependsOn>Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
-    <ILCompilerTargetsPath>$([MSBuild]::NormalizePath('$(NativeAotTargetsPath)', 'Microsoft.DotNet.ILCompiler.SingleEntry.targets'))</ILCompilerTargetsPath>
+    <MainLibraryFileName>tvOS.Device.Aot.Test.dll</MainLibraryFileName>
   </PropertyGroup>
 
   <ItemGroup>
