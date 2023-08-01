@@ -389,8 +389,6 @@ export async function start_asset_download(asset: AssetEntryInternal): Promise<A
             return await start_asset_download_with_throttle(asset);
         } catch (err) {
             asset.pendingDownloadInternal = undefined;
-            // third attempt after small delay
-            await delay(100);
             // eslint-disable-next-line no-console
             console.log("hey thays 9 - " + asset.name);
             mono_log_debug(`Retrying download (2) '${asset.name}' after delay`);
