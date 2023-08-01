@@ -234,7 +234,7 @@ public class IcuTests : TestMainJsTestBase
     [Theory]
     [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, false, RunHost.NodeJS | RunHost.Chrome })] 
     [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, true, RunHost.NodeJS | RunHost.Chrome })]
-    public void FullIcuFromRuntimePackWithCustomIcu(BuildArgs buildArgs, bool fullIcu, bool useCustomFile, RunHost host, string id)
+    public void FullIcuFromRuntimePackOrCustomIcu(BuildArgs buildArgs, bool fullIcu, bool useCustomFile, RunHost host, string id)
     {
         string projectName = $"fullIcuCustom_{fullIcu}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
