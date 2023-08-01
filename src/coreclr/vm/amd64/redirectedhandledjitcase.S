@@ -28,7 +28,7 @@
         push            rdi
 
         test            rsp, 0x0f
-        jnz             \stub\()_FixRsp
+        jnz             C_FUNC(\stub\()_FixRsp)
 
 \stub\()_RspAligned:
 
@@ -62,7 +62,7 @@
 // straightforward.
 LEAF_ENTRY \stub\()_FixRsp, _TEXT
 
-        call            \stub\()_RspAligned
+        call            C_FUNC(\stub\()_RspAligned)
 
         // Target should not return.
         int             3
