@@ -37,6 +37,45 @@
  * crash dump. We use a special code that's easy to search for in Watson.
  */
 
+BOOL IsMitigationDisabled()
+{
+    enum _MitigationEnablementTristate
+    {
+        MITIGATION_NOT_YET_QUERIED = 0,
+        MITIGATION_DISABLED = 1,
+        MITIGATION_ENABLED = 2 // really, anything other than 0 or 1
+    };
+    static long s_fMitigationEnablementState = MITIGATION_NOT_YET_QUERIED;
+
+    // If already initialized, return immediately.
+    // We don't need a volatile read here since the publish is performed with release semantics.
+    if (s_fMitigationEnablementState != MITIGATION_NOT_YET_QUERIED)
+    {
+        return (s_fMitigationEnablementState == MITIGATION_DISABLED);
+    }
+
+    // Initialize the tri-state now.
+    // It's ok for multiple threads to do this simultaneously. Only one thread will win.
+    // Valid env var values to disable mitigation: "true" and "1"
+    // All other env var values (or error) leaves mitigation enabled.
+    //
+    // Buffer needs to be large enough to hold null terminator, but returned cch does not include
+    // null terminator. Note *exclusive* bounds of 0 and buffer length on returned cch.
+    // Ref: https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-getenvironmentvariable
+    CHAR pchBuffer[5]; // enough to hold "true" and a terminator
+    DWORD dwEnvVarLength = GetEnvironmentVariableA("DOTNET_SYSTEM_IO_COMPRESSION_DISABLEZLIBMITIGATIONS", pchBuffer, _countof(pchBuffer));
+    BOOL fMitigationDisabled = (dwEnvVarLength > 0 && dwEnvVarLength < _countof(pchBuffer))
+        && (strcmp(pchBuffer, "1") == 0 || strcmp(pchBuffer, "true") == 0);
+    
+    // We really don't care about the return value of the ICE operation. If another thread
+    // beat us to it, so be it. The recursive call will figure it out.
+    InterlockedCompareExchange(
+        /* destination: */ &s_fMitigationEnablementState,
+        /* exchange:    */ fMitigationDisabled ? MITIGATION_DISABLED : MITIGATION_ENABLED,
+        /* comparand:   */ MITIGATION_NOT_YET_QUERIED);
+    return IsMitigationDisabled();
+}
+
 // Gets the special heap we'll allocate from.
 HANDLE GetZlibHeap()
 {
@@ -99,6 +138,13 @@ voidpf ZLIB_INTERNAL zcalloc(opaque, items, size)
 {
     (void)opaque; // suppress C4100 - unreferenced formal parameter
 
+    if (IsMitigationDisabled())
+    {
+        // fallback logic copied from zutil.c
+        return sizeof(uInt) > 2 ? (voidpf)malloc(items * size) :
+                                  (voidpf)calloc(items, size);
+    }
+
     // If initializing a fixed-size structure, zero the memory.
     DWORD dwFlags = (items == 1) ? HEAP_ZERO_MEMORY : 0;
 
@@ -155,6 +201,13 @@ void ZLIB_INTERNAL zcfree(opaque, ptr)
     voidpf ptr;
 {
     (void)opaque; // suppress C4100 - unreferenced formal parameter
+
+    if (IsMitigationDisabled())
+    {
+        // fallback logic copied from zutil.c
+        free(ptr);
+        return;
+    }
 
     if (ptr == NULL) { return; } // ok to free nullptr
 
