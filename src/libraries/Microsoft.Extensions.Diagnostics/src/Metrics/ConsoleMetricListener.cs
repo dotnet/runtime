@@ -36,7 +36,17 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         }
 
         public void Initialize(IObservableInstrumentsSource source) => _source = source;
-        public MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct => MeasurementHandler;
+
+        public MeasurementHandlers GetMeasurementHandlers() => new MeasurementHandlers
+        {
+            ByteHandler = MeasurementHandler,
+            ShortHandler = MeasurementHandler,
+            IntHandler = MeasurementHandler,
+            LongHandler = MeasurementHandler,
+            FloatHandler = MeasurementHandler,
+            DoubleHandler = MeasurementHandler,
+            DecimalHandler = MeasurementHandler,
+        };
 
         private void MeasurementHandler<T>(Instrument instrument, T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags, object? state) where T : struct
         {

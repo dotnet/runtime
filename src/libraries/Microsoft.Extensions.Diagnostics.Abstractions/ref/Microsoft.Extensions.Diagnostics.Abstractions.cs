@@ -19,7 +19,17 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public void Initialize(IObservableInstrumentsSource source);
         public bool InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument, out object? userState);
         public void MeasurementsCompleted(System.Diagnostics.Metrics.Instrument instrument, object? userState);
-        public System.Diagnostics.Metrics.MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct;
+        public MeasurementHandlers GetMeasurementHandlers();
+    }
+    public class MeasurementHandlers
+    {
+        public System.Diagnostics.Metrics.MeasurementCallback<byte>? ByteHandler { get; set; }
+        public System.Diagnostics.Metrics.MeasurementCallback<short>? ShortHandler { get; set; }
+        public System.Diagnostics.Metrics.MeasurementCallback<int>? IntHandler { get; set; }
+        public System.Diagnostics.Metrics.MeasurementCallback<long>? LongHandler { get; set; }
+        public System.Diagnostics.Metrics.MeasurementCallback<float>? FloatHandler { get; set; }
+        public System.Diagnostics.Metrics.MeasurementCallback<double>? DoubleHandler { get; set; }
+        public System.Diagnostics.Metrics.MeasurementCallback<decimal>? DecimalHandler { get; set; }
     }
     public interface IObservableInstrumentsSource
     {

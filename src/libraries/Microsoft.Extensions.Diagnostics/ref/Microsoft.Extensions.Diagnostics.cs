@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         internal TextWriter _textWriter;
         public string Name { get; }
-        public System.Diagnostics.Metrics.MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct => throw null!;
+        public MeasurementHandlers GetMeasurementHandlers() => throw null!;
         public bool InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument, out object? userState) => throw null!;
         public void MeasurementsCompleted(System.Diagnostics.Metrics.Instrument instrument, object? userState) => throw null!;
         public void Initialize(IObservableInstrumentsSource source) => throw null!;

@@ -29,13 +29,14 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         {
             _meterListener.InstrumentPublished = InstrumentPublished;
             _meterListener.MeasurementsCompleted = MeasurementsCompleted;
-            _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<byte>());
-            _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<short>());
-            _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<int>());
-            _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<long>());
-            _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<float>());
-            _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<double>());
-            _meterListener.SetMeasurementEventCallback(_metricsListener.GetMeasurementHandler<decimal>());
+            var handlers = _metricsListener.GetMeasurementHandlers();
+            _meterListener.SetMeasurementEventCallback(handlers.ByteHandler);
+            _meterListener.SetMeasurementEventCallback(handlers.ShortHandler);
+            _meterListener.SetMeasurementEventCallback(handlers.IntHandler);
+            _meterListener.SetMeasurementEventCallback(handlers.LongHandler);
+            _meterListener.SetMeasurementEventCallback(handlers.FloatHandler);
+            _meterListener.SetMeasurementEventCallback(handlers.DoubleHandler);
+            _meterListener.SetMeasurementEventCallback(handlers.DecimalHandler);
             _meterListener.Start();
             _metricsListener.Initialize(this);
         }

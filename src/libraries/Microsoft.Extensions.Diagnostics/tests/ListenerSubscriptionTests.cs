@@ -341,8 +341,21 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             public IObservableInstrumentsSource? Source { get; set; }
             public FakeMeasurementCallback OnMeasurement { get; set; }
 
-            public MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct
-                => (instrument, value, tags, state) => OnMeasurement(instrument, value, tags, state);
+            public MeasurementHandlers GetMeasurementHandlers() => new MeasurementHandlers
+            {
+                ByteHandler = CallOnMeasurement,
+                ShortHandler = CallOnMeasurement,
+                IntHandler = CallOnMeasurement,
+                LongHandler = CallOnMeasurement,
+                FloatHandler = CallOnMeasurement,
+                DoubleHandler = CallOnMeasurement,
+                DecimalHandler = CallOnMeasurement,
+            };
+
+            private void CallOnMeasurement<T>(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state)
+            {
+                OnMeasurement(instrument, measurement, tags, state);
+            }
 
             public bool InstrumentPublished(Instrument instrument, out object? userState)
             {

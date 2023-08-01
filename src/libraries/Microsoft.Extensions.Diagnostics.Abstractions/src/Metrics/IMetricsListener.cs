@@ -11,6 +11,6 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public void Initialize(IObservableInstrumentsSource source);
         public bool InstrumentPublished(Instrument instrument, out object? userState);
         public void MeasurementsCompleted(Instrument instrument, object? userState);
-        public MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct;
+        public MeasurementHandlers GetMeasurementHandlers();
     }
 }
