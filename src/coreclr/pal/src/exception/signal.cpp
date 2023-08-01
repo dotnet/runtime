@@ -275,11 +275,13 @@ void SEHCleanupSignals(bool isChildProcess)
         restore_signal(SIGFPE, &g_previous_sigfpe);
         restore_signal(SIGBUS, &g_previous_sigbus);
         restore_signal(SIGABRT, &g_previous_sigabrt);
+#if !HAVE_MACH_EXCEPTIONS
         // Do not restore the sigsegv when stack overflow was hit on a thread,
         // since all other sigsegvs have to wait in the handler until the process
         // dies.
         // If it is called by a forked child though, restore the sigsegv unconditionally
         if (isChildProcess || (g_stackOverflowHandlerStack != 0)) 
+#endif
         {
             restore_signal(SIGSEGV, &g_previous_sigsegv);
         }
