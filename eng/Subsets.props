@@ -70,6 +70,7 @@
     <DefaultMonoSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">$(DefaultMonoSubsets)mono.aotcross+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetsMobile)' == 'true' or '$(ForceBuildMobileManifests)' == 'true'">$(DefaultMonoSubsets)mono.manifests+</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="$(_subset.Contains('+mono.wasmworkload+'))">$(DefaultMonoSubsets)mono.manifests+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'Mono'">$(DefaultMonoSubsets)mono.tools+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetsMobile)' != 'true'">$(DefaultMonoSubsets)host.native+</DefaultMonoSubsets>
 
@@ -153,6 +154,7 @@
     <SubsetName Include="Mono.Tools" Description="Tooling that helps support Mono development and testing." />
     <SubsetName Include="Mono.WasmRuntime" Description="The Emscripten runtime." />
     <SubsetName Include="Mono.WasiRuntime" Description="The WASI runtime." />
+    <SubsetName Include="Mono.WasmWorkload" Description="*Helper* subset for building some pre-requisites for wasm workload testing, useful on CI." />
     <SubsetName Include="Mono.MsCorDbi" Description="The implementation of ICorDebug interface." />
     <SubsetName Include="Mono.Workloads" OnDemand="true" Description="Builds the installers and the insertion metadata for Blazor workloads." />
 
@@ -423,6 +425,10 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.workloads+'))">
     <ProjectToBuild Include="$(WorkloadsProjectRoot)\workloads.csproj" Category="mono" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+mono.wasmworkload+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)\wasm\workloads.proj" Category="mono" />
   </ItemGroup>
 
   <!-- Host sets -->
