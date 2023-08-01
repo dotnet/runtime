@@ -475,7 +475,7 @@ dotnet_diagnostic.CA1860.severity = warning
 dotnet_diagnostic.CA1861.severity = warning
 
 # CA1862: Prefer using 'StringComparer'/'StringComparison' to perform case-insensitive string comparisons
-dotnet_diagnostic.CA1862.severity = warning
+dotnet_diagnostic.CA1862.severity = info
 
 # CA1863: Use 'CompositeFormat'
 dotnet_diagnostic.CA1863.severity = suggestion
