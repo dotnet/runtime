@@ -2419,7 +2419,7 @@ namespace System.DirectoryServices.AccountManagement
 
             // Pull the requested port number
             Uri ldapUri = new Uri(this.ctxBase.Path);
-            int port = ldapUri.Port != -1 ? ldapUri.Port : (ldapUri.Scheme.ToUpper() == "LDAPS" ? 636 : 389);
+            int port = ldapUri.Port != -1 ? ldapUri.Port : (ldapUri.Scheme.ToUpperInvariant() == "LDAPS" ? 636 : 389);
 
             string dnsDomainName = "";
 
