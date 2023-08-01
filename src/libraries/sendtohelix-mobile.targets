@@ -58,7 +58,7 @@
       <_XHarnessAppleCustomCommand Condition="'$(NeedsiOSSDK)' == 'true'">
         source build-apple-app.sh
       </_XHarnessAppleCustomCommand>
-      <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', '..', '.packages', 'microsoft.net.illink.tasks', '$(MicrosoftNETILLinkTasksVersion)'))</ILLinkDir>
+      <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.net.illink.tasks', '$(MicrosoftNETILLinkTasksVersion)'))</ILLinkDir>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
@@ -71,7 +71,7 @@
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross"                      Condition="'$(RuntimeFlavor)' == 'mono'" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
       <HelixCorrelationPayload Include="$(CoreCLRCrossILCompilerDir)"            Destination="build/ilc"                        Condition="'$(RuntimeFlavor)' == 'coreclr'" />
-      <HelixCorrelationPayload Include="$(NativeAotTargetsPath)"                 Destination="build/BuildIntegration"           Condition="'$(RuntimeFlavor)' == 'coreclr'" />
+      <HelixCorrelationPayload Include="$(CoreCLRBuildIntegrationDir)"           Destination="build/BuildIntegration"           Condition="'$(RuntimeFlavor)' == 'coreclr'" />
       <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Destination="build/aotsdk"                     Condition="'$(RuntimeFlavor)' == 'coreclr'" />
       <HelixCorrelationPayload Include="$(ILLinkDir)"                            Destination="build/microsoft.net.illink.tasks" />
     </ItemGroup>
