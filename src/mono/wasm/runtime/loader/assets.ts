@@ -9,6 +9,8 @@ import { mono_log_debug } from "./logging";
 import { mono_exit } from "./exit";
 import { addCachedReponse, findCachedResponse, isCacheAvailable } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
+import { mono_log_warn } from "./logging";
+import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -79,10 +81,10 @@ function getSingleAssetWithResolvedUrl(resources: ResourceList | undefined, beha
 
     const customSrc = invokeLoadBootResource(asset);
     if (typeof (customSrc) === "string") {
-        asset.resolvedUrl = customSrc;
+        asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customSrc);
     } else if (customSrc) {
-        // Since we must load this via a import, it's only valid to supply a URI (and not a Request, say)
-        throw new Error(`For a ${behavior} resource, custom loaders must supply a URI string.`);
+        mono_log_warn(`For a ${behavior} resource, custom loaders must supply a URI string.`);
+        // we apply a default URL
     }
 
     return asset;
@@ -301,11 +303,11 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
             }
         }
 
-        if (resources.jsSymbols) {
-            for (const name in resources.jsSymbols) {
+        if (resources.wasmSymbols) {
+            for (const name in resources.wasmSymbols) {
                 alwaysLoadedAssets.push({
                     name,
-                    hash: resources.jsSymbols[name],
+                    hash: resources.wasmSymbols[name],
                     behavior: "symbols"
                 });
             }
@@ -585,8 +587,7 @@ function fetchResource(request: ResourceRequest): Promise<Response> {
             // They are supplying an entire custom response, so just use that
             return customLoadResult;
         } else if (typeof customLoadResult === "string") {
-            // They are supplying a custom URL, so use that with the default fetch behavior
-            url = customLoadResult;
+            url = makeURLAbsoluteWithApplicationBase(customLoadResult);
         }
     }
 
@@ -614,6 +615,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "pdb": "pdb",
     "icu": "globalization",
     "vfs": "configuration",
+    "manifest": "manifest",
     "dotnetwasm": "dotnetwasm",
     "js-module-native": "dotnetjs",
     "js-module-runtime": "dotnetjs",
@@ -625,17 +627,10 @@ function invokeLoadBootResource(request: ResourceRequest): string | Promise<Resp
         const requestHash = request.hash ?? "";
         const url = request.resolvedUrl!;
 
-        // Try to send with AssetBehaviors
-        let customLoadResult = loaderHelpers.loadBootResource(request.behavior, request.name, url, requestHash);
-        if (!customLoadResult) {
-            // If we don't get result, try to send with WebAssemblyBootResourceType
-            const resourceType = monoToBlazorAssetTypeMap[request.behavior];
-            if (resourceType) {
-                customLoadResult = loaderHelpers.loadBootResource(resourceType as AssetBehaviors, request.name, url, requestHash);
-            }
+        const resourceType = monoToBlazorAssetTypeMap[request.behavior];
+        if (resourceType) {
+            return loaderHelpers.loadBootResource(resourceType, request.name, url, requestHash, request.behavior);
         }
-
-        return customLoadResult;
     }
 
     return undefined;

@@ -157,6 +157,14 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
     throw new Error("No fetch implementation available");
 }
 
+export function makeURLAbsoluteWithApplicationBase(url: string) {
+    mono_assert(typeof url === "string", "url must be a string");
+    if (!isPathAbsolute(url) && url.indexOf("./") !== 0 && url.indexOf("../") !== 0 && globalThis.URL && globalThis.document && globalThis.document.baseURI) {
+        url = (new URL(url, globalThis.document.baseURI)).toString();
+    }
+    return url;
+}
+
 function normalizeFileUrl(filename: string) {
     // unix vs windows
     // remove query string

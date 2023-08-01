@@ -55,6 +55,10 @@ switch (testCase) {
                 }
             }
         });
+        dotnet.withResourceLoader(() => {
+            // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
+            return `_framework/${name}`;
+        })
         break;
 }
 

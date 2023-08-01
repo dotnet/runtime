@@ -3,11 +3,12 @@
 
 import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
-import type { AssetBehaviors, DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
+import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
+import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // If source has collection fields set to null (produced by boot config for example), we should maintain the target values
@@ -61,8 +62,8 @@ function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): R
     if (providedResources.jsModuleRuntime !== undefined) {
         providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
     }
-    if (providedResources.jsSymbols !== undefined) {
-        providedResources.jsSymbols = { ...(target.jsSymbols || {}), ...(providedResources.jsSymbols || {}) };
+    if (providedResources.wasmSymbols !== undefined) {
+        providedResources.wasmSymbols = { ...(target.wasmSymbols || {}), ...(providedResources.wasmSymbols || {}) };
     }
     if (providedResources.wasmNative !== undefined) {
         providedResources.wasmNative = { ...(target.wasmNative || {}), ...(providedResources.wasmNative || {}) };
@@ -133,7 +134,7 @@ export function normalizeConfig() {
                     toMerge.icu = resource;
                     break;
                 case "symbols":
-                    toMerge.jsSymbols = resource;
+                    toMerge.wasmSymbols = resource;
                     break;
                 case "vfs":
                     toMerge.vfs = {};
@@ -247,7 +248,7 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
 
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
-        loaderHelpers.loadBootResource("manifest" as AssetBehaviors, "blazor.boot.json", defaultConfigSrc, "") :
+        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "", "manifest") :
         defaultLoadBootConfig(defaultConfigSrc);
 
     let loadConfigResponse: Response;
@@ -255,7 +256,7 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     if (!loaderResponse) {
         loadConfigResponse = await defaultLoadBootConfig(defaultConfigSrc);
     } else if (typeof loaderResponse === "string") {
-        loadConfigResponse = await defaultLoadBootConfig(loaderResponse);
+        loadConfigResponse = await defaultLoadBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
     } else {
         loadConfigResponse = await loaderResponse;
     }
