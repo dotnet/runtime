@@ -232,15 +232,15 @@ public class IcuTests : TestMainJsTestBase
     }
 
     [Theory]
-    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })] 
-    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
-    public void FullIcuFromRuntimePackWithCustomIcu(BuildArgs buildArgs, bool fullIcu, RunHost host, string id)
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, false, RunHost.NodeJS | RunHost.Chrome })] 
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, true, RunHost.NodeJS | RunHost.Chrome })]
+    public void FullIcuFromRuntimePackWithCustomIcu(BuildArgs buildArgs, bool fullIcu, bool useCustomFile, RunHost host, string id)
     {
         string projectName = $"fullIcuCustom_{fullIcu}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName };
-        string customFile = fullIcu ? "icudt_nonexisting.dat" : s_customIcuPath;
+        string customFile = useCustomFile ? "icudt_nonexisting.dat" : s_customIcuPath;
         buildArgs = ExpandBuildArgs(
             buildArgs, 
             extraProperties: 
@@ -256,7 +256,7 @@ public class IcuTests : TestMainJsTestBase
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                             GlobalizationMode: fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.PredefinedIcu,
                             PredefinedIcudt: fullIcu ? "" : s_customIcuPath));
-        if (fullIcu)
+        if (useCustomFile)
             Assert.Contains("$(WasmIcuDataFileName) has no effect when $(WasmIncludeFullIcuData) is set to true.", output);
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
