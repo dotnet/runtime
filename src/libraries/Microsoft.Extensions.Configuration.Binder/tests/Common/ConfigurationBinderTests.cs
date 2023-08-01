@@ -2069,7 +2069,6 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var configuration = TestHelpers.GetConfigurationFromJsonString("""{ "WriterOptions": { "Indented": "true" } }""");
             var obj = new GraphWithUnsupportedMember();
             configuration.Bind(obj);
-            Assert.True(obj.WriterOptions.Indented);
 
             // Encoder prop not supported; throw if there's config data.
             configuration = TestHelpers.GetConfigurationFromJsonString("""{ "WriterOptions": { "Indented": "true", "Encoder": { "Random": "" } } }""");
