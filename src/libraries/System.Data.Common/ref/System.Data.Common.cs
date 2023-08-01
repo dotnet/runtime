@@ -2001,7 +2001,7 @@ namespace System.Data.Common
         public abstract int RecordsAffected { get; }
         public System.Data.Common.DbParameterCollection Parameters { get { throw null; } }
         protected abstract System.Data.Common.DbParameterCollection DbParameterCollection { get; }
-        public virtual DbParameter CreateParameter() { throw null; }
+        public virtual System.Data.Common.DbParameter CreateParameter() { throw null; }
         public virtual bool CanCreateParameter { get { throw null; } }
     }
     public abstract class DbBatchCommandCollection : System.Collections.Generic.IList<DbBatchCommand>
