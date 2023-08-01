@@ -98,15 +98,26 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         bool publish = false,
         bool setWasmDevel = true,
         params string[] extraArgs)
-        => BuildProjectWithoutAssert(
-                    id,
-                    config,
-                    new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish),
-                    extraArgs.Concat(new[]
-                    {
-                        "-p:BlazorEnableCompression=false",
-                        setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
-                    }).ToArray());
+    {
+        try
+        {
+            return BuildProjectWithoutAssert(
+                        id,
+                        config,
+                        new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish),
+                        extraArgs.Concat(new[]
+                        {
+                            "-p:BlazorEnableCompression=false",
+                            setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
+                        }).ToArray());
+        }
+        catch (XunitException xe)
+        {
+            if (xe.Message.Contains("error CS1001: Identifier expected"))
+                Utils.DirectoryCopy(_projectDir!, Path.Combine(s_buildEnv.LogRootPath, id), testOutput: _testOutput);
+            throw;
+        }
+    }
 
     public void AssertBundle(string buildOutput, BlazorBuildOptions blazorBuildOptions)
     {

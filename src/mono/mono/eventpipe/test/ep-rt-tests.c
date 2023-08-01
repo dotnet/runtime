@@ -15,6 +15,10 @@ static RESULT
 test_rt_setup (void)
 {
 #ifdef _CRTDBG_MAP_ALLOC
+	// Make sure temp path gets static allocated before taking memory snapshot.
+	ep_char8_t one;
+	ep_rt_temp_path_get (&one, 1);
+
 	_CrtMemCheckpoint (&eventpipe_memory_start_snapshot);
 #endif
 	return NULL;
@@ -149,6 +153,47 @@ ep_on_error:
 }
 
 static RESULT
+test_rt_temp_path_get (void)
+{
+	RESULT result = NULL;
+	uint32_t test_location = 0;
+	ep_char8_t *buffer_precise = NULL;
+
+	ep_char8_t buffer_large [1024];
+	ep_raise_error_if_nok (ep_rt_temp_path_get (buffer_large, sizeof(buffer_large)) != 0);
+
+	test_location = 1;
+
+	ep_char8_t buffer_small [2];
+	ep_raise_error_if_nok (ep_rt_temp_path_get (buffer_small, sizeof(buffer_small)) == 0);
+
+	test_location = 2;
+
+	uint32_t len = (uint32_t)strlen (buffer_large);
+	buffer_precise = malloc (len + 1);
+
+	ep_raise_error_if_nok (ep_rt_temp_path_get (buffer_precise, len - 1) == 0);
+
+	test_location = 3;
+
+	ep_raise_error_if_nok (ep_rt_temp_path_get (buffer_precise, len) == 0);
+
+	test_location = 4;
+
+	ep_raise_error_if_nok (ep_rt_temp_path_get (buffer_precise, len + 1) != 0);
+
+ep_on_exit:
+
+	free (buffer_precise);
+	return result;
+
+ep_on_error:
+	if (!result)
+		result = FAILED ("Failed at test location=%i", test_location);
+	ep_exit_error_handler ();
+}
+
+static RESULT
 test_rt_teardown (void)
 {
 #ifdef _CRTDBG_MAP_ALLOC
@@ -167,6 +212,7 @@ static Test ep_rt_tests [] = {
 	{"test_rt_perf_timestamp", test_rt_perf_timestamp},
 	{"test_rt_system_time", test_rt_system_time},
 	{"test_rt_system_timestamp", test_rt_system_timestamp},
+	{"test_rt_temp_path_get", test_rt_temp_path_get},
 	{"test_rt_teardown", test_rt_teardown},
 	{NULL, NULL}
 };

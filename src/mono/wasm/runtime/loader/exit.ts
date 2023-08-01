@@ -49,7 +49,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
                 mono_log_debug("abort_startup, reason: " + reason);
                 abort_promises(reason);
             }
-            logErrorOnExit(exit_code, reason);
+            logOnExit(exit_code, reason);
             appendElementOnExit(exit_code);
             if (runtimeHelpers.jiterpreter_dump_stats) runtimeHelpers.jiterpreter_dump_stats(false);
             if (exit_code === 0 && loaderHelpers.config?.interopCleanupOnExit) {
@@ -146,19 +146,26 @@ function appendElementOnExit(exit_code: number) {
     }
 }
 
-function logErrorOnExit(exit_code: number, reason: any) {
+function logOnExit(exit_code: number, reason: any) {
     if (exit_code !== 0 && reason) {
-        if (reason instanceof Error) {
+        // ExitStatus usually is not real JS error and so stack strace is not very useful.
+        // We will use debug level for it, which will print only when diagnosticTracing is set.
+        const mono_log = runtimeHelpers.ExitStatus && reason instanceof runtimeHelpers.ExitStatus
+            ? mono_log_debug
+            : mono_log_error;
+        if (typeof reason == "string") {
+            mono_log(reason);
+        }
+        else if (reason.stack && reason.message) {
             if (runtimeHelpers.stringify_as_error_with_stack) {
-                mono_log_error(runtimeHelpers.stringify_as_error_with_stack(reason));
+                mono_log(runtimeHelpers.stringify_as_error_with_stack(reason));
             } else {
-                mono_log_error(reason.message + "\n" + reason.stack);
+                mono_log(reason.message + "\n" + reason.stack);
             }
         }
-        else if (typeof reason == "string")
-            mono_log_error(reason);
-        else
-            mono_log_error(JSON.stringify(reason));
+        else {
+            mono_log(JSON.stringify(reason));
+        }
     }
     if (loaderHelpers.config && loaderHelpers.config.logExitCode) {
         if (consoleWebSocket) {
