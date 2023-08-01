@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(MeterFactory, primaryHandler.MeterFactory);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void Build_SocketsHttpHandler_MeterFactorySet()
         {
             // Arrange & Act
