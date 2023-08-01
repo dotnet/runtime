@@ -546,7 +546,7 @@ namespace ILCompiler
                 {
                     foreach (TypeDesc instArg in method.Instantiation)
                     {
-                        dependencies.Add(factory.MaximallyConstructableType(instArg), "LDTOKEN method");
+                        dependencies.Add(factory.ReflectedType(instArg), "LDTOKEN method");
                     }
                 }
             }
