@@ -22,6 +22,7 @@ namespace Microsoft.Interop
 
             public const string RequiresAllowUnsafeBlocks = Prefix + "1062";
             public const string UnnecessaryMarshallingInfo = Prefix + "1063";
+            public const string NotRecommendedGeneratedComInterfaceUsage = Prefix + "1092";
         }
 
         private const string Category = "LibraryImportGenerator";

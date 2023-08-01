@@ -147,6 +147,16 @@
         <target state="translated">Hostování .NET COM s EnableComHosting nepodporuje rozhraní s generatedComInterfaceAttribute</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
+        <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
+        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
+        <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
+        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
         <target state="translated">Model COM vygenerovaný zdrojem bude ignorovat všechny nepodporované konfigurace.</target>

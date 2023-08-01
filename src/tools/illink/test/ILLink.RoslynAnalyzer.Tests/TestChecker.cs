@@ -70,6 +70,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 		}
 
+		public override void VisitCompilationUnit (CompilationUnitSyntax node)
+		{
+			base.VisitCompilationUnit (node);
+			ValidateDiagnostics (node, node.AttributeLists);
+		}
+
 		public override void VisitClassDeclaration (ClassDeclarationSyntax node)
 		{
 			base.VisitClassDeclaration (node);

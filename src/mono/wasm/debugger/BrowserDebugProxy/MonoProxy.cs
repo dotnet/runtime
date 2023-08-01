@@ -34,13 +34,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool JustMyCode { get; private set; }
         private PauseOnExceptionsKind _defaultPauseOnExceptions { get; set; }
 
-        protected readonly ProxyOptions _options;
-
-        public MonoProxy(ILogger logger, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
+        public MonoProxy(ILogger logger, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(options, logger, loggerId)
         {
             UrlSymbolServerList = new List<string>();
             RuntimeId = runtimeId;
-            _options = options;
             _defaultPauseOnExceptions = PauseOnExceptionsKind.Unset;
             JustMyCode = options?.JustMyCode ?? false;
         }

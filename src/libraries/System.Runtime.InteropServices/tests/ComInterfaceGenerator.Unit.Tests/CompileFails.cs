@@ -1065,10 +1065,132 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         [Theory]
         [MemberData(nameof(CountParameterIsOutSnippets))]
-        public async Task RunTheseTests(string ID, string source, params DiagnosticResult[] diagnostics)
+        public async Task ValidateSizeParameterRefKindDiagnostics(string ID, string source, params DiagnosticResult[] diagnostics)
         {
             _ = ID;
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, diagnostics);
+        }
+
+        public static IEnumerable<object[]> IntAndEnumReturnTypeSnippets()
+        {
+            var diagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable).WithLocation(0);
+            var enumDecl = $$"""
+                internal enum Err
+                {
+                    Val1, Val2
+                }
+                """;
+            var structDeclHR = $$"""
+                internal struct HR
+                {
+                    int hr;
+                }
+                """;
+            var structDeclHResult = $$"""
+                internal struct HResult
+                {
+                    int hr;
+                }
+                """;
+            var enumReturn = Template("Err", enumDecl, "");
+            var intReturn = Template("int", "", "");
+            var floatReturn = Template("float", "", "");
+            var structHrReturn = Template("HR", structDeclHR, "");
+            var structHResultReturn = Template("HResult", structDeclHResult, "");
+            yield return new object[] {
+                ID(),
+                enumReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                intReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                structHrReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                structHResultReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                floatReturn,
+                new DiagnosticResult[] {  }
+            };
+
+            var enumReturnPreserveSig = Template("Err", enumDecl, "[PreserveSig]");
+            var intReturnPreserveSig = Template("int", "", "[PreserveSig]");
+            var structHrPreserveSig = Template("HR", structDeclHR, "[PreserveSig]");
+            var structHResultPreserveSig = Template("HResult", structDeclHResult, "[PreserveSig]");
+            yield return new object[] {
+                ID(),
+                enumReturnPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+            yield return new object[] {
+                ID(),
+                intReturnPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+            yield return new object[] {
+                ID(),
+                structHrPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+            yield return new object[] {
+                ID(),
+                structHResultPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+
+            var intReturnMarshalAs = Template("int", "", "[return: MarshalAs(UnmanagedType.I4)]");
+            yield return new object[] {
+                ID(),
+                intReturnMarshalAs,
+                new DiagnosticResult[] {  }
+            };
+
+            string Template(string type, string typedef, string attribute)
+            {
+                return $$"""
+                    using System.Runtime.InteropServices;
+                    using System.Runtime.InteropServices.Marshalling;
+                    [GeneratedComInterface]
+                    [Guid("0DB41042-0255-4CDD-B73A-9C5D5F31303D")]
+                    partial interface I
+                    {
+                        {{attribute}}
+                        {{type}} {|#0:Method|}();
+                    }
+                    {{typedef}}
+                    """;
+            }
+        }
+        [Theory]
+        [MemberData(nameof(IntAndEnumReturnTypeSnippets))]
+        async Task ValidateIntReturnTypeShowsInfo(string id, string source, DiagnosticResult[] diagnostics)
+        {
+            _ = id;
+
+            var test = new VerifyComInterfaceGenerator.Test(referenceAncillaryInterop: false)
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        ("Source.cs", source)
+                    },
+                },
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+            };
+            test.ExpectedDiagnostics.AddRange(diagnostics);
+            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
+            await test.RunAsync();
         }
     }
 }

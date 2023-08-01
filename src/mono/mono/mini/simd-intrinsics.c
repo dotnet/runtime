@@ -2572,7 +2572,7 @@ static G_GNUC_UNUSED MonoInst*
 emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins;
-	int id, len;
+	int id;
 	MonoClass *klass;
 	MonoType *type, *etype;
 
@@ -2598,7 +2598,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	klass = cmethod->klass;
 	type = m_class_get_byval_arg (klass);
 	etype = m_class_get_byval_arg (mono_defaults.single_class);
-	len = mono_class_value_size (klass, NULL) / 4;
 
 	// Similar to the cases in emit_sys_numerics_vector_t ()
 	switch (id) {
@@ -2628,6 +2627,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		}
 		// FIXME: These don't work since Vector2/Vector3 are not handled as SIMD
 #if 0
+		int len = mono_class_value_size (klass, NULL) / 4;
 		} else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
 			/* Vector3 (Vector2, float) */
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);

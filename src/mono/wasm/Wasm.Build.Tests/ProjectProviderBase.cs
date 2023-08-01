@@ -170,7 +170,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             bool expectFingerprint = superSet[expectedFilename];
 
-            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in the list of actual files on disk - {string.Join(", ", actual.Keys)} in bundle directory: {bundleDir}");
+            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in bundle directory: {bundleDir}. Actual files on disk: {string.Join(", ", actual.Keys)}");
 
             // Check that the version and hash are present or not present as expected
             if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
@@ -320,13 +320,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         (expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs) || expectFingerprintForThisFile;
 
 
-    public static void AssertRuntimePackPath(string buildOutput, string targetFramework)
+    public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
         var match = s_runtimePackPathRegex.Match(buildOutput);
         if (!match.Success || match.Groups.Count != 2)
             throw new XunitException($"Could not find the pattern in the build output: '{s_runtimePackPathPattern}'.{Environment.NewLine}Build output: {buildOutput}");
 
-        string expectedRuntimePackDir = BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework);
+        string expectedRuntimePackDir = BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework, runtimeType);
         string actualPath = match.Groups[1].Value;
         if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
             throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
@@ -365,7 +365,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 // predefined ICU name can be identical with the icu files from runtime pack
                 expected.Add(assertOptions.PredefinedIcudt);
                 break;
-            case GlobalizationMode.Default:
+            case GlobalizationMode.Sharded:
                 // icu shard chosen based on the locale
                 expected.Add("icudt_CJK.dat");
                 expected.Add("icudt_EFIGS.dat");
@@ -390,7 +390,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
 
         BootJsonData bootJson = ParseBootData(bootJsonPath);
-        var bootJsonEntries = bootJson.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.", StringComparison.Ordinal)).ToArray();
+        var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
+            .Union(bootJson.resources.jsModuleRuntime.Keys)
+            .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.jsSymbols?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.wasmNative.Keys)
+            .ToArray();
 
         var expectedEntries = new SortedDictionary<string, Action<string>>();
         IReadOnlySet<string> expected = GetDotNetFilesExpectedSet(options);
@@ -398,7 +403,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var knownSet = GetAllKnownDotnetFilesToFingerprintMap(options);
         foreach (string expectedFilename in expected)
         {
-            if (Path.GetExtension(expectedFilename) == ".map")
+            // FIXME: Find a systematic solution for skipping dotnet.js from boot json check
+            if (expectedFilename == "dotnet.js" || Path.GetExtension(expectedFilename) == ".map")
                 continue;
 
             bool expectFingerprint = knownSet[expectedFilename];

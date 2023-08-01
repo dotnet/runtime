@@ -707,6 +707,14 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnableNoGCRegionCallback")]
         private static unsafe partial EnableNoGCRegionCallbackStatus _EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, long totalSize);
 
+        internal static long GetGenerationBudget(int generation)
+        {
+            return _GetGenerationBudget(generation);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetGenerationBudget")]
+        internal static partial long _GetGenerationBudget(int generation);
+
         internal static void UnregisterMemoryLoadChangeNotification(Action notification)
         {
             ArgumentNullException.ThrowIfNull(notification);

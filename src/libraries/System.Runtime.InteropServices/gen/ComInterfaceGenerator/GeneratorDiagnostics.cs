@@ -22,7 +22,7 @@ namespace Microsoft.Interop
             public const string UnnecessaryMarshallingInfo = Prefix + "1063";
             public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1090";
             public const string MemberWillNotBeSourceGenerated = Prefix + "1091";
-            public const string MultipleComInterfaceBaseTypes = Prefix + "1092";
+            public const string NotRecommendedGeneratedComInterfaceUsage = Prefix + "1092";
             public const string AnalysisFailed = Prefix + "1093";
             public const string BaseInterfaceFailedGeneration = Prefix + "1094";
             public const string InvalidGeneratedComClassAttributeUsage = Prefix + "1095";
@@ -340,7 +340,7 @@ namespace Microsoft.Interop
         /// <inheritdoc cref="SR.MultipleComInterfaceBaseTypesMessage"/>
         public static readonly DiagnosticDescriptor MultipleComInterfaceBaseTypes =
             new DiagnosticDescriptor(
-                Ids.MultipleComInterfaceBaseTypes,
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
                 GetResourceString(nameof(SR.MultipleComInterfaceBaseTypesTitle)),
                 GetResourceString(nameof(SR.MultipleComInterfaceBaseTypesMessage)),
                 Category,
@@ -454,7 +454,7 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
-        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageContentsOutParam"/>
+        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue"/>
         public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallReturnValue =
             new DiagnosticDescriptor(
                 Ids.InvalidGeneratedComInterfaceAttributeUsage,
@@ -462,6 +462,16 @@ namespace Microsoft.Interop
                 GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue)),
                 Category,
                 DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+        /// <inheritdoc cref="SR.ComMethodReturningIntWillBeOutParameterMessage"/>
+        public static readonly DiagnosticDescriptor ComMethodManagedReturnWillBeOutVariable =
+            new DiagnosticDescriptor(
+                Ids.NotRecommendedGeneratedComInterfaceUsage,
+                GetResourceString(nameof(SR.ComMethodReturningIntWillBeOutParameterTitle)),
+                GetResourceString(nameof(SR.ComMethodReturningIntWillBeOutParameterMessage)),
+                Category,
+                DiagnosticSeverity.Info,
                 isEnabledByDefault: true);
 
         /// <summary>

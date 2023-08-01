@@ -59,7 +59,7 @@ namespace Wasm.Build.Tests
                             new BuildProjectOptions(
                                 InitProject: () => File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantGlobalization.cs"), Path.Combine(_projectDir!, "Program.cs")),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                                GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Default));
+                                GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded));
 
             if (invariantGlobalization == true)
             {
