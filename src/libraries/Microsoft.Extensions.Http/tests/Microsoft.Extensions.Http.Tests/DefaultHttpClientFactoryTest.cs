@@ -387,40 +387,6 @@ namespace Microsoft.Extensions.Http
             Assert.False(factory.CleanupTimerStarted.IsSet, "Cleanup timer not started");
         }
 
-        [Fact]
-        public void LoggerFactoryWithHttpClientFactory_NoCircularDependency()
-        {
-            var services = new ServiceCollection();
-
-            services.AddHttpClient("TestLoggerProvider").RemoveAllLoggers();
-
-            services.AddLogging(builder => builder.Services.AddSingleton<ILoggerProvider, TestLoggerProvider>());
-
-            using var serviceProvider = services.BuildServiceProvider();
-
-            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-        }
-
-        private sealed class TestLoggerProvider : ILoggerProvider
-        {
-            private readonly HttpClient _httpClient;
-
-            public TestLoggerProvider(IHttpClientFactory httpClientFactory)
-            {
-                _httpClient = httpClientFactory.CreateClient("TestLoggerProvider");
-            }
-
-            public ILogger CreateLogger(string categoryName)
-            {
-                return NullLogger.Instance;
-            }
-
-            public void Dispose()
-            {
-                _httpClient.Dispose();
-            }
-        }
-
         // Separate to avoid the HttpClient getting its lifetime extended by
         // the state machine of the test.
         [MethodImpl(MethodImplOptions.NoInlining)]

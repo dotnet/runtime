@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Logging;
 using Microsoft.Extensions.Logging;
@@ -12,17 +13,17 @@ namespace Microsoft.Extensions.Http
     // Internal so we can change the requirements without breaking changes.
     internal sealed class LoggingHttpMessageHandlerBuilderFilter : IHttpMessageHandlerBuilderFilter
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly Lazy<ILoggerFactory> _loggerFactory;
         private readonly IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;
-        private ILoggerFactory LoggerFactory => _serviceProvider.GetRequiredService<ILoggerFactory>();
 
         public LoggingHttpMessageHandlerBuilderFilter(IServiceProvider serviceProvider, IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor)
         {
             ThrowHelper.ThrowIfNull(serviceProvider);
             ThrowHelper.ThrowIfNull(optionsMonitor);
 
-            _serviceProvider = serviceProvider;
             _optionsMonitor = optionsMonitor;
+
+            _loggerFactory = new Lazy<ILoggerFactory>(serviceProvider.GetRequiredService<ILoggerFactory>, LazyThreadSafetyMode.PublicationOnly);
         }
 
         public Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next)
@@ -44,8 +45,8 @@ namespace Microsoft.Extensions.Http
 
                 // We want all of our logging message to show up as-if they are coming from HttpClient,
                 // but also to include the name of the client for more fine-grained control.
-                ILogger outerLogger = LoggerFactory.CreateLogger($"System.Net.Http.HttpClient.{loggerName}.LogicalHandler");
-                ILogger innerLogger = LoggerFactory.CreateLogger($"System.Net.Http.HttpClient.{loggerName}.ClientHandler");
+                ILogger outerLogger = _loggerFactory.Value.CreateLogger($"System.Net.Http.HttpClient.{loggerName}.LogicalHandler");
+                ILogger innerLogger = _loggerFactory.Value.CreateLogger($"System.Net.Http.HttpClient.{loggerName}.ClientHandler");
 
                 // The 'scope' handler goes first so it can surround everything.
                 builder.AdditionalHandlers.Insert(0, new LoggingScopeHttpMessageHandler(outerLogger, options));
