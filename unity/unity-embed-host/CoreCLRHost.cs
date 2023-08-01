@@ -695,6 +695,15 @@ static unsafe partial class CoreCLRHost
         return tClass.IsArray ? tClass.GetArrayRank() : 0;
     }
 
+    [return: NativeCallbackType("MonoClass*")]
+    public static IntPtr array_class_get(
+        [NativeCallbackType("MonoClass*")] IntPtr klass,
+        [NativeCallbackType("guint32")] UInt32 rank)
+    {
+        Type tClass = klass.TypeFromHandleIntPtr();
+        return tClass.MakeArrayType((int)rank).TypeHandleIntPtr();
+    }
+
 
     [return: NativeCallbackType("gint64")]
     public static long gc_get_heap_size()

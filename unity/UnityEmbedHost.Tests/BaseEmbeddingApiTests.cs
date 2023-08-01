@@ -844,6 +844,15 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(rank, Is.EqualTo(expectedResult));
     }
 
+    [TestCase(typeof(Cat),    2, typeof(Cat[,]))]
+    [TestCase(typeof(bool),   2, typeof(bool[,]))]
+    [TestCase(typeof(object), 6, typeof(object[,,,,,]))]
+    public void ArrayClassGetReturnsProperValue(Type klass, int rank, Type expectedResult)
+    {
+        var arrayType = ClrHost.array_class_get(klass, (uint)rank);
+        Assert.That(arrayType, Is.EqualTo(expectedResult));
+    }
+
     [Test]
     [Timeout(50000)]
     public void GcGetHeapSizeReturnsProperValue()
