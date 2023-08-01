@@ -646,7 +646,15 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
             *(WORD*)(pInstr + 5) == *(WORD*)((BYTE*)StubPrecodeCode + 5) &&
             *(DWORD*)(pInstr + SYMBOL_VALUE(StubPrecodeCode_Target_Offset)) == (DWORD)(pInstr + GetOsPageSize() + offsetof(StubPrecodeData, Target));
 #else // TARGET_X86
-    return memcmp(pInstr, (void*)PCODEToPINSTR((PCODE)StubPrecodeCode), (BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) == 0;
+    BYTE *pTemplateInstr = (BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode);
+    BYTE *pTemplateInstrEnd = (BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode_End);
+    while ((pTemplateInstr < pTemplateInstrEnd) && (*pInstr == *pTemplateInstr))
+    {
+        pInstr++;
+        pTemplateInstr++;
+    }
+
+    return pTemplateInstr == pTemplateInstrEnd;
 #endif // TARGET_X86
 }
 
@@ -763,7 +771,15 @@ BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
         *(WORD*)(pInstr + 11) == *(WORD*)((BYTE*)FixupPrecodeCode + 11) &&
         *(DWORD*)(pInstr + SYMBOL_VALUE(FixupPrecodeCode_PrecodeFixupThunk_Offset)) == (DWORD)(pInstr + GetOsPageSize() + offsetof(FixupPrecodeData, PrecodeFixupThunk));
 #else // TARGET_X86
-    return memcmp(pInstr, (void*)PCODEToPINSTR((PCODE)FixupPrecodeCode), (BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode) == 0;
+    BYTE *pTemplateInstr = (BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode);
+    BYTE *pTemplateInstrEnd = (BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode_End);
+    while ((pTemplateInstr < pTemplateInstrEnd) && (*pInstr == *pTemplateInstr))
+    {
+        pInstr++;
+        pTemplateInstr++;
+    }
+
+    return pTemplateInstr == pTemplateInstrEnd;
 #endif // TARGET_X86
 }
 
