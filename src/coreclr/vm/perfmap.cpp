@@ -19,6 +19,14 @@
 
 #define FMT_CODE_ADDR "%p"
 
+#ifndef __ANDROID__
+#define TEMP_DIRECTORY_PATH "/tmp"
+#else
+// On Android, "/tmp/" doesn't exist; temporary files should go to
+// /data/local/tmp/
+#define TEMP_DIRECTORY_PATH "/data/local/tmp"
+#endif
+
 Volatile<bool> PerfMap::s_enabled = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
@@ -37,14 +45,24 @@ void PerfMap::Initialize()
 {
     LIMITED_METHOD_CONTRACT;
 
+    const DWORD perfMapEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled);
+    if (perfMapEnabled == DISABLED)
+    {
+        return;
+    }
+
+    // Build the path to the map file on disk.
+    char tempPathBuffer[MAX_LONGPATH+1];
+    const char* tempPath = InternalConstructPath(tempPathBuffer, sizeof(tempPathBuffer));
+
     // Only enable the map if requested.
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == ALL || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == PERFMAP)
+    if (perfMapEnabled == ALL || perfMapEnabled == PERFMAP)
     {
         // Get the current process id.
         int currentPid = GetCurrentProcessId();
 
         // Create the map.
-        s_Current = new PerfMap(currentPid);
+        s_Current = new PerfMap(currentPid, tempPath);
 
         int signalNum = (int) CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapIgnoreSignal);
 
@@ -52,40 +70,39 @@ void PerfMap::Initialize()
         {
             PAL_IgnoreProfileSignal(signalNum);
         }
-
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
-        {
-            s_ShowOptimizationTiers = true;
-        }
-
-        s_enabled = true;
     }
 
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == ALL || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == JITDUMP)
+    // only enable JitDumps if requested
+    if (perfMapEnabled == ALL || perfMapEnabled == JITDUMP)
     {
-        const char* jitdumpPath;
-        char jitdumpPathBuffer[4096];
-
-        CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
-        if (value.IsSet())
-        {
-            jitdumpPath = value.AsString();
-        }
-        else
-        {
-            GetTempPathA(sizeof(jitdumpPathBuffer) - 1, jitdumpPathBuffer);
-            jitdumpPath = jitdumpPathBuffer;
-        }
-
-        PAL_PerfJitDump_Start(jitdumpPath);
-
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
-        {
-            s_ShowOptimizationTiers = true;
-        }
-        
-        s_enabled = true;
+        PAL_PerfJitDump_Start(tempPath);
     }
+
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
+    {
+        s_ShowOptimizationTiers = true;
+    }
+    
+    s_enabled = true;
+}
+
+// InternalConstructPath is guaranteed to return a non-null path
+// the function  uses the input buffer only whe PerfMapJitDumpPath environment variable is set
+const char * PerfMap::InternalConstructPath(char *tmpBuf, int lenBuf)
+{
+    DWORD len = GetEnvironmentVariableA("DOTNET_PerfMapJitDumpPath", tmpBuf, lenBuf);
+    if (len == 0)
+    {
+        len = GetEnvironmentVariableA("COMPlus_PerfMapJitDumpPath", tmpBuf, lenBuf);
+    }
+
+    if (len == 0 || // GetEnvironmentVariableA returns 0 if the variable is not found, 
+        len >= lenBuf) // or the length of the string not including the null terminator on success.
+    {
+        return TEMP_DIRECTORY_PATH;
+    }
+
+    return tmpBuf;
 }
 
 // Destroy the map for the process - called from EEShutdownHelper.
@@ -102,7 +119,7 @@ void PerfMap::Destroy()
 }
 
 // Construct a new map for the process.
-PerfMap::PerfMap(int pid)
+PerfMap::PerfMap(int pid, const char* path)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -110,19 +127,13 @@ PerfMap::PerfMap(int pid)
     m_ErrorEncountered = false;
 
     // Build the path to the map file on disk.
-    WCHAR tempPath[MAX_LONGPATH+1];
-    if(!GetTempPathW(MAX_LONGPATH, tempPath))
-    {
-        return;
-    }
-
-    SString path;
-    path.Printf("%Sperf-%d.map", &tempPath, pid);
+    SString pathFile;
+    pathFile.Printf("%s/perf-%d.map", path, pid);
 
     // Open the map file for writing.
-    OpenFile(path);
+    OpenFile(pathFile);
 
-    m_PerfInfo = new PerfInfo(pid);
+    m_PerfInfo = new PerfInfo(pid, path);
 }
 
 // Construct a new map without a specified file name.
