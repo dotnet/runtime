@@ -22,12 +22,27 @@ namespace SharedTypes.ComInterfaces
     [GeneratedComClass]
     internal partial class StatefulFinallyMarshalling : IStatefulFinallyMarshalling
     {
-        public void Method(StatefulFinallyType param) { }
-        public void MethodIn(in StatefulFinallyType param) { }
-        public void MethodOut(out StatefulFinallyType param) { param = new StatefulFinallyType() { i = 42 }; }
-        public void MethodRef(ref StatefulFinallyType param) { param = new StatefulFinallyType() { i = 99 }; }
-        public StatefulFinallyType Return() => new StatefulFinallyType() { i = 8 };
-        public StatefulFinallyType ReturnPreserveSig() => new StatefulFinallyType() { i = 3 };
+        public void Method(StatefulFinallyType param)
+        {
+            _ = param.i;
+        }
+        public void MethodIn(in StatefulFinallyType param)
+        {
+            _ = param.i;
+        }
+        public void MethodOut(out StatefulFinallyType param)
+        {
+            param = new StatefulFinallyType() { i = 42 };
+        }
+        public void MethodRef(ref StatefulFinallyType param)
+        {
+            _ = param.i;
+            param = new StatefulFinallyType() { i = 99 };
+        }
+        public StatefulFinallyType Return()
+            => new StatefulFinallyType() { i = 8 };
+        public StatefulFinallyType ReturnPreserveSig()
+            => new StatefulFinallyType() { i = 3 };
     }
 
     [NativeMarshalling(typeof(StatefulFinallyTypeMarshaller))]

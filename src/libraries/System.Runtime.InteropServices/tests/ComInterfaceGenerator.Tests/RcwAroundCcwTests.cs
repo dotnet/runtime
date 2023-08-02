@@ -130,6 +130,19 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
+        public void IStatelessFinallyMarshalling()
+        {
+            var obj = CreateWrapper<StatelessFinallyMarshalling, IStatelessFinallyMarshalling>();
+            var data = new StatelessFinallyType() { I = -10 };
+            obj.Method(data);
+            obj.MethodIn(in data);
+            obj.MethodOut(out _);
+            obj.MethodRef(ref data);
+            _ = obj.Return();
+            _ = obj.ReturnPreserveSig();
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89747")]
         public void ICollectionMarshallingFails()
         {
