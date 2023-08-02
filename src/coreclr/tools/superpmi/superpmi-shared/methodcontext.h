@@ -407,12 +407,11 @@ public:
     bool repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context, DWORD* exceptionCode);
 
     void recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
-                         CORINFO_METHOD_HANDLE callerHandle,
                          bool                  hasSideEffects,
                          CorInfoHelpFunc       result,
                          DWORD                 exceptionCode);
-    void dmpGetNewHelper(const Agnostic_GetNewHelper& key, const DDD& value);
-    CorInfoHelpFunc repGetNewHelper(CORINFO_CLASS_HANDLE classHandle, CORINFO_METHOD_HANDLE callerHandle, bool* pHasSideEffects, DWORD* exceptionCode);
+    void dmpGetNewHelper(DWORDLONG key, const DDD& value);
+    CorInfoHelpFunc repGetNewHelper(CORINFO_CLASS_HANDLE classHandle, bool* pHasSideEffects, DWORD* exceptionCode);
 
     void recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                bool                          fEmbedParent,

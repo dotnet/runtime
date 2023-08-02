@@ -2495,7 +2495,6 @@ public:
     // returns the "NEW" helper optimized for "newCls."
     virtual CorInfoHelpFunc getNewHelper(
             CORINFO_CLASS_HANDLE  classHandle,
-            CORINFO_METHOD_HANDLE callerHandle,
             bool*                 pHasSideEffects
             ) = 0;
 

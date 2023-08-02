@@ -1096,7 +1096,7 @@ namespace Internal.JitInterface
             return helper;
         }
 
-        private CorInfoHelpFunc getNewHelper(CORINFO_CLASS_STRUCT_* classHandle, CORINFO_METHOD_STRUCT_* callerHandle, ref bool pHasSideEffects)
+        private CorInfoHelpFunc getNewHelper(CORINFO_CLASS_STRUCT_* classHandle, ref bool pHasSideEffects)
         {
             TypeDesc type = HandleToObject(classHandle);
 

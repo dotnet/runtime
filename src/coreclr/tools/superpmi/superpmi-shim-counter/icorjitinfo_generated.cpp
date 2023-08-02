@@ -474,11 +474,10 @@ bool interceptor_ICJI::checkMethodModifier(
 
 CorInfoHelpFunc interceptor_ICJI::getNewHelper(
           CORINFO_CLASS_HANDLE classHandle,
-          CORINFO_METHOD_HANDLE callerHandle,
           bool* pHasSideEffects)
 {
     mcs->AddCall("getNewHelper");
-    return original_ICorJitInfo->getNewHelper(classHandle, callerHandle, pHasSideEffects);
+    return original_ICorJitInfo->getNewHelper(classHandle, pHasSideEffects);
 }
 
 CorInfoHelpFunc interceptor_ICJI::getNewArrHelper(

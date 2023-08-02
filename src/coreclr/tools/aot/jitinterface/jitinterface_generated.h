@@ -68,7 +68,7 @@ struct JitInterfaceCallbacks
     CORINFO_FIELD_HANDLE (* getFieldInClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd, int32_t num);
     GetTypeLayoutResult (* getTypeLayout)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t* numTreeNodes);
     bool (* checkMethodModifier)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod, const char* modifier, bool fOptional);
-    CorInfoHelpFunc (* getNewHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE classHandle, CORINFO_METHOD_HANDLE callerHandle, bool* pHasSideEffects);
+    CorInfoHelpFunc (* getNewHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE classHandle, bool* pHasSideEffects);
     CorInfoHelpFunc (* getNewArrHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE arrayCls);
     CorInfoHelpFunc (* getCastingHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing);
     CorInfoHelpFunc (* getSharedCCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd);
@@ -756,11 +756,10 @@ public:
 
     virtual CorInfoHelpFunc getNewHelper(
           CORINFO_CLASS_HANDLE classHandle,
-          CORINFO_METHOD_HANDLE callerHandle,
           bool* pHasSideEffects)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CorInfoHelpFunc temp = _callbacks->getNewHelper(_thisHandle, &pException, classHandle, callerHandle, pHasSideEffects);
+    CorInfoHelpFunc temp = _callbacks->getNewHelper(_thisHandle, &pException, classHandle, pHasSideEffects);
     if (pException != nullptr) throw pException;
     return temp;
 }

@@ -461,12 +461,6 @@ struct Agnostic_FindCallSiteSig
     DWORDLONG context;
 };
 
-struct Agnostic_GetNewHelper
-{
-    DWORDLONG classHandle;
-    DWORDLONG callerHandle;
-};
-
 struct Agnostic_GetCastingHelper
 {
     DWORDLONG hClass;
