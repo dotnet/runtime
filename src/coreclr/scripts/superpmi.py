@@ -750,7 +750,6 @@ class SuperPMICollect:
                         self.superpmi_jit_path = os.path.join(self.temp_location, jit_name_without_ext + "_superpmi" + jit_name_ext)
                         shutil.copyfile(self.jit_path, self.superpmi_jit_path)
                     except Exception:
-                        logging.info(self.superpmi_jit_path)
                         # Fallback to original JIT path if we are not able to make a copy.
                         self.superpmi_jit_path = self.jit_path
                 else:
