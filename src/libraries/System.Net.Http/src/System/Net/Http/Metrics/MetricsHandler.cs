@@ -137,6 +137,7 @@ namespace System.Net.Http.Metrics
             }
             else if (exception is HttpRequestException e)
             {
+                Debug.Assert(Enum.GetValues<HttpRequestError>().Length == 12, "We need to extend the mapping in case new values are added to HttpRequestError.");
                 return e.HttpRequestError switch
                 {
                     HttpRequestError.NameResolutionError => "name_resolution_error",
