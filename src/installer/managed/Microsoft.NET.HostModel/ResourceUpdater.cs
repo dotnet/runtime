@@ -18,7 +18,7 @@ namespace Microsoft.NET.HostModel
     {
         private readonly Stream stream;
         private readonly PEReader _reader;
-        private readonly ResourceData _resourceData;
+        private ResourceData _resourceData;
         private readonly bool leaveOpen;
 
         ///<summary>
@@ -79,6 +79,7 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public ResourceUpdater AddResourcesFromPEImage(string peFile)
         {
+            if (_resourceData == null) throw ThrowExceptionForInvalidUpdate();
             using var module = new PEReader(File.Open(peFile, FileMode.Open));
             var moduleResources = new ResourceData(module);
             _resourceData.CopyResourcesFrom(moduleResources);
@@ -104,6 +105,7 @@ namespace Microsoft.NET.HostModel
             {
                 throw new ArgumentException("AddResource can only be used with integer resource types");
             }
+            if (_resourceData == null) throw ThrowExceptionForInvalidUpdate();
 
             _resourceData.AddResource((ushort)lpType, (ushort)lpName, LangID_LangNeutral_SublangNeutral, data);
 
@@ -122,6 +124,7 @@ namespace Microsoft.NET.HostModel
             {
                 throw new ArgumentException("AddResource can only be used with integer resource names");
             }
+            if (_resourceData == null) throw ThrowExceptionForInvalidUpdate();
 
             _resourceData.AddResource(lpType, (ushort)lpName, LangID_LangNeutral_SublangNeutral, data);
 
@@ -178,6 +181,8 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public void Update()
         {
+            if (_resourceData == null) throw ThrowExceptionForInvalidUpdate();
+
             int resourceSectionIndex = _reader.PEHeaders.SectionHeaders.Length;
             for (int i = 0; i < _reader.PEHeaders.SectionHeaders.Length; i++)
             {
@@ -368,6 +373,8 @@ namespace Microsoft.NET.HostModel
             stream.Write(buffer, 0, buffer.Length);
             stream.SetLength(buffer.LongLength);
             stream.Flush();
+
+            _resourceData = null;
         }
 
         private static int ReadI32(byte[] buffer, int position)
@@ -395,6 +402,12 @@ namespace Microsoft.NET.HostModel
             WriteI32(buffer, position, modifier(ReadI32(buffer, position)));
 
         public static int GetAligned(int integer, int alignWith) => (integer + alignWith - 1) & ~(alignWith - 1);
+
+        private static InvalidOperationException ThrowExceptionForInvalidUpdate()
+        {
+            return new InvalidOperationException(
+                "Update handle is invalid. This instance may not be used for further updates");
+        }
 
         public void Dispose()
         {
