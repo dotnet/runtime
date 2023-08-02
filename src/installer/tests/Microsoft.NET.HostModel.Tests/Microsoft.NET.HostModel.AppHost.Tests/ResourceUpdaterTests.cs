@@ -79,4 +79,50 @@ public class ResourceUpdaterTests
             Assert.Equal("OtherResource"u8.ToArray(), testType);
         }
     }
+
+    [Fact]
+    void ResourceUpdaterAddResourceIdType()
+    {
+        using var memoryStream = GetCurrentAssemblyMemoryStream();
+        const ushort IdTestType = 100;
+
+        using (var updater = new ResourceUpdater(memoryStream, true))
+        {
+            updater.AddResource("OtherResource"u8.ToArray(), IdTestType, 0);
+            updater.Update();
+        }
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        using (var reader = new PEReader(memoryStream, PEStreamOptions.LeaveOpen))
+        {
+            var resourceReader = new ResourceData(reader);
+            byte[]? testType = resourceReader.FindResource(0, IdTestType, 0);
+            Assert.Equal("OtherResource"u8.ToArray(), testType);
+        }
+    }
+
+    [Fact]
+    void ResourceUpdaterAddResourceTwo()
+    {
+        using var memoryStream = GetCurrentAssemblyMemoryStream();
+
+        using (var updater = new ResourceUpdater(memoryStream, true))
+        {
+            updater.AddResource("Test Resource"u8.ToArray(), "testType", 0);
+            updater.AddResource("Other Resource"u8.ToArray(), "testType", 1);
+            updater.Update();
+        }
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        using (var reader = new PEReader(memoryStream, PEStreamOptions.LeaveOpen))
+        {
+            var resourceReader = new ResourceData(reader);
+            byte[]? name0 = resourceReader.FindResource(0, "testType", 0);
+            byte[]? name1 = resourceReader.FindResource(1, "testType", 0);
+            Assert.Equal("Test Resource"u8.ToArray(), name0);
+            Assert.Equal("Other Resource"u8.ToArray(), name1);
+        }
+    }
 }
