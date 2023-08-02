@@ -17,7 +17,7 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class BitArray : ICollection, ICloneable
     {
-        public int[] m_array; // Do not rename (binary serialization)
+        private int[] m_array; // Do not rename (binary serialization)
         private int m_length; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
 
