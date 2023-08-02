@@ -15,10 +15,20 @@
 
 #include "eventtrace_etw.h"
 #include "eventtracebase.h"
+#include "eventtrace_context.h"
 
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+
+EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context = { W("Microsoft-Windows-DotNETRuntime"), 0, false, 0 };
+
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {
+#ifdef FEATURE_ETW
+    &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
+#endif
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context
+};
 
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
 
@@ -67,6 +77,66 @@ void EventTracing_Initialize()
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimePrivateHandle;
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeHandle;
 #endif // FEATURE_ETW
+}
+
+enum CallbackProviderIndex
+{
+    DotNETRuntime = 0,
+    DotNETRuntimeRundown = 1,
+    DotNETRuntimeStress = 2,
+    DotNETRuntimePrivate = 3
+};
+
+// @TODO
+int const EVENT_CONTROL_CODE_ENABLE_PROVIDER=1;
+int const EVENT_CONTROL_CODE_DISABLE_PROVIDER=0;
+
+void EtwCallbackCommon(
+    CallbackProviderIndex ProviderIndex,
+    ULONG ControlCode,
+    unsigned char Level,
+    ULONGLONG MatchAnyKeyword,
+    PVOID pFilterData,
+    BOOL isEventPipeCallback)
+{
+//     LIMITED_METHOD_CONTRACT;
+
+    bool bIsPublicTraceHandle = ProviderIndex == DotNETRuntime;
+
+    DOTNET_TRACE_CONTEXT * ctxToUpdate;
+    switch(ProviderIndex)
+    {
+    case DotNETRuntime:
+        ctxToUpdate = &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
+        break;
+    default:
+        _ASSERTE(!"EtwCallbackCommon was called with invalid context");
+        return;
+    }
+
+    // This callback gets called on both ETW/EventPipe session enable/disable.
+    // We need toupdate the EventPipe provider context if we are in a callback
+    // from EventPipe, but not from ETW.
+    if (isEventPipeCallback)
+    {
+        ctxToUpdate->EventPipeProvider.Level = Level;
+        ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
+        ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
+
+        // For EventPipe, ControlCode can only be either 0 or 1.
+        _ASSERTE(ControlCode == 0 || ControlCode == 1);
+    }
+
+    if (
+#if !defined(HOST_UNIX)
+        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
+#endif
+        (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
+    {
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask);
+        GCEventLevel level = static_cast<GCEventLevel>(ctxToUpdate->EventPipeProvider.Level);
+        GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
+    }
 }
 
 #ifdef FEATURE_ETW
@@ -130,3 +200,15 @@ void EtwCallback(
     }
 }
 #endif // FEATURE_ETW
+
+void EventPipeEtwCallbackDotNETRuntime(
+    _In_ GUID * SourceId,
+    _In_ ULONG ControlCode,
+    _In_ unsigned char Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ EventFilterDescriptor* FilterData,
+    _Inout_opt_ PVOID CallbackContext)
+{
+    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+}
