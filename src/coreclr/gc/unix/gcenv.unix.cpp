@@ -10,6 +10,7 @@
 #include <cinttypes>
 #include <memory>
 #include <pthread.h>
+#include <sched.h>
 #include <signal.h>
 
 #include "config.gc.h"
@@ -1047,8 +1048,16 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 //  true if the priority boost was successful, false otherwise.
 bool GCToOSInterface::BoostThreadPriority()
 {
-    // [LOCALGC TODO] Thread priority for unix
+#ifndef __APPLE__
+    pthread_t thread_t = pthread_self();
+    struct sched_param params;
+    // Use max priority minus 1, in order to avoid need for elevated privileges
+    params.sched_priority = sched_get_priority_max(SCHED_FIFO) - 1;
+    return !!pthread_setschedparam(thread_t, SCHED_FIFO, &params);
+#else // __APPLE__
+    // [LOCALGC TODO] Thread priority for macos
     return false;
+#endif
 }
 
 // Set the set of processors enabled for GC threads for the current process based on config specified affinity mask and set
