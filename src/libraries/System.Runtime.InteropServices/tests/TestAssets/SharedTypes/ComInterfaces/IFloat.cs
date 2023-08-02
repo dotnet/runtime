@@ -8,20 +8,18 @@ using System.Runtime.InteropServices.Marshalling;
 namespace SharedTypes.ComInterfaces
 {
     [GeneratedComInterface]
-    [Guid(IID)]
-    internal partial interface IGetAndSetInt
+    [Guid("9FA4A8A9-2D8F-48A8-B6FB-B44B5F1B9FB6")]
+    internal partial interface IFloat
     {
-        int GetInt();
-
-        public void SetInt(int x);
-
-        public const string IID = "2c3f9903-b586-46b1-881b-adfce9af47b1";
+        float Get();
+        void Set(float value);
     }
+
     [GeneratedComClass]
-    internal partial class GetAndSetInt : IGetAndSetInt
+    internal partial class IFloatImpl : IFloat
     {
-        int _data = 0;
-        public int GetInt() => _data;
-        public void SetInt(int x) => _data = x;
+        float _data;
+        public float Get() => _data;
+        public void Set(float value) => _data = value;
     }
 }
