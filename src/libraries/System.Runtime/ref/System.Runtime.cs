@@ -13042,6 +13042,12 @@ namespace System.Runtime.CompilerServices
     {
         public RequiredMemberAttribute() { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class RequiresLocationAttribute : System.Attribute
+    {
+        public RequiresLocationAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute
     {
