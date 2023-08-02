@@ -92,11 +92,11 @@ namespace System.Net.Http.Metrics
             return (startTimestamp, recordCurrentRequests);
         }
 
-        private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, long startTimestamp, bool recordCurrentRequsts)
+        private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, long startTimestamp, bool recordCurrentRequests)
         {
             TagList tags = InitializeCommonTags(request);
 
-            if (recordCurrentRequsts)
+            if (recordCurrentRequests)
             {
                 _activeRequests.Add(-1, tags);
             }
