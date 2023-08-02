@@ -270,19 +270,16 @@
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
       <!-- find the path with the assemblies, so we don't have to hardcode the tfm.
            Cannot use System.Private.Corelib since that is in a different directory -->
-      <_SystemRuntimePathItem Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''" Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net*\System.Runtime.dll" />
-
-      <!-- Allow the path to be specifically overridden -->
-      <_SystemRuntimePathItem Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)\System.Runtime.dll" />
+      <_SystemRuntimePathItem Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net*\System.Runtime.dll" />
     </ItemGroup>
 
-    <Error Condition="@(_SystemRuntimePathItem->Count()) == 0" Text="Could not find System.Runtime.dll in $(MicrosoftNetCoreAppRuntimePackRidDir). This is likely a setup issue." />
-    <Error Condition="@(_SystemRuntimePathItem->Count()) > 1" Text="Found more than one System.Runtime.dll. This is likely a setup issue." />
+    <Error Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == '' and @(_SystemRuntimePathItem->Count()) == 0" Text="Could not find System.Runtime.dll in $(MicrosoftNetCoreAppRuntimePackRidDir). This is likely a setup issue." />
+    <Error Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == '' and @(_SystemRuntimePathItem->Count()) > 1" Text="Found more than one System.Runtime.dll. This is likely a setup issue." />
 
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
       <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([System.IO.Path]::GetDirectoryName(%(_SystemRuntimePathItem.Identity)))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
     </PropertyGroup>
 
