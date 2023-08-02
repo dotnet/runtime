@@ -779,8 +779,8 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             PCCOR_SIGNATURE pSig;
             ULONG cSig;
             IfFailThrow(ty.GetModule()->GetMDImport()->GetTypeSpecFromToken(mdType, &pSig, &cSig));
-            SString typeName(L"const ");
-            const char* str;
+            SmallStackSString typeName(SString::Utf8, "const ");
+            LPCSTR str;
             switch (*pSig++)
             {
                 case ELEMENT_TYPE_BOOLEAN       :
@@ -835,9 +835,9 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             szPrefix = "!!";
 
         SmallStackSString pName(SString::Utf8, szPrefix);
-        pName.AppendUTF8(szPrefix);
         pName.AppendUTF8(szName);
         tnb.AddName(pName.GetUnicode());
+
         format &= ~FormatAssembly;
     }
 
