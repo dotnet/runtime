@@ -243,11 +243,6 @@ namespace Microsoft.NET.HostModel
             bool needsMoveTrailingSections = !isRsrcIsLastSection && delta > 0;
             long finalImageSize = trailingSectionStart + Math.Max(delta, 0) + trailingSectionLength;
 
-            // I wanted to use Memory Mapped File to overwrite some part of file
-            // but it's impossible to achieve open once goal because
-            // CreateFromFile with currentSectionIndex is not exists in
-            // netstandard 2.0. So, I use read to byte[] instead.
-
             using var mmap = MemoryMappedFile.CreateFromFile(stream, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true);
             using var accessor = mmap.CreateViewAccessor(0, finalImageSize, MemoryMappedFileAccess.ReadWrite);
             var buffer = accessor;
