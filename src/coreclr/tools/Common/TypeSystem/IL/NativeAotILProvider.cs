@@ -270,9 +270,7 @@ namespace Internal.IL
                                     if (elementType.IsNullable)
                                     {
                                         bool? nullableOfEquatable = ComparerIntrinsics.ImplementsIEquatable(elementType.Instantiation[0]);
-                                        if (!nullableOfEquatable.HasValue)
-                                            return null;
-                                        if (nullableOfEquatable.HasValue)
+                                        if (nullableOfEquatable.HasValue && nullableOfEquatable.Value)
                                             return helperType.GetKnownMethod("StructOnlyEqualsNullable", null)
                                                 .MakeInstantiatedMethod(elementType.Instantiation[0]);
                                         return null; // Fallback to default implementation based on EqualityComparer
