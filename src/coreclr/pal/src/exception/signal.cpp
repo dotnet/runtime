@@ -413,7 +413,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
 
     PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-    PROCCreateCrashDumpIfEnabled(code, siginfo);
+    PROCCreateCrashDumpIfEnabled(code, siginfo, true);
 }
 
 /*++
@@ -746,7 +746,7 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         DWORD val = 0;
         if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
         {
-            PROCCreateCrashDumpIfEnabled(code, siginfo);
+            PROCCreateCrashDumpIfEnabled(code, siginfo, false);
         }
         // g_pSynchronizationManager shouldn't be null if PAL is initialized.
         _ASSERTE(g_pSynchronizationManager != nullptr);

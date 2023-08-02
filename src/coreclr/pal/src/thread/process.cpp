@@ -207,6 +207,9 @@ LPWSTR g_lpwstrAppDir = NULL;
 // Thread ID of thread that has started the ExitProcess process
 Volatile<LONG> terminator = 0;
 
+// Id of thread generating a core dump
+Volatile<LONG> g_crashingThreadId = 0;
+
 // Process and session ID of this process.
 DWORD gPID = (DWORD) -1;
 DWORD gSID = (DWORD) -1;
@@ -2178,7 +2181,8 @@ Function:
   Creates crash dump of the process. Can be called from the
   unhandled native exception handler.
 
-(no return value)
+Return:
+  TRUE - succeeds, FALSE - fails
 --*/
 BOOL
 PROCCreateCrashDump(
@@ -2293,6 +2297,41 @@ PROCCreateCrashDump(
         }
     }
     return true;
+}
+
+/*++
+Function:
+  PROCSerializedCreateCrashDump
+
+  Creates crash dump of the process. Only allows one thread to generate the
+  core dump. Can be called from the unhandled native exception handler.
+
+Return:
+   nothing
+--*/
+VOID
+PROCSerializedCreateCrashDump(
+    std::vector<const char*>& argv,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer)
+{
+    _ASSERTE(argv.size() > 0);
+    _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
+
+    size_t currentThreadId = THREADSilentGetCurrentThreadId();
+    size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
+    if (previousThreadId == 0)
+    {
+        PROCCreateCrashDump(argv, errorMessageBuffer, cbErrorMessageBuffer);
+    }
+    else
+    {
+        // Should never reenter or recurse
+        _ASSERTE(previousThreadId != currentThreadId)
+
+        // The first thread generates the crash info and any other threads are blocked
+        Sleep(INFINITE);
+    }
 }
 
 /*++
@@ -2429,11 +2468,13 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  siginfo - POSIX signal info or nullptr
+  serialize - allow only one thread to generate core dump
 
 (no return value)
 --*/
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
 {
     // If enabled, launch the create minidump utility and wait until it completes
     if (!g_argvCreateDump.empty())
@@ -2491,7 +2532,14 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
             argv.push_back(nullptr);
         }
 
-        PROCCreateCrashDump(argv, nullptr, 0);
+        if (serialize)
+        {
+            PROCSerializedCreateCrashDump(argv, nullptr, 0);
+        }
+        else
+        {
+            PROCCreateCrashDump(argv, nullptr, 0);
+        }
 
         free(signalArg);
         free(crashThreadArg);
@@ -2520,7 +2568,7 @@ PROCAbort(int signal, siginfo_t* siginfo)
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal, siginfo);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, true);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
