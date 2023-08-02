@@ -58,6 +58,7 @@ public class AssetsComputingHelper
             ".dat" when loadFullICUData && fileName != "icudt" => "full ICU data is enabled",
             ".dat" when hybridGlobalization && fileName != "icudt_hybrid" => "hybrid globalization is enabled",
             ".dat" when !string.IsNullOrEmpty(customIcuCandidateFilename) && fileName != customIcuCandidateFilename => "custom icu file will be used instead of icu from the runtime pack",
+            ".dat" when IsDefaultIcuMode() && (fileName != "icudt_EFIGS" && fileName != "icudt_CJK" && fileName != "icudt_no_CJK") => "automatic icu shard selection, based on application culture, is enabled",
             ".json" when fromMonoPackage && (fileName == "emcc-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
             ".map" when !emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => "source map file is not published",
@@ -69,6 +70,11 @@ public class AssetsComputingHelper
         };
 
         return reason != null;
+
+        bool IsDefaultIcuMode()
+        {
+            return !invariantGlobalization && !loadFullICUData && !hybridGlobalization && string.IsNullOrEmpty(customIcuCandidateFilename);
+        }
     }
 
     private static bool IsFromMonoPackage(ITaskItem candidate)

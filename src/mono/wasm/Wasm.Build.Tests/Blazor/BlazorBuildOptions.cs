@@ -16,6 +16,6 @@ public record BlazorBuildOptions
     bool ExpectRelinkDirWhenPublishing = false,
     bool ExpectFingerprintOnDotnetJs = false,
     RuntimeVariant RuntimeType = RuntimeVariant.SingleThreaded,
-    GlobalizationMode GlobalizationMode = GlobalizationMode.Default,
+    GlobalizationMode GlobalizationMode = GlobalizationMode.Sharded,
     string PredefinedIcudt = ""
 );
