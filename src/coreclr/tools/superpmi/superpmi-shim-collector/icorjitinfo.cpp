@@ -645,22 +645,28 @@ bool interceptor_ICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR
 }
 
 // returns the "NEW" helper optimized for "newCls."
-CorInfoHelpFunc interceptor_ICJI::getNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                               CORINFO_METHOD_HANDLE   callerHandle,
+CorInfoHelpFunc interceptor_ICJI::getNewHelper(CORINFO_CLASS_HANDLE  classHandle,
+                                               CORINFO_METHOD_HANDLE callerHandle,
                                                bool* pHasSideEffects)
 {
     CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
+    bool hasSideEffects = false;
 
     RunWithErrorExceptionCodeCaptureAndContinue(
         [&]()
         {
             mc->cr->AddCall("getNewHelper");
-            result = original_ICorJitInfo->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
+            result = original_ICorJitInfo->getNewHelper(classHandle, callerHandle, &hasSideEffects);
         },
         [&](DWORD exceptionCode)
         {
-            mc->recGetNewHelper(pResolvedToken, callerHandle, pHasSideEffects, result, exceptionCode);
+            mc->recGetNewHelper(classHandle, callerHandle, hasSideEffects, result, exceptionCode);
         });
+
+    if (pHasSideEffects != nullptr)
+    {
+        *pHasSideEffects = hasSideEffects;
+    }
 
     return result;
 }

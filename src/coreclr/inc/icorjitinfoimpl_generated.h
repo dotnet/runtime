@@ -254,7 +254,7 @@ bool checkMethodModifier(
           bool fOptional) override;
 
 CorInfoHelpFunc getNewHelper(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_CLASS_HANDLE classHandle,
           CORINFO_METHOD_HANDLE callerHandle,
           bool* pHasSideEffects) override;
 

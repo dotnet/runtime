@@ -463,7 +463,7 @@ struct Agnostic_FindCallSiteSig
 
 struct Agnostic_GetNewHelper
 {
-    DWORDLONG hClass;
+    DWORDLONG classHandle;
     DWORDLONG callerHandle;
 };
 

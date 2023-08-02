@@ -572,12 +572,12 @@ bool WrapICorJitInfo::checkMethodModifier(
 }
 
 CorInfoHelpFunc WrapICorJitInfo::getNewHelper(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_CLASS_HANDLE classHandle,
           CORINFO_METHOD_HANDLE callerHandle,
           bool* pHasSideEffects)
 {
     API_ENTER(getNewHelper);
-    CorInfoHelpFunc temp = wrapHnd->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
+    CorInfoHelpFunc temp = wrapHnd->getNewHelper(classHandle, callerHandle, pHasSideEffects);
     API_LEAVE(getNewHelper);
     return temp;
 }

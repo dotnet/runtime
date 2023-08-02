@@ -3026,48 +3026,48 @@ bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_I
     return result;
 }
 
-void MethodContext::recGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_METHOD_HANDLE   callerHandle,
-                                    bool*                   pHasSideEffects,
-                                    CorInfoHelpFunc         result,
-                                    DWORD                   exceptionCode)
+void MethodContext::recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
+                                    CORINFO_METHOD_HANDLE callerHandle,
+                                    bool                  hasSideEffects,
+                                    CorInfoHelpFunc       result,
+                                    DWORD                 exceptionCode)
 {
     if (GetNewHelper == nullptr)
         GetNewHelper = new LightWeightMap<Agnostic_GetNewHelper, DDD>();
 
     Agnostic_GetNewHelper key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.hClass       = CastHandle(pResolvedToken->hClass);
+    ZeroMemory(&key, sizeof(key));
+    key.classHandle  = CastHandle(classHandle);
     key.callerHandle = CastHandle(callerHandle);
 
     DDD value;
-    value.A = (pHasSideEffects != nullptr) ? (DWORD)(*pHasSideEffects ? 1 : 0) : (DWORD)0;
+    value.A = hasSideEffects ? 1 : 0;
     value.B = (DWORD)result;
     value.C = exceptionCode;
 
     GetNewHelper->Add(key, value);
     DEBUG_REC(dmpGetNewHelper(key, value));
 }
-void MethodContext::dmpGetNewHelper(const Agnostic_GetNewHelper& key, DDD value)
+void MethodContext::dmpGetNewHelper(const Agnostic_GetNewHelper& key, const DDD& value)
 {
-    printf("GetNewHelper key cls-%016" PRIX64 " chan-%016" PRIX64 ", hasSideEffects-%u, value res-%u, exceptionCode-%08X", key.hClass, key.callerHandle, value.A, value.B, value.C);
+    printf("GetNewHelper key cls-%016" PRIX64 " chan-%016" PRIX64 ", hasSideEffects-%u, value res-%u, exceptionCode-%08X", key.classHandle, key.callerHandle, value.A, value.B, value.C);
 }
-CorInfoHelpFunc MethodContext::repGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                               CORINFO_METHOD_HANDLE   callerHandle,
-                                               bool*                   pHasSideEffects,
-                                               DWORD*                  exceptionCode)
+CorInfoHelpFunc MethodContext::repGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
+                                               CORINFO_METHOD_HANDLE callerHandle,
+                                               bool*                 pHasSideEffects,
+                                               DWORD*                exceptionCode)
 {
     Agnostic_GetNewHelper key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.hClass       = CastHandle(pResolvedToken->hClass);
+    ZeroMemory(&key, sizeof(key));
+    key.classHandle  = CastHandle(classHandle);
     key.callerHandle = CastHandle(callerHandle);
 
-    DDD value = LookupByKeyOrMiss(GetNewHelper, key, ": key %016" PRIX64 " %016" PRIX64 "", key.hClass, key.callerHandle);
+    DDD value = LookupByKeyOrMiss(GetNewHelper, key, ": key %016" PRIX64 " %016" PRIX64 "", key.classHandle, key.callerHandle);
     DEBUG_REP(dmpGetNewHelper(key, value));
 
     if (pHasSideEffects != nullptr)
     {
-        *pHasSideEffects = (value.A == 0) ? false : true;
+        *pHasSideEffects = value.A != 0;
     }
     CorInfoHelpFunc result = (CorInfoHelpFunc)value.B;
     *exceptionCode = value.C;

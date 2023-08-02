@@ -2494,9 +2494,9 @@ public:
 
     // returns the "NEW" helper optimized for "newCls."
     virtual CorInfoHelpFunc getNewHelper(
-            CORINFO_RESOLVED_TOKEN *    pResolvedToken,
-            CORINFO_METHOD_HANDLE       callerHandle,
-            bool *                      pHasSideEffects
+            CORINFO_CLASS_HANDLE  classHandle,
+            CORINFO_METHOD_HANDLE callerHandle,
+            bool*                 pHasSideEffects
             ) = 0;
 
     // returns the newArr (1-Dim array) helper optimized for "arrayCls."

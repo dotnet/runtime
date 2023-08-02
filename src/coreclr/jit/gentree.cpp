@@ -8668,7 +8668,7 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
 
     bool            helperHasSideEffects;
     CorInfoHelpFunc helperTemp =
-        info.compCompHnd->getNewHelper(pResolvedToken, info.compMethodHnd, &helperHasSideEffects);
+        info.compCompHnd->getNewHelper(pResolvedToken->hClass, info.compMethodHnd, &helperHasSideEffects);
 
     if (!usingReadyToRunHelper)
     {
