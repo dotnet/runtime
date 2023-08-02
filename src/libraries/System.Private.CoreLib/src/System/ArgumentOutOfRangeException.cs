@@ -22,31 +22,22 @@ namespace System
         // Creates a new ArgumentOutOfRangeException with its message
         // string set to a default message explaining an argument was out of range.
         public ArgumentOutOfRangeException()
-            : base(SR.Arg_ArgumentOutOfRangeException)
-        {
-            HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
-        }
+            : this(null, null, null) {}
 
         public ArgumentOutOfRangeException(string? paramName)
-            : base(SR.Arg_ArgumentOutOfRangeException, paramName)
-        {
-            HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
-        }
-
+            : this(paramName, null, null) {}
+ 
         public ArgumentOutOfRangeException(string? paramName, string? message)
-            : base(message, paramName)
-        {
-            HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
-        }
-
+            : this(paramName, null, message) {}
+ 
         public ArgumentOutOfRangeException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
-
+ 
         public ArgumentOutOfRangeException(string? paramName, object? actualValue, string? message)
-            : base(message, paramName)
+            : base(message ?? SR.Arg_ArgumentOutOfRangeException, paramName)
         {
             _actualValue = actualValue;
             HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
