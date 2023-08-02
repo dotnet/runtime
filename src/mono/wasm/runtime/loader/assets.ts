@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
-import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, ResourceRequest, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
+import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
@@ -72,6 +72,7 @@ function getSingleAssetWithResolvedUrl(resources: ResourceList | undefined, beha
     mono_assert(keys.length == 1, `Expect to have one ${behavior} asset in resources`);
 
     const name = keys[0];
+    // FIXME, this creates another copy of the asset object
     const asset = {
         name,
         hash: resources![name],
@@ -322,7 +323,9 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
                 alwaysLoadedAssets.push({
                     name: configFileName,
                     resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(configUrl), "vfs"),
-                    behavior: "vfs"
+                    behavior: "vfs",
+                    noCache: true,
+                    useCredentials: true
                 });
             }
         }
@@ -534,16 +537,16 @@ export function appendUniqueQuery(attemptUrl: string, behavior: AssetBehaviors):
 let resourcesLoaded = 0;
 const totalResources = new Set<string>();
 
-function download_resource(request: ResourceRequest): LoadingResource {
+function download_resource(asset: AssetEntryInternal): LoadingResource {
     try {
-        mono_assert(request.resolvedUrl, "Request's resolvedUrl must be set");
-        const fetchResponse = download_resource_with_cache(request);
-        const response = { name: request.name, url: request.resolvedUrl, response: fetchResponse };
+        mono_assert(asset.resolvedUrl, "Request's resolvedUrl must be set");
+        const fetchResponse = download_resource_with_cache(asset);
+        const response = { name: asset.name, url: asset.resolvedUrl, response: fetchResponse };
 
-        totalResources.add(request.name!);
+        totalResources.add(asset.name!);
         response.response.then(() => {
-            if (request.behavior == "assembly") {
-                loaderHelpers.loadedAssemblies.push(request.resolvedUrl!);
+            if (asset.behavior == "assembly") {
+                loaderHelpers.loadedAssemblies.push(asset.resolvedUrl!);
             }
 
             resourcesLoaded++;
@@ -554,35 +557,33 @@ function download_resource(request: ResourceRequest): LoadingResource {
     } catch (err) {
         const response = <Response><any>{
             ok: false,
-            url: request.resolvedUrl,
+            url: asset.resolvedUrl,
             status: 500,
             statusText: "ERR29: " + err,
             arrayBuffer: () => { throw err; },
             json: () => { throw err; }
         };
         return {
-            name: request.name, url: request.resolvedUrl!, response: Promise.resolve(response)
+            name: asset.name, url: asset.resolvedUrl!, response: Promise.resolve(response)
         };
     }
 }
 
-async function download_resource_with_cache(request: ResourceRequest): Promise<Response> {
-    let response = await findCachedResponse(request);
+async function download_resource_with_cache(asset: AssetEntryInternal): Promise<Response> {
+    let response = await findCachedResponse(asset);
     if (!response) {
-        response = await fetchResource(request);
-        addCachedReponse(request, response);
+        response = await fetchResource(asset);
+        addCachedReponse(asset, response);
     }
 
     return response;
 }
 
-const credentialsIncludeAssetBehaviors: AssetBehaviors[] = ["vfs"]; // Previously only configuration
-
-function fetchResource(request: ResourceRequest): Promise<Response> {
+function fetchResource(asset: AssetEntryInternal): Promise<Response> {
     // Allow developers to override how the resource is loaded
-    let url = request.resolvedUrl!;
+    let url = asset.resolvedUrl!;
     if (loaderHelpers.loadBootResource) {
-        const customLoadResult = invokeLoadBootResource(request);
+        const customLoadResult = invokeLoadBootResource(asset);
         if (customLoadResult instanceof Promise) {
             // They are supplying an entire custom response, so just use that
             return customLoadResult;
@@ -591,11 +592,11 @@ function fetchResource(request: ResourceRequest): Promise<Response> {
         }
     }
 
-    const fetchOptions: RequestInit = {
-        cache: "no-cache"
-    };
-
-    if (credentialsIncludeAssetBehaviors.includes(request.behavior)) {
+    const fetchOptions: RequestInit = {};
+    if (!asset.noCache) {
+        fetchOptions.cache = "no-cache";
+    }
+    if (asset.useCredentials) {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";
     } else {
@@ -603,7 +604,7 @@ function fetchResource(request: ResourceRequest): Promise<Response> {
         // Note that if cacheBootResources was explicitly disabled, we also bypass hash checking
         // This is to give developers an easy opt-out from the entire caching/validation flow if
         // there's anything they don't like about it.
-        fetchOptions.integrity = isCacheAvailable() ? (request.hash ?? "") : undefined;
+        fetchOptions.integrity = isCacheAvailable() ? (asset.hash ?? "") : undefined;
     }
 
     return loaderHelpers.fetch_like(url, fetchOptions);
@@ -623,14 +624,14 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "js-module-threads": "dotnetjs"
 };
 
-function invokeLoadBootResource(request: ResourceRequest): string | Promise<Response> | null | undefined {
+function invokeLoadBootResource(asset: AssetEntryInternal): string | Promise<Response> | null | undefined {
     if (loaderHelpers.loadBootResource) {
-        const requestHash = request.hash ?? "";
-        const url = request.resolvedUrl!;
+        const requestHash = asset.hash ?? "";
+        const url = asset.resolvedUrl!;
 
-        const resourceType = monoToBlazorAssetTypeMap[request.behavior];
+        const resourceType = monoToBlazorAssetTypeMap[asset.behavior];
         if (resourceType) {
-            return loaderHelpers.loadBootResource(resourceType, request.name, url, requestHash, request.behavior);
+            return loaderHelpers.loadBootResource(resourceType, asset.name, url, requestHash, asset.behavior);
         }
     }
 

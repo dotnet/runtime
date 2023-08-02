@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviors, MonoConfig, ResourceRequest } from "../types";
+import type { MonoConfig } from "../types";
+import type { AssetEntryInternal } from "../types/internal";
 import { loaderHelpers } from "./globals";
 
-const cacheSkipAssetBehaviors: AssetBehaviors[] = ["vfs"]; // Previously only configuration
 const usedCacheKeys: { [key: string]: boolean } = {};
 const networkLoads: { [name: string]: LoadLogEntry } = {};
 const cacheLoads: { [name: string]: LoadLogEntry } = {};
@@ -67,13 +67,13 @@ export async function purgeUnusedCacheEntriesAsync(): Promise<void> {
     }
 }
 
-export async function findCachedResponse(request: ResourceRequest): Promise<Response | undefined> {
+export async function findCachedResponse(asset: AssetEntryInternal): Promise<Response | undefined> {
     const cache = cacheIfUsed;
-    if (!cache || cacheSkipAssetBehaviors.includes(request.behavior) || !request.hash || request.hash.length === 0) {
+    if (!cache || asset.noCache || !asset.hash || asset.hash.length === 0) {
         return undefined;
     }
 
-    const cacheKey = getCacheKey(request);
+    const cacheKey = getCacheKey(asset);
     usedCacheKeys[cacheKey] = true;
 
     let cachedResponse: Response | undefined;
@@ -90,22 +90,24 @@ export async function findCachedResponse(request: ResourceRequest): Promise<Resp
 
     // It's in the cache.
     const responseBytes = parseInt(cachedResponse.headers.get("content-length") || "0");
-    cacheLoads[request.name] = { responseBytes };
+    cacheLoads[asset.name] = { responseBytes };
     return cachedResponse;
 }
 
-export function addCachedReponse(request: ResourceRequest, networkResponse: Response): void {
+export function addCachedReponse(asset: AssetEntryInternal, networkResponse: Response): void {
     const cache = cacheIfUsed;
-    if (!cache || cacheSkipAssetBehaviors.includes(request.behavior) || !request.hash || request.hash.length === 0) {
+    if (!cache || asset.noCache || !asset.hash || asset.hash.length === 0) {
         return;
     }
 
-    const cacheKey = getCacheKey(request);
-    addToCacheAsync(cache, request.name, cacheKey, networkResponse); // Don't await - add to cache in background
+    setTimeout(() => {
+        const cacheKey = getCacheKey(asset);
+        addToCacheAsync(cache, asset.name, cacheKey, networkResponse); // Don't await - add to cache in background
+    }, 0);
 }
 
-function getCacheKey(request: ResourceRequest) {
-    return `${request.resolvedUrl}.${request.hash}`;
+function getCacheKey(asset: AssetEntryInternal) {
+    return `${asset.resolvedUrl}.${asset.hash}`;
 }
 
 async function addToCacheAsync(cache: Cache, name: string, cacheKey: string, response: Response) {

@@ -272,7 +272,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         if (loaderHelpers.config.debugLevel !== 0 && loaderHelpers.config.cacheBootResources) {
             loaderHelpers.logDownloadStatsToConsole();
         }
-        loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        const afterStartupRushIsOver = 10000;// 10 seconds
+        setTimeout(() => {
+            loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        }, afterStartupRushIsOver);
 
         // call user code
         try {

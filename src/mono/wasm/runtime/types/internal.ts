@@ -93,8 +93,10 @@ export type RunArguments = {
 }
 
 export interface AssetEntryInternal extends AssetEntry {
-    // this is almost the same as pendingDownload, but it could have multiple values in time, because of re-try download logic
+    // this could have multiple values in time, because of re-try download logic
     pendingDownloadInternal?: LoadingResource
+    noCache?: boolean
+    useCredentials?: boolean
 }
 
 export type LoaderHelpers = {
