@@ -234,7 +234,7 @@ namespace Microsoft.Interop
                 });
 
         /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam"/>
-        internal static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallOutParam =
+        public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallOutParam =
             new DiagnosticDescriptor(
                 Ids.InvalidLibraryImportAttributeUsage,
                 GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),

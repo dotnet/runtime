@@ -268,7 +268,9 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
 
-        public string CollectionTypeMarshallingBasic((string parameterType, string parameterModifiers, string[] countNames) returnType, params (string parameterType, string parameterModifiers, string parameterName, string[] countNames)[] parameters)
+        public string CollectionTypeMarshallingBasic(
+            (string parameterType, string parameterModifiers, string[] countNames) returnType,
+            params (string parameterType, string parameterModifiers, string parameterName, string[] countNames)[] parameters)
         {
             List<string> parameterSources = new();
             int i = 1;
