@@ -2327,7 +2327,7 @@ PROCSerializedCreateCrashDump(
     else
     {
         // Should never reenter or recurse
-        _ASSERTE(previousThreadId != currentThreadId)
+        _ASSERTE(previousThreadId != currentThreadId);
 
         // The first thread generates the crash info and any other threads are blocked
         Sleep(INFINITE);
