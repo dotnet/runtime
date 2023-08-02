@@ -388,8 +388,15 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     {
         if (signalRestarts)
         {
+            // Shutdown and create the core dump before we restore the signal to the default handler.
+            PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
+
+            PROCCreateCrashDumpIfEnabled(code, siginfo, true);
+
             // Restore the original and restart h/w exception.
             restore_signal(code, action);
+
+            return;
         }
         else
         {
