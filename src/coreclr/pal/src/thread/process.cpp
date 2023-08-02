@@ -2178,8 +2178,9 @@ PROCBuildCreateDumpCommandLine(
 Function:
   PROCCreateCrashDump
 
-  Creates crash dump of the process. Can be called from the
-  unhandled native exception handler.
+  Creates crash dump of the process. Can be called from the unhandled
+  native exception handler. Allows only one thread to generate the core
+  dump if serialize is true.
 
 Return:
   TRUE - succeeds, FALSE - fails
@@ -2188,10 +2189,27 @@ BOOL
 PROCCreateCrashDump(
     std::vector<const char*>& argv,
     LPSTR errorMessageBuffer,
-    INT cbErrorMessageBuffer)
+    INT cbErrorMessageBuffer,
+    bool serialize)
 {
     _ASSERTE(argv.size() > 0);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
+
+    if (serialize)
+    {
+        size_t currentThreadId = THREADSilentGetCurrentThreadId();
+        size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
+        if (previousThreadId != 0)
+        {
+            // Should never reenter or recurse
+            _ASSERTE(previousThreadId != currentThreadId);
+
+            // The first thread generates the crash info and any other threads are blocked
+            SleepEx(INFINITE, FALSE);
+
+            return false;
+        }
+    }
 
     int pipe_descs[2];
     if (pipe(pipe_descs) == -1)
@@ -2297,41 +2315,6 @@ PROCCreateCrashDump(
         }
     }
     return true;
-}
-
-/*++
-Function:
-  PROCSerializedCreateCrashDump
-
-  Creates crash dump of the process. Only allows one thread to generate the
-  core dump. Can be called from the unhandled native exception handler.
-
-Return:
-   nothing
---*/
-VOID
-PROCSerializedCreateCrashDump(
-    std::vector<const char*>& argv,
-    LPSTR errorMessageBuffer,
-    INT cbErrorMessageBuffer)
-{
-    _ASSERTE(argv.size() > 0);
-    _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
-
-    size_t currentThreadId = THREADSilentGetCurrentThreadId();
-    size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
-    if (previousThreadId == 0)
-    {
-        PROCCreateCrashDump(argv, errorMessageBuffer, cbErrorMessageBuffer);
-    }
-    else
-    {
-        // Should never reenter or recurse
-        _ASSERTE(previousThreadId != currentThreadId);
-
-        // The first thread generates the crash info and any other threads are blocked
-        Sleep(INFINITE);
-    }
 }
 
 /*++
@@ -2452,7 +2435,7 @@ PAL_GenerateCoreDump(
     BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
     if (result)
     {
-        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer);
+        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer, false);
     }
     free(program);
     free(pidarg);
@@ -2532,14 +2515,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
             argv.push_back(nullptr);
         }
 
-        if (serialize)
-        {
-            PROCSerializedCreateCrashDump(argv, nullptr, 0);
-        }
-        else
-        {
-            PROCCreateCrashDump(argv, nullptr, 0);
-        }
+        PROCCreateCrashDump(argv, nullptr, 0, serialize);
 
         free(signalArg);
         free(crashThreadArg);
