@@ -26,8 +26,6 @@ public class ResourceUpdaterTests
         memoryStream.Write(peImageBuilder.ToArray());
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        memoryStream.Seek(0, SeekOrigin.Begin);
-
         return memoryStream;
     }
 
@@ -35,8 +33,6 @@ public class ResourceUpdaterTests
     {
         var memoryStream = new MemoryStream();
         memoryStream.Write(File.ReadAllBytes(Assembly.GetExecutingAssembly().Location));
-        memoryStream.Seek(0, SeekOrigin.Begin);
-
         memoryStream.Seek(0, SeekOrigin.Begin);
 
         return memoryStream;
