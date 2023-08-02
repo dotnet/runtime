@@ -393,5 +393,11 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal("feature2", attr2.FeatureName);
             Assert.True(attr2.IsOptional);
         }
+
+        [Fact]
+        public static void RequiresLocationAttributeTests()
+        {
+            new RequiresLocationAttribute();
+        }
     }
 }
