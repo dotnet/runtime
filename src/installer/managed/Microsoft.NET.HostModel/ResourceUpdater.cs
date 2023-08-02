@@ -146,7 +146,7 @@ namespace Microsoft.NET.HostModel
             const int pe64InitializedDataSizeOffset = optionalHeaderBase + 8;
             const int pe64SizeOfImageOffset = optionalHeaderBase + 56;
             const int pe64DataDirectoriesOffset = optionalHeaderBase + 112;
-            const int pe32InitializedDataSizeOffset = optionalHeaderBase + 12;
+            const int pe32InitializedDataSizeOffset = optionalHeaderBase + 8;
             const int pe32SizeOfImageOffset = optionalHeaderBase + 56;
             const int pe32DataDirectoriesOffset = optionalHeaderBase + 96;
             // offset relative to each section header
