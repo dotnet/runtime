@@ -1,6 +1,6 @@
 <!--
 ***********************************************************************************************
-CLRTest.Execute.targets
+CLRTest.CrossGen.targets
 
 WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
           created a backup copy.  Incorrect changes to this file will make it
@@ -113,7 +113,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         fi
         echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
         echo --targetos:$(TargetOS)>>$__ResponseFile
-        echo -O>>$__ResponseFile
 
         echo "Response file: $__ResponseFile"
         cat $__ResponseFile
@@ -263,7 +262,6 @@ if defined RunCrossGen2 (
     echo -r:!CORE_ROOT!\xunit.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\netstandard.dll>>!__ResponseFile!
-    echo -O>>!__ResponseFile!
 
     if not "$(__CreatePdb)" == "" (
         echo --pdb>>!__ResponseFile!

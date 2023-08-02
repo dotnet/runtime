@@ -239,8 +239,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
             throw;
         }
 
-        _remoteEndPoint = info->RemoteAddress->ToIPEndPoint();
-        _localEndPoint = info->LocalAddress->ToIPEndPoint();
+        _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(info->RemoteAddress);
+        _localEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(info->LocalAddress);
 #if DEBUG
         _tlsSecret = MsQuicTlsSecret.Create(_handle);
 #endif
@@ -478,10 +478,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _negotiatedApplicationProtocol = new SslApplicationProtocol(new Span<byte>(data.NegotiatedAlpn, data.NegotiatedAlpnLength).ToArray());
 
         QuicAddr remoteAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
-        _remoteEndPoint = remoteAddress.ToIPEndPoint();
+        _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&remoteAddress);
 
         QuicAddr localAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
-        _localEndPoint = localAddress.ToIPEndPoint();
+        _localEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&localAddress);
 
         if (NetEventSource.Log.IsEnabled())
         {
@@ -512,12 +512,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventLocalAddressChanged(ref LOCAL_ADDRESS_CHANGED_DATA data)
     {
-        _localEndPoint = data.Address->ToIPEndPoint();
+        _localEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(data.Address);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventPeerAddressChanged(ref PEER_ADDRESS_CHANGED_DATA data)
     {
-        _remoteEndPoint = data.Address->ToIPEndPoint();
+        _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(data.Address);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventPeerStreamStarted(ref PEER_STREAM_STARTED_DATA data)
