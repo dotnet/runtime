@@ -69,7 +69,4 @@
     <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
   </PropertyGroup>
 
-  <ItemGroup>
-    <RuntimePackAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\**\*" OriginalItemName="SynthesizedFromFilesOnDisk" />
-  </ItemGroup>
 </Project>
