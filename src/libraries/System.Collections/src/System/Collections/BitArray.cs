@@ -17,7 +17,7 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class BitArray : ICollection, ICloneable
     {
-        private int[] m_array; // Do not rename (binary serialization)
+        public int[] m_array; // Do not rename (binary serialization)
         private int m_length; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
 
@@ -119,6 +119,8 @@ namespace System.Collections
         private const uint Vector128IntCount = 4;
         private const uint Vector256ByteCount = 32;
         private const uint Vector256IntCount = 8;
+        private const uint Vector512ByteCount = 64;
+        private const uint Vector512IntCount = 16;
         public unsafe BitArray(bool[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
@@ -340,7 +342,15 @@ namespace System.Collections
             ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
             ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
 
-            if (Vector256.IsHardwareAccelerated)
+            if (Vector512.IsHardwareAccelerated && i < ((uint)count - (Vector512IntCount - 1u)))
+            {
+                for (; i < (uint)count - (Vector512IntCount - 1u); i += Vector512IntCount)
+                {
+                    Vector512<int> result = Vector512.LoadUnsafe(ref left, i) & Vector512.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated && i < ((uint)count - (Vector256IntCount - 1u)))
             {
                 for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
@@ -348,7 +358,7 @@ namespace System.Collections
                     result.StoreUnsafe(ref left, i);
                 }
             }
-            else if (Vector128.IsHardwareAccelerated)
+            else if (Vector128.IsHardwareAccelerated && i < ((uint)count - (Vector128IntCount - 1u)))
             {
                 for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
@@ -406,7 +416,15 @@ namespace System.Collections
             ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
             ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
 
-            if (Vector256.IsHardwareAccelerated)
+            if (Vector512.IsHardwareAccelerated && i < ((uint)count - (Vector512IntCount - 1u)))
+            {
+                for (; i < (uint)count - (Vector512IntCount - 1u); i += Vector512IntCount)
+                {
+                    Vector512<int> result = Vector512.LoadUnsafe(ref left, i) | Vector512.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated && i < ((uint)count - (Vector256IntCount - 1u)))
             {
                 for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
@@ -414,7 +432,7 @@ namespace System.Collections
                     result.StoreUnsafe(ref left, i);
                 }
             }
-            else if (Vector128.IsHardwareAccelerated)
+            else if (Vector128.IsHardwareAccelerated && i < ((uint)count - (Vector128IntCount - 1u)))
             {
                 for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
@@ -472,7 +490,15 @@ namespace System.Collections
             ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
             ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
 
-            if (Vector256.IsHardwareAccelerated)
+            if (Vector512.IsHardwareAccelerated && i < ((uint)count - (Vector512IntCount - 1u)))
+            {
+                for (; i < (uint)count - (Vector512IntCount - 1u); i += Vector512IntCount)
+                {
+                    Vector512<int> result = Vector512.LoadUnsafe(ref left, i) ^ Vector512.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated && i < ((uint)count - (Vector256IntCount - 1u)))
             {
                 for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
@@ -480,7 +506,7 @@ namespace System.Collections
                     result.StoreUnsafe(ref left, i);
                 }
             }
-            else if (Vector128.IsHardwareAccelerated)
+            else if (Vector128.IsHardwareAccelerated && i < ((uint)count - (Vector128IntCount - 1u)))
             {
                 for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
@@ -530,7 +556,15 @@ namespace System.Collections
 
             ref int value = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
 
-            if (Vector256.IsHardwareAccelerated)
+            if (Vector512.IsHardwareAccelerated && i < ((uint)count - (Vector512IntCount - 1u)))
+            {
+                for (; i < (uint)count - (Vector512IntCount - 1u); i += Vector512IntCount)
+                {
+                    Vector512<int> result = ~Vector512.LoadUnsafe(ref value, i);
+                    result.StoreUnsafe(ref value, i);
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated && i < ((uint)count - (Vector256IntCount - 1u)))
             {
                 for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
@@ -538,7 +572,7 @@ namespace System.Collections
                     result.StoreUnsafe(ref value, i);
                 }
             }
-            else if (Vector128.IsHardwareAccelerated)
+            else if (Vector128.IsHardwareAccelerated && i < ((uint)count - (Vector128IntCount - 1u)))
             {
                 for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
@@ -803,7 +837,32 @@ namespace System.Collections
                 Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
                 Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
 
-                if (Avx2.IsSupported)
+                if (Avx512F.IsSupported)
+                {
+                    Vector256<byte> upperShuffleMask_CopyToBoolArray256 = Vector256.Create(0x04040404_04040404, 0x05050505_05050505,
+                                                                                             0x06060606_06060606, 0x07070707_07070707).AsByte();
+                    Vector256<byte> lowerShuffleMask_CopyToBoolArray256 = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
+                    Vector512<byte> shuffleMask = Vector512.Create(lowerShuffleMask_CopyToBoolArray256, upperShuffleMask_CopyToBoolArray256);
+                    Vector512<byte> bitMask = Vector512.Create(0x80402010_08040201).AsByte();
+                    Vector512<byte> ones = Vector512.Create((byte)1);
+
+                    fixed (bool* destination = &boolArray[index])
+                    {
+                        for (; (i + Vector512ByteCount) <= (uint)m_length; i += Vector512ByteCount)
+                        {
+                            long bits = m_array[i / (uint)BitsPerInt32] + m_array[(i / (uint)BitsPerInt32) + 1];
+                            Vector512<long> scalar = Vector512.Create(bits);
+                            Vector512<byte> shuffled = Vector512.Shuffle(scalar.AsByte(), shuffleMask);
+                            Vector512<byte> extracted = Avx512F.And(shuffled, bitMask);
+
+                            // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
+                            // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
+                            Vector512<byte> normalized = Vector512.Min(extracted, ones);
+                            Avx512F.Store((byte*)destination + i, normalized);
+                        }
+                    }
+                }
+                else if (Avx2.IsSupported)
                 {
                     Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
                     Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
