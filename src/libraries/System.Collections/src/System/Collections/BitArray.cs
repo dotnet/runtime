@@ -850,7 +850,7 @@ namespace System.Collections
                     {
                         for (; (i + Vector512ByteCount) <= (uint)m_length; i += Vector512ByteCount)
                         {
-                            long bits = m_array[i / (uint)BitsPerInt32] + m_array[(i / (uint)BitsPerInt32) + 1];
+                            long bits = m_array[i / (uint)BitsPerInt32] + (m_array[(i / (uint)BitsPerInt32) + 1] << BitsPerInt32);
                             Vector512<long> scalar = Vector512.Create(bits);
                             Vector512<byte> shuffled = Vector512.Shuffle(scalar.AsByte(), shuffleMask);
                             Vector512<byte> extracted = Avx512F.And(shuffled, bitMask);
