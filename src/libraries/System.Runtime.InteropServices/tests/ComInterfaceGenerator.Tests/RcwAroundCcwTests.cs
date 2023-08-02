@@ -119,31 +119,34 @@ namespace ComInterfaceGenerator.Tests
         [Fact]
         public void ICollectionMarshallingFails()
         {
+            Type hrExceptionType = PlatformDetection.IsWindows ? typeof(MarshallingFailureException) : typeof(Exception);
+
             var obj = CreateWrapper<ICollectionMarshallingFailsImpl, ICollectionMarshallingFails>();
 
             Assert.Throws<MarshallingFailureException>(() =>
+                obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 }, 10)
+            );
+
+            Assert.Throws(hrExceptionType, () =>
                 _ = obj.GetConstSize()
             );
 
-            Assert.Throws<MarshallingFailureException>(() =>
+            Assert.Throws(hrExceptionType, () =>
                 _ = obj.Get(out _)
-            );
-
-            Assert.Throws<MarshallingFailureException>(() =>
-                obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 }, 10)
             );
         }
 
         [Fact]
         public void IJaggedArrayMarshallingFails()
         {
+            Type hrExceptionType = PlatformDetection.IsWindows ? typeof(MarshallingFailureException) : typeof(Exception);
             var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
 
-            Assert.Throws<MarshallingFailureException>(() =>
+            Assert.Throws(hrExceptionType, () =>
                 _ = obj.GetConstSize()
             );
 
-            Assert.Throws<MarshallingFailureException>(() =>
+            Assert.Throws(hrExceptionType, () =>
                 _ = obj.Get(out _, out _)
             );
             var array = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5, }, new int[] { 6, 7, 8, 9 } };
@@ -157,6 +160,7 @@ namespace ComInterfaceGenerator.Tests
         [Fact]
         public void IStringArrayMarshallingFails()
         {
+            Type hrExceptionType = PlatformDetection.IsWindows ? typeof(MarshallingFailureException) : typeof(Exception);
             var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
 
             var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
@@ -178,35 +182,11 @@ namespace ComInterfaceGenerator.Tests
             {
                 obj.ByValueInOutParam(strings);
             });
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
-        public void IStringArrayMarshallingFailsOutWindows()
-        {
-            var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
-            var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
-            // This will fail in the native side and throw for HR on the managed to unmanaged stub. In Windows environments, this is will unwrap the exception.
-            Assert.Throws<MarshallingFailureException>(() =>
+            Assert.Throws(hrExceptionType, () =>
             {
                 obj.OutParam(out strings);
             });
-            Assert.Throws<MarshallingFailureException>(() =>
-            {
-                _ = obj.ReturnValue();
-            });
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
-        public void IStringArrayMarshallingFailsOutNonWindows()
-        {
-            var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
-            var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
-            // This will fail in the native side and throw for HR on the managed to unmanaged stub. In non-Windows environments, this is a plain Exception.
-            Assert.Throws<Exception>(() =>
-            {
-                obj.OutParam(out strings);
-            });
-            Assert.Throws<Exception>(() =>
+            Assert.Throws(hrExceptionType, () =>
             {
                 _ = obj.ReturnValue();
             });
