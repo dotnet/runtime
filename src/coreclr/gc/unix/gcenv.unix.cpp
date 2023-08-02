@@ -1053,7 +1053,7 @@ bool GCToOSInterface::BoostThreadPriority()
     struct sched_param params;
     // Use max priority minus 1, in order to avoid need for elevated privileges
     params.sched_priority = sched_get_priority_max(SCHED_RR) - 1;
-    return !!pthread_setschedparam(thread_t, SCHED_RR, &params);
+    return !pthread_setschedparam(thread_t, SCHED_RR, &params);
 #else // __APPLE__
     // [LOCALGC TODO] Thread priority for macos
     return false;
