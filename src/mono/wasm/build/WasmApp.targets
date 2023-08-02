@@ -337,6 +337,8 @@
   <Target Name="_GetWasmGenerateAppBundleDependencies">
     <Warning Condition="'$(InvariantGlobalization)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(WasmIcuDataFileName)' != '' and '$(HybridGlobalization)' == 'true'" Text="%24(WasmIcuDataFileName) has no effect when %24(HybridGlobalization) is set to true." />
+    <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." /> 
+ 
     <PropertyGroup>
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.js'">true</_HasDotnetJsWorker>
@@ -366,7 +368,7 @@
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
-      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*"  Exclude="@(_HybridGlobalizationDataFiles)"/>
+      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*"  Exclude="@(_HybridGlobalizationDataFiles);$(_WasmIcuDataFileName)"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
@@ -374,6 +376,8 @@
       <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>
 
+    <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->'%(Filename)')."/>
+    <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !$([System.IO.Path]::GetFileName('$(WasmIcuDataFileName)').StartsWith('icudt'))" Text="Custom ICU file name in path %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) must start with 'icudt'."/>
   </Target>
 
   <Target Name="_WasmGenerateAppBundle"
@@ -381,9 +385,7 @@
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
           DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies">
-    <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->' %(Filename)')."/>
-    <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." />
-
+          
     <PropertyGroup>
       <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">true</_WasmAppIncludeThreadsWorker>
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->

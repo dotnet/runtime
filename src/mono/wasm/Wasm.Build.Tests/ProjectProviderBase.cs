@@ -393,7 +393,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
             .Union(bootJson.resources.jsModuleRuntime.Keys)
             .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
-            .Union(bootJson.resources.jsSymbols?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.wasmNative.Keys)
             .ToArray();
 
