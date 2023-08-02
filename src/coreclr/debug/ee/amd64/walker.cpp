@@ -857,14 +857,17 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
             switch (address[1])
             {
             case 0x38:
+                LOG((LF_CORDB, LL_INFO10000, "map:0F38 "));
                 opCodeMap = Escape0F_38;
                 address += 2;
                 break;
             case 0x3A:
+                LOG((LF_CORDB, LL_INFO10000, "map:0F3A "));
                 opCodeMap = Escape0F_3A;
                 address += 2;
                 break;
             default:
+                LOG((LF_CORDB, LL_INFO10000, "map:0F "));
                 opCodeMap = Secondary;
                 address += 1;
                 break;
@@ -881,6 +884,20 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 
         case 0xc4: // Vex 3-byte
             opCodeMap = (OpcodeMap)(int(address[0]) << 8 | (address[1] & 0x1f));
+
+            switch (opCodeMap)
+            {
+            case VexMapC40F:
+                LOG((LF_CORDB, LL_INFO10000, "map:Vex0F "));
+                break;
+            case VexMapC40F38:
+                LOG((LF_CORDB, LL_INFO10000, "map:Vex0F38 "));
+                break;
+            case VexMapC40F3A:
+                LOG((LF_CORDB, LL_INFO10000, "map:Vex0F3A "));
+                break;
+            }
+
             // W is the top bit of opcode2.
             if ((address[2] & 0x80) != 0)
             {
@@ -897,6 +914,8 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 
         case 0xc5: // Vex 2-byte
             opCodeMap = VexMapC40F;
+            LOG((LF_CORDB, LL_INFO10000, "map:VexC5 (Vex0F) "));
+
             W = true;
             if ((address[1] & 0x04) != 0)
             {
@@ -913,12 +932,15 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
             switch (evex_mmm)
             {
             case 0x1:
+                LOG((LF_CORDB, LL_INFO10000, "map:Evex0F "));
                 opCodeMap = EvexMap0F;
                 break;
             case 0x2:
+                LOG((LF_CORDB, LL_INFO10000, "map:Evex0F38 "));
                 opCodeMap = EvexMap0F38;
                 break;
             case 0x3:
+                LOG((LF_CORDB, LL_INFO10000, "map:Evex0F3A "));
                 opCodeMap = EvexMap0F3A;
                 break;
             default:
@@ -948,6 +970,8 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
     
     size_t opCode    = size_t(*address);
     size_t opCodeExt = (opCode << 2) | pp;
+
+    LOG((LF_CORDB, LL_INFO10000, "opCode:%02x pp:%d W:%d L:%d LL:%d ", opCode, pp, W ? 1 : 0, L ? 1 : 0, evex_LL));
 
     switch (opCodeMap)
     {
@@ -987,6 +1011,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 
     bool fModRM = InstructionHasModRMByte(form, W);
     ModRMByte modrm = ModRMByte(address[1]);
+    LOG((LF_CORDB, LL_INFO10000, "modrm .mod:%d .reg:%d .rm:%d form:%d ", modrm.mod, modrm.reg, modrm.rm, form));
 
     if (fModRM && (modrm.mod == 0x0) && (modrm.rm == 0x5))
     {
@@ -1007,6 +1032,13 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 
         pInstrAttrib->m_fIsWrite = InstructionIsWrite(form);
         pInstrAttrib->m_cOperandSize = InstructionOperandSize(form, pp, W, L, evex_LL, fPrefix66);
+
+        LOG((LF_CORDB, LL_INFO10000, "cb:%d o2disp:%d write:%s immBytes:%d opSize:%d ",
+            pInstrAttrib->m_cbInstr,
+            pInstrAttrib->m_dwOffsetToDisp,
+            pInstrAttrib->m_fIsWrite ? "true" : "false",
+            immBytes,
+            pInstrAttrib->m_cOperandSize));
     }
 
     if (opCodeMap == Primary)
@@ -1059,7 +1091,10 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
                 break;
         }
     }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO10000, "\n"));
+    }
 }
-
 
 #endif
