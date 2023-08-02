@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using Microsoft.NET.HostModel.Win32Resources;
@@ -16,7 +17,7 @@ namespace Microsoft.NET.HostModel
     /// </summary>
     public class ResourceUpdater : IDisposable
     {
-        private readonly Stream stream;
+        private readonly FileStream stream;
         private readonly PEReader _reader;
         private ResourceData _resourceData;
         private readonly bool leaveOpen;
@@ -53,7 +54,7 @@ namespace Microsoft.NET.HostModel
         /// which the ResourceUpdater can not be used for further
         /// updates.
         /// </summary>
-        public ResourceUpdater(Stream stream, bool leaveOpen = false)
+        public ResourceUpdater(FileStream stream, bool leaveOpen = false)
         {
             this.stream = stream;
             this.leaveOpen = leaveOpen;
@@ -246,10 +247,10 @@ namespace Microsoft.NET.HostModel
             // but it's impossible to achieve open once goal because
             // CreateFromFile with currentSectionIndex is not exists in
             // netstandard 2.0. So, I use read to byte[] instead.
-            byte[] buffer = new byte[finalImageSize];
-            var memoryStream = new MemoryStream(buffer);
-            stream.Seek(0, SeekOrigin.Begin);
-            stream.CopyTo(memoryStream);
+
+            using var mmap = MemoryMappedFile.CreateFromFile(stream, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true);
+            using var accessor = mmap.CreateViewAccessor(0, finalImageSize, MemoryMappedFileAccess.ReadWrite);
+            var buffer = accessor;
 
             int peSignatureOffset = ReadI32(buffer, Offsets.DosStab.PESignatureOffset);
             int sectionBase = peSignatureOffset + Offsets.PEHeaderSize +
@@ -266,14 +267,14 @@ namespace Microsoft.NET.HostModel
                 WriteI32(buffer, peSignatureOffset + Offsets.PEHeader.NumberOfSections, resourceSectionIndex + 1);
 
                 // section name ".rsrc\0\0\0" = 2E 72 73 72 63 00 00 00
-                buffer[resourceSectionBase + 0] = 0x2E;
-                buffer[resourceSectionBase + 1] = 0x72;
-                buffer[resourceSectionBase + 2] = 0x73;
-                buffer[resourceSectionBase + 3] = 0x72;
-                buffer[resourceSectionBase + 4] = 0x63;
-                buffer[resourceSectionBase + 5] = 0x00;
-                buffer[resourceSectionBase + 6] = 0x00;
-                buffer[resourceSectionBase + 7] = 0x00;
+                buffer.Write(resourceSectionBase + 0, (byte)0x2E);
+                buffer.Write(resourceSectionBase + 1, (byte)0x72);
+                buffer.Write(resourceSectionBase + 2, (byte)0x73);
+                buffer.Write(resourceSectionBase + 3, (byte)0x72);
+                buffer.Write(resourceSectionBase + 4, (byte)0x63);
+                buffer.Write(resourceSectionBase + 5, (byte)0x00);
+                buffer.Write(resourceSectionBase + 6, (byte)0x00);
+                buffer.Write(resourceSectionBase + 7, (byte)0x00);
                 WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
                 WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.VirtualAddress, rsrcVirtualAddress);
                 WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.RawSize, newSectionSize);
@@ -288,9 +289,9 @@ namespace Microsoft.NET.HostModel
 
             if (needsMoveTrailingSections)
             {
-                Array.Copy(buffer, trailingSectionStart,
-                    buffer, trailingSectionStart + delta,
-                    trailingSectionLength);
+                byte[] moveTrailingSectionBuffer = new byte[trailingSectionLength];
+                buffer.ReadArray(trailingSectionStart, moveTrailingSectionBuffer, 0, trailingSectionLength);
+                buffer.WriteArray(trailingSectionStart + delta, moveTrailingSectionBuffer, 0, trailingSectionLength);
 
                 for (int i = resourceSectionIndex + 1; i < _reader.PEHeaders.SectionHeaders.Length; i++)
                 {
@@ -359,46 +360,38 @@ namespace Microsoft.NET.HostModel
                 }
             }
 
-            Array.Copy(rsrcSectionData, 0,
-                buffer, rsrcPointerToRawData,
-                rsrcSectionDataSize);
+            buffer.WriteArray(rsrcPointerToRawData, rsrcSectionData, 0, rsrcSectionDataSize);
 
             // clear rest
             //Array.Fill is standard 2.1
             for (int i = rsrcSectionDataSize; i < newSectionSize; i++)
-                buffer[rsrcPointerToRawData + i] = 0;
-
-            // write back the buffer data
-            stream.Seek(0, SeekOrigin.Begin);
-            stream.Write(buffer, 0, buffer.Length);
-            stream.SetLength(buffer.LongLength);
-            stream.Flush();
+                buffer.Write(rsrcPointerToRawData + i, (byte)0);
 
             _resourceData = null;
         }
 
-        private static int ReadI32(byte[] buffer, int position)
+        private static int ReadI32(MemoryMappedViewAccessor buffer, int position)
         {
-            return buffer[position + 0]
-                        | (buffer[position + 1] << 8)
-                        | (buffer[position + 2] << 16)
-                        | (buffer[position + 3] << 24);
+            return buffer.ReadByte(position + 0)
+                        | (buffer.ReadByte(position + 1) << 8)
+                        | (buffer.ReadByte(position + 2) << 16)
+                        | (buffer.ReadByte(position + 3) << 24);
         }
 
-        private static void WriteI32(byte[] buffer, int position, int data)
+        private static void WriteI32(MemoryMappedViewAccessor buffer, int position, int data)
         {
-            buffer[position + 0] = (byte)(data & 0xFF);
-            buffer[position + 1] = (byte)(data >> 8 & 0xFF);
-            buffer[position + 2] = (byte)(data >> 16 & 0xFF);
-            buffer[position + 3] = (byte)(data >> 24 & 0xFF);
+            buffer.Write(position + 0, (byte)(data & 0xFF));
+            buffer.Write(position + 1, (byte)(data >> 8 & 0xFF));
+            buffer.Write(position + 2, (byte)(data >> 16 & 0xFF));
+            buffer.Write(position + 3, (byte)(data >> 24 & 0xFF));
         }
-        private static void WriteI16(byte[] buffer, int position, short data)
+        private static void WriteI16(MemoryMappedViewAccessor buffer, int position, short data)
         {
-            buffer[position + 0] = (byte)(data & 0xFF);
-            buffer[position + 1] = (byte)(data >> 8 & 0xFF);
+            buffer.Write(position + 0, (byte)(data & 0xFF));
+            buffer.Write(position + 1, (byte)(data >> 8 & 0xFF));
         }
 
-        private static void ModifyI32(byte[] buffer, int position, Func<int, int> modifier) =>
+        private static void ModifyI32(MemoryMappedViewAccessor buffer, int position, Func<int, int> modifier) =>
             WriteI32(buffer, position, modifier(ReadI32(buffer, position)));
 
         public static int GetAligned(int integer, int alignWith) => (integer + alignWith - 1) & ~(alignWith - 1);
