@@ -17,7 +17,7 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class BitArray : ICollection, ICloneable
     {
-        private int[] m_array; // Do not rename (binary serialization)
+        public int[] m_array; // Do not rename (binary serialization)
         private int m_length; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
 
@@ -335,7 +335,7 @@ namespace System.Collections
 
             ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
             ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
-
+            
             if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
             {
                 for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
@@ -409,7 +409,7 @@ namespace System.Collections
 
             ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
             ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
-
+            
             if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
             {
                 for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
@@ -549,7 +549,7 @@ namespace System.Collections
             uint i = 0;
 
             ref int value = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
-
+            
             if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
             {
                 for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
@@ -826,6 +826,12 @@ namespace System.Collections
                     goto LessThan32;
 
                 // The mask used when shuffling a single int into Vector128/256.
+                // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
+                // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
+                Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
+                Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
+
+                // The mask used when shuffling a single int into Vector128/256/512.
                 // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
                 // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
                 Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
