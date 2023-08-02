@@ -665,6 +665,8 @@ class SuperPMICollect:
         else:
             self.superpmi_jit_path = self.jit_path
 
+        logging.info("SuperPMI JIT Path: %s", self.superpmi_jit_path)
+
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.mcs_path = determine_mcs_tool_path(coreclr_args)
 
