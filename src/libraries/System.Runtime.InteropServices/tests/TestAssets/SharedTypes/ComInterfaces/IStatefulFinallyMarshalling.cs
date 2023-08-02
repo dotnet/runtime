@@ -25,32 +25,82 @@ namespace SharedTypes.ComInterfaces
     {
     }
 
-    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.Default, typeof(StatefulFinallyTypeMarshaller))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.UnmanagedToManagedOut, typeof(ManagedToUnmanaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.ManagedToUnmanagedOut, typeof(UnmanagedToManaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.UnmanagedToManagedIn, typeof(UnmanagedToManaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.UnmanagedToManagedRef, typeof(Bidirectional))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.ManagedToUnmanagedRef, typeof(Bidirectional))]
     internal struct StatefulFinallyTypeMarshaller
     {
-        public void FromManaged(StatefulFinallyType managed)
+        internal struct Bidirectional
         {
-            throw new NotImplementedException();
+            public void FromManaged(StatefulFinallyType managed)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public nint ToUnmanaged()
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public void FromUnmanaged(nint unmanaged)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public StatefulFinallyType ToManagedFinally()
+            {
+                throw new NotImplementedException();
+            }
+
+
+            public void Free()
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public void OnInvoked() { }
         }
 
-        public nint ToUnmanaged()
+        internal struct ManagedToUnmanaged
         {
-            throw new NotImplementedException();
+            public void FromManaged(StatefulFinallyType managed)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public nint ToUnmanaged()
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public void Free()
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public void OnInvoked() { }
         }
 
-        public void FromUnmanaged(nint unmanaged)
+        internal struct UnmanagedToManaged
         {
-            throw new NotImplementedException();
-        }
+            public void FromUnmanaged(nint unmanaged)
+            {
+                throw new System.NotImplementedException();
+            }
+            public StatefulFinallyType ToManagedFinally()
+            {
+                throw new NotImplementedException();
+            }
 
-        public StatefulFinallyType ToManagedFinally()
-        {
-            throw new NotImplementedException();
-        }
+            public void Free()
+            {
+                throw new System.NotImplementedException();
+            }
 
-        public void Free()
-        {
-            throw new NotImplementedException();
+            public void OnInvoked() { }
         }
     }
 }
