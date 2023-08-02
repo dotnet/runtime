@@ -25,7 +25,13 @@ extends:
             runtimeFlavor: mono
             platforms:
               - windows_x64
-              - windows_x86
+              - linux_x64
+              - osx_x64
+              - ${{ if eq(variables['isRollingBuild'], true) }}:
+                - android_x64
+                - linux_arm
+                - linux_musl_x64
+                - windows_x86
             jobParameters:
               testScope: outerloop
               nameSuffix: AllSubsets_Mono
@@ -35,6 +41,29 @@ extends:
               # extra steps, run tests
               extraStepsTemplate: /eng/pipelines/libraries/helix.yml
               extraStepsParameters:
+                testScope: outerloop
+                creator: dotnet-bot
+                testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+            buildConfig: Release
+            runtimeFlavor: mono
+            platforms:
+            - browser_wasm
+            jobParameters:
+              testScope: outerloop
+              nameSuffix: AllSubsets_Mono
+              buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+              timeoutInMinutes: 180
+              includeAllPlatforms: ${{ variables['isRollingBuild'] }}
+              # extra steps, run tests
+              extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+              extraStepsParameters:
+                scenarios:
+                - normal
                 testScope: outerloop
                 creator: dotnet-bot
                 testRunNamePrefixSuffix: Mono_$(_BuildConfig)
