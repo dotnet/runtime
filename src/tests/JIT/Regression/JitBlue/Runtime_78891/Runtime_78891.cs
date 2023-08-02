@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -32,11 +33,12 @@ public class Runtime_78891
             try
             {
                 M59(vr2, vr3);
-                return 100;
-            }
-            catch
-            {
                 return 0;
+            }
+            catch (NullReferenceException)
+            {
+                // We expect a null reference exception to occur, return 100.
+                return 100;
             }
         }
 
