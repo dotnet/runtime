@@ -10,7 +10,7 @@ using Microsoft.NET.HostModel;
 using Microsoft.NET.HostModel.Win32Resources;
 using Xunit;
 
-namespace AppHost.Bundle.Tests;
+namespace Microsoft.NET.HostModel.Tests;
 
 public class ResourceUpdaterTests
 {
