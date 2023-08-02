@@ -1431,7 +1431,8 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 
     // First check special constraints
     DWORD flags;
-    IfFailThrow(pInternalImport->GetGenericParamProps(genericParamToken, NULL, &flags, NULL, NULL, NULL));
+    mdToken tkType;
+    IfFailThrow(pInternalImport->GetGenericParamProps(genericParamToken, NULL, &flags, NULL, &tkType, NULL));
 
     DWORD specialConstraints = flags & gpSpecialConstraintMask;
 
@@ -1489,6 +1490,21 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
         // A<T> using pInstContext so that it becomes A<int>. Otherwise the constraint check fails.
         //
         GatherConstraintsRecursive(pTyVar, &argList, pInstContext);
+    }
+    else if (thArg.IsConstValue())
+    {
+        if (!RidFromToken(tkType))
+            return FALSE;
+        ConstValueTypeDesc *pConVal = thArg.AsConstValue();
+        TypeHandle thType = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(GetModule(),
+                                                                        tkType,
+                                                                        pTypeContextOfConstraintDeclarer,
+                                                                        ClassLoader::ThrowIfNotFound,
+                                                                        ClassLoader::FailIfUninstDefOrRef,
+                                                                        ClassLoader::LoadTypes,
+                                                                        CLASS_DEPENDENCIES_LOADED);
+        if (!pConVal->GetConstValueType().IsEquivalentTo(thType))
+            return FALSE;
     }
     else
     {
