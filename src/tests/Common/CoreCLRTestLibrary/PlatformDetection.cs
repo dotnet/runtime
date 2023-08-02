@@ -22,6 +22,8 @@ namespace TestLibrary
                                                 ? isEnabled
                                                 : true);
 
+        public static bool IsRareEnumsSupported => !Utilities.IsNativeAot;
+
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
         {
