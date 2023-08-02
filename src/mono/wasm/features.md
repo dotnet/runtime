@@ -151,9 +151,7 @@ See also [fetch integrity](https://developer.mozilla.org/en-US/docs/Web/API/Requ
 
 ## MIME types
 
-`Content-Type` HTTP headers tell the browser about the type of each downloaded asset. They are necessary for correct and fast processing by the browser, but also by various caches and proxies.
-
-HTTP headers are sent by your HTTP server or proxy, which need to be properly configured. If not set correctly, your application may load slowly or even fail to start.
+`Content-Type` HTTP headers tell the browser about the type of each downloaded asset. They are necessary for correct and fast processing by the browser, but also by various caches and proxies. HTTP headers are sent by your HTTP server or proxy, which need to be properly configured. If not set correctly, your application may load slowly or even fail to start.
 
 | file extension  | Content-Type |
 |---|---|
@@ -164,15 +162,12 @@ HTTP headers are sent by your HTTP server or proxy, which need to be properly co
 See also [Content-Type on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type)
 
 ## Compression
-Modern browsers are able to unpack files that have been compressed by the server, allowing for faster downloads and reduced startup time. By default, a Blazor application published will include gzip (`.gz`) and brotli (`.br`) compressed versions of each asset, and by configuring your web server correctly those files can be served to end users for improved performance.
+Modern browsers are able to automatically decompress files that have been compressed by the server, allowing for faster downloads and reduced startup time. By default, a Blazor application published will include gzip (`.gz`) and brotli (`.br`) compressed versions of each asset, and by configuring your web server correctly those files can be delivered to end users for reduced download and startup time.
 
 See also [Content-Encoding on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding)
 
 ## Content security policy
-
-dotnet runtime for wasm is CSP compliant starting from .Net 8, except legacy JS interop methods.
-
-In order to enable it, please set HTTP headers similar to `Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'`
+dotnet runtime for wasm is CSP compliant starting from .Net 8, except legacy JS interop methods. In order to enable it, please set HTTP headers similar to `Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'`.
 
 HTTP headers are sent by your HTTP server or proxy, which need to be properly configured.
 
@@ -181,80 +176,48 @@ See also [CSP on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
 See also [wasm-unsafe-eval](https://github.com/WebAssembly/content-security-policy/blob/main/proposals/CSP.md#the-wasm-unsafe-eval-source-directive)
 
 ## Globalization, ICU
+Browsers do not offer full support for the globalization APIs available in .NET, so by default we provide our own version of the [ICU library](https://icu.unicode.org/) and databases. To reduce download sizes, by default the runtime will detect the end user's locale at startup, and load an appropriate slice of the ICU database only containing information for that locale.
 
-Browsers don't offer full set APIs for working with localization and so we have to bring the data and the logic as part of the application.
+For some use cases, you may wish to override this behavior or create a custom ICU database. For more information on doing this, see [globalization-icu-wasm.md](../../../docs/design/features/globalization-icu-wasm.md).
 
-In order to make downloades smaller, runtime will detect the locale of the browser and load just shard of the ICU database. You can also create and configure your own custom shards.
+There are also rare use cases where your application does not rely on the contents of the ICU databases. In those scenarios, you can make your application smaller by enabling Invariant Globalization via the `<InvariantCulture>true</InvariantCulture>` msbuild property. For more details see [globalization-invariant-mode.md](../../../docs/design/features/globalization-invariant-mode.md).
 
-For more details see [globalization-icu-wasm.md](../../../docs/design/features/globalization-icu-wasm.md)
+We are currently developing a third approach for locales where we offer a more limited feature set by relying on browser APIs, called "Hybrid Globalization". This provides more functionality than Invariant Culture mode without the need to ship the ICU library or its databases, which improves startup time. You can use the msbuild property `<HybridGlobalization>true</HybridGlobalization>` to test this in-development feature, but be aware that it is currently incomplete and may have performance issues. For more details see [globalization-hybrid-mode.md](../../../docs/design/features/globalization-hybrid-mode.md).
 
-If your application doesn't need to work with locatization, you can reduce download size by `<InvariantCulture>true</InvariantCulture>`.
-
-For more details see [globalization-invariant-mode.md](../../../docs/design/features/globalization-invariant-mode.md)
-
-If your application needs to work with locatization but you don't require processing speed for working with large texts, you can reduce download size by `<HybridGlobalization>true</HybridGlobalization>`.
-It will use browser APIs instead part of ICU database. This feature is still in development.
-
-For more details see [globalization-hybrid-mode.md](../../../docs/design/features/globalization-hybrid-mode.md)
-
-This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
+Customized globalization settings require [wasm-tools workload](#wasm-tools-workload) to be installed.
 
 ## Timezones
+Browsers do not offer a way to access the contents of their time zone database, so we deploy our own time zone database automatically as a part of your application. For applications that do not need to work with times or dates, you can use the `<InvariantTimezone>true</InvariantTimezone>` msbuild property to omit the database and reduce download size.
 
-Browsers don't offer API for working with time zone database and so we have to bring the time zone data as part of the application.
-
-If your application doesn't need to work with time zones, you can reduce download size by `<InvariantTimezone>true</InvariantTimezone>`.
-
-This requires that you have [wasm-tools workload](#wasm-tools-workload) installed.
+This requires that you have the [wasm-tools workload](#wasm-tools-workload) installed.
 
 ## Bundling JavaScript and other assets
+Many web developers use tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) to bundle many files into one large .js file. When deploying a .NET application to the web, you can safely bundle the `dotnet.js` ES6 module with the rest of your JavaScript application, but the other assets and modules in the `_framework` folder may not be bundled as they are loaded dynamically.
 
-In the web ecosystem it's usual that developers use assets bundlers like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) to bundle many files into one large .js file.
-
-You can bundle the `dotnet.js` ES6 module with the rest of your JavaScript application.
-
-The other assets and JS modules of the dotnet are loaded via dynamic `import` or via `fetch` APIs. They are not ready to be bundled in Net8.
-We consider that the dotnet application is usually large as is and giving the browser chance to start compiling it in parallel with other downloads is better.
-
-We would like to [hear from the community](https://github.com/dotnet/runtime/issues/86162) more about the use-cases when it would be benefitial.
+In our testing the dynamic loading of assets provides faster startup and shorter download times, so there are currently no plans to allow bundling other assets. We would like to [hear from the community](https://github.com/dotnet/runtime/issues/86162) if there are scenarios where you need the ability to bundle the rest of an application.
 
 # Resources consumed on the target device
+When you deploy a .NET application to the browser, many necessary components and databases are included:
+- The .NET runtime, including a garbage collector, interpreter, and JIT compiler
+- The .NET base class library
+- An OS emulation layer that supplements browser features to provide a platform suitable for applications, like timezones and globalization
+- Browser integration for features like HTTP and WebSockets
+- And finally, your application binaries
 
-dotnet is complex and large application, it consists of
-- dotnet runtime, including garbage collector, IL interpreter and browser specific JIT
-- dotnet base class library
-- emulation layer which is bringing missing features of the OS, which the browser doesn't provide. Like timezone database or ICU.
-- integration with the browser JavaScript APIs, for example HTTP and WebSocket client
-- application code
-
-All of the mentioned code and data need to be downloaded and loaded into the browser memory during the dotnet startup sequence.
-Browser itself will run JIT compilation of the WASM and JS code, which consumes memory and CPU cycles too.
+All of the above must be downloaded and loaded into memory before your application can start, because web browsers do not provide the ability to "page in" content on demand like native operating systems. The browser must also perform its own JIT compilation at startup in order to run your application. The result is that running a .NET application in the browser may require more memory and CPU resources than it would to run it natively using the .NET runtime outside of the browser.
 
 ## Mobile phones
+Recent mobile phones distribute their browser as an application that can be upgraded separately from the operating system. Note that all browsers on iOS and iPadOS are required to use the Safari browser engine, so their level of support for WASM features depends on the version of Safari installed on the device.
 
-Recent mobile phones distribute their browser as an application that can be upgraded separately from the operating system.
-
-Note that all browsers on iOS and iPadOS are required to use the Safari browser engine, so their level of support for WASM features depends on the version of Safari installed on the device.
-
-Mobile browsers typically have strict limits on the amount of memory they can use, and many users are on slow internet connections. A WebAssembly application that works well on desktop PCs may take minutes to download or run out of memory before it is able to start.
+Mobile browsers typically have strict limits on the amount of memory they can use, and many users are on slow internet connections. A WebAssembly application that works well on desktop PCs may take minutes to download or run out of memory before it is able to start, and the same is true for .NET.
 
 ## Shell environments - NodeJS & V8
-We pass most of the unit tests with NodeJS v 14 but it's not fully supported target platform. We would like to hear about community use-cases.
+While our primary target is web browsers, we have partial support for Node.JS v14 sufficient to pass most of our automated tests. We also have partial support for the D8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
 
-We also use the d8 command-line shell, version 11 or higher, to run some of the tests. This shell lacks most browser APIs and features.
-
-## Trade-offs compared to native JavaScript applications
-
-There is trade-off between download size, application performance and complexity of application maintanance.
-If your business logic is very complex, changes often or you already have existing C# codebase and skillset, running the same code dotnet on wasm is probably the right choice.
-If your application is simple and you have JavaScript skills on your team, it may be better if you re/write your logic in Web native technologies like HTML/JavaScript or typescript/webpack stack.
+## Choosing the right platform target
+Every end user has different needs, so the right platform for every application may differ. The trade-offs involved in using .NET WebAssembly - like download size, startup time and performance - mean that for some applications other technologies may be more appropriate, whether it's deploying a native application on the .NET runtime or re-writing parts of your application using web technologies like HTML and TypeScript and using our interop support to integrate them.
 
 # wasm-tools workload
+The wasm-tools workload contains all of the tools and libraries necessary to perform native rebuild or AOT compilation and other optimizations of your application. Although it's optional for Blazor, we strongly recommend using it!
 
-The wasm-tools workload contains all of the tools and libraries necessary to perform native rebuild or AOT compilation and other optimizations of your application.
-
-Although it's optional for Blazor, we strongly recommend using it!
-
-You can install it by running `dotnet workload install wasm-tools` on your command line.
-
-You can also install `dotnet workload install wasm-experimental`.
+You can install it by running `dotnet workload install wasm-tools` from the command line. You can also install `dotnet workload install wasm-experimental` to test out new experimental features and templates.
