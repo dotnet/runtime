@@ -107,7 +107,6 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         ws.removeEventListener("open", local_on_open);
         ws.removeEventListener("close", local_on_close);
         ws.removeEventListener("error", local_on_error);
-        reject_promises(ws, new Error("WebSocket aborted"));
         ws_wasm_abort(ws);
     };
 
