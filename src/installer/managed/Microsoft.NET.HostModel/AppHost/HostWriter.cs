@@ -125,7 +125,7 @@ namespace Microsoft.NET.HostModel.AppHost
                     }
                 });
 
-                RetryUtil.RetryOnWin32Error(UpdateResources);
+                RetryUtil.RetryOnIOError(UpdateResources);
 
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
