@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -59,32 +58,30 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         return true;
     }
 
-    private GlobalizationMode GetGlobalizationMode()
+    private ICUDataMode GetICUDataMode()
     {
         // Invariant has always precedence
         if (InvariantGlobalization)
-            return GlobalizationMode.Invariant;
+            return ICUDataMode.Invariant;
 
         // If user provided a path to a custom ICU data file, use it
         if (!string.IsNullOrEmpty(WasmIcuDataFileName))
-            return GlobalizationMode.Custom;
+            return ICUDataMode.Custom;
 
         // Hybrid mode
         if (HybridGlobalization)
-            return GlobalizationMode.Hybrid;
+            return ICUDataMode.Hybrid;
 
         // If user requested to include full ICU data, use it
         if (WasmIncludeFullIcuData)
-            return GlobalizationMode.All;
+            return ICUDataMode.All;
 
         // Otherwise, use sharded mode
-        return GlobalizationMode.Sharded;
+        return ICUDataMode.Sharded;
     }
 
     protected override bool ExecuteInternal()
     {
-        var helper = new BootJsonBuilderHelper(Log);
-
         if (!ValidateArguments())
             return false;
 
@@ -98,8 +95,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         var bootConfig = new BootJsonData()
         {
-            mainAssemblyName = MainAssemblyName,
-            globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant()
+            config = new(),
+            entryAssembly = MainAssemblyName,
+            icuDataMode = GetICUDataMode()
         };
 
         // Create app
@@ -160,9 +158,19 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
             var itemHash = Utils.ComputeIntegrity(item.ItemSpec);
 
-            Dictionary<string, string>? resourceList = helper.GetNativeResourceTargetInBootConfig(bootConfig, name);
-            if (resourceList != null)
-                resourceList[name] = itemHash;
+            if (name.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".wasm", StringComparison.OrdinalIgnoreCase))
+            {
+                if (bootConfig.resources.runtimeAssets == null)
+                    bootConfig.resources.runtimeAssets = new();
+
+                bootConfig.resources.runtimeAssets[name] = new()
+                {
+                    hash = itemHash,
+                    behavior = "dotnetwasm"
+                };
+            }
+
+            bootConfig.resources.runtime[name] = itemHash;
         }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");
@@ -205,6 +213,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
         }
 
+        bootConfig.debugBuild = DebugLevel > 0;
         bootConfig.debugLevel = DebugLevel;
 
         ProcessSatelliteAssemblies(args =>
@@ -303,8 +312,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     return false;
                 }
 
-                bootConfig.resources.icu ??= new();
-                bootConfig.resources.icu[Path.GetFileName(idfn)] = Utils.ComputeIntegrity(idfn);
+                bootConfig.resources.runtime[Path.GetFileName(idfn)] = Utils.ComputeIntegrity(idfn);
             }
         }
 
@@ -362,15 +370,35 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         string tmpMonoConfigPath = Path.GetTempFileName();
         using (var sw = File.CreateText(tmpMonoConfigPath))
         {
-            helper.ComputeResourcesHash(bootConfig);
+            var sb = new StringBuilder();
 
-            var jsonOptions = new JsonSerializerOptions
+            static void AddDictionary(StringBuilder sb, Dictionary<string, string> res)
             {
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                WriteIndented = true
-            };
-            var json = JsonSerializer.Serialize(bootConfig, jsonOptions);
+                foreach (var asset in res)
+                    sb.Append(asset.Value);
+            }
+
+            AddDictionary(sb, bootConfig.resources.assembly);
+            AddDictionary(sb, bootConfig.resources.runtime);
+
+            if (bootConfig.resources.lazyAssembly != null)
+                AddDictionary(sb, bootConfig.resources.lazyAssembly);
+
+            if (bootConfig.resources.satelliteResources != null)
+            {
+                foreach (var culture in bootConfig.resources.satelliteResources)
+                    AddDictionary(sb, culture.Value);
+            }
+
+            if (bootConfig.resources.vfs != null)
+            {
+                foreach (var entry in bootConfig.resources.vfs)
+                    AddDictionary(sb, entry.Value);
+            }
+
+            bootConfig.resources.hash = Utils.ComputeTextIntegrity(sb.ToString());
+
+            var json = JsonSerializer.Serialize(bootConfig, new JsonSerializerOptions { WriteIndented = true });
             sw.Write(json);
         }
 

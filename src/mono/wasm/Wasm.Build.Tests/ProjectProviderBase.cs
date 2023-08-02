@@ -390,12 +390,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
 
         BootJsonData bootJson = ParseBootData(bootJsonPath);
-        var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
-            .Union(bootJson.resources.jsModuleRuntime.Keys)
-            .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
-            .Union(bootJson.resources.jsSymbols?.Keys ?? Enumerable.Empty<string>())
-            .Union(bootJson.resources.wasmNative.Keys)
-            .ToArray();
+        var bootJsonEntries = bootJson.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.", StringComparison.Ordinal)).ToArray();
 
         var expectedEntries = new SortedDictionary<string, Action<string>>();
         IReadOnlySet<string> expected = GetDotNetFilesExpectedSet(options);
@@ -403,8 +398,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var knownSet = GetAllKnownDotnetFilesToFingerprintMap(options);
         foreach (string expectedFilename in expected)
         {
-            // FIXME: Find a systematic solution for skipping dotnet.js from boot json check
-            if (expectedFilename == "dotnet.js" || Path.GetExtension(expectedFilename) == ".map")
+            if (Path.GetExtension(expectedFilename) == ".map")
                 continue;
 
             bool expectFingerprint = knownSet[expectedFilename];

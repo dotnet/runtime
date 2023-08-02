@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviors, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI } from ".";
+import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI } from ".";
+import type { BootJsonData } from "./blazor";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -68,8 +69,6 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
 
 // when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
-    linkerEnabled?: boolean,
-    assets?: AssetEntry[],
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
@@ -134,18 +133,16 @@ export type LoaderHelpers = {
     getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
     assertIsControllablePromise: <T>(promise: Promise<T>) => asserts promise is ControllablePromise<T>,
     mono_download_assets: () => Promise<void>,
-    resolve_asset_path: (behavior: AssetBehaviors) => AssetEntryInternal,
+    resolve_asset_path: (behavior: AssetBehaviours) => AssetEntryInternal,
     setup_proxy_console: (id: string, console: Console, origin: string) => void
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     locateFile: (path: string, prefix?: string) => string,
+    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined
     out(message: string): void;
     err(message: string): void;
+    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 
-    hasDebuggingEnabled(config: MonoConfig): boolean,
-    retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
-    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-    logDownloadStatsToConsole: () => void;
-    purgeUnusedCacheEntriesAsync: () => Promise<void>;
+    hasDebuggingEnabled(bootConfig: BootJsonData): boolean,
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,

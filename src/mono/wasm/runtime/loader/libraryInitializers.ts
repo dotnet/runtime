@@ -8,17 +8,17 @@ import { loaderHelpers } from "./globals";
 import { mono_exit } from "./exit";
 
 export type LibraryInitializerTypes =
-    "modulesAfterConfigLoaded"
-    | "modulesAfterRuntimeReady";
+    "onRuntimeConfigLoaded"
+    | "onRuntimeReady";
 
 async function fetchLibraryInitializers(config: MonoConfig, type: LibraryInitializerTypes): Promise<void> {
     if (!loaderHelpers.libraryInitializers) {
         loaderHelpers.libraryInitializers = [];
     }
 
-    const libraryInitializers = type == "modulesAfterConfigLoaded"
-        ? config.resources?.modulesAfterConfigLoaded
-        : config.resources?.modulesAfterRuntimeReady;
+    const libraryInitializers = type == "onRuntimeConfigLoaded"
+        ? config.resources?.libraryStartupModules?.onRuntimeConfigLoaded
+        : config.resources?.libraryStartupModules?.onRuntimeReady;
 
     if (!libraryInitializers) {
         return;
