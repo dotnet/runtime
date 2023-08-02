@@ -53,49 +53,54 @@ namespace System.Collections.Frozen
                 int maxSubstringLength = Math.Min(minLength, MaxSubstringLengthLimit);
                 for (int count = 1; count <= maxSubstringLength; count++)
                 {
-                    leftComparer.Count = count;
+                    int maxOffset = minLength - count;
+                    leftComparer.Start(0, count);
 
-                    // For each index, get a uniqueness factor for the left-justified substrings.
+                    // For each offset, get a uniqueness factor for the left-justified substrings.
                     // If any is above our threshold, we're done.
-                    for (int index = 0; index <= minLength - count; index++)
+                    for (int offset = 0; offset <= maxOffset; offset++)
                     {
-                        leftComparer.Index = index;
-
                         if (HasSufficientUniquenessFactor(leftSet, uniqueStrings, acceptableNonUniqueCount))
                         {
                             return CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, leftComparer);
                         }
+
+                        leftComparer.GoRight();
                     }
 
                     // There were no left-justified substrings of this length available.
                     // If all of the strings are of the same length, then just checking left-justification is sufficient.
-                    // But if any strings are of different lengths, then we'll get different alignments for left- vs
-                    // right-justified substrings, and so we also check right-justification.
+                    // But if any strings are of different lengths, then we'll get different alignments for left-justified
+                    // vs right-justified substrings, and so we also check right-justification.
                     if (minLength != maxLength)
                     {
-                        rightComparer ??= ignoreCase ? new RightSubstringCaseInsensitiveComparer() : new RightSubstringOrdinalComparer();
-                        rightSet ??= MakeHashSet(uniqueStringsLength, rightComparer);
+                        if (rightComparer is null)
+                        {
+                            rightComparer = ignoreCase ? new RightSubstringCaseInsensitiveComparer() : new RightSubstringOrdinalComparer();
+                            rightSet = MakeHashSet(uniqueStringsLength, rightComparer);
+                        }
 
-                        // when Index is negative, we're offsetting from the right, ensure we're at least
-                        // far enough from the right that we have count characters available
-                        rightComparer!.Count = count;
-                        rightComparer!.Index = -count;
+                        // when we're offsetting from the right, ensure we're at least far enough
+                        // from the right that we have count characters available
+                        rightComparer.Start(-count, count);
 
-                        // For each index, get a uniqueness factor for the right-justified substrings.
+                        // For each offset, get a uniqueness factor for the right-justified substrings.
                         // If any is above our threshold, we're done.
-                        for (int offset = 0; offset <= minLength - count; offset++, rightComparer!.Index--)
+                        for (int offset = 0; offset <= maxOffset; offset++)
                         {
                             if (HasSufficientUniquenessFactor(rightSet!, uniqueStrings, acceptableNonUniqueCount))
                             {
                                 return CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, rightComparer);
                             }
+
+                            rightComparer.GoLeft();
                         }
                     }
                 }
             }
 
             // Could not find a substring index/length that was good enough, use the entire string.
-            return CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, s_FullComparer);
+            return CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, new FullStringEqualityComparer());
         }
 
         private static HashSet<string> MakeHashSet(int length, IEqualityComparer<string> comparer)
@@ -253,7 +258,5 @@ namespace System.Collections.Frozen
             public bool SubstringHashing => HashCount != 0;
             public bool RightJustifiedSubstring => HashIndex < 0;
         }
-
-        private static FullStringEqualityComparer s_FullComparer = new FullStringEqualityComparer();
     }
 }
