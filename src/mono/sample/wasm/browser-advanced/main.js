@@ -52,6 +52,10 @@ try {
             },
             postRun: () => { console.log('user code Module.postRun'); },
         })
+        .withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
+            return name;
+        })
         .create();
 
     // at this point both emscripten and monoVM are fully initialized.

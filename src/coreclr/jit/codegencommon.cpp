@@ -4806,7 +4806,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
             offset += genSPtoFPdelta();
         }
 
-        JITDUMP("---OSR--- V%02u (reg) old rbp offset %d old frame %d this frame sp-fp %d new offset %d (%02xH)\n",
+        JITDUMP("---OSR--- V%02u (reg) old rbp offset %d old frame %d this frame sp-fp %d new offset %d (0x%02x)\n",
                 varNum, stkOffs, originalFrameSize, genSPtoFPdelta(), offset, offset);
 
         GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);

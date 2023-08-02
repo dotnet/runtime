@@ -31,7 +31,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             AddDictionary(sb, bootConfig.resources.jsModuleNative);
             AddDictionary(sb, bootConfig.resources.jsModuleRuntime);
             AddDictionary(sb, bootConfig.resources.wasmNative);
-            AddDictionary(sb, bootConfig.resources.jsSymbols);
+            AddDictionary(sb, bootConfig.resources.wasmSymbols);
             AddDictionary(sb, bootConfig.resources.icu);
             AddDictionary(sb, bootConfig.resources.runtime);
             AddDictionary(sb, bootConfig.resources.lazyAssembly);
@@ -65,7 +65,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             else if (resourceName.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return null;
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".symbols", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.jsSymbols ??= new();
+                return bootConfig.resources.wasmSymbols ??= new();
             else if (resourceName.StartsWith("icudt", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.icu ??= new();
             else
