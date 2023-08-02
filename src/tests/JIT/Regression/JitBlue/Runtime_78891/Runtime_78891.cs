@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 // This test is to ensure that an assertion does not occur in the JIT.
-public class Runtime_78554
+public class Runtime_78891
 {
     public class C0
     {
