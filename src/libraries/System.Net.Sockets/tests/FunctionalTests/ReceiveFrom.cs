@@ -155,6 +155,65 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ReceiveSent_SocketAddress_Success(bool ipv4)
+        {
+            const int DatagramSize = 256;
+            const int DatagramsToSend = 16;
+
+            IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            using Socket server = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using Socket client = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+
+            client.BindToAnonymousPort(address);
+            server.BindToAnonymousPort(address);
+
+            byte[] sendBuffer = new byte[DatagramSize];
+            byte[] receiveBuffer = new byte[DatagramSize];
+
+            SocketAddress serverSA = server.LocalEndPoint.Serialize();
+            SocketAddress clientSA = client.LocalEndPoint.Serialize();
+            SocketAddress sa = new SocketAddress(address.AddressFamily);
+
+            Random rnd = new Random(0);
+
+            for (int i = 0; i < DatagramsToSend; i++)
+            {
+                rnd.NextBytes(sendBuffer);
+                client.SendTo(sendBuffer.AsSpan(), SocketFlags.None, serverSA);
+
+                int readBytes = server.ReceiveFrom(receiveBuffer, SocketFlags.None, sa);
+                Assert.Equal(sa, clientSA);
+                Assert.Equal(client.LocalEndPoint, client.LocalEndPoint.Create(sa));
+                Assert.True(new Span<byte>(receiveBuffer, 0, readBytes).SequenceEqual(sendBuffer));
+
+                // and send it back to make sure it works.
+                rnd.NextBytes(sendBuffer);
+                server.SendTo(sendBuffer, SocketFlags.None, sa);
+                readBytes = client.ReceiveFrom(receiveBuffer, SocketFlags.None, sa);
+                Assert.Equal(sa, serverSA);
+                Assert.Equal(server.LocalEndPoint, server.LocalEndPoint.Create(sa));
+                Assert.True(new Span<byte>(receiveBuffer, 0, readBytes).SequenceEqual(sendBuffer));
+
+            }
+        }
+
+        [Fact]
+        public void ReceiveSent_SmallSocketAddress_Throws()
+        {
+            using Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            server.BindToAnonymousPort(IPAddress.Loopback);
+
+            byte[] receiveBuffer = new byte[1];
+
+            SocketAddress serverSA = server.LocalEndPoint.Serialize();
+
+            SocketAddress sa = new SocketAddress(AddressFamily.InterNetwork, 2);
+           Assert.Throws<ArgumentOutOfRangeException>(() => server.ReceiveFrom(receiveBuffer, SocketFlags.None, sa));
+        }
+
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ClosedBeforeOperation_Throws_ObjectDisposedException(bool closeOrDispose)

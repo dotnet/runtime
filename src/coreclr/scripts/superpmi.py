@@ -598,7 +598,10 @@ class AsyncSubprocessHelper:
         reset_env = os.environ.copy()
 
         try:
-            loop = asyncio.get_running_loop()
+            if sys.version_info[:2] >= (3, 7):
+                loop = asyncio.get_running_loop()
+            else:
+                loop = asyncio.get_event_loop()
         except RuntimeError:
             if 'win32' in sys.platform:
                 # Windows specific event-loop policy & cmd
