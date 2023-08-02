@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -123,6 +124,49 @@ public class ResourceUpdaterTests
             byte[]? name1 = resourceReader.FindResource(1, "testType", 0);
             Assert.Equal("Test Resource"u8.ToArray(), name0);
             Assert.Equal("Other Resource"u8.ToArray(), name1);
+        }
+    }
+
+    [Fact]
+    void AddResourcesFromPEImage()
+    {
+        using var memoryStream = GetCurrentAssemblyMemoryStream();
+
+        using (var updater = new ResourceUpdater(memoryStream, true))
+        {
+            updater.AddResourcesFromPEImage(Assembly.GetExecutingAssembly().Location);
+            updater.Update();
+        }
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        using (var modified = new PEReader(memoryStream, PEStreamOptions.LeaveOpen))
+        using (var assembly = new PEReader(File.Open(Assembly.GetExecutingAssembly().Location, FileMode.Open)))
+        {
+            var modifiedReader = new ResourceData(modified);
+            var assemblyReader = new ResourceData(assembly);
+            foreach ((object nameObj, object typeObj, ushort language, byte[] data) in assemblyReader.GetAllResources())
+            {
+                byte[]? found;
+                switch (nameObj, typeObj)
+                {
+                    case (ushort name, ushort type):
+                        found = modifiedReader.FindResource(name, type, language);
+                        break;
+                    case (ushort name, string type):
+                        found = modifiedReader.FindResource(name, type, language);
+                        break;
+                    case (string name, ushort type):
+                        found = modifiedReader.FindResource(name, type, language);
+                        break;
+                    case (string name, string type):
+                        found = modifiedReader.FindResource(name, type, language);
+                        break;
+                    default:
+                        throw new InvalidOperationException();
+                }
+                Assert.Equal(data, found);
+            }
         }
     }
 }
