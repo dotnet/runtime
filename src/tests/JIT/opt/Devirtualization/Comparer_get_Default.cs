@@ -271,7 +271,7 @@ public class Program
                 Compare_Struct1_Nullable(null, null);
                 Compare_Struct2_Nullable(null, null);
 
-                if (PlatformDetection.IsRareEnumsSupported)
+                if (TestLibrary.PlatformDetection.IsRareEnumsSupported)
                 {
                     // workaround for: https://github.com/dotnet/roslyn/issues/68770
                     static T Bitcast<T>(long l) => Unsafe.As<long, T>(ref l);
