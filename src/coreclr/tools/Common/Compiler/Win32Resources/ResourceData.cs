@@ -154,18 +154,19 @@ namespace ILCompiler.Win32Resources
         {
             WriteResources(sectionBase, ref dataBuilder, ref dataBuilder);
         }
-
-        public void WriteResources(int sectionBase, ref ObjectDataBuilder dataBuilder, ref ObjectDataBuilder contentBuilder)
-        {
 #else
         public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder)
         {
             WriteResources(nodeAssociatedWithDataBuilder, ref dataBuilder, ref dataBuilder);
         }
-
-        public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder, ref ObjectDataBuilder contentBuilder)
-        {
 #endif
+
+#if HOST_MODEL
+        public void WriteResources(int sectionBase, ref ObjectDataBuilder dataBuilder, ref ObjectDataBuilder contentBuilder)
+#else
+        public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder, ref ObjectDataBuilder contentBuilder)
+#endif
+        {
             Debug.Assert(dataBuilder.CountBytes == 0);
 
             SortedDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable = new SortedDictionary<string, List<ObjectDataBuilder.Reservation>>();
