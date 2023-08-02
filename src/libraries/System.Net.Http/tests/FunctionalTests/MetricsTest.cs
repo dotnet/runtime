@@ -534,6 +534,12 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(MethodData))]
         public async Task RequestMetrics_EmitNormalizedMethodTags(string method, string expectedMethodTag)
         {
+            if (PlatformDetection.IsBrowser && expectedMethodTag is "PATCH" or "_OTHER")
+            {
+                // Only RFC9110 methods are supported by BrowserHttpHandler.
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
