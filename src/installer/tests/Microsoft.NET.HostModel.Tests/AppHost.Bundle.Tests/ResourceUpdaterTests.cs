@@ -6,8 +6,8 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using ILCompiler.Win32Resources;
 using Microsoft.NET.HostModel;
+using Microsoft.NET.HostModel.Win32Resources;
 using Xunit;
 
 namespace AppHost.Bundle.Tests;

@@ -7,9 +7,15 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
+#if !HOST_MODEL
 using ILCompiler.DependencyAnalysis;
+#endif
 
+#if HOST_MODEL
+namespace Microsoft.NET.HostModel.Win32Resources
+#else
 namespace ILCompiler.Win32Resources
+#endif
 {
     /// <summary>
     /// Resource abstraction to allow examination

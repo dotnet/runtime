@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace ILCompiler.DependencyAnalysis
+namespace Microsoft.NET.HostModel.Win32Resources
 {
     public struct ObjectDataBuilder
     {

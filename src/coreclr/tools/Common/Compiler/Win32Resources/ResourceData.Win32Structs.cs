@@ -5,9 +5,15 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection.Metadata;
 
+#if !HOST_MODEL
 using ILCompiler.DependencyAnalysis;
+#endif
 
+#if HOST_MODEL
+namespace Microsoft.NET.HostModel.Win32Resources
+#else
 namespace ILCompiler.Win32Resources
+#endif
 {
     public unsafe partial class ResourceData
     {

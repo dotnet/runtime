@@ -5,8 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection.PortableExecutable;
-using ILCompiler.DependencyAnalysis;
-using ILCompiler.Win32Resources;
+using Microsoft.NET.HostModel.Win32Resources;
 
 namespace Microsoft.NET.HostModel
 {
