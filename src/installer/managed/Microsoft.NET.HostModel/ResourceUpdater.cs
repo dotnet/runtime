@@ -136,13 +136,14 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public void Update()
         {
+            // see https://learn.microsoft.com/windows/win32/debug/pe-format
             // 20 of data and 4 of magic
-            const int peMagicSize = 4;
-            const int peHeaderSize = 20;
+            const int peSignatureSize = sizeof(int);
+            const int coffHeaderSize = 20;
             const int oneSectionHeaderSize = 40;
             // offset relative to Lfanew, which is pointer to first byte in header
-            const int numberOfSections = peMagicSize + 2;
-            const int optionalHeaderBase = peMagicSize + peHeaderSize;
+            const int numberOfSectionsOffset = peSignatureSize + 2;
+            const int optionalHeaderBase = peSignatureSize + coffHeaderSize;
             const int pe64InitializedDataSizeOffset = optionalHeaderBase + 8;
             const int pe64SizeOfImageOffset = optionalHeaderBase + 56;
             const int pe64DataDirectoriesOffset = optionalHeaderBase + 112;
@@ -228,7 +229,7 @@ namespace Microsoft.NET.HostModel
             stream.CopyTo(memoryStream);
 
             int peSignatureOffset = ReadI32(buffer, 0x3c);
-            int sectionBase = peSignatureOffset + peMagicSize + peHeaderSize + (ushort)_reader.PEHeaders.CoffHeader.SizeOfOptionalHeader;
+            int sectionBase = peSignatureOffset + peSignatureSize + coffHeaderSize + (ushort)_reader.PEHeaders.CoffHeader.SizeOfOptionalHeader;
 
             if (needsAddSection)
             {
@@ -237,7 +238,7 @@ namespace Microsoft.NET.HostModel
                 if (resourceSectionBase + oneSectionHeaderSize > _reader.PEHeaders.SectionHeaders[0].PointerToRawData)
                     throw new InvalidOperationException("Cannot add section header");
 
-                WriteI32(buffer, peSignatureOffset + numberOfSections, resourceSectionIndex + 1);
+                WriteI32(buffer, peSignatureOffset + numberOfSectionsOffset, resourceSectionIndex + 1);
 
                 // section name ".rsrc\0\0\0" = 2E 72 73 72 63 00 00 00
                 buffer[resourceSectionBase + 0] = 0x2E;
