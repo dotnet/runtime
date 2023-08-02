@@ -56,6 +56,13 @@ namespace Tracing.Tests
         {
             using (RuntimeEventListener listener = new RuntimeEventListener())
             {
+                int someNumber = 0;
+                Task[] tasks = new Task[100];
+                for (int i = 0; i < tasks.Length; i++) 
+                {
+                    tasks[i] = Task.Run(() => { someNumber += 1; });
+                }
+
                 Overlapped overlapped = new Overlapped();
                 IOCompletionCallback completionCallback = null;
 
@@ -66,7 +73,14 @@ namespace Tracing.Tests
 
                 listener.TPWaitEvent.WaitOne(TimeSpan.FromMinutes(3));
 
-                if (listener.TPIOPack > 0)
+                bool workerThreadEventsOk = listener.TPWorkerThreadStartCount > 0 &&
+                                            listener.TPWorkerThreadStopCount > 0 &&
+                                            listener.TPWorkerThreadWaitCount > 0;
+
+                bool ioPackEventOk = listener.TPIOPack > 0;
+
+                // Don't evaluate workerThreadEventsOk if it's NativeAot
+                if ((TestLibrary.Utilities.IsNativeAot || workerThreadEventsOk) && ioPackEventOk)
                 {
                     Console.WriteLine("Test Passed.");
                     return 100;
