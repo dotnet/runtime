@@ -24,17 +24,14 @@
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
              Link="Common\System\Net\IPAddressParserStatics.cs" />
-    <Compile Include="$(CommonPath)System\Net\SocketAddress.cs"
-             Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
-    <!-- System.Net.Internals -->
-    <Compile Include="$(CommonPath)System\Net\Internals\IPAddressExtensions.cs"
-             Link="Common\System\Net\Internals\IPAddressExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs"
-             Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs"
+             Link="Common\System\Net\IPEndPointExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
+             Link="Common\System\Net\Sockets\SocketType.cs" />
   </ItemGroup>
   <ItemGroup Condition="('$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows')">
     <Compile Include="System\Net\NetworkInformation\IcmpV4MessageConstants.cs" />
@@ -96,9 +93,6 @@
              Link="Common\Interop\Windows\WinSock\Interop.WSAStartup.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs"
              Link="Common\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs" />
-    <!-- System.Net.Internals -->
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
-             Link="Common\System\Net\Sockets\SocketType.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />

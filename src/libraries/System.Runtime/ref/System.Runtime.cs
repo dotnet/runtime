@@ -9746,6 +9746,7 @@ namespace System.IO
     [System.FlagsAttribute]
     public enum FileAttributes
     {
+        None = 0,
         ReadOnly = 1,
         Hidden = 2,
         System = 4,

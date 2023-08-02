@@ -33,9 +33,16 @@ switch (testCase) {
                 Math.floor(Math.random() * 5) + 5,
                 Math.floor(Math.random() * 5) + 10
             ];
-            dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity) => {
-                if (type !== "assembly")
+            dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+                if (type === "dotnetjs") {
+                    // loadBootResource could return string with unqualified name of resource. 
+                    // It assumes that we resolve it with document.baseURI
+                    // we test it here
+                    return `_framework/${name}`;
+                }
+                if (type !== "assembly") {
                     return defaultUri;
+                }
 
                 assemblyCounter++;
                 if (!failAtAssemblyNumbers.includes(assemblyCounter))

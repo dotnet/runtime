@@ -902,6 +902,9 @@
     <!-- Hardcode version paths in a global location. Condition on running OS to generate the right files for the Mono WASM cross tools. -->
     <NativeVersionFile Condition="'$(HostOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="'$(HostOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <NativeSourceLinkFile>$(ArtifactsObjDir)native.sourcelink.json</NativeSourceLinkFile>
+    <VerifySourceLinkFileExists>false</VerifySourceLinkFileExists>
+    <VerifySourceLinkFileExists Condition="'$(ContinuousIntegrationBuild)' == 'true' AND '$(EnableSourceControlManagerQueries)' == 'true'">true</VerifySourceLinkFileExists>
     <AssemblyName>.NET Runtime</AssemblyName>
   </PropertyGroup>
 
@@ -909,9 +912,9 @@
 
   <!-- The standard set of targets that need to run before the BuildMono target runs -->
   <PropertyGroup>
-    <MonoDependsOnTargets>CheckEnv;GetXcodeDir;GenerateRuntimeVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
-    <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">GenerateRuntimeVersionFile;ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
-    <MonoDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">GenerateRuntimeVersionFile;ProvisionWasiSdk;ValidateWasiSdk;$(MonoDependsOnTargets)</MonoDependsOnTargets>
+    <MonoDependsOnTargets>CheckEnv;GetXcodeDir;GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
+    <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
+    <MonoDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">ProvisionWasiSdk;ValidateWasiSdk;$(MonoDependsOnTargets)</MonoDependsOnTargets>
   </PropertyGroup>
 
   <!-- General targets -->
