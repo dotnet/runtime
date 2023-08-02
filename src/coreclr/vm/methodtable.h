@@ -859,7 +859,7 @@ public:
 
     void AllocateRegularStaticBoxes();
     void AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle);
-    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0, bool canBeFrozen = false);
+    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bool canBeFrozen = false);
 
     void CheckRestore();
 
