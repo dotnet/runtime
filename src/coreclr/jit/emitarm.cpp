@@ -5524,8 +5524,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 }
                 else
                 {
-                    assert(distVal >= CALL_DIST_MAX_NEG);
-                    assert(distVal <= CALL_DIST_MAX_POS);
+                    if ((distVal < CALL_DIST_MAX_NEG) || (distVal > CALL_DIST_MAX_POS))
+                        IMPL_LIMITATION("Method is too large");
 
                     if (distVal < 0)
                         code |= 1 << 26;
