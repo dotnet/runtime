@@ -660,8 +660,13 @@ class SuperPMICollect:
             jit_name_ext = os.path.splitext(jit_name)[1]
             jit_name_without_ext = os.path.splitext(jit_name)[0]
             self.superpmi_jit_path_temp_dir = tempfile.TemporaryDirectory()
-            self.superpmi_jit_path = os.path.join(self.superpmi_jit_path_temp_dir.name, jit_name_without_ext + "_superpmi" + jit_name_ext)
-            shutil.copyfile(self.jit_path, self.superpmi_jit_path)
+            try:
+                self.superpmi_jit_path = os.path.join(self.superpmi_jit_path_temp_dir.name, jit_name_without_ext + "_superpmi" + jit_name_ext)
+                shutil.copyfile(self.jit_path, self.superpmi_jit_path)
+            except Exception:
+                # Fallback to original JIT path if we are not able to make a copy.
+                self.superpmi_jit_path.cleanup()
+                self.superpmi_jit_path = self.jit_path
         else:
             self.superpmi_jit_path = self.jit_path
 
