@@ -4,9 +4,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace Microsoft.Android.Build
+namespace Microsoft.Mobile.Build.Clang
 {
-    public sealed class AndroidBuildOptions
+    public sealed class ClangBuildOptions
     {
         public List<string> CompilerArguments { get; } = new List<string>();
 
