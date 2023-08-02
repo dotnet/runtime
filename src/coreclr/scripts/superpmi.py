@@ -665,7 +665,6 @@ class SuperPMICollect:
                 shutil.copyfile(self.jit_path, self.superpmi_jit_path)
             except Exception:
                 # Fallback to original JIT path if we are not able to make a copy.
-                self.superpmi_jit_path.cleanup()
                 self.superpmi_jit_path = self.jit_path
         else:
             self.superpmi_jit_path = self.jit_path
