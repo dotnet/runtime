@@ -895,7 +895,7 @@ namespace System.Text
             // Only run the loop if we have at least two vectors we can pull out.
             if (Vector512.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector512<ushort>.Count)
             {
-                const uint SizeOfVector512InChars = Vector512.Size / sizeof(ushort);
+                const uint SizeOfVector512InChars = Vector512.Size / sizeof(char);
 
                 if (!VectorContainsNonAsciiChar(Vector512.Load((ushort*)pBuffer)))
                 {
@@ -931,7 +931,7 @@ namespace System.Text
             }
             else if (Vector256.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector256<ushort>.Count)
             {
-                const uint SizeOfVector256InChars = Vector256.Size / sizeof(ushort);
+                const uint SizeOfVector256InChars = Vector256.Size / sizeof(char);
 
                 if (!VectorContainsNonAsciiChar(Vector256.Load((ushort*)pBuffer)))
                 {
@@ -967,7 +967,7 @@ namespace System.Text
             }
             else if (Vector128.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector128<ushort>.Count)
             {
-                const uint SizeOfVector128InChars = Vector128.Size / sizeof(ushort); // JIT will make this a const
+                const uint SizeOfVector128InChars = Vector128.Size / sizeof(char); // JIT will make this a const
 
                 if (!VectorContainsNonAsciiChar(Vector128.Load((ushort*)pBuffer)))
                 {
@@ -2385,22 +2385,41 @@ namespace System.Text
                     // write instructions. See: https://github.com/dotnet/runtime/issues/33002
                     nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector512<byte>.Count;
 
-                    do
+                    Vector512<byte> asciiVector = Vector512.Load(pAsciiBuffer + currentOffset);
+                    if (asciiVector.ExtractMostSignificantBits() == 0)
                     {
-                        Vector512<byte> asciiVector = Vector512.Load(pAsciiBuffer + currentOffset);
-
-                        if (asciiVector.ExtractMostSignificantBits() != 0)
-                        {
-                            break;
-                        }
-
                         (Vector512<ushort> utf16LowVector, Vector512<ushort> utf16HighVector) = Vector512.Widen(asciiVector);
                         utf16LowVector.Store(pCurrentWriteAddress);
                         utf16HighVector.Store(pCurrentWriteAddress + Vector512<ushort>.Count);
 
-                        currentOffset += (nuint)Vector512<byte>.Count;
-                        pCurrentWriteAddress += (nuint)Vector512<byte>.Count;
-                    } while (currentOffset <= finalOffsetWhereCanRunLoop);
+                        // Bump write buffer up to the next aligned boundary
+                        pCurrentWriteAddress += Vector512<ushort>.Count * 2;
+                        pCurrentWriteAddress = (ushort*)((nuint)pCurrentWriteAddress & ~(nuint)(Vector512.Size - 1));
+                        nuint numBytesWritten = (nuint)pCurrentWriteAddress - (nuint)pUtf16Buffer;
+                        currentOffset += (nuint)numBytesWritten / 2;
+
+                        Debug.Assert(0 < numBytesWritten && numBytesWritten <= (Vector512.Size * 2), "We should've made forward progress of at least one byte.");
+
+                        while (currentOffset <= finalOffsetWhereCanRunLoop)
+                        {
+                            asciiVector = Vector512.Load(pAsciiBuffer + currentOffset);
+
+                            if (asciiVector.ExtractMostSignificantBits() != 0)
+                            {
+                                break;
+                            }
+
+                            Debug.Assert((nuint)pCurrentWriteAddress % Vector512.Size == 0, "Vector write should be aligned.");
+                            Debug.Assert((nuint)(pCurrentWriteAddress + Vector512<ushort>.Count) % Vector512.Size == 0, "Vector write should be aligned.");
+
+                            (utf16LowVector, utf16HighVector) = Vector512.Widen(asciiVector);
+                            utf16LowVector.StoreAligned(pCurrentWriteAddress);
+                            utf16HighVector.StoreAligned(pCurrentWriteAddress + Vector512<ushort>.Count);
+
+                            currentOffset += (nuint)Vector512<byte>.Count;
+                            pCurrentWriteAddress += (nuint)(Vector512<ushort>.Count * 2);
+                        }
+                    }
                 }
                 else if (Vector256.IsHardwareAccelerated && elementCount >= (uint)Vector256<byte>.Count)
                 {
@@ -2409,22 +2428,41 @@ namespace System.Text
                     // write instructions. See: https://github.com/dotnet/runtime/issues/33002
                     nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector256<byte>.Count;
 
-                    do
+                    Vector256<byte> asciiVector = Vector256.Load(pAsciiBuffer + currentOffset);
+                    if (asciiVector.ExtractMostSignificantBits() == 0)
                     {
-                        Vector256<byte> asciiVector = Vector256.Load(pAsciiBuffer + currentOffset);
-
-                        if (asciiVector.ExtractMostSignificantBits() != 0)
-                        {
-                            break;
-                        }
-
                         (Vector256<ushort> utf16LowVector, Vector256<ushort> utf16HighVector) = Vector256.Widen(asciiVector);
                         utf16LowVector.Store(pCurrentWriteAddress);
                         utf16HighVector.Store(pCurrentWriteAddress + Vector256<ushort>.Count);
 
-                        currentOffset += (nuint)Vector256<byte>.Count;
-                        pCurrentWriteAddress += (nuint)Vector256<byte>.Count;
-                    } while (currentOffset <= finalOffsetWhereCanRunLoop);
+                        // Bump write buffer up to the next aligned boundary
+                        pCurrentWriteAddress += Vector256<ushort>.Count * 2;
+                        pCurrentWriteAddress = (ushort*)((nuint)pCurrentWriteAddress & ~(nuint)(Vector256.Size - 1));
+                        nuint numBytesWritten = (nuint)pCurrentWriteAddress - (nuint)pUtf16Buffer;
+                        currentOffset += (nuint)numBytesWritten / 2;
+
+                        Debug.Assert(0 < numBytesWritten && numBytesWritten <= (Vector256.Size * 2), "We should've made forward progress of at least one byte.");
+
+                        while (currentOffset <= finalOffsetWhereCanRunLoop)
+                        {
+                            asciiVector = Vector256.Load(pAsciiBuffer + currentOffset);
+
+                            if (asciiVector.ExtractMostSignificantBits() != 0)
+                            {
+                                break;
+                            }
+
+                            Debug.Assert((nuint)pCurrentWriteAddress % Vector256.Size == 0, "Vector write should be aligned.");
+                            Debug.Assert((nuint)(pCurrentWriteAddress + Vector256<ushort>.Count) % Vector256.Size == 0, "Vector write should be aligned.");
+
+                            (utf16LowVector, utf16HighVector) = Vector256.Widen(asciiVector);
+                            utf16LowVector.StoreAligned(pCurrentWriteAddress);
+                            utf16HighVector.StoreAligned(pCurrentWriteAddress + Vector256<ushort>.Count);
+
+                            currentOffset += (nuint)Vector256<byte>.Count;
+                            pCurrentWriteAddress += (nuint)(Vector256<ushort>.Count * 2);
+                        }
+                    }
                 }
                 else
                 {
@@ -2433,22 +2471,41 @@ namespace System.Text
                     // write instructions. See: https://github.com/dotnet/runtime/issues/33002
                     nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector128<byte>.Count;
 
-                    do
+                    Vector128<byte> asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
+                    if (asciiVector.ExtractMostSignificantBits() == 0)
                     {
-                        Vector128<byte> asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
-
-                        if (VectorContainsNonAsciiChar(asciiVector))
-                        {
-                            break;
-                        }
-
                         (Vector128<ushort> utf16LowVector, Vector128<ushort> utf16HighVector) = Vector128.Widen(asciiVector);
                         utf16LowVector.Store(pCurrentWriteAddress);
                         utf16HighVector.Store(pCurrentWriteAddress + Vector128<ushort>.Count);
 
-                        currentOffset += (nuint)Vector128<byte>.Count;
-                        pCurrentWriteAddress += (nuint)Vector128<byte>.Count;
-                    } while (currentOffset <= finalOffsetWhereCanRunLoop);
+                        // Bump write buffer up to the next aligned boundary
+                        pCurrentWriteAddress += Vector128<ushort>.Count * 2;
+                        pCurrentWriteAddress = (ushort*)((nuint)pCurrentWriteAddress & ~(nuint)(Vector128.Size - 1));
+                        nuint numBytesWritten = (nuint)pCurrentWriteAddress - (nuint)pUtf16Buffer;
+                        currentOffset += (nuint)numBytesWritten / 2;
+
+                        Debug.Assert(0 < numBytesWritten && numBytesWritten <= (Vector128.Size * 2), "We should've made forward progress of at least one byte.");
+
+                        while (currentOffset <= finalOffsetWhereCanRunLoop)
+                        {
+                            asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
+
+                            if (asciiVector.ExtractMostSignificantBits() != 0)
+                            {
+                                break;
+                            }
+
+                            Debug.Assert((nuint)pCurrentWriteAddress % Vector128.Size == 0, "Vector write should be aligned.");
+                            Debug.Assert((nuint)(pCurrentWriteAddress + Vector128<ushort>.Count) % Vector128.Size == 0, "Vector write should be aligned.");
+
+                            (utf16LowVector, utf16HighVector) = Vector128.Widen(asciiVector);
+                            utf16LowVector.StoreAligned(pCurrentWriteAddress);
+                            utf16HighVector.StoreAligned(pCurrentWriteAddress + Vector128<ushort>.Count);
+
+                            currentOffset += (nuint)Vector128<byte>.Count;
+                            pCurrentWriteAddress += (nuint)(Vector128<ushort>.Count * 2);
+                        }
+                    }
                 }
             }
             else if (Vector.IsHardwareAccelerated)
