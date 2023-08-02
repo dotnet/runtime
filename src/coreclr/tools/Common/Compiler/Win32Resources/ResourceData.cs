@@ -146,26 +146,8 @@ namespace ILCompiler.Win32Resources
         /// </summary>
         public void CopyResourcesFrom(ResourceData moduleResources)
         {
-            foreach (KeyValuePair<ushort, ResType> typeIdPair in moduleResources._resTypeHeadID)
-                CopyResType(typeIdPair.Key, typeIdPair.Value);
-
-            foreach (KeyValuePair<string, ResType> typeNamePair in moduleResources._resTypeHeadName)
-                CopyResType(typeNamePair.Key, typeNamePair.Value);
-
-            void CopyResType(object type, ResType resType)
-            {
-                foreach (KeyValuePair<ushort, ResName> nameIdPair in resType.NameHeadID)
-                    CopyResName(type, nameIdPair.Key, nameIdPair.Value);
-
-                foreach (KeyValuePair<string, ResName> nameNamePair in resType.NameHeadName)
-                    CopyResName(type, nameNamePair.Key, nameNamePair.Value);
-            }
-
-            void CopyResName(object type, object name, ResName resType)
-            {
-                foreach (KeyValuePair<ushort, ResLanguage> lang in resType.Languages)
-                    AddResourceInternal(type, name, lang.Key, lang.Value.DataEntry);
-            }
+            foreach ((object name, object type, ushort language, byte[] data) in moduleResources.GetAllResources())
+                AddResourceInternal(type, name, language, data);
         }
 
 #if HOST_MODEL
