@@ -759,6 +759,7 @@ namespace System
             if (pinned)
                 flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
 
+            // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
             return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
         }
 
