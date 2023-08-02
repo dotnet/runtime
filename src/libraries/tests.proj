@@ -28,6 +28,9 @@
     <RunWasmSamples Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' != 'true' and  '$(TestWasmBuildTests)' != 'true' and '$(TestWasmDebuggerTests)' != 'true'">true</RunWasmSamples>
   </PropertyGroup>
 
+  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(TestReadyToRun)' == 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
+  <Import Project="$(Crossgen2SdkOverrideTargetsPath)" Condition="'$(TestReadyToRun)' == 'true' and '$(Crossgen2SdkOverrideTargetsPath)' != ''" />
+
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- https://github.com/dotnet/runtime/issues/65356 - OOM while linking -->
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />

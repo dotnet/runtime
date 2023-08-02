@@ -1,4 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(TestReadyToRun)' == 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
+  <Import Project="$(Crossgen2SdkOverrideTargetsPath)" Condition="'$(TestReadyToRun)' == 'true' and '$(Crossgen2SdkOverrideTargetsPath)' != ''" />
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
