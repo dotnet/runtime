@@ -275,12 +275,13 @@
            Cannot use System.Private.Corelib since that is in a different directory -->
       <_SystemRuntimePathItem Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net*\System.Runtime.dll" />
     </ItemGroup>
-    <PropertyGroup>
-      <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([System.IO.Path]::GetDirectoryName(%(_SystemRuntimePathItem.Identity)))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
-    </PropertyGroup>
 
     <Error Condition="@(_SystemRuntimePathItem->Count()) == 0" Text="Could not find System.Runtime.dll in $(MicrosoftNetCoreAppRuntimePackRidDir). This is likely a setup issue." />
     <Error Condition="@(_SystemRuntimePathItem->Count()) > 1" Text="Found more than one System.Runtime.dll. This is likely a setup issue." />
+
+    <PropertyGroup>
+      <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([System.IO.Path]::GetDirectoryName(%(_SystemRuntimePathItem.Identity)))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
+    </PropertyGroup>
 
     <MakeDir Directories="$(WasmCachePath)" Condition="'$(WasmCachePath)' != '' and !Exists($(WasmCachePath))" />
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
