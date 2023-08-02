@@ -31,10 +31,10 @@ public class BuildPublishTests : BlazorWasmTestBase
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config));
-        await BlazorRunForBuildWithDotnetRun(config);
+        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
 
         BlazorPublish(new BlazorBuildOptions(id, config));
-        await BlazorRunForPublishWithWebServer(config);
+        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
     }
 
     [Theory]
@@ -155,10 +155,11 @@ public class BuildPublishTests : BlazorWasmTestBase
         if (publish)
             BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: build));
 
+        BlazorRunOptions runOptions = new() { Config = config, Test = TestDllImport };
         if (publish)
-            await BlazorRunForPublishWithWebServer(config, TestDllImport);
+            await BlazorRunForPublishWithWebServer(runOptions);
         else
-            await BlazorRunForBuildWithDotnetRun(config, TestDllImport);
+            await BlazorRunForBuildWithDotnetRun(runOptions);
 
         async Task TestDllImport(IPage page)
         {
@@ -230,7 +231,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
-        await BlazorRunForBuildWithDotnetRun(config);
+        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
@@ -250,7 +251,7 @@ public class BuildPublishTests : BlazorWasmTestBase
             config,
             aot ? NativeFilesType.AOT
                 : (config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack)));
-        await BlazorRunForPublishWithWebServer(config);
+        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
     }
 
     private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Pages/Counter.razor")

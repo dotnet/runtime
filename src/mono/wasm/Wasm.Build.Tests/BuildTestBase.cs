@@ -50,6 +50,7 @@ namespace Wasm.Build.Tests
 
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
+        public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
             Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
@@ -84,6 +85,7 @@ namespace Wasm.Build.Tests
                     Console.WriteLine($"=============== Using webcil-in-wasm ===============");
                 else
                     Console.WriteLine($"=============== Webcil disabled ===============");
+                Console.WriteLine ($"============== Multi-threading runtime pack for {DefaultTargetFramework} is {(IsWorkloadWithMultiThreadingForDefaultFramework ? "available" : "not available")} ==============");
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine("");
             }

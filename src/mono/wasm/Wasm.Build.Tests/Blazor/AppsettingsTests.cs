@@ -43,12 +43,16 @@ public class AppsettingsTests : BlazorWasmTestBase
         bool existsChecked = false;
         bool contentChecked = false;
 
-        await BlazorRunForBuildWithDotnetRun("debug", onConsoleMessage: msg =>
+        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions()
         {
-            if (msg.Text.Contains("appSettings Exists 'True'"))
-                existsChecked = true;
-            else if (msg.Text.Contains($"appSettings Content '{{ \"Id\": \"{id}\" }}'"))
-                contentChecked = true;
+            Config = "debug",
+            OnConsoleMessage = msg =>
+            {
+                if (msg.Text.Contains("appSettings Exists 'True'"))
+                    existsChecked = true;
+                else if (msg.Text.Contains($"appSettings Content '{{ \"Id\": \"{id}\" }}'"))
+                    contentChecked = true;
+            }
         });
 
         Assert.True(existsChecked, "File '/appsettings.json' wasn't found");

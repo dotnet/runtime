@@ -30,8 +30,8 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="instancePtr">A pointer representing the unmanaged instance.</param>
         /// <param name="iid">The IID (Interface ID) to query for.</param>
-        /// <param name="ppObj">The resulting interface</param>
-        /// <returns>Returns an HRESULT represents the success of the operation</returns>
+        /// <param name="ppObj">The resulting interface.</param>
+        /// <returns>Returns an HRESULT represents the success of the operation.</returns>
         /// <seealso cref="Marshal.QueryInterface(nint, ref Guid, out nint)"/>
         public int QueryInterface(void* instancePtr, in Guid iid, out void* ppObj);
 
