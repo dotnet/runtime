@@ -564,7 +564,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
     }
     orArray->m_NumComponents = cElements;
 
-    // Publish needs to be postponed in this case because we need to specify array length 
+    // Publish needs to be postponed in this case because we need to specify array length
     PublishObjectAndNotify(orArray, GC_ALLOC_NO_FLAGS);
 
     return ObjectToOBJECTREF(orArray);
@@ -972,7 +972,7 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap, bool* pIs
         if (orString != nullptr)
         {
             orString->SetStringLength(cchStringLength);
-            // Publish needs to be postponed in this case because we need to specify string length 
+            // Publish needs to be postponed in this case because we need to specify string length
             PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
             _ASSERTE(orString->GetBuffer()[cchStringLength] == W('\0'));
             orStringRef = ObjectToSTRINGREF(orString);
@@ -1024,6 +1024,7 @@ void AllocateComClassObject(ComClassFactory* pComClsFac, OBJECTREF* ppRefClass)
 // AllocateObject will throw OutOfMemoryException so don't need to check
 // for NULL return value from it.
 OBJECTREF AllocateObject(MethodTable *pMT
+                         , GC_ALLOC_FLAGS flags
 #ifdef FEATURE_COMINTEROP
                          , bool fHandleCom
 #endif
@@ -1068,7 +1069,6 @@ OBJECTREF AllocateObject(MethodTable *pMT
 #endif // FEATURE_COMINTEROP
     else
     {
-        GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
         if (pMT->ContainsPointers())
             flags |= GC_ALLOC_CONTAINS_REF;
 
