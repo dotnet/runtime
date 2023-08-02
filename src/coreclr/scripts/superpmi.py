@@ -659,9 +659,8 @@ class SuperPMICollect:
             # Therefore, we produce a copy of the JIT binary for SuperPMI to use. 
             jit_name_ext = os.path.splitext(jit_name)[1]
             jit_name_without_ext = os.path.splitext(jit_name)[0]
-            self.superpmi_jit_path_temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
             try:
-                self.superpmi_jit_path = os.path.join(self.superpmi_jit_path_temp_dir.name, jit_name_without_ext + "_superpmi" + jit_name_ext)
+                self.superpmi_jit_path = os.path.join(self.temp_location, jit_name_without_ext + "_superpmi" + jit_name_ext)
                 shutil.copyfile(self.jit_path, self.superpmi_jit_path)
             except Exception:
                 # Fallback to original JIT path if we are not able to make a copy.
@@ -794,10 +793,6 @@ class SuperPMICollect:
 
         if passed:
             logging.info("Generated MCH file: %s", self.final_mch_file)
-
-        # Cleanup the copy of the JIT binary.
-        if self.coreclr_args.crossgen2 and not self.coreclr_args.skip_cleanup:
-            self.superpmi_jit_path_temp_dir.cleanup()
 
         return passed
 
