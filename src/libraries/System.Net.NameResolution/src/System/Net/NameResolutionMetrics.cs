@@ -15,7 +15,7 @@ namespace System.Net
         private static readonly Histogram<double> s_lookupDuration = s_meter.CreateHistogram<double>(
             name: "dns.lookups.duration",
             unit: "s",
-            description: "Measures the time take to perform a DNS lookup.");
+            description: "Measures the time taken to perform a DNS lookup.");
 
         public static bool IsEnabled() => s_lookupDuration.Enabled;
 
