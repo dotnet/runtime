@@ -67,7 +67,7 @@ export function setLoaderGlobals(
         config: globalObjects.module.config,
         diagnosticTracing: false,
 
-        maxParallelDownloads: 10,
+        maxParallelDownloads: 16,
         enableDownloadRetry: true,
         assertAfterExit: !ENVIRONMENT_IS_WEB,
 

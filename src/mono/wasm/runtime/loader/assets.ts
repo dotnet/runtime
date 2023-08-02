@@ -349,35 +349,23 @@ export async function start_asset_download(asset: AssetEntryInternal): Promise<A
     try {
         return await start_asset_download_with_throttle(asset);
     } catch (err: any) {
-        // eslint-disable-next-line no-console
-        console.log("hey thays 1 - " + JSON.stringify(err));
         if (!loaderHelpers.enableDownloadRetry) {
-            // eslint-disable-next-line no-console
-            console.log("hey thays 3 - loaderHelpers.enableDownloadRetry - " + asset.name);
             // we will not re-try if disabled
             throw err;
         }
         if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
-            // eslint-disable-next-line no-console
-            console.log("hey thays 4 - ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE - " + asset.name);
             // we will not re-try on shell
             throw err;
         }
         if (asset.pendingDownload && asset.pendingDownloadInternal == asset.pendingDownload) {
-            // eslint-disable-next-line no-console
-            console.log("hey thays 5 - asset.pendingDownload && asset.pendingDownloadInternal == asset.pendingDownload - " + asset.name);
             // we will not re-try with external source
             throw err;
         }
         if (asset.resolvedUrl && asset.resolvedUrl.indexOf("file://") != -1) {
-            // eslint-disable-next-line no-console
-            console.log("hey thays 6 - asset.resolvedUrl && asset.resolvedUrl.indexOf(file://) - " + asset.name);
             // we will not re-try with local file
             throw err;
         }
         if (err && err.status == 404) {
-            // eslint-disable-next-line no-console
-            console.log("hey thays 7 - err && err.status == 404 - " + asset.name);
             // we will not re-try with 404
             throw err;
         }
@@ -385,14 +373,13 @@ export async function start_asset_download(asset: AssetEntryInternal): Promise<A
         // second attempt only after all first attempts are queued
         await loaderHelpers.allDownloadsQueued.promise;
         try {
-            // eslint-disable-next-line no-console
-            console.log("hey thays 8 - " + asset.name);
             mono_log_debug(`Retrying download '${asset.name}'`);
             return await start_asset_download_with_throttle(asset);
         } catch (err) {
             asset.pendingDownloadInternal = undefined;
-            // eslint-disable-next-line no-console
-            console.log("hey thays 9 - " + asset.name);
+            // third attempt after small delay
+            await delay(100);
+
             mono_log_debug(`Retrying download (2) '${asset.name}' after delay`);
             return await start_asset_download_with_throttle(asset);
         }
@@ -617,6 +604,7 @@ function fetchResource(request: ResourceRequest): Promise<Response> {
         // there's anything they don't like about it.
         fetchOptions.integrity = isCacheAvailable() ? (request.hash ?? "") : undefined;
     }
+
     return loaderHelpers.fetch_like(url, fetchOptions);
 }
 
