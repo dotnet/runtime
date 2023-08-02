@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Tracing.Tests.Common;
 
 
-{// Copied from fix #86370 by @davmason:
+{// Copied from https://github.com/dotnet/runtime/pull/86370 by @davmason:
 
     // Access ArrayPool.Shared.Rent() before the test to avoid the deadlock reported
     // in https://github.com/dotnet/runtime/issues/86233. This is a real issue,
