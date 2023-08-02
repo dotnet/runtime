@@ -30,7 +30,7 @@
         test            rsp, 0x0f
         jnz             C_FUNC(\stub\()_FixRsp)
 
-\stub\()_RspAligned:
+LOCAL_LABEL(\stub\()_RspAligned):
 
         // Any stack operations hereafter must be recorded in the unwind info, but
         // only nonvolatile register locations are needed.  Anything else is only
@@ -62,7 +62,7 @@
 // straightforward.
 LEAF_ENTRY \stub\()_FixRsp, _TEXT
 
-        call           \stub\()_RspAligned
+        call            LOCAL_LABEL(\stub\()_RspAligned)
 
         // Target should not return.
         int             3
