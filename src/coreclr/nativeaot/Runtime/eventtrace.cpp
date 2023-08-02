@@ -14,6 +14,7 @@
 #include "daccess.h"
 
 #include "eventtrace_etw.h"
+#include "eventtracebase.h"
 
 #include "thread.h"
 #include "threadstore.h"
@@ -56,15 +57,15 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
 void EventTracing_Initialize()
 {
 #ifdef FEATURE_ETW
-    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
-    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled = FALSE;
 
-    // Register the Redhawk event provider with the system.
-    RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Private();
-    RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Public();
+    // Register the ETW providers with the system.
+    RH_ETW_REGISTER_Microsoft_Windows_DotNETRuntimePrivate();
+    RH_ETW_REGISTER_Microsoft_Windows_DotNETRuntime();
 
-    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PrivateHandle;
-    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PublicHandle;
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimePrivateHandle;
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeHandle;
 #endif // FEATURE_ETW
 }
 
@@ -76,14 +77,31 @@ void EventTracing_Initialize()
 // function whenever the system enables or disables tracing for this provider.
 //
 
-uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
+void EtwCallback(
+    GUID * /*SourceId*/,
+    uint32_t IsEnabled,
+    uint8_t Level,
+    uint64_t MatchAnyKeyword,
+    uint64_t MatchAllKeyword,
+    EVENT_FILTER_DESCRIPTOR * FilterData,
+    void * CallbackContext)
 {
-    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle),
+    RH_ETW_CONTEXT * pContext = (RH_ETW_CONTEXT*)CallbackContext;
+    if (pContext == NULL)
+        return;
+
+    pContext->Level = Level;
+    pContext->MatchAnyKeyword = MatchAnyKeyword;
+    pContext->MatchAllKeyword = MatchAllKeyword;
+    pContext->FilterData = FilterData;
+    pContext->IsEnabled = IsEnabled;
+
+    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_DotNETRuntimeHandle),
                                             static_cast<GCEventKeyword>(pContext->MatchAnyKeyword),
                                             static_cast<GCEventLevel>(pContext->Level));
 
     if (IsEnabled &&
-        (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PrivateHandle) &&
+        (pContext->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) &&
         GCHeapUtilities::IsGCHeapInitialized())
     {
         FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
@@ -95,7 +113,7 @@ uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
     // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
     // flick this to force a full GC.
     if (IsEnabled &&
-        (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle) &&
+        (pContext->RegistrationHandle == Microsoft_Windows_DotNETRuntimeHandle) &&
         GCHeapUtilities::IsGCHeapInitialized() &&
         ((pContext->MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0))
     {
@@ -110,7 +128,5 @@ uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
         }
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
-
-    return 0;
 }
 #endif // FEATURE_ETW
