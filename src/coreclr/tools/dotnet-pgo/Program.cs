@@ -21,6 +21,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Encodings.Web;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using Microsoft.Diagnostics.Tools.Pgo;
@@ -1343,6 +1344,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 double excludeEventsBefore = Get(_command.ExcludeEventsBefore);
                 double excludeEventsAfter = Get(_command.ExcludeEventsAfter);
+                Regex excludeEventsBeforeMethod = !string.IsNullOrEmpty(Get(_command.ExcludeEventsBeforeMethod)) ? new Regex(Get(_command.ExcludeEventsBeforeMethod)) : null;
+                Regex excludeEventsAfterMethod = !string.IsNullOrEmpty(Get(_command.ExcludeEventsAfterMethod)) ? new Regex(Get(_command.ExcludeEventsAfterMethod)) : null;
+
+                // Find all the R2RLoad events.
+                SortedDictionary<double, List<Tuple<int, MethodDesc>>> sortedR2RLoadEvents = new();
                 if (_command.ProcessR2REvents)
                 {
                     foreach (var e in p.EventsInProcess.ByEventType<R2RGetEntryPointTraceData>())
@@ -1351,6 +1357,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         string retArg = e.MethodSignature.Substring(0, parenIndex);
                         string paramsArgs = e.MethodSignature.Substring(parenIndex);
                         string methodNameFromEventDirectly = retArg + e.MethodNamespace + "." + e.MethodName + paramsArgs;
+
                         if (e.ClrInstanceID != clrInstanceId)
                         {
                             if (!_command.Warnings)
@@ -1382,12 +1389,33 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             continue;
                         }
 
-                        if ((e.TimeStampRelativeMSec >= excludeEventsBefore) && (e.TimeStampRelativeMSec <= excludeEventsAfter))
-                            methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "R2RLoad"));
+                        string methodAsString = method.ToString();
+                        if (e.TimeStampRelativeMSec > excludeEventsBefore && excludeEventsBeforeMethod != null && excludeEventsBeforeMethod.IsMatch(methodAsString))
+                        {
+                            excludeEventsBefore = e.TimeStampRelativeMSec;
+                        }
+
+                        if (e.TimeStampRelativeMSec < excludeEventsAfter && excludeEventsAfterMethod != null && excludeEventsAfterMethod.IsMatch(methodAsString))
+                        {
+                            excludeEventsAfter = e.TimeStampRelativeMSec;
+                        }
+
+                        List<Tuple<int, MethodDesc>> r2rLoadEvents = null;
+                        if (sortedR2RLoadEvents.TryGetValue(e.TimeStampRelativeMSec, out r2rLoadEvents))
+                        {
+                            r2rLoadEvents.Add(new((int)e.EventIndex, method));
+                        }
+                        else
+                        {
+                            r2rLoadEvents = new ();
+                            r2rLoadEvents.Add(new ((int)e.EventIndex, method));
+                            sortedR2RLoadEvents.Add(e.TimeStampRelativeMSec, r2rLoadEvents);
+                        }
                     }
                 }
 
                 // Find all the jitStart events.
+                SortedDictionary<double, List<Tuple<int, MethodDesc>>> sortedJitStartEvents = new();
                 if (_command.ProcessJitEvents)
                 {
                     foreach (var e in p.EventsInProcess.ByEventType<MethodJittingStartedTraceData>())
@@ -1428,8 +1456,99 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             continue;
                         }
 
-                        if ((e.TimeStampRelativeMSec >= excludeEventsBefore) && (e.TimeStampRelativeMSec <= excludeEventsAfter))
-                            methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "JitStart"));
+                        string methodAsString = method.ToString();
+                        if (e.TimeStampRelativeMSec > excludeEventsBefore && excludeEventsBeforeMethod != null && excludeEventsBeforeMethod.IsMatch(methodAsString))
+                        {
+                            excludeEventsBefore = e.TimeStampRelativeMSec;
+                        }
+
+                        if (e.TimeStampRelativeMSec < excludeEventsAfter && excludeEventsAfterMethod != null && excludeEventsAfterMethod.IsMatch(methodAsString))
+                        {
+                            excludeEventsAfter = e.TimeStampRelativeMSec;
+                        }
+
+                        List<Tuple<int, MethodDesc>> jitStartEvents = null;
+                        if (sortedJitStartEvents.TryGetValue(e.TimeStampRelativeMSec, out jitStartEvents))
+                        {
+                            jitStartEvents.Add(new((int)e.EventIndex, method));
+                        }
+                        else
+                        {
+                            jitStartEvents = new();
+                            jitStartEvents.Add(new((int)e.EventIndex, method));
+                            sortedJitStartEvents.Add(e.TimeStampRelativeMSec, jitStartEvents);
+                        }
+                    }
+                }
+
+                Regex includeMethods = !string.IsNullOrEmpty(Get(_command.IncludeMethods)) ? new Regex(Get(_command.IncludeMethods)) : null;
+                Regex excludeMethods = !string.IsNullOrEmpty(Get(_command.ExcludeMethods)) ? new Regex(Get(_command.ExcludeMethods)) : null;
+
+                if (excludeEventsBefore > excludeEventsAfter)
+                {
+                    PrintError($"Exclude events before timestamp: \"{excludeEventsBefore}\" can't be later than exclude events after timestamp: \"{excludeEventsAfter}\"");
+                    return -1;
+                }
+
+                // Add R2RLoad events based on include/exclude criterias.
+                foreach (var sortedR2RLoadEvent in sortedR2RLoadEvents)
+                {
+                    double timestamp = sortedR2RLoadEvent.Key;
+                    List<Tuple<int,MethodDesc>> r2rLoadEvents = sortedR2RLoadEvent.Value;
+                    foreach (var r2rLoadEvent in r2rLoadEvents)
+                    {
+                        if (timestamp < excludeEventsBefore || timestamp > excludeEventsAfter)
+                        {
+                            continue;
+                        }
+
+                        if (includeMethods != null || excludeMethods != null)
+                        {
+                            string methodAsString = r2rLoadEvent.Item2.ToString();
+
+                            if (includeMethods != null && !includeMethods.IsMatch(methodAsString))
+                            {
+                                continue;
+                            }
+
+                            if (excludeMethods != null && excludeMethods.IsMatch(methodAsString))
+                            {
+                                continue;
+                            }
+                        }
+
+                        methodsToAttemptToPrepare.Add(r2rLoadEvent.Item1, new ProcessedMethodData(timestamp, r2rLoadEvent.Item2, "R2RLoad"));
+                    }
+                }
+
+                // Add jitStart events based on include/exclude criterias.
+                foreach (var sortedJitStartEvent in sortedJitStartEvents)
+                {
+                    double timestamp = sortedJitStartEvent.Key;
+                    List<Tuple<int, MethodDesc>> jitStartEvents = sortedJitStartEvent.Value;
+                    foreach (var jitStartEvent in jitStartEvents)
+                    {
+                        if (timestamp < excludeEventsBefore || timestamp > excludeEventsAfter)
+                        {
+                            continue;
+                        }
+
+                        if (includeMethods != null || excludeMethods != null)
+                        {
+                            string methodAsString = jitStartEvent.Item2.ToString();
+
+                            if (includeMethods != null && !includeMethods.IsMatch(methodAsString))
+                            {
+                                continue;
+                            }
+
+                            if (excludeMethods != null && excludeMethods.IsMatch(methodAsString))
+                            {
+                                continue;
+                            }
+                        }
+
+                        methodsToAttemptToPrepare.Add(jitStartEvent.Item1, new ProcessedMethodData(timestamp, jitStartEvent.Item2, "JitStart"));
                     }
                 }
 
