@@ -90,7 +90,7 @@ namespace Microsoft.Interop
                 RefKindSyntax = RefKindToSyntax(paramSymbol.RefKind),
                 ByValueContentsMarshalKind = byValueContentsMarshalKind,
                 ByValueMarshalAttributeLocations = (inLocation, outLocation),
-                ScopedKind = paramSymbol.ScopedKind,
+                ScopedKind = paramSymbol.ScopedKind
             };
 
             return typeInfo;
