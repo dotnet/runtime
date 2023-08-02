@@ -742,10 +742,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithLocation(1)
                     .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
-            // Pinned arrays cannot be [In]
-            var inAttributeNotSupportedOnBlittableArray = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments(SR.InAttributeNotSupportedWithoutOutBlittableArray, paramName);
             var inAttributeNotSupportedOnPinnedParameter = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
                     .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
@@ -791,24 +787,20 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                //https://github.com/dotnet/runtime/issues/88708
                 new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
             };
 
-            // [Out] Should not warn
-            // https://github.com/dotnet/runtime/issues/88708
-            //yield return new object[] {
-            //    ID(),
-            //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
-            //    new DiagnosticResult[] { }
-            //};
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
+                new DiagnosticResult[] { }
+            };
 
-            // https://github.com/dotnet/runtime/issues/88708
-            //yield return new object[] {
-            //    ID(),
-            //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-            //    new DiagnosticResult[] { }
-            //};
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
+                new DiagnosticResult[] { }
+            };
         }
 
         [Theory]
@@ -822,8 +814,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
-                // https://github.com/dotnet/runtime/issues/88708
-                CompilerDiagnostics = diagnostics.Length != 0 ? CompilerDiagnostics.None : CompilerDiagnostics.Errors,
             };
             test.ExpectedDiagnostics.AddRange(diagnostics);
             await test.RunAsync();
@@ -982,6 +972,128 @@ namespace ComInterfaceGenerator.Unit.Tests
             var test = new UnsafeBlocksNotAllowedTest(false);
             test.TestState.Sources.Add(source);
             test.ExpectedDiagnostics.Add(expectedDiagnostic);
+            await test.RunAsync();
+        }
+
+        public static IEnumerable<object[]> IntAndEnumReturnTypeSnippets()
+        {
+            var diagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable).WithLocation(0);
+            var enumDecl = $$"""
+                internal enum Err
+                {
+                    Val1, Val2
+                }
+                """;
+            var structDeclHR = $$"""
+                internal struct HR
+                {
+                    int hr;
+                }
+                """;
+            var structDeclHResult = $$"""
+                internal struct HResult
+                {
+                    int hr;
+                }
+                """;
+            var enumReturn = Template("Err", enumDecl, "");
+            var intReturn = Template("int", "", "");
+            var floatReturn = Template("float", "", "");
+            var structHrReturn = Template("HR", structDeclHR, "");
+            var structHResultReturn = Template("HResult", structDeclHResult, "");
+            yield return new object[] {
+                ID(),
+                enumReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                intReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                structHrReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                structHResultReturn,
+                new DiagnosticResult[] { diagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                floatReturn,
+                new DiagnosticResult[] {  }
+            };
+
+            var enumReturnPreserveSig = Template("Err", enumDecl, "[PreserveSig]");
+            var intReturnPreserveSig = Template("int", "", "[PreserveSig]");
+            var structHrPreserveSig = Template("HR", structDeclHR, "[PreserveSig]");
+            var structHResultPreserveSig = Template("HResult", structDeclHResult, "[PreserveSig]");
+            yield return new object[] {
+                ID(),
+                enumReturnPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+            yield return new object[] {
+                ID(),
+                intReturnPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+            yield return new object[] {
+                ID(),
+                structHrPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+            yield return new object[] {
+                ID(),
+                structHResultPreserveSig,
+                new DiagnosticResult[] {  }
+            };
+
+            var intReturnMarshalAs = Template("int", "", "[return: MarshalAs(UnmanagedType.I4)]");
+            yield return new object[] {
+                ID(),
+                intReturnMarshalAs,
+                new DiagnosticResult[] {  }
+            };
+
+            string Template(string type, string typedef, string attribute)
+            {
+                return $$"""
+                    using System.Runtime.InteropServices;
+                    using System.Runtime.InteropServices.Marshalling;
+                    [GeneratedComInterface]
+                    [Guid("0DB41042-0255-4CDD-B73A-9C5D5F31303D")]
+                    partial interface I
+                    {
+                        {{attribute}}
+                        {{type}} {|#0:Method|}();
+                    }
+                    {{typedef}}
+                    """;
+            }
+        }
+        [Theory]
+        [MemberData(nameof(IntAndEnumReturnTypeSnippets))]
+        async Task ValidateIntReturnTypeShowsInfo(string id, string source, DiagnosticResult[] diagnostics)
+        {
+            _ = id;
+
+            var test = new VerifyComInterfaceGenerator.Test(referenceAncillaryInterop: false)
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        ("Source.cs", source)
+                    },
+                },
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+            };
+            test.ExpectedDiagnostics.AddRange(diagnostics);
+            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
             await test.RunAsync();
         }
     }

@@ -2950,6 +2950,21 @@ invalidated_delegate_trampoline (char *desc)
 }
 #endif
 
+void *
+mono_dyn_method_alloc0 (MonoMethod *method, guint size)
+{
+	MonoDynamicMethod *dmethod = (MonoDynamicMethod*)method;
+
+	g_assert (method->dynamic);
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	jit_mm_lock (jit_mm);
+	if (!dmethod->mp)
+		dmethod->mp = mono_mempool_new_size (128);
+	gpointer ret = mono_mempool_alloc0 (dmethod->mp, size);
+	jit_mm_unlock (jit_mm);
+	return ret;
+}
+
 /*
  * mono_jit_free_method:
  *
@@ -2968,6 +2983,21 @@ mono_jit_free_method (MonoMethod *method)
 
 	if (mono_use_interpreter)
 		mini_get_interp_callbacks ()->free_method (method);
+
+	jit_mm = jit_mm_for_method (method);
+
+	jit_mm_lock (jit_mm);
+	if (jit_mm->dyn_delegate_info_hash) {
+		GSList *pairs = g_hash_table_lookup (jit_mm->dyn_delegate_info_hash, method);
+		for (GSList *l = pairs; l; l = l->next) {
+			MonoDelegateClassMethodPair *dpair = (MonoDelegateClassMethodPair *)l->data;
+			g_assert (dpair->method == method);
+			g_hash_table_remove (jit_mm->delegate_info_hash, dpair);
+		}
+		g_slist_free (pairs);
+		g_hash_table_remove (jit_mm->dyn_delegate_info_hash, method);
+	}
+	jit_mm_unlock (jit_mm);
 
 	ji = mono_dynamic_code_hash_lookup (method);
 	if (!ji)
@@ -4029,6 +4059,7 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 	MonoDelegateTrampInfo *info = NULL;
 
 	if (mono_use_interpreter) {
+		g_assert (method || del->interp_method);
 		mini_get_interp_callbacks ()->init_delegate (del, &info, error);
 		return_if_nok (error);
 	}
@@ -4398,6 +4429,8 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	g_hash_table_destroy (info->jump_trampoline_hash);
 	g_hash_table_destroy (info->jit_trampoline_hash);
 	g_hash_table_destroy (info->delegate_info_hash);
+	if (info->dyn_delegate_info_hash)
+		g_hash_table_destroy (info->dyn_delegate_info_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->mrgctx_hash);
 	g_hash_table_destroy (info->interp_method_pointer_hash);
@@ -5114,7 +5147,7 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_monitor_enter_fast, mono_icall_sig_int_obj);
 	register_icall_no_wrapper (mono_monitor_enter_v4_fast, mono_icall_sig_int_obj_ptr);
 
-#ifdef TARGET_IOS
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 	register_icall (pthread_getspecific, mono_icall_sig_ptr_ptr, TRUE);
 #endif
 	/* Register tls icalls */

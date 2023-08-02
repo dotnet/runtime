@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class InvariantGlobalizationTests : BuildTestBase
+    public class InvariantGlobalizationTests : TestMainJsTestBase
     {
         public InvariantGlobalizationTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -59,7 +59,7 @@ namespace Wasm.Build.Tests
                             new BuildProjectOptions(
                                 InitProject: () => File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantGlobalization.cs"), Path.Combine(_projectDir!, "Program.cs")),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                                GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : null));
+                                GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded));
 
             if (invariantGlobalization == true)
             {

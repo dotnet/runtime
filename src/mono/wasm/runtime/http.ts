@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { ENVIRONMENT_IS_NODE, Module, loaderHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, Module, loaderHelpers, mono_assert } from "./globals";
 import { MemoryViewType, Span } from "./marshal";
 import type { VoidPtr } from "./types/emscripten";
 
@@ -10,8 +10,8 @@ import type { VoidPtr } from "./types/emscripten";
 function verifyEnvironment() {
     if (typeof globalThis.fetch !== "function" || typeof globalThis.AbortController !== "function") {
         const message = ENVIRONMENT_IS_NODE
-            ? "Please install `node-fetch` and `node-abort-controller` npm packages to enable HTTP client support."
-            : "This browser doesn't support fetch API. Please use a modern browser.";
+            ? "Please install `node-fetch` and `node-abort-controller` npm packages to enable HTTP client support. See also https://aka.ms/dotnet-wasm-features"
+            : "This browser doesn't support fetch API. Please use a modern browser. See also https://aka.ms/dotnet-wasm-features";
         throw new Error(message);
     }
 }

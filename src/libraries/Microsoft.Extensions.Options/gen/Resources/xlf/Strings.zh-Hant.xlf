@@ -64,12 +64,12 @@
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeMessage">
         <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
-        <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
+        <target state="translated">無法從驗證程式類型 '{2}' 存取成員 '{1}' 上的驗證屬性 '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeTitle">
         <source>Validation attribute on the member is inaccessible from the validator type..</source>
-        <target state="new">Validation attribute on the member is inaccessible from the validator type..</target>
+        <target state="translated">無法從驗證程式類型存取成員上的驗證屬性。</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">

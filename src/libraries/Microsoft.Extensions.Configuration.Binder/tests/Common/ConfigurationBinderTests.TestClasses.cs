@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
+using System.Text.Json;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Xunit;
@@ -663,6 +665,82 @@ namespace Microsoft.Extensions
             public StructWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
 
             public int MyInt { get; }
+        }
+
+        public interface IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
+        [TypeConverter(typeof(GeolocationTypeConverter))]
+        public struct Geolocation : IGeolocation
+        {
+            public static readonly Geolocation Zero = new(0, 0);
+
+            public Geolocation(double latitude, double longitude)
+            {
+                Latitude = latitude;
+                Longitude = longitude;
+            }
+
+            public double Latitude { get; set; }
+
+            public double Longitude { get; set; }
+
+            private sealed class GeolocationTypeConverter : TypeConverter
+            {
+                public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+                    throw new NotImplementedException();
+
+                public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                    throw new NotImplementedException();
+            }
+        }
+
+        public sealed class GeolocationClass : IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
+        public sealed record GeolocationRecord : IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
+        public class GeolocationWrapper
+        {
+            public Geolocation Location { get; set; }
+        }
+
+        public class GraphWithUnsupportedMember
+        {
+            public JsonWriterOptions WriterOptions { get; set; }
+        }
+
+        public record RemoteAuthenticationOptions<TRemoteAuthenticationProviderOptions> where TRemoteAuthenticationProviderOptions : new()
+        {
+            public TRemoteAuthenticationProviderOptions GenericProp { get; } = new();
+            public OidcProviderOptions NonGenericProp { get; } = new();
+
+            public TRemoteAuthenticationProviderOptions _genericField { get; } = new();
+            public OidcProviderOptions _nonGenericField { get; } = new();
+
+            public static TRemoteAuthenticationProviderOptions StaticGenericProp { get; } = new();
+            public static OidcProviderOptions StaticNonGenericProp { get; } = new();
+
+            public static TRemoteAuthenticationProviderOptions s_GenericField = new();
+            public static OidcProviderOptions s_NonGenericField = new();
+
+            public TRemoteAuthenticationProviderOptions? NullGenericProp { get; }
+            public static OidcProviderOptions? s_NullNonGenericField;
+        }
+
+        public record OidcProviderOptions
+        {
+            public string? Authority { get; set; }
         }
     }
 }

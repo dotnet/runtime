@@ -1,20 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions, LoadBootResourceCallback } from "../types";
+import BuildConfiguration from "consts:configuration";
+
+import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, LoadBootResourceCallback } from "../types";
 import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit } from "./exit";
-import { setup_proxy_console } from "./logging";
-import { resolve_asset_path, start_asset_download } from "./assets";
+import { setup_proxy_console, mono_log_info } from "./logging";
+import { resolve_single_asset_path, start_asset_download } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { invokeLibraryInitializers } from "./libraryInitializers";
-
+import { initCacheToUseIfEnabled } from "./assetsCache";
 
 const module = globalObjectsRoot.module;
 const monoConfig = module.config as MonoConfigInternal;
@@ -28,6 +30,19 @@ export class HostBuilder implements DotnetHostBuilder {
     withModuleConfig(moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         try {
             deep_merge_module(module, moduleConfig);
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
+    withOnConfigLoaded(onConfigLoaded: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
+        try {
+            deep_merge_module(module, {
+                onConfigLoaded
+            });
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -102,6 +117,32 @@ export class HostBuilder implements DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 appendElementOnExit: true
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
+    withInteropCleanupOnExit(): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                interopCleanupOnExit: true
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
+    withAssertAfterExit(): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                assertAfterExit: true
             });
             return this;
         } catch (err) {
@@ -276,13 +317,6 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withStartupOptions(startupOptions: Partial<WebAssemblyStartOptions>): DotnetHostBuilder {
-        return this
-            .withApplicationEnvironment(startupOptions.environment)
-            .withApplicationCulture(startupOptions.applicationCulture)
-            .withResourceLoader(startupOptions.loadBootResource);
-    }
-
     withApplicationEnvironment(applicationEnvironment?: string): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
@@ -322,14 +356,6 @@ export class HostBuilder implements DotnetHostBuilder {
             if (!this.instance) {
                 if (ENVIRONMENT_IS_WEB && (module.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
                     setup_proxy_console("main", globalThis.console, globalThis.location.origin);
-                }
-                if (ENVIRONMENT_IS_NODE) {
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-ignore:
-                    const process = await import(/* webpackIgnore: true */"process");
-                    if (process.versions.node.split(".")[0] < 14) {
-                        throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
-                    }
                 }
                 mono_assert(module, "Null moduleConfig");
                 mono_assert(module.config, "Null moduleConfig.config");
@@ -391,14 +417,20 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         throw new Error("Can't use moduleFactory callback of createDotnetRuntime function.");
     }
 
+    await detect_features_and_polyfill(module);
+    if (BuildConfiguration === "Debug") {
+        mono_log_info(`starting script ${loaderHelpers.scriptUrl}`);
+        mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
+    }
+
     return module.ENVIRONMENT_IS_PTHREAD
         ? createEmscriptenWorker()
         : createEmscriptenMain();
 }
 
 function importModules() {
-    runtimeHelpers.runtimeModuleUrl = resolve_asset_path("js-module-runtime").resolvedUrl!;
-    runtimeHelpers.nativeModuleUrl = resolve_asset_path("js-module-native").resolvedUrl!;
+    runtimeHelpers.runtimeModuleUrl = resolve_single_asset_path("js-module-runtime").resolvedUrl!;
+    runtimeHelpers.nativeModuleUrl = resolve_single_asset_path("js-module-native").resolvedUrl!;
     return [
         // keep js module names dynamic by using config, in the future we can use feature detection to load different flavors
         import(/* webpackIgnore: true */runtimeHelpers.runtimeModuleUrl),
@@ -406,7 +438,7 @@ function importModules() {
     ];
 }
 
-function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
+async function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
     const { initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
     const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
@@ -426,9 +458,7 @@ function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModu
 }
 
 async function createEmscriptenMain(): Promise<RuntimeAPI> {
-    await detect_features_and_polyfill(module);
-
-    if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.assets)) {
+    if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
         // if config file location nor assets are provided
         module.configSrc = "./blazor.boot.json";
     }
@@ -438,34 +468,36 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     const promises = importModules();
 
-    const wasmModuleAsset = resolve_asset_path("dotnetwasm");
+    await initCacheToUseIfEnabled();
+
+    const wasmModuleAsset = resolve_single_asset_path("dotnetwasm");
     start_asset_download(wasmModuleAsset).then(asset => {
         loaderHelpers.wasmDownloadPromise.promise_control.resolve(asset);
+    }).catch(err => {
+        mono_exit(1, err);
     });
 
     init_globalization();
 
     // TODO call mono_download_assets(); here in parallel ?
     const es6Modules = await Promise.all(promises);
-    initializeModules(es6Modules as any);
+    await initializeModules(es6Modules as any);
 
     await runtimeHelpers.dotnetReady.promise;
 
-    await invokeLibraryInitializers("onRuntimeReady", [globalObjectsRoot.api], "onRuntimeReady");
+    await invokeLibraryInitializers("onRuntimeReady", [globalObjectsRoot.api], "modulesAfterRuntimeReady");
 
     return exportedRuntimeAPI;
 }
 
 async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
-    await detect_features_and_polyfill(module);
-
     setupPreloadChannelToMainThread();
 
     await loaderHelpers.afterConfigLoaded.promise;
 
     const promises = importModules();
     const es6Modules = await Promise.all(promises);
-    initializeModules(es6Modules as any);
+    await initializeModules(es6Modules as any);
 
     return module;
 }

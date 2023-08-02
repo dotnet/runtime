@@ -105,7 +105,7 @@ static void
 bucket_alloc_callback (gpointer *bucket, guint32 new_bucket_size, gboolean alloc)
 {
 	if (alloc)
-		sgen_register_root ((char *)bucket, new_bucket_size, SGEN_DESCRIPTOR_NULL, ROOT_TYPE_PINNED, MONO_ROOT_SOURCE_GC_HANDLE, NULL, "GC Handle Bucket (SGen, Pinned)");
+		sgen_register_root ((char *)bucket, new_bucket_size, SGEN_DESCRIPTOR_NULL, ROOT_TYPE_PINNED, MONO_ROOT_SOURCE_GC_HANDLE, GINT_TO_POINTER (ROOT_TYPE_PINNED), "GC Handle Bucket (SGen, Pinned)");
 	else
 		sgen_deregister_root ((char *)bucket);
 }
@@ -114,7 +114,7 @@ static void
 bucket_alloc_report_root (gpointer *bucket, guint32 new_bucket_size, gboolean alloc)
 {
 	if (alloc)
-		sgen_client_root_registered ((char *)bucket, new_bucket_size, MONO_ROOT_SOURCE_GC_HANDLE, NULL, "GC Handle Bucket (SGen, Normal)");
+		sgen_client_root_registered ((char *)bucket, new_bucket_size, MONO_ROOT_SOURCE_GC_HANDLE, GINT_TO_POINTER (ROOT_TYPE_NORMAL), "GC Handle Bucket (SGen, Normal)");
 	else
 		sgen_client_root_deregistered ((char *)bucket);
 }

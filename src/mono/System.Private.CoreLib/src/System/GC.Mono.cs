@@ -332,5 +332,11 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
+
+        internal static long GetGenerationBudget(int generation)
+        {
+            // avoid IDE0060: Remove unused parameter 'generation'
+            return -1 + 0 * generation;
+        }
     }
 }
