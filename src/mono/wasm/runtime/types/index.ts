@@ -118,7 +118,7 @@ export interface ResourceGroups {
     jsModuleWorker?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
-    jsSymbols?: ResourceList;
+    wasmSymbols?: ResourceList;
     wasmNative: ResourceList;
     icu?: ResourceList;
 
@@ -143,9 +143,11 @@ export type ResourceList = { [name: string]: string | null | "" };
  * @param name The name of the resource to be loaded.
  * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
  * @param integrity The integrity string representing the expected content in the response.
- * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
+ * @param behavior The detailed behavior/type of the resource to be loaded.
+ * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior. 
+ * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
-export type LoadBootResourceCallback = (type: AssetBehaviors | "manifest", name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
+export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
 
 export interface ResourceRequest {
     name: string, // the name of the asset, including extension.
@@ -196,17 +198,25 @@ export type SingleAssetBehaviors =
      */
     | "dotnetwasm"
     /**
+     * The javascript module for loader.
+     */
+    | "js-module-dotnet"
+    /**
      * The javascript module for threads.
      */
     | "js-module-threads"
     /**
-     * The javascript module for threads.
+     * The javascript module for runtime.
      */
     | "js-module-runtime"
     /**
-     * The javascript module for threads.
+     * The javascript module for emscripten.
      */
-    | "js-module-native";
+    | "js-module-native"
+    /**
+     * Typically blazor.boot.json
+     */
+    | "manifest";
 
 export type AssetBehaviors = SingleAssetBehaviors |
     /**
