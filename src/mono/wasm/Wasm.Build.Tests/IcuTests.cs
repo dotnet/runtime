@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 namespace Wasm.Build.Tests;
 
-public class IcuTests : TestMainJsTestBase
+public class IcuTests : IcuTestsBase
 {
     public IcuTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
@@ -23,8 +23,8 @@ public class IcuTests : TestMainJsTestBase
                 // in invariant mode, all locales should be missing
                 new object[] { true, true, "Array.Empty<Locale>()" },
                 new object[] { true, false, "Array.Empty<Locale>()" },
-                new object[] { false, false, IcuTestsHelper.GetEfigsTestedLocales() },
-                new object[] { false, true,  IcuTestsHelper.FullIcuTestedLocales})
+                new object[] { false, false, GetEfigsTestedLocales() },
+                new object[] { false, true,  FullIcuTestedLocales})
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
@@ -47,7 +47,7 @@ public class IcuTests : TestMainJsTestBase
         buildArgs = buildArgs with { ProjectName = projectName };
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<InvariantGlobalization>{invariant}</InvariantGlobalization><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
-        string programText = IcuTestsHelper.GetProgramText(testedLocales);
+        string programText = GetProgramText(testedLocales);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
         (_, string output) = BuildProject(buildArgs,
                         id: id,
@@ -70,8 +70,8 @@ public class IcuTests : TestMainJsTestBase
         buildArgs = buildArgs with { ProjectName = projectName };
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{IcuTestsHelper.CustomIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
-        string testedLocales = fullIcu ? IcuTestsHelper.FullIcuTestedLocales : IcuTestsHelper.CustomIcuTestedLocales;
-        string programText = IcuTestsHelper.GetProgramText(testedLocales);
+        string testedLocales = fullIcu ? FullIcuTestedLocales : CustomIcuTestedLocales;
+        string programText = GetProgramText(testedLocales);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
         (_, string output) = BuildProject(buildArgs,
                         id: id,
