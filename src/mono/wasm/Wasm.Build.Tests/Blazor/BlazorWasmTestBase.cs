@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
+using Wasm.Build.Tests.Blazor;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -124,7 +125,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (IsUsingWorkloads)
         {
             // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, blazorBuildOptions.TargetFramework ?? DefaultTargetFramework);
+            ProjectProviderBase.AssertRuntimePackPath(buildOutput, blazorBuildOptions.TargetFramework ?? DefaultTargetFramework, blazorBuildOptions.RuntimeType);
         }
 
         _provider.AssertBundle(blazorBuildOptions);
@@ -146,48 +147,70 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
-    public Task BlazorRunForBuildWithDotnetRun(string config, Func<IPage, Task>? test = null, string extraArgs = "--no-build", Action<IConsoleMessage>? onConsoleMessage = null)
-        => BlazorRunTest($"run -c {config} {extraArgs}", _projectDir!, test, onConsoleMessage);
+    public Task BlazorRunForBuildWithDotnetRun(BlazorRunOptions runOptions)
+    {
+        if (runOptions.ExtraArgs is null)
+            runOptions = runOptions with { ExtraArgs = "--no-build" };
 
-    public Task BlazorRunForPublishWithWebServer(string config, Func<IPage, Task>? test = null, string extraArgs = "", Action<IConsoleMessage>? onConsoleMessage = null)
-        => BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files {extraArgs}",
-                         Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(config, forPublish: true), "..")),
-                         test, onConsoleMessage);
+        return BlazorRunTest($"run -c {runOptions.Config}",
+                         _projectDir!,
+                         runOptions with { Host = BlazorRunHost.DotnetRun });
+    }
+
+    public Task BlazorRunForPublishWithWebServer(BlazorRunOptions runOptions)
+        => BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
+                         Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(runOptions.Config, forPublish: true), "..")),
+                         runOptions with { Host = BlazorRunHost.WebServer });
 
     public async Task BlazorRunTest(string runArgs,
                                     string workingDirectory,
-                                    Func<IPage, Task>? test = null,
-                                    Action<IConsoleMessage>? onConsoleMessage = null,
-                                    bool detectRuntimeFailures = true)
+                                    BlazorRunOptions runOptions)
     {
+        if (!string.IsNullOrEmpty(runOptions.ExtraArgs))
+            runArgs += $" {runOptions.ExtraArgs}";
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(workingDirectory);
 
         await using var runner = new BrowserRunner(_testOutput);
-        var page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage);
+        var page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, onError: OnErrorMessage);
 
-        await page.Locator("text=Counter").ClickAsync();
-        var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-        Assert.Equal("Current count: 0", txt);
+        _testOutput.WriteLine("Waiting for page to load");
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
 
-        await page.Locator("text=\"Click me\"").ClickAsync();
-        txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-        Assert.Equal("Current count: 1", txt);
+        if (runOptions.CheckCounter)
+        {
+            await page.Locator("text=Counter").ClickAsync();
+            var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+            Assert.Equal("Current count: 0", txt);
 
-        if (test is not null)
-            await test(page);
+            await page.Locator("text=\"Click me\"").ClickAsync();
+            txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+            Assert.Equal("Current count: 1", txt);
+        }
+
+        if (runOptions.Test is not null)
+            await runOptions.Test(page);
+
+        _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
+        await Task.Delay(10_000);
 
         void OnConsoleMessage(IConsoleMessage msg)
         {
             _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
 
-            onConsoleMessage?.Invoke(msg);
+            runOptions.OnConsoleMessage?.Invoke(msg);
 
-            if (detectRuntimeFailures)
+            if (runOptions.DetectRuntimeFailures)
             {
                 if (msg.Text.Contains("[MONO] * Assertion") || msg.Text.Contains("Error: [MONO] "))
                     throw new XunitException($"Detected a runtime failure at line: {msg.Text}");
             }
+        }
+
+        void OnErrorMessage(string msg)
+        {
+            _testOutput.WriteLine($"[ERROR] {msg}");
+            runOptions.OnErrorMessage?.Invoke(msg);
         }
     }
 

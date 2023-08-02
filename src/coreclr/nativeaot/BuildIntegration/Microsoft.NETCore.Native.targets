@@ -299,7 +299,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
     <Message Text="Generating native code" Importance="high" />
 
-    <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
+    <PropertyGroup>
+      <_IlcEnvironmentVariables Condition="'$(IlcUseServerGc)' == 'false'">DOTNET_gcServer=0;$(_IlcEnvironmentVariables)</_IlcEnvironmentVariables>
+    </PropertyGroup>
+
+    <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;"
+          EnvironmentVariables="$(_IlcEnvironmentVariables)" />
 
     <!-- Trick ILLinker into not actually running -->
     <MakeDir Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '7.0.0'))" Directories="$(IntermediateLinkDir)" />
