@@ -62,8 +62,7 @@ namespace System.Net
         [NonEvent]
         public long BeforeResolution(object hostNameOrAddress)
         {
-            bool telemetryEnabled = IsEnabled();
-            if (telemetryEnabled)
+            if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
                 Interlocked.Increment(ref _currentLookups);
@@ -78,7 +77,7 @@ namespace System.Net
                 return Stopwatch.GetTimestamp();
             }
 
-            return telemetryEnabled || NameResolutionMetrics.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
+            return NameResolutionMetrics.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
         }
 
         [NonEvent]
