@@ -268,6 +268,7 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
         // verification types and CLASS_HANDLEs to track the difference.
 
         TYP_REF, // CORINFO_TYPE_VAR             = 0x16,
+        TYP_UNDEF, // CORINFO_TYPE_CTARG         = 0x17
     };
 
     // spot check to make certain enumerations have not changed

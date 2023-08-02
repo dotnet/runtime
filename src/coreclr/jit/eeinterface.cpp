@@ -158,7 +158,7 @@ void Compiler::eePrintConstValue(StringPrinter* printer, CorInfoType valueType, 
             printer->Append(buffer);
             break;
         default:
-            _ASSERTE(!"UNKNOWN VALUE TYPE");
+            _ASSERTE(!"UNKNOWN CONST VALUE TYPE");
             break;
     }
     printer->Append(")");

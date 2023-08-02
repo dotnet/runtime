@@ -767,10 +767,64 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
 
         LPCSTR szName = NULL;
         mdToken mdOwner;
+        mdToken mdType;
 
-        IfFailThrow(ty.GetModule()->GetMDImport()->GetGenericParamProps(token, NULL, NULL, &mdOwner, NULL, &szName));
+        IfFailThrow(ty.GetModule()->GetMDImport()->GetGenericParamProps(token, NULL, NULL, &mdOwner, &mdType, &szName));
 
         _ASSERTE(TypeFromToken(mdOwner) == mdtTypeDef || TypeFromToken(mdOwner) == mdtMethodDef);
+
+        if (RidFromToken(mdType))
+        {
+            _ASSERTE(TypeFromToken(mdType) == mdtTypeSpec);
+            PCCOR_SIGNATURE pSig;
+            ULONG cSig;
+            IfFailThrow(ty.GetModule()->GetMDImport()->GetTypeSpecFromToken(mdType, &pSig, &cSig));
+            SString typeName(L"const ");
+            const char* str;
+            switch (*pSig++)
+            {
+                case ELEMENT_TYPE_BOOLEAN       :
+                    str = "bool"; goto APPEND;
+                case ELEMENT_TYPE_CHAR          :
+                    str = "char"; goto APPEND;
+                case ELEMENT_TYPE_I1            :
+                    str = "int8"; goto APPEND;
+                case ELEMENT_TYPE_U1            :
+                    str = "uint8"; goto APPEND;
+                case ELEMENT_TYPE_I2            :
+                    str = "int16"; goto APPEND;
+                case ELEMENT_TYPE_U2            :
+                    str = "uint16"; goto APPEND;
+                case ELEMENT_TYPE_I4            :
+                    str = "int32"; goto APPEND;
+                case ELEMENT_TYPE_U4            :
+                    str = "uint32"; goto APPEND;
+                case ELEMENT_TYPE_I8            :
+                    str = "int64"; goto APPEND;
+                case ELEMENT_TYPE_U8            :
+                    str = "uint64"; goto APPEND;
+                case ELEMENT_TYPE_R4            :
+                    str = "float32"; goto APPEND;
+                case ELEMENT_TYPE_R8            :
+                    str = "float64"; goto APPEND;
+                APPEND:
+                    typeName.AppendUTF8(str);
+                    break;
+                case ELEMENT_TYPE_VAR           :
+                    typeName.AppendUTF8("!");
+                    goto APPEND_VAR;
+                case ELEMENT_TYPE_MVAR          :
+                    typeName.AppendUTF8("!!");
+                APPEND_VAR:
+                    typeName.AppendPrintf("%u", CorSigUncompressData(pSig));
+                    break;
+                default:
+                    _ASSERTE(!"UNKNOWN CONST TYPE PARAMETER");
+                    break;
+            }
+            typeName.AppendUTF8(" ");
+            tnb.Append(typeName.GetUnicode());
+        }
 
         LPCSTR szPrefix;
         if (!(format & FormatGenericParam))
@@ -781,6 +835,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             szPrefix = "!!";
 
         SmallStackSString pName(SString::Utf8, szPrefix);
+        pName.AppendUTF8(szPrefix);
         pName.AppendUTF8(szName);
         tnb.AddName(pName.GetUnicode());
         format &= ~FormatAssembly;
