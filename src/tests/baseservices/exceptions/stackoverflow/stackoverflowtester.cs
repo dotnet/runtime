@@ -25,6 +25,7 @@ namespace TestStackOverflow
             testProcess.StartInfo.Arguments = $"{Path.Combine(s_currentPath, "..", testName, $"{testName}.dll")} {testArgs}";
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
+            testProcess.StartInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
             bool endOfStackTrace = false;
             testProcess.ErrorDataReceived += (sender, line) => 
             {
