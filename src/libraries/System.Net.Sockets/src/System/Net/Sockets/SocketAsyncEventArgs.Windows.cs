@@ -54,9 +54,8 @@ namespace System.Net.Sockets
         private byte[]? _controlBufferPinned;
         private WSABuffer[]? _wsaRecvMsgWSABufferArrayPinned;
 
-        // Internal SocketAddress buffer
-        private GCHandle _socketAddressGCHandle;
-        private Internals.SocketAddress? _pinnedSocketAddress;
+        // SocketAddress buffer
+        private IntPtr _socketAddressPtr;
 
         // SendPacketsElements property variables.
         private SafeFileHandle[]? _sendPacketsFileHandles;
@@ -407,9 +406,9 @@ namespace System.Net.Sockets
             // WSARecvFrom uses a WSABuffer array describing buffers in which to
             // receive data and from which to send data respectively. Single and multiple buffers
             // are handled differently so as to optimize performance for the more common single buffer case.
-            // WSARecvFrom and WSASendTo also uses a sockaddr buffer in which to store the address from which the data was received.
-            // The sockaddr is pinned with a GCHandle to avoid having to use the object array form of UnsafePack.
-            PinSocketAddressBuffer();
+            // WSARecvFrom also uses a sockaddr buffer in which to store the address from which the data was received.
+            // The sockaddr is allocated from NativeMemory and reused multiple time when possible.
+            AllocateSocketAddressBuffer();
 
             return _bufferList == null ?
                 DoOperationReceiveFromSingleBuffer(handle, cancellationToken) :
@@ -434,8 +433,8 @@ namespace System.Net.Sockets
                         1,
                         out int bytesTransferred,
                         ref flags,
-                        PtrSocketAddressBuffer,
-                        PtrSocketAddressBufferSize,
+                        PtrSocketAddressBuffer(),
+                        PtrSocketAddressSize(),
                         overlapped,
                         IntPtr.Zero);
 
@@ -463,8 +462,8 @@ namespace System.Net.Sockets
                     _bufferListInternal!.Count,
                     out int bytesTransferred,
                     ref flags,
-                    PtrSocketAddressBuffer,
-                    PtrSocketAddressBufferSize,
+                    PtrSocketAddressBuffer(),
+                    PtrSocketAddressSize(),
                     overlapped,
                     IntPtr.Zero);
 
@@ -483,11 +482,11 @@ namespace System.Net.Sockets
 
             // WSARecvMsg uses a WSAMsg descriptor.
             // The WSAMsg buffer is a pinned array to avoid complicating the use of Overlapped.
-            // WSAMsg contains a pointer to a sockaddr.
-            // The sockaddr is pinned with a GCHandle to avoid complicating the use of Overlapped.
-            // WSAMsg contains a pointer to a WSABuffer array describing data buffers.
+            // WSAMsg contains a pointer to a sockaddr that is allocated from NativeMemory
+            // and reused multiple time when possible.
+            // WSAMsg also contains a pointer to a WSABuffer array describing data buffers.
             // WSAMsg also contains a single WSABuffer describing a control buffer.
-            PinSocketAddressBuffer();
+            AllocateSocketAddressBuffer();
 
             // Create a WSAMessageBuffer if none exists yet.
             _wsaMessageBufferPinned ??= GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.WSAMsg), pinned: true);
@@ -538,8 +537,8 @@ namespace System.Net.Sockets
             {
                 // Fill in WSAMessageBuffer.
                 Interop.Winsock.WSAMsg* pMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBufferPinned, 0);
-                pMessage->socketAddress = PtrSocketAddressBuffer;
-                pMessage->addressLength = (uint)_socketAddress.Size;
+                pMessage->socketAddress = PtrSocketAddressBuffer();
+                pMessage->addressLength = (uint)SocketAddress.GetMaximumAddressSize(_socketAddress!.Family);
                 fixed (void* ptrWSARecvMsgWSABufferArray = &wsaRecvMsgWSABufferArray[0])
                 {
                     pMessage->buffers = (IntPtr)ptrWSARecvMsgWSABufferArray;
@@ -857,44 +856,31 @@ namespace System.Net.Sockets
             }
         }
 
-        // Ensures appropriate SocketAddress buffer is pinned.
-        private void PinSocketAddressBuffer()
+        // Ensures appropriate SocketAddress buffer is allocated.
+        private unsafe void AllocateSocketAddressBuffer()
         {
-            // Check if already pinned.
-            if (_pinnedSocketAddress == _socketAddress)
+            //_socketAddress!.Size = SocketAddress.GetMaximumAddressSize(_socketAddress!.Family);
+            int size = SocketAddress.GetMaximumAddressSize(_socketAddress!.Family);
+
+            if (_socketAddressPtr == IntPtr.Zero)
             {
-                return;
+                _socketAddressPtr = (IntPtr)NativeMemory.Alloc((uint)(_socketAddress!.Size + sizeof(IntPtr)));
             }
 
-            // Unpin any existing.
-            if (_socketAddressGCHandle.IsAllocated)
-            {
-                _socketAddressGCHandle.Free();
-            }
-
-            // Pin down the new one.
-            _socketAddressGCHandle = GCHandle.Alloc(_socketAddress!.InternalBuffer, GCHandleType.Pinned);
-            _socketAddress.CopyAddressSizeIntoBuffer();
-            _pinnedSocketAddress = _socketAddress;
+            *((int*)_socketAddressPtr) = size;
         }
 
-        private unsafe IntPtr PtrSocketAddressBuffer
+        private unsafe IntPtr PtrSocketAddressBuffer()
         {
-            get
-            {
-                Debug.Assert(_pinnedSocketAddress != null);
-                Debug.Assert(_pinnedSocketAddress.InternalBuffer != null);
-                Debug.Assert(_pinnedSocketAddress.InternalBuffer.Length > 0);
-                Debug.Assert(_socketAddressGCHandle.IsAllocated);
-                Debug.Assert(_socketAddressGCHandle.Target == _pinnedSocketAddress.InternalBuffer);
-                fixed (void* ptrSocketAddressBuffer = &_pinnedSocketAddress.InternalBuffer[0])
-                {
-                    return (IntPtr)ptrSocketAddressBuffer;
-                }
-            }
+            Debug.Assert(_socketAddressPtr != IntPtr.Zero);
+            return _socketAddressPtr + sizeof(IntPtr);
         }
 
-        private IntPtr PtrSocketAddressBufferSize => PtrSocketAddressBuffer + _socketAddress!.GetAddressSizeOffset();
+        private IntPtr PtrSocketAddressSize()
+        {
+            Debug.Assert(_socketAddressPtr != IntPtr.Zero);
+            return _socketAddressPtr;
+        }
 
         // Cleans up any existing Overlapped object and related state variables.
         private void FreeOverlapped()
@@ -909,7 +895,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void FreePinHandles()
+        private unsafe void FreePinHandles()
         {
             _pinState = PinState.None;
 
@@ -922,10 +908,10 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (_socketAddressGCHandle.IsAllocated)
+            if (_socketAddressPtr != IntPtr.Zero)
             {
-                _socketAddressGCHandle.Free();
-                _pinnedSocketAddress = null;
+                NativeMemory.Free((void*)_socketAddressPtr);
+                _socketAddressPtr = IntPtr.Zero;
             }
 
             Debug.Assert(_singleBufferHandle.Equals(default(MemoryHandle)));
@@ -1133,7 +1119,13 @@ namespace System.Net.Sockets
             }
         }
 
-        private unsafe int GetSocketAddressSize() => *(int*)PtrSocketAddressBufferSize;
+        private unsafe void UpdateReceivedSocketAddress(Internals.SocketAddress socketAddress)
+        {
+            Debug.Assert(_socketAddressPtr != IntPtr.Zero);
+            int size = *((int*)_socketAddressPtr);
+            socketAddress!.Size = size;
+            new Span<byte>((void*)PtrSocketAddressBuffer(), size).CopyTo(socketAddress.Buffer.Span);
+        }
 
         private void CompleteCore()
         {
