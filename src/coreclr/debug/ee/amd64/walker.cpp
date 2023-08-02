@@ -438,21 +438,28 @@ static bool InstructionHasModRMByte(Amd64InstrDecode::InstrForm form, bool W)
     return modrm;
 }
 
-static bool IsWrite(Amd64InstrDecode::InstrForm form)
+static bool InstructionIsWrite(Amd64InstrDecode::InstrForm form)
 {
     bool isWrite = false;
     switch (form)
     {
+    // M1st cases (memory operand comes first)
     case Amd64InstrDecode::InstrForm::M1st_I1B_L_M16B_or_M8B:
+    case Amd64InstrDecode::InstrForm::M1st_I1B_LL_M8B_or_M16B_or_M32B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_WP_M8B_or_M4B_or_M2B:
     case Amd64InstrDecode::InstrForm::M1st_L_M32B_or_M16B:
+    case Amd64InstrDecode::InstrForm::M1st_LL_M16B_or_M32B_or_M64B:
+    case Amd64InstrDecode::InstrForm::M1st_LL_M2B_or_M4B_or_M8B:
+    case Amd64InstrDecode::InstrForm::M1st_LL_M4B_or_M8B_or_M16B:
+    case Amd64InstrDecode::InstrForm::M1st_LL_M8B_or_M16B_or_M32B:
     case Amd64InstrDecode::InstrForm::M1st_M16B:
     case Amd64InstrDecode::InstrForm::M1st_M16B_I1B:
     case Amd64InstrDecode::InstrForm::M1st_M1B:
     case Amd64InstrDecode::InstrForm::M1st_M1B_I1B:
     case Amd64InstrDecode::InstrForm::M1st_M2B:
     case Amd64InstrDecode::InstrForm::M1st_M2B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_M32B_I1B:
     case Amd64InstrDecode::InstrForm::M1st_M4B:
     case Amd64InstrDecode::InstrForm::M1st_M4B_I1B:
     case Amd64InstrDecode::InstrForm::M1st_M8B:
@@ -462,6 +469,8 @@ static bool IsWrite(Amd64InstrDecode::InstrForm form)
     case Amd64InstrDecode::InstrForm::M1st_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B:
     case Amd64InstrDecode::InstrForm::M1st_WP_M8B_or_M4B_or_M2B:
+
+    // MOnly cases (memory operand is the only operand)
     case Amd64InstrDecode::InstrForm::MOnly_M10B:
     case Amd64InstrDecode::InstrForm::MOnly_M1B:
     case Amd64InstrDecode::InstrForm::MOnly_M2B:
@@ -481,13 +490,14 @@ static bool IsWrite(Amd64InstrDecode::InstrForm form)
     return isWrite;
 }
 
-static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
+static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, int LL, bool fPrefix66)
 {
     uint8_t opSize = 0;
     bool P = !((pp == 1) || fPrefix66);
     switch (form)
     {
     // M32B
+    case Amd64InstrDecode::InstrForm::M1st_M32B_I1B:
     case Amd64InstrDecode::InstrForm::MOp_M32B:
     case Amd64InstrDecode::InstrForm::MOp_M32B_I1B:
         opSize = 32;
@@ -604,6 +614,57 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
     case Amd64InstrDecode::InstrForm::MOp_M1B_I1B:
         opSize = 1;
         break;
+
+    // LL_M8B_or_M16B_or_M32B
+    case Amd64InstrDecode::InstrForm::M1st_I1B_LL_M8B_or_M16B_or_M32B:
+    case Amd64InstrDecode::InstrForm::M1st_LL_M8B_or_M16B_or_M32B:
+    case Amd64InstrDecode::InstrForm::MOp_LL_M8B_or_M16B_or_M32B:
+        opSize = (LL == 0) ? 8 : (LL == 1) ? 16 : 32;
+        break;
+
+    // LL_M2B_or_M4B_or_M8B
+    case Amd64InstrDecode::InstrForm::M1st_LL_M2B_or_M4B_or_M8B:
+    case Amd64InstrDecode::InstrForm::MOp_LL_M2B_or_M4B_or_M8B:
+        opSize = (LL == 0) ? 2 : (LL == 1) ? 4 : 8;
+        break;
+
+    // LL_M4B_or_M8B_or_M16B
+    case Amd64InstrDecode::InstrForm::M1st_LL_M4B_or_M8B_or_M16B:
+    case Amd64InstrDecode::InstrForm::MOp_LL_M4B_or_M8B_or_M16B:
+        opSize = (LL == 0) ? 4 : (LL == 1) ? 8 : 16;
+        break;
+
+    // LL_M8B_or_M32B_or_M64B
+    case Amd64InstrDecode::InstrForm::MOp_LL_M8B_or_M32B_or_M64B:
+        opSize = (LL == 0) ? 8 : (LL == 1) ? 32 : 64;
+        break;
+
+    // LL_M16B_or_M32B_or_M64B
+    case Amd64InstrDecode::InstrForm::M1st_LL_M16B_or_M32B_or_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_LL_M16B_or_M32B_or_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_LL_M16B_or_M32B_or_M64B:
+        opSize = (LL == 0) ? 16 : (LL == 1) ? 32 : 64;
+        break;
+
+    // LL_None_or_M32B_or_M64B
+    case Amd64InstrDecode::InstrForm::MOp_I1B_LL_None_or_M32B_or_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_LL_None_or_M32B_or_M64B:
+        // We should never see LL == 0.
+        opSize = (LL == 0) ? 0 : (LL == 1) ? 32 : 64;
+        break;
+
+    // WLL_M16B_M32B_M64B_or_M8B_M16B_M32B
+    case Amd64InstrDecode::InstrForm::MOp_WLL_M16B_M32B_M64B_or_M8B_M16B_M32B:
+        if (W)
+        {
+            opSize = (LL == 0) ? 16 : (LL == 1) ? 32 : 64;
+        }
+        else
+        {
+            opSize = (LL == 0) ? 8 : (LL == 1) ? 16 : 32;
+        }
+        break;
+
     // MUnknown
     case Amd64InstrDecode::InstrForm::M1st_MUnknown:
     case Amd64InstrDecode::InstrForm::MOnly_MUnknown:
@@ -617,7 +678,7 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
     return opSize;
 }
 
-static int immSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
+static int InstructionImmSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool fPrefix66)
 {
     int immSize = 0;
     bool P = !((pp == 1) || fPrefix66);
@@ -627,19 +688,23 @@ static int immSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, boo
     case Amd64InstrDecode::InstrForm::M1st_I1B_L_M16B_or_M8B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_WP_M8B_or_M4B_or_M2B:
-    case Amd64InstrDecode::InstrForm::M1st_M16B_I1B:
     case Amd64InstrDecode::InstrForm::M1st_M1B_I1B:
     case Amd64InstrDecode::InstrForm::M1st_M2B_I1B:
     case Amd64InstrDecode::InstrForm::M1st_M4B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_M16B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_M32B_I1B:
     case Amd64InstrDecode::InstrForm::MOp_I1B_L_M32B_or_M16B:
     case Amd64InstrDecode::InstrForm::MOp_I1B_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::MOp_I1B_WP_M8B_or_M4B_or_M2B:
-    case Amd64InstrDecode::InstrForm::MOp_M16B_I1B:
     case Amd64InstrDecode::InstrForm::MOp_M1B_I1B:
     case Amd64InstrDecode::InstrForm::MOp_M2B_I1B:
-    case Amd64InstrDecode::InstrForm::MOp_M32B_I1B:
     case Amd64InstrDecode::InstrForm::MOp_M4B_I1B:
     case Amd64InstrDecode::InstrForm::MOp_M8B_I1B:
+    case Amd64InstrDecode::InstrForm::MOp_M16B_I1B:
+    case Amd64InstrDecode::InstrForm::MOp_M32B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_I1B_LL_M8B_or_M16B_or_M32B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_LL_M16B_or_M32B_or_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_LL_None_or_M32B_or_M64B:
         immSize = 1;
         break;
     case Amd64InstrDecode::InstrForm::I2B:
@@ -662,6 +727,7 @@ static int immSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, boo
     case Amd64InstrDecode::InstrForm::WP_I8B_or_I4B_or_I2B:
         immSize = W ? 8 : P ? 4 : 2;
         break;
+
     default:
         break;
     }
@@ -681,12 +747,13 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
     pInstrAttrib->Reset();
 
     // These three legacy prefixes are used to modify some of the two-byte opcodes.
-    bool  fPrefix66 = false;
-    bool  fPrefixF2 = false;
-    bool  fPrefixF3 = false;
+    bool fPrefix66 = false;
+    bool fPrefixF2 = false;
+    bool fPrefixF3 = false;
 
-    bool  W     = false;
-    bool  L     = false;
+    bool W       = false;
+    bool L       = false;
+    BYTE evex_LL = 0;
 
     int pp = 0;
 
@@ -778,7 +845,10 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         Escape0F_3A = 0x0F3A,
         VexMapC40F = 0xc401,
         VexMapC40F38 = 0xc402,
-        VexMapC40F3A = 0xc403
+        VexMapC40F3A = 0xc403,
+        EvexMap0F = 0x6201,
+        EvexMap0F38 = 0x6202,
+        EvexMap0F3A = 0x6203
     } opCodeMap;
 
     switch (*address)
@@ -837,34 +907,79 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
             address += 2;
             break;
 
+        case 0x62: // Evex
+        {
+            BYTE evex_mmm = address[1] & 0x7;
+            switch (evex_mmm)
+            {
+            case 0x1:
+                opCodeMap = EvexMap0F;
+                break;
+            case 0x2:
+                opCodeMap = EvexMap0F38;
+                break;
+            case 0x3:
+                opCodeMap = EvexMap0F3A;
+                break;
+            default:
+                _ASSERT(!"Unknown Evex 'mmm' bytes");
+                return;
+            }
+
+            BYTE evex_w = address[2] & 0x80;
+            if (evex_w != 0)
+            {
+                W = true;
+            }
+
+            evex_LL = (address[2] & 0x60) >> 5;
+
+            pp = address[1] & 0x3;
+            address += 4;
+            break;
+        }
+
         default:
             opCodeMap = Primary;
             break;
     }
 
     Amd64InstrDecode::InstrForm form = Amd64InstrDecode::InstrForm::None;
+    
+    size_t opCode    = size_t(*address);
+    size_t opCodeExt = (opCode << 2) | pp;
+
     switch (opCodeMap)
     {
     case Primary:
-        form = Amd64InstrDecode::instrFormPrimary[*address];
+        form = Amd64InstrDecode::instrFormPrimary[opCode];
         break;
     case Secondary:
-        form = Amd64InstrDecode::instrFormSecondary[(size_t(*address) << 2)| pp];
+        form = Amd64InstrDecode::instrFormSecondary[opCodeExt];
         break;
     case Escape0F_38:
-        form = Amd64InstrDecode::instrFormF38[(size_t(*address) << 2)| pp];
+        form = Amd64InstrDecode::instrFormF38[opCodeExt];
         break;
     case Escape0F_3A:
-        form = Amd64InstrDecode::instrFormF3A[(size_t(*address) << 2)| pp];
+        form = Amd64InstrDecode::instrFormF3A[opCodeExt];
         break;
     case VexMapC40F:
-        form = Amd64InstrDecode::instrFormVex1[(size_t(*address) << 2)| pp];
+        form = Amd64InstrDecode::instrFormVex1[opCodeExt];
         break;
     case VexMapC40F38:
-        form = Amd64InstrDecode::instrFormVex2[(size_t(*address) << 2)| pp];
+        form = Amd64InstrDecode::instrFormVex2[opCodeExt];
         break;
     case VexMapC40F3A:
-        form = Amd64InstrDecode::instrFormVex3[(size_t(*address) << 2)| pp];
+        form = Amd64InstrDecode::instrFormVex3[opCodeExt];
+        break;
+    case EvexMap0F:
+        form = Amd64InstrDecode::instrFormEvex_0F[opCodeExt];
+        break;
+    case EvexMap0F38:
+        form = Amd64InstrDecode::instrFormEvex_0F38[opCodeExt];
+        break;
+    case EvexMap0F3A:
+        form = Amd64InstrDecode::instrFormEvex_0F3A[opCodeExt];
         break;
     default:
         _ASSERTE(false);
@@ -885,21 +1000,20 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         _ASSERTE(pInstrAttrib->m_dwOffsetToDisp <= MAX_INSTRUCTION_LENGTH);
 
         const int dispBytes = 4;
-        const int immBytes = immSize(form, pp, W, L, fPrefix66);
+        const int immBytes = InstructionImmSize(form, pp, W, fPrefix66);
 
         pInstrAttrib->m_cbInstr = pInstrAttrib->m_dwOffsetToDisp + dispBytes + immBytes;
         _ASSERTE(pInstrAttrib->m_cbInstr <= MAX_INSTRUCTION_LENGTH);
 
-        pInstrAttrib->m_fIsWrite = IsWrite(form);
-        pInstrAttrib->m_cOperandSize = InstructionOperandSize(form, pp, W, L, fPrefix66);
+        pInstrAttrib->m_fIsWrite = InstructionIsWrite(form);
+        pInstrAttrib->m_cOperandSize = InstructionOperandSize(form, pp, W, L, evex_LL, fPrefix66);
     }
 
     if (opCodeMap == Primary)
     {
         BYTE opcode0 = *address;
         //
-        // Look at opcode to tell if it's a call or an
-        // absolute branch.
+        // Look at opcode to tell if it's a call or an absolute branch.
         //
         switch (opcode0)
         {
@@ -935,6 +1049,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
                     case 4:
                     case 5:
                         pInstrAttrib->m_fIsAbsBranch = true;
+                        break;
                 }
                 LOG((LF_CORDB, LL_INFO10000, "CALL/JMP modr/m:%0.2x\n", opcode0));
                 break;

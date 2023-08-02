@@ -18,8 +18,14 @@ gcc -g opcodes.cpp -o opcodes
 gdb opcodes -batch -ex "set disassembly-flavor intel" -ex "disass /r opcodes" > opcodes.intel
 
 # Parse disassembly and generate code
-cat opcodes.intel | dotnet run > ../amd64InstrDecode.h
+# Build as a separate step so it will display build errors, if any.
+../../../../../../dotnet.sh build
+cat opcodes.intel | ../../../../../../dotnet.sh run > new_amd64InstrDecode.h
 ```
+
+After checking it, copy the generated new_amd64InstrDecode.h to ../amd64InstrDecode.h.
+
+This process can be run using the `createTables.sh` script in this directory.
 
 ## Technical design
 
@@ -35,26 +41,41 @@ instruction.  The decoder currently must be able to identify:
 - The instruction length in bytes
 - The size of the memory operation in bytes
 
-To get this right is complicated, because the `amd64` instruction set is
-complicated.
+To get this right is complicated, because the `amd64` instruction set is complicated.
 
-A high level view of the `amd64` instruction set can be seen by looking at
-`AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions`
- `Section 1.1 Instruction Encoding Overview`
- `Figure 1-1.  Instruction Encoding Syntax`
+A high level view of the `amd64` instruction set can be seen by looking at:
+
+`AMD64 Architecture Programmer's Manual Volume 3: General-Purpose and System Instructions`
+`Section 1.1 Instruction Encoding Overview`
+`Figure 1-1. Instruction Encoding Syntax`
+
+also:
+
+`Intel(R) 64 and IA-32 Architectures Software Developer's Manual`
+`Volume 2: Instruction Set Reference, A-Z`
+`Chapter 2 Instruction Format`
+
+Also useful in the manuals:
+
+AMD: `Appendix A: Opcode and Operand Encodings`
+Intel: `Volume 2, Appendix A: Opcode Map`
 
 The general behavior of each instruction can be modified by many of the
-bytes in the 1-15 byte instruction.
+bytes in the 1-15 byte instruction (15 is the maximum byte length of an instruction).
 
 This set of files generates a metadata table by extracting the data from
 sample instruction disassembly.
 
-The process entails
+The process entails:
 - Generating a necessary set of instructions
 - Generating parsable disassembly for the instructions
 - Parsing the disassembly
+- Generating the tables
 
 ### Generating a necessary set of instructions
+
+What set of possible instruction encodings are needed to extract the information
+needed in the tables?
 
 #### The necessary set
 
@@ -62,13 +83,14 @@ The process entails
 - All combinations of modifier bits which affect the instruction form
     - presence and/or size of the memory access
     - size or presence of immediates
+    - vector size bits
 
-So with modrm.mod = 0, modrm.rm = 0x5 (instruction pointer relative memory access)
+So with modrm.mod = 0, modrm.rm = 0x5 (RIP relative memory access)
 we need all combinations of:
 - `opcodemap`
 - `opcode`
 - `modrm.reg`
-- `pp`, `W`, `L`
+- `pp`, `W`, `L`, `L'L`
 - Some combinations of `vvvv`
 - Optional prefixes: `repe`, `repne`, `opSize`
 
@@ -78,7 +100,7 @@ We will iterate through all the necessary set. Many of these combinations
 will lead to invalid/undefined encodings.  This will cause the disassembler
 to give up and mark the disassemble as bad.
 
-The disassemble will then resume trying to disassemble at the next boundary.
+The disassembly will then resume trying to disassemble at the next boundary.
 
 To make sure the disassembler attempts to disassemble every instruction,
 we need to make sure the preceding instruction is always valid and terminates
@@ -95,8 +117,7 @@ instruction.
 
 Using a fixed suffix makes disassembly parsing simpler.
 
-After the modrm byte, the generated instructions always include a
-`postamble`,
+After the modrm byte, the generated instructions always include a `postamble`,
 
 ```C++
 const char* postamble = "0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59,\n";
@@ -114,7 +135,7 @@ the needs of the particular opcode map:
 - opcode
 - pp & some prefixes
 - modrm.reg
-- W, L, vvvv
+- W, L, L'L, vvvv
 
 This is to keep related instruction grouped together.
 
@@ -158,6 +179,7 @@ their sizes. For instance:
 - "OWORD PTR [rip+0x53525150]"
 - "XMMWORD PTR [rip+0x53525150]"
 - "YMMWORD PTR [rip+0x53525150]"
+- "ZMMWORD PTR [rip+0x53525150]"
 - "FWORD PTR [rip+0x53525150]"
 - "TBYTE PTR [rip+0x53525150]"
 
@@ -196,7 +218,7 @@ cat opcodes.intel | dotnet run > ../amd64InstrDecode.h
 #### Finding relevant disassembly lines
 
 We are not interested in all lines in the disassembly. The disassembler
-stray comments, recovery and our padding introduce lines we need to ignore.
+stray comments, recovery, and our padding introduce lines we need to ignore.
 
 We filter out and ignore non-disassembly lines using a `Regex` for a
 disassembly line.
@@ -225,7 +247,7 @@ For each sample, we need to calculate the important properties:
     - map
     - opcode position
 - Encoding Flags
-    - pp, W, L, prefix and encoding flags
+    - pp, W, L, L'L, prefix and encoding flags
 - `SuffixFlags`
     - presence of RIP relative accesses
         - size of operation
@@ -241,13 +263,10 @@ unknown sizes.
 
 #### `opCodeExt`
 
-To facilitate identifying sets of instructions, the creates an `opCodeExt`.
+To facilitate identifying sets of instructions, the tool creates an `opCodeExt`.
 
 For the `Primary` map this is simply the encoded opcode from the instruction
 shifted left by 4 bits.
-
-For the 3D Now `NOW3D` map this is simply the encoded immediate from the
-instruction shifted left by 4 bits.
 
 For the `Secondary`, `F38`, and `F39` maps this is the encoded opcode from
 the instruction shifted left by 4 bits or'ed with a synthetic `pp`. The
@@ -257,14 +276,14 @@ synthetic `pp` is constructed to match the rules of
 For the case where the opSize 0x66 prefix is present with a `rep*` prefix, the `rep*` prefix is used
 to encode `pp`.
 
-For the `VEX*` and `XOP*` maps this is the encoded opcode from
+For the `VEX*` maps this is the encoded opcode from
 the instruction shifted left by 4 bits or'ed with `pp`.
 
 #### Identifying sets of instructions
 
 For most instructions, the `opCodeExt` will uniquely identify the instruction.
 
-For many instructions, `modrm.reg` is used to uniquely identify the instruction.
+For many instructions, `modrm.reg` is used to help uniquely identify the instruction.
 These instruction typically change mnemonic and behavior as `modrm.reg`
 changes. These become problematic, when the form of these instructions vary.
 
@@ -288,7 +307,9 @@ set based on the encoding flags.  These are the `sometimesFlags`
 `sometimesFlags`, check each rule by calling `TestHypothesis`.  This
 determines if the rule corresponds to the set of observations.
 
-Encode the rule as a string.
+Encode the rule as a string. The rule might encode that the `W` bit or `L`
+bit causes a different memory/immediate behavior for the particular
+`<map, opCodeExt>` entry.
 
 Add the rule to the set of all observed rules.
 Add the set's rule with comment to a dictionary.
@@ -367,4 +388,3 @@ Regenerate and compare.
 ### New debugger feature requires more metadata
 
 Add new feature code, regenerate.
-

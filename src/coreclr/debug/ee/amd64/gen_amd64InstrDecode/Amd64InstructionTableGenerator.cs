@@ -26,7 +26,16 @@ namespace Amd64InstructionTableGenerator
 
         W = 0x10,
         L = 0x100,
+
+        // EVEX L'L bits. Mask off using EncodingFlagsLLmask then direct compare (don't bit compare these value).
+        LL00 = 0x000,
+        LL01 = 0x200,
+        LL10 = 0x400,
+
+        LLshift = 9,
+        LLmask = 0x3 << EncodingFlags.LLshift,
     }
+
 
     [Flags]
     internal enum SuffixFlags : int
@@ -43,15 +52,15 @@ namespace Amd64InstructionTableGenerator
         M8B = 0x100, // Memory op is 8  bytes
         M16B = 0x200, // Memory op is 16 bytes
         M32B = 0x400, // Memory op is 32 bytes
-        // TODO: add M64B for EVEX
-        M6B = 0x800, // Memory op is 6  bytes
-        M10B = 0x1000, // Memory op is 10 bytes
-        I1B = 0x2000, // Instruction includes 1  byte  of immediates
-        I2B = 0x4000, // Instruction includes 2  bytes of immediates
-        I3B = 0x8000, // Instruction includes 3  bytes of immediates
-        I4B = 0x10000, // Instruction includes 4  bytes of immediates
-        I8B = 0x20000, // Instruction includes 8  bytes of immediates
-        Unknown = 0x40000, // Instruction sample did not include a modrm configured to produce RIP addressing
+        M64B = 0x800, // Memory op is 64 bytes
+        M6B = 0x1000, // Memory op is 6  bytes
+        M10B = 0x2000, // Memory op is 10 bytes
+        I1B = 0x4000, // Instruction includes 1  byte  of immediates
+        I2B = 0x8000, // Instruction includes 2  bytes of immediates
+        I3B = 0x10000, // Instruction includes 3  bytes of immediates
+        I4B = 0x20000, // Instruction includes 4  bytes of immediates
+        I8B = 0x40000, // Instruction includes 8  bytes of immediates
+        Unknown = 0x80000, // Instruction sample did not include a modrm configured to produce RIP addressing
     }
 
     internal enum Map
@@ -65,6 +74,9 @@ namespace Amd64InstructionTableGenerator
         Vex1, // mmmmm = 00001 (0F)
         Vex2, // mmmmm = 00010 (0F 38)
         Vex3, // mmmmm = 00011 (0F 3A)
+        Evex_0F, // mmm = 001
+        Evex_0F38, // mmm = 010
+        Evex_0F3A, // mmm = 011
     }
 
     internal sealed partial class Amd64InstructionSample
@@ -94,6 +106,7 @@ namespace Amd64InstructionTableGenerator
             ["OWORD PTR [rip+0x53525150]"] = SuffixFlags.M16B,
             ["XMMWORD PTR [rip+0x53525150]"] = SuffixFlags.M16B,
             ["YMMWORD PTR [rip+0x53525150]"] = SuffixFlags.M32B,
+            ["ZMMWORD PTR [rip+0x53525150]"] = SuffixFlags.M64B,
             ["FWORD PTR [rip+0x53525150]"] = SuffixFlags.M6B,
             ["TBYTE PTR [rip+0x53525150]"] = SuffixFlags.M10B,
         };
@@ -117,31 +130,49 @@ namespace Amd64InstructionTableGenerator
 
         public readonly Map map;
         public readonly EncodingFlags encodingFlags;
-        private readonly byte opIndex;
+        private readonly byte opIndex; // offset into `encoding` of the opcode byte: encoding[opIndex] is the opcode byte.
 
         public int opCodeExt
         {
             get
             {
                 const byte BytePP = 0x3;
+                byte opcode = encoding[opIndex];
+                byte pp = 0;
+
                 switch (map)
                 {
                     case Map.Primary:
-                        return encoding[opIndex] << 4;
+                        break; // no pp (use zero)
                     case Map.Secondary:
                     case Map.F38:
                     case Map.F3A:
-                        return (((int)encoding[opIndex]) << 4) +
-                                (encodingFlags.HasFlag(EncodingFlags.F2) ? 0x3 :
-                                    (encodingFlags.HasFlag(EncodingFlags.P) ? 0x1 :
-                                        (encodingFlags.HasFlag(EncodingFlags.F3) ? 0x2 : 0)));
+                        if (encodingFlags.HasFlag(EncodingFlags.F2))
+                            pp = 0x3;
+                        else if (encodingFlags.HasFlag(EncodingFlags.P))
+                            pp = 0x1;
+                        else if (encodingFlags.HasFlag(EncodingFlags.F3))
+                            pp = 0x2;
+                        break;
                     case Map.Vex1:
                     case Map.Vex2:
                     case Map.Vex3:
-                        return (((int)encoding[opIndex]) << 4) + (encoding[opIndex - 1] & BytePP);
+                        // `pp` is the low 2 bits of the last byte of the VEX prefix (either 3-byte or 2-byte form).
+                        pp = (byte)(encoding[opIndex - 1] & BytePP);
+                        break;
+                    case Map.Evex_0F:
+                    case Map.Evex_0F38:
+                    case Map.Evex_0F3A:
+                    {
+                        var evex_p1 = encoding[opIndex - 2];
+                        pp = (byte)(evex_p1 & BytePP);
+                        break;
+                    }
                     default:
                         return 0;
-                };
+                }
+
+                return (((int)opcode) << 4) + pp;
             }
         }
 
@@ -155,7 +186,7 @@ namespace Amd64InstructionTableGenerator
         {
             disassembly = disassembly_;
 
-            if (Debug.debug) Console.WriteLine($"Read: {disassembly}");
+            if (Debug.debug) Console.WriteLine($"new sample: {disassembly}");
 
             var match = EncDisassemblySplit().Match(disassembly);
 
@@ -224,6 +255,7 @@ namespace Amd64InstructionTableGenerator
             F3A = 0x3A,
             DS = 0x3E,
             Rex = 0x40,
+            Evex = 0x62,
             FS = 0x64,
             GS = 0x65,
             OpSize = 0x66,
@@ -244,8 +276,8 @@ namespace Amd64InstructionTableGenerator
 
             const byte RexMask = 0xf0;
             const byte RexW = 0x8;
-            const byte ByteL = 0x04;
-            const byte ByteW = 0x80;
+            const byte Vex_ByteW = 0x80;
+            const byte Vex_ByteL = 0x04;
 
             while (!done)
             {
@@ -274,8 +306,8 @@ namespace Amd64InstructionTableGenerator
                     case Prefixes.GS:
                     case Prefixes.AddSize:
                     case Prefixes.Lock:
-                        operandIndex++;
                         if (Debug.debug) Console.WriteLine($"  P:misc");
+                        operandIndex++;
                         break;
                     default:
                         done = true;
@@ -283,7 +315,7 @@ namespace Amd64InstructionTableGenerator
                 }
             }
 
-            // Handle Rex prefix
+            // Handle Rex prefix. Note: Rex prefixes are all values 0x40-0x4f.
             if ((encoding[operandIndex] & RexMask) == (byte)Prefixes.Rex)
             {
                 byte rex = encoding[operandIndex++];
@@ -345,12 +377,12 @@ namespace Amd64InstructionTableGenerator
                         }
 
                         var byte2 = encoding[operandIndex + 2];
-                        if ((byte2 & ByteW) != 0)
+                        if ((byte2 & Vex_ByteW) != 0)
                         {
                             flags |= EncodingFlags.W;
                             if (Debug.debug) Console.WriteLine($"  VEX.W");
                         }
-                        if ((byte2 & ByteL) != 0)
+                        if ((byte2 & Vex_ByteL) != 0)
                         {
                             flags |= EncodingFlags.L;
                             if (Debug.debug) Console.WriteLine($"  VEX.L");
@@ -366,13 +398,58 @@ namespace Amd64InstructionTableGenerator
                         map = Map.Vex1;
                         if (Debug.debug) Console.WriteLine($"  map: Vex1");
 
-                        if ((byte1 & ByteL) != 0)
+                        if ((byte1 & Vex_ByteL) != 0)
                         {
                             flags |= EncodingFlags.L;
                             if (Debug.debug) Console.WriteLine($"  VEX.L");
                         }
 
                         operandIndex += 3;
+                        break;
+                    }
+                case Prefixes.Evex:
+                    {
+                        const byte Evex_ByteW = 0x80; // in byte P1
+                        const byte Evex_ByteLprimeLmask = 0x60; // in byte P2
+                        const byte Evex_ByteLprimeLshift = 5;
+
+                        if (Debug.debug) Console.WriteLine($"  P:EVEX");
+                        var evex_p0 = encoding[operandIndex + 1];
+                        var evex_p1 = encoding[operandIndex + 2];
+                        var evex_p2 = encoding[operandIndex + 3];
+                        var evex_mmm = evex_p0 & 0x7;
+                        switch (evex_mmm)
+                        {
+                            case 0x1:
+                                map = Map.Evex_0F;
+                                if (Debug.debug) Console.WriteLine($"  map: Evex_0F");
+                                break;
+                            case 0x2:
+                                map = Map.Evex_0F38;
+                                if (Debug.debug) Console.WriteLine($"  map: Evex_0F38");
+                                break;
+                            case 0x3:
+                                map = Map.Evex_0F3A;
+                                if (Debug.debug) Console.WriteLine($"  map: Evex_0F3A");
+                                break;
+                            default:
+                                throw new Exception($"Unexpected EVEX map {encoding}");
+                        }
+
+                        if ((evex_p1 & Evex_ByteW) != 0)
+                        {
+                            flags |= EncodingFlags.W;
+                            if (Debug.debug) Console.WriteLine($"  EVEX.W");
+                        }
+
+                        byte evex_LprimeL = (byte)((evex_p2 & Evex_ByteLprimeLmask) >> Evex_ByteLprimeLshift);
+                        flags |= (EncodingFlags)(evex_LprimeL << (byte)EncodingFlags.LLshift);
+                        if (Debug.debug)
+                        {
+                            Console.WriteLine($"  EVEX.L'L={evex_LprimeL:x1}");
+                        }
+
+                        operandIndex += 4;
                         break;
                     }
                 default:
@@ -463,7 +540,7 @@ namespace Amd64InstructionTableGenerator
 
             return flags;
         }
-    }
+    } // end class Amd64InstructionSample
 
 
     internal sealed partial class Amd64InstructionTableGenerator
@@ -474,7 +551,7 @@ namespace Amd64InstructionTableGenerator
         private const string preTerminator = "58\t";
         private const string groupTerminator = "59\tpop";
 
-        [GeneratedRegex(@"((\(bad\))|(\srex(\.[WRXB]*)?\s*(#.*)?$))")]
+        [GeneratedRegex(@"((\{vex\})|(\{bad\})|(\(bad\))|(\srex(\.[WRXB]*)?\s*(#.*)?$))")]
         private static partial Regex BadDisassembly();
 
         private List<(Map, int)> regExpandOpcodes;
@@ -516,6 +593,9 @@ namespace Amd64InstructionTableGenerator
                 { Map.Vex1,      new Dictionary<int, string>() },
                 { Map.Vex2,      new Dictionary<int, string>() },
                 { Map.Vex3,      new Dictionary<int, string>() },
+                { Map.Evex_0F,   new Dictionary<int, string>() },
+                { Map.Evex_0F38, new Dictionary<int, string>() },
+                { Map.Evex_0F3A, new Dictionary<int, string>() },
             };
 
             ParseSamples();
@@ -529,7 +609,7 @@ namespace Amd64InstructionTableGenerator
             bool saw58 = false;
             while ((line = Console.In.ReadLine()) != null)
             {
-                if (Debug.debug) Console.WriteLine($"line: {line}");
+                //if (Debug.debug) Console.WriteLine($"line: {line}");
 
                 if (sample == null)
                 {
@@ -539,7 +619,7 @@ namespace Amd64InstructionTableGenerator
                     continue;
                 }
 
-                if (Debug.debug) Console.WriteLine($"sample: {sample}");
+                //if (Debug.debug) Console.WriteLine($"sample: {sample}");
 
                 // Each sample may contain multiple instructions
                 // We are only interested in the first of each group
@@ -574,7 +654,10 @@ namespace Amd64InstructionTableGenerator
                 }
                 else
                 {
-                    if (Debug.debug) Console.WriteLine($"  - bad disassembly");
+                    if (Debug.debug)
+                    {
+                        Console.WriteLine($"{sample} - bad disassembly");
+                    }
                 }
 
                 saw58 = false;
@@ -605,7 +688,7 @@ namespace Amd64InstructionTableGenerator
 
         private void SummarizeSamples(bool reg)
         {
-            if (Debug.debug) Console.WriteLine($"SummarizeSamples reg={reg}");
+            if (Debug.debug) Console.WriteLine($"SummarizeSamples opcodeExt={samples[0].opCodeExt:x3}, useModRmReg={reg}");
 
             var sample = samples[0];
             SuffixFlags intersectionSuffix = (SuffixFlags)~0;
@@ -616,7 +699,7 @@ namespace Amd64InstructionTableGenerator
             {
                 SuffixFlags suffix = s.parseSuffix();
 
-                if (Debug.debug) Console.WriteLine($"{s.disassembly} => {suffix}");
+                if (Debug.debug) Console.WriteLine($"{s.disassembly} => {suffix} ({s.encodingFlags})");
 
                 map.TryAdd(suffix, new List<Amd64InstructionSample>() { });
                 map[suffix].Add(s);
@@ -626,13 +709,28 @@ namespace Amd64InstructionTableGenerator
                 intersectionSuffix &= suffix;
                 unionSuffix |= suffix;
             }
-            string rules = Enum.Format(typeof(SuffixFlags), intersectionSuffix, "F").Replace(", ", "_");
 
+            if (Debug.debug)
+            {
+                Console.WriteLine($"SuffixFlags => samples map:");
+                foreach ((SuffixFlags e, List<Amd64InstructionSample> l) in map)
+                {
+                    Console.WriteLine($"  {e}");
+                    foreach (var s in l)
+                    {
+                        Console.WriteLine($"    {s.disassembly} ({s.encodingFlags})");
+                    }
+                }
+            }
+
+            string rules = Enum.Format(typeof(SuffixFlags), intersectionSuffix, "F").Replace(", ", "_");
             rules = rules.Replace("None", "^");
 
             if (Debug.debug) Console.WriteLine($"  rules-intersection:{rules}");
 
             SuffixFlags sometimesSuffix = unionSuffix & ~intersectionSuffix;
+            if (Debug.debug) Console.WriteLine($"  rules-sometimes:{sometimesSuffix}");
+
             switch (sometimesSuffix)
             {
                 case SuffixFlags.None:
@@ -674,6 +772,8 @@ namespace Amd64InstructionTableGenerator
                 case SuffixFlags.M8B | SuffixFlags.M4B | SuffixFlags.M2B:
                     if (TestHypothesis((e) => Amd64WP(SuffixFlags.M8B, SuffixFlags.M4B, SuffixFlags.M2B, e), sometimesSuffix, map))
                         rules += "_WP_M8B_or_M4B_or_M2B";
+                    else if (TestHypothesis((e) => TestLL(SuffixFlags.M2B, SuffixFlags.M4B, SuffixFlags.M8B, e), sometimesSuffix, map))
+                        rules += "_LL_M2B_or_M4B_or_M8B"; // e.g., vpmovusqb
                     else
                         goto default;
                     break;
@@ -721,10 +821,51 @@ namespace Amd64InstructionTableGenerator
                     else
                         goto default;
                     break;
+                case SuffixFlags.M16B | SuffixFlags.M32B | SuffixFlags.M64B:
+                    if (TestHypothesis((e) => TestLL(SuffixFlags.M16B, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
+                        rules += "_LL_M16B_or_M32B_or_M64B";
+                    else
+                        goto default;
+                    break;
+                case SuffixFlags.M8B | SuffixFlags.M32B | SuffixFlags.M64B:
+                    if (TestHypothesis((e) => TestLL(SuffixFlags.M8B, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
+                        rules += "_LL_M8B_or_M32B_or_M64B"; // e.g., vmovddup, vcvtps2pd
+                    else
+                        goto default;
+                    break;
+                case SuffixFlags.M8B | SuffixFlags.M16B | SuffixFlags.M32B:
+                    if (TestHypothesis((e) => TestLL(SuffixFlags.M8B, SuffixFlags.M16B, SuffixFlags.M32B, e), sometimesSuffix, map))
+                        rules += "_LL_M8B_or_M16B_or_M32B"; // e.g., vcvtps2pd, vpmovuswb
+                    else
+                        goto default;
+                    break;
+                case SuffixFlags.M4B | SuffixFlags.M8B | SuffixFlags.M16B:
+                    if (TestHypothesis((e) => TestLL(SuffixFlags.M4B, SuffixFlags.M8B, SuffixFlags.M16B, e), sometimesSuffix, map))
+                        rules += "_LL_M4B_or_M8B_or_M16B"; // e.g., vpmovusdb
+                    else
+                        goto default;
+                    break;
+                case SuffixFlags.M32B | SuffixFlags.M64B:
+                    if (TestHypothesis((e) => TestLL(SuffixFlags.None, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
+                        rules += "_LL_None_or_M32B_or_M64B"; // e.g., vpermpd, vpermps (no EVEX.128 (LL00) form)
+                    else
+                        goto default;
+                    break;
+                case SuffixFlags.M8B | SuffixFlags.M16B | SuffixFlags.M32B | SuffixFlags.M64B:
+                    if (TestHypothesis((e) => Amd64WLL(SuffixFlags.M16B, SuffixFlags.M32B, SuffixFlags.M64B, SuffixFlags.M8B, SuffixFlags.M16B, SuffixFlags.M32B, e), sometimesSuffix, map))
+                        rules += "_WLL_M16B_M32B_M64B_or_M8B_M16B_M32B"; // e.g., vcvttps2uqq, vcvttpd2uqq
+                    else
+                        goto default;
+                    break;
                 default:
+                    if (Debug.debug)
+                    {
+                        Console.WriteLine($"Unhandled rule...{sometimesSuffix}");
+                    }
                     Console.Error.WriteLine($"Unhandled rule...{sometimesSuffix}");
                     return;
             }
+
             rules = rules.Replace("^_", "").Replace("^", "None");
 
             if (Debug.debug) Console.WriteLine($"  rules:{rules}");
@@ -738,13 +879,13 @@ namespace Amd64InstructionTableGenerator
             }
         }
 
-        private static bool TestHypothesis(Func<EncodingFlags, SuffixFlags> hypothesis, SuffixFlags sometimes, Dictionary<SuffixFlags, List<Amd64InstructionSample>> samples)
+        private static bool TestHypothesis(Func<EncodingFlags, SuffixFlags> hypothesis, SuffixFlags sometimesSuffixFlags, Dictionary<SuffixFlags, List<Amd64InstructionSample>> suffixMap)
         {
-            foreach ((SuffixFlags e, List<Amd64InstructionSample> l) in samples)
+            foreach ((SuffixFlags suffixFlags, List<Amd64InstructionSample> samples) in suffixMap)
             {
-                foreach (var sample in l)
+                foreach (var sample in samples)
                 {
-                    if (hypothesis(sample.encodingFlags) != (e & sometimes))
+                    if (hypothesis(sample.encodingFlags) != (suffixFlags & sometimesSuffixFlags))
                     {
                         return false;
                     }
@@ -754,11 +895,24 @@ namespace Amd64InstructionTableGenerator
         }
 
         public static SuffixFlags Test(EncodingFlags e, SuffixFlags t, SuffixFlags f, EncodingFlags g) => g.HasFlag(e) ? t : f;
+        public static SuffixFlags TestLL(SuffixFlags LL00, SuffixFlags LL01, SuffixFlags LL10, EncodingFlags g)
+        {
+            EncodingFlags LprimeLflags = (EncodingFlags)(g & EncodingFlags.LLmask);
+            if (LprimeLflags == EncodingFlags.LL00)
+                return LL00;
+            if (LprimeLflags == EncodingFlags.LL01)
+                return LL01;
+            if (LprimeLflags == EncodingFlags.LL10)
+                return LL10;
+            return SuffixFlags.None;
+        }
 
         public static SuffixFlags Amd64L(SuffixFlags t, SuffixFlags f, EncodingFlags g) => Test(EncodingFlags.L, t, f, g);
         public static SuffixFlags Amd64W(SuffixFlags t, SuffixFlags f, EncodingFlags g) => Test(EncodingFlags.W, t, f, g);
         public static SuffixFlags Amd64P(SuffixFlags t, SuffixFlags f, EncodingFlags g) => Test(EncodingFlags.P, f, t, g);
         public static SuffixFlags Amd64WP(SuffixFlags tx, SuffixFlags ft, SuffixFlags ff, EncodingFlags g) => Amd64W(tx, Amd64P(ft, ff, g), g);
+        public static SuffixFlags Amd64WLL(SuffixFlags twll00, SuffixFlags twll01, SuffixFlags twll10, SuffixFlags fwll00, SuffixFlags fwll01, SuffixFlags fwll10, EncodingFlags g) =>
+            Amd64W(TestLL(twll00, twll01, twll10, g), TestLL(fwll00, fwll01, fwll10, g), g);
 
         private void AddOpCode(Map map, int opCodeExt, bool reg, int modrmReg, string rule, HashSet<string> mnemonics)
         {
@@ -823,6 +977,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("    //      M8B      // Memory op is 8  bytes");
             Console.WriteLine("    //      M16B     // Memory op is 16 bytes");
             Console.WriteLine("    //      M32B     // Memory op is 32 bytes");
+            Console.WriteLine("    //      M64B     // Memory op is 64 bytes");
             Console.WriteLine("    //      M6B      // Memory op is 6  bytes");
             Console.WriteLine("    //      M10B     // Memory op is 10 bytes");
             Console.WriteLine("    //      I1B      // Instruction includes 1  byte  of immediates");
@@ -832,10 +987,13 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("    //      I8B      // Instruction includes 8  bytes of immediates");
             Console.WriteLine("    //      Unknown  // Instruction samples did not include a modrm configured to produce RIP addressing");
             Console.WriteLine("    //      L        // Flags depend on L bit in encoding.  L_<flagsLTrue>_or_<flagsLFalse>");
+            Console.WriteLine("    //      LL       // Flags depend on L'L bits in EVEX encoding.  LL_<flagsLL00>_or_<flagsLL01>_or_<flagsLL10>");
+            Console.WriteLine("    //                  LL00 = 128-bit vector; LL01 = 256-bit vector; LL10 = 512-bit vector");
             Console.WriteLine("    //      W        // Flags depend on W bit in encoding.  W_<flagsWTrue>_or_<flagsWFalse>");
             Console.WriteLine("    //      P        // Flags depend on OpSize prefix for encoding.  P_<flagsNoOpSizePrefix>_or_<flagsOpSizePrefix>");
             Console.WriteLine("    //      WP       // Flags depend on W bit in encoding and OpSize prefix.  WP_<flagsWTrue>_or_<flagsNoOpSizePrefix>_or_<flagsOpSizePrefix>");
-            Console.WriteLine("    //      or       // Flag option separator used in W, L, P, and WP above");
+            Console.WriteLine("    //      WLL      // Flags depend on W and L'L bits.  WL_<flagsWTrueL00>_<flagsWTrueL01>_<flagsWTrueL10>_or_<flagsWFalseL00>_<flagsWFalseL01>_<flagsWFalseL10>");
+            Console.WriteLine("    //      or       // Flag option separator used in W, L, P, WP, and WLL above");
             Console.WriteLine("    enum InstrForm : uint8_t");
             Console.WriteLine("    {");
             Console.WriteLine($"       None,");
@@ -895,7 +1053,10 @@ namespace Amd64InstructionTableGenerator
                     ("F3A", Map.F3A),
                     ("Vex1", Map.Vex1),
                     ("Vex2", Map.Vex2),
-                    ("Vex3", Map.Vex3)
+                    ("Vex3", Map.Vex3),
+                    ("Evex_0F", Map.Evex_0F),
+                    ("Evex_0F38", Map.Evex_0F38),
+                    ("Evex_0F3A", Map.Evex_0F3A)
                 };
 
             foreach ((string name, Map map) in mapTuples)

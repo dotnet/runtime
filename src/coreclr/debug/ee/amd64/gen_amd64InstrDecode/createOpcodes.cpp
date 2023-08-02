@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdio.h>
+                
+#define ARRAYSIZE(a) (sizeof(a)/sizeof((a)[0]))
 
 int main(int argc, char* argv[])
 {
@@ -38,13 +40,13 @@ int main(int argc, char* argv[])
             case 0x4D: // REX
             case 0x4E: // REX
             case 0x4F: // REX
+            case 0x62: // EVEX
             case 0x64: // FS
             case 0x65: // GS
             case 0x66: // OpSize
             case 0x67: // AddrSize
             case 0xc4: // Vex 3 Byte
             case 0xc5: // Vex 2 Byte
-            // TODO: add EVEX prefix 62
             case 0xf0: // Lock
             case 0xf2: // Repne
             case 0xf3: // Rep
@@ -131,7 +133,7 @@ int main(int argc, char* argv[])
 
     // Interesting cases for byte 2 (3rd byte) of 3-byte VEX prefix. Note that all cases of `pp` are added
     // below, in the loops.
-    int byte3cases[] =
+    int VexByte2Cases[] =
     {
         0x00, // VEX.W = 0, VEX.vvvv = 0000b (xmm15),  VEX.L = 0
         0x04, // VEX.W = 0, VEX.vvvv = 0000b (xmm15),  VEX.L = 1
@@ -153,9 +155,9 @@ int main(int argc, char* argv[])
         {
             for (int modrm = 0x5; modrm < 64; modrm += 8)
             {
-                for (int c = 0; c < sizeof(byte3cases)/sizeof(byte3cases[0]); ++c)
+                for (int c = 0; c < ARRAYSIZE(VexByte2Cases); ++c)
                 {
-                    printf( "0xc4, 0xe1, 0x%02x, 0x%02x, 0x%02x, %s", pp + byte3cases[c],   i, modrm, postamble);
+                    printf( "0xc4, 0xe1, 0x%02x, 0x%02x, 0x%02x, %s", pp + VexByte2Cases[c],   i, modrm, postamble);
                 }
             }
         }
@@ -169,9 +171,9 @@ int main(int argc, char* argv[])
         {
             for (int modrm = 0x5; modrm < 64; modrm += 8)
             {
-                for (int c = 0; c < sizeof(byte3cases)/sizeof(byte3cases[0]); ++c)
+                for (int c = 0; c < ARRAYSIZE(VexByte2Cases); ++c)
                 {
-                    printf( "0xc4, 0xe2, 0x%02x, 0x%02x, 0x%02x, %s", pp + byte3cases[c],   i, modrm, postamble);
+                    printf( "0xc4, 0xe2, 0x%02x, 0x%02x, 0x%02x, %s", pp + VexByte2Cases[c],   i, modrm, postamble);
                 }
             }
         }
@@ -185,9 +187,134 @@ int main(int argc, char* argv[])
         {
             for (int modrm = 0x5; modrm < 64; modrm += 8)
             {
-                for (int c = 0; c < sizeof(byte3cases)/sizeof(byte3cases[0]); ++c)
+                for (int c = 0; c < ARRAYSIZE(VexByte2Cases); ++c)
                 {
-                    printf( "0xc4, 0xe3, 0x%02x, 0x%02x, 0x%02x, %s", pp + byte3cases[c],   i, modrm, postamble);
+                    printf( "0xc4, 0xe3, 0x%02x, 0x%02x, 0x%02x, %s", pp + VexByte2Cases[c],   i, modrm, postamble);
+                }
+            }
+        }
+        printf("\n");
+    }
+
+    // Interesting cases for the EVEX prefix. Several cases are added below, in the loops, to ensure desired
+    // ordering:
+    // 1. cases of `mmm` (which defines the opcode decoding map) are the outer loops.
+    // 2. cases of `pp`, next inner loops.
+    // 3. cases of ModR/M byte, innermost loops.
+    //
+    // In all cases, we have:
+    //    P0:
+    //      P[3] = P0[3] = 0 // required by specification
+    //      EVEX.R'=1 (inverted)
+    //      EVEX.RXB=111 (inverted)
+    //    P1:
+    //      P[10] = P1[2] = 1 // required by specification
+    //    P2:
+    //      EVEX.aaa = 0 // opmask register k0 (no masking)
+    //      EVEX.V'=1 (inverted)
+    //      EVEX.b=0 // no broadcast (REVIEW: need to handle broadcast as it changes the size of the memory operand)
+    //      EVEX.z=0 // always merge
+
+    const int evex_p0_base = 0xf0;
+    const int evex_p1_base = 0x04;
+    const int evex_p2_base = 0x08;
+
+    const int evex_w_cases[] = // EVEX.W in P1
+    {
+        0,
+        1 << 7,
+    };
+    const size_t evex_w_cases_size = ARRAYSIZE(evex_w_cases);
+
+    const int evex_vvvv_cases[] = // EVEX.vvvv in P1
+    {
+        0,       // 0000b (xmm15)
+        0xf << 3 // 1111b (unused)
+    };
+    const size_t evex_vvvv_cases_size = ARRAYSIZE(evex_vvvv_cases);
+
+    const int evex_LprimeL_cases[] = // EVEX.L'L in P2
+    {
+        0,        // 00b = 128-bit vectors
+        0x1 << 5, // 01b = 256-bit vectors
+        0x2 << 5  // 10b = 512-bit vectors
+    };
+    const size_t evex_LprimeL_cases_size = ARRAYSIZE(evex_LprimeL_cases);
+
+    const size_t total_evex_cases = evex_w_cases_size * evex_vvvv_cases_size * evex_LprimeL_cases_size;
+
+    struct EvexBytes
+    {
+        int p0, p1, p2;
+    }
+    EvexCases[total_evex_cases];
+    
+    size_t evex_case = 0;
+    for (size_t i = 0; i < evex_w_cases_size; i++)
+    {
+        for (size_t j = 0; j < evex_vvvv_cases_size; j++)
+        {
+            for (size_t k = 0; k < evex_LprimeL_cases_size; k++)
+            {
+                EvexCases[evex_case].p0 = evex_p0_base;
+                EvexCases[evex_case].p1 = evex_p1_base | evex_w_cases[i] | evex_vvvv_cases[j];
+                EvexCases[evex_case].p2 = evex_p2_base | evex_LprimeL_cases[k];
+                ++evex_case;
+            }
+        }
+    }
+
+    printf("// EVEX: mmm=001 (0F)\n");
+    for (int i = 0; i < 256; ++i)
+    {
+        for (int pp = 0; pp < 4; ++pp)
+        {
+            for (int modrm = 0x5; modrm < 64; modrm += 8)
+            {
+                for (int c = 0; c < ARRAYSIZE(EvexCases); ++c)
+                {
+                    int evex_p0 = EvexCases[c].p0 | 0x1; // mmm=001 (0F)
+                    int evex_p1 = EvexCases[c].p1 | pp;
+                    int evex_p2 = EvexCases[c].p2;
+                    printf( "0x62, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, %s", evex_p0, evex_p1, evex_p2, i, modrm, postamble);
+                }
+            }
+        }
+        printf("\n");
+    }
+
+    printf("// EVEX: mmm=010 (0F 38)\n");
+    for (int i = 0; i < 256; ++i)
+    {
+        for (int pp = 0; pp < 4; ++pp)
+        {
+            for (int modrm = 0x5; modrm < 64; modrm += 8)
+            {
+                for (int c = 0; c < ARRAYSIZE(EvexCases); ++c)
+                {
+                    int evex_p0 = EvexCases[c].p0 | 0x2; // mmm=010 (0F 38)
+                    int evex_p1 = EvexCases[c].p1 | pp;
+                    int evex_p2 = EvexCases[c].p2;
+                    printf( "0x62, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, %s", evex_p0, evex_p1, evex_p2, i, modrm, postamble);
+                }
+            }
+        }
+        printf("\n");
+    }
+
+    printf("// EVEX: mmm=011 (0F 3A)\n");
+    for (int i = 0; i < 256; ++i)
+    {
+        for (int pp = 0; pp < 4; ++pp)
+        {
+            for (int modrm = 0x5; modrm < 64; modrm += 8)
+            {
+                for (int c = 0; c < ARRAYSIZE(EvexCases); ++c)
+                {
+                    int evex_p0 = EvexCases[c].p0 | 0x3; // mmm=011 (0F 3A)
+                    int evex_p1 = EvexCases[c].p1 | pp;
+                    int evex_p2 = EvexCases[c].p2;
+                    printf( "0x62, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, %s", evex_p0, evex_p1, evex_p2, i, modrm, postamble);
                 }
             }
         }
