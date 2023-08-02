@@ -8,8 +8,6 @@
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <IsPackable>true</IsPackable>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
-    <!-- M.E.Configuration.Binder.SourceGeneration: JavaScriptEncoder not supported; no logic generated which is okay. Remove this when https://github.com/dotnet/runtime/issues/88865 is fixed.  -->
-    <NoWarn>$(NoWarn);SYSLIB1100</NoWarn>
     <PackageDescription>Console logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
   </PropertyGroup>
 

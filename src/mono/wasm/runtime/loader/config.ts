@@ -3,16 +3,20 @@
 
 import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
-import type { AssetBehaviors, DotnetModuleConfig, MonoConfig, ResourceGroups } from "../types";
+import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
+import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
+    // no need to merge the same object
+    if (target === source) return target;
+
     // If source has collection fields set to null (produced by boot config for example), we should maintain the target values
     const providedConfig: MonoConfigInternal = { ...source };
-    if (providedConfig.assets !== undefined) {
+    if (providedConfig.assets !== undefined && providedConfig.assets !== target.assets) {
         providedConfig.assets = [...(target.assets || []), ...(providedConfig.assets || [])];
     }
     if (providedConfig.resources !== undefined) {
@@ -26,13 +30,16 @@ export function deep_merge_config(target: MonoConfigInternal, source: MonoConfig
     if (providedConfig.environmentVariables !== undefined) {
         providedConfig.environmentVariables = { ...(target.environmentVariables || {}), ...(providedConfig.environmentVariables || {}) };
     }
-    if (providedConfig.runtimeOptions !== undefined) {
+    if (providedConfig.runtimeOptions !== undefined && providedConfig.runtimeOptions !== target.runtimeOptions) {
         providedConfig.runtimeOptions = [...(target.runtimeOptions || []), ...(providedConfig.runtimeOptions || [])];
     }
     return Object.assign(target, providedConfig);
 }
 
 export function deep_merge_module(target: DotnetModuleInternal, source: DotnetModuleConfig): DotnetModuleInternal {
+    // no need to merge the same object
+    if (target === source) return target;
+
     const providedConfig: DotnetModuleConfig = { ...source };
     if (providedConfig.config) {
         if (!target.config) target.config = {};
@@ -42,6 +49,9 @@ export function deep_merge_module(target: DotnetModuleInternal, source: DotnetMo
 }
 
 function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): ResourceGroups {
+    // no need to merge the same object
+    if (target === source) return target;
+
     const providedResources: ResourceGroups = { ...source };
     if (providedResources.assembly !== undefined) {
         providedResources.assembly = { ...(target.assembly || {}), ...(providedResources.assembly || {}) };
@@ -61,8 +71,8 @@ function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): R
     if (providedResources.jsModuleRuntime !== undefined) {
         providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
     }
-    if (providedResources.jsSymbols !== undefined) {
-        providedResources.jsSymbols = { ...(target.jsSymbols || {}), ...(providedResources.jsSymbols || {}) };
+    if (providedResources.wasmSymbols !== undefined) {
+        providedResources.wasmSymbols = { ...(target.wasmSymbols || {}), ...(providedResources.wasmSymbols || {}) };
     }
     if (providedResources.wasmNative !== undefined) {
         providedResources.wasmNative = { ...(target.wasmNative || {}), ...(providedResources.wasmNative || {}) };
@@ -71,7 +81,7 @@ function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): R
         providedResources.icu = { ...(target.icu || {}), ...(providedResources.icu || {}) };
     }
     if (providedResources.satelliteResources !== undefined) {
-        providedResources.satelliteResources = { ...(target.satelliteResources || {}), ...(providedResources.satelliteResources || {}) };
+        providedResources.satelliteResources = deep_merge_dict(target.satelliteResources || {}, providedResources.satelliteResources || {});
     }
     if (providedResources.modulesAfterConfigLoaded !== undefined) {
         providedResources.modulesAfterConfigLoaded = { ...(target.modulesAfterConfigLoaded || {}), ...(providedResources.modulesAfterConfigLoaded || {}) };
@@ -83,9 +93,19 @@ function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): R
         providedResources.extensions = { ...(target.extensions || {}), ...(providedResources.extensions || {}) };
     }
     if (providedResources.vfs !== undefined) {
-        providedResources.vfs = { ...(target.vfs || {}), ...(providedResources.vfs || {}) };
+        providedResources.vfs = deep_merge_dict(target.vfs || {}, providedResources.vfs || {});
     }
     return Object.assign(target, providedResources);
+}
+
+function deep_merge_dict(target: { [key: string]: ResourceList }, source: { [key: string]: ResourceList }) {
+    // no need to merge the same object
+    if (target === source) return target;
+
+    for (const key in source) {
+        target[key] = { ...target[key], ...source[key] };
+    }
+    return target;
 }
 
 // NOTE: this is called before setRuntimeGlobals
@@ -94,14 +114,66 @@ export function normalizeConfig() {
     const config = loaderHelpers.config;
 
     config.environmentVariables = config.environmentVariables || {};
-    config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];
     config.resources = config.resources || {
         assembly: {},
         jsModuleNative: {},
+        jsModuleWorker: {},
         jsModuleRuntime: {},
-        wasmNative: {}
+        wasmNative: {},
+        vfs: {},
+        satelliteResources: {},
     };
+
+    if (config.assets) {
+        mono_log_debug("config.assets is deprecated, use config.resources instead");
+        for (const asset of config.assets) {
+            const resource = {} as ResourceList;
+            resource[asset.name] = asset.hash || "";
+            const toMerge = {} as ResourceGroups;
+            switch (asset.behavior as string) {
+                case "assembly":
+                    toMerge.assembly = resource;
+                    break;
+                case "pdb":
+                    toMerge.pdb = resource;
+                    break;
+                case "resource":
+                    toMerge.satelliteResources = {};
+                    toMerge.satelliteResources[asset.culture!] = resource;
+                    break;
+                case "icu":
+                    toMerge.icu = resource;
+                    break;
+                case "symbols":
+                    toMerge.wasmSymbols = resource;
+                    break;
+                case "vfs":
+                    toMerge.vfs = {};
+                    toMerge.vfs[asset.virtualPath!] = resource;
+                    break;
+                case "dotnetwasm":
+                    toMerge.wasmNative = resource;
+                    break;
+                case "js-module-threads":
+                    toMerge.jsModuleWorker = resource;
+                    break;
+                case "js-module-runtime":
+                    toMerge.jsModuleRuntime = resource;
+                    break;
+                case "js-module-native":
+                    toMerge.jsModuleNative = resource;
+                    break;
+                case "js-module-dotnet":
+                    // don't merge loader
+                    break;
+                default:
+                    throw new Error(`Unexpected behavior ${asset.behavior} of asset ${asset.name}`);
+            }
+            deep_merge_resources(config.resources, toMerge);
+        }
+    }
+
     loaderHelpers.assertAfterExit = config.assertAfterExit = config.assertAfterExit || !ENVIRONMENT_IS_WEB;
 
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
@@ -190,7 +262,7 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
 
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
-        loaderHelpers.loadBootResource("manifest" as AssetBehaviors, "blazor.boot.json", defaultConfigSrc, "") :
+        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "", "manifest") :
         defaultLoadBootConfig(defaultConfigSrc);
 
     let loadConfigResponse: Response;
@@ -198,7 +270,7 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     if (!loaderResponse) {
         loadConfigResponse = await defaultLoadBootConfig(defaultConfigSrc);
     } else if (typeof loaderResponse === "string") {
-        loadConfigResponse = await defaultLoadBootConfig(loaderResponse);
+        loadConfigResponse = await defaultLoadBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
     } else {
         loadConfigResponse = await loaderResponse;
     }

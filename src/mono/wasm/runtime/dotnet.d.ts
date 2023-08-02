@@ -181,7 +181,7 @@ interface ResourceGroups {
     jsModuleWorker?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
-    jsSymbols?: ResourceList;
+    wasmSymbols?: ResourceList;
     wasmNative: ResourceList;
     icu?: ResourceList;
     satelliteResources?: {
@@ -207,9 +207,11 @@ type ResourceList = {
  * @param name The name of the resource to be loaded.
  * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
  * @param integrity The integrity string representing the expected content in the response.
+ * @param behavior The detailed behavior/type of the resource to be loaded.
  * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
+ * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
-type LoadBootResourceCallback = (type: AssetBehaviors | "manifest", name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
+type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
 interface ResourceRequest {
     name: string;
     behavior: AssetBehaviors;
@@ -255,17 +257,25 @@ type SingleAssetBehaviors =
  */
 "dotnetwasm"
 /**
+ * The javascript module for loader.
+ */
+ | "js-module-dotnet"
+/**
  * The javascript module for threads.
  */
  | "js-module-threads"
 /**
- * The javascript module for threads.
+ * The javascript module for runtime.
  */
  | "js-module-runtime"
 /**
- * The javascript module for threads.
+ * The javascript module for emscripten.
  */
- | "js-module-native";
+ | "js-module-native"
+/**
+ * Typically blazor.boot.json
+ */
+ | "manifest";
 type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.
@@ -396,6 +406,7 @@ type ModuleAPI = {
     exit: (code: number, reason?: any) => void;
 };
 type CreateDotnetRuntimeType = (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)) => Promise<RuntimeAPI>;
+type WebAssemblyBootResourceType = "assembly" | "pdb" | "dotnetjs" | "dotnetwasm" | "globalization" | "manifest" | "configuration";
 
 interface IDisposable {
     dispose(): void;
@@ -431,4 +442,4 @@ declare global {
 }
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-export { AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
