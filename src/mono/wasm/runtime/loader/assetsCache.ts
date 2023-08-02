@@ -10,10 +10,6 @@ const networkLoads: { [name: string]: LoadLogEntry } = {};
 const cacheLoads: { [name: string]: LoadLogEntry } = {};
 let cacheIfUsed: Cache | null;
 
-export function isCacheAvailable(): boolean {
-    return !!cacheIfUsed;
-}
-
 export function logDownloadStatsToConsole(): void {
     const cacheLoadsEntries = Object.values(cacheLoads);
     const networkLoadsEntries = Object.values(networkLoads);

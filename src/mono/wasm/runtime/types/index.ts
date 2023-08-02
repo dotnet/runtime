@@ -64,6 +64,14 @@ export type MonoConfig = {
      */
     cacheBootResources?: boolean,
     /**
+     * Configures use of the hash for integrity checks while fetching assets
+     */
+    disableIntegrityCheck?: boolean,
+    /**
+     * Configures use of the hash for integrity checks while fetching assets
+     */
+    disableNoCacheFetch?: boolean,
+    /**
     * Enables diagnostic log messages during startup
     */
     diagnosticTracing?: boolean

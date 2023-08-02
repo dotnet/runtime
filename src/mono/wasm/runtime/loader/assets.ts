@@ -7,7 +7,7 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, 
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
 import { mono_exit } from "./exit";
-import { addCachedReponse, findCachedResponse, isCacheAvailable } from "./assetsCache";
+import { addCachedReponse, findCachedResponse } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
 import { mono_log_warn } from "./logging";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
@@ -328,6 +328,7 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
                     useCredentials: true
                 });
             }
+            // FIXME: why are not loading all the other files in appsettings ? https://github.com/dotnet/runtime/issues/89861
         }
     }
 
@@ -593,18 +594,21 @@ function fetchResource(asset: AssetEntryInternal): Promise<Response> {
     }
 
     const fetchOptions: RequestInit = {};
-    if (!asset.noCache) {
+    if (!loaderHelpers.config.disableNoCacheFetch) {
+        // FIXME: "no-cache" is how blazor works in Net7, but this prevents caching on HTTP level
+        // if we would like to get rid of our own cache and only use HTTP cache, we need to remove this
+        // https://github.com/dotnet/runtime/issues/74815
         fetchOptions.cache = "no-cache";
     }
     if (asset.useCredentials) {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";
     } else {
-        // Any other resource than configuration should provide integrity check
-        // Note that if cacheBootResources was explicitly disabled, we also bypass hash checking
-        // This is to give developers an easy opt-out from the entire caching/validation flow if
-        // there's anything they don't like about it.
-        fetchOptions.integrity = isCacheAvailable() ? (asset.hash ?? "") : undefined;
+        // `disableIntegrityCheck` is to give developers an easy opt-out from the integrity check 
+        if (!loaderHelpers.config.disableIntegrityCheck && asset.hash) {
+            // Any other resource than configuration should provide integrity check
+            fetchOptions.integrity = asset.hash;
+        }
     }
 
     return loaderHelpers.fetch_like(url, fetchOptions);
