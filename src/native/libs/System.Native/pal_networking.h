@@ -312,7 +312,7 @@ PALEXPORT int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength);
 
 PALEXPORT int32_t SystemNative_GetHostName(uint8_t* name, int32_t nameLength);
 
-PALEXPORT int32_t SystemNative_GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize);
+PALEXPORT int32_t SystemNative_GetSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize, int32_t* udsSocketAddressSize, int32_t* maxSocketAddressSize);
 
 PALEXPORT int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t socketAddressLen, int32_t* addressFamily);
 

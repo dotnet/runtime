@@ -19,9 +19,9 @@
     <Compile Include="Fakes\IPAddressFakeExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.cs" />
-    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'"
+    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs"
              Link="Common\System\Net\Sockets\ProtocolType.cs" />
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'"
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
              Link="Common\System\Net\Sockets\SocketType.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolFamily.cs"
               Link="Common\System\Net\Sockets\ProtocolFamily.cs" />

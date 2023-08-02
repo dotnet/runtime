@@ -488,13 +488,8 @@ mono_interp_get_imethod (MonoMethod *method)
 
 	sig = mono_method_signature_internal (method);
 
-	MonoMemPool *dyn_mp = NULL;
 	if (method->dynamic)
-		// FIXME: Use this in more places
-		dyn_mp = mono_mempool_new_size (sizeof (InterpMethod));
-
-	if (dyn_mp)
-		imethod = (InterpMethod*)mono_mempool_alloc0 (dyn_mp, sizeof (InterpMethod));
+		imethod = (InterpMethod*)mono_dyn_method_alloc0 (method, sizeof (InterpMethod));
 	else
 		imethod = (InterpMethod*)m_method_alloc0 (method, sizeof (InterpMethod));
 	imethod->method = method;
@@ -512,8 +507,8 @@ mono_interp_get_imethod (MonoMethod *method)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
 	else
 		imethod->rtype = mini_get_underlying_type (sig->ret);
-	if (dyn_mp)
-		imethod->param_types = (MonoType**)mono_mempool_alloc0 (dyn_mp, sizeof (MonoType*) * sig->param_count);
+	if (method->dynamic)
+		imethod->param_types = (MonoType**)mono_dyn_method_alloc0 (method, sizeof (MonoType*) * sig->param_count);
 	else
 		imethod->param_types = (MonoType**)m_method_alloc0 (method, sizeof (MonoType*) * sig->param_count);
 	for (i = 0; i < sig->param_count; ++i)
@@ -523,11 +518,7 @@ mono_interp_get_imethod (MonoMethod *method)
 	InterpMethod *old_imethod;
 	if (!((old_imethod = mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method)))) {
 		mono_internal_hash_table_insert (&jit_mm->interp_code_hash, method, imethod);
-		if (method->dynamic)
-			((MonoDynamicMethod*)method)->mp = dyn_mp;
 	} else {
-		if (dyn_mp)
-			mono_mempool_destroy (dyn_mp);
 		imethod = old_imethod; /* leak the newly allocated InterpMethod to the mempool */
 	}
 	jit_mm_unlock (jit_mm);
@@ -1284,17 +1275,12 @@ compute_arg_offset (MonoMethodSignature *sig, int index)
 }
 
 static gpointer
-imethod_alloc0 (InterpMethod *imethod, size_t size)
+imethod_alloc0 (InterpMethod *imethod, guint size)
 {
-	if (imethod->method->dynamic) {
-		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-		jit_mm_lock (jit_mm);
-		gpointer ret = mono_mempool_alloc0 (((MonoDynamicMethod*)imethod->method)->mp, (guint)size);
-		jit_mm_unlock (jit_mm);
-		return ret;
-	} else {
-		return m_method_alloc0 (imethod->method, (guint)size);
-	}
+	if (imethod->method->dynamic)
+		return mono_dyn_method_alloc0 (imethod->method, size);
+	else
+		return m_method_alloc0 (imethod->method, size);
 }
 
 static guint32*
