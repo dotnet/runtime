@@ -11,6 +11,10 @@ include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
+
+  if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+    add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+  endif()
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})

@@ -472,8 +472,31 @@ extends:
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # Wasm.Build.Tests
-      - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+      # For Wasm.Build.Tests - runtime pack builds
+      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+          nameSuffix: SingleThreaded
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          publishArtifactsForWorkload: true
+          publishWBT: true
+
+      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+          nameSuffix: MultiThreaded
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          publishArtifactsForWorkload: true
+          publishWBT: false
+
+      # Browser Wasm.Build.Tests
+      - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
         parameters:
           platforms:
             - browser_wasm
@@ -525,7 +548,7 @@ extends:
           scenarios:
             - normal
 
-      - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+      - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
         parameters:
           platforms:
             - wasi_wasm

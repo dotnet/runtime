@@ -357,9 +357,12 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        private unsafe int GetSocketAddressSize()
+        private void UpdateReceivedSocketAddress(Internals.SocketAddress socketAddress)
         {
-            return _socketAddressSize;
+            if (_socketAddressSize > 0)
+            {
+                socketAddress.Size = _socketAddressSize;
+            }
         }
 
         partial void FinishOperationReceiveMessageFrom();
