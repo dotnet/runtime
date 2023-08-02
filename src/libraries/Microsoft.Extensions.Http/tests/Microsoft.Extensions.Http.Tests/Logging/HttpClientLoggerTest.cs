@@ -418,18 +418,19 @@ namespace Microsoft.Extensions.Http.Logging
                 .RemoveAllLoggers();
 
             services.AddHttpClient("Production")
-                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .SetHandlerLifetime(TimeSpan.FromSeconds(1));
+                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>();
 
             var serviceProvider = services.BuildServiceProvider();
 
-            var prodClient = serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("Production");
+            var httpClientFactory = (DefaultHttpClientFactory)serviceProvider.GetRequiredService<IHttpClientFactory>();
+            var prodClient = httpClientFactory.CreateClient("Production");
 
             _ = await prodClient.GetAsync(Url);
 
-            await Task.Delay(TimeSpan.FromSeconds(3));
+            httpClientFactory.StartCleanupTimer(); // we need to create a timer instance before triggering cleanup; normally it happens after the first expiry
+            httpClientFactory.CleanupTimer_Tick(); // trigger cleanup to write debug logs
 
-            Assert.InRange(sink.Writes.Count(w => w.LoggerName == typeof(DefaultHttpClientFactory).FullName), 1, 4);
+            Assert.Equal(2, sink.Writes.Count(w => w.LoggerName == typeof(DefaultHttpClientFactory).FullName));
         }
 
         private sealed class TestLoggerProvider : ILoggerProvider
