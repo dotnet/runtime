@@ -10360,11 +10360,11 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
             if (addr < 0)
             {
-                printf("-%02XH", -addr);
+                printf("-0x%02X", -addr);
             }
             else if (addr > 0)
             {
-                printf("+%02XH", addr);
+                printf("+0x%02X", addr);
             }
         }
         else
@@ -10375,17 +10375,17 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
             if (addr < 0)
             {
-                printf("-%02XH", -addr);
+                printf("-0x%02X", -addr);
             }
             else if (addr > 0)
             {
-                printf("+%02XH", addr);
+                printf("+0x%02X", addr);
             }
 
 #if !FEATURE_FIXED_OUT_ARGS
 
             if (emitCurStackLvl)
-                printf("+%02XH", emitCurStackLvl);
+                printf("+0x%02X", emitCurStackLvl);
 
 #endif // !FEATURE_FIXED_OUT_ARGS
         }
@@ -10566,34 +10566,34 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             }
             if (frameRef)
             {
-                printf("%02XH", (unsigned)disp);
+                printf("0x%02X", (unsigned)disp);
             }
             else if (disp < 1000)
             {
-                printf("%02XH", (unsigned)disp);
+                printf("0x%02X", (unsigned)disp);
             }
             else if (disp <= 0xFFFF)
             {
-                printf("%04XH", (unsigned)disp);
+                printf("0x%04X", (unsigned)disp);
             }
             else
             {
-                printf("%08XH", (unsigned)disp);
+                printf("0x%08X", (unsigned)disp);
             }
         }
         else if (disp < 0)
         {
             if (frameRef)
             {
-                printf("-%02XH", (unsigned)-disp);
+                printf("-0x%02X", (unsigned)-disp);
             }
             else if (disp > -1000)
             {
-                printf("-%02XH", (unsigned)-disp);
+                printf("-0x%02X", (unsigned)-disp);
             }
             else if (disp >= -0xFFFF)
             {
-                printf("-%04XH", (unsigned)-disp);
+                printf("-0x%04X", (unsigned)-disp);
             }
             else if (disp < -0xFFFFFF)
             {
@@ -10601,16 +10601,16 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
                 {
                     printf("+");
                 }
-                printf("%08XH", (unsigned)disp);
+                printf("0x%08X", (unsigned)disp);
             }
             else
             {
-                printf("-%08XH", (unsigned)-disp);
+                printf("-0x%08X", (unsigned)-disp);
             }
         }
         else if (!nsep)
         {
-            printf("%04XH", (unsigned)disp);
+            printf("0x%04X", (unsigned)disp);
         }
     }
 
@@ -15667,7 +15667,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = id->idjShort ? ssz : lsz;
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = %08XH\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
                emitComp->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs,
                distVal);
     }

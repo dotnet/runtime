@@ -458,7 +458,7 @@ async function initializeModules(es6Modules: [RuntimeModuleExportsInternal, Nati
 }
 
 async function createEmscriptenMain(): Promise<RuntimeAPI> {
-    if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !(module.config as MonoConfigInternal).assets || !module.config.resources)) {
+    if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
         // if config file location nor assets are provided
         module.configSrc = "./blazor.boot.json";
     }
@@ -473,6 +473,8 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
     const wasmModuleAsset = resolve_single_asset_path("dotnetwasm");
     start_asset_download(wasmModuleAsset).then(asset => {
         loaderHelpers.wasmDownloadPromise.promise_control.resolve(asset);
+    }).catch(err => {
+        mono_exit(1, err);
     });
 
     init_globalization();

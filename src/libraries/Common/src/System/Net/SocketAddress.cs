@@ -98,12 +98,6 @@ namespace System.Net.Internals
             ArgumentOutOfRangeException.ThrowIfLessThan(size, MinSize);
 
             InternalSize = size;
-#if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
-            // WSARecvFrom needs a pinned pointer to the 32bit socket address size: https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsarecvfrom
-            // Allocate IntPtr.Size extra bytes at the end of Buffer ensuring IntPtr.Size alignment, so we don't need to pin anything else.
-            // The following formula will extend 'size' to the alignment boundary then add IntPtr.Size more bytes.
-            size = (size + IntPtr.Size -  1) / IntPtr.Size * IntPtr.Size + IntPtr.Size;
-#endif
             InternalBuffer = new byte[size];
             InternalBuffer[0] = (byte)InternalSize;
 
@@ -196,24 +190,6 @@ namespace System.Net.Internals
         {
             return new IPEndPoint(GetIPAddress(), GetPort());
         }
-
-#if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
-        // For ReceiveFrom we need to pin address size, using reserved Buffer space.
-        internal void CopyAddressSizeIntoBuffer()
-        {
-            int addressSizeOffset = GetAddressSizeOffset();
-            InternalBuffer[addressSizeOffset] = unchecked((byte)(InternalSize));
-            InternalBuffer[addressSizeOffset + 1] = unchecked((byte)(InternalSize >> 8));
-            InternalBuffer[addressSizeOffset + 2] = unchecked((byte)(InternalSize >> 16));
-            InternalBuffer[addressSizeOffset + 3] = unchecked((byte)(InternalSize >> 24));
-        }
-
-        // Can be called after the above method did work.
-        internal int GetAddressSizeOffset()
-        {
-            return InternalBuffer.Length - IntPtr.Size;
-        }
-#endif
 
         public override bool Equals(object? comparand) =>
             comparand is SocketAddress other && Equals(other);

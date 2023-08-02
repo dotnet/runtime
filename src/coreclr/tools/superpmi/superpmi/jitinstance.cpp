@@ -414,7 +414,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             pParam->pThis->mc->cr->recAllocMemCapture();
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
-            pParam->pThis->mc->cr->recMessageLog("Successful Compile");
+            pParam->pThis->mc->cr->recMessageLog(jitResult == CORJIT_OK ? "Successful Compile" : "Successful Compile (BADCODE)");
 
             pParam->metrics->NumCodeBytes += NCodeSizeBlock;
         }
@@ -434,6 +434,22 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             LogMissing("Method context %d failed to replay: %s", mcIndex, message);
             e.DeleteMessage();
             param.result = RESULT_MISSING;
+        }
+        else if (e.GetCode() == EXCEPTIONCODE_COMPLUS)
+        {
+            // We assume that managed exceptions are never JIT bugs and were
+            // thrown by the EE during recording. Various EE APIs can throw
+            // managed exceptions and replay will faithfully rethrow these. The
+            // JIT itself will sometimes catch them (e.g. during inlining), but
+            // if they make it out of the JIT then we assume that they are not
+            // JIT bugs. The typical scenario is something like
+            // MissingFieldException thrown from resolveToken.
+
+            // Call these methods to capture that no code/GC info was generated.
+            mc->cr->recAllocMemCapture();
+            mc->cr->recAllocGCInfoCapture();
+
+            mc->cr->recMessageLog("Successful Compile (EE API exception)");
         }
         else
         {
