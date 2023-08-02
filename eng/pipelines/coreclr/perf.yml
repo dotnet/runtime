@@ -23,13 +23,13 @@ variables:
 
 # Run at 10:00AM () every night to give plenty of time to rerun if errors occur
 schedules:
-- cron: "00 10 * * *"
-  displayName: Every day at 10:00AM UTC (3AM PDT)
-  branches:
-    include:
-    - main
-  always: true
-  batch: true
+  - cron: "00 10 * * *"
+    displayName: Every day at 10:00AM UTC (3AM PDT)
+    branches:
+      include:
+      - main
+    always: true
+    batch: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -41,9 +41,9 @@ extends:
       - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
         parameters:
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-          ${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-            runProfile: 'non-v8'
-          ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+          # ${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+          #   runProfile: 'non-v8'
+          ${{ if ne(variables['System.TeamProject'], 'public') }}: # , notin(variables['Build.Reason'], 'Schedule')
             runProfile: 'v8'
 
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
