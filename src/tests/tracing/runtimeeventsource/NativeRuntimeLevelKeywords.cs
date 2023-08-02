@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +10,15 @@ using System.Threading.Tasks;
 using Tracing.Tests.Common;
 
 
+{// Copied from fix #86370 by @davmason:
 
+    // Access ArrayPool.Shared.Rent() before the test to avoid the deadlock reported
+    // in https://github.com/dotnet/runtime/issues/86233. This is a real issue,
+    // but only seen if you have a short lived EventListener and create EventSources
+    // in your OnEventWritten callback so we don't expect customers to hit it.
+    byte[] localBuffer = ArrayPool<byte>.Shared.Rent(10);
+    Console.WriteLine($"buffer length={localBuffer.Length}");
+}
 const string SourceName = "Microsoft-Windows-DotNETRuntime";
 
 using Listener most = Listener.Create(SourceName, EventLevel.Verbose, EventKeywords.All);
@@ -105,7 +114,7 @@ internal sealed class Listener : EventListener, IReadOnlySet<string>
         }
     }
     protected override void OnEventWritten(EventWrittenEventArgs e) => Invoke(events.Add, $"{e.EventId}\t\t{e.EventName}");
-    
+
     private TResult Invoke<T, TResult>(Func<T, TResult> func, T t)
     {
         lock (eventsLock)
