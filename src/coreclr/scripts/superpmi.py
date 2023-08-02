@@ -659,7 +659,7 @@ class SuperPMICollect:
             # Therefore, we produce a copy of the JIT binary for SuperPMI to use. 
             jit_name_ext = os.path.splitext(jit_name)[1]
             jit_name_without_ext = os.path.splitext(jit_name)[0]
-            self.superpmi_jit_path_temp_dir = tempfile.TemporaryDirectory()
+            self.superpmi_jit_path_temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
             try:
                 self.superpmi_jit_path = os.path.join(self.superpmi_jit_path_temp_dir.name, jit_name_without_ext + "_superpmi" + jit_name_ext)
                 shutil.copyfile(self.jit_path, self.superpmi_jit_path)
