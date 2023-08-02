@@ -373,7 +373,7 @@
 
   <!-- Test WASM with WASMStripIL enabled -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunAOTCompilation)' == 'true'">
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\WebAssembly\Browser\StartupHook\WebAssembly.Browser.StartupHook.Tests.csproj"
+    <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\WebAssembly\Browser\StartupHook\WebAssembly.Browser.StartupHook.Tests.csproj"
                       AdditionalProperties="%(AdditionalProperties);WASMStripIL=true;TestProjectName=WebAssembly_Browser_StartupHook_Tests_ILStripped"
                       BuildInParallel="false" />
   </ItemGroup>
