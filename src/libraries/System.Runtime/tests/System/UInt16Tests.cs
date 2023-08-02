@@ -367,6 +367,49 @@ namespace System.Tests
         }
 
         [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, ushort expected)
+        {
+            ushort result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
+            {
+                Assert.True(ushort.TryParse(valueUtf8, out result));
+                Assert.Equal(expected, result);
+            }
+
+            Assert.Equal(expected, ushort.Parse(valueUtf8, style, provider));
+
+            Assert.True(ushort.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                ushort result;
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(ushort.TryParse(valueUtf8, out result));
+                    Assert.Equal(0u, result);
+                }
+
+                Assert.Throws(exceptionType, () => ushort.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(ushort.TryParse(valueUtf8, style, provider, out result));
+                Assert.Equal(0u, result);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat(ushort i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);

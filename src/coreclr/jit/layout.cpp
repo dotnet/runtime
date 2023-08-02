@@ -417,6 +417,25 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
 }
 
 //------------------------------------------------------------------------
+// HasGCByRef: does the layout contain at least one GC ByRef
+//
+// Return value:
+//    true if at least one GC ByRef, false otherwise.
+bool ClassLayout::HasGCByRef() const
+{
+    unsigned slots = GetSlotCount();
+    for (unsigned i = 0; i < slots; i++)
+    {
+        if (IsGCByRef(i))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // AreCompatible: check if 2 layouts are the same for copying.
 //
 // Arguments:

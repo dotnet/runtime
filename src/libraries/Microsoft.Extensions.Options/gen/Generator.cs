@@ -17,20 +17,20 @@ namespace Microsoft.Extensions.Options.Generators
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<(TypeDeclarationSyntax TypeSyntax, SemanticModel SemanticModel)> typeDeclarations = context.SyntaxProvider
+            IncrementalValuesProvider<(TypeDeclarationSyntax? TypeSyntax, SemanticModel SemanticModel)> typeDeclarations = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     SymbolLoader.OptionsValidatorAttribute,
                     (node, _) => node is TypeDeclarationSyntax,
                     (context, _) => (TypeSyntax:context.TargetNode as TypeDeclarationSyntax, SemanticModel: context.SemanticModel))
                 .Where(static m => m.TypeSyntax is not null);
 
-            IncrementalValueProvider<(Compilation, ImmutableArray<(TypeDeclarationSyntax TypeSyntax, SemanticModel SemanticModel)>)> compilationAndTypes =
+            IncrementalValueProvider<(Compilation, ImmutableArray<(TypeDeclarationSyntax? TypeSyntax, SemanticModel SemanticModel)>)> compilationAndTypes =
                 context.CompilationProvider.Combine(typeDeclarations.Collect());
 
             context.RegisterSourceOutput(compilationAndTypes, static (spc, source) => HandleAnnotatedTypes(source.Item1, source.Item2, spc));
         }
 
-        private static void HandleAnnotatedTypes(Compilation compilation, ImmutableArray<(TypeDeclarationSyntax TypeSyntax, SemanticModel SemanticModel)> types, SourceProductionContext context)
+        private static void HandleAnnotatedTypes(Compilation compilation, ImmutableArray<(TypeDeclarationSyntax? TypeSyntax, SemanticModel SemanticModel)> types, SourceProductionContext context)
         {
             if (!SymbolLoader.TryLoad(compilation, out var symbolHolder))
             {
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Options.Generators
             var validatorTypes = parser.GetValidatorTypes(types);
             if (validatorTypes.Count > 0)
             {
-                var emitter = new Emitter();
+                var emitter = new Emitter(compilation);
                 var result = emitter.Emit(validatorTypes, context.CancellationToken);
 
                 context.AddSource("Validators.g.cs", SourceText.From(result, Encoding.UTF8));

@@ -22,8 +22,8 @@
 // For convenience, it is called ETM (Event Tracing for Mac) and exists only on the Mac Leopard OS
 // ============================================================================
 
-#ifndef _ETWTRACER_HXX_
-#define _ETWTRACER_HXX_
+#ifndef EVENTTRACEBASE_H
+#define EVENTTRACEBASE_H
 
 struct EventStructTypeData;
 void InitializeEventTracing();
@@ -95,6 +95,14 @@ struct ProfilingScanContext;
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) \
     (Context.IsEnabled && ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_EVENT_ENABLED(Context, EventDescriptor))
 
+#define CLR_GC_KEYWORD 0x1
+#define CLR_OVERRIDEANDSUPPRESSNGENEVENTS_KEYWORD 0x40000
+#define CLR_TYPE_KEYWORD 0x80000
+#define CLR_GCHEAPDUMP_KEYWORD 0x100000
+#define CLR_GCHEAPSURVIVALANDMOVEMENT_KEYWORD 0x400000
+#define CLR_MANAGEDHEAPCOLLECT_KEYWORD 0x800000
+#define CLR_GCHEAPANDTYPENAMES_KEYWORD 0x1000000
+
 //
 // Using KEYWORDZERO means when checking the events category ignore the keyword
 //
@@ -106,31 +114,19 @@ struct ProfilingScanContext;
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) \
     (ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_CATEGORY_ENABLED(Context, Level, Keyword))
 
+bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword);
+
+#ifdef FEATURE_ETW
+#define RUNTIME_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
+    (DotNETRuntimeProvider_IsEnabled(Level, Keyword) || ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, Level, Keyword))
+#else
+#define RUNTIME_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
+    DotNETRuntimeProvider_IsEnabled(Level, Keyword)
+#endif // FEATURE_ETW
+
 #else // FEATURE_EVENT_TRACE
 
 #include "etmdummy.h"
 #endif // FEATURE_EVENT_TRACE
 
-// These parts of the ETW namespace are common for both FEATURE_NATIVEAOT and
-// !FEATURE_NATIVEAOT builds.
-
-
-struct ProfilingScanContext;
-struct ProfilerWalkHeapContext;
-class Object;
-
-namespace ETW
-{
-    // Class to wrap the logging of threads (runtime and rundown providers)
-    class ThreadLog
-    {
-    private:
-        static DWORD GetEtwThreadFlags(Thread * pThread);
-
-    public:
-        static void FireThreadCreated(Thread * pThread);
-        static void FireThreadDC(Thread * pThread);
-    };
-};
-
-#endif //_ETWTRACER_HXX_
+#endif // EVENTTRACEBASE_H

@@ -9,17 +9,6 @@
 #include "eventpipeadapter.h"
 #include "gcheaputilities.h"
 
-#ifndef _INC_WINDOWS
-    typedef void* LPVOID;
-    typedef uint32_t UINT;
-    typedef void* PVOID;
-    typedef uint64_t ULONGLONG;
-    typedef uint32_t ULONG;
-    typedef int64_t LONGLONG;
-    typedef uint8_t BYTE;
-    typedef uint16_t UINT16;
-#endif // _INC_WINDOWS
-
 #ifndef ERROR_WRITE_FAULT
 #define ERROR_WRITE_FAULT 29L
 #endif
@@ -3146,4 +3135,19 @@ void InitDotNETRuntime(void)
     EventPipeEventGenAwareEnd = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,207,1048576,0,EP_EVENT_LEVEL_INFORMATIONAL,true);
     EventPipeEventGCLOHCompact = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,208,1,0,EP_EVENT_LEVEL_INFORMATIONAL,true);
     EventPipeEventGCFitBucketInfo = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,209,1,0,EP_EVENT_LEVEL_VERBOSE,true);
+}
+
+bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword)
+{
+    if (!EventPipeAdapter::Enabled())
+        return false;
+
+    EVENTPIPE_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider;
+    if (!context.IsEnabled)
+        return false;
+
+    if (level > context.Level)
+        return false;
+
+    return (keyword == (ULONGLONG)0) || (keyword & context.EnabledKeywordsBitmask) != 0;
 }

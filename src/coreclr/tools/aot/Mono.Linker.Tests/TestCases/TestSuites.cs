@@ -44,6 +44,7 @@ namespace Mono.Linker.Tests.TestCases
 			switch (t) {
 			case "TypeHierarchyReflectionWarnings":
 			case "ParametersUsedViaReflection":
+			case "UnsafeAccessor":
 				Run (t);
 				break;
 			default:
@@ -69,6 +70,13 @@ namespace Mono.Linker.Tests.TestCases
 		[Theory]
 		[MemberData (nameof (TestDatabase.SingleFile), MemberType = typeof (TestDatabase))]
 		public void SingleFile (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.TopLevelStatements), MemberType = typeof (TestDatabase))]
+		public void TopLevelStatements (string t)
 		{
 			Run (t);
 		}

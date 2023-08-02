@@ -167,10 +167,7 @@ namespace System.Xml.Schema
                 SchemaNotation no = new SchemaNotation(notation!.QualifiedName);
                 no.SystemLiteral = notation.System;
                 no.Pubid = notation.Public;
-                if (!schemaInfo.Notations.ContainsKey(no.Name.Name))
-                {
-                    schemaInfo.Notations.Add(no.Name.Name, no);
-                }
+                schemaInfo.Notations.TryAdd(no.Name.Name, no);
             }
         }
 

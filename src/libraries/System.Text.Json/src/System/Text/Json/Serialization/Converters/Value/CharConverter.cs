@@ -12,6 +12,11 @@ namespace System.Text.Json.Serialization.Converters
 
         public override char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (reader.TokenType is not (JsonTokenType.String or JsonTokenType.PropertyName))
+            {
+                ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
+            }
+
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, 1, MaxEscapedCharacterLength))
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedChar(reader.TokenType);

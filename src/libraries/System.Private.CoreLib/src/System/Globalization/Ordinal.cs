@@ -21,7 +21,7 @@ namespace System.Globalization
             ref char charA = ref strA;
             ref char charB = ref strB;
 
-            char maxChar = (char)0x7F;
+            const char maxChar = (char)0x7F;
 
             while (length != 0 && charA <= maxChar && charB <= maxChar)
             {

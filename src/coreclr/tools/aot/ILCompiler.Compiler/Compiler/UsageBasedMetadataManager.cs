@@ -81,7 +81,7 @@ namespace ILCompiler
             UsageBasedMetadataGenerationOptions generationOptions,
             MetadataManagerOptions options,
             Logger logger,
-            IEnumerable<KeyValuePair<string, bool>> featureSwitchValues,
+            IReadOnlyDictionary<string, bool> featureSwitchValues,
             IEnumerable<string> rootEntireAssembliesModules,
             IEnumerable<string> additionalRootedAssemblies,
             IEnumerable<string> trimmedAssemblies,
@@ -94,8 +94,8 @@ namespace ILCompiler
             FlowAnnotations = flowAnnotations;
             Logger = logger;
 
-            _linkAttributesHashTable = new LinkAttributesHashTable(Logger, new Dictionary<string, bool>(featureSwitchValues));
-            FeatureSwitches = new Dictionary<string, bool>(featureSwitchValues);
+            _linkAttributesHashTable = new LinkAttributesHashTable(Logger, featureSwitchValues);
+            FeatureSwitches = featureSwitchValues;
 
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
             _rootEntireAssembliesModules.UnionWith(additionalRootedAssemblies);
@@ -225,7 +225,7 @@ namespace ILCompiler
             out List<MetadataMapping<MetadataType>> typeMappings,
             out List<MetadataMapping<MethodDesc>> methodMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
-            out List<MetadataMapping<MethodDesc>> stackTraceMapping)
+            out List<StackTraceMapping> stackTraceMapping)
         {
             ComputeMetadata(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory),
                 factory, out metadataBlob, out typeMappings, out methodMappings, out fieldMappings, out stackTraceMapping);
@@ -487,13 +487,28 @@ namespace ILCompiler
                         continue;
 
                     // Generic methods need to be instantiated over something.
+                    // We try to make up a canonical instantiation if possible to match the
+                    // general expectation that if one has a type, and a method on the uninstantiated type,
+                    // one can GetMemberWithSameMetadataDefinitionAs and MakeGenericMethod the result
+                    // over reference types. We promise reference type instantiations are possible.
+                    MethodDesc reflectedMethod;
                     if (method.HasInstantiation)
-                        continue;
+                    {
+                        Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: true);
+                        if (inst.IsNull)
+                            continue;
+
+                        reflectedMethod = method.MakeInstantiatedMethod(inst);
+                    }
+                    else
+                    {
+                        reflectedMethod = method;
+                    }
 
                     dependencies ??= new CombinedDependencyList();
                     dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        factory.ReflectedMethod(method),
-                        factory.ReflectedMethod(method.GetTypicalMethodDefinition()),
+                        factory.ReflectedMethod(reflectedMethod),
+                        factory.ReflectedMethod(reflectedMethod.GetTypicalMethodDefinition()),
                         "Methods have same reflectability"));
                 }
             }
@@ -979,10 +994,10 @@ namespace ILCompiler
 
         private sealed class LinkAttributesHashTable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
-            private readonly Dictionary<string, bool> _switchValues;
+            private readonly IReadOnlyDictionary<string, bool> _switchValues;
             private readonly Logger _logger;
 
-            public LinkAttributesHashTable(Logger logger, Dictionary<string, bool> switchValues)
+            public LinkAttributesHashTable(Logger logger, IReadOnlyDictionary<string, bool> switchValues)
             {
                 _logger = logger;
                 _switchValues = switchValues;
