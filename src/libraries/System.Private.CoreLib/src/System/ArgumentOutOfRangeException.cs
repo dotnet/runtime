@@ -35,7 +35,7 @@ namespace System
         {
             HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
- 
+
         public ArgumentOutOfRangeException(string? paramName, object? actualValue, string? message)
             : base(message ?? SR.Arg_ArgumentOutOfRangeException, paramName)
         {
