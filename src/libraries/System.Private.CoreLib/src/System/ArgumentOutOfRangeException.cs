@@ -26,12 +26,12 @@ namespace System
 
         public ArgumentOutOfRangeException(string? paramName)
             : this(paramName, null, null) {}
- 
+
         public ArgumentOutOfRangeException(string? paramName, string? message)
             : this(paramName, null, message) {}
- 
+
         public ArgumentOutOfRangeException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_ArgumentOutOfRangeException, innerException)
         {
             HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
