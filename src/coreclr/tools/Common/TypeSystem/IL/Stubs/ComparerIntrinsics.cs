@@ -195,12 +195,12 @@ namespace Internal.IL.Stubs
         private static bool? ImplementsInterfaceOfSelf(TypeDesc type, string interfaceName)
         {
             MetadataType interfaceType = null;
-            bool canonicalSubType = false;
+            bool canonicalSubtype = false;
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 type = type.GetTypeDefinition();
-                canonicalSubType = true;
+                canonicalSubtype = true;
             }
 
             bool candidateFound = false;
@@ -230,8 +230,8 @@ namespace Internal.IL.Stubs
             if (type.CanCastTo(interfaceType.MakeInstantiatedType(type)))
                 return true;
 
-            // Specific instantiation of a shared types may implement the interface.
-            return canonicalSubType ? null : false;
+            // Specific instantiation of the canonical subtype may implement the interface.
+            return canonicalSubtype ? null : false;
         }
 
         public static bool CanCompareValueTypeBits(MetadataType type, MethodDesc objectEqualsMethod)

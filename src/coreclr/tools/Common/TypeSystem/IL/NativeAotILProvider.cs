@@ -286,8 +286,8 @@ namespace Internal.IL
                                 }
                             }
                         }
-                        break;
                     }
+                    break;
             }
 
             return null;
