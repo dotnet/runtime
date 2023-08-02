@@ -649,10 +649,20 @@ CorInfoHelpFunc interceptor_ICJI::getNewHelper(CORINFO_RESOLVED_TOKEN* pResolved
                                                CORINFO_METHOD_HANDLE   callerHandle,
                                                bool* pHasSideEffects)
 {
-    mc->cr->AddCall("getNewHelper");
-    CorInfoHelpFunc temp = original_ICorJitInfo->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
-    mc->recGetNewHelper(pResolvedToken, callerHandle, pHasSideEffects, temp);
-    return temp;
+    CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
+
+    RunWithErrorExceptionCodeCaptureAndContinue(
+        [&]()
+        {
+            mc->cr->AddCall("getNewHelper");
+            result = original_ICorJitInfo->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
+        },
+        [&](DWORD exceptionCode)
+        {
+            mc->recGetNewHelper(pResolvedToken, callerHandle, pHasSideEffects, result, exceptionCode);
+        });
+
+    return result;
 }
 
 // returns the newArr (1-Dim array) helper optimized for "arrayCls."

@@ -550,7 +550,11 @@ bool MyICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier,
 CorInfoHelpFunc MyICJI::getNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects)
 {
     jitInstance->mc->cr->AddCall("getNewHelper");
-    return jitInstance->mc->repGetNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
+    DWORD exceptionCode = 0;
+    CorInfoHelpFunc result = jitInstance->mc->repGetNewHelper(pResolvedToken, callerHandle, pHasSideEffects, &exceptionCode);
+    if (exceptionCode != 0)
+        ThrowException(exceptionCode);
+    return result;
 }
 
 // returns the newArr (1-Dim array) helper optimized for "arrayCls."
