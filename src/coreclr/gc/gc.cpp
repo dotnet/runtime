@@ -3295,8 +3295,7 @@ void gc_heap::fire_committed_usage_event()
     size_t total_committed_in_global_free = new_committed_by_oh[recorded_committed_free_bucket] - total_committed_in_free - total_committed_in_global_decommit;
     size_t total_bookkeeping_committed = committed_bookkeeping;
 
-    GCEventFireCommittedUsage (
-        (uint16_t)1,
+    GCEventFireCommittedUsage_V1 (
         (uint64_t)total_committed_in_use,
         (uint64_t)total_committed_in_global_decommit,
         (uint64_t)total_committed_in_free,
@@ -25065,8 +25064,7 @@ void gc_heap::check_heap_count ()
 
     dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
 
-    GCEventFireDynamicHeapCountSample(
-        (uint16_t)1,
+    GCEventFireHeapCountSample_V1(
         sample.gc_elapsed_time,
         sample.soh_msl_wait_time,
         sample.uoh_msl_wait_time,
@@ -25222,8 +25220,7 @@ void gc_heap::check_heap_count ()
         dynamic_heap_count_data.space_cost_increase_per_step_up   = space_cost_increase_per_step_up;
         dynamic_heap_count_data.space_cost_decrease_per_step_down = space_cost_decrease_per_step_down;
 
-        GCEventFireDynamicHeapCountTuning(
-            (uint16_t)1,
+        GCEventFireHeapCountTuning_V1(
             (uint16_t)dynamic_heap_count_data.new_n_heaps,
             (uint64_t)VolatileLoad(&settings.gc_index),
             dynamic_heap_count_data.median_percent_overhead,
@@ -25237,7 +25234,7 @@ void gc_heap::check_heap_count ()
         if (new_n_heaps != n_heaps)
         {
             // can't have threads allocating while we change the number of heaps
-            GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
+            GCToEEInterface::SuspendEE(SUSPEND_FOR_GC_PREP);
 
             if (gc_heap::background_running_p())
             {
