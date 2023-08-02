@@ -104,8 +104,6 @@ void ECall::PopulateManagedCastHelpers()
     MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFANY));
     PCODE pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
-    // array cast uses the "ANY" helper
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFARRAY, pDest);
 
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();
@@ -118,8 +116,6 @@ void ECall::PopulateManagedCastHelpers()
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTANY));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
-    // array cast uses the "ANY" helper
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTARRAY, pDest);
 
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();

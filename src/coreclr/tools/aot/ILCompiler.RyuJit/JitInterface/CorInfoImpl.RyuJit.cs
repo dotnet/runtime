@@ -694,8 +694,7 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY:
-                case CorInfoHelpFunc.CORINFO_HELP_CHKCASTARRAY:
-                    id = ReadyToRunHelper.CheckCastAny;
+                   id = ReadyToRunHelper.CheckCastAny;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTINTERFACE:
                     id = ReadyToRunHelper.CheckCastInterface;
@@ -708,7 +707,6 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY:
-                case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFARRAY:
                     id = ReadyToRunHelper.CheckInstanceAny;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFINTERFACE:
@@ -1056,11 +1054,6 @@ namespace Internal.JitInterface
                 // If it is a non-variant interface, use the fast interface helper
                 helper = CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFINTERFACE;
             }
-            else if (type.IsArray)
-            {
-                // If it is an array, use the fast array helper
-                helper = CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFARRAY;
-            }
             else if (type.IsDefType)
             {
                 helper = CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS;
@@ -1082,8 +1075,6 @@ namespace Internal.JitInterface
 
                 Debug.Assert(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFINTERFACE + delta
                     == CorInfoHelpFunc.CORINFO_HELP_CHKCASTINTERFACE);
-                Debug.Assert(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFARRAY + delta
-                    == CorInfoHelpFunc.CORINFO_HELP_CHKCASTARRAY);
                 Debug.Assert(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS + delta
                     == CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS);
 
