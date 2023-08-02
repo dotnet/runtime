@@ -87,7 +87,12 @@ namespace JIT.HardwareIntrinsics.General
             }
 
             public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
-            public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* outArrayPtr
+            {
+                // Workaround a bug on Arm64
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                get => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
+            }
 
             public void Dispose()
             {
