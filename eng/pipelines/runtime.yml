@@ -353,7 +353,7 @@ extends:
             testGroup: innerloop
             isSingleFile: false
             nameSuffix: ReadyToRun_Libraries
-            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) /p:TestReadyToRun=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:Crossgen2TasksOverriden=true
+            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) /p:TestReadyToRun=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
             timeoutInMinutes: 120
             extraStepsTemplate: /eng/pipelines/libraries/helix.yml
             extraStepsParameters:
