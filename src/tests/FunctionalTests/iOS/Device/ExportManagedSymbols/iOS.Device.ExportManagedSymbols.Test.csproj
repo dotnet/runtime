@@ -10,6 +10,7 @@
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
     <NativeMainSource>$(MSBuildProjectDirectory)/main.m</NativeMainSource>
+    <IsTestProject Condition="'$(IsTestProject)' == ''">true</IsTestProject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">

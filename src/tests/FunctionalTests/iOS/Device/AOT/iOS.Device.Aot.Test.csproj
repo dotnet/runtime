@@ -11,6 +11,7 @@
     <SelfContained>true</SelfContained>
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+    <IsTestProject Condition="'$(IsTestProject)' == ''">true</IsTestProject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
