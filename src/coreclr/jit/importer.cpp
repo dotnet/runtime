@@ -5476,11 +5476,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             if (helper == CORINFO_HELP_CHKCASTANY)
             {
                 const bool isAbstract = (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) &
-                    (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
+                                         (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
                 canExpandInline = !isAbstract;
             }
         }
-        else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_CHKCASTANY))
+        else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY))
         {
             // If the class is exact, the jit can expand the IsInst check inline.
             canExpandInline = isClassExact;
@@ -5616,8 +5616,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     GenTree* condTrue;
     if (isCastClass)
     {
-        assert((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY)
-            || (helper == CORINFO_HELP_CHKCASTINTERFACE));
+        assert((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
+               (helper == CORINFO_HELP_CHKCASTINTERFACE));
 
         CorInfoHelpFunc specialHelper = helper;
         if ((helper == CORINFO_HELP_CHKCASTCLASS) &&
