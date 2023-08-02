@@ -349,6 +349,7 @@ export async function start_asset_download(asset: AssetEntryInternal): Promise<A
     try {
         return await start_asset_download_with_throttle(asset);
     } catch (err: any) {
+        // eslint-disable-next-line no-console
         console.log("hey thays 1 - " + JSON.stringify(err));
         if (!loaderHelpers.enableDownloadRetry) {
             // eslint-disable-next-line no-console
