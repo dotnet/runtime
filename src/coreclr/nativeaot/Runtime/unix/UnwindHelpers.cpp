@@ -761,18 +761,11 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 
 #endif // TARGET_ARM64
 
-bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t format, unw_word_t unwind_info, uint8_t prolog_length)
+bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t format, unw_word_t unwind_info)
 {
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
 
 #if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
-
-    // Compact unwinding doesn't support asynchronous unwinding in prolog. We can interpret a code
-    // subset in some cases if it becomes necessary.
-    if (regs->GetIP() - start_ip < prolog_length)
-    {
-        return false;
-    }
 
 #if defined(TARGET_ARM64)
     if ((format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
