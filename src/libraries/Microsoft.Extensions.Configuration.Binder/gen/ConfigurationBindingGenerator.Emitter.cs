@@ -124,6 +124,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     parsedValueExpr = stringValueToParse_Expr;
                 }
+                else if (typeKind is StringParsableTypeKind.Enum)
+                {
+                    parsedValueExpr = $"ParseEnum<{type.MinimalDisplayString}>({stringValueToParse_Expr}, () => {sectionPathExpr})";
+                }
                 else
                 {
                     string helperMethodDisplayString = GetHelperMethodDisplayString(type.ParseMethodName);

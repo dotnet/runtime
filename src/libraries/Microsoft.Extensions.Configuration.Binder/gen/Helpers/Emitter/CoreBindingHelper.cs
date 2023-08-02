@@ -429,10 +429,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _emitBlankLineBeforeNextStatement = true;
                 }
 
+                bool enumTypeExists = false;
+
                 foreach (ParsableFromStringSpec type in _sourceGenSpec.PrimitivesForHelperGen)
                 {
                     EmitBlankLineIfRequired();
-                    EmitPrimitiveParseMethod(type);
+
+                    if (type.StringParsableTypeKind == StringParsableTypeKind.Enum)
+                    {
+                        if (!enumTypeExists)
+                        {
+                            EmitEnumParseMethod();
+                            enumTypeExists = true;
+                        }
+                    }
+                    else
+                    {
+                        EmitPrimitiveParseMethod(type);
+                    }
                 }
             }
 
@@ -518,6 +532,30 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
+            private void EmitEnumParseMethod()
+            {
+                string innerExceptionTypeDisplayString = _useFullyQualifiedNames ? "global::System.Exception" : "Exception";
+                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof(T)}}");
+
+                _writer.WriteLine($$"""
+                    public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
+                    {
+                        try
+                        {
+                            #if NETFRAMEWORK || NETSTANDARD2_0
+                                return (T)Enum.Parse(typeof(T), value, ignoreCase: true);
+                            #else
+                                return Enum.Parse<T>(value, ignoreCase: true);
+                            #endif
+                        }
+                        catch ({{innerExceptionTypeDisplayString}} {{Identifier.exception}})
+                        {
+                            throw new {{GetInvalidOperationDisplayName()}}($"{{exceptionArg1}}", {{Identifier.exception}});
+                        }
+                    }
+                    """);
+            }
+
             private void EmitPrimitiveParseMethod(ParsableFromStringSpec type)
             {
                 string innerExceptionTypeDisplayString;
@@ -546,10 +584,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 switch (typeKind)
                 {
                     case StringParsableTypeKind.Enum:
-                        {
-                            parsedValueExpr = $"({typeDisplayString}){Identifier.Enum}.{Identifier.Parse}(typeof({typeDisplayString}), {Identifier.value}, ignoreCase: true)";
-                        }
-                        break;
+                        return;
                     case StringParsableTypeKind.ByteArray:
                         {
                             parsedValueExpr = $"Convert.FromBase64String({Identifier.value})";
