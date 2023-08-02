@@ -101,7 +101,7 @@ Physical representation of the managed heap
 -------------------------------------------
 
 The managed heap is a set of managed heap segments. A heap segment is a contiguous block of memory that is acquired by the GC from the OS. Heap segments can be
-small, large, or pinned object segments depending on what they contain. On each heap the heap segments are chained together. There is at least one small object segment and one large segment - they are reserved when CLR is loaded. There's also a NonGC heap that contains ro (readonly) segments.
+small, large, or pinned object segments depending on what they contain. On each heap the heap segments are chained together. There is at least one small object segment and one large segment - they are reserved when CLR is loaded. There is also a NonGC heap that contains ro (readonly) segments.
 
 There's always only one ephemeral segment in each small object heap, which is where gen0 and gen1 live. This segment may or may not include gen2
 objects. In addition to the ephemeral segment, there can be zero, one or more additional segments, which will be gen2 segments since they only contain gen2 objects.
