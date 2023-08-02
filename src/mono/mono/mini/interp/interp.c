@@ -8601,6 +8601,31 @@ interp_sufficient_stack (gsize size)
 	return (context->stack_pointer + size) < (context->stack_start + INTERP_STACK_SIZE);
 }
 
+gboolean
+interp_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig)
+{
+	if (sig->param_count > 10)
+		return FALSE;
+	if (sig->pinvoke)
+		return FALSE;
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		return FALSE;
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		return FALSE;
+	if (!mono_llvm_only && method->is_inflated)
+		return FALSE;
+	if (method->string_ctor)
+		return FALSE;
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+
+	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
+		/* Used to mark methods containing StackCrawlMark locals */
+		return FALSE;
+
+	return TRUE;
+}
+
 static void
 interp_cleanup (void)
 {
