@@ -80,7 +80,7 @@ namespace Microsoft.NET.HostModel
         public ResourceUpdater AddResourcesFromPEImage(string peFile)
         {
             if (_resourceData == null) throw ThrowExceptionForInvalidUpdate();
-            using var module = new PEReader(File.Open(peFile, FileMode.Open));
+            using var module = new PEReader(File.Open(peFile, FileMode.Open, FileAccess.Read, FileShare.Read));
             var moduleResources = new ResourceData(module);
             _resourceData.CopyResourcesFrom(moduleResources);
             return this;
