@@ -107,7 +107,7 @@ public class IcuTests : IcuTestsBase
         }
         else
         {
-            Assert.Contains($"Custom ICU file name in path $(WasmIcuDataFileName)={customIcu} has to start with 'icudt'.", output);
+            Assert.Contains($"Custom ICU file name in path $(WasmIcuDataFileName)={customIcu} must start with 'icudt'.", output);
         }
     }
 }
