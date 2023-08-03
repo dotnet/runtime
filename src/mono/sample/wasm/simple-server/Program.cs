@@ -23,7 +23,7 @@ public sealed record FileContent(byte[] buffer, string hash);
     {
         private bool Verbose = false;
         private ConcurrentDictionary<string, Session> Sessions = new ConcurrentDictionary<string, Session>();
-        private Dictionary<string, FileContent> cache = new Dictionary<string, FileContent>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, FileContent> cache = new(StringComparer.OrdinalIgnoreCase);
 
         public static int Main()
         {
