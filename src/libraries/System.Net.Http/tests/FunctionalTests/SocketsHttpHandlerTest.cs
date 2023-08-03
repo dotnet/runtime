@@ -4365,7 +4365,8 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        [Fact]
+        // On Windows7 DNS may return SocketError.NoData (WSANO_DATA), which we currently don't map to NameResolutionError.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         public async Task NameResolutionError()
         {
             using HttpClient client = CreateHttpClient();
