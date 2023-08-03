@@ -194,9 +194,7 @@ namespace Internal.IL.Stubs
         private static bool? ImplementsInterfaceOfSelf(TypeDesc type, string interfaceName)
         {
             MetadataType interfaceType = null;
-            bool canonicalSubtype = type.IsCanonicalSubtype(CanonicalFormKind.Any);
 
-            bool candidateFound = false;
             foreach (TypeDesc implementedInterface in type.RuntimeInterfaces)
             {
                 Instantiation interfaceInstantiation = implementedInterface.Instantiation;
@@ -206,14 +204,15 @@ namespace Internal.IL.Stubs
 
                     if (implementedInterface.GetTypeDefinition() == interfaceType)
                     {
-                        if (canonicalSubtype)
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                         {
-                            // Skip candidates that cannot possibly be the interface of self
+                            // Ignore interface instantiations that cannot possibly be the interface of self
                             if (implementedInterface.ConvertToCanonForm(CanonicalFormKind.Specific) !=
                                 interfaceType.MakeInstantiatedType(type).ConvertToCanonForm(CanonicalFormKind.Specific))
                             {
                                 continue;
                             }
+                            return null;
                         }
                         else
                         {
@@ -223,21 +222,13 @@ namespace Internal.IL.Stubs
                                 Debug.Assert(type.CanCastTo(interfaceType.MakeInstantiatedType(type)));
                                 return true;
                             }
+                            return type.CanCastTo(interfaceType.MakeInstantiatedType(type));
                         }
-
-                        candidateFound = true;
-                        break;
                     }
                 }
             }
 
-            if (!candidateFound)
-                return false;
-
-            if (canonicalSubtype)
-                return null;
-
-            return type.CanCastTo(interfaceType.MakeInstantiatedType(type));
+            return false;
         }
 
         public static bool CanCompareValueTypeBits(MetadataType type, MethodDesc objectEqualsMethod)
