@@ -2492,7 +2492,18 @@ public:
             bool                        fOptional
             ) = 0;
 
-    // returns the "NEW" helper optimized for "newCls."
+    //------------------------------------------------------------------------------
+    // getNewHelper: Returns the allocation helper optimized for a specific class.
+    //
+    // Parameters:
+    //   classHandle     - Handle of the type.
+    //   pHasSideEffects - [out] Whether or not the allocation of the specified
+    //                     type can have user-visible side effects; for example,
+    //                     because a finalizer may run as a result.
+    //
+    // Returns:
+    //   Helper to call to allocate the specified type.
+    //
     virtual CorInfoHelpFunc getNewHelper(
             CORINFO_CLASS_HANDLE  classHandle,
             bool*                 pHasSideEffects
