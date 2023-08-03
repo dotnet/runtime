@@ -286,6 +286,7 @@ Typical trade-offs of any web application are:
 When compared .NET WebAssembly with native JavaScript applications:
 - if your business logic is complex
 - you already have existing C# codebase and skill-set
+
 running the same code dotnet on wasm is probably the right choice.
 
 If your application:
@@ -293,6 +294,7 @@ If your application:
 - you have JavaScript skills on your team
 - require very small download and fast start time
 - you need to support legacy devices or browsers
+
 it may be better if you re/write your logic in Web native technologies like HTML/CSS and typescript/webpack stack.
 
 Sometimes it makes sense to implement a mix of both.
