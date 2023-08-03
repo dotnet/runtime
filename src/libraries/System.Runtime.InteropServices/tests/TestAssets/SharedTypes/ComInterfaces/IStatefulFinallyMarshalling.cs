@@ -19,10 +19,41 @@ namespace SharedTypes.ComInterfaces
         [PreserveSig]
         StatefulFinallyType ReturnPreserveSig();
     }
+    [GeneratedComClass]
+    internal partial class StatefulFinallyMarshalling : IStatefulFinallyMarshalling
+    {
+        public void Method(StatefulFinallyType param)
+        {
+            _ = param.i;
+        }
+        public void MethodIn(in StatefulFinallyType param)
+        {
+            _ = param.i;
+        }
+        public void MethodOut(out StatefulFinallyType param)
+        {
+            param = new StatefulFinallyType() { i = 42 };
+        }
+        public void MethodRef(ref StatefulFinallyType param)
+        {
+            _ = param.i;
+            param = new StatefulFinallyType() { i = 99 };
+        }
+        public StatefulFinallyType Return()
+            => new StatefulFinallyType() { i = 8 };
+        public StatefulFinallyType ReturnPreserveSig()
+            => new StatefulFinallyType() { i = 3 };
+    }
 
     [NativeMarshalling(typeof(StatefulFinallyTypeMarshaller))]
     internal class StatefulFinallyType
     {
+        public int i;
+    }
+
+    internal struct StatefulFinallyNative
+    {
+        public int i;
     }
 
     [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanaged))]
@@ -35,70 +66,67 @@ namespace SharedTypes.ComInterfaces
     {
         internal struct Bidirectional
         {
+            int managed_i;
+            int unmanaged_i;
+
             public void FromManaged(StatefulFinallyType managed)
             {
-                throw new System.NotImplementedException();
+                managed_i = managed.i;
             }
 
             public nint ToUnmanaged()
             {
-                throw new System.NotImplementedException();
+                return new StatefulFinallyNative() { i = this.managed_i };
             }
 
-            public void FromUnmanaged(nint unmanaged)
+            public void FromUnmanaged(StatefulFinallyNative unmanaged)
             {
-                throw new System.NotImplementedException();
+                unmanaged_i = unmanaged.i;
             }
 
             public StatefulFinallyType ToManagedFinally()
             {
-                throw new NotImplementedException();
+                return new StatefulFinallyType() { i = unmanaged_i };
             }
 
-
-            public void Free()
-            {
-                throw new System.NotImplementedException();
-            }
+            public void Free() { }
 
             public void OnInvoked() { }
         }
 
         internal struct ManagedToUnmanaged
         {
+            int managed_i;
+
             public void FromManaged(StatefulFinallyType managed)
             {
-                throw new System.NotImplementedException();
+                managed_i = managed.i;
             }
 
-            public nint ToUnmanaged()
+            public StatefulFinallyNative ToUnmanaged()
             {
-                throw new System.NotImplementedException();
+                return new StatefulFinallyNative() { i = this.managed_i };
             }
 
-            public void Free()
-            {
-                throw new System.NotImplementedException();
-            }
+            public void Free() { }
 
             public void OnInvoked() { }
         }
 
         internal struct UnmanagedToManaged
         {
-            public void FromUnmanaged(nint unmanaged)
+            int unmanaged_i;
+
+            public void FromUnmanaged(StatefulFinallyNative unmanaged)
             {
-                throw new System.NotImplementedException();
+                unmanaged_i = unmanaged.i;
             }
             public StatefulFinallyType ToManagedFinally()
             {
-                throw new NotImplementedException();
+                return new StatefulFinallyType() { i = unmanaged_i };
             }
 
-            public void Free()
-            {
-                throw new System.NotImplementedException();
-            }
+            public void Free() { }
 
             public void OnInvoked() { }
         }
