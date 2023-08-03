@@ -18,10 +18,12 @@ namespace System.Net.Quic.Tests
 
         public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
-        public async Task TestConnect()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TestConnect(bool ipv6)
         {
-            await using QuicListener listener = await CreateQuicListener();
+            await using QuicListener listener = await CreateQuicListener(ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback);
 
             var options = CreateQuicClientOptions(listener.LocalEndPoint);
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(options);
@@ -369,9 +371,10 @@ namespace System.Net.Quic.Tests
                 }).WaitAsync(TimeSpan.FromSeconds(5)));
         }
 
-        [Fact]
-        [OuterLoop("Uses external servers")]
-        public async Task ConnectAsync_InvalidName_ThrowsSocketException()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ConnectAsync_InvalidName_ThrowsSocketException(bool sameTargetHost)
         {
             string name = $"{Guid.NewGuid().ToString("N")}.microsoft.com.";
             var options = new QuicClientConnectionOptions()
@@ -379,7 +382,7 @@ namespace System.Net.Quic.Tests
                 DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
                 DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
                 RemoteEndPoint = new DnsEndPoint(name, 10000),
-                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(sameTargetHost ? name : "localhost")
             };
 
             SocketException ex = await Assert.ThrowsAsync<SocketException>(() => QuicConnection.ConnectAsync(options).AsTask());
