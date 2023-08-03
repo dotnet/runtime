@@ -73,7 +73,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string tempIdentifier = GetIncrementalIdentifier(Identifier.temp);
                 if (initKind is InitializationKind.AssignmentWithNullCheck)
                 {
-                    _writer.WriteLine($"{type.MinimalDisplayString} {tempIdentifier} = {memberAccessExpr};");
+                    Debug.Assert(!type.IsValueType);
+                    _writer.WriteLine($"{type.MinimalDisplayString}? {tempIdentifier} = {memberAccessExpr};");
                     EmitBindCoreCall(tempIdentifier, InitializationKind.AssignmentWithNullCheck);
                 }
                 else if (initKind is InitializationKind.None && type.IsValueType)
