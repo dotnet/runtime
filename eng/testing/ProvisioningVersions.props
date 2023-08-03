@@ -9,9 +9,10 @@
     the same snapshot might not be available in both of them.
   -->
   <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
-    <ChromiumRevision>972765</ChromiumRevision>
-    <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
-    <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</ChromeDriverUrl>
+    <ChromiumRevision>1148114</ChromiumRevision>
+    <!-- 115.0.5790.170 -->
+    <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1148123/chrome-linux.zip</ChromiumUrl>
+    <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1148123/chromedriver_linux64.zip</ChromeDriverUrl>
     <ChromiumDirName>chrome-linux</ChromiumDirName>
     <ChromeDriverDirName>chromedriver_linux64</ChromeDriverDirName>
     <ChromiumBinaryName>chrome</ChromiumBinaryName>
@@ -21,9 +22,10 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
-    <ChromiumRevision>972766</ChromiumRevision>
-    <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chrome-win.zip</ChromiumUrl>
-    <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</ChromeDriverUrl>
+    <ChromiumRevision>1148114</ChromiumRevision>
+    <!-- 115.0.5790.170 -->
+    <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1148119/chrome-win.zip</ChromiumUrl>
+    <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1148119/chromedriver_win32.zip</ChromeDriverUrl>
     <ChromiumDirName>chrome-win</ChromiumDirName>
     <ChromeDriverDirName>chromedriver_win32</ChromeDriverDirName>
     <ChromiumBinaryName>chrome.exe</ChromiumBinaryName>
