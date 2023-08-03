@@ -3,14 +3,16 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Xunit;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
 		const float EPS = Single.Epsilon * 5;
 		
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var a = new System.Numerics.Vector<short>(51);
             for (int i = 0; i < System.Numerics.Vector<short>.Count; ++i)

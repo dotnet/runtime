@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-unsafe class Runtime_61040_5
+public unsafe class Runtime_61040_5
 {
     private const int ArrLen = 10;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] arr = new int[ArrLen];
 

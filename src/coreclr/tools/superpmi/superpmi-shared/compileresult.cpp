@@ -645,9 +645,9 @@ void CompileResult::dmpReportFatalError(DWORD key, DWORD value)
     printf("ReportFatalError key Count-%u, value result-%08X", key, value);
 }
 
-void CompileResult::recRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
+void CompileResult::recRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta)
 {
-    repRecordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    repRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
 const char* relocationTypeToString(uint16_t fRelocType)
@@ -679,11 +679,11 @@ const char* relocationTypeToString(uint16_t fRelocType)
 }
 void CompileResult::dmpRecordRelocation(DWORD key, const Agnostic_RecordRelocation& value)
 {
-    printf("RecordRelocation key %u, value loc-%016" PRIX64 " tgt-%016" PRIX64 " fRelocType-%u(%s) slotNum-%u addlDelta:%d", key,
+    printf("RecordRelocation key %u, value loc-%016" PRIX64 " tgt-%016" PRIX64 " fRelocType-%u(%s) addlDelta:%d", key,
            value.location, value.target, value.fRelocType, relocationTypeToString((uint16_t)value.fRelocType),
-           value.slotNum, (int32_t)value.addlDelta);
+           (int32_t)value.addlDelta);
 }
-void CompileResult::repRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
+void CompileResult::repRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta)
 {
     if (RecordRelocation == nullptr)
         RecordRelocation = new DenseLightWeightMap<Agnostic_RecordRelocation>();
@@ -693,10 +693,7 @@ void CompileResult::repRecordRelocation(void* location, void* target, uint16_t f
     value.location   = CastPointer(location);
     value.target     = CastPointer(target);
     value.fRelocType = (DWORD)fRelocType;
-    value.slotNum    = (DWORD)slotNum;
     value.addlDelta  = (DWORD)addlDelta;
-
-    Assert(value.slotNum == 0);
 
     RecordRelocation->Append(value);
 }
@@ -872,7 +869,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
         {
             if (relocType == IMAGE_REL_BASED_DIR64)
             {
-                DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
+                DWORDLONG fixupLocation = tmp.location;
 
                 // Write 64-bits into location
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
@@ -893,7 +890,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
         // Now do all-platform relocations.
         if (tmp.fRelocType == IMAGE_REL_BASED_REL32)
         {
-            DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
+            DWORDLONG fixupLocation = tmp.location;
 
             size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
             if ((section_begin <= address) && (address < section_end)) // A reloc for our section?

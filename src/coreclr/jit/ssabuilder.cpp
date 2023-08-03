@@ -143,7 +143,7 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler)
 //
 //  Return Value:
 //     The number of nodes visited while performing DFS on the graph.
-
+//
 int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
 {
     Compiler* comp = m_pCompiler;
@@ -164,15 +164,14 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
             unsigned               index = 0;
             while (true)
             {
-                bool        isEHsucc = successors.IsNextEHSuccessor();
-                BasicBlock* succ     = successors.NextSuccessor(comp);
+                BasicBlock* succ = successors.NextSuccessor(comp);
 
                 if (succ == nullptr)
                 {
                     break;
                 }
 
-                printf("%s%s" FMT_BB, (index++ ? ", " : ""), (isEHsucc ? "[EH]" : ""), succ->bbNum);
+                printf("%s" FMT_BB, (index++ ? ", " : ""), succ->bbNum);
             }
             printf("]\n");
         }
@@ -210,7 +209,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
             DBG_SSA_JITDUMP("[SsaBuilder::TopologicalSort] postOrder[%d] = " FMT_BB "\n", postIndex, block->bbNum);
             postOrder[postIndex]  = block;
             block->bbPostorderNum = postIndex;
-            postIndex += 1;
+            postIndex++;
         }
     }
 
@@ -1172,8 +1171,7 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
 //
 void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
 {
-    for (BasicBlock* succ : block->GetAllSuccs(m_pCompiler))
-    {
+    block->VisitAllSuccs(m_pCompiler, [this, block](BasicBlock* succ) {
         // Walk the statements for phi nodes.
         for (Statement* const stmt : succ->Statements())
         {
@@ -1359,7 +1357,9 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                 tryInd = succTry->ebdEnclosingTryIndex;
             }
         }
-    }
+
+        return BasicBlockVisit::Continue;
+    });
 }
 
 //------------------------------------------------------------------------

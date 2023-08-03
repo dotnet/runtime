@@ -9,7 +9,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly ceeillegal { }
+.assembly ASSEMBLY_NAME { }
 .method public static void f()
 {
 .emitbyte 0xee

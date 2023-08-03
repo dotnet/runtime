@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import type { EmscriptenReplacements } from "./types/internal";
 import type { TypedArray } from "./types/emscripten";
@@ -25,11 +24,6 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     replacements.scriptDirectory = loaderHelpers.scriptDirectory;
     if (Module.locateFile === Module.__locateFile) {
         Module.locateFile = loaderHelpers.locateFile;
-    }
-
-    if (BuildConfiguration === "Debug") {
-        console.debug(`MONO_WASM: starting script ${loaderHelpers.scriptUrl}`);
-        console.debug(`MONO_WASM: starting in ${loaderHelpers.scriptDirectory}`);
     }
 
     // prefer fetch_like over global fetch for assets

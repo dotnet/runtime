@@ -535,6 +535,8 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         DomainAssemblyIterator domainAssemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete);
         while (!domainAssemblyIt.end())
         {
+            // Call AssemblyUnloadStarted event
+            domainAssemblyIt->GetAssembly()->StartUnload();
             // Notify the debugger
             domainAssemblyIt->NotifyDebuggerUnload();
             domainAssemblyIt++;

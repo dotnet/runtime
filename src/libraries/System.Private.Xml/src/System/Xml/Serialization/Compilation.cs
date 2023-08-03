@@ -317,7 +317,7 @@ namespace System.Xml.Serialization
             {
                 foreach (Type t in scope.Types)
                 {
-                    compiler.AddImport(t, importedTypes);
+                    Compiler.AddImport(t, importedTypes);
                     Assembly a = t.Assembly;
                     string name = a.FullName!;
                     if (assemblies[name] != null)
@@ -331,7 +331,7 @@ namespace System.Xml.Serialization
 
             for (int i = 0; i < types.Length; i++)
             {
-                compiler.AddImport(types[i], importedTypes);
+                Compiler.AddImport(types[i], importedTypes);
             }
 
             var writer = new IndentedWriter(compiler.Source, false);

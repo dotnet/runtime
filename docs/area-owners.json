@@ -41,14 +41,15 @@
     {
       "lead": "steveisok",
       "owners": [
-        ""
+        "kotlarmilos"
       ],
       "label": "os-maccatalyst"
     },
     {
       "lead": "steveisok",
       "owners": [
-        "vargaz"
+        "vargaz",
+        "kotlarmilos"
       ],
       "label": "os-ios"
     },
@@ -66,7 +67,8 @@
     {
       "lead": "steveisok",
       "owners": [
-        "vargaz"
+        "vargaz",
+        "kotlarmilos"
       ],
       "label": "os-tvos"
     },
@@ -115,7 +117,8 @@
     {
       "lead": "SamMonoRT",
       "owners": [
-        "vargaz"
+        "vargaz",
+        "kotlarmilos"
       ],
       "label": "area-Codegen-AOT-mono"
     },
@@ -248,7 +251,7 @@
       "label": "area-Diagnostics-mono"
     },
     {
-      "lead": "marek-safar",
+      "lead": "SamMonoRT",
       "owners": [
         "lambdageek"
       ],

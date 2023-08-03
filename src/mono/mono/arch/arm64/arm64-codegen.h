@@ -950,6 +950,20 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 
 #define arm_autibsp(p) arm_format_autib ((p), 0b0011, 0b111)
 
+/* CRC32 */
+
+#define arm_format_crc32(p, sf, C, sz, rm, rn, rd) arm_emit ((p), ((sf) << 31) | (0b11010110 << 21) | (rm) << 16 | (0b010 << 13) | ((C) << 12) | ((sz) << 10) | ((rn) << 5) | ((rd) << 0))
+
+#define arm_crc32b(p, rd, rn, rm) arm_format_crc32 ((p), 0, 0, 0b00, (rm), (rn), (rd))
+#define arm_crc32h(p, rd, rn, rm) arm_format_crc32 ((p), 0, 0, 0b01, (rm), (rn), (rd))
+#define arm_crc32w(p, rd, rn, rm) arm_format_crc32 ((p), 0, 0, 0b10, (rm), (rn), (rd))
+#define arm_crc32x(p, rd, rn, rm) arm_format_crc32 ((p), 1, 0, 0b11, (rm), (rn), (rd))
+
+#define arm_crc32cb(p, rd, rn, rm) arm_format_crc32 ((p), 0, 1, 0b00, (rm), (rn), (rd))
+#define arm_crc32ch(p, rd, rn, rm) arm_format_crc32 ((p), 0, 1, 0b01, (rm), (rn), (rd))
+#define arm_crc32cw(p, rd, rn, rm) arm_format_crc32 ((p), 0, 1, 0b10, (rm), (rn), (rd))
+#define arm_crc32cx(p, rd, rn, rm) arm_format_crc32 ((p), 1, 1, 0b11, (rm), (rn), (rd))
+
 /* C4.1.69 NEON vector ISA */
 
 // Opcode naming convention is arm_neon_<operation>_[<op>_]<elem_count><type>
@@ -1033,6 +1047,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 
 /* NEON :: move SIMD register*/
 #define arm_neon_mov(p, rd, rn) arm_neon_orr ((p), VREG_FULL, (rd), (rn), (rn))
+#define arm_neon_mov_8b(p, rd, rn) arm_neon_orr ((p), VREG_LOW, (rd), (rn), (rn))
 
 /* NEON :: AES */ 
 #define arm_neon_aes_opcode(p, size, opcode, rd, rn) arm_neon_opcode_2reg ((p), VREG_FULL, 0b00001110001010000000100000000000 | (size) << 22 | (opcode) << 12, (rd), (rn))

@@ -3,10 +3,12 @@
 
 using System.Transactions.Oletx;
 using System.Transactions.DtcProxyShim.DtcInterfaces;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Transactions.DtcProxyShim;
 
-internal sealed class ResourceManagerNotifyShim : NotificationShimBase, IResourceManagerSink
+[GeneratedComClass]
+internal sealed partial class ResourceManagerNotifyShim : NotificationShimBase, IResourceManagerSink
 {
     internal ResourceManagerNotifyShim(
         DtcProxyShimFactory shimFactory,

@@ -84,22 +84,10 @@ namespace System.Net.Http.Json
                     using HttpResponseMessage response = await responseTask.ConfigureAwait(false);
                     response.EnsureSuccessStatusCode();
 
-                    Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
-                    int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
-
-                    if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
-                    {
-                        LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
-                    }
-
                     try
                     {
-                        using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(response.Content, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false);
-
-                        // If ResponseHeadersRead wasn't used, HttpClient will have already buffered the whole response upfront. No need to check the limit again.
-                        Stream readStream = usingResponseHeadersRead
-                            ? new LengthLimitReadStream(contentStream, (int)client.MaxResponseContentBufferSize)
-                            : contentStream;
+                        using Stream readStream = await GetHttpResponseStreamAsync(client, response, usingResponseHeadersRead, cancellationToken)
+                            .ConfigureAwait(false);
 
                         return await deserializeMethod(readStream, jsonOptions, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false);
                     }
@@ -123,5 +111,31 @@ namespace System.Net.Http.Json
 
         private static Uri? CreateUri(string? uri) =>
             string.IsNullOrEmpty(uri) ? null : new Uri(uri, UriKind.RelativeOrAbsolute);
+
+        private static async Task<Stream> GetHttpResponseStreamAsync(
+            HttpClient client,
+            HttpResponseMessage response,
+            bool usingResponseHeadersRead,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
+            int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
+
+            if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
+            {
+                LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
+            }
+
+            Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(response.Content, cancellationToken)
+                .ConfigureAwait(false);
+
+            // If ResponseHeadersRead wasn't used, HttpClient will have already buffered the whole response upfront.
+            // No need to check the limit again.
+            Stream readStream = usingResponseHeadersRead
+                ? new LengthLimitReadStream(contentStream, (int)client.MaxResponseContentBufferSize)
+                : contentStream;
+
+            return readStream;
+        }
     }
 }

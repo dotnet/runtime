@@ -35,6 +35,5 @@ run:
 	/p:RunActivity=false \
 	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
-
 clean:
 	rm -rf ../../../../artifacts/bin/AndroidSampleApp

@@ -66,6 +66,9 @@ getNonPortableDistroRid()
         __uname_version=$(uname -v)
         __solaris_major_version=$(echo "${__uname_version%.*}")
         nonPortableRid=solaris."$__solaris_major_version"-"$targetArch"
+    elif [ "$targetOs" = "haiku" ]; then
+        __uname_release=$(uname -r)
+        nonPortableRid=haiku.r"$__uname_release"-"$targetArch"
     fi
 
     echo "$(echo $nonPortableRid | tr '[:upper:]' '[:lower:]')"
@@ -113,9 +116,14 @@ initDistroRidGlobal()
     if [ -z "${__PortableTargetOS:-}" ]; then
         __PortableTargetOS="$targetOs"
 
+        STRINGS="$(command -v strings || true)"
+        if [ -z "$STRINGS" ]; then
+            STRINGS="$(command -v llvm-strings || true)"
+        fi
+
         # Check for musl-based distros (e.g Alpine Linux, Void Linux).
         if "${rootfsDir}/usr/bin/ldd" --version 2>&1 | grep -q musl ||
-                strings "${rootfsDir}/usr/bin/ldd" 2>&1 | grep -q musl; then
+                ( [ -n "$STRINGS" ] && "$STRINGS" "${rootfsDir}/usr/bin/ldd" 2>&1 | grep -q musl ); then
             __PortableTargetOS="linux-musl"
         fi
     fi

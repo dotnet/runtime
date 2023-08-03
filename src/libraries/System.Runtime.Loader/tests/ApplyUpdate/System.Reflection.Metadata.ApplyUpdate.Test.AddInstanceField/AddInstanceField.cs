@@ -47,5 +47,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
 
             return Accumulator;
         }
+
+        public DateTime GetDateTime() => default(DateTime);
     }
 }

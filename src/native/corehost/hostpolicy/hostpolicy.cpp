@@ -862,6 +862,23 @@ namespace
 
         return get_deps_from_app_binary(get_directory(context->application), context->application);
     }
+
+    deps_json_t::rid_resolution_options_t get_component_rid_resolution_options(const hostpolicy_init_t& init)
+    {
+        bool read_fallback_graph = hostpolicy_context_t::should_read_rid_fallback_graph(init);
+        if (read_fallback_graph)
+        {
+            // The RID graph still has to come from the actual root framework, so get the deps file
+            // for the app's root framework and read in the graph.
+            static deps_json_t::rid_fallback_graph_t root_rid_fallback_graph =
+                deps_json_t::get_rid_fallback_graph(get_root_deps_file(init));
+            return { read_fallback_graph, &root_rid_fallback_graph };
+        }
+        else
+        {
+            return { read_fallback_graph, nullptr };
+        }
+    }
 }
 
 SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
@@ -938,10 +955,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     // TODO Review: Since we're only passing the one component framework, the resolver will not consider
     // frameworks from the app for probing paths. So potential references to paths inside frameworks will not resolve.
 
-    // The RID graph still has to come from the actual root framework, so get the deps file
-    // for the app's root framework and read in the graph.
-    static deps_json_t::rid_fallback_graph_t root_rid_fallback_graph =
-        deps_json_t::get_rid_fallback_graph(get_root_deps_file(init));
+    static deps_json_t::rid_resolution_options_t rid_resolution_options = get_component_rid_resolution_options(init);
 
     deps_resolver_t resolver(
         args,
@@ -949,7 +963,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
         /* additional_deps_serialized */ nullptr, // Additional deps - don't use those from the app, they're already in the app
         shared_store::get_paths(init.tfm, host_mode, init.host_info.host_path),
         init.probe_paths,
-        &root_rid_fallback_graph,
+        rid_resolution_options,
         true);
 
     pal::string_t resolver_errors;

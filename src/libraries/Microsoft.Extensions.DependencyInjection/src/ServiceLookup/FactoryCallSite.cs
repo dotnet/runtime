@@ -15,6 +15,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             ServiceType = serviceType;
         }
 
+        public FactoryCallSite(ResultCache cache, Type serviceType, object serviceKey, Func<IServiceProvider, object, object> factory) : base(cache)
+        {
+            Factory = sp => factory(sp, serviceKey);
+            ServiceType = serviceType;
+        }
+
         public override Type ServiceType { get; }
         public override Type? ImplementationType => null;
 

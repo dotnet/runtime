@@ -539,10 +539,6 @@ class AsyncSubprocessHelper:
         self.verbose = verbose
         self.subproc_count_queue = None
 
-        if 'win32' in sys.platform:
-            # Windows specific event-loop policy & cmd
-            asyncio.set_event_loop(asyncio.ProactorEventLoop())
-
     async def __get_item__(self, item, index, size, async_callback, *extra_args):
         """ Wrapper to the async callback which will schedule based on the queue
         """
@@ -600,7 +596,18 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
-        loop = asyncio.get_event_loop()
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            if 'win32' in sys.platform:
+                # Windows specific event-loop policy & cmd
+                loop = asyncio.ProactorEventLoop()
+            else:
+                loop = asyncio.new_event_loop()
+
+            asyncio.set_event_loop(loop)
+            
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.clear()
         os.environ.update(reset_env)
@@ -2383,10 +2390,16 @@ class SuperPMIReplayThroughputDiff:
         if self.coreclr_args.base_jit_option:
             for o in self.coreclr_args.base_jit_option:
                 base_option_flags += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                base_option_flags += "-jitoption", o
 
         diff_option_flags = []
         if self.coreclr_args.diff_jit_option:
             for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
 
         base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)

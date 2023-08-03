@@ -5,12 +5,14 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     private static int returnCode = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] testIndices = Enumerable.Range(-50, 50)
                 // also add some corner case values

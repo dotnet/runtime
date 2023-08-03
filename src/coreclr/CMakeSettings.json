@@ -12,7 +12,7 @@
       "configurationType": "Debug",
       "buildRoot": "${env.artifactsObj}\\${name}",
       "installRoot": "${env.artifactsBin}\\${name}",
-      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x64",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x64 -DCLI_CMAKE_FALLBACK_OS=win",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64" ]
@@ -23,7 +23,7 @@
       "configurationType": "Release",
       "buildRoot": "${env.artifactsObj}\\${name}",
       "installRoot": "${env.artifactsBin}\\${name}",
-      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x64",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x64 -DCLI_CMAKE_FALLBACK_OS=win",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64" ]
@@ -34,7 +34,7 @@
       "configurationType": "Debug",
       "buildRoot": "${env.artifactsObj}\\${name}",
       "installRoot": "${env.artifactsBin}\\${name}",
-      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x86",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x86 -DCLI_CMAKE_FALLBACK_OS=win",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x86" ]
@@ -45,7 +45,7 @@
       "configurationType": "Release",
       "buildRoot": "${env.artifactsObj}\\${name}",
       "installRoot": "${env.artifactsBin}\\${name}",
-      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x86",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x86 -DCLI_CMAKE_FALLBACK_OS=win",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x86" ]
@@ -56,7 +56,7 @@
       "configurationType": "Debug",
       "buildRoot": "${env.artifactsObj}\\${name}",
       "installRoot": "${env.artifactsBin}\\${name}",
-      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=arm64",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=arm64 -DCLI_CMAKE_FALLBACK_OS=win",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_arm64" ],
@@ -68,7 +68,7 @@
       "configurationType": "Release",
       "buildRoot": "${env.artifactsObj}\\${name}",
       "installRoot": "${env.artifactsBin}\\${name}",
-      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=arm64",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=arm64 -DCLI_CMAKE_FALLBACK_OS=win",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_arm64" ],

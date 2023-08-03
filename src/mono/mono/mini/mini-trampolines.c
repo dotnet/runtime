@@ -14,7 +14,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/unlocked.h>
@@ -128,6 +128,16 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 		res = mono_aot_get_static_rgctx_trampoline (ctx, addr);
 	else
 		res = mono_arch_get_static_rgctx_trampoline (jit_mm->mem_manager, ctx, addr);
+
+	/* This address might be passed to mini_init_delegate () which needs to look up the method */
+	MonoJitInfo *ji;
+
+	ji = mini_alloc_jinfo (jit_mm, MONO_SIZEOF_JIT_INFO);
+	ji->code_start = MINI_FTNPTR_TO_ADDR (res);
+	/* Doesn't matter, just need to be able to look up the exact address */
+	ji->code_size = 4;
+	ji->d.method = m;
+	mono_jit_info_table_add (ji);
 
 	jit_mm_lock (jit_mm);
 	/* Duplicates inserted while we didn't hold the lock are OK */

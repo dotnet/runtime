@@ -4,10 +4,10 @@
 import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
 import BuildConfiguration from "consts:configuration";
-import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
+import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 import type { RuntimeAPI } from "./types";
 
-import { Module, disableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
+import { Module, linkerDisableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects, is_nullish } from "./types/internal";
 import { configureEmscriptenStartup, configureWorkerStartup } from "./startup";
 
@@ -20,21 +20,22 @@ import { initializeReplacements } from "./polyfills";
 import { mono_bind_static_method } from "./net6-legacy/method-calls";
 import { export_binding_api, export_internal_api, export_mono_api } from "./net6-legacy/exports-legacy";
 import { initializeLegacyExports } from "./net6-legacy/globals";
-import { mono_wasm_stringify_as_error_with_stack } from "./logging";
+import { mono_log_warn, mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { instantiate_asset, instantiate_symbols_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
+import { forceDisposeProxies } from "./gc-handles";
 
 function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     const module = Module;
     const globals = globalObjects;
     const globalThisAny = globalThis as any;
 
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         initializeLegacyExports(globals);
     }
 
     // here we merge methods from the local objects into exported objects
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         Object.assign(globals.mono, export_mono_api());
         Object.assign(globals.binding, export_binding_api());
         Object.assign(globals.internal, export_internal_api());
@@ -45,6 +46,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         instantiate_symbols_asset,
         instantiate_asset,
         jiterpreter_dump_stats,
+        forceDisposeProxies,
     });
 
     const API = export_api();
@@ -58,7 +60,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         },
         ...API,
     });
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         Object.assign(exportedRuntimeAPI, {
             MONO: globals.mono,
             BINDING: globals.binding,
@@ -72,12 +74,12 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     if (!module.disableDotnet6Compatibility) {
         Object.assign(module, exportedRuntimeAPI);
 
-        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
             // backward compatibility
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-                console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
+                mono_log_warn("Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
                 return mono_bind_static_method(fqn, signature);
             };
         }
@@ -93,7 +95,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
                     if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
-                        console.warn(`MONO_WASM: global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
+                        mono_log_warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
                         value = provider();
                     }
                     return value;

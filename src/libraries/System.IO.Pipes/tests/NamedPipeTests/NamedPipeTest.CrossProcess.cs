@@ -103,6 +103,22 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        public void NamedPipeOptionsFirstPipeInstance_Throws_WhenNameIsUsedAcrossProcesses()
+        {
+            var uniqueServerName = PipeStreamConformanceTests.GetUniquePipeName();
+            using (var firstServer = new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 2, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance))
+            {
+                RemoteExecutor.Invoke(new Action<string>(CreateFirstPipeInstance_OtherProcess), uniqueServerName).Dispose();
+            }
+        }
+
+        private static void CreateFirstPipeInstance_OtherProcess(string uniqueServerName)
+        {
+            Assert.Throws<UnauthorizedAccessException>(() => new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 2, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance));
+        }
+
         private static void PingPong_OtherProcess(string inName, string outName)
         {
             // Create pipes with the supplied names

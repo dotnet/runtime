@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Benchstone.MDBenchI
 {
@@ -71,7 +72,8 @@ public static class MDGeneralArray
         return Bench(Iterations, s, d);
     }
 
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
         bool result = Test() && Test2();
         return (result ? 100 : -1);
     }

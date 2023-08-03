@@ -178,8 +178,8 @@ namespace System.Tests
         public void CompareTo_ObjectNotAVersion_ThrowsArgumentException(object other)
         {
             var version = new Version(1, 1);
-            AssertExtensions.Throws<ArgumentException>(null, () => version.CompareTo(other));
-            AssertExtensions.Throws<ArgumentException>(null, () => ((IComparable)version).CompareTo(other));
+            AssertExtensions.Throws<ArgumentException>("version", () => version.CompareTo(other));
+            AssertExtensions.Throws<ArgumentException>("version", () => ((IComparable)version).CompareTo(other));
         }
 
         public static IEnumerable<object[]> Equals_TestData()

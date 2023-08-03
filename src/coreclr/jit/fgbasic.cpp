@@ -167,7 +167,7 @@ void Compiler::fgInit()
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
-    fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
+    fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
 #endif
 
     fgHasSwitch                  = false;
@@ -1840,7 +1840,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                 if ((jmpDist == 0) &&
                     (opcode == CEE_LEAVE || opcode == CEE_LEAVE_S || opcode == CEE_BR || opcode == CEE_BR_S) &&
-                    opts.CanBeInstrumentedOrIsOptimized())
+                    opts.DoEarlyBlockMerging())
                 {
                     break; /* NOP */
                 }
@@ -2989,7 +2989,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
                 jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
-                if ((jmpDist == 0) && (opcode == CEE_BR || opcode == CEE_BR_S) && opts.CanBeInstrumentedOrIsOptimized())
+                if ((jmpDist == 0) && (opcode == CEE_BR || opcode == CEE_BR_S) && opts.DoEarlyBlockMerging())
                 {
                     continue; /* NOP */
                 }
@@ -4664,8 +4664,8 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 
         IL_OFFSET splitPointILOffset = fgFindBlockILOffset(newBlock);
 
-        curr->bbCodeOffsEnd  = splitPointILOffset;
-        newBlock->bbCodeOffs = splitPointILOffset;
+        curr->bbCodeOffsEnd  = max(curr->bbCodeOffs, splitPointILOffset);
+        newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
     }
     else
     {
@@ -4781,11 +4781,11 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
             }
         }
 
-        curr->bbCodeOffsEnd = splitPointILOffset;
+        curr->bbCodeOffsEnd = max(curr->bbCodeOffs, splitPointILOffset);
 
         // Also use this as the beginning offset of the next block. Presumably we could/should
         // look to see if the first node is a GT_IL_OFFSET node, and use that instead.
-        newBlock->bbCodeOffs = splitPointILOffset;
+        newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
     }
     else
     {
@@ -6042,12 +6042,18 @@ bool Compiler::fgMightHaveLoop()
     {
         BitVecOps::AddElemD(&blockVecTraits, blocksSeen, block->bbNum);
 
-        for (BasicBlock* const succ : block->GetAllSuccs(this))
-        {
+        BasicBlockVisit result = block->VisitAllSuccs(this, [&](BasicBlock* succ) {
             if (BitVecOps::IsMember(&blockVecTraits, blocksSeen, succ->bbNum))
             {
-                return true;
+                return BasicBlockVisit::Abort;
             }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        if (result == BasicBlockVisit::Abort)
+        {
+            return true;
         }
     }
     return false;

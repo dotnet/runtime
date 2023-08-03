@@ -37,7 +37,7 @@ namespace Microsoft.Interop
             int hash = 0;
             foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in Modes)
             {
-                hash ^= mode.Key.GetHashCode() ^ mode.Value.GetHashCode();
+                hash = HashCode.Combine(hash, mode.Key, mode.Value);
             }
             return hash;
         }
@@ -526,7 +526,7 @@ namespace Microsoft.Interop
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
                 HasState: false,
                 shape,
-                nativeType.IsStrictlyBlittable(),
+                nativeType.IsStrictlyBlittableInContext(compilation),
                 bufferElementType,
                 collectionElementTypeInfo,
                 collectionElementMarshallingInfo);
@@ -606,7 +606,7 @@ namespace Microsoft.Interop
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
                 HasState: true,
                 shape,
-                nativeType.IsStrictlyBlittable(),
+                nativeType.IsStrictlyBlittableInContext(compilation),
                 bufferElementType,
                 CollectionElementType: collectionElementTypeInfo,
                 CollectionElementMarshallingInfo: collectionElementMarshallingInfo);

@@ -2,6 +2,7 @@
 
 - Install [Visual Studio Code](https://code.visualstudio.com/)
 - Install the [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp)
+- Optionally install the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit)
 - Open the folder containing the source you want to debug in VS Code - i.e., if you are debugging a test failure in System.Net.Sockets, open `runtime/src/libraries/System.Net.Sockets`
 - Open the debug window: `ctrl-shift-D` or click on the button on the left
 - Click "create a launch.json file", select the option that includes `.NET Core` from the selection dropdown

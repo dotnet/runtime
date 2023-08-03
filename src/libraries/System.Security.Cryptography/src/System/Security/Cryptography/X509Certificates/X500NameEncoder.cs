@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.X509Certificates
             rdnValue.IsEmpty ||
             IsQuotableWhitespace(rdnValue[0]) ||
             IsQuotableWhitespace(rdnValue[^1]) ||
-            rdnValue.IndexOfAny(s_needsQuotingChars) >= 0;
+            rdnValue.ContainsAny(s_needsQuotingChars);
 
         private static bool IsQuotableWhitespace(char c)
         {

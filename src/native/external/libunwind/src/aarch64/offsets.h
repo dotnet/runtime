@@ -47,3 +47,10 @@
 #define LINUX_SC_SP_OFF         0x100
 #define LINUX_SC_PC_OFF         0x108
 #define LINUX_SC_PSTATE_OFF     0x110
+#define LINUX_SC_RESERVED_OFF   0x120
+
+// struct _aarch64_ctx { __u32 magic; __u32 size; };
+// struct sve_context { struct _aarch64_ctx head; __u16 vl; __u16 __reserved[3]; };
+#define LINUX_SC_RESERVED_MAGIC_OFF     0x0
+#define LINUX_SC_RESERVED_SIZE_OFF      0x4
+#define LINUX_SC_RESERVED_SVE_VL_OFF    0x8

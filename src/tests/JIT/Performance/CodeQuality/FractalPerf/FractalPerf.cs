@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace FractalPerf
 {
@@ -148,7 +149,8 @@ namespace FractalPerf
             return result;
         }
 
-        public static int Main() {
+        [Fact]
+        public static int TestEntryPoint() {
             bool result = TestBase();
             return (result ? 100 : -1);
         }

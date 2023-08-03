@@ -6,10 +6,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace System.Collections.Immutable
 {
+    [CollectionBuilder(typeof(ImmutableArray), nameof(ImmutableArray.Create))]
     public readonly partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable, IImmutableList<T>
     {
         /// <summary>
@@ -278,6 +280,20 @@ namespace System.Collections.Immutable
         public bool Contains(T item)
         {
             return this.IndexOf(item) >= 0;
+        }
+
+        /// <summary>
+        /// Determines whether the specified item exists in the array.
+        /// </summary>
+        /// <param name="item">The item to search for.</param>
+        /// <param name="equalityComparer">
+        /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+        /// </param>
+        /// <returns><c>true</c> if an equal value was found in the array; <c>false</c> otherwise.</returns>
+        public bool Contains(T item, IEqualityComparer<T>? equalityComparer)
+        {
+            return this.IndexOf(item, equalityComparer) >= 0;
         }
 
         /// <summary>

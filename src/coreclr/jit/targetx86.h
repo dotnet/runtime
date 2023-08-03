@@ -116,8 +116,6 @@
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
   #define ZMM_REGSIZE_BYTES        64      // ZMM register size in bytes
 
-  #define ZMM_RECOMMENDED_THRESHOLD 128    // A general recommendation to use ZMM for data starting from this size in bytes
-
   #define REGNUM_BITS              6       // number of bits in a REG_*
 
   #define REGSIZE_BYTES            4       // number of bytes in one register

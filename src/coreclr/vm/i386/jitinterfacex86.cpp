@@ -22,6 +22,8 @@
 #include "eventtrace.h"
 #include "threadsuspend.h"
 
+#include <minipal/cpuid.h>
+
 #if defined(_DEBUG) && !defined (WRITE_BARRIER_CHECK)
 #define WRITE_BARRIER_CHECK 1
 #endif
@@ -962,18 +964,11 @@ void InitJITHelpers1()
     // Get CPU features and check for SSE2 support.
     // This code should eventually probably be moved into codeman.cpp,
     // where we set the cpu feature flags for the JIT based on CPU type and features.
-    DWORD dwCPUFeaturesECX;
-    DWORD dwCPUFeaturesEDX;
+    int cpuFeatures[4];
+    __cpuid(cpuFeatures, 1);
 
-    __asm
-    {
-        pushad
-        mov eax, 1
-        cpuid
-	mov dwCPUFeaturesECX, ecx
-        mov dwCPUFeaturesEDX, edx
-        popad
-    }
+    DWORD dwCPUFeaturesECX = cpuFeatures[2];
+    DWORD dwCPUFeaturesEDX = cpuFeatures[3];
 
     //  If bit 26 (SSE2) is set, then we can use the SSE2 flavors
     //  and faster x87 implementation for the P4 of Dbl2Lng.

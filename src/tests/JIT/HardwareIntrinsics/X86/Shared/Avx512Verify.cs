@@ -88,6 +88,40 @@ namespace JIT.HardwareIntrinsics.X86
             return x - TFloat.Round(TFloat.ScaleB(TFloat.One, m) * x) * TFloat.ScaleB(TFloat.One, -m);
         }
 
+        public static T Shuffle2x128<T>(T[] left, T[] right, byte control, int i)
+            where T : struct
+        {
+            int partsPerV128 = left.Length / 2;
+            int offset = i % partsPerV128;
+            int selected = (control >> (i / partsPerV128)) & 0b1;
+
+            if (i < (left.Length / 2))
+            {
+                return left[(selected * partsPerV128) + offset];
+            }
+            else
+            {
+                return right[(selected * partsPerV128) + offset];
+            }
+        }
+
+        public static T Shuffle4x128<T>(T[] left, T[] right, byte control, int i)
+            where T : struct
+        {
+            int partsPerV128 = left.Length / 4;
+            int offset = i % partsPerV128;
+            int selected = (control >> (i / partsPerV128 * 2)) & 0b11;
+
+            if (i < (left.Length / 2))
+            {
+                return left[(selected * partsPerV128) + offset];
+            }
+            else
+            {
+                return right[(selected * partsPerV128) + offset];
+            }
+        }
+
         public static ushort SumAbsoluteDifferencesInBlock32(byte[] left, byte[] right, byte control, int i)
         {
             int a = i % 4;

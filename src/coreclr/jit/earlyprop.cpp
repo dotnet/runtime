@@ -362,7 +362,7 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 
     // Track along the use-def chain to get the array length
     LclSsaVarDsc*        ssaVarDsc   = lvaTable[lclNum].GetPerSsaData(ssaNum);
-    GenTreeLclVarCommon* ssaDefStore = ssaVarDsc->GetAssignment();
+    GenTreeLclVarCommon* ssaDefStore = ssaVarDsc->GetDefNode();
 
     // Incoming parameters or live-in variables don't have actual definition tree node for
     // their FIRST_SSA_NUM. Definitions induced by calls do not record the store node. See
@@ -565,7 +565,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
             return nullptr;
         }
 
-        GenTreeLclVarCommon* defNode = defLoc->GetAssignment();
+        GenTreeLclVarCommon* defNode = defLoc->GetDefNode();
         if ((defNode == nullptr) || !defNode->OperIs(GT_STORE_LCL_VAR) || (defNode->GetLclNum() != lclNum))
         {
             return nullptr;

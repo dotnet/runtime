@@ -387,7 +387,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads UTF8 encoded string starting at the current position.
+        /// Reads UTF-8 encoded string starting at the current position.
         /// </summary>
         /// <param name="byteCount">The number of bytes to read.</param>
         /// <returns>The string.</returns>
@@ -400,7 +400,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads UTF16 (little-endian) encoded string starting at the current position.
+        /// Reads UTF-16 (little-endian) encoded string starting at the current position.
         /// </summary>
         /// <param name="byteCount">The number of bytes to read.</param>
         /// <returns>The string.</returns>
@@ -578,7 +578,7 @@ namespace System.Reflection.Metadata
 
         /// <summary>
         /// Reads a string encoded as a compressed integer containing its length followed by
-        /// its contents in UTF8. Null strings are encoded as a single 0xFF byte.
+        /// its contents in UTF-8. Null strings are encoded as a single 0xFF byte.
         /// </summary>
         /// <remarks>Defined as a 'SerString' in the ECMA CLI specification.</remarks>
         /// <returns>String value or null.</returns>

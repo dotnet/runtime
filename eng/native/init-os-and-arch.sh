@@ -8,7 +8,7 @@ if command -v getprop && getprop ro.product.system.model 2>&1 | grep -qi android
 fi
 
 case "$OSName" in
-freebsd|linux|netbsd|openbsd|sunos|android)
+freebsd|linux|netbsd|openbsd|sunos|android|haiku)
     os="$OSName" ;;
 darwin)
     os=osx ;;

@@ -19,6 +19,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Checked user-defined operators](#checked-user-defined-operators)
 - [Atomic reads and writes](#atomic-reads-and-writes)
 - [Backward branch constraints](#backward-branch-constraints)
+- [Transient pointers](#transient-pointers)
 - [API documentation](#api-documentation)
 - [Debug Interchange Format](#debug-interchange-format)
 
@@ -1048,6 +1049,12 @@ A conforming CLI shall guarantee that read and write access of *built-in primiti
 ## Backward branch constraints
 
 Section "II.1.7.5 Backward branch constraints" is deleted. These constraints were not enforced by any mainstream .NET runtime and they are not respected by .NET compilers. It means that it is not possible to infer the exact state of the evaluation stack at every instruction with a single forward-pass through the CIL instruction stream.
+
+## Transient pointers
+
+The paragraphs mentioning "transient pointers" in section "I.12.3.2.1 The evaluation stack" are deleted. The transient pointers seemed to be a concept in the very early versions of the spec that was deleted in the final version of the spec and this one place was missed.
+
+Instead, note is added to sections "III.3.39 ldarga" and "III.3.44 ldloca": The arguments / local variables are stored in unmanaged memory. The address of argument / local variable can be converted to unmanaged pointer without explicit pinning.
 
 ## API documentation
 

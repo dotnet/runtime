@@ -37,7 +37,7 @@ if(CLR_CMAKE_HOST_UNIX)
   endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
 endif (CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_HOST_ALPINE_LINUX)
+if(CLR_CMAKE_TARGET_LINUX_MUSL)
     # Fix up the main thread stack size for MUSL to more reasonable size.
     # TODO: https://github.com/dotnet/runtimelab/issues/791
     add_definitions(-DENSURE_PRIMARY_STACK_SIZE)

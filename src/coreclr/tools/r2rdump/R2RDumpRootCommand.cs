@@ -8,127 +8,127 @@ using System.IO;
 
 namespace R2RDump
 {
-    internal sealed class R2RDumpRootCommand : RootCommand
+    internal sealed class R2RDumpRootCommand : CliRootCommand
     {
-        public Option<List<string>> In { get; } =
-            new(new[] { "--in", "-i" }, result => Helpers.BuildPathList(result.Tokens), true, "Input file(s) to dump. Expects them to by ReadyToRun images");
-        public Option<FileInfo> Out { get; } =
-            new(new[] { "--out", "-o" }, "Output file path. Dumps everything to the specified file except for help message and exception messages");
-        public Option<bool> Raw { get; } =
-            new(new[] { "--raw" }, "Dump the raw bytes of each section or runtime function");
-        public Option<bool> Header { get; } =
-            new(new[] { "--header" }, "Dump R2R header");
-        public Option<bool> Disasm { get; } =
-            new(new[] { "--disasm", "-d" }, "Show disassembly of methods or runtime functions");
-        public Option<bool> Naked { get; } =
-            new(new[] { "--naked" }, "Naked dump suppresses most compilation details like placement addresses");
-        public Option<bool> HideOffsets { get; } =
-            new(new[] { "--hide-offsets", "--ho" }, "Hide offsets in naked disassembly");
+        public CliOption<List<string>> In { get; } =
+            new("--in", "-i") { CustomParser = result => Helpers.BuildPathList(result.Tokens), DefaultValueFactory = result => Helpers.BuildPathList(result.Tokens), Description = "Input file(s) to dump. Expects them to by ReadyToRun images" };
+        public CliOption<FileInfo> Out { get; } =
+            new("--out", "-o") { Description = "Output file path. Dumps everything to the specified file except for help message and exception messages" };
+        public CliOption<bool> Raw { get; } =
+            new("--raw") { Description = "Dump the raw bytes of each section or runtime function" };
+        public CliOption<bool> Header { get; } =
+            new("--header") { Description = "Dump R2R header" };
+        public CliOption<bool> Disasm { get; } =
+            new("--disasm", "-d") { Description = "Show disassembly of methods or runtime functions" };
+        public CliOption<bool> Naked { get; } =
+            new("--naked") { Description = "Naked dump suppresses most compilation details like placement addresses" };
+        public CliOption<bool> HideOffsets { get; } =
+            new("--hide-offsets", "--ho") { Description = "Hide offsets in naked disassembly" };
 
-        public Option<string[]> Query { get; } =
-            new(new[] { "--query", "-q" }, "Query method by exact name, signature, row ID or token");
-        public Option<string[]> Keyword { get; } =
-            new(new[] { "--keyword", "-k" }, "Search method by keyword");
-        public Option<string[]> RuntimeFunction { get; } =
-            new(new[] { "--runtimefunction", "-f" }, "Get one runtime function by id or relative virtual address");
-        public Option<string[]> Section { get; } =
-            new(new[] { "--section", "-s" }, "Get section by keyword");
+        public CliOption<string[]> Query { get; } =
+            new("--query", "-q") { Description = "Query method by exact name, signature, row ID or token" };
+        public CliOption<string[]> Keyword { get; } =
+            new("--keyword", "-k") { Description = "Search method by keyword" };
+        public CliOption<string[]> RuntimeFunction { get; } =
+            new("--runtimefunction", "-f") { Description = "Get one runtime function by id or relative virtual address" };
+        public CliOption<string[]> Section { get; } =
+            new("--section", "-s") { Description = "Get section by keyword" };
 
-        public Option<bool> Unwind { get; } =
-            new(new[] { "--unwind" }, "Dump unwindInfo");
-        public Option<bool> GC { get; } =
-            new(new[] { "--gc" }, "Dump gcInfo and slot table");
-        public Option<bool> Pgo { get; } =
-            new(new[] { "--pgo" }, "Dump embedded pgo instrumentation data");
-        public Option<bool> SectionContents { get; } =
-            new(new[] { "--sectionContents", "--sc" }, "Dump section contents");
-        public Option<bool> EntryPoints { get; } =
-            new(new[] { "--entrypoints", "-e" }, "Dump list of method / instance entrypoints in the R2R file");
-        public Option<bool> Normalize { get; } =
-            new(new[] { "--normalize", "-n" }, "Normalize dump by sorting the various tables and methods (default = unsorted i.e. file order)");
-        public Option<bool> HideTransitions { get; } =
-            new(new[] { "--hide-transitions", "--ht" }, "Don't include GC transitions in disassembly output");
-        public Option<bool> Verbose { get; } =
-            new(new[] { "--verbose" }, "Dump disassembly, unwindInfo, gcInfo and sectionContents");
-        public Option<bool> Diff { get; } =
-            new(new[] { "--diff" }, "Compare two R2R images");
-        public Option<bool> DiffHideSameDisasm { get; } =
-            new(new[] { "--diff-hide-same-disasm" }, "In matching method diff dump, hide functions with identical disassembly");
+        public CliOption<bool> Unwind { get; } =
+            new("--unwind") { Description = "Dump unwindInfo" };
+        public CliOption<bool> GC { get; } =
+            new("--gc") { Description = "Dump gcInfo and slot table" };
+        public CliOption<bool> Pgo { get; } =
+            new("--pgo") { Description = "Dump embedded pgo instrumentation data" };
+        public CliOption<bool> SectionContents { get; } =
+            new("--sectionContents", "--sc") { Description = "Dump section contents" };
+        public CliOption<bool> EntryPoints { get; } =
+            new("--entrypoints", "-e") { Description = "Dump list of method / instance entrypoints in the R2R file" };
+        public CliOption<bool> Normalize { get; } =
+            new("--normalize", "-n") { Description = "Normalize dump by sorting the various tables and methods (default = unsorted i.e. file order)" };
+        public CliOption<bool> HideTransitions { get; } =
+            new("--hide-transitions", "--ht") { Description = "Don't include GC transitions in disassembly output" };
+        public CliOption<bool> Verbose { get; } =
+            new("--verbose") { Description = "Dump disassembly, unwindInfo, gcInfo and sectionContents" };
+        public CliOption<bool> Diff { get; } =
+            new("--diff") { Description = "Compare two R2R images" };
+        public CliOption<bool> DiffHideSameDisasm { get; } =
+            new("--diff-hide-same-disasm") { Description = "In matching method diff dump, hide functions with identical disassembly" };
 
-        public Option<bool> CreatePDB { get; } =
-            new(new[] { "--create-pdb" }, "Create PDB");
-        public Option<string> PdbPath { get; } =
-            new(new[] { "--pdb-path" }, "PDB output path for --create-pdb");
+        public CliOption<bool> CreatePDB { get; } =
+            new("--create-pdb") { Description = "Create PDB" };
+        public CliOption<string> PdbPath { get; } =
+            new("--pdb-path") { Description = "PDB output path for --create-pdb" };
 
-        public Option<bool> CreatePerfmap { get; } =
-            new(new[] { "--create-perfmap" }, "Create PerfMap");
-        public Option<string> PerfmapPath { get; } =
-            new(new[] { "--perfmap-path" }, "PerfMap output path for --create-perfmap");
-        public Option<int> PerfmapFormatVersion { get; } =
-            new(new[] { "--perfmap-format-version" }, () => ILCompiler.Diagnostics.PerfMapWriter.CurrentFormatVersion, "PerfMap format version for --create-perfmap");
+        public CliOption<bool> CreatePerfmap { get; } =
+            new("--create-perfmap") { Description = "Create PerfMap" };
+        public CliOption<string> PerfmapPath { get; } =
+            new("--perfmap-path") { Description = "PerfMap output path for --create-perfmap" };
+        public CliOption<int> PerfmapFormatVersion { get; } =
+            new("--perfmap-format-version") { DefaultValueFactory = _ => ILCompiler.Diagnostics.PerfMapWriter.CurrentFormatVersion, Description = "PerfMap format version for --create-perfmap" };
 
-        public Option<List<string>> Reference { get; } =
-            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathList(result.Tokens), true, "Explicit reference assembly files");
-        public Option<DirectoryInfo[]> ReferencePath { get; } =
-            new(new[] { "--referencePath", "--rp" }, "Search paths for reference assemblies");
+        public CliOption<List<string>> Reference { get; } =
+            new("--reference", "-r") { CustomParser = result => Helpers.BuildPathList(result.Tokens), DefaultValueFactory = result => Helpers.BuildPathList(result.Tokens), Description = "Explicit reference assembly files" };
+        public CliOption<DirectoryInfo[]> ReferencePath { get; } =
+            new("--referencePath", "--rp") { Description = "Search paths for reference assemblies" };
 
-        public Option<bool> SignatureBinary { get; } =
-            new(new[] { "--signatureBinary", "--sb" }, "Append signature binary to its textual representation");
-        public Option<bool> InlineSignatureBinary { get; } =
-            new(new[] { "--inlineSignatureBinary", "--isb" }, "Embed binary signature into its textual representation");
-        public Option<bool> ValidateDebugInfo { get; } =
-            new(new[] { "--validateDebugInfo", "--val" }, "Validate functions reported debug info.");
+        public CliOption<bool> SignatureBinary { get; } =
+            new("--signatureBinary", "--sb") { Description = "Append signature binary to its textual representation" };
+        public CliOption<bool> InlineSignatureBinary { get; } =
+            new("--inlineSignatureBinary", "--isb") { Description = "Embed binary signature into its textual representation" };
+        public CliOption<bool> ValidateDebugInfo { get; } =
+            new("--validateDebugInfo", "--val") { Description = "Validate functions reported debug info." };
 
         public ParseResult Result;
 
         public R2RDumpRootCommand()
             : base("Parses and outputs the contents of a ReadyToRun image")
         {
-            AddOption(In);
-            AddOption(Out);
-            AddOption(Raw);
-            AddOption(Header);
-            AddOption(Disasm);
-            AddOption(Naked);
-            AddOption(HideOffsets);
+            Options.Add(In);
+            Options.Add(Out);
+            Options.Add(Raw);
+            Options.Add(Header);
+            Options.Add(Disasm);
+            Options.Add(Naked);
+            Options.Add(HideOffsets);
 
-            AddOption(Query);
-            AddOption(Keyword);
-            AddOption(RuntimeFunction);
-            AddOption(Section);
+            Options.Add(Query);
+            Options.Add(Keyword);
+            Options.Add(RuntimeFunction);
+            Options.Add(Section);
 
-            AddOption(Unwind);
-            AddOption(GC);
-            AddOption(Pgo);
-            AddOption(SectionContents);
-            AddOption(EntryPoints);
-            AddOption(Normalize);
-            AddOption(HideTransitions);
-            AddOption(Verbose);
-            AddOption(Diff);
-            AddOption(DiffHideSameDisasm);
+            Options.Add(Unwind);
+            Options.Add(GC);
+            Options.Add(Pgo);
+            Options.Add(SectionContents);
+            Options.Add(EntryPoints);
+            Options.Add(Normalize);
+            Options.Add(HideTransitions);
+            Options.Add(Verbose);
+            Options.Add(Diff);
+            Options.Add(DiffHideSameDisasm);
 
-            AddOption(CreatePDB);
-            AddOption(PdbPath);
+            Options.Add(CreatePDB);
+            Options.Add(PdbPath);
 
-            AddOption(CreatePerfmap);
-            AddOption(PerfmapPath);
-            AddOption(PerfmapFormatVersion);
+            Options.Add(CreatePerfmap);
+            Options.Add(PerfmapPath);
+            Options.Add(PerfmapFormatVersion);
 
-            AddOption(Reference);
-            AddOption(ReferencePath);
+            Options.Add(Reference);
+            Options.Add(ReferencePath);
 
-            AddOption(SignatureBinary);
-            AddOption(InlineSignatureBinary);
-            AddOption(ValidateDebugInfo);
+            Options.Add(SignatureBinary);
+            Options.Add(InlineSignatureBinary);
+            Options.Add(ValidateDebugInfo);
 
-            this.SetHandler(context =>
+            SetAction(parseResult =>
             {
-                Result = context.ParseResult;
+                Result = parseResult;
 
                 try
                 {
-                    context.ExitCode = new Program(this).Run();
+                    return new Program(this).Run();
                 }
                 catch (Exception e)
                 {
@@ -140,7 +140,7 @@ namespace R2RDump
 
                     Console.ResetColor();
 
-                    context.ExitCode = 1;
+                    return 1;
                 }
             });
         }

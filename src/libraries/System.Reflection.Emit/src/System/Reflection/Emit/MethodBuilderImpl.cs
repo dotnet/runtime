@@ -3,24 +3,23 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
-using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
     internal sealed class MethodBuilderImpl : MethodBuilder
     {
-        private readonly Type _returnType;
-        private readonly Type[]? _parameterTypes;
+        private Type _returnType;
+        private Type[]? _parameterTypes;
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly CallingConventions _callingConventions;
         private readonly TypeBuilderImpl _declaringType;
         private MethodAttributes _attributes;
         private MethodImplAttributes _methodImplFlags;
+        private GenericTypeParameterBuilderImpl[]? _typeParameters;
 
         internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
@@ -49,11 +48,43 @@ namespace System.Reflection.Emit
             _methodImplFlags = MethodImplAttributes.IL;
         }
 
-        internal BlobBuilder GetMethodSignatureBlob() =>
-            MetadataSignatureHelper.MethodSignatureEncoder(_module, _parameterTypes, ReturnType, !IsStatic);
+        internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.MethodSignatureEncoder(_module,
+            _parameterTypes, ReturnType, GetSignatureConvention(_callingConventions), GetGenericArguments().Length, !IsStatic);
 
+        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConventions)
+        {
+            // TODO: find out and handle other SignatureCallingConvention scenarios
+            SignatureCallingConvention convention = SignatureCallingConvention.Default;
+            if ((callingConventions & CallingConventions.HasThis) != 0 ||
+                (callingConventions & CallingConventions.ExplicitThis) != 0)
+            {
+                convention |= SignatureCallingConvention.ThisCall;
+            }
+
+            if ((callingConventions & CallingConventions.VarArgs) != 0)
+            {
+                convention |= SignatureCallingConvention.VarArgs;
+            }
+
+            return convention;
+        }
         protected override bool InitLocalsCore { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
+        protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
+        {
+            if (_typeParameters != null)
+                throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
+
+            var typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
+            for (int i = 0; i < names.Length; i++)
+            {
+                string name = names[i];
+                ArgumentNullException.ThrowIfNull(names, nameof(names));
+                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this);
+            }
+
+            return _typeParameters = typeParameters;
+        }
+
         protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
         {
             if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
@@ -66,6 +97,7 @@ namespace System.Reflection.Emit
             _parameters[position] = parameter;
             return parameter;
         }
+
         protected override ILGenerator GetILGeneratorCore(int size) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
@@ -106,15 +138,32 @@ namespace System.Reflection.Emit
             _methodImplFlags = attributes;
         }
         protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
-            Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();
+            Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
+        {
+            if (returnType != null)
+            {
+                _returnType = returnType;
+            }
+
+            if (parameterTypes != null)
+            {
+                _parameterTypes = new Type[parameterTypes.Length];
+                _parameters = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
+                }
+            }
+            // TODO: Add support for other parameters: returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypeRequiredCustomModifiers and parameterTypeOptionalCustomModifiers
+        }
         public override string Name => _name;
         public override MethodAttributes Attributes => _attributes;
         public override CallingConventions CallingConvention => _callingConventions;
         public override TypeBuilder DeclaringType => _declaringType;
         public override Module Module => _module;
-        public override bool ContainsGenericParameters { get => throw new NotSupportedException(SR.NotSupported_DynamicModule); }
-        public override bool IsGenericMethod { get => throw new NotImplementedException(); }
-        public override bool IsGenericMethodDefinition { get => throw new NotImplementedException(); }
+        public override bool ContainsGenericParameters => throw new NotSupportedException();
+        public override bool IsGenericMethod => _typeParameters != null;
+        public override bool IsGenericMethodDefinition => _typeParameters != null;
         public override bool IsSecurityCritical => true;
         public override bool IsSecuritySafeCritical => false;
         public override bool IsSecurityTransparent => false;
@@ -131,11 +180,9 @@ namespace System.Reflection.Emit
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
-        public override Type[] GetGenericArguments()
-            => throw new NotImplementedException();
+        public override Type[] GetGenericArguments() => _typeParameters ?? Type.EmptyTypes;
 
-        public override MethodInfo GetGenericMethodDefinition()
-            => throw new NotImplementedException();
+        public override MethodInfo GetGenericMethodDefinition() => !IsGenericMethod ? throw new InvalidOperationException() : this;
 
         public override int GetHashCode()
             => throw new NotImplementedException();

@@ -114,5 +114,14 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="RemoveOOBPackageReference" AfterTargets="ResolvePackageAssets">
+
+    <!-- Tests have some dependencies that use the System.Text.Json package (HostModel, DependencyModel),
+         but the tests should just use the framework on which they are run. Explicitly remove the item. -->
+    <ItemGroup>
+      <RuntimeCopyLocalItems Remove="@(RuntimeCopyLocalItems)" Condition="'%(NuGetPackageId)' == 'System.Text.Json'" />
+    </ItemGroup>
+  </Target>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>

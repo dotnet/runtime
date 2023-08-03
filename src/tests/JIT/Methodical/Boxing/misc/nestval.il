@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'nestval' { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace BoxTest_nestval_il
 {

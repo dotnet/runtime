@@ -111,6 +111,7 @@ HRESULT EEConfig::Init()
     iJitOptimizeType = OPT_DEFAULT;
     fJitFramed = false;
     fJitMinOpts = false;
+    fJitEnableOptionalRelocs = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fNgenBindOptimizeNonGac = false;
@@ -543,6 +544,7 @@ HRESULT EEConfig::sync()
 
     fJitFramed = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitFramed) != 0);
     fJitMinOpts = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JITMinOpts) == 1);
+    fJitEnableOptionalRelocs = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitEnableOptionalRelocs) == 1);
     iJitOptimizeType      =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
 
@@ -771,24 +773,24 @@ HRESULT EEConfig::sync()
             tieredCompilation_CallCountingDelayMs = 0;
         }
 
+    #if defined(FEATURE_PGO)
+        fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
+
+        // Also, consider DynamicPGO enabled if WritePGOData is set
+        fTieredPGO |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) != 0;
+        tieredPGO_InstrumentOnlyHotCode = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode) == 1;
+
+        // We need quick jit for TieredPGO
+        if (!fTieredCompilation_QuickJit)
+        {
+            fTieredPGO = false;
+        }
+    #endif
+
         if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
         {
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
-    }
-#endif
-
-#if defined(FEATURE_PGO)
-    fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
-
-    // Also, consider DynamicPGO enabled if WritePGOData is set
-    fTieredPGO |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) != 0;
-    tieredPGO_InstrumentOnlyHotCode = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode) == 1;
-
-    // We need quick jit for TieredPGO
-    if (!fTieredCompilation_QuickJit)
-    {
-        fTieredPGO = false;
     }
 #endif
 

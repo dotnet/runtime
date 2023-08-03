@@ -1,6 +1,6 @@
 .assembly extern mscorlib {}
 .assembly extern xunit.core {}
-.assembly volatilldind { }
+.assembly ASSEMBLY_NAME { }
 .method public static void f()
 {
 .locals init (int32* V_0)

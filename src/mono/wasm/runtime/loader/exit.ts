@@ -1,37 +1,69 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, runtimeHelpers } from "./globals";
-import { consoleWebSocket } from "./logging";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix, mono_log_warn } from "./logging";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function abort_startup(reason: any, should_exit: boolean): void {
-    if (loaderHelpers.diagnosticTracing) console.trace("MONO_WASM: abort_startup");
-    loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
-    loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
-    loaderHelpers.wasmDownloadPromise.promise_control.reject(reason);
-    loaderHelpers.runtimeModuleLoaded.promise_control.reject(reason);
-    if (runtimeHelpers.dotnetReady) {
-        runtimeHelpers.dotnetReady.promise_control.reject(reason);
-        runtimeHelpers.memorySnapshotSkippedOrDone.promise_control.reject(reason);
-        runtimeHelpers.afterInstantiateWasm.promise_control.reject(reason);
-        runtimeHelpers.beforePreInit.promise_control.reject(reason);
-        runtimeHelpers.afterPreInit.promise_control.reject(reason);
-        runtimeHelpers.afterPreRun.promise_control.reject(reason);
-        runtimeHelpers.beforeOnRuntimeInitialized.promise_control.reject(reason);
-        runtimeHelpers.afterOnRuntimeInitialized.promise_control.reject(reason);
-        runtimeHelpers.afterPostRun.promise_control.reject(reason);
-    }
-    if (typeof reason !== "object" || reason.silent !== true) {
-        if (should_exit || ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
-            mono_exit(1, reason);
-        }
-        throw reason;
-    }
+export function is_exited() {
+    return loaderHelpers.exitCode !== undefined;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function is_runtime_running() {
+    return runtimeHelpers.runtimeReady && !is_exited();
+}
+
+export function assert_runtime_running() {
+    mono_assert(runtimeHelpers.runtimeReady, "mono runtime didn't start yet");
+    mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `mono runtime already exited with ${loaderHelpers.exitCode}`);
+}
+
+// this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
 export function mono_exit(exit_code: number, reason?: any): void {
+    // unify shape of the reason object
+    const is_object = reason && typeof reason === "object";
+    exit_code = (is_object && typeof reason.status === "number") ? reason.status : exit_code;
+    const message = (is_object && typeof reason.message === "string")
+        ? reason.message
+        : "" + reason;
+    reason = is_object
+        ? reason
+        : (runtimeHelpers.ExitStatus
+            ? new runtimeHelpers.ExitStatus(exit_code)
+            : new Error("Exit with code " + exit_code + " " + message));
+    reason.status = exit_code;
+    if (!reason.message) {
+        reason.message = message;
+    }
+
+    // force stack property to be generated before we shut down managed code, or create current stack if it doesn't exist
+    if (!reason.stack) {
+        reason.stack = new Error().stack || "";
+    }
+
+    // don't report this error twice
+    reason.silent = true;
+
+    if (!is_exited()) {
+        try {
+            if (!runtimeHelpers.runtimeReady) {
+                mono_log_debug("abort_startup, reason: " + reason);
+                abort_promises(reason);
+            }
+            logErrorOnExit(exit_code, reason);
+            appendElementOnExit(exit_code);
+            if (runtimeHelpers.jiterpreter_dump_stats) runtimeHelpers.jiterpreter_dump_stats(false);
+            if (exit_code === 0 && loaderHelpers.config?.interopCleanupOnExit) {
+                runtimeHelpers.forceDisposeProxies(true, true);
+            }
+        }
+        catch (err) {
+            mono_log_warn("mono_exit failed", err);
+            // don't propagate any failures
+        }
+
+        loaderHelpers.exitCode = exit_code;
+    }
+
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
         (async () => {
@@ -44,13 +76,25 @@ export function mono_exit(exit_code: number, reason?: any): void {
         })();
         // we need to throw, rather than let the caller continue the normal execution
         // in the middle of some code, which expects this to stop the process
-        throw runtimeHelpers.ExitStatus
-            ? new runtimeHelpers.ExitStatus(exit_code)
-            : reason
-                ? reason
-                : new Error("Stop with exit code " + exit_code);
+        throw reason;
     } else {
         set_exit_code_and_quit_now(exit_code, reason);
+    }
+}
+
+function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
+    if (is_runtime_running() && runtimeHelpers.mono_wasm_exit) {
+        runtimeHelpers.mono_wasm_exit(exit_code);
+    }
+    // just in case mono_wasm_exit didn't exit or throw
+    if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
+        if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
+            INTERNAL.process.exit(exit_code);
+        }
+        else if (runtimeHelpers.quit) {
+            runtimeHelpers.quit(exit_code, reason);
+        }
+        throw reason;
     }
 }
 
@@ -69,48 +113,25 @@ async function flush_node_streams() {
         const stdoutFlushed = flushStream(process.stdout);
         await Promise.all([stdoutFlushed, stderrFlushed]);
     } catch (err) {
-        console.error(`flushing std* streams failed: ${err}`);
+        mono_log_error(`flushing std* streams failed: ${err}`);
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
-    if (runtimeHelpers.ExitStatus) {
-        if (reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
-            if (!loaderHelpers.config.logExitCode) {
-                if (reason instanceof Error && runtimeHelpers.stringify_as_error_with_stack)
-                    loaderHelpers.err(runtimeHelpers.stringify_as_error_with_stack(reason));
-                else if (typeof reason == "string")
-                    loaderHelpers.err(reason);
-                else
-                    loaderHelpers.err(JSON.stringify(reason));
-            }
-        }
-        else if (!reason) {
-            reason = new runtimeHelpers.ExitStatus(exit_code);
-        } else if (typeof reason.status === "number") {
-            exit_code = reason.status;
-        }
-    }
-    logErrorOnExit(exit_code, reason);
-    try {
-        if (runtimeHelpers.jiterpreter_dump_stats) runtimeHelpers.jiterpreter_dump_stats(false);
-    } catch {
-        // eslint-disable-next-line @typescript-eslint/no-extra-semi
-        ;
-    }
-
-    appendElementOnExit(exit_code);
-    if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
-        if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
-            INTERNAL.process.exit(exit_code);
-            throw reason;
-        }
-        else if (runtimeHelpers.quit) {
-            runtimeHelpers.quit(exit_code, reason);
-        } else {
-            throw reason;
-        }
+function abort_promises(reason: any) {
+    loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
+    loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
+    loaderHelpers.wasmDownloadPromise.promise_control.reject(reason);
+    loaderHelpers.runtimeModuleLoaded.promise_control.reject(reason);
+    if (runtimeHelpers.dotnetReady) {
+        runtimeHelpers.dotnetReady.promise_control.reject(reason);
+        runtimeHelpers.memorySnapshotSkippedOrDone.promise_control.reject(reason);
+        runtimeHelpers.afterInstantiateWasm.promise_control.reject(reason);
+        runtimeHelpers.beforePreInit.promise_control.reject(reason);
+        runtimeHelpers.afterPreInit.promise_control.reject(reason);
+        runtimeHelpers.afterPreRun.promise_control.reject(reason);
+        runtimeHelpers.beforeOnRuntimeInitialized.promise_control.reject(reason);
+        runtimeHelpers.afterOnRuntimeInitialized.promise_control.reject(reason);
+        runtimeHelpers.afterPostRun.promise_control.reject(reason);
     }
 }
 
@@ -125,30 +146,35 @@ function appendElementOnExit(exit_code: number) {
     }
 }
 
-function logErrorOnExit(exit_code: number, reason?: any) {
-    if (loaderHelpers.config && loaderHelpers.config.logExitCode) {
-        if (exit_code != 0 && reason) {
-            if (reason instanceof Error && runtimeHelpers.stringify_as_error_with_stack)
-                console.error(runtimeHelpers.stringify_as_error_with_stack(reason));
-            else if (typeof reason == "string")
-                console.error(reason);
-            else
-                console.error(JSON.stringify(reason));
+function logErrorOnExit(exit_code: number, reason: any) {
+    if (exit_code !== 0 && reason) {
+        if (reason instanceof Error) {
+            if (runtimeHelpers.stringify_as_error_with_stack) {
+                mono_log_error(runtimeHelpers.stringify_as_error_with_stack(reason));
+            } else {
+                mono_log_error(reason.message + "\n" + reason.stack);
+            }
         }
+        else if (typeof reason == "string")
+            mono_log_error(reason);
+        else
+            mono_log_error(JSON.stringify(reason));
+    }
+    if (loaderHelpers.config && loaderHelpers.config.logExitCode) {
         if (consoleWebSocket) {
             const stop_when_ws_buffer_empty = () => {
                 if (consoleWebSocket.bufferedAmount == 0) {
                     // tell xharness WasmTestMessagesProcessor we are done.
                     // note this sends last few bytes into the same WS
-                    console.log("WASM EXIT " + exit_code);
+                    mono_log_info_no_prefix("WASM EXIT " + exit_code);
                 }
                 else {
-                    setTimeout(stop_when_ws_buffer_empty, 100);
+                    globalThis.setTimeout(stop_when_ws_buffer_empty, 100);
                 }
             };
             stop_when_ws_buffer_empty();
         } else {
-            console.log("WASM EXIT " + exit_code);
+            mono_log_info_no_prefix("WASM EXIT " + exit_code);
         }
     }
 }

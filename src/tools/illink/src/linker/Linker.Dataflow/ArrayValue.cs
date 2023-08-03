@@ -68,11 +68,15 @@ namespace ILLink.Shared.TrimAnalysis
 			if (!equals)
 				return false;
 
-			// If both sets T and O are the same size and "T intersect O" is empty, then T == O.
-			HashSet<KeyValuePair<int, ValueBasicBlockPair>> thisValueSet = new (IndexValues);
-			HashSet<KeyValuePair<int, ValueBasicBlockPair>> otherValueSet = new (otherArr.IndexValues);
-			thisValueSet.ExceptWith (otherValueSet);
-			return thisValueSet.Count == 0;
+			// Here we rely on the assumption that we can't store mutable values in arrays. The only mutable value
+			// which we currently support are array values, but those are not allowed in an array (to avoid complexity).
+			// As such we can rely on the values to be immutable, and thus if the counts are equal
+			// then the arrays are equal if items from one can be directly found in the other.
+			foreach (var kvp in IndexValues)
+				if (!otherArr.IndexValues.TryGetValue (kvp.Key, out ValueBasicBlockPair value) || !kvp.Value.Equals (value))
+					return false;
+
+			return true;
 		}
 
 		public override SingleValue DeepCopy ()
@@ -88,7 +92,7 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 #endif
 
-				newValue.IndexValues.Add (kvp.Key, new ValueBasicBlockPair (kvp.Value.Value.Clone (), kvp.Value.BasicBlockIndex));
+				newValue.IndexValues.Add (kvp.Key, new ValueBasicBlockPair (kvp.Value.Value.DeepCopy (), kvp.Value.BasicBlockIndex));
 			}
 
 			return newValue;

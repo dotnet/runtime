@@ -96,7 +96,7 @@ namespace System.Threading.Tasks
 
             // There are race conditions where the timer fires after we have attached the cancellation callback but before the
             // registration is stored in state.Registration, or where cancellation is requested prior to the registration being
-            // stored into state.Registration, or where the timer could fire after it's been createdbut before it's been stored
+            // stored into state.Registration, or where the timer could fire after it's been created but before it's been stored
             // in state.Timer. In such cases, the cancellation registration and/or the Timer might be stored into state after the
             // callbacks and thus left undisposed.  So, we do a subsequent check here. If the task isn't completed by this point,
             // then the callbacks won't have called TrySetResult (the callbacks invoke TrySetResult before disposing of the fields),

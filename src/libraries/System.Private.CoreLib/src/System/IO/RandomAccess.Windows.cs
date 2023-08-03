@@ -250,7 +250,23 @@ namespace System.IO
                 return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path));
             }
 
-            return ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
+            return AsyncOverSyncWithIoCancellation.InvokeAsync(static state =>
+            {
+                try
+                {
+                    int result = ReadAtOffset(state.handle, state.buffer.Span, state.fileOffset);
+                    if (result != state.buffer.Length)
+                    {
+                        state.strategy?.OnIncompleteOperation(state.buffer.Length, result);
+                    }
+                    return result;
+                }
+                catch (Exception) when (state.strategy is not null)
+                {
+                    state.strategy.OnIncompleteOperation(state.buffer.Length, 0);
+                    throw;
+                }
+            }, (handle, buffer, fileOffset, strategy), cancellationToken);
         }
 
         private static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
@@ -332,7 +348,18 @@ namespace System.IO
                 return ValueTask.FromException(Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path));
             }
 
-            return ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
+            return AsyncOverSyncWithIoCancellation.InvokeAsync(static state =>
+            {
+                try
+                {
+                    WriteAtOffset(state.handle, state.buffer.Span, state.fileOffset);
+                }
+                catch (Exception) when (state.strategy is not null)
+                {
+                    state.strategy.OnIncompleteOperation(state.buffer.Length, 0);
+                    throw;
+                }
+            }, (handle, buffer, fileOffset, strategy), cancellationToken);
         }
 
         private static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
@@ -527,7 +554,7 @@ namespace System.IO
         {
             if (!handle.IsAsync)
             {
-                return ScheduleSyncReadScatterAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
+                return AsyncOverSyncWithIoCancellation.InvokeAsync(static state => ReadScatterAtOffset(state.handle, state.buffers, state.fileOffset), (handle, buffers, fileOffset), cancellationToken);
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
@@ -624,7 +651,7 @@ namespace System.IO
         {
             if (!handle.IsAsync)
             {
-                return ScheduleSyncWriteGatherAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
+                return AsyncOverSyncWithIoCancellation.InvokeAsync(static state => WriteGatherAtOffset(state.handle, state.buffers, state.fileOffset), (handle, buffers, fileOffset), cancellationToken);
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)

@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { WebAssemblyBootResourceType, WebAssemblyStartOptions } from "../../types";
+import type { LoadBootResourceCallback, WebAssemblyBootResourceType } from "../../types";
 import type { BootJsonData, ResourceList } from "../../types/blazor";
+import { loaderHelpers } from "../globals";
 import { toAbsoluteUri } from "./_Polyfill";
 const networkFetchCacheMode = "no-cache";
+
+const cacheSkipResourceTypes = ["configuration"];
 
 export class WebAssemblyResourceLoader {
     private usedCacheKeys: { [key: string]: boolean } = {};
@@ -13,12 +16,12 @@ export class WebAssemblyResourceLoader {
 
     private cacheLoads: { [name: string]: LoadLogEntry } = {};
 
-    static async initAsync(bootConfig: BootJsonData, startOptions: Partial<WebAssemblyStartOptions>): Promise<WebAssemblyResourceLoader> {
+    static async initAsync(bootConfig: BootJsonData, loadBootResource?: LoadBootResourceCallback): Promise<WebAssemblyResourceLoader> {
         const cache = await getCacheToUseIfEnabled(bootConfig);
-        return new WebAssemblyResourceLoader(bootConfig, cache, startOptions);
+        return new WebAssemblyResourceLoader(bootConfig, cache, loadBootResource);
     }
 
-    constructor(readonly bootConfig: BootJsonData, readonly cacheIfUsed: Cache | null, readonly startOptions: Partial<WebAssemblyStartOptions>) {
+    constructor(readonly bootConfig: BootJsonData, readonly cacheIfUsed: Cache | null, readonly loadBootResource?: LoadBootResourceCallback) {
     }
 
     loadResources(resources: ResourceList, url: (name: string) => string, resourceType: WebAssemblyBootResourceType): LoadingResource[] {
@@ -27,11 +30,16 @@ export class WebAssemblyResourceLoader {
     }
 
     loadResource(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): LoadingResource {
-        const response = this.cacheIfUsed
+        const response = this.cacheIfUsed && !cacheSkipResourceTypes.includes(resourceType)
             ? this.loadResourceWithCaching(this.cacheIfUsed, name, url, contentHash, resourceType)
             : this.loadResourceWithoutCaching(name, url, contentHash, resourceType);
 
-        return { name, url: toAbsoluteUri(url), response };
+        const absoluteUrl = toAbsoluteUri(url);
+
+        if (resourceType == "assembly") {
+            loaderHelpers.loadedAssemblies.push(absoluteUrl);
+        }
+        return { name, url: absoluteUrl, response };
     }
 
     logToConsole(): void {
@@ -46,20 +54,28 @@ export class WebAssemblyResourceLoader {
         }
 
         const linkerDisabledWarning = this.bootConfig.linkerEnabled ? "%c" : "\n%cThis application was built with linking (tree shaking) disabled. Published applications will be significantly smaller.";
+        // eslint-disable-next-line no-console
         console.groupCollapsed(`%cdotnet%c Loaded ${toDataSizeString(totalResponseBytes)} resources${linkerDisabledWarning}`, "background: purple; color: white; padding: 1px 3px; border-radius: 3px;", "font-weight: bold;", "font-weight: normal;");
 
         if (cacheLoadsEntries.length) {
+            // eslint-disable-next-line no-console
             console.groupCollapsed(`Loaded ${toDataSizeString(cacheResponseBytes)} resources from cache`);
+            // eslint-disable-next-line no-console
             console.table(this.cacheLoads);
+            // eslint-disable-next-line no-console
             console.groupEnd();
         }
 
         if (networkLoadsEntries.length) {
+            // eslint-disable-next-line no-console
             console.groupCollapsed(`Loaded ${toDataSizeString(networkResponseBytes)} resources from network`);
+            // eslint-disable-next-line no-console
             console.table(this.networkLoads);
+            // eslint-disable-next-line no-console
             console.groupEnd();
         }
 
+        // eslint-disable-next-line no-console
         console.groupEnd();
     }
 
@@ -113,8 +129,8 @@ export class WebAssemblyResourceLoader {
 
     private loadResourceWithoutCaching(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): Promise<Response> {
         // Allow developers to override how the resource is loaded
-        if (this.startOptions.loadBootResource) {
-            const customLoadResult = this.startOptions.loadBootResource(resourceType, name, url, contentHash);
+        if (this.loadBootResource) {
+            const customLoadResult = this.loadBootResource(resourceType, name, url, contentHash);
             if (customLoadResult instanceof Promise) {
                 // They are supplying an entire custom response, so just use that
                 return customLoadResult;
@@ -127,10 +143,19 @@ export class WebAssemblyResourceLoader {
         // Note that if cacheBootResources was explicitly disabled, we also bypass hash checking
         // This is to give developers an easy opt-out from the entire caching/validation flow if
         // there's anything they don't like about it.
-        return fetch(url, {
-            cache: networkFetchCacheMode,
-            integrity: this.bootConfig.cacheBootResources ? contentHash : undefined,
-        });
+        const fetchOptions: RequestInit = {
+            cache: networkFetchCacheMode
+        };
+
+        if (resourceType === "configuration") {
+            // Include credentials so the server can allow download / provide user specific file
+            fetchOptions.credentials = "include";
+        } else {
+            // Any other resource than configuration should provide integrity check
+            fetchOptions.integrity = this.bootConfig.cacheBootResources ? contentHash : undefined;
+        }
+
+        return fetch(url, fetchOptions);
     }
 
     private async addToCacheAsync(cache: Cache, name: string, cacheKey: string, response: Response) {

@@ -65,8 +65,8 @@ namespace System.Text.Json.Serialization.Converters
             string[] names = Enum.GetNames<T>();
             T[] values = Enum.GetValues<T>();
 #else
-            string[] names = Enum.GetNames(TypeToConvert);
-            Array values = Enum.GetValues(TypeToConvert);
+            string[] names = Enum.GetNames(Type);
+            Array values = Enum.GetValues(Type);
 #endif
             Debug.Assert(names.Length == values.Length);
 
