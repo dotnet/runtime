@@ -561,7 +561,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         /// <returns>Not <b>null</b> if <b>throwIfCallSiteNotFound</b> is true</returns>
         private ServiceCallSite[]? CreateArgumentCallSites(
+#pragma warning disable IDE0060 // Remove unused parameter
             ServiceIdentifier serviceIdentifier,
+#pragma warning restore IDE0060 // Remove unused parameter
             Type implementationType,
             CallSiteChain callSiteChain,
             ParameterInfo[] parameters,
@@ -573,26 +575,23 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 ServiceCallSite? callSite = null;
                 Type parameterType = parameters[index].ParameterType;
-                if (parameters[index].CustomAttributes != null)
+                foreach (var attribute in parameters[index].GetCustomAttributes(true))
                 {
-                    foreach (var attribute in parameters[index].GetCustomAttributes(true))
+                    if (serviceIdentifier.ServiceKey != null && attribute is ServiceKeyAttribute)
                     {
-                        if (serviceIdentifier.ServiceKey != null && attribute is ServiceKeyAttribute)
+                        // Check if the parameter type matches
+                        if (parameterType != serviceIdentifier.ServiceKey.GetType())
                         {
-                            // Check if the parameter type matches
-                            if (parameterType != serviceIdentifier.ServiceKey.GetType())
-                            {
-                                throw new InvalidOperationException(SR.InvalidServiceKeyType);
-                            }
-                            callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
-                            break;
+                            throw new InvalidOperationException(SR.InvalidServiceKeyType);
                         }
-                        if (attribute is FromKeyedServicesAttribute keyed)
-                        {
-                            var parameterSvcId = new ServiceIdentifier(keyed.Key, parameterType);
-                            callSite = GetCallSite(parameterSvcId, callSiteChain);
-                            break;
-                        }
+                        callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
+                        break;
+                    }
+                    if (attribute is FromKeyedServicesAttribute keyed)
+                    {
+                        var parameterSvcId = new ServiceIdentifier(keyed.Key, parameterType);
+                        callSite = GetCallSite(parameterSvcId, callSiteChain);
+                        break;
                     }
                 }
 
