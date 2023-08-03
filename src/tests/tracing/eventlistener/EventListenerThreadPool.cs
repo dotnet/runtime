@@ -89,7 +89,7 @@ namespace Tracing.Tests
                                             listener.TPWorkerThreadStopCount > 0 ||
                                             listener.TPWorkerThreadWaitCount > 0;
 
-                bool ioPackEventOk = listener.TPIOPack > 0 && listener.TPIOEnqueue > 0 && listener.TPIODequeue > 0;
+                bool ioEventsOK = listener.TPIOPack > 0 && listener.TPIOEnqueue > 0 && listener.TPIODequeue > 0;
 
                 if (!TestLibrary.Utilities.IsNativeAot && !workerThreadEventsOk)
                 {
@@ -99,7 +99,7 @@ namespace Tracing.Tests
                     Console.WriteLine($"ThreadPoolWorkerThreadWaitCount: {listener.TPWorkerThreadWaitCount}");
                     return -1;
                 }
-                else if (!ioPackEventOk)
+                else if (!ioEventsOK)
                 {
                     Console.WriteLine("Test Failed: Did not see all of the expected events.");
                     Console.WriteLine($"ThreadPoolIOPack: {listener.TPIOPack}");
