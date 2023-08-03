@@ -212,7 +212,9 @@ namespace Internal.IL.Stubs
                             {
                                 continue;
                             }
-                            return null;
+                            // Try to prove that the interface of self is always implemented using the type definition.
+                            TypeDesc typeDefinition = type.GetTypeDefinition();
+                            return typeDefinition.CanCastTo(interfaceType.MakeInstantiatedType(typeDefinition)) ? true : null;
                         }
                         else
                         {
