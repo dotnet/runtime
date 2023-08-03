@@ -27,5 +27,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public MethodsToGen_ConfigurationBinder MethodsToGen_ConfigurationBinder { get; set; }
         public MethodsToGen_Extensions_OptionsBuilder MethodsToGen_OptionsBuilderExt { get; set; }
         public MethodsToGen_Extensions_ServiceCollection MethodsToGen_ServiceCollectionExt { get; set; }
+
+        public bool EmitEnumParseMethod { get; set; }
     }
 }

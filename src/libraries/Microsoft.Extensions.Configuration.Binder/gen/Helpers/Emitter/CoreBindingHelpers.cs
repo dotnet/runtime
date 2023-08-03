@@ -413,24 +413,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitGetBinderOptionsHelper();
                 }
 
-                bool enumTypeExists = false;
+                if (_sourceGenSpec.EmitEnumParseMethod)
+                {
+                    _writer.WriteLine();
+                    EmitEnumParseMethod();
+                    _emitBlankLineBeforeNextStatement = true;
+                }
 
                 foreach (ParsableFromStringSpec type in _sourceGenSpec.PrimitivesForHelperGen)
                 {
                     EmitBlankLineIfRequired();
-
-                    if (type.StringParsableTypeKind == StringParsableTypeKind.Enum)
-                    {
-                        if (!enumTypeExists)
-                        {
-                            EmitEnumParseMethod();
-                            enumTypeExists = true;
-                        }
-                    }
-                    else
-                    {
-                        EmitPrimitiveParseMethod(type);
-                    }
+                    EmitPrimitiveParseMethod(type);
                 }
             }
 
@@ -549,8 +542,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 switch (typeKind)
                 {
-                    case StringParsableTypeKind.Enum:
-                        return;
                     case StringParsableTypeKind.ByteArray:
                         {
                             parsedValueExpr = $"Convert.FromBase64String({Identifier.value})";
