@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Http
     /// a transient service. Callers should retrieve a new instance for each <see cref="HttpMessageHandler"/> to
     /// be created. Implementors should expect each instance to be used a single time.
     /// </remarks>
-    public abstract class HttpMessageHandlerBuilder
+    public abstract class HttpMessageHandlerBuilder : IPrimaryHandlerBuilder, IAdditionalHandlersBuilder
     {
         /// <summary>
         /// Gets or sets the name of the <see cref="HttpClient"/> being created.
@@ -117,5 +117,22 @@ namespace Microsoft.Extensions.Http
 
             return next;
         }
+    }
+
+    internal interface IHandlerBuilder
+    {
+        [DisallowNull]
+        string? Name { get; set; }
+        IServiceProvider Services { get; }
+    }
+
+    internal interface IPrimaryHandlerBuilder : IHandlerBuilder
+    {
+        HttpMessageHandler PrimaryHandler { get; set; }
+    }
+
+    internal interface IAdditionalHandlersBuilder : IHandlerBuilder
+    {
+        IList<DelegatingHandler> AdditionalHandlers { get; }
     }
 }

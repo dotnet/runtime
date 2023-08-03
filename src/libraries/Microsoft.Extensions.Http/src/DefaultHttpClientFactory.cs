@@ -164,9 +164,24 @@ namespace Microsoft.Extensions.Http
 
                 void Configure(HttpMessageHandlerBuilder b)
                 {
-                    for (int i = 0; i < options.HttpMessageHandlerBuilderActions.Count; i++)
+                    if (options.MergedToHandlerBuilderActions)
                     {
-                        options.HttpMessageHandlerBuilderActions[i](b);
+                        for (int i = 0; i < options.HttpMessageHandlerBuilderActions.Count; i++)
+                        {
+                            options.HttpMessageHandlerBuilderActions[i](b);
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < options.PrimaryHandlerActions.Count; i++)
+                        {
+                            options.PrimaryHandlerActions[i](b);
+                        }
+
+                        for (int i = 0; i < options.AdditionalHandlersActions.Count; i++)
+                        {
+                            options.AdditionalHandlersActions[i](b);
+                        }
                     }
 
                     // Logging is added separately in the end. But for now it should be still possible to override it via filters...

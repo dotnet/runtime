@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +26,12 @@ namespace Microsoft.Extensions.Http
         /// <summary>
         /// Gets a list of operations used to configure an <see cref="HttpMessageHandlerBuilder"/>.
         /// </summary>
-        public IList<Action<HttpMessageHandlerBuilder>> HttpMessageHandlerBuilderActions { get; } = new List<Action<HttpMessageHandlerBuilder>>();
+        /// <remarks>
+        /// Accessing this property will have a performance impact, as it will disable some optimizations.
+        /// Consider using configuration APIs like ConfigurePrimaryHttpMessageHandler or
+        /// ConfigureAdditionalHttpMessageHandlers instead of accessing this property directly.
+        /// </remarks>
+        public IList<Action<HttpMessageHandlerBuilder>> HttpMessageHandlerBuilderActions => _httpMessageHandlerBuilderActions ??= MergeToHandlerBuilderActions();
 
         /// <summary>
         /// Gets a list of operations used to configure an <see cref="HttpClient"/>.
@@ -104,5 +110,58 @@ namespace Microsoft.Extensions.Http
 
         internal bool SuppressDefaultLogging { get; set; }
         internal List<Action<HttpMessageHandlerBuilder>> LoggingBuilderActions { get; } = new List<Action<HttpMessageHandlerBuilder>>();
+
+        private List<Action<HttpMessageHandlerBuilder>>? _httpMessageHandlerBuilderActions;
+        private List<Action<IPrimaryHandlerBuilder>>? _primaryHandlerActions = new List<Action<IPrimaryHandlerBuilder>>();
+        private List<Action<IAdditionalHandlersBuilder>>? _additionalHandlersActions = new List<Action<IAdditionalHandlersBuilder>>();
+
+        internal IReadOnlyList<Action<IPrimaryHandlerBuilder>> PrimaryHandlerActions => _primaryHandlerActions!;
+        internal IReadOnlyList<Action<IAdditionalHandlersBuilder>> AdditionalHandlersActions => _additionalHandlersActions!;
+        internal bool MergedToHandlerBuilderActions => _primaryHandlerActions is null;
+
+        // fallback for backwards compatibility
+        private List<Action<HttpMessageHandlerBuilder>> MergeToHandlerBuilderActions()
+        {
+            Debug.Assert(_httpMessageHandlerBuilderActions is null);
+            Debug.Assert(_primaryHandlerActions is not null);
+            Debug.Assert(_additionalHandlersActions is not null);
+
+            List<Action<HttpMessageHandlerBuilder>> handlerBuilderActions = new List<Action<HttpMessageHandlerBuilder>>();
+            handlerBuilderActions.AddRange(_primaryHandlerActions);
+            handlerBuilderActions.AddRange(_additionalHandlersActions);
+
+            _primaryHandlerActions = null;
+            _additionalHandlersActions = null;
+
+            return handlerBuilderActions;
+        }
+
+        internal void AddPrimaryHandlerAction(Action<IPrimaryHandlerBuilder> action, bool updatesExistingHandler)
+        {
+            if (!MergedToHandlerBuilderActions)
+            {
+                if (!updatesExistingHandler)
+                {
+                    _primaryHandlerActions!.Clear();
+                }
+                _primaryHandlerActions!.Add(action);
+            }
+            else
+            {
+                _httpMessageHandlerBuilderActions!.Add(action);
+            }
+        }
+
+        internal void AddAdditionalHandlersAction(Action<IAdditionalHandlersBuilder> action)
+        {
+            if (!MergedToHandlerBuilderActions)
+            {
+                _additionalHandlersActions!.Add(action);
+            }
+            else
+            {
+                _httpMessageHandlerBuilderActions!.Add(action);
+            }
+        }
     }
 }
