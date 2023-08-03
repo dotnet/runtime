@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -33,13 +35,25 @@ namespace System.Net.Quic.Tests
             await using QuicConnection serverConnection = acceptTask.Result;
             await using QuicConnection clientConnection = connectTask.Result;
 
-            Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint);
-            Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
-            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+            IgnoreScopeIdIPEndpointComparer endPointComparer = new();
+            Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint, endPointComparer);
+            Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint, endPointComparer);
+            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint, endPointComparer);
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, clientConnection.TargetHostName);
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, serverConnection.TargetHostName);
+        }
+
+        private class IgnoreScopeIdIPEndpointComparer : IEqualityComparer<IPEndPoint>
+        {
+            public bool Equals(IPEndPoint x, IPEndPoint y)
+            {
+                byte[] xBytes = x.Address.GetAddressBytes();
+                byte[] yBytes = y.Address.GetAddressBytes();
+                return xBytes.AsSpan().SequenceEqual(yBytes) && x.Port == y.Port;
+            }
+            public int GetHashCode([DisallowNull] IPEndPoint obj) => obj.Port;
         }
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
