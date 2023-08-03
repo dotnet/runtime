@@ -18,7 +18,9 @@ namespace Tracing.Tests
         public volatile int TPIODequeue = 0;
 
         public ManualResetEvent TPWaitWorkerThreadEvent = new ManualResetEvent(false);
-        public ManualResetEvent TPWaitIOEvent = new ManualResetEvent(false);
+        public ManualResetEvent TPWaitIOPackEvent = new ManualResetEvent(false);
+        public ManualResetEvent TPWaitIOEnqueueEvent = new ManualResetEvent(false);
+        public ManualResetEvent TPWaitIODequeueEvent = new ManualResetEvent(false);
         
         protected override void OnEventSourceCreated(EventSource source)
         {
@@ -48,17 +50,17 @@ namespace Tracing.Tests
             else if (eventData.EventName.Equals("ThreadPoolIOPack"))
             {
                 Interlocked.Increment(ref TPIOPack);
-                TPWaitIOEvent.Set();
+                TPWaitIOPackEvent.Set();
             }
             else if (eventData.EventName.Equals("ThreadPoolIOEnqueue"))
             {
                 Interlocked.Increment(ref TPIOEnqueue);
-                TPWaitIOEvent.Set();
+                TPWaitIOEnqueueEvent.Set();
             }
             else if (eventData.EventName.Equals("ThreadPoolIODequeue"))
             {
                 Interlocked.Increment(ref TPIODequeue);
-                TPWaitIOEvent.Set();
+                TPWaitIODequeueEvent.Set();
             }
         }
     }
@@ -69,28 +71,34 @@ namespace Tracing.Tests
         {
             using (RuntimeEventListener listener = new RuntimeEventListener())
             {
-                int someNumber = 0;
-                Task[] tasks = new Task[100];
-                for (int i = 0; i < tasks.Length; i++)
+
+                // Test this part in CoreCLR only
+                if (!TestLibrary.Utilities.IsNativeAot)
                 {
-                    tasks[i] = Task.Run(() => { someNumber += 1; });
+                    int someNumber = 0;
+                    Task[] tasks = new Task[100];
+                    for (int i = 0; i < tasks.Length; i++)
+                    {
+                        tasks[i] = Task.Run(() => { someNumber += 1; });
+                    }
+
+                    listener.TPWaitWorkerThreadEvent.WaitOne(TimeSpan.FromMinutes(3));
+
+                    bool workerThreadEventsOk = listener.TPWorkerThreadStartCount > 0 ||
+                                                listener.TPWorkerThreadStopCount > 0 ||
+                                                listener.TPWorkerThreadWaitCount > 0;
+
+                    if (!workerThreadEventsOk)
+                    {
+                        Console.WriteLine("Test Failed: Did not see any of the expected events.");
+                        Console.WriteLine($"ThreadPoolWorkerThreadStartCount: {listener.TPWorkerThreadStartCount}");
+                        Console.WriteLine($"ThreadPoolWorkerThreadStopCount: {listener.TPWorkerThreadStopCount}");
+                        Console.WriteLine($"ThreadPoolWorkerThreadWaitCount: {listener.TPWorkerThreadWaitCount}");
+                        return -1;
+                    }
                 }
 
-                listener.TPWaitWorkerThreadEvent.WaitOne(TimeSpan.FromMinutes(3));
-
-                bool workerThreadEventsOk = listener.TPWorkerThreadStartCount > 0 ||
-                                            listener.TPWorkerThreadStopCount > 0 ||
-                                            listener.TPWorkerThreadWaitCount > 0;
-
-                if (!TestLibrary.Utilities.IsNativeAot && !workerThreadEventsOk)
-                {
-                    Console.WriteLine("Test Failed: Did not see any of the expected events.");
-                    Console.WriteLine($"ThreadPoolWorkerThreadStartCount: {listener.TPWorkerThreadStartCount}");
-                    Console.WriteLine($"ThreadPoolWorkerThreadStopCount: {listener.TPWorkerThreadStopCount}");
-                    Console.WriteLine($"ThreadPoolWorkerThreadWaitCount: {listener.TPWorkerThreadWaitCount}");
-                    return -1;
-                }
-
+                // Test this part in both CoreCLR and NativeAOT
                 Overlapped overlapped = new Overlapped();
 
                 unsafe
@@ -98,14 +106,10 @@ namespace Tracing.Tests
                     NativeOverlapped* nativeOverlapped = overlapped.Pack(null);
                     ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
                 }
-
-                for (int i = 0; i < 3; ++i)
-                {
-                    if (listener.TPIOPack == 0 || listener.TPIOEnqueue == 0 || listener.TPIODequeue == 0)
-                    {
-                        listener.TPWaitIOEvent.WaitOne(TimeSpan.FromMinutes(1));
-                    }
-                }
+                
+                listener.TPWaitIOPackEvent.WaitOne(TimeSpan.FromMinutes(3));
+                listener.TPWaitIOEnqueueEvent.WaitOne(TimeSpan.FromMinutes(3));
+                listener.TPWaitIODequeueEvent.WaitOne(TimeSpan.FromMinutes(3));
 
                 if (!(listener.TPIOPack > 0 && listener.TPIOEnqueue > 0 && listener.TPIODequeue > 0))
                 {
