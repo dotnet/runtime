@@ -199,7 +199,6 @@ namespace ComInterfaceGenerator.Tests
         {
             Type hrExceptionType = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
             var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
-            var hrException = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
 
             var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
 
