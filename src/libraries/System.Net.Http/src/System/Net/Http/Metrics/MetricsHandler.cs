@@ -161,8 +161,8 @@ namespace System.Net.Http.Metrics
         {
             (1, 0) => "1.0",
             (1, 1) => "1.1",
-            (2, 0) => "2.0",
-            (3, 0) => "3.0",
+            (2, 0) => "2",
+            (3, 0) => "3",
             _ => httpVersion.ToString()
         };
 

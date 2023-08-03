@@ -34,8 +34,8 @@ namespace System.Net.Http.Metrics
                 tags.Add("network.protocol.version", versionMajor switch
                 {
                     1 => "1.1",
-                    2 => "2.0",
-                    _ => "3.0"
+                    2 => "2",
+                    _ => "3"
                 });
 
                 tags.Add("url.scheme", pool.IsSecure ? "https" : "http");
