@@ -825,12 +825,6 @@ namespace System.Collections
                 if (m_length < BitsPerInt32)
                     goto LessThan32;
 
-                // The mask used when shuffling a single int into Vector128/256.
-                // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
-                // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
-                Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
-                Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
-
                 // The mask used when shuffling a single int into Vector128/256/512.
                 // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
                 // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
