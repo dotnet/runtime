@@ -27,6 +27,7 @@ void jiterp_preserve_module (void);
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <pthread.h>
 
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-threads.h>
@@ -931,6 +932,48 @@ mono_interp_tier_prepare_jiterpreter_fast (
 	}
 }
 
+void
+mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod)
+{
+	MonoJitInfo *jinfo = imethod->jinfo;
+	const guint8 *start;
+
+	// Erase the method and interpmethod from all of the thread local JIT queues
+	mono_jiterp_tlqueue_purge_all (method);
+	mono_jiterp_tlqueue_purge_all (imethod);
+
+	// FIXME: Enumerate all active threads and ensure we perform the free_method_data_js
+	//  call on every thread.
+	// TODO: Migrate the interp_entry and jit_call JIT queues into the native heap,
+	//  so that this method can synchronously remove entries from them.
+
+	if (!jinfo) {
+		// HACK: Perform a single free operation to clear out any stuff from the jit queues
+		mono_jiterp_free_method_data_js (method, imethod, 0);
+		return;
+	}
+
+	start = (const guint8*) jinfo->code_start;
+	const guint16 *p = (const guint16 *)start,
+		*end = (const guint16 *)(start + jinfo->code_size);
+	while (p < end) {
+		switch (*p) {
+			// FIXME: Is it possible for there to actually be any jiterp data
+			//  for a given trace if we see a prepare point? I don't think so
+			case MINT_TIER_PREPARE_JITERPRETER:
+			case MINT_TIER_NOP_JITERPRETER:
+			case MINT_TIER_ENTER_JITERPRETER:
+			case MINT_TIER_MONITOR_JITERPRETER: {
+				JiterpreterOpcode *opcode = (JiterpreterOpcode *)p;
+				guint32 trace_index = opcode->trace_index;
+				mono_jiterp_free_method_data_js (method, imethod, trace_index);
+				break;
+			}
+		}
+		p = mono_interp_dis_mintop_len (p);
+	}
+}
+
 // Used to parse runtime options that control the jiterpreter. This is *also* used at runtime
 //  by the jiterpreter typescript to reconfigure the jiterpreter, for example if WASM EH is not
 //  actually available even though it was enabled (to turn it off).
@@ -1489,6 +1532,104 @@ mono_jiterp_patch_opcode (volatile JiterpreterOpcode *ip, guint16 old_opcode, gu
 	*/
 	return result;
 #endif
+}
+
+/*
+ * Unordered thread-local pointer queue (used for do_jit_call and interp_entry wrappers)
+ * The queues are all tracked in a global list so that it is possible to perform a global
+ *  'purge item with this value from all queues' operation, which means queue operations
+ *  are protected by a lock
+ */
+
+#define NUM_QUEUES 2
+pthread_key_t queue_keys[NUM_QUEUES] = { 0 };
+pthread_once_t queue_keys_initialized = PTHREAD_ONCE_INIT;
+mono_mutex_t queue_mutex;
+GPtrArray *shared_queues = NULL;
+
+static void
+free_queue (void *ptr) {
+	mono_os_mutex_lock (&queue_mutex);
+	g_ptr_array_remove_fast (shared_queues, ptr);
+	g_ptr_array_free ((GPtrArray *)ptr, TRUE);
+	mono_os_mutex_unlock (&queue_mutex);
+}
+
+static void
+initialize_queue_keys () {
+	mono_os_mutex_lock (&queue_mutex);
+	shared_queues = g_ptr_array_new ();
+	mono_os_mutex_unlock (&queue_mutex);
+
+	for (int i = 0; i < NUM_QUEUES; i++)
+		g_assert (pthread_key_create (&queue_keys[i], free_queue) == 0);
+}
+
+static pthread_key_t
+get_queue_key (int queue) {
+	g_assert ((queue >= 0) && (queue < NUM_QUEUES));
+	pthread_once (&queue_keys_initialized, initialize_queue_keys);
+	return queue_keys[queue];
+}
+
+static GPtrArray *
+get_queue (int queue) {
+	pthread_key_t key = get_queue_key (queue);
+	GPtrArray *result = NULL;
+	if ((result = (GPtrArray *)pthread_getspecific (key)) == NULL) {
+		pthread_setspecific (key, result = g_ptr_array_new ());
+		mono_os_mutex_lock (&queue_mutex);
+		g_ptr_array_add (shared_queues, result);
+		mono_os_mutex_unlock (&queue_mutex);
+	}
+	return result;
+}
+
+// Purges this item from all queues
+void
+mono_jiterp_tlqueue_purge_all (gpointer item) {
+	mono_os_mutex_lock (&queue_mutex);
+	for (int i = 0; i < shared_queues->len; i++) {
+		GPtrArray *queue = (GPtrArray *)g_ptr_array_index (shared_queues, i);
+		gboolean ok = g_ptr_array_remove_fast (queue, item);
+		if (ok) {
+			// g_printf ("Purged %x from queue %x\n", (unsigned int)item, (unsigned int)queue);
+		}
+	}
+	mono_os_mutex_unlock (&queue_mutex);
+}
+
+// Removes the next item from the queue, if any, and returns it (NULL if empty)
+EMSCRIPTEN_KEEPALIVE gpointer
+mono_jiterp_tlqueue_next (int queue) {
+	GPtrArray *items = get_queue (queue);
+	mono_os_mutex_lock (&queue_mutex);
+	if (items->len < 1)
+		return NULL;
+	gpointer result = g_ptr_array_index (items, 0);
+	g_ptr_array_remove_index_fast (items, 0);
+	mono_os_mutex_unlock (&queue_mutex);
+	return result;
+}
+
+// Adds a new item to the end of the queue and returns the new size of the queue
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_tlqueue_add (int queue, gpointer item) {
+	int result;
+	GPtrArray *items = get_queue (queue);
+	mono_os_mutex_lock (&queue_mutex);
+	g_ptr_array_add (items, item);
+	result = items->len;
+	mono_os_mutex_unlock (&queue_mutex);
+	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_tlqueue_clear (int queue) {
+	GPtrArray *items = get_queue (queue);
+	mono_os_mutex_lock (&queue_mutex);
+	g_ptr_array_set_size (items, 0);
+	mono_os_mutex_unlock (&queue_mutex);
 }
 
 // HACK: fix C4206

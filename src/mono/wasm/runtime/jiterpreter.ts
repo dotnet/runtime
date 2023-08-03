@@ -22,6 +22,8 @@ import {
 import {
     generateWasmBody
 } from "./jiterpreter-trace-generator";
+import { mono_jiterp_free_method_data_interp_entry } from "./jiterpreter-interp-entry";
+import { mono_jiterp_free_method_data_jit_call } from "./jiterpreter-jit-call";
 import { mono_log_error, mono_log_info, mono_log_warn } from "./logging";
 import { utf8ToString } from "./strings";
 
@@ -232,15 +234,15 @@ const mathOps1d =
         "powf",
     ];
 
-function recordBailout(ip: number, base: MintOpcodePtr, reason: BailoutReason) {
+function recordBailout(ip: number, traceIndex: number, reason: BailoutReason) {
     cwraps.mono_jiterp_trace_bailout(reason);
     // Counting these is not meaningful and messes up the end of run statistics
     if (reason === BailoutReason.Return)
         return ip;
 
-    const info = traceInfo[<any>base];
+    const info = traceInfo[traceIndex];
     if (!info) {
-        mono_log_error(`trace info not found for ${base}`);
+        mono_log_error(`trace info not found for ${traceIndex}`);
         return;
     }
     let table = info.bailoutCounts;
@@ -702,11 +704,11 @@ function initialize_builder(builder: WasmBuilder) {
 }
 
 function assert_not_null(
-    value: number, expectedValue: number, traceIp: MintOpcodePtr, ip: MintOpcodePtr
+    value: number, expectedValue: number, traceIndex: number, ip: MintOpcodePtr
 ) {
     if (value && (value === expectedValue))
         return;
-    const info = traceInfo[<any>traceIp];
+    const info = traceInfo[traceIndex];
     throw new Error(`expected non-null value ${expectedValue} but found ${value} in trace ${info.name} @ 0x${(<any>ip).toString(16)}`);
 }
 
@@ -714,8 +716,8 @@ function assert_not_null(
 function generate_wasm(
     frame: NativePointer, methodName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
-    methodFullName: string | undefined, backwardBranchTable: Uint16Array | null,
-    presetFunctionPointer: number
+    traceIndex: number, methodFullName: string | undefined,
+    backwardBranchTable: Uint16Array | null, presetFunctionPointer: number
 ): number {
     // Pre-allocate a decent number of constant slots - this adds fixed size bloat
     //  to the trace but will make the actual pointer constants in the trace smaller
@@ -750,7 +752,7 @@ function generate_wasm(
     let compileStarted = 0;
     let rejected = true, threw = false;
 
-    const ti = traceInfo[<any>ip];
+    const ti = traceInfo[traceIndex];
     const instrument = ti.isVerbose || (methodFullName && (
         instrumentedMethodNames.findIndex(
             (filter) => methodFullName.indexOf(filter) >= 0
@@ -809,6 +811,7 @@ function generate_wasm(
                 }
 
                 builder.base = ip;
+                builder.traceIndex = traceIndex;
                 builder.frame = frame;
                 switch (getU16(ip)) {
                     case MintOpcode.MINT_TIER_PREPARE_JITERPRETER:
@@ -971,7 +974,7 @@ export function trace_operands(a: number, b: number) {
     mostRecentTrace.operand2 = b >>> 0;
 }
 
-export function record_abort(traceIp: MintOpcodePtr, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
+export function record_abort(traceIndex: number, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
     if (typeof (reason) === "number") {
         cwraps.mono_jiterp_adjust_abort_count(reason, 1);
         reason = getOpcodeName(reason);
@@ -986,9 +989,9 @@ export function record_abort(traceIp: MintOpcodePtr, ip: MintOpcodePtr, traceNam
     }
 
     if ((traceAbortLocations && (reason !== "end-of-body")) || (trace >= 2))
-        mono_log_info(`abort ${traceIp} ${traceName}@${ip} ${reason}`);
+        mono_log_info(`abort #${traceIndex} ${traceName}@${ip} ${reason}`);
 
-    traceInfo[<any>traceIp].abortReason = reason;
+    traceInfo[traceIndex].abortReason = reason;
 }
 
 const JITERPRETER_TRAINING = 0;
@@ -1009,10 +1012,10 @@ export function mono_interp_tier_prepare_jiterpreter(
     else if (mostRecentOptions.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated))
         return JITERPRETER_NOT_JITTED;
 
-    let info = traceInfo[<any>ip];
+    let info = traceInfo[index];
 
     if (!info)
-        traceInfo[<any>ip] = info = new TraceInfo(ip, index, isVerbose);
+        traceInfo[index] = info = new TraceInfo(ip, index, isVerbose);
 
     modifyCounter(JiterpCounter.TraceCandidates, 1);
     let methodFullName: string | undefined;
@@ -1055,8 +1058,8 @@ export function mono_interp_tier_prepare_jiterpreter(
 
     const fnPtr = generate_wasm(
         frame, methodName, ip, startOfBody,
-        sizeOfBody, methodFullName, backwardBranchTable,
-        presetFunctionPointer
+        sizeOfBody, index, methodFullName,
+        backwardBranchTable, presetFunctionPointer
     );
 
     if (fnPtr) {
@@ -1068,6 +1071,20 @@ export function mono_interp_tier_prepare_jiterpreter(
     } else {
         return mostRecentOptions.estimateHeat ? JITERPRETER_TRAINING : JITERPRETER_NOT_JITTED;
     }
+}
+
+// NOTE: This will potentially be called once for every trace entry point
+//  in a given method, not just once per method
+export function mono_jiterp_free_method_data_js(
+    method: MonoMethod, imethod: number, traceIndex: number
+) {
+    // TODO: Uninstall the trace function pointer from the function pointer table,
+    //  so that the compiled trace module can be freed by the browser eventually
+    // Release the trace info object, if present
+    delete traceInfo[traceIndex];
+    // Remove any AOT data and queue entries associated with the method
+    mono_jiterp_free_method_data_interp_entry(imethod);
+    mono_jiterp_free_method_data_jit_call(method);
 }
 
 export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {

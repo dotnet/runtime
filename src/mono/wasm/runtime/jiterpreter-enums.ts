@@ -157,3 +157,8 @@ export const BailoutReasonNames = [
     "UnexpectedRetIp",
     "LeaveCheck",
 ];
+
+export const enum JitQueue {
+    JitCall = 0,
+    InterpEntry = 1
+}

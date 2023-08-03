@@ -3459,6 +3459,11 @@ interp_free_method (MonoMethod *method)
 
 	jit_mm_lock (jit_mm);
 	imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
+
+#if HOST_BROWSER
+	mono_jiterp_free_method_data (method, imethod);
+#endif
+
 	mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
 	if (imethod && jit_mm->interp_method_pointer_hash) {
 		if (imethod->jit_entry)

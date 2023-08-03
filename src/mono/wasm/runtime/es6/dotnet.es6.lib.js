@@ -4,6 +4,8 @@
 
 "use strict";
 
+// FIXME: MERGE DAMAGE
+
 // -- this javascript file is evaluated by emcc during compilation! --
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
