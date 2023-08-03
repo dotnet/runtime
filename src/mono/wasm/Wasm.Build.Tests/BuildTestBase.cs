@@ -576,35 +576,7 @@ namespace Wasm.Build.Tests
                 _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
         }
 
-        public static string GetRandomId() => FixupSymbolName(Path.GetRandomFileName());
-
-        public static string FixupSymbolName(string name)
-        {
-            UTF8Encoding utf8 = new();
-            byte[] bytes = utf8.GetBytes(name);
-            StringBuilder sb = new();
-
-            foreach (byte b in bytes)
-            {
-                if ((b >= (byte)'0' && b <= (byte)'9') ||
-                    (b >= (byte)'a' && b <= (byte)'z') ||
-                    (b >= (byte)'A' && b <= (byte)'Z') ||
-                    (b == (byte)'_'))
-                {
-                    sb.Append((char)b);
-                }
-                else if (s_charsToReplace.Contains((char)b))
-                {
-                    sb.Append('_');
-                }
-                else
-                {
-                    sb.Append($"_{b:X}_");
-                }
-            }
-
-            return sb.ToString();
-        }
+        public static string GetRandomId() => TestUtils.FixupSymbolName(Path.GetRandomFileName());
 
         internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish = true)
         {

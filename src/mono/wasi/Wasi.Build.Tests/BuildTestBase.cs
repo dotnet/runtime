@@ -637,6 +637,8 @@ namespace Wasm.Build.Tests
                 _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
         }
 
+        public static string GetRandomId() => TestUtils.FixupSymbolName(Path.GetRandomFileName());
+
         private static string GetEnvironmentVariableOrDefault(string envVarName, string defaultValue)
         {
             string? value = Environment.GetEnvironmentVariable(envVarName);
