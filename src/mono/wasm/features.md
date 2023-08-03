@@ -119,7 +119,7 @@ When you want to call JavaScript functions from C# or managed code from JavaScri
 
 * [Introductory Blog Post](https://devblogs.microsoft.com/dotnet/use-net-7-from-any-javascript-app-in-net-7/)
 * [Todo-MVC sample](https://github.com/pavelsavara/dotnet-wasm-todo-mvc)
-* or [the documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/javascript-interoperability/import-export-interop).
+* or [the documentation](https://learn.microsoft.com/aspnet/core/client-side/dotnet-interop).
 
 ### Embedding dotnet in existing JavaScript applications
 To embed the .NET runtime inside of a JavaScript application, you will need to use both the MSBuild toolchain (to build and publish your managed code) and your existing web build toolchain.
