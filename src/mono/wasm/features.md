@@ -80,7 +80,7 @@ AOT compilation greatly improves application performance but will increase the s
 This feature only works if you have the [wasm-tools workload](#wasm-tools-workload) installed.
 
 ### IL trimming
-Trimming will remove unused code from your application, which reduces application startup time and memory usage. Trimming also reduces the amount of time spent during AOT compilation if it is in use. To enable trimming of managed code, use `<PublishTrimmed>true</PublishTrimmed>` and `<EnableAggressiveTrimming>true</EnableAggressiveTrimming>`.
+Trimming will remove unused code from your application, which reduces application startup time and memory usage. Trimming also reduces the amount of time spent during AOT compilation if it is in use. To enable trimming of managed code, use `<PublishTrimmed>true</PublishTrimmed>` and `<TrimMode>full</TrimMode>`.
 
 Some applications will break if trimming is used without further configuration due to the trimmer not knowing which code is used, for example any code accessed via reflection or serialization or dependency injection.
 
