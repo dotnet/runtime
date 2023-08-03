@@ -410,8 +410,13 @@ namespace Microsoft.Interop
         /// It only looks at an indirection level of 0 (the size of the outer array), so there are some holes in
         /// analysis if the parameter is a multidimensional array, but that case seems very unlikely to be hit.
         /// </summary>
-        public static void ValidateCountInfoAvailableAtCall(TypePositionInfo info, GeneratorDiagnosticsBag generatorDiagnostics, IMethodSymbol symbol, DiagnosticDescriptor outParamDescriptor, DiagnosticDescriptor returnValueDescriptor)
+        public static void ValidateCountInfoAvailableAtCall(MarshalDirection stubDirection, TypePositionInfo info, GeneratorDiagnosticsBag generatorDiagnostics, IMethodSymbol symbol, DiagnosticDescriptor outParamDescriptor, DiagnosticDescriptor returnValueDescriptor)
         {
+            // In managed to unmanaged stubs, we can always just get the length of managed object
+            // We only really need to be concerned about unmanaged to managed stubs
+            if (stubDirection is MarshalDirection.ManagedToUnmanaged)
+                return;
+
             if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
                 && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo
                 && !(info.RefKind is RefKind.Out

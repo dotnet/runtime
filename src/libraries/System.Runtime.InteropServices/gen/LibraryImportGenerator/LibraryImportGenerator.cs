@@ -285,17 +285,6 @@ namespace Microsoft.Interop
 
             // Create the stub.
             var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr), environment, typeof(LibraryImportGenerator).Assembly);
-            // Ensure the size of collections are known at marshal / unmarshal in time.
-            // A collection that is marshalled in cannot have a size that is an 'out' parameter.
-            foreach (var parameter in signatureContext.ManagedParameters)
-            {
-                MarshallerHelpers.ValidateCountInfoAvailableAtCall(
-                    parameter,
-                    generatorDiagnostics,
-                    symbol,
-                    GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam,
-                    GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue);
-            }
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
