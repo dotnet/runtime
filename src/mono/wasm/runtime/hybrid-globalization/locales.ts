@@ -16,7 +16,7 @@ export function mono_wasm_get_first_day_of_week(culture: MonoStringRef, isExcept
         const cultureName = monoStringToString(cultureRoot);
         const locale : any = cultureName ? cultureName : undefined;
         const canonicalLocale = normalizeLocale(locale);
-        return getFirstDayOfWeek(canonicalLocale);        
+        return getFirstDayOfWeek(canonicalLocale);
     }
     catch (ex: any) {
         wrap_error_root(isException, ex, exceptionRoot);

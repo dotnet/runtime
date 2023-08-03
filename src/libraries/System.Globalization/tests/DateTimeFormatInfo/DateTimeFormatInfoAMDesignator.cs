@@ -14,7 +14,7 @@ namespace System.Globalization.Tests
             Assert.Equal("AM", DateTimeFormatInfo.InvariantInfo.AMDesignator);
         }
 
-        public static IEnumerable<object[]> AMDesignator_Get_TestData()
+        public static IEnumerable<object[]> AMDesignator_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "ص" };
@@ -206,10 +206,9 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(AMDesignator_Get_TestData))]
-        public void AMDesignator_Get_GetReturnsExpected(DateTimeFormatInfo format, string value)
+        [MemberData(nameof(AMDesignator_Get_TestData_HybridGlobalization))]
+        public void AMDesignator_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string value)
         {
-            format.FullDateTimePattern = value;
             Assert.Equal(value, format.AMDesignator);
         }
 

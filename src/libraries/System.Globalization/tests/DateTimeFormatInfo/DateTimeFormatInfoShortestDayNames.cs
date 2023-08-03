@@ -28,7 +28,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new string[] { "", "", "", "", "", "", "" } };
         }
 
-        public static IEnumerable<object[]> ShortestDayNames_Get_TestData()
+        public static IEnumerable<object[]> ShortestDayNames_Get_TestData_HybridGlobalization()
         {
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, new string[] { "ح", "ن", "ث", "ر", "خ", "ج", "س" } };
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] { "እ", "ሰ", "ማ", "ረ", "ሐ", "ዓ", "ቅ" } };
@@ -83,8 +83,8 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(ShortestDayNames_Get_TestData))]
-        public void ShortestDayNames_Get_GetReturnsExpected(DateTimeFormatInfo format, string[] expected)
+        [MemberData(nameof(ShortestDayNames_Get_TestData_HybridGlobalization))]
+        public void ShortestDayNames_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string[] expected)
         {
             Assert.Equal(expected, format.ShortestDayNames);
         }

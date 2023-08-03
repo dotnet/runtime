@@ -423,14 +423,14 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => calendar.TwoDigitYearMax = max + 1);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void GetEra_Invalid_ThrowsArgumentOutOfRangeException()
         {
             Calendar calendar = Calendar;
             Assert.All(DateTime_TestData(calendar), dt =>
             {
                 // JapaneseCalendar throws on ICU, but not on NLS or in HybridGlobalization on Browser
-                if ((calendar is JapaneseCalendar && (PlatformDetection.IsNlsGlobalization || PlatformDetection.IsHybridGlobalizationOnBrowser)) ||
+                if ((calendar is JapaneseCalendar && (PlatformDetection.IsNlsGlobalization || !PlatformDetection.IsHybridGlobalizationOnBrowser)) ||
                     calendar is HebrewCalendar ||
                     calendar is TaiwanLunisolarCalendar ||
                     calendar is JapaneseLunisolarCalendar)

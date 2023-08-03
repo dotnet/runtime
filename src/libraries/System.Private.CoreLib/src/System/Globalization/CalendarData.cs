@@ -181,7 +181,7 @@ namespace System.Globalization
                 // For Localized Gregorian we really expect the data from the OS.
                 case CalendarId.GREGORIAN:
                     // Fallback for CoreCLR < Win7 or culture.dll missing
-                    if (EraNamesEmpty())
+                    if (AreEraNamesEmpty())
                     {
                         this.saEraNames = new string[] { "A.D." };
                     }
@@ -243,7 +243,7 @@ namespace System.Globalization
                     break;
 
                 case CalendarId.PERSIAN:
-                    if (EraNamesEmpty())
+                    if (AreEraNamesEmpty())
                     {
                         this.saEraNames = new string[] { "\x0647\x002e\x0634" };
                     }
@@ -251,7 +251,7 @@ namespace System.Globalization
 
                 default:
 #if TARGET_BROWSER
-                    if (GlobalizationMode.Hybrid && !EraNamesEmpty())
+                    if (GlobalizationMode.Hybrid && !AreEraNamesEmpty())
                     {
                         // we don't want to have this overwritten because JS already loaded it
                         break;
@@ -261,7 +261,7 @@ namespace System.Globalization
                     this.saEraNames = Invariant.saEraNames;
                     break;
 
-                    bool EraNamesEmpty() =>
+                    bool AreEraNamesEmpty() =>
                         this.saEraNames == null || this.saEraNames.Length == 0 || string.IsNullOrEmpty(this.saEraNames[0]);
             }
         }

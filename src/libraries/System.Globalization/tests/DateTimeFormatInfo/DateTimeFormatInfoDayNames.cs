@@ -28,7 +28,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new string[] { "", "", "", "", "", "", "" } };
         }
 
-        public static IEnumerable<object[]> DayNames_Get_TestData()
+        public static IEnumerable<object[]> DayNames_Get_TestData_HybridGlobalization()
         {
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, new string[] { "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت" } };
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] { "እሑድ", "ሰኞ", "ማክሰኞ", "ረቡዕ", "ሐሙስ", "ዓርብ", "ቅዳሜ" } };
@@ -79,8 +79,8 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(DayNames_Get_TestData))]
-        public void DayNames_Get_GetReturnsExpected(DateTimeFormatInfo format, string[] expected)
+        [MemberData(nameof(DayNames_Get_TestData_HybridGlobalization))]
+        public void DayNames_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string[] expected)
         {
             Assert.Equal(expected, format.DayNames);
         }

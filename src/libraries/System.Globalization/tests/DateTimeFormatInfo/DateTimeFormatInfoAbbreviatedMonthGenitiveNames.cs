@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
     public class DateTimeFormatInfoAbbreviatedMonthGenitiveNames
     {
 
-        public static IEnumerable<object[]> AbbreviatedMonthGenitiveNames_Get_TestData()
+        public static IEnumerable<object[]> AbbreviatedMonthGenitiveNames_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, new string[] { "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة", "" } };
@@ -200,8 +200,8 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(AbbreviatedMonthGenitiveNames_Get_TestData))]
-        public void AbbreviatedMonthGenitiveNames_Get_ReturnsExpected(DateTimeFormatInfo format, string[] expected)
+        [MemberData(nameof(AbbreviatedMonthGenitiveNames_Get_TestData_HybridGlobalization))]
+        public void AbbreviatedMonthGenitiveNames_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string[] expected)
         {
             Assert.Equal(expected, format.AbbreviatedMonthGenitiveNames);
         }
@@ -290,10 +290,10 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestAbbreviatedGenitiveNamesWithAllCultures()
         {
-            // WASM in Hybrid mode does not support NeutralCultures (only "no"), it support is limited to the list:
+            // WASM in Hybrid mode does not support NeutralCultures (only "no"), its support is limited to the list:
             // https://github.com/dotnet/icu/blob/dotnet/main/icu-filters/icudt_wasm.json
             CultureInfo[] cultures = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                CultureInfo.GetCultures(CultureTypes.SpecificCultures | CultureTypes.InstalledWin32Cultures) :
+                CultureInfo.GetCultures(CultureTypes.AllCultures & ~CultureTypes.NeutralCultures) :
                 CultureInfo.GetCultures(CultureTypes.AllCultures);
             DateTime dt = new DateTime(2000, 1, 20);
 
@@ -306,6 +306,7 @@ namespace System.Globalization.Tests
                     if (!ci.DateTimeFormat.MonthNames[i].Equals(ci.DateTimeFormat.MonthGenitiveNames[i]) ||
                         !ci.DateTimeFormat.AbbreviatedMonthNames[i].Equals(ci.DateTimeFormat.AbbreviatedMonthGenitiveNames[i]))
                     {
+                        // We have genitive month names, we expect parsing to work and produce the exact original result.
                         Assert.Equal(dt, DateTime.Parse(formattedDate, ci));
                         break;
                     }

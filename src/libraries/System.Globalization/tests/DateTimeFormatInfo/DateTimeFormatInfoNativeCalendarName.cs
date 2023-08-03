@@ -8,7 +8,7 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoNativeCalendarName
     {
-        public static IEnumerable<object[]> NativeCalendarName_Get_TestData()
+        public static IEnumerable<object[]> NativeCalendarName_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, in this collection it always differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "islamic-umalqura" }; // التقويم الإسلامي (أم القرى)
@@ -201,8 +201,8 @@ namespace System.Globalization.Tests
         }
         
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(NativeCalendarName_Get_TestData))]
-        public void NativeCalendarName_Get_GetReturnsExpected(DateTimeFormatInfo format, string expected)
+        [MemberData(nameof(NativeCalendarName_Get_TestData_HybridGlobalization))]
+        public void NativeCalendarName_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string expected)
         {
             Assert.Equal(expected, format.NativeCalendarName);
         }

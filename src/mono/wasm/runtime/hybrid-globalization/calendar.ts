@@ -13,7 +13,7 @@ const MONTH_CODE = "MMMM";
 const YEAR_CODE = "yyyy";
 const DAY_CODE = "d";
 
-// this function joing all calendar info with OUTER_SEPARATOR into one string and returns back to managed code
+// this function joins all calendar info with OUTER_SEPARATOR into one string and returns it back to managed code
 export function mono_wasm_get_calendar_info(culture: MonoStringRef, calendarId: number, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number
 {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),

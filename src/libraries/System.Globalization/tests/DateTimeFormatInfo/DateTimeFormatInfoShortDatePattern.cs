@@ -8,7 +8,7 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortDatePattern
     {
-        public static IEnumerable<object[]> ShortDatePattern_Get_TestData()
+        public static IEnumerable<object[]> ShortDatePattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "d\u200f/M\u200f/yyyy" }; // "d\u200f/M\u200f/yyyy g"
@@ -201,8 +201,8 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(ShortDatePattern_Get_TestData))]
-        public void ShortDatePattern_Get_GetReturnsExpected(DateTimeFormatInfo format, string expected)
+        [MemberData(nameof(ShortDatePattern_Get_TestData_HybridGlobalization))]
+        public void ShortDatePattern_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string expected)
         {
             Assert.Equal(expected, format.ShortDatePattern);
         }

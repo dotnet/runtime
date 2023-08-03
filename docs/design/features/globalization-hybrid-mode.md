@@ -303,7 +303,7 @@ Affected public APIs:
 - DateTimeFormatInfo.YearMonthPattern
 
 
-The Hybrid responses my differ because they use Web API functions. To better ilustrate the mechanism we provide an example for each endpoint. All exceptions cannot be listed, for reference check the response of specific version of Web API on your host.
+The Hybrid responses may differ because they use Web API functions. To better ilustrate the mechanism we provide an example for each endpoint. All exceptions cannot be listed, for reference check the response of specific version of Web API on your host.
 |            **API**            |                                                         **Functions used**                                                         | **Example of difference for locale** |   **non-Hybrid**   |     **Hybrid**    |
 |:-----------------------------:|:----------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------:|:------------------:|:-----------------:|
 |      AbbreviatedDayNames      |                                  `Date.prototype.toLocaleDateString(locale, { weekday: "short" })`                                 |                 en-CA                |        Sun.        |        Sun        |

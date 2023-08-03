@@ -29,7 +29,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new string[] { "", "", "", "", "", "", "", "", "", "", "", "", "" } };
         }
 
-        public static IEnumerable<object[]> AbbreviatedMonthNames_Get_TestData()
+        public static IEnumerable<object[]> AbbreviatedMonthNames_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, new string[] { "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة", "" } };
@@ -221,8 +221,8 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(AbbreviatedMonthNames_Get_TestData))]
-        public void AbbreviatedMonthNames_Get_GetReturnsExpected(DateTimeFormatInfo format, string[] expected)
+        [MemberData(nameof(AbbreviatedMonthNames_Get_TestData_HybridGlobalization))]
+        public void AbbreviatedMonthNames_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string[] expected)
         {
             Assert.Equal(expected, format.AbbreviatedMonthNames);
         }

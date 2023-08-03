@@ -25,7 +25,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "dddd, dd MMMM yyyy" };
         }
 
-        public static IEnumerable<object[]> LongDatePattern_Get_TestData()
+        public static IEnumerable<object[]> LongDatePattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "dddd، d MMMM yyyy" }; // dddd، d MMMM yyyy g
@@ -217,8 +217,8 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(LongDatePattern_Get_TestData))]
-        public void LongDatePattern_Get_GetReturnsExpected(DateTimeFormatInfo format, string expected)
+        [MemberData(nameof(LongDatePattern_Get_TestData_HybridGlobalization))]
+        public void LongDatePattern_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string expected)
         {
             Assert.Equal(expected, format.LongDatePattern);
         }

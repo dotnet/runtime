@@ -26,7 +26,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "m" };
         }
 
-        public static IEnumerable<object[]> MonthDayPattern_Get_TestData()
+        public static IEnumerable<object[]> MonthDayPattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "d MMMM" };
@@ -218,8 +218,8 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(MonthDayPattern_Get_TestData))]
-        public void MonthDayPattern_Get_GetReturnsExpected(DateTimeFormatInfo format, string expected)
+        [MemberData(nameof(MonthDayPattern_Get_TestData_HybridGlobalization))]
+        public void MonthDayPattern_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string expected)
         {
             Assert.Equal(expected, format.MonthDayPattern);
         }

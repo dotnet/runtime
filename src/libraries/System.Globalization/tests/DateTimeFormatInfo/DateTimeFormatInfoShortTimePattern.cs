@@ -14,7 +14,7 @@ namespace System.Globalization.Tests
             Assert.Equal("HH:mm", DateTimeFormatInfo.InvariantInfo.ShortTimePattern);
         }
 
-        public static IEnumerable<object[]> ShortTimePattern_Get_TestData()
+        public static IEnumerable<object[]> ShortTimePattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "h:mm tt" };
@@ -206,10 +206,9 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(ShortTimePattern_Get_TestData))]
-        public void ShortTimePattern_Get_GetReturnsExpected(DateTimeFormatInfo format, string value)
+        [MemberData(nameof(ShortTimePattern_Get_TestData_HybridGlobalization))]
+        public void ShortTimePattern_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string value)
         {
-            format.FullDateTimePattern = value;
             Assert.Equal(value, format.ShortTimePattern);
         }
 

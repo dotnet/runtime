@@ -28,7 +28,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new string[] { "", "", "", "", "", "", "" } };
         }
 
-        public static IEnumerable<object[]> AbbreviatedDayNames_Get_TestData()
+        public static IEnumerable<object[]> AbbreviatedDayNames_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, new string[] { "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت" } };
@@ -87,8 +87,8 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [MemberData(nameof(AbbreviatedDayNames_Get_TestData))]
-        public void AbbreviatedDayNames_Get_GetReturnsExpected(DateTimeFormatInfo format, string[] expected)
+        [MemberData(nameof(AbbreviatedDayNames_Get_TestData_HybridGlobalization))]
+        public void AbbreviatedDayNames_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string[] expected)
         {
             Assert.Equal(expected, format.AbbreviatedDayNames);
         }

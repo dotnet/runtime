@@ -1901,21 +1901,21 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
             if (order == ORDER_MDY || order == ORDER_YMD)
             {
-                if (SetMD(ref result, raw.year, n1, n2))
+                if (SetYMD(ref result, raw.year, n1, n2))
                     return true;
 #if TARGET_BROWSER
                 // if we are parsing the datetime string with custom format then the CultureInfo format `order`
                 // does not matter and DM + Year is also possible for NNY
-                if (GlobalizationMode.Hybrid && SetDM(ref result, raw.year, n1, n2))
+                if (GlobalizationMode.Hybrid && SetYDM(ref result, raw.year, n1, n2))
                     return true;
 #endif
             }
             else
             {
-                if (SetDM(ref result, raw.year, n1, n2))
+                if (SetYDM(ref result, raw.year, n1, n2))
                     return true;
 #if TARGET_BROWSER
-                if (GlobalizationMode.Hybrid && SetMD(ref result, raw.year, n1, n2))
+                if (GlobalizationMode.Hybrid && SetYMD(ref result, raw.year, n1, n2))
                     return true;
 #endif
             }
@@ -1923,7 +1923,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        private static bool SetMD(ref DateTimeResult result, int year, int month, int day)
+        private static bool SetYMD(ref DateTimeResult result, int year, int month, int day)
         {
             if (SetDateYMD(ref result, year, month, day))
             {
@@ -1933,7 +1933,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        private static bool SetDM(ref DateTimeResult result, int year, int month, int day)
+        private static bool SetYDM(ref DateTimeResult result, int year, int month, int day)
         {
             if (SetDateYMD(ref result, year, day, month))
             {
@@ -2663,7 +2663,6 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         else
                         {
                             if (!ProcessTerminalState(dps, ref result, ref styles, ref raw, dtfi))
-                            // why don't we pass str here? How can we know what is the requested format of the date? We cannot just take the default CultureInfo's format
                             {
                                 TPTraceExit("0060 (ProcessTerminalState)", dps);
                                 return false;
