@@ -22,8 +22,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public ResultCache(ServiceLifetime lifetime, ServiceIdentifier serviceIdentifier, int slot)
         {
-            Debug.Assert(lifetime == ServiceLifetime.Transient);
-
             switch (lifetime)
             {
                 case ServiceLifetime.Singleton:

@@ -67,9 +67,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         ValidateTrimmingAnnotations(serviceType, serviceTypeGenericArguments, implementationType, implementationTypeGenericArguments);
                     }
                 }
-                else if (!descriptor.HasImplementationInstance() && !descriptor.HasImplementationFactory())
+                else if (descriptor.TryGetImplementationType(out Type? implementationType))
                 {
-                    Type? implementationType = descriptor.GetImplementationType();
                     Debug.Assert(implementationType != null);
 
                     if (implementationType.IsGenericTypeDefinition ||
