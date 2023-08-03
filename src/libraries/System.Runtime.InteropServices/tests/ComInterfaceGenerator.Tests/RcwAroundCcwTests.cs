@@ -209,6 +209,7 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89913", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void IStringArrayMarshallingFailsOutWindows()
         {
             var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
