@@ -265,9 +265,13 @@ namespace System
             //
             // Once the timezone cache is populated with the IDs, we reference tzlookup id tags
             // to determine if an id is backwards and label it as such if they are.
-            private static void FilterBackwardIDs(string tzFileDir, out HashSet<string> tzLookupIDs)
+            private static bool FilterBackwardIDs(string tzFileDir, out HashSet<string> tzLookupIDs)
             {
                 tzLookupIDs = new HashSet<string>();
+                string tzFilePath = Path.Combine(tzFileDir, "tzlookup.xml");
+                if (!File.Exists(tzFilePath))
+                    return false;
+
                 try
                 {
                     using (StreamReader sr = File.OpenText(Path.Combine(tzFileDir, "tzlookup.xml")))
@@ -290,7 +294,12 @@ namespace System
                         }
                     }
                 }
-                catch {}
+                catch
+                {
+                    return false;
+                }
+
+                return true;
             }
 
             [MemberNotNullWhen(true, nameof(_ids))]
@@ -367,7 +376,7 @@ namespace System
                 _ids = new string[entryCount];
                 _lengths = new int[entryCount];
                 _isBackwards = new bool[entryCount];
-                FilterBackwardIDs(tzFileDir, out HashSet<string> tzLookupIDs);
+                bool hasTzLookupFile = FilterBackwardIDs(tzFileDir, out HashSet<string> tzLookupIDs);
                 for (int i = 0; i < entryCount; ++i)
                 {
                     LoadEntryAt(fs, indexOffset + (entrySize*i), out string id, out int byteOffset, out int length);
@@ -375,7 +384,8 @@ namespace System
                     _byteOffsets[i] = byteOffset + dataOffset;
                     _ids[i] = id;
                     _lengths[i] = length;
-                    _isBackwards[i] = !tzLookupIDs.Contains(id);
+                    if (hasTzLookupFile)
+                        _isBackwards[i] = !tzLookupIDs.Contains(id);
 
                     if (length < 24) // Header Size
                     {
