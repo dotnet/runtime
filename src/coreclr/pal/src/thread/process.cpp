@@ -2205,7 +2205,7 @@ PROCCreateCrashDump(
             _ASSERTE(previousThreadId != currentThreadId);
 
             // The first thread generates the crash info and any other threads are blocked
-            SleepEx(INFINITE, FALSE);
+            poll(NULL, 0, INFTIM);
 
             return false;
         }
