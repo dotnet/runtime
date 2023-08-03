@@ -245,6 +245,19 @@
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
+      <!-- find the path with the assemblies, so we don't have to hardcode the tfm.
+           Cannot use System.Private.Corelib since that is in a different directory -->
+      <_SystemRuntimePathItem Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net*\System.Runtime.dll" />
+    </ItemGroup>
+
+    <Error Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == '' and @(_SystemRuntimePathItem->Count()) == 0" Text="Could not find System.Runtime.dll in $(MicrosoftNetCoreAppRuntimePackRidDir). This is likely a setup issue." />
+    <Error Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == '' and @(_SystemRuntimePathItem->Count()) > 1" Text="Found more than one System.Runtime.dll. This is likely a setup issue." />
+
+    <PropertyGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
+      <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([System.IO.Path]::GetDirectoryName(%(_SystemRuntimePathItem.Identity)))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
+    </PropertyGroup>
+
     <!-- FIXME: move to a emscripten init target -->
     <MakeDir Directories="$(WasmCachePath)" Condition="'$(IsBrowserWasmProject)' == 'true' and '$(WasmCachePath)' != '' and !Exists($(WasmCachePath))" />
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
