@@ -1084,7 +1084,7 @@ namespace System.Net.Http
                             if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)
                             {
-                                connection = await http2ConnectionWaiter.WaitForConnectionAsync(this, async, cancellationToken).ConfigureAwait(false);
+                                connection = await http2ConnectionWaiter.WaitForConnectionAsync(request, this, async, cancellationToken).ConfigureAwait(false);
                             }
 
                             Debug.Assert(connection is not null || !_http2Enabled);
@@ -1116,7 +1116,7 @@ namespace System.Net.Http
                             // Use HTTP/1.x.
                             if (!TryGetPooledHttp11Connection(request, async, out HttpConnection? connection, out http11ConnectionWaiter))
                             {
-                                connection = await http11ConnectionWaiter.WaitForConnectionAsync(this, async, cancellationToken).ConfigureAwait(false);
+                                connection = await http11ConnectionWaiter.WaitForConnectionAsync(request, this, async, cancellationToken).ConfigureAwait(false);
                             }
 
                             connection.Acquire(); // In case we are doing Windows (i.e. connection-based) auth, we need to ensure that we hold on to this specific connection while auth is underway.
@@ -2620,14 +2620,14 @@ namespace System.Net.Http
             // Distinguish connection cancellation that happens because the initiating request is cancelled or completed on a different connection.
             public bool CancelledByOriginatingRequestCompletion { get; set; }
 
-            public ValueTask<T> WaitForConnectionAsync(HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
+            public ValueTask<T> WaitForConnectionAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
             {
                 return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled
-                    ? WaitForConnectionWithTelemetryAsync(pool, async, requestCancellationToken)
+                    ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
                     : WaitWithCancellationAsync(async, requestCancellationToken);
             }
 
-            private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
+            private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
             {
                 Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
 
@@ -2641,7 +2641,7 @@ namespace System.Net.Http
                     TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
                     int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
 
-                    pool.Settings._metrics!.RequestLeftQueue(pool, duration, versionMajor);
+                    pool.Settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor);
 
                     if (HttpTelemetry.Log.IsEnabled())
                     {

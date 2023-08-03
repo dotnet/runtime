@@ -1,27 +1,27 @@
 jobs:
 
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+# - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
 
-  # build mono
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-      runtimeFlavor: mono
-      buildConfig: release
-      platforms:
-      - linux_x64
+#   # build mono
+#   - template: /eng/pipelines/common/platform-matrix.yml
+#     parameters:
+#       jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+#       runtimeFlavor: mono
+#       buildConfig: release
+#       platforms:
+#       - linux_x64
 
-  # build coreclr and libraries
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-      buildConfig: release
-      platforms:
-      - linux_x64
-      jobParameters:
-        testGroup: perf
+#   # build coreclr and libraries
+#   - template: /eng/pipelines/common/platform-matrix.yml
+#     parameters:
+#       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+#       buildConfig: release
+#       platforms:
+#       - linux_x64
+#       jobParameters:
+#         testGroup: perf
 
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+- ${{ if ne(variables['System.TeamProject'], 'public') }}: # notin(variables['Build.Reason'], 'Schedule') # Temporarily remove schedule filter since we are now running on schedule runs (Same for above schedule section)
 
   # build coreclr and libraries
   - template: /eng/pipelines/common/platform-matrix.yml
