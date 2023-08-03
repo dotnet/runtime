@@ -142,14 +142,11 @@ namespace System.Collections.Tests
         [Fact]
         public void HashSetResized_CapacityChanged()
         {
-            var hashSet = (HashSet<T>)GenericISetFactory(10);
+            var hashSet = (HashSet<T>)GenericISetFactory(3);
             int initialCapacity = hashSet.Capacity;
 
             int seed = 85877;
-            for (int i = 0; i < hashSet.Capacity; i++)
-            {
-                hashSet.Add(CreateT(seed++));
-            }
+            hashSet.Add(CreateT(seed++));
 
             int afterCapacity = hashSet.Capacity;
 
