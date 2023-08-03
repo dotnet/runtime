@@ -303,12 +303,12 @@ namespace System.Net.Sockets
                 {
                     Span<byte> buffer = stackalloc byte[SocketAddress.GetMaximumAddressSize(_addressFamily)];
                     int size = buffer.Length;
-                    // This may throw ObjectDisposedException.
 
                     unsafe
                     {
                         fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
                         {
+                            // This may throw ObjectDisposedException.
                             SocketError errorCode = SocketPal.GetSockName(_handle, ptr, &size);
                             if (errorCode != SocketError.Success)
                             {

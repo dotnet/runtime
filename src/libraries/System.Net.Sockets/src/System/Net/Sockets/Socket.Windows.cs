@@ -71,7 +71,7 @@ namespace System.Net.Sockets
             IPEndPoint ep = new IPEndPoint(tempAddress, 0);
 
             Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(ep);
-            int size = socketAddress.Size;
+            int size = socketAddress.Buffer.Length;
             unsafe
             {
                 fixed (byte* bufferPtr = socketAddress.Buffer.Span)

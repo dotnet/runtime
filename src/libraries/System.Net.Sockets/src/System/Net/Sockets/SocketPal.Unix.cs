@@ -1091,7 +1091,7 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError Bind(SafeSocketHandle handle, ProtocolType socketProtocolType, ReadOnlySpan<byte> buffer)
         {
-            Interop.Error err = Interop.Sys.Bind(handle, socketProtocolType, buffer, buffer.Length);
+            Interop.Error err = Interop.Sys.Bind(handle, socketProtocolType, buffer);
 
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }

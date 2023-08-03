@@ -331,7 +331,7 @@ namespace System.Net.Sockets
 
         private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
         {
-            new ReadOnlySpan<byte>(_acceptBuffer!, 0, _acceptAddressBufferCount).CopyTo(remoteSocketAddress.Buffer.Span);
+            new ReadOnlySpan<byte>(_acceptBuffer, 0, _acceptAddressBufferCount).CopyTo(remoteSocketAddress.Buffer.Span);
             remoteSocketAddress.Size = _acceptAddressBufferCount;
 
             Socket acceptedSocket = _currentSocket!.CreateAcceptSocket(
