@@ -143,13 +143,6 @@ Console.WriteLine($"firstDate={ firstDate}");
 
 Using the low-level JSON reader/writer types
 ```csharp
-/*
-  SharpLab tools in Run mode:
-    • value.Inspect()
-    • Inspect.Heap(object)
-    • Inspect.Stack(value)
-    • Inspect.MemoryGraph(value1, value2, …)
-*/
 using System;
 using System.IO;
 using System.Text;
