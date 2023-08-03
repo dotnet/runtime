@@ -560,9 +560,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         /// <returns>Not <b>null</b> if <b>throwIfCallSiteNotFound</b> is true</returns>
         private ServiceCallSite[]? CreateArgumentCallSites(
-#pragma warning disable IDE0060 // Remove unused parameter
             ServiceIdentifier serviceIdentifier,
-#pragma warning restore IDE0060 // Remove unused parameter
             Type implementationType,
             CallSiteChain callSiteChain,
             ParameterInfo[] parameters,
