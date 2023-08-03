@@ -82,7 +82,7 @@
     <Compile Include="System\Net\NetworkInformation\TeredoHelper.cs" />
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs" Link="Common\System\Net\IPAddressParserStatics.cs" />
-    <Compile Include="$(CommonPath)System\Net\SocketAddress.cs" Link="Common\System\Net\SocketAddress.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs" Link="Common\System\Net\IPEndPointExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs" Link="Common\System\Net\SocketAddressPal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\StartIPOptions.cs" Link="Common\System\Net\NetworkInformation\StartIPOptions.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Windows.cs" Link="Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs" />

@@ -304,7 +304,7 @@ namespace System.Net.Sockets
 
                     unsafe
                     {
-                        fixed (byte* buffer = socketAddress.Buffer)
+                        fixed (byte* buffer = socketAddress.InternalBuffer)
                         fixed (int* bufferSize = &socketAddress.InternalSize)
                         {
                             // This may throw ObjectDisposedException.
@@ -346,7 +346,7 @@ namespace System.Net.Sockets
                     // This may throw ObjectDisposedException.
                     SocketError errorCode = SocketPal.GetPeerName(
                         _handle,
-                        socketAddress.Buffer,
+                        socketAddress.InternalBuffer,
                         ref socketAddress.InternalSize);
 
                     if (errorCode != SocketError.Success)
@@ -765,7 +765,7 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketPal.Bind(
                 _handle,
                 _protocolType,
-                socketAddress.Buffer,
+                socketAddress.InternalBuffer,
                 socketAddress.Size);
 
             // Throw an appropriate SocketException if the native call fails.
@@ -797,10 +797,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
-            if (_isConnected)
-            {
-                throw new SocketException((int)SocketError.IsConnected);
-            }
+            ThrowIfConnectedStreamSocket();
 
             ValidateBlockingMode();
 
@@ -839,10 +836,7 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            if (_isConnected)
-            {
-                throw new SocketException((int)SocketError.IsConnected);
-            }
+            ThrowIfConnectedStreamSocket();
 
             ValidateForMultiConnect(isMultiEndpoint: false); // needs to come before CanTryAddressFamily call
 
@@ -902,10 +896,7 @@ namespace System.Net.Sockets
                 throw new NotSupportedException(SR.net_invalidversion);
             }
 
-            if (_isConnected)
-            {
-                throw new SocketException((int)SocketError.IsConnected);
-            }
+            ThrowIfConnectedStreamSocket();
 
             ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
 
@@ -1014,13 +1005,15 @@ namespace System.Net.Sockets
             // This may throw ObjectDisposedException.
             SafeSocketHandle acceptedSocketHandle;
             SocketError errorCode;
+            int socketAddressLen;
             try
             {
                 errorCode = SocketPal.Accept(
                     _handle,
                     socketAddress.Buffer,
-                    ref socketAddress.InternalSize,
+                    out socketAddressLen,
                     out acceptedSocketHandle);
+                socketAddress.Size = socketAddressLen;
             }
             catch (Exception ex)
             {
@@ -1282,7 +1275,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1354,7 +1347,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1371,6 +1364,42 @@ namespace System.Net.Sockets
 
             // Save a copy of the EndPoint so we can use it for Create().
             _rightEndPoint ??= remoteEP;
+
+            return bytesTransferred;
+        }
+
+        /// <summary>
+        /// Sends data to a specific endpoint using the specified <see cref="SocketFlags"/>.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that contains the data to be sent.</param>
+        /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
+        /// <param name="socketAddress">The <see cref="SocketAddress"/> that represents the destination for the data.</param>
+        /// <returns>The number of bytes sent.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, SocketAddress socketAddress)
+        {
+            ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(socketAddress);
+
+            ValidateBlockingMode();
+
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, out bytesTransferred);
+
+            // Throw an appropriate SocketException if the native call fails.
+            if (errorCode != SocketError.Success)
+            {
+                UpdateSendSocketErrorForDisposed(ref errorCode);
+
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
+            }
 
             return bytesTransferred;
         }
@@ -1681,7 +1710,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, out int socketAddressLength, out bytesTransferred);
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
@@ -1702,6 +1731,8 @@ namespace System.Net.Sockets
                 SocketsTelemetry.Log.BytesReceived(bytesTransferred);
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
+
+            socketAddress.Size = socketAddressLength;
 
             if (!socketAddressOriginal.Equals(socketAddress))
             {
@@ -1788,7 +1819,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.Buffer, out int socketAddressLength, out bytesTransferred);
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
@@ -1810,6 +1841,7 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
+            socketAddress.Size = socketAddressLength;
             if (!socketAddressOriginal.Equals(socketAddress))
             {
                 try
@@ -1835,6 +1867,52 @@ namespace System.Net.Sockets
             if (socketException != null)
             {
                 throw socketException;
+            }
+
+            return bytesTransferred;
+        }
+
+        /// <summary>
+        /// Receives a datagram into the data buffer, using the specified <see cref="SocketFlags"/>, and stores the endpoint.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that is the storage location for received data.</param>
+        /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
+        /// <param name="receivedSocketAddress">An <see cref="SocketAddress"/>, that will be updated with value of the remote peer.</param>
+        /// <returns>The number of bytes received.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, SocketAddress receivedSocketAddress)
+        {
+            ThrowIfDisposed();
+
+            if (receivedSocketAddress.Size < SocketAddress.GetMaximumAddressSize(AddressFamily))
+            {
+                throw new ArgumentOutOfRangeException(nameof(receivedSocketAddress), SR.net_sockets_address_small);
+            }
+
+            ValidateBlockingMode();
+
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, receivedSocketAddress.Buffer, out int socketAddressSize, out bytesTransferred);
+            if (socketAddressSize > 0)
+            {
+                receivedSocketAddress.Size = socketAddressSize;
+            }
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
+            // If the native call fails we'll throw a SocketException.
+            if (errorCode != SocketError.Success)
+            {
+                SocketException socketException = new SocketException((int)errorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
+
+                throw socketException;
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
             return bytesTransferred;
@@ -2648,10 +2726,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
-            if (_isConnected)
-            {
-                throw new SocketException((int)SocketError.IsConnected);
-            }
+            ThrowIfConnectedStreamSocket();
 
             // Prepare SocketAddress.
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
@@ -3082,7 +3157,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             try
             {
-                errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
+                errorCode = SocketPal.Connect(_handle, socketAddress.Buffer);
             }
             catch (Exception ex)
             {
@@ -3734,6 +3809,14 @@ namespace System.Net.Sockets
         private void ThrowIfDisposed()
         {
             ObjectDisposedException.ThrowIf(Disposed, this);
+        }
+
+        private void ThrowIfConnectedStreamSocket()
+        {
+            if (_isConnected && _socketType == SocketType.Stream)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
         }
 
         private bool IsConnectionOriented => _socketType == SocketType.Stream;

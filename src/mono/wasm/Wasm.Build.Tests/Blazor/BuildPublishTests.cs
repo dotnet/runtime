@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -16,7 +14,7 @@ using Microsoft.Playwright;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class BuildPublishTests : BuildTestBase
+public class BuildPublishTests : BlazorWasmTestBase
 {
     public BuildPublishTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -27,18 +25,16 @@ public class BuildPublishTests : BuildTestBase
     [Theory, TestCategory("no-workload")]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void DefaultTemplate_WithoutWorkload(string config)
+    public async Task DefaultTemplate_WithoutWorkload(string config)
     {
         string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
-        // Build
-        BlazorBuildInternal(id, config, publish: false);
-        AssertBlazorBootJson(config, isPublish: false);
+        BlazorBuild(new BlazorBuildOptions(id, config));
+        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
 
-        // Publish
-        BlazorBuildInternal(id, config, publish: true);
-        AssertBlazorBootJson(config, isPublish: true);
+        BlazorPublish(new BlazorBuildOptions(id, config));
+        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
     }
 
     [Theory]
@@ -159,10 +155,11 @@ public class BuildPublishTests : BuildTestBase
         if (publish)
             BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: build));
 
+        BlazorRunOptions runOptions = new() { Config = config, Test = TestDllImport };
         if (publish)
-            await BlazorRunForPublishWithWebServer(config, TestDllImport);
+            await BlazorRunForPublishWithWebServer(runOptions);
         else
-            await BlazorRunForBuildWithDotnetRun(config, TestDllImport);
+            await BlazorRunForBuildWithDotnetRun(runOptions);
 
         async Task TestDllImport(IPage page)
         {
@@ -196,7 +193,7 @@ public class BuildPublishTests : BuildTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{WebcilInWasmExtension}" : "RazorClassLibrary.dll";
+        string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{ProjectProviderBase.WebcilInWasmExtension}" : "RazorClassLibrary.dll";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
             <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileName}"" />
@@ -234,7 +231,7 @@ public class BuildPublishTests : BuildTestBase
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
-        await BlazorRunForBuildWithDotnetRun(config);
+        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
@@ -254,7 +251,30 @@ public class BuildPublishTests : BuildTestBase
             config,
             aot ? NativeFilesType.AOT
                 : (config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack)));
-        await BlazorRunForPublishWithWebServer(config);
+        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
     }
 
+    private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Pages/Counter.razor")
+    {
+        string additionalCode = $$"""
+            <p role="{{methodName}}">Output: @outputText</p>
+            <button class="btn btn-primary" @onclick="{{methodName}}">{{buttonText}}</button>
+
+            @code {
+                private string outputText = string.Empty;
+                public void {{methodName}}()
+                {
+                    {{customCode}}
+                }
+            }
+        """;
+
+        // find blazor's Counter.razor
+        string counterRazorPath = Path.Combine(_projectDir!, razorPage);
+        if (!File.Exists(counterRazorPath))
+            throw new FileNotFoundException($"Could not find {counterRazorPath}");
+
+        string oldContent = File.ReadAllText(counterRazorPath);
+        File.WriteAllText(counterRazorPath, oldContent + additionalCode);
+    }
 }

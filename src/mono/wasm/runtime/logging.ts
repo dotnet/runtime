@@ -27,6 +27,10 @@ export function mono_log_warn(msg: string, ...data: any) {
 }
 
 export function mono_log_error(msg: string, ...data: any) {
+    if (data && data.length > 0 && data[0] && typeof data[0] === "object" && data[0].silent) {
+        // don't log silent errors
+        return;
+    }
     console.error(prefix + msg, ...data);
 }
 
@@ -87,8 +91,8 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
 export function mono_wasm_stringify_as_error_with_stack(err: Error | string): string {
     let errObj: any = err;
-    if (!errObj || !errObj.stack || !(errObj instanceof Error)) {
-        errObj = new Error(errObj || "Unknown error");
+    if (!errObj || !errObj.stack) {
+        errObj = new Error(errObj ? ("" + errObj) : "Unknown error");
     }
 
     // Error

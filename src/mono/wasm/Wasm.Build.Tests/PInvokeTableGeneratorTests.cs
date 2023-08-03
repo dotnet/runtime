@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class PInvokeTableGeneratorTests : BuildTestBase
+    public class PInvokeTableGeneratorTests : TestMainJsTestBase
     {
         public PInvokeTableGeneratorTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)

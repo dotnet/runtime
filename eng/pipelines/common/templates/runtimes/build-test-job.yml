@@ -69,7 +69,7 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
       - name: liveRuntimeBuildParams
-        value: 'libs.sfx+libs.oob+clr.iltools /p:RefOnly=true -c Release -ci'
+        value: 'libs+clr.iltools -c Release -ci'
       - name: compilerArg
         value: ''
 
@@ -79,6 +79,10 @@ jobs:
       - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
         - name: runtimeFlavorArgs
           value: '-mono'
+
+      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
+        - name: runtimeFlavorArgs
+          value: '-nativeaot'
 
       - name: testTreeFilterArg
         value: ''

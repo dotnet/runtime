@@ -499,7 +499,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
     }
 
     _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
-    return GetMethodTable_NoLogging()->GetSlot(GetSlot());
+    return GetMethodTable()->GetSlot(GetSlot());
 }
 
 PTR_PCODE MethodDesc::GetAddrOfSlot()
@@ -935,6 +935,34 @@ PCODE MethodDesc::GetNativeCode()
     return GetStableEntryPoint();
 }
 
+PCODE MethodDesc::GetNativeCodeReJITAware()
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+
+    PCODE pDefaultCode = GetNativeCode();
+    if (pDefaultCode != NULL)
+    {
+        return pDefaultCode;
+    }
+
+    {
+        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
+        if (!ilVersion.IsDefaultVersion())
+        {
+            NativeCodeVersion activeNativeCodeVersion = ilVersion.GetActiveNativeCodeVersion(PTR_MethodDesc(this));
+            if (!activeNativeCodeVersion.IsNull())
+            {
+                return activeNativeCodeVersion.GetNativeCode();
+            }
+        }
+
+        return NULL;
+    }
+}
+
 //*******************************************************************************
 PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 {
@@ -1345,19 +1373,6 @@ Module* MethodDesc::GetLoaderModule()
 
 //*******************************************************************************
 Module *MethodDesc::GetModule() const
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    SUPPORTS_DAC;
-
-    Module *pModule = GetModule_NoLogging();
-
-    return pModule;
-}
-
-//*******************************************************************************
-Module *MethodDesc::GetModule_NoLogging() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;

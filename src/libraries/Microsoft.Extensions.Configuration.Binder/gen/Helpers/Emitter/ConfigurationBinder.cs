@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             private bool ShouldEmitMethods(MethodsToGen_ConfigurationBinder methods) => (_sourceGenSpec.MethodsToGen_ConfigurationBinder & methods) != 0;
 
-            private void EmitBinder_ConfigurationBinder()
+            private void EmitBinder_Extensions_IConfiguration()
             {
                 Debug.Assert(_sourceGenSpec.TypesForGen_ConfigurationBinder_BindMethods.Count <= 3 &&
                     !_sourceGenSpec.TypesForGen_ConfigurationBinder_BindMethods.Keys.Any(overload => (overload & MethodsToGen_ConfigurationBinder.Bind) is 0));
@@ -25,13 +25,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 _emitBlankLineBeforeNextStatement = false;
-                EmitRootBindingClassBlockStart(Identifier.GeneratedConfigurationBinder);
+                EmitRootBindingClassStartBlock(Identifier.GeneratedConfigurationBinder);
 
                 EmitGetMethods();
                 EmitGetValueMethods();
                 EmitBindMethods_ConfigurationBinder();
 
-                _writer.WriteBlockEnd();
+                EmitEndBlock();
                 _emitBlankLineBeforeNextStatement = true;
             }
 

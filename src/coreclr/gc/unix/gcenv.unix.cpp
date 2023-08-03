@@ -136,7 +136,7 @@ typedef cpuset_t cpu_set_t;
 #endif
 #endif // __APPLE__
 
-#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
 #else
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN

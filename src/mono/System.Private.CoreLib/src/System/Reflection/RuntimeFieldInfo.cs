@@ -241,11 +241,10 @@ namespace System.Reflection
             if (val != null)
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
-                ParameterCopyBackAction _ = default;
 
                 if (!ReferenceEquals(val.GetType(), fieldType))
                 {
-                    fieldType.CheckValue(ref val, ref _, binder, culture, invokeAttr);
+                    fieldType.CheckValue(ref val, binder, culture, invokeAttr);
                 }
             }
 

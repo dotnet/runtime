@@ -452,22 +452,10 @@ public:
         return (HasClassInstantiation() || HasMethodInstantiation());
     }
 
-    BOOL HasClassOrMethodInstantiation_NoLogging() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (HasClassInstantiation_NoLogging() || HasMethodInstantiation());
-    }
-
     inline BOOL HasClassInstantiation() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return GetMethodTable()->HasInstantiation();
-    }
-
-    inline BOOL HasClassInstantiation_NoLogging() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetMethodTable_NoLogging()->HasInstantiation();
     }
 
     // Return the instantiation for an instantiated generic method
@@ -980,14 +968,13 @@ public:
     inline EEClass* GetClass()
     {
         WRAPPER_NO_CONTRACT;
-        MethodTable *pMT = GetMethodTable_NoLogging();
-        EEClass *pClass = pMT->GetClass_NoLogging();
+        MethodTable *pMT = GetMethodTable();
+        EEClass *pClass = pMT->GetClass();
         PREFIX_ASSUME(pClass != NULL);
         return pClass;
     }
 
     inline PTR_MethodTable GetMethodTable() const;
-    inline PTR_MethodTable GetMethodTable_NoLogging() const;
 
     inline DPTR(PTR_MethodTable) GetMethodTablePtr() const;
 
@@ -1000,7 +987,6 @@ public:
     inline MethodTable* GetCanonicalMethodTable();
 
     Module *GetModule() const;
-    Module *GetModule_NoLogging() const;
 
     Assembly *GetAssembly() const
     {
@@ -1048,7 +1034,6 @@ public:
 
 public:
     mdMethodDef GetMemberDef() const;
-    mdMethodDef GetMemberDef_NoLogging() const;
 
 #ifdef _DEBUG
     BOOL SanityCheck();
@@ -1387,6 +1372,14 @@ public:
         return GetNativeCode() != NULL;
     }
 
+    // Perf warning: takes the CodeVersionManagerLock on every call
+    BOOL HasNativeCodeReJITAware()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return GetNativeCodeReJITAware() != NULL;
+    }
+
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
 
     PTR_PCODE GetAddrOfNativeCodeSlot();
@@ -1442,6 +1435,11 @@ public:
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();
+
+    // Returns GetNativeCode() if it exists, but also checks to see if there
+    // is a non-default IL code version and returns that.
+    // Perf warning: takes the CodeVersionManagerLock on every call
+    PCODE GetNativeCodeReJITAware();
 
 #if defined(FEATURE_JIT_PITCHING)
     bool IsPitchable();
@@ -2458,6 +2456,8 @@ public:
         StubTailCallStoreArgs,
         StubTailCallCallTarget,
 
+        StubVirtualStaticMethodDispatch,
+
         StubLast
     };
 
@@ -3409,20 +3409,13 @@ private:
 
 };
 
-inline PTR_MethodTable MethodDesc::GetMethodTable_NoLogging() const
+inline PTR_MethodTable MethodDesc::GetMethodTable() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     MethodDescChunk *pChunk = GetMethodDescChunk();
     PREFIX_ASSUME(pChunk != NULL);
     return pChunk->GetMethodTable();
-}
-
-inline PTR_MethodTable MethodDesc::GetMethodTable() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return GetMethodTable_NoLogging();
 }
 
 inline DPTR(PTR_MethodTable) MethodDesc::GetMethodTablePtr() const
@@ -3441,7 +3434,7 @@ inline MethodTable* MethodDesc::GetCanonicalMethodTable()
     return GetMethodTable()->GetCanonicalMethodTable();
 }
 
-inline mdMethodDef MethodDesc::GetMemberDef_NoLogging() const
+inline mdMethodDef MethodDesc::GetMemberDef() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -3453,12 +3446,6 @@ inline mdMethodDef MethodDesc::GetMemberDef_NoLogging() const
     static_assert_no_msg(enum_flag3_TokenRemainderMask == METHOD_TOKEN_REMAINDER_MASK);
 
     return MergeToken(tokrange, tokremainder);
-}
-
-inline mdMethodDef MethodDesc::GetMemberDef() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetMemberDef_NoLogging();
 }
 
 // Set the offset of this method desc in a chunk table (which allows us
@@ -3500,7 +3487,7 @@ inline void MethodDesc::SetMemberDef(mdMethodDef mb)
 #ifdef _DEBUG
     if (mb != 0)
     {
-        _ASSERTE(GetMemberDef_NoLogging() == mb);
+        _ASSERTE(GetMemberDef() == mb);
     }
 #endif
 }

@@ -139,7 +139,7 @@
     <HelixCommandPrefixEnvVarItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_WORKITEM_ROOT%\.dotnet" />
 
     <HelixCommandPrefixEnvVarItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_ROOT=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
-    <!--<HelixCommandPrefixEnvVarItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_ROOT=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />-->
+    <HelixCommandPrefixEnvVarItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_ROOT=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />
 
     <HelixCommandPrefixEnvVarItem Condition="'$(WindowsShell)' != 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%24{HELIX_CORRELATION_PAYLOAD}/$(SdkForWorkloadTestingDirName)" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WindowsShell)' == 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />
