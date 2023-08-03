@@ -1253,6 +1253,7 @@ mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 	case OP_FBLT_UN:
 	case OP_FBLE_UN:
 	case OP_FBGT_UN:
+	case OP_RCONV_TO_I2:
 	case OP_RCONV_TO_I4:
 	case OP_ICONV_TO_R4:
 #ifdef TARGET_RISCV64
@@ -2218,6 +2219,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FNEG:
 		case OP_ICONV_TO_R8:
 		case OP_RCONV_TO_R8:
+		case OP_RCONV_TO_I8:
 		case OP_RCONV_TO_I4:
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_R4:
@@ -2229,12 +2231,19 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_R4CONST:
 		case OP_ICONV_TO_R4:
 			break;
-		case OP_FCONV_TO_I2: {
+		case OP_FCONV_TO_I2: 
+		case OP_RCONV_TO_I2: {
 			// fconv_to_i2 rd, fs1 => fconv_to_i{4|8} rs1, fs1; {i|l}conv_to_i2 rd, rs1
 #ifdef TARGET_RISCV64
-			NEW_INS_BEFORE(cfg, ins, temp, OP_FCONV_TO_I8);
+			if (ins->opcode == OP_FCONV_TO_I2)
+				NEW_INS_BEFORE(cfg, ins, temp, OP_FCONV_TO_I8);
+			else
+				NEW_INS_BEFORE(cfg, ins, temp, OP_RCONV_TO_I8);
 #else
-			NEW_INS_BEFORE(cfg, ins, temp, OP_FCONV_TO_I4);
+			if (ins->opcode == OP_FCONV_TO_I2)
+				NEW_INS_BEFORE(cfg, ins, temp, OP_FCONV_TO_I4);
+			else
+				NEW_INS_BEFORE(cfg, ins, temp, OP_RCONV_TO_I4);
 #endif
 			temp->dreg = mono_alloc_ireg (cfg);
 			temp->sreg1 = ins->sreg1;
@@ -4432,6 +4441,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RCONV_TO_R8: {
 			g_assert (riscv_stdext_d);
 			riscv_fcvt_d_s (code, ins->dreg, ins->sreg1);
+			break;
+		}
+		case OP_RCONV_TO_I8: {
+			g_assert (riscv_stdext_f);
+			riscv_fcvt_l_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_RCONV_TO_I4: {

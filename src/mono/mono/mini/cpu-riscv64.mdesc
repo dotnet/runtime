@@ -133,6 +133,7 @@ r4const: dest:f len:16
 r8const: dest:f len:16
 int_conv_to_r4: dest:f src1:i len:4
 int_conv_to_r8: dest:f src1:i len:4
+r4_conv_to_i8: dest:i src1:f len:4
 r4_conv_to_r8: dest:f src1:f len:4
 r4_conv_to_i4: dest:i src1:f len:4
 float_conv_to_i4: dest:i src1:f len:4
