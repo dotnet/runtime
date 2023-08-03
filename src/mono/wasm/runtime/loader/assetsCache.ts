@@ -95,10 +95,10 @@ export function addCachedReponse(asset: AssetEntryInternal, networkResponse: Res
     if (!cache || asset.noCache || !asset.hash || asset.hash.length === 0) {
         return;
     }
-
+    const clonedResponse = networkResponse.clone();
     setTimeout(() => {
         const cacheKey = getCacheKey(asset);
-        addToCacheAsync(cache, asset.name, cacheKey, networkResponse); // Don't await - add to cache in background
+        addToCacheAsync(cache, asset.name, cacheKey, clonedResponse); // Don't await - add to cache in background
     }, 0);
 }
 
@@ -106,16 +106,16 @@ function getCacheKey(asset: AssetEntryInternal) {
     return `${asset.resolvedUrl}.${asset.hash}`;
 }
 
-async function addToCacheAsync(cache: Cache, name: string, cacheKey: string, response: Response) {
+async function addToCacheAsync(cache: Cache, name: string, cacheKey: string, clonedResponse: Response) {
     // We have to clone in order to put this in the cache *and* not prevent other code from
     // reading the original response stream.
-    const responseData = await response.clone().arrayBuffer();
+    const responseData = await clonedResponse.arrayBuffer();
 
     // Now is an ideal moment to capture the performance stats for the request, since it
     // only just completed and is most likely to still be in the buffer. However this is
     // only done on a 'best effort' basis. Even if we do receive an entry, some of its
     // properties may be blanked out if it was a CORS request.
-    const performanceEntry = getPerformanceEntry(response.url);
+    const performanceEntry = getPerformanceEntry(clonedResponse.url);
     const responseBytes = (performanceEntry && performanceEntry.encodedBodySize) || undefined;
     networkLoads[name] = { responseBytes };
 
@@ -123,8 +123,8 @@ async function addToCacheAsync(cache: Cache, name: string, cacheKey: string, res
     // We can't rely on the server sending content-length (ASP.NET Core doesn't by default)
     const responseToCache = new Response(responseData, {
         headers: {
-            "content-type": response.headers.get("content-type") || "",
-            "content-length": (responseBytes || response.headers.get("content-length") || "").toString(),
+            "content-type": clonedResponse.headers.get("content-type") || "",
+            "content-length": (responseBytes || clonedResponse.headers.get("content-length") || "").toString(),
         },
     });
 
