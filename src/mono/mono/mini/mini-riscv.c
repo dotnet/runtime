@@ -862,12 +862,20 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	}
 	// Scalars that are at most XLEN bits wide are passed in a single argument register
 	else {
-		ainfo->storage = ArgVtypeInIReg;
-		ainfo->reg = cinfo->next_arg;
-		ainfo->size = sizeof (host_mgreg_t);
-		ainfo->is_regpair = FALSE;
+		if (cinfo->next_arg > RISCV_A7) {
+			ainfo->offset = cinfo->stack_usage;
+			ainfo->storage = ArgVtypeOnStack;
+			cinfo->stack_usage += sizeof (host_mgreg_t);
+			ainfo->slot_size = sizeof (host_mgreg_t);
+		}
+		else {
+			ainfo->storage = ArgVtypeInIReg;
+			ainfo->reg = cinfo->next_arg;
+			ainfo->size = sizeof (host_mgreg_t);
+			ainfo->is_regpair = FALSE;
 
-		cinfo->next_arg += 1;
+			cinfo->next_arg += 1;
+		}
 	}
 }
 
@@ -2228,6 +2236,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_I8:
 		case OP_FCEQ:
 		case OP_FCLT:
+		case OP_RCLT:
 		case OP_FCLT_UN:
 		case OP_RISCV_SETFREG_R4:
 		case OP_R4CONST:
