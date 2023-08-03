@@ -4376,10 +4376,8 @@ namespace System.Net.Http.Functional.Tests
             };
 
             HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
-
-            // TODO: Some platforms fail to detect NameResolutionError reliably, we should investigate this.
-            // Also, System.Net.Quic does not report DNS resolution errors yet.
-            Assert.True(ex.HttpRequestError is HttpRequestError.NameResolutionError or HttpRequestError.ConnectionError);
+            Assert.Equal(HttpRequestError.NameResolutionError, ex.HttpRequestError);
+            Assert.IsType<SocketException>(ex.InnerException);
         }
 
         [Fact]
