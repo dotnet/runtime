@@ -10,12 +10,12 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObje
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit } from "./exit";
 import { setup_proxy_console, mono_log_info } from "./logging";
-import { prepareAssets, prepareAssetsWorker, resolve_single_asset_path, start_asset_download } from "./assets";
+import { mono_download_assets, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, start_asset_download } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
-import { invokeLibraryInitializers } from "./libraryInitializers";
+import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { initCacheToUseIfEnabled } from "./assetsCache";
 
 const module = globalObjectsRoot.module;
@@ -481,13 +481,16 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     init_globalization();
 
-    // TODO call mono_download_assets(); here in parallel ?
     const es6Modules = await Promise.all(promises);
+
+    mono_download_assets(); // intentionally not awaited
+
     await initializeModules(es6Modules as any);
 
     await runtimeHelpers.dotnetReady.promise;
 
-    await invokeLibraryInitializers("onRuntimeReady", [globalObjectsRoot.api], "modulesAfterRuntimeReady");
+    await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
+    await invokeLibraryInitializers("onRuntimeReady", [globalObjectsRoot.api]);
 
     return exportedRuntimeAPI;
 }

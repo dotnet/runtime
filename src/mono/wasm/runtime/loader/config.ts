@@ -6,7 +6,7 @@ import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
-import { invokeLibraryInitializers } from "./libraryInitializers";
+import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { appendUniqueQuery } from "./assets";
@@ -228,7 +228,8 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
 
         normalizeConfig();
 
-        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config], "modulesAfterConfigLoaded");
+        await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterRuntimeReady);
+        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
 
         if (module.onConfigLoaded) {
             try {

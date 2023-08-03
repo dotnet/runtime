@@ -74,6 +74,7 @@ export function setLoaderGlobals(
         _loaded_files: [],
         loadedFiles: [],
         loadedAssemblies: [],
+        libraryInitializers: [],
         actual_downloaded_assets_count: 0,
         actual_instantiated_assets_count: 0,
         expected_downloaded_assets_count: 0,

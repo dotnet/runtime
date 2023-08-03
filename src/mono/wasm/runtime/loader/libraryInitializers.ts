@@ -2,24 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_log_warn } from "./logging";
-import { MonoConfig } from "../types";
 import { appendUniqueQuery } from "./assets";
 import { loaderHelpers } from "./globals";
 import { mono_exit } from "./exit";
+import { ResourceList } from "../types";
 
-export type LibraryInitializerTypes =
-    "modulesAfterConfigLoaded"
-    | "modulesAfterRuntimeReady";
-
-async function fetchLibraryInitializers(config: MonoConfig, type: LibraryInitializerTypes): Promise<void> {
-    if (!loaderHelpers.libraryInitializers) {
-        loaderHelpers.libraryInitializers = [];
-    }
-
-    const libraryInitializers = type == "modulesAfterConfigLoaded"
-        ? config.resources?.modulesAfterConfigLoaded
-        : config.resources?.modulesAfterRuntimeReady;
-
+export async function importLibraryInitializers(libraryInitializers: ResourceList | undefined): Promise<void> {
     if (!libraryInitializers) {
         return;
     }
@@ -39,11 +27,7 @@ async function fetchLibraryInitializers(config: MonoConfig, type: LibraryInitial
     }
 }
 
-export async function invokeLibraryInitializers(functionName: string, args: any[], type?: LibraryInitializerTypes) {
-    if (type) {
-        await fetchLibraryInitializers(loaderHelpers.config, type);
-    }
-
+export async function invokeLibraryInitializers(functionName: string, args: any[]) {
     if (!loaderHelpers.libraryInitializers) {
         return;
     }
