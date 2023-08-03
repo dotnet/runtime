@@ -1788,6 +1788,8 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 
 	case OP_ICONV_TO_R8:
 	case OP_LCONV_TO_R8:
+	case OP_RCONV_TO_I2:
+	case OP_FCONV_TO_I2:
 	case OP_FCONV_TO_R4:
 	case OP_FCONV_TO_R8:
 	case OP_FCONV_TO_I8:
@@ -2219,14 +2221,32 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RCONV_TO_I4:
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_R4:
+		case OP_FCONV_TO_I8:
 		case OP_FCEQ:
 		case OP_FCLT:
 		case OP_FCLT_UN:
 		case OP_RISCV_SETFREG_R4:
-			break;
 		case OP_R4CONST:
 		case OP_ICONV_TO_R4:
 			break;
+		case OP_FCONV_TO_I2: {
+			// fconv_to_i2 rd, fs1 => fconv_to_i{4|8} rs1, fs1; {i|l}conv_to_i2 rd, rs1
+#ifdef TARGET_RISCV64
+			NEW_INS_BEFORE(cfg, ins, temp, OP_FCONV_TO_I8);
+#else
+			NEW_INS_BEFORE(cfg, ins, temp, OP_FCONV_TO_I4);
+#endif
+			temp->dreg = mono_alloc_ireg (cfg);
+			temp->sreg1 = ins->sreg1;
+
+#ifdef TARGET_RISCV64
+			ins->opcode = OP_LCONV_TO_I2;
+#else
+			ins->opcode = OP_ICONV_TO_I2;
+#endif
+			ins->sreg1 = temp->dreg;
+			goto loop_start;
+		}
 		case OP_RCGT:
 		case OP_RCGT_UN: {
 			// rcgt rd, rs1, rs2 -> rlt rd, rs2, rs1
@@ -4425,6 +4445,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_fcvt_w_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			else
 				riscv_fcvt_w_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
+			break;
+		}
+		case OP_FCONV_TO_I8: {
+			g_assert (riscv_stdext_f || riscv_stdext_d);
+			if (riscv_stdext_d)
+				riscv_fcvt_l_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
+			else
+				riscv_fcvt_l_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_FCONV_TO_R4:
