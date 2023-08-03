@@ -16,6 +16,7 @@
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <MonoEnableLLVM>true</MonoEnableLLVM>
     <MainLibraryFileName>tvOS.Device.Aot.Test.dll</MainLibraryFileName>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
   </PropertyGroup>
 
   <ItemGroup>
