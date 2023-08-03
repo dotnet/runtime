@@ -66,6 +66,29 @@ public class Program
                 count++;
             }
         }
+
+
+        if (count == 0)
+        {
+            // something is off, lets check the StandardError stream
+            int errorCount = 0;
+            string[] firstFiveErrors = new string[5];
+            while ((line = proc.StandardError.ReadLine()) != null)
+            {
+                if (line.Contains("error:"))
+                {
+                    if (errorCount < 5) firstFiveErrors[errorCount] = line;
+                    errorCount++;
+                }
+            }
+
+            if (errorCount > 0)
+            {
+                Console.Error.WriteLine($"llvm-dwarfdump failed. First five errors:{Environment.NewLine}{string.Join(Environment.NewLine, firstFiveErrors)}");
+                return 10;
+            }
+        }
+
         proc.WaitForExit();
         Console.WriteLine($"Found {count} warnings and errors");
         if (count is not (>= MinWarnings and <= MaxWarnings))
