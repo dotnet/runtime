@@ -14,9 +14,9 @@ using Microsoft.Playwright;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class BuildPublishTestsDefaultTemplate : BlazorWasmTestBase
+public class BuildPublishTestsFromBlazorTemplate : BlazorWasmTestBase
 {
-    public BuildPublishTestsDefaultTemplate(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public BuildPublishTestsFromBlazorTemplate(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
         _enablePerTestCleanup = true;

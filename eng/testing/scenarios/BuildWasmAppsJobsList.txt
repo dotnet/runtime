@@ -6,7 +6,8 @@ Wasm.Build.NativeRebuild.Tests.SimpleSourceChangeRebuildTest
 Wasm.Build.Templates.Tests.NativeBuildTests
 Wasm.Build.Tests.Blazor.AppsettingsTests
 Wasm.Build.Tests.Blazor.BuildPublishTests
-Wasm.Build.Tests.Blazor.BuildPublishTestsDefaultTemplate
+Wasm.Build.Tests.Blazor.BuildPublishTestsFromWasmTemplate
+Wasm.Build.Tests.Blazor.BuildPublishTestsFromBlazorTemplate
 Wasm.Build.Tests.Blazor.CleanTests
 Wasm.Build.Tests.Blazor.MiscTests
 Wasm.Build.Tests.Blazor.MiscTests2
