@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StartupHookSupport>true</StartupHookSupport>
+    <SkipTestUtilitiesReference>false</SkipTestUtilitiesReference>
   </PropertyGroup>
 
   <ItemGroup>
