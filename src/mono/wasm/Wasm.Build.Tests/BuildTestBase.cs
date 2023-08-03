@@ -38,6 +38,7 @@ namespace Wasm.Build.Tests
         protected string _nugetPackagesDir = string.Empty;
         private ProjectProviderBase _providerOfBaseType;
 
+        private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         // changing Windows's language programistically is complicated and Node is using OS's language to determine
         // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
@@ -573,6 +574,36 @@ namespace Wasm.Build.Tests
         {
             if (_projectDir != null && _enablePerTestCleanup)
                 _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
+        }
+
+        public static string GetRandomId() => FixupSymbolName(Path.GetRandomFileName());
+
+        public static string FixupSymbolName(string name)
+        {
+            UTF8Encoding utf8 = new();
+            byte[] bytes = utf8.GetBytes(name);
+            StringBuilder sb = new();
+
+            foreach (byte b in bytes)
+            {
+                if ((b >= (byte)'0' && b <= (byte)'9') ||
+                    (b >= (byte)'a' && b <= (byte)'z') ||
+                    (b >= (byte)'A' && b <= (byte)'Z') ||
+                    (b == (byte)'_'))
+                {
+                    sb.Append((char)b);
+                }
+                else if (s_charsToReplace.Contains((char)b))
+                {
+                    sb.Append('_');
+                }
+                else
+                {
+                    sb.Append($"_{b:X}_");
+                }
+            }
+
+            return sb.ToString();
         }
 
         internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish = true)
