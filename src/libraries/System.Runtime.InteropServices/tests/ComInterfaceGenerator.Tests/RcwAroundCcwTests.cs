@@ -21,6 +21,8 @@ namespace ComInterfaceGenerator.Tests
             return ifaceObject;
         }
 
+        static bool SystemFindsComCalleeException() => PlatformDetection.IsWindows && PlatformDetection.IsNotNativeAot;
+
         [Fact]
         public void IInt()
         {
@@ -145,7 +147,7 @@ namespace ComInterfaceGenerator.Tests
         [Fact]
         public void ICollectionMarshallingFails()
         {
-            Type hrExceptionType = PlatformDetection.IsWindows ? typeof(MarshallingFailureException) : typeof(Exception);
+            Type hrExceptionType = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
 
             var obj = CreateWrapper<ICollectionMarshallingFailsImpl, ICollectionMarshallingFails>();
 
@@ -165,7 +167,7 @@ namespace ComInterfaceGenerator.Tests
         [Fact]
         public void IJaggedArrayMarshallingFails()
         {
-            Type hrExceptionType = PlatformDetection.IsWindows ? typeof(MarshallingFailureException) : typeof(Exception);
+            Type hrExceptionType = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
             var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
 
             Assert.Throws(hrExceptionType, () =>
@@ -186,7 +188,7 @@ namespace ComInterfaceGenerator.Tests
         [Fact]
         public void IStringArrayMarshallingFails()
         {
-            Type hrExceptionType = PlatformDetection.IsWindows ? typeof(MarshallingFailureException) : typeof(Exception);
+            Type hrExceptionType = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
             var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
 
             var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
