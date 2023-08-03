@@ -6539,7 +6539,7 @@ enum CorDebugGenerationTypes
         CorDebug_Gen2   = 2,
         CorDebug_LOH    = 3,
         CorDebug_POH    = 4,
-        CorDebug_NonGC  = INT_MAX
+        CorDebug_NonGC  = 0x7FFFFFFF
     }   CorDebugGenerationTypes;
 
 typedef struct _COR_SEGMENT
