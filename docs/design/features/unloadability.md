@@ -11,7 +11,7 @@
 After investigating all the details, it was decided that we won't support the following scenarios in unloadable `AssemblyLoadContext` unless we get strong feedback on a need to support those.
 * Loading IJW assemblies
 * Using R2R generated code from assemblies. R2R assemblies will be loaded as plain IL ones.
-* ~~Implementation of the FixedAddressValueTypeAttribute~~ Support added in .NET TBD
+* ~~Implementation of the FixedAddressValueTypeAttribute~~ Support added in .NET 9
 ## General scenarios
 Based on various discussions and feedback on github, the following general scenarios were often mentioned as use cases for unloadability.
 * Plugin scenarios when dynamic plugin loading and unloading is required.
@@ -86,7 +86,7 @@ The After the `AssemblyLoadContext` unload is initiated and the managed `LoaderA
 #### FixedAddressValueTypeAttribute for fields in collectible types
 The fields with `FixedAddressValueTypeAttribute` are always pinned, so their address in memory never changes. Historically for non-collectible types, these fields are held pinned by a pinned `GCHandle`. But we could not use that for collectible types, since the `MethodTable` whose pointer is stored in the respective boxed instance of the value type would prevent the managed `LoaderAllocator` from being collected.
 
-Since .NET TBD, we always allocate these fields in the Pinned Object Heap. That way, they are pinned without being held by a handle, and are able to be collected.
+Since .NET 9, we always allocate these fields in the Pinned Object Heap. That way, they are pinned without being held by a handle, and are able to be collected.
 ## AssemblyLoadContext unloading process
 For better understanding of the unloading process, it is important to understand relations between several components that play role in the lifetime management. The picture below shows these components and the ways they reference each other.
 The green marked relations and blocks are the new ones that were added to enable unloadable `AssemblyLoadContext`. The black ones were already present before.
