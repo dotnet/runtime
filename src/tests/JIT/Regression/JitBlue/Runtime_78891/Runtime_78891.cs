@@ -26,20 +26,13 @@ public class Runtime_78891
     public class Program
     {
         public static S5 s_48;
-        public static int Start()
+
+        [Fact]
+        public static void Start()
         {
             var vr2 = new S5();
             var vr3 = new S5();
-            try
-            {
-                M59(vr2, vr3);
-                return 0;
-            }
-            catch (NullReferenceException)
-            {
-                // We expect a null reference exception to occur, return 100.
-                return 100;
-            }
+            Assert.Throws<NullReferenceException>(() => M59(vr2, vr3));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -65,11 +58,5 @@ public class Runtime_78891
                 }
             }
         }
-    }
-
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        return Program.Start();
     }
 }
