@@ -84,7 +84,7 @@ export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
     return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
 }
 
-function convertSingleAsset(resource: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
+function convertSingleAsset(modulesAssets: AssetEntryInternal[], resource: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
     const keys = Object.keys(resource || {});
     mono_assert(keys.length == 1, `Expect to have one ${behavior} asset in resources`);
 
@@ -96,6 +96,8 @@ function convertSingleAsset(resource: ResourceList | undefined, behavior: Single
         behavior,
     };
 
+    // so that we can use it on the worker too
+    modulesAssets.push(asset);
     return asset;
 }
 
@@ -257,11 +259,11 @@ export async function mono_download_assets(): Promise<void> {
 
 export function prepareAssets() {
     const config = loaderHelpers.config;
+    const modulesAssets: AssetEntryInternal[] = [];
 
     // if assets exits, we will assume Net7 legacy and not process resources object
     if (config.assets) {
-        for (const a of config.assets) {
-            const asset: AssetEntryInternal = a;
+        for (const asset of config.assets) {
             mono_assert(typeof asset === "object", () => `asset must be object, it was ${typeof asset} : ${asset}`);
             mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
             mono_assert(typeof asset.name === "string", "asset name must be string");
@@ -295,11 +297,11 @@ export function prepareAssets() {
         mono_assert(resources.jsModuleNative, "resources.jsModuleNative must be defined");
         mono_assert(resources.jsModuleRuntime, "resources.jsModuleRuntime must be defined");
         mono_assert(!MonoWasmThreads || resources.jsModuleWorker, "resources.jsModuleWorker must be defined");
-        wasmModuleAsset = convertSingleAsset(resources.wasmNative, "dotnetwasm");
-        jsModuleNativeAsset = convertSingleAsset(resources.jsModuleNative, "js-module-native");
-        jsModuleRuntimeAsset = convertSingleAsset(resources.jsModuleRuntime, "js-module-runtime");
+        wasmModuleAsset = convertSingleAsset(modulesAssets, resources.wasmNative, "dotnetwasm");
+        jsModuleNativeAsset = convertSingleAsset(modulesAssets, resources.jsModuleNative, "js-module-native");
+        jsModuleRuntimeAsset = convertSingleAsset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (MonoWasmThreads) {
-            jsModuleWorkerAsset = convertSingleAsset(resources.jsModuleWorker, "js-module-threads");
+            jsModuleWorkerAsset = convertSingleAsset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
 
         if (resources.assembly) {
@@ -373,6 +375,7 @@ export function prepareAssets() {
         }
     }
 
+    // FIXME: should we also load Net7 backward compatible `config.configs` in a same way ?
     if (config.appsettings) {
         for (let i = 0; i < config.appsettings.length; i++) {
             const configUrl = config.appsettings[i];
@@ -386,11 +389,30 @@ export function prepareAssets() {
                     useCredentials: true
                 });
             }
-            // FIXME: why are not loading all the other files in appsettings ? https://github.com/dotnet/runtime/issues/89861
+            // FIXME: why are not loading all the other named files in appsettings ? https://github.com/dotnet/runtime/issues/89861
         }
     }
 
-    config.assets = [...containedInSnapshotAssets, ...alwaysLoadedAssets];
+    config.assets = [...containedInSnapshotAssets, ...alwaysLoadedAssets, ...modulesAssets];
+}
+
+export function prepareAssetsWorker() {
+    const config = loaderHelpers.config;
+    mono_assert(config.assets, "config.assets must be defined");
+
+    for (const asset of config.assets) {
+        switch (asset.behavior) {
+            case "js-module-native":
+                jsModuleNativeAsset = asset;
+                break;
+            case "js-module-runtime":
+                jsModuleRuntimeAsset = asset;
+                break;
+            case "js-module-threads":
+                jsModuleWorkerAsset = asset;
+                break;
+        }
+    }
 }
 
 export function delay(ms: number): Promise<void> {
