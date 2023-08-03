@@ -96,8 +96,13 @@ namespace ComInterfaceGenerator.Tests
         {
             var obj = CreateWrapper<ArrayOfStatelessElementsThrows, IArrayOfStatelessElements>();
             var data = new StatelessType[10];
-            obj.MethodContentsOut(data, 10)
-
+            var oldFreeCount = StatelessTypeMarshaller.UnmanagedToManaged.FreeCount;
+            try
+            {
+                obj.MethodContentsOut(data, 10);
+            }
+            catch (Exception) { }
+            Assert.Equal(oldFreeCount, StatelessTypeMarshaller.UnmanagedToManaged.FreeCount);
         }
 
         [Fact]
