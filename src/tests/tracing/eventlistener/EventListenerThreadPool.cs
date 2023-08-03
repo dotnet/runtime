@@ -14,6 +14,8 @@ namespace Tracing.Tests
         public volatile int TPWorkerThreadStopCount = 0;
         public volatile int TPWorkerThreadWaitCount = 0;
         public volatile int TPIOPack = 0;
+        public volatile int TPIOEnqueue = 0;
+        public volatile int TPIODequeue = 0;
 
     public ManualResetEvent TPWaitEvent = new ManualResetEvent(false);
         
@@ -47,6 +49,16 @@ namespace Tracing.Tests
                 Interlocked.Increment(ref TPIOPack);
                 TPWaitEvent.Set();
             }
+            else if (eventData.EventName.Equals("ThreadPoolIOEnqueue"))
+            {
+                Interlocked.Increment(ref TPIOEnqueue);
+                TPWaitEvent.Set();
+            }
+            else if (eventData.EventName.Equals("ThreadPoolIODequeue"))
+            {
+                Interlocked.Increment(ref TPIODequeue);
+                TPWaitEvent.Set();
+            }
         }
     }
 
@@ -64,11 +76,11 @@ namespace Tracing.Tests
                 }
 
                 Overlapped overlapped = new Overlapped();
-                IOCompletionCallback completionCallback = null;
 
                 unsafe
                 {
-                    overlapped.Pack(completionCallback);
+                    NativeOverlapped* nativeOverlapped = overlapped.Pack(null);
+                    ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
                 }
 
                 listener.TPWaitEvent.WaitOne(TimeSpan.FromMinutes(3));
@@ -77,21 +89,28 @@ namespace Tracing.Tests
                                             listener.TPWorkerThreadStopCount > 0 ||
                                             listener.TPWorkerThreadWaitCount > 0;
 
-                bool ioPackEventOk = listener.TPIOPack > 0;
+                bool ioPackEventOk = listener.TPIOPack > 0 && listener.TPIOEnqueue > 0 && listener.TPIODequeue > 0;
 
-                // Don't evaluate workerThreadEventsOk if it's NativeAot
-                if ((TestLibrary.Utilities.IsNativeAot || workerThreadEventsOk) && ioPackEventOk)
-                {
-                    Console.WriteLine("Test Passed.");
-                    return 100;
-                }
-                else
+                if (!TestLibrary.Utilities.IsNativeAot && !workerThreadEventsOk)
                 {
                     Console.WriteLine("Test Failed: Did not see any of the expected events.");
                     Console.WriteLine($"ThreadPoolWorkerThreadStartCount: {listener.TPWorkerThreadStartCount}");
                     Console.WriteLine($"ThreadPoolWorkerThreadStopCount: {listener.TPWorkerThreadStopCount}");
                     Console.WriteLine($"ThreadPoolWorkerThreadWaitCount: {listener.TPWorkerThreadWaitCount}");
                     return -1;
+                }
+                else if (!ioPackEventOk)
+                {
+                    Console.WriteLine("Test Failed: Did not see all of the expected events.");
+                    Console.WriteLine($"ThreadPoolIOPack: {listener.TPIOPack}");
+                    Console.WriteLine($"ThreadPoolIOEnqueue: {listener.TPIOEnqueue}");
+                    Console.WriteLine($"ThreadPoolIODequeue: {listener.TPIODequeue}"); // locally failing here: TPIODequeue = 0
+                    return -1;
+                }
+                else
+                {
+                    Console.WriteLine("Test Passed.");
+                    return 100;
                 }
             }
         }
