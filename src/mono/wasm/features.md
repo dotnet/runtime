@@ -31,6 +31,8 @@ For more information, see [SharedArrayBuffer security requirements](https://deve
 
 JavaScript interop with managed code via `[JSExport]`/`[JSImport]` is currently limited to the main thread even if multi-threading support is enabled.
 
+Blocking on the main thread with operations like `Task.Wait` or `Monitor.Enter` is not supported by browsers and very dangerous. The work on the proper design for this still in progress.
+
 ### SIMD - Single instruction, multiple data
 WebAssembly SIMD provides significant performance improvements for operations on spans, strings, vectors and arrays. This feature requires a somewhat recent browser and may also not be supported by older hardware. It is currently enabled by default.
 
@@ -303,3 +305,4 @@ Although it's optional for Blazor, we strongly recommend using it!
 You can install it by running `dotnet workload install wasm-tools` from the command line.
 
 You can also install `dotnet workload install wasm-experimental` to test out new experimental features and templates.
+It includes the WASM templates for `dotnet new` and also preview version of multi-threading flavor of the runtime pack.
