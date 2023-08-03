@@ -126,8 +126,11 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
 
     - subset: runtimetests
+      combined: true
       include:
       - src/tests/*
+      exclude:
+      - ${{ parameters._const_paths._wasm_specific_only }}
 
     - subset: tools_illink
       include:
