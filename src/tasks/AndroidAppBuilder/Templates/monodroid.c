@@ -367,7 +367,7 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     for (int i = 0; i < args_len; ++i)
     {
         jstring j_arg = (*env)->GetObjectArrayElement(env, j_args, i);
-        managed_argv[i + 1] = (*env)->GetStringUTFChars(env, j_arg, NULL);
+        managed_argv[i + 1] = (char*)((*env)->GetStringUTFChars(env, j_arg, NULL));
     }
 
     int res = mono_droid_runtime_init (executable, managed_argc, managed_argv, current_local_time);
