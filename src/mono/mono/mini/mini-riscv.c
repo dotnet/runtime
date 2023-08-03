@@ -3702,7 +3702,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		MonoInst *ins = cfg->vret_addr;
 
 		g_assert (ins->opcode == OP_REGOFFSET);
-		code = mono_riscv_emit_store (code, sig->hasthis ? RISCV_A1 : RISCV_A0, ins->inst_basereg, ins->inst_offset, 0);
+		code = mono_riscv_emit_store (code, cfg->arch.cinfo->ret.reg, ins->inst_basereg, ins->inst_offset, 0);
 	}
 
 	/* Save mrgctx received in MONO_ARCH_RGCTX_REG */
@@ -4500,6 +4500,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst *)ins;
 			const MonoJumpInfoTarget patch = mono_call_to_patch (call);
 			code = mono_riscv_emit_call (cfg, code, patch.type, patch.target);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);
 			code = emit_move_return_value (cfg, code, ins);
 			break;
 		}
