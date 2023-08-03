@@ -202,8 +202,8 @@ namespace ComInterfaceGenerator.Tests
         [Fact]
         public void IStringArrayMarshallingFails()
         {
-            Type hrExceptionType = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
             var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
+            var hrException = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
 
             var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
 
@@ -224,11 +224,11 @@ namespace ComInterfaceGenerator.Tests
             {
                 obj.ByValueInOutParam(strings);
             });
-            Assert.Throws(hrExceptionType, () =>
+            Assert.Throws(hrException, () =>
             {
                 obj.OutParam(out strings);
             });
-            Assert.Throws(hrExceptionType, () =>
+            Assert.Throws(hrException, () =>
             {
                 _ = obj.ReturnValue();
             });

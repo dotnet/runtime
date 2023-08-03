@@ -195,7 +195,6 @@ The .NET Foundation licenses this file to you under the MIT license.
   </Target>
 
   <Target Name="WriteIlcRspFileForCompilation"
-      Inputs="@(IlcCompileInput);@(RdXmlFile);@(TrimmerRootDescriptor)"
       Outputs="%(ManagedBinary.IlcRspFile)"
       DependsOnTargets="$(IlcCompileDependsOn)">
 
