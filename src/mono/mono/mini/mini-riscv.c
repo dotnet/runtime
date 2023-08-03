@@ -1841,6 +1841,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_OVF_U2:
 	case OP_LCONV_TO_OVF_I:
 	case OP_LCONV_TO_OVF_U:
+	case OP_LCONV_TO_OVF_I4:
 	case OP_LCONV_TO_OVF_I4_UN:
 	case OP_LCONV_TO_OVF_U4_UN:
 
@@ -2668,6 +2669,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					NULLIFY_INS (ins);
 				} else if (ins->next->opcode == OP_COND_EXC_LE_UN) {
 					ins->next->opcode = OP_RISCV_EXC_BGEU;
+					ins->next->sreg1 = ins->sreg2;
+					ins->next->sreg2 = ins->sreg1;
+					NULLIFY_INS (ins);
+				} else if (ins->next->opcode == OP_COND_EXC_IGT || ins->next->opcode == OP_COND_EXC_GT) {
+					ins->next->opcode = OP_RISCV_EXC_BLT;
 					ins->next->sreg1 = ins->sreg2;
 					ins->next->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
