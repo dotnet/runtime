@@ -280,8 +280,8 @@ namespace System.Reflection.Tests
             Assert.Throws<FileLoadException>(() => Type.GetType("System.Object, System.Runtime, Version=x.y"));
         }
 
-        [Fact]
-        public static void TestTypeIdentifierAttribute()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
+        public void TestTypeIdentifierAttribute()
         {
             string typeName = $"{typeof(EquivalentValueType).FullName},{typeof(TestAssembly.ClassToInvoke).Assembly.GetName().Name}";
             Type otherEquivalentValueType = Type.GetType(typeName);
