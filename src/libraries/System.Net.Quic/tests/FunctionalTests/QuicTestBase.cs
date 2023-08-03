@@ -145,7 +145,7 @@ namespace System.Net.Quic.Tests
             address ??= IPAddress.Loopback;
             return new QuicListenerOptions()
             {
-                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ListenEndPoint = new IPEndPoint(address, 0),
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
                 ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
             };
