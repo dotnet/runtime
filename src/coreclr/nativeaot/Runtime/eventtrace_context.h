@@ -31,6 +31,7 @@ typedef struct _DOTNET_TRACE_CONTEXT
 #endif // DOTNET_TRACE_CONTEXT_DEF
 
 extern "C" DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
+extern "C" DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
 
 struct _EventFilterDescriptor;
 typedef struct _EventFilterDescriptor EventFilterDescriptor;
