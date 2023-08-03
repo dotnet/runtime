@@ -7,7 +7,7 @@
 
 #import <Foundation/Foundation.h>
 
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 // Enum that corresponds to C# CompareOptions
 typedef enum

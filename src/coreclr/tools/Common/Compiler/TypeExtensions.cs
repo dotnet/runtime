@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
@@ -752,6 +753,59 @@ namespace ILCompiler
         {
             Debug.Assert(interfaceType.IsInterface);
             return interfaceType.HasCustomAttribute("System.Runtime.InteropServices", "DynamicInterfaceCastableImplementationAttribute");
+        }
+
+        public static bool HasImpliedRepeatedFields(this MetadataType mdType)
+        {
+            if (mdType.IsInlineArray)
+            {
+                return true;
+            }
+
+            // If the type is not an [InlineArray] type, do a best-effort detection of whether the type is a fixed buffer type
+            // as emitted by the C# compiler.
+
+            if (!mdType.IsSequentialLayout)
+            {
+                return false;
+            }
+
+            if (mdType.GetClassLayout().Size == 0)
+            {
+                // Unsafe fixed buffers have a specified size in the class layout information.
+                return false;
+            }
+
+            FieldDesc firstField = null;
+            foreach (FieldDesc field in mdType.GetFields())
+            {
+                if (!field.IsStatic)
+                {
+                    // A type is only an unsafe fixed buffer type if it has exactly one field.
+                    if (firstField is not null)
+                    {
+                        return false;
+                    }
+                    firstField = field;
+                }
+            }
+
+            if (firstField is null)
+            {
+                return false;
+            }
+            TypeDesc firstFieldElementType = firstField.FieldType;
+
+            // A fixed buffer type is always a value type that has exactly one value type field at offset 0
+            // and whose size is an exact multiple of the size of the field.
+            // It is possible that we catch a false positive with this check, but that chance is extremely slim
+            // and the user can always change their structure to something more descriptive of what they want
+            // instead of adding additional padding at the end of a one-field structure.
+            // We do this check here to save looking up the FixedBufferAttribute when loading the field
+            // from metadata.
+            return firstFieldElementType.IsValueType
+                    && firstField.Offset.AsInt == 0
+                    && ((mdType.GetElementSize().AsInt % firstFieldElementType.GetElementSize().AsInt) == 0);
         }
     }
 }

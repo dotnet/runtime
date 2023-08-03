@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
@@ -14,7 +13,6 @@ namespace Microsoft.Interop
     internal sealed class UnmanagedToManagedStubGenerator
     {
         private const string ReturnIdentifier = "__retVal";
-        private const string InvokeSucceededIdentifier = "__invokeSucceeded";
 
         private readonly BoundGenerators _marshallers;
 
@@ -60,26 +58,15 @@ namespace Microsoft.Interop
                 || !statements.ManagedExceptionCatchClauses.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
 
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
-            {
-                setupStatements.Add(MarshallerHelpers.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
-            }
-
             setupStatements.AddRange(declarations.Initializations);
             setupStatements.AddRange(declarations.Variables);
             setupStatements.AddRange(statements.Setup);
 
             List<StatementSyntax> tryStatements = new();
+            tryStatements.AddRange(statements.GuaranteedUnmarshal);
             tryStatements.AddRange(statements.Unmarshal);
 
             tryStatements.Add(statements.InvokeStatement);
-
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
-            {
-                tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(InvokeSucceededIdentifier),
-                    LiteralExpression(SyntaxKind.TrueLiteralExpression))));
-            }
 
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
             tryStatements.AddRange(statements.PinnedMarshal);
@@ -87,10 +74,6 @@ namespace Microsoft.Interop
 
             List<StatementSyntax> allStatements = setupStatements;
             List<StatementSyntax> finallyStatements = new();
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
-            {
-                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal)));
-            }
 
             SyntaxList<CatchClauseSyntax> catchClauses = List(statements.ManagedExceptionCatchClauses);
 

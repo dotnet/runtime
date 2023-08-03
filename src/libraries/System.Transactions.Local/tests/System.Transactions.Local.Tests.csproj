@@ -4,6 +4,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="NonMsdtcPromoterTests.cs" />
     <Compile Include="AsyncTransactionScopeTests.cs" />
     <Compile Include="IntResourceManager.cs" />

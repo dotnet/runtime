@@ -383,23 +383,6 @@ PTR_Module MethodTable::GetModule()
 }
 
 //==========================================================================================
-PTR_Module MethodTable::GetModule_NoLogging()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // Fast path for non-generic non-array case
-    if ((m_dwFlags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == 0)
-        return GetLoaderModule();
-
-    MethodTable * pMTForModule = IsArray() ? this : GetCanonicalMethodTable();
-    if (!pMTForModule->HasModuleOverride())
-        return pMTForModule->GetLoaderModule();
-
-    TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return *dac_cast<DPTR(PTR_Module)>(pSlot);
-}
-
-//==========================================================================================
 PTR_DispatchMap MethodTable::GetDispatchMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1084,7 +1067,7 @@ BOOL MethodTable::FindDynamicallyAddedInterface(MethodTable *pInterface)
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(IsRestored_NoLogging());
+    _ASSERTE(IsRestored());
     _ASSERTE(HasDynamicInterfaceMap());     // This should never be called on for a type that is not an extensible RCW.
 
     unsigned cDynInterfaces = GetNumDynamicallyAddedInterfaces();
@@ -1107,7 +1090,7 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
         PRECONDITION(HasDynamicInterfaceMap());    // This should never be called on for a type that is not an extensible RCW.
     }
     CONTRACTL_END;
@@ -1435,7 +1418,7 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(pTargetMT->IsInterface());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -1476,7 +1459,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(pTargetMT->HasVariance());
         PRECONDITION(pTargetMT->IsInterface() || pTargetMT->IsDelegate());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -1618,7 +1601,7 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
         MODE_COOPERATIVE;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -2190,6 +2173,45 @@ BOOL MethodTable::IsClassPreInited()
 
 //========================================================================================
 
+namespace
+{
+    // Does this type have fields that are implicitly defined through repetition and not explicitly defined in metadata?
+    bool HasImpliedRepeatedFields(MethodTable* pMT, MethodTable* pFirstFieldValueType = nullptr)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pMT));
+        }
+        CONTRACTL_END;
+
+        // InlineArray types and fixed buffer types have implied repeated fields.
+        // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+        if (pMT->GetClass()->IsInlineArray())
+        {
+            return true;
+        }
+
+        DWORD numIntroducedFields = pMT->GetNumIntroducedInstanceFields();
+        FieldDesc *pFieldStart = pMT->GetApproxFieldDescListRaw();
+        CorElementType firstFieldElementType = pFieldStart->GetFieldType();
+
+        // A fixed buffer type is always a value type that has exactly one value type field at offset 0
+        // and who's size is an exact multiple of the size of the field.
+        // It is possible that we catch a false positive with this check, but that chance is extremely slim
+        // and the user can always change their structure to something more descriptive of what they want
+        // instead of adding additional padding at the end of a one-field structure.
+        // We do this check here to save looking up the FixedBufferAttribute when loading the field
+        // from metadata.
+        return numIntroducedFields == 1
+                        && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
+                            || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
+                        && (pFieldStart->GetOffset() == 0)
+                        && pMT->HasLayout()
+                        && (pMT->GetNumInstanceFieldBytes() % pFieldStart->GetSize(pFirstFieldValueType) == 0);
+    }
+}
+
 #if defined(UNIX_AMD64_ABI_ITF)
 
 #if defined(_DEBUG) && defined(LOGGING)
@@ -2290,13 +2312,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                                                      bool useNativeLayout,
                                                      MethodTable** pByValueClassCache)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     DWORD numIntroducedFields = GetNumIntroducedInstanceFields();
 
@@ -2340,23 +2356,9 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     FieldDesc *pFieldStart = GetApproxFieldDescListRaw();
 
-    CorElementType firstFieldElementType = pFieldStart->GetFieldType();
+    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this, ByValueClassCacheLookup(pByValueClassCache, 0));
 
-    // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-    // and who's size is an exact multiple of the size of the field.
-    // It is possible that we catch a false positive with this check, but that chance is extremely slim
-    // and the user can always change their structure to something more descriptive of what they want
-    // instead of adding additional padding at the end of a one-field structure.
-    // We do this check here to save looking up the FixedBufferAttribute when loading the field
-    // from metadata.
-    bool isFixedBuffer = numIntroducedFields == 1
-                                && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
-                                    || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
-                                && (pFieldStart->GetOffset() == 0)
-                                && HasLayout()
-                                && (GetNumInstanceFieldBytes() % pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0)) == 0);
-
-    if (isFixedBuffer)
+    if (hasImpliedRepeatedFields)
     {
         numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0));
     }
@@ -2365,13 +2367,13 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
     {
         FieldDesc* pField;
         DWORD fieldOffset;
-        unsigned int fieldIndexForSize = fieldIndex;
+        unsigned int fieldIndexForCacheLookup = fieldIndex;
 
-        if (isFixedBuffer)
+        if (hasImpliedRepeatedFields)
         {
             pField = pFieldStart;
-            fieldIndexForSize = 0;
-            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForSize));
+            fieldIndexForCacheLookup = 0;
+            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
         }
         else
         {
@@ -2381,7 +2383,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         unsigned int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
-        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForSize));
+        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
         _ASSERTE(fieldSize != (unsigned int)-1);
 
         // The field can't span past the end of the struct.
@@ -2402,7 +2404,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         {
             TypeHandle th;
             if (pByValueClassCache != NULL)
-                th = TypeHandle(pByValueClassCache[fieldIndex]);
+                th = TypeHandle(pByValueClassCache[fieldIndexForCacheLookup]);
             else
                 th = pField->GetApproxFieldTypeHandleThrowing();
             _ASSERTE(!th.IsNull());
@@ -2515,13 +2517,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
                                                     unsigned int startOffsetOfStruct,
                                                     EEClassNativeLayoutInfo const* pNativeLayoutInfo)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef DACCESS_COMPILE
     // No register classification for this case.
@@ -2543,22 +2539,9 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         return false;
     }
 
-    // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-    // and who's size is an exact multiple of the size of the field.
-    // It is possible that we catch a false positive with this check, but that chance is extremely slim
-    // and the user can always change their structure to something more descriptive of what they want
-    // instead of adding additional padding at the end of a one-field structure.
-    // We do this check here to save looking up the FixedBufferAttribute when loading the field
-    // from metadata.
-    CorElementType firstFieldElementType = pNativeFieldDescs->GetFieldDesc()->GetFieldType();
-    bool isFixedBuffer = numIntroducedFields == 1
-                                && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
-                                    || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
-                                && (pNativeFieldDescs->GetExternalOffset() == 0)
-                                && IsValueType()
-                                && (pNativeLayoutInfo->GetSize() % pNativeFieldDescs->NativeSize() == 0);
+    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
 
-    if (isFixedBuffer)
+    if (hasImpliedRepeatedFields)
     {
         numIntroducedFields = pNativeLayoutInfo->GetSize() / pNativeFieldDescs->NativeSize();
     }
@@ -2597,7 +2580,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
     {
         const NativeFieldDescriptor* pNFD;
-        if (isFixedBuffer)
+        if (hasImpliedRepeatedFields)
         {
             // Reuse the first field marshaler for all fields if a fixed buffer.
             pNFD = pNativeFieldDescs;
@@ -2619,7 +2602,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         unsigned int fieldNativeSize = pNFD->NativeSize();
         DWORD fieldOffset = pNFD->GetExternalOffset();
 
-        if (isFixedBuffer)
+        if (hasImpliedRepeatedFields)
         {
             // Since we reuse the NativeFieldDescriptor for fixed buffers, we need to adjust the offset.
             fieldOffset += fieldIndex * fieldNativeSize;
@@ -2999,13 +2982,11 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields != 1)
@@ -3249,13 +3230,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields > 2)
@@ -3619,13 +3598,11 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields != 1)
@@ -3869,13 +3846,11 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields > 2)
@@ -5243,7 +5218,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     // First ensure that we're loaded to just below CLASS_DEPENDENCIES_LOADED
     ClassLoader::EnsureLoaded(this, (ClassLoadLevel) (level-1));
 
-    CONSISTENCY_CHECK(IsRestored_NoLogging());
+    CONSISTENCY_CHECK(IsRestored());
     CONSISTENCY_CHECK(!HasApproxParent());
 
     if ((level == CLASS_LOADED) && !IsSharedByGenericInstantiations())
@@ -5596,7 +5571,7 @@ void MethodTable::SetOHDelegate (OBJECTHANDLE _ohDelegate)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(GetClass());
-    GetClass_NoLogging()->SetOHDelegate(_ohDelegate);
+    GetClass()->SetOHDelegate(_ohDelegate);
 }
 
 //==========================================================================================
@@ -5734,9 +5709,9 @@ CorElementType MethodTable::GetInternalCorElementType()
     // DAC may be targeting a dump; dumps do not guarantee you can retrieve the EEClass from
     // the MethodTable so this is not expected to work in a DAC build.
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    if (IsRestored_NoLogging())
+    if (IsRestored())
     {
-        PTR_EEClass pClass = GetClass_NoLogging();
+        PTR_EEClass pClass = GetClass();
         if (ret != pClass->GetInternalCorElementType())
         {
             _ASSERTE(!"Mismatched results in MethodTable::GetInternalCorElementType");
@@ -5853,7 +5828,7 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType)
         break;
     }
 
-    GetClass_NoLogging()->SetInternalCorElementType(_NormType);
+    GetClass()->SetInternalCorElementType(_NormType);
     _ASSERTE(GetInternalCorElementType() == _NormType);
 }
 
@@ -6210,22 +6185,26 @@ MethodTable::FindDispatchImpl(
 
                 // Try exact match first
                 MethodDesc *pDefaultMethod = NULL;
+
+                FindDefaultInterfaceImplementationFlags flags = FindDefaultInterfaceImplementationFlags::InstantiateFoundMethodDesc;
+                if (throwOnConflict)
+                    flags = flags | FindDefaultInterfaceImplementationFlags::ThrowOnConflict;
+
                 BOOL foundDefaultInterfaceImplementation  = FindDefaultInterfaceImplementation(
                     pIfcMD,     // the interface method being resolved
                     pIfcMT,     // the interface being resolved
                     &pDefaultMethod,
-                    FALSE, // allowVariance
-                    throwOnConflict);
+                    flags);
 
                 // If there's no exact match, try a variant match
                 if (!foundDefaultInterfaceImplementation && pIfcMT->HasVariance())
                 {
+                    flags = flags | FindDefaultInterfaceImplementationFlags::AllowVariance;
                     foundDefaultInterfaceImplementation = FindDefaultInterfaceImplementation(
                         pIfcMD,     // the interface method being resolved
                         pIfcMT,     // the interface being resolved
                         &pDefaultMethod,
-                        TRUE, // allowVariance
-                        throwOnConflict);
+                        flags);
                 }
 
                 if (foundDefaultInterfaceImplementation)
@@ -6324,10 +6303,13 @@ namespace
         MethodTable *pMT,
         MethodDesc *interfaceMD,
         MethodTable *interfaceMT,
-        BOOL allowVariance,
+        FindDefaultInterfaceImplementationFlags findDefaultImplementationFlags,
         MethodDesc **candidateMD,
         ClassLoadLevel level)
     {
+        bool allowVariance = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::AllowVariance) != FindDefaultInterfaceImplementationFlags::None;
+        bool instantiateMethodInstantiation = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::InstantiateFoundMethodDesc) != FindDefaultInterfaceImplementationFlags::None;
+
         *candidateMD = NULL;
 
         MethodDesc *candidateMaybe = NULL;
@@ -6349,7 +6331,7 @@ namespace
                     candidateMaybe = interfaceMD;
                 }
             }
-            else
+            else if (!interfaceMD->IsStatic())
             {
                 //
                 // A more specific interface - search for an methodimpl for explicit override
@@ -6413,16 +6395,26 @@ namespace
                             }
                         }
                     }
-                    else if (pMD->IsStatic() && pMD->HasMethodImplSlot())
-                    {
-                        // Static virtual methods don't record MethodImpl slots so they need special handling
-                        candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
-                            interfaceMT,
-                            interfaceMD,
-                            /* verifyImplemented */ FALSE,
-                            /* level */ level);
-                    }
                 }
+            }
+            else
+            {
+                // Static virtual methods don't record MethodImpl slots so they need special handling
+                ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags = ResolveVirtualStaticMethodFlags::None;
+                if (allowVariance)
+                {
+                    resolveVirtualStaticMethodFlags |= ResolveVirtualStaticMethodFlags::AllowVariantMatches;
+                }
+                if (instantiateMethodInstantiation)
+                {
+                    resolveVirtualStaticMethodFlags |= ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc;
+                }
+
+                candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
+                    interfaceMT,
+                    interfaceMD,
+                    resolveVirtualStaticMethodFlags,
+                    /* level */ level);
             }
         }
 
@@ -6460,8 +6452,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     MethodDesc *pInterfaceMD,
     MethodTable *pInterfaceMT,
     MethodDesc **ppDefaultMethod,
-    BOOL allowVariance,
-    BOOL throwOnConflict,
+    FindDefaultInterfaceImplementationFlags findDefaultImplementationFlags,
     ClassLoadLevel level
 )
 {
@@ -6477,12 +6468,13 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     } CONTRACT_END;
 
 #ifdef FEATURE_DEFAULT_INTERFACES
+    bool allowVariance = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::AllowVariance) != FindDefaultInterfaceImplementationFlags::None;
     CQuickArray<MatchCandidate> candidates;
     unsigned candidatesCount = 0;
 
     // Check the current method table itself
     MethodDesc *candidateMaybe = NULL;
-    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe, level))
+    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &candidateMaybe, level))
     {
         _ASSERTE(candidateMaybe != NULL);
 
@@ -6522,7 +6514,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                 MethodTable *pCurMT = it.GetInterface(pMT, level);
 
                 MethodDesc *pCurMD = NULL;
-                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD, level))
+                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &pCurMD, level))
                 {
                     //
                     // Found a match. But is it a more specific match (we want most specific interfaces)
@@ -6618,6 +6610,8 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
         }
         else if (pBestCandidateMT != candidates[i].pMT)
         {
+            bool throwOnConflict = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::ThrowOnConflict) != FindDefaultInterfaceImplementationFlags::None;
+
             if (throwOnConflict)
                 ThrowExceptionForConflictingOverride(this, pInterfaceMT, pInterfaceMD);
 
@@ -7064,7 +7058,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
             // Remember that we didn't find the GUID, so we can skip looking during
             // future checks. (Note that this is a very important optimization in the
             // prejit case.)
-            GetClass_NoLogging()->SetHasNoGuid();
+            GetClass()->SetHasNoGuid();
         }
     }
 
@@ -7280,14 +7274,6 @@ unsigned MethodTable::GetTypeDefRid()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return GetTypeDefRid_NoLogging();
-}
-
-//==========================================================================================
-unsigned MethodTable::GetTypeDefRid_NoLogging()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
     WORD token = m_wToken;
 
     if (token == METHODTABLE_TOKEN_OVERFLOW)
@@ -7379,7 +7365,7 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
 
     // workaround: Type loader accesses partially initialized datastructures that interferes with IBC logging.
     // Once type loader is fixed to do not access partially  initialized datastructures, this can go away.
-    if (!GetWriteableData_NoLogging()->IsParentMethodTablePointerValid())
+    if (!GetWriteableData()->IsParentMethodTablePointerValid())
         return FALSE;
 
     return TRUE;
@@ -7411,8 +7397,8 @@ MethodTable * MethodTable::GetMethodTableMatchingParentClass(MethodTable * pWhic
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pWhichParent));
-        PRECONDITION(IsRestored_NoLogging());
-        PRECONDITION(pWhichParent->IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
+        PRECONDITION(pWhichParent->IsRestored());
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -7467,8 +7453,8 @@ Instantiation MethodTable::GetInstantiationOfParentClass(MethodTable *pWhichPare
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pWhichParent));
-        PRECONDITION(IsRestored_NoLogging());
-        PRECONDITION(pWhichParent->IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
+        PRECONDITION(pWhichParent->IsRestored());
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -8874,12 +8860,15 @@ MethodDesc *
 MethodTable::ResolveVirtualStaticMethod(
     MethodTable* pInterfaceType,
     MethodDesc* pInterfaceMD,
-    BOOL allowNullResult,
-    BOOL verifyImplemented,
-    BOOL allowVariantMatches,
+    ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags,
     BOOL* uniqueResolution,
     ClassLoadLevel level)
 {
+    bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
+    bool allowVariantMatches = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowVariantMatches) != ResolveVirtualStaticMethodFlags::None;
+    bool instantiateMethodParameters = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc) != ResolveVirtualStaticMethodFlags::None;
+    bool allowNullResult = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowNullResult) != ResolveVirtualStaticMethodFlags::None;
+
     if (uniqueResolution != nullptr)
     {
         *uniqueResolution = TRUE;
@@ -8911,7 +8900,7 @@ MethodTable::ResolveVirtualStaticMethod(
             // Search for match on a per-level in the type hierarchy
             for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
             {
-                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented, level);
+                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, resolveVirtualStaticMethodFlags & ~ResolveVirtualStaticMethodFlags::AllowVariantMatches, level);
                 if (pMD != nullptr)
                 {
                     return pMD;
@@ -8920,7 +8909,7 @@ MethodTable::ResolveVirtualStaticMethod(
                 if (pInterfaceType->HasVariance() || pInterfaceType->HasTypeEquivalence())
                 {
                     // Variant interface dispatch
-                    MethodTable::InterfaceMapIterator it = IterateInterfaceMap();
+                    MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
                     while (it.Next())
                     {
                         if (it.CurrentInterfaceMatches(this, pInterfaceType))
@@ -8955,7 +8944,7 @@ MethodTable::ResolveVirtualStaticMethod(
                         {
                             // Variant or equivalent matching interface found
                             // Attempt to resolve on variance matched interface
-                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented, level);
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, resolveVirtualStaticMethodFlags & ~ResolveVirtualStaticMethodFlags::AllowVariantMatches, level);
                             if (pMD != nullptr)
                             {
                                 return pMD;
@@ -8966,22 +8955,51 @@ MethodTable::ResolveVirtualStaticMethod(
             }
 
             MethodDesc *pMDDefaultImpl = nullptr;
-            BOOL haveUniqueDefaultImplementation = FindDefaultInterfaceImplementation(
-                pInterfaceMD,
-                pInterfaceType,
-                &pMDDefaultImpl,
-                /* allowVariance */ allowVariantMatches,
-                /* throwOnConflict */ uniqueResolution == nullptr,
-                level);
-            if (haveUniqueDefaultImplementation || (pMDDefaultImpl != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+            BOOL allowVariantMatchInDefaultImplementationLookup = FALSE;
+            do
             {
-                // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
-                if (uniqueResolution != nullptr)
+                FindDefaultInterfaceImplementationFlags findDefaultImplementationFlags = FindDefaultInterfaceImplementationFlags::None;
+                if (allowVariantMatchInDefaultImplementationLookup)
                 {
-                    *uniqueResolution = haveUniqueDefaultImplementation;
+                    findDefaultImplementationFlags |= FindDefaultInterfaceImplementationFlags::AllowVariance;
                 }
-                return pMDDefaultImpl;
-            }
+                if (uniqueResolution == nullptr)
+                {
+                    findDefaultImplementationFlags |= FindDefaultInterfaceImplementationFlags::ThrowOnConflict;
+                }
+                if (instantiateMethodParameters)
+                {
+                    findDefaultImplementationFlags |= FindDefaultInterfaceImplementationFlags::InstantiateFoundMethodDesc;
+                }
+
+                BOOL haveUniqueDefaultImplementation = FindDefaultInterfaceImplementation(
+                    pInterfaceMD,
+                    pInterfaceType,
+                    &pMDDefaultImpl,
+                    findDefaultImplementationFlags,
+                    level);
+                if (haveUniqueDefaultImplementation || (pMDDefaultImpl != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+                {
+                    // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
+                    if (uniqueResolution != nullptr)
+                    {
+                        // Always report a unique resolution when reporting results of a variant match
+                        if (allowVariantMatchInDefaultImplementationLookup)
+                            *uniqueResolution = TRUE;
+                        else
+                            *uniqueResolution = haveUniqueDefaultImplementation;
+                    }
+                    return pMDDefaultImpl;
+                }
+
+                // We only loop at most twice here
+                if (allowVariantMatchInDefaultImplementationLookup)
+                {
+                    break;
+                }
+
+                allowVariantMatchInDefaultImplementationLookup = allowVariantMatches;
+            } while (allowVariantMatchInDefaultImplementationLookup);
         }
 
         // Default implementation logic, which only kicks in for default implementations when looking up on an exact interface target
@@ -9001,8 +9019,12 @@ MethodTable::ResolveVirtualStaticMethod(
 // Try to locate the appropriate MethodImpl matching a given interface static virtual method.
 // Returns nullptr on failure.
 MethodDesc*
-MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, ClassLoadLevel level)
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level)
 {
+    bool instantiateMethodParameters = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc) != ResolveVirtualStaticMethodFlags::None;
+    bool allowVariance = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowVariantMatches) != ResolveVirtualStaticMethodFlags::None;
+    bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
+
     HRESULT hr = S_OK;
     IMDInternalImport* pMDInternalImport = GetMDImport();
     HENUMInternalMethodImplHolder hEnumMethodImpl(pMDInternalImport);
@@ -9049,9 +9071,22 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             ClassLoader::LoadTypes,
             CLASS_LOAD_EXACTPARENTS)
             .GetMethodTable();
-        if (pInterfaceMT != pInterfaceType)
+
+        if (allowVariance)
         {
-            continue;
+            // Allow variant, but not equivalent interface match
+            if (!pInterfaceType->HasSameTypeDefAs(pInterfaceMT) ||
+                !pInterfaceMT->CanCastTo(pInterfaceType, NULL))
+            {
+                continue;
+            }
+        }
+        else
+        {
+            if (pInterfaceMT != pInterfaceType)
+            {
+                continue;
+            }
         }
         MethodDesc *pMethodDecl;
 
@@ -9118,7 +9153,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
 
-        if (!verifyImplemented)
+        if (!verifyImplemented && instantiateMethodParameters)
         {
             pMethodImpl = pMethodImpl->FindOrCreateAssociatedMethodDesc(
                 pMethodImpl,
@@ -9167,13 +9202,12 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
                 BOOL uniqueResolution;
                 if (pMD->IsVirtual() &&
                     pMD->IsStatic() &&
+                    !pMD->HasMethodImplSlot() && // Re-abstractions are virtual static abstract with a MethodImpl
                     (pMD->IsAbstract() &&
                     !ResolveVirtualStaticMethod(
                         pInterfaceMT,
                         pMD,
-                        /* allowNullResult */ TRUE,
-                        /* verifyImplemented */ TRUE,
-                        /* allowVariantMatches */ FALSE,
+                        ResolveVirtualStaticMethodFlags::AllowNullResult | ResolveVirtualStaticMethodFlags::VerifyImplemented,
                         /* uniqueResolution */ &uniqueResolution,
                         /* level */ CLASS_LOAD_EXACTPARENTS)))
                 {
@@ -9209,12 +9243,18 @@ MethodTable::TryResolveConstraintMethodApprox(
         _ASSERTE(!thInterfaceType.IsTypeDesc());
         _ASSERTE(thInterfaceType.IsInterface());
         BOOL uniqueResolution;
+
+        ResolveVirtualStaticMethodFlags flags = ResolveVirtualStaticMethodFlags::AllowVariantMatches
+                                              | ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc;
+        if (pfForceUseRuntimeLookup != NULL)
+        {
+            flags |= ResolveVirtualStaticMethodFlags::AllowNullResult;
+        }
+
         MethodDesc *result = ResolveVirtualStaticMethod(
             thInterfaceType.GetMethodTable(),
             pInterfaceMD,
-            /* allowNullResult */pfForceUseRuntimeLookup != NULL,
-            /* verifyImplemented */ FALSE,
-            /* allowVariantMatches */ TRUE,
+            flags,
             &uniqueResolution);
         if (result == NULL || !uniqueResolution)
         {

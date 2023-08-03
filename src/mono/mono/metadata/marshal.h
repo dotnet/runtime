@@ -19,6 +19,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
 #include <mono/utils/mono-error.h>
+#include <mono/metadata/unsafe-accessor.h>
 #include <mono/metadata/icalls.h>
 #include <mono/metadata/marshal-lightweight.h>
 
@@ -135,7 +136,8 @@ typedef enum {
 	WRAPPER_SUBTYPE_INTERP_IN,
 	WRAPPER_SUBTYPE_INTERP_LMF,
 	WRAPPER_SUBTYPE_AOT_INIT,
-	WRAPPER_SUBTYPE_LLVM_FUNC
+	WRAPPER_SUBTYPE_LLVM_FUNC,
+	WRAPPER_SUBTYPE_UNSAFE_ACCESSOR,
 } WrapperSubtype;
 
 typedef struct {
@@ -239,6 +241,12 @@ typedef struct {
 	MonoMethodSignature *sig;
 } NativeFuncWrapperInfo;
 
+typedef struct {
+	MonoMethod *method;
+	MonoUnsafeAccessorKind kind;
+	const char *member_name; /* the member we're accessing */
+} UnsafeAccessorWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -285,6 +293,8 @@ typedef struct {
 		LLVMFuncWrapperInfo llvm_func;
 		/* NATIVE_FUNC_INDIRECT */
 		NativeFuncWrapperInfo native_func;
+		/* UNSAFE_ACCESSOR */
+		UnsafeAccessorWrapperInfo unsafe_accessor;
 	} d;
 } WrapperInfo;
 
@@ -332,6 +342,7 @@ typedef struct {
 	void (*emit_synchronized_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method);
 	void (*emit_unbox_wrapper) (MonoMethodBuilder *mb, MonoMethod *method);
 	void (*emit_array_accessor_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig, MonoGenericContext *ctx);
+	void (*emit_unsafe_accessor_wrapper) (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name);
 	void (*emit_generic_array_helper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig);
 	void (*emit_thunk_invoke_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig);
 	void (*emit_create_string_hack) (MonoMethodBuilder *mb, MonoMethodSignature *csig, MonoMethod *res);
@@ -340,7 +351,6 @@ typedef struct {
 	void (*emit_return) (MonoMethodBuilder *mb);
 	void (*emit_vtfixup_ftnptr) (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type);
 	void (*mb_skip_visibility) (MonoMethodBuilder *mb);
-	void (*mb_set_dynamic) (MonoMethodBuilder *mb);
 	void (*mb_emit_exception) (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg);
 	void (*mb_emit_exception_for_error) (MonoMethodBuilder *mb, const MonoError *emitted_error);
 	void (*mb_emit_byte) (MonoMethodBuilder *mb, guint8 op);
@@ -588,6 +598,9 @@ mono_marshal_get_gsharedvt_in_wrapper (void);
 MonoMethod*
 mono_marshal_get_gsharedvt_out_wrapper (void);
 
+MonoMethod*
+mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsafeAccessorKind kind, const char *member_name);
+
 void
 mono_marshal_free_dynamic_wrappers (MonoMethod *method);
 
@@ -706,18 +719,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUn
 ICALL_EXPORT
 int
 ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (MonoIUnknown *pUnk);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_win32_compat_CopyMemory (gpointer dest, gconstpointer source, gsize length);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_win32_compat_FillMemory (gpointer dest, gsize length, guchar fill);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_win32_compat_MoveMemory (gpointer dest, gconstpointer source, gsize length);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_win32_compat_ZeroMemory (gpointer dest, gsize length);
 
 void
 mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, guint8 *bitmask);
