@@ -21,14 +21,20 @@ namespace Microsoft.Extensions.Http
         // Testing this because it's an important design detail. If someone wants to globally replace the handler
         // they can do so by replacing this service. It's important that the Factory isn't the one to instantiate
         // the handler. The factory has no defaults - it only applies options.
-        [Fact] 
+        [Fact]
         public void Ctor_SetsPrimaryHandler()
         {
             // Arrange & Act
             var builder = new DefaultHttpMessageHandlerBuilder(Services);
 
             // Act
+#if NET5_0_OR_GREATER
+            HttpMessageHandler _ = SocketsHttpHandler.IsSupported
+                ? Assert.IsType<SocketsHttpHandler>(builder.PrimaryHandler)
+                : Assert.IsType<HttpClientHandler>(builder.PrimaryHandler);
+#else
             Assert.IsType<HttpClientHandler>(builder.PrimaryHandler);
+#endif
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads

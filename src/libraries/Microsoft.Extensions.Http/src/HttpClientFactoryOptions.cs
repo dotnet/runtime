@@ -16,10 +16,11 @@ namespace Microsoft.Extensions.Http
     {
         // Establishing a minimum lifetime helps us avoid some possible destructive cases.
         //
-        // IMPORTANT: This is used in a resource string. Update the resource if this changes.
+        // IMPORTANT: MinimumHandlerLifetime is used in a resource string. Update the resource if this changes.
         internal static readonly TimeSpan MinimumHandlerLifetime = TimeSpan.FromSeconds(1);
+        internal static readonly TimeSpan DefaultHandlerLifetime = TimeSpan.FromMinutes(2);
 
-        private TimeSpan _handlerLifetime = TimeSpan.FromMinutes(2);
+        private TimeSpan _handlerLifetime = DefaultHandlerLifetime;
 
         /// <summary>
         /// Gets a list of operations used to configure an <see cref="HttpMessageHandlerBuilder"/>.

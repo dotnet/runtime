@@ -33,17 +33,20 @@ namespace Microsoft.Extensions.Http
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddHttpClient("DefaultPrimaryHandler");
 
-            serviceCollection.AddHttpClient("SocketsHttpHandler")
+            serviceCollection.AddHttpClient("UseSocketsHttpHandler")
                 .UseSocketsHttpHandler();
 
             var services = serviceCollection.BuildServiceProvider();
             var messageHandlerFactory = services.GetRequiredService<IHttpMessageHandlerFactory>();
 
             var defaultPrimaryHandlerChain = messageHandlerFactory.CreateHandler("DefaultPrimaryHandler");
-            var socketsHttpHandlerChain = messageHandlerFactory.CreateHandler("SocketsHttpHandler");
+            var useSocketsHttpHandlerChain = messageHandlerFactory.CreateHandler("UseSocketsHttpHandler");
 
-            Assert.IsType<HttpClientHandler>(GetPrimaryHandler(defaultPrimaryHandlerChain));
-            Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(socketsHttpHandlerChain));
+            var defaultPrimaryHandler = Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(defaultPrimaryHandlerChain));
+            var useSocketsHttpHandler = Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(useSocketsHttpHandlerChain));
+
+            Assert.Equal(HttpClientFactoryOptions.DefaultHandlerLifetime, defaultPrimaryHandler.PooledConnectionLifetime); // opinionated default
+            Assert.Equal(Timeout.InfiniteTimeSpan, useSocketsHttpHandler.PooledConnectionLifetime); // clear unconfigured instance
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

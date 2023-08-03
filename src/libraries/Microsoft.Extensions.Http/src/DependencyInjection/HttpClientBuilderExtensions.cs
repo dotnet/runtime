@@ -133,7 +133,17 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
-                options.HttpMessageHandlerBuilderActions.Add(b => b.AdditionalHandlers.Add(b.Services.GetRequiredService<THandler>()));
+                options.HttpMessageHandlerBuilderActions.Add(b =>
+                {
+                    THandler? handler = null;
+                    if (b.Services is IKeyedServiceProvider keyedProvider)
+                    {
+                        handler = keyedProvider.GetKeyedService<THandler>(b.Name);
+                    }
+                    handler ??= b.Services.GetRequiredService<THandler>();
+
+                    b.AdditionalHandlers.Add(handler);
+                });
             });
 
             return builder;
@@ -215,7 +225,17 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
-                options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = b.Services.GetRequiredService<THandler>());
+                options.HttpMessageHandlerBuilderActions.Add(b =>
+                {
+                    THandler? handler = null;
+                    if (b.Services is IKeyedServiceProvider keyedProvider)
+                    {
+                        handler = keyedProvider.GetKeyedService<THandler>(b.Name);
+                    }
+                    handler ??= b.Services.GetRequiredService<THandler>();
+
+                    b.PrimaryHandler = handler;
+                });
             });
 
             return builder;
@@ -290,10 +310,16 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 options.HttpMessageHandlerBuilderActions.Add(b =>
                 {
-                    if (b.PrimaryHandler is not SocketsHttpHandler handler)
+                    SocketsHttpHandler? handler = null;
+
+                    // checking for PrimaryHandlerIsSet first avoids allocating a default handler instance on accessing PrimaryHandler property
+                    bool canAccessPrimaryHandler = b is not DefaultHttpMessageHandlerBuilder dfb || dfb.PrimaryHandlerIsSet;
+                    if (canAccessPrimaryHandler)
                     {
-                        handler = new SocketsHttpHandler();
+                        handler = b.PrimaryHandler as SocketsHttpHandler;
                     }
+                    handler ??= new SocketsHttpHandler();
+
                     configureHandler?.Invoke(handler, b.Services);
                     b.PrimaryHandler = handler;
                 });
@@ -378,6 +404,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient(s => AddTransientHelper<TClient>(s, builder));
 
+            builder.Services.AddKeyedTransient<TClient>(builder.Name, (s, key) =>
+            {
+                HttpClient httpClient = s.GetRequiredKeyedService<HttpClient>(key);
+                ITypedHttpClientFactory<TClient> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TClient>>();
+                return typedClientFactory.CreateClient(httpClient);
+            });
+
             return builder;
         }
 
@@ -442,6 +475,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient(s => AddTransientHelper<TClient, TImplementation>(s, builder));
 
+            builder.Services.AddKeyedTransient<TClient>(builder.Name, (s, key) =>
+            {
+                HttpClient httpClient = s.GetRequiredKeyedService<HttpClient>(key);
+                ITypedHttpClientFactory<TImplementation> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TImplementation>>();
+                return typedClientFactory.CreateClient(httpClient);
+            });
+
             return builder;
         }
 
@@ -499,6 +539,12 @@ namespace Microsoft.Extensions.DependencyInjection
                 return factory(httpClient);
             });
 
+            builder.Services.AddKeyedTransient<TClient>(builder.Name, (s, key) =>
+            {
+                HttpClient httpClient = s.GetRequiredKeyedService<HttpClient>(key);
+                return factory(httpClient);
+            });
+
             return builder;
         }
 
@@ -545,6 +591,12 @@ namespace Microsoft.Extensions.DependencyInjection
                 IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
                 HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
 
+                return factory(httpClient, s);
+            });
+
+            builder.Services.AddKeyedTransient<TClient>(builder.Name, (s, key) =>
+            {
+                HttpClient httpClient = s.GetRequiredKeyedService<HttpClient>(key);
                 return factory(httpClient, s);
             });
 

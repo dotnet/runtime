@@ -105,6 +105,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(name);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             return new DefaultHttpClientBuilder(services, name);
         }
@@ -133,6 +134,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
@@ -163,6 +165,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
@@ -200,6 +203,8 @@ namespace Microsoft.Extensions.DependencyInjection
             AddHttpClient(services);
 
             string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            services.AddKeyedHttpClient(name);
+
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClientCore<TClient>(validateSingleType: true);
             return builder;
@@ -241,6 +246,8 @@ namespace Microsoft.Extensions.DependencyInjection
             AddHttpClient(services);
 
             string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            services.AddKeyedHttpClient(name);
+
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: true);
             return builder;
@@ -279,8 +286,10 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(name);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             var builder = new DefaultHttpClientBuilder(services, name);
+
             builder.AddTypedClientCore<TClient>(validateSingleType: false); // Name was explicitly provided.
             return builder;
         }
@@ -323,6 +332,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(name);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: false); // name was explicitly provided
@@ -362,6 +372,8 @@ namespace Microsoft.Extensions.DependencyInjection
             AddHttpClient(services);
 
             string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            services.AddKeyedHttpClient(name);
+
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient>(validateSingleType: true);
@@ -401,6 +413,8 @@ namespace Microsoft.Extensions.DependencyInjection
             AddHttpClient(services);
 
             string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            services.AddKeyedHttpClient(name);
+
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient>(validateSingleType: true);
@@ -445,6 +459,8 @@ namespace Microsoft.Extensions.DependencyInjection
             AddHttpClient(services);
 
             string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            services.AddKeyedHttpClient(name);
+
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: true);
@@ -489,6 +505,8 @@ namespace Microsoft.Extensions.DependencyInjection
             AddHttpClient(services);
 
             string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            services.AddKeyedHttpClient(name);
+
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: true);
@@ -530,6 +548,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
@@ -572,6 +591,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
@@ -619,6 +639,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
@@ -666,6 +687,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
@@ -706,6 +728,8 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(factory);
 
             string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            services.AddKeyedHttpClient(name);
+
             return AddHttpClient<TClient, TImplementation>(services, name, factory);
         }
 
@@ -746,6 +770,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(factory);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClient<TClient>(factory);
@@ -785,6 +810,8 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(factory);
 
             string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            services.AddKeyedHttpClient(name);
+
             return AddHttpClient<TClient, TImplementation>(services, name, factory);
         }
 
@@ -823,10 +850,29 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(factory);
 
             AddHttpClient(services);
+            services.AddKeyedHttpClient(name);
 
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClient<TClient>(factory);
             return builder;
+        }
+
+        private static IServiceCollection AddKeyedHttpClient(this IServiceCollection services, string name)
+        {
+            services.AddKeyedTransient<HttpClient>(name, KeyedCreateClient)
+                .AddKeyedTransient<HttpMessageHandler>(name, KeyedCreateHandler);
+
+            return services;
+        }
+
+        private static HttpClient KeyedCreateClient(IServiceProvider services, object? key)
+        {
+            return services.GetRequiredService<IHttpClientFactory>().CreateClient((string?)key ?? string.Empty);
+        }
+
+        private static HttpMessageHandler KeyedCreateHandler(IServiceProvider services, object? key)
+        {
+            return services.GetRequiredService<IHttpMessageHandlerFactory>().CreateHandler((string?)key ?? string.Empty);
         }
     }
 }

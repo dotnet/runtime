@@ -53,8 +53,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 options.LoggingBuilderActions.Add(b =>
                 {
                     IHttpClientLogger httpClientLogger = httpClientLoggerFactory(b.Services);
-                    HttpClientLoggerHandler handler = new HttpClientLoggerHandler(httpClientLogger);
 
+                    HttpClientLoggerHandler handler = new HttpClientLoggerHandler(httpClientLogger);
                     if (wrapHandlersPipeline)
                     {
                         b.AdditionalHandlers.Insert(0, handler);
@@ -110,7 +110,30 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ThrowHelper.ThrowIfNull(builder);
 
-            return AddLogger(builder, services => services.GetRequiredService<TLogger>(), wrapHandlersPipeline);
+            builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+            {
+                options.LoggingBuilderActions.Add(b =>
+                {
+                    IHttpClientLogger? httpClientLogger = null;
+                    if (b.Services is IKeyedServiceProvider keyedProvider)
+                    {
+                        httpClientLogger = keyedProvider.GetKeyedService<TLogger>(b.Name);
+                    }
+                    httpClientLogger ??= b.Services.GetRequiredService<TLogger>();
+
+                    HttpClientLoggerHandler handler = new HttpClientLoggerHandler(httpClientLogger);
+                    if (wrapHandlersPipeline)
+                    {
+                        b.AdditionalHandlers.Insert(0, handler);
+                    }
+                    else
+                    {
+                        b.AdditionalHandlers.Add(handler);
+                    }
+                });
+            });
+
+            return builder;
         }
 
         /// <summary>
