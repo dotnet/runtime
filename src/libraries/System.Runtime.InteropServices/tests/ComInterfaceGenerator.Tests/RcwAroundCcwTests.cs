@@ -92,17 +92,60 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
+        public void IArrayOfStatelessElements()
+        {
+            var obj = CreateWrapper<ArrayOfStatelessElements, IArrayOfStatelessElements>();
+            var data = new StatelessType[10];
+
+            // ByValueContentsOut should only free the returned values
+            var oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            obj.MethodContentsOut(data, data.Length);
+            Assert.Equal(oldFreeCount + 10, StatelessTypeMarshaller.AllFreeCount);
+
+            // ByValueContentsOut should only free the elements after the call
+            oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            obj.MethodContentsIn(data, data.Length);
+            Assert.Equal(oldFreeCount + 10, StatelessTypeMarshaller.AllFreeCount);
+
+            // ByValueContentsInOut should free elements in both directions
+            oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            obj.MethodContentsInOut(data, data.Length);
+            Assert.Equal(oldFreeCount + 20, StatelessTypeMarshaller.AllFreeCount);
+        }
+
+        [Fact]
         public void IArrayOfStatelessElementsThrows()
         {
             var obj = CreateWrapper<ArrayOfStatelessElementsThrows, IArrayOfStatelessElements>();
             var data = new StatelessType[10];
-            var oldFreeCount = StatelessTypeMarshaller.UnmanagedToManaged.FreeCount;
+            var oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
             try
             {
                 obj.MethodContentsOut(data, 10);
             }
             catch (Exception) { }
-            Assert.Equal(oldFreeCount, StatelessTypeMarshaller.UnmanagedToManaged.FreeCount);
+            Assert.Equal(oldFreeCount, StatelessTypeMarshaller.AllFreeCount);
+
+            for (int i = 0; i < 10; i++)
+            {
+                data[i] = new StatelessType() { I = i };
+            }
+
+            oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            try
+            {
+                obj.MethodContentsIn(data, 10);
+            }
+            catch (Exception) { }
+            Assert.Equal(oldFreeCount + 10, StatelessTypeMarshaller.AllFreeCount);
+
+            oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            try
+            {
+                obj.MethodContentsInOut(data, 10);
+            }
+            catch (Exception) { }
+            Assert.Equal(oldFreeCount + 10, StatelessTypeMarshaller.AllFreeCount);
         }
 
         [Fact]

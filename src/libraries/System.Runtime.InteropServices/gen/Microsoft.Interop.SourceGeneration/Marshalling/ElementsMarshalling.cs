@@ -545,8 +545,7 @@ namespace Microsoft.Interop
                     new FreeAlwaysOwnedOriginalValueGenerator(_elementMarshaller),
                     StubCodeContext.Stage.Marshal,
                     StubCodeContext.Stage.PinnedMarshal,
-                    StubCodeContext.Stage.CleanupCallerAllocated,
-                    StubCodeContext.Stage.CleanupCalleeAllocated));
+                    StubCodeContext.Stage.CleanupCallerAllocated));
         }
 
         private static List<StatementSyntax> GenerateElementStages(
