@@ -837,7 +837,7 @@ namespace System.Collections
                 Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
                 Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
 
-                if (Avx512F.IsSupported)
+                if (Avx512F.IsSupported && ((i + Vector512ByteCount) <= (uint)m_length))
                 {
                     Vector256<byte> upperShuffleMask_CopyToBoolArray256 = Vector256.Create(0x04040404_04040404, 0x05050505_05050505,
                                                                                              0x06060606_06060606, 0x07070707_07070707).AsByte();
@@ -852,17 +852,17 @@ namespace System.Collections
                         {
                             long bits = m_array[i / (uint)BitsPerInt32] + (m_array[(i / (uint)BitsPerInt32) + 1] << BitsPerInt32);
                             Vector512<long> scalar = Vector512.Create(bits);
-                            Vector512<byte> shuffled = Vector512.Shuffle(scalar.AsByte(), shuffleMask);
+                            Vector512<byte> shuffled = Avx512BW.Shuffle(scalar.AsByte(), shuffleMask);
                             Vector512<byte> extracted = Avx512F.And(shuffled, bitMask);
 
                             // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
                             // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
-                            Vector512<byte> normalized = Vector512.Min(extracted, ones);
+                            Vector512<byte> normalized = Avx512BW.Min(extracted, ones);
                             Avx512F.Store((byte*)destination + i, normalized);
                         }
                     }
                 }
-                else if (Avx2.IsSupported)
+                else if (Avx2.IsSupported && ((i + Vector256ByteCount) <= (uint)m_length))
                 {
                     Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
                     Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
@@ -884,7 +884,7 @@ namespace System.Collections
                         }
                     }
                 }
-                else if (Ssse3.IsSupported)
+                else if (Ssse3.IsSupported && ((i + Vector128ByteCount * 2u) <= (uint)m_length))
                 {
                     Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
                     Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;
