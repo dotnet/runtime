@@ -229,10 +229,18 @@ ipc_log_poll_handles (dn_vector_t *ipc_poll_handles)
 	} DN_VECTOR_FOREACH_END;
 }
 
+static
+bool
+EP_CALLBACK_CALLTYPE
+ipc_stream_factory_callback (void)
+{
+	return ds_ipc_stream_factory_any_suspended_ports ();
+}
+
 bool
 ds_ipc_stream_factory_init (void)
 {
-	ep_ipc_stream_factory_callback_set (ds_ipc_stream_factory_any_suspended_ports);
+	ep_ipc_stream_factory_callback_set (ipc_stream_factory_callback);
 	_ds_port_array = dn_vector_ptr_alloc ();
 	return _ds_port_array != NULL;
 }
