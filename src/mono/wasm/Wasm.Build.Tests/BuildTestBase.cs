@@ -148,8 +148,7 @@ namespace Wasm.Build.Tests
                 buildType,
                 $"-bl:{logFilePath}",
                 $"-p:Configuration={config}",
-                "-nr:false",
-                !UseWebcil ? "-p:WasmEnableWebcil=false" : string.Empty,
+                "-nr:false"
             };
             commandLineArgs.AddRange(extraArgs);
 

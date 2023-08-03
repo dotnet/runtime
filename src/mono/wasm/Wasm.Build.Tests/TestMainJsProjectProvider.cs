@@ -76,8 +76,7 @@ public class TestMainJsProjectProvider : ProjectProviderBase
             TestUtils.AssertFilesExist(assertOptions.BundleDir, new[] { "index.html" });
         TestUtils.AssertFilesExist(assertOptions.BundleDir, new[] { "run-v8.sh" }, expectToExist: assertOptions.HasV8Script);
 
-        string bundledMainAppAssembly =
-            BuildTestBase.UseWebcil ? $"{assertOptions.ProjectName}{WebcilInWasmExtension}" : $"{assertOptions.ProjectName}.dll";
+        string bundledMainAppAssembly = $"{assertOptions.ProjectName}{WasmAssemblyExtension}";
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir, new[] { bundledMainAppAssembly });
     }
 

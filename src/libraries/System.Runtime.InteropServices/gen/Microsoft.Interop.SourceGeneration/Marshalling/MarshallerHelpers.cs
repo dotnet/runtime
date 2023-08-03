@@ -44,11 +44,21 @@ namespace Microsoft.Interop
                         IdentifierName(indexerIdentifier))));
         }
 
+        /// <summary>
+        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/> = default;</code>
+        /// or
+        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/>;</code>
+        /// </summary>
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
         {
             return Declare(typeSyntax, identifier, initializeToDefault ? LiteralExpression(SyntaxKind.DefaultLiteralExpression) : null);
         }
 
+        /// <summary>
+        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/> = <paramref name="identifier"/>;</code>
+        /// or
+        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/>;</code>
+        /// </summary>
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, ExpressionSyntax? initializer)
         {
             VariableDeclaratorSyntax decl = VariableDeclarator(identifier);

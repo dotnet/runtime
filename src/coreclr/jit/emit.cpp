@@ -3532,11 +3532,11 @@ void emitter::emitDispVarSet()
 
             if (of < 0)
             {
-                printf("-%02XH", -of);
+                printf("-0x%02X", -of);
             }
             else if (of > 0)
             {
-                printf("+%02XH", +of);
+                printf("+0x%02X", +of);
             }
 
             printf("]");
@@ -4113,7 +4113,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
 
         if (jitdump)
         {
-            printf("%soffs=%06XH, size=%04XH", separator, ig->igOffs, ig->igSize);
+            printf("%soffs=0x%06X, size=0x%04X", separator, ig->igOffs, ig->igSize);
             separator = ", ";
         }
 
@@ -7121,12 +7121,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
                     if (emitComp->opts.disAddr)
                     {
-                        printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
+                        printf("              ;; offset=0x%04X", emitCurCodeOffs(cp));
                     }
                     else
 #endif // DEBUG
                     {
-                        printf("  ;; offset=%04XH", emitCurCodeOffs(cp));
+                        printf("  ;; offset=0x%04X", emitCurCodeOffs(cp));
                     }
                 }
                 printf("\n");
@@ -7138,7 +7138,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             printf("\n%s:", emitLabelString(ig));
             if (!emitComp->opts.disDiffable)
             {
-                printf("                ;; offset=%04XH", emitCurCodeOffs(cp));
+                printf("                ;; offset=0x%04X", emitCurCodeOffs(cp));
             }
             printf("\n");
         }
