@@ -440,8 +440,9 @@ namespace Microsoft.Interop
                 indexConstraintName,
                 _elementInfo,
                 _elementMarshaller,
-                StubCodeContext.Stage.CleanupCallerAllocated,
-                StubCodeContext.Stage.CleanupCalleeAllocated);
+                context.CurrentStage);
+            //StubCodeContext.Stage.CleanupCallerAllocated,
+            //StubCodeContext.Stage.CleanupCalleeAllocated);
 
             if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
             {

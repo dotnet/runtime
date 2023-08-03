@@ -92,6 +92,15 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
+        public void IArrayOfStatelessElementsThrows()
+        {
+            var obj = CreateWrapper<ArrayOfStatelessElementsThrows, IArrayOfStatelessElements>();
+            var data = new StatelessType[10];
+            obj.MethodContentsOut(data, 10)
+
+        }
+
+        [Fact]
         public void IJaggedIntArray()
         {
             int[][] data = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5 }, new int[] { 6, 7, 8, 9 } };
