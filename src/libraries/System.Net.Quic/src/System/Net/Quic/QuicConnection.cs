@@ -276,13 +276,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 address = addresses[0];
             }
 
-            QuicAddr quicAddress = new IPEndPoint(address, port).ToQuicAddr();
-            MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, quicAddress);
+            QuicAddr remoteQuicAddress = new IPEndPoint(address, port).ToQuicAddr();
+            MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, remoteQuicAddress);
 
             if (options.LocalEndPoint is not null)
             {
-                quicAddress = options.LocalEndPoint.ToQuicAddr();
-                MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS, quicAddress);
+                QuicAddr localQuicAddress = options.LocalEndPoint.ToQuicAddr();
+                MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS, localQuicAddress);
             }
 
             // RFC 6066 forbids IP literals
@@ -309,7 +309,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                     ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionStart(
                         _handle,
                         _configuration,
-                        (ushort)quicAddress.Family,
+                        (ushort)remoteQuicAddress.Family,
                         (sbyte*)targetHostPtr,
                         (ushort)port),
                         "ConnectionStart failed");
