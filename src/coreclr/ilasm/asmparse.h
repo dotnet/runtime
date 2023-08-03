@@ -315,6 +315,7 @@ private:
     friend int ProcessEOF();
     friend unsigned __int8* skipType(unsigned __int8* ptr, BOOL fFixupType);
     friend void FixupConstraints();
+    friend void ResolveTyParList(TyParList* list);
 
 	Assembler* assem;			// This does most of the semantic processing
     bool success;               // overall success of the compilation

@@ -481,7 +481,7 @@ typeListNotEmpty        : typeSpec                          { $$ = new BinStr();
                         ;
 
 typarsClause            : /* EMPTY */                       { $$ = NULL; PASM->m_TyParList = NULL;}
-                        | '<' typars '>'                    { $$ = $2;   PASM->m_TyParList = $2;}
+                        | '<' typars '>'                    { PASM->m_TyParList = $2; ResolveTyParList(PASM->m_TyParList); $$ = PASM->m_TyParList; }
                         ;
 
 typarAttrib             : '+'                               { $$ = gpCovariant; }
@@ -504,7 +504,7 @@ conTyparAttribs         : /* EMPTY */                       { $$ = 0; }
                         | conTyparAttrib conTyparAttribs    { $$ = $1 | $2; }
                         ;
 
-typars                  : CONST_ conTyparAttribs typeSpec dottedName typarsRest {$$ = new TyParList($2, $3, NULL, $4, $5); }
+typars                  : CONST_ conTyparAttribs type dottedName typarsRest {$$ = new TyParList($2, $3, NULL, $4, $5); }
                         | typarAttribs tyBound dottedName typarsRest {$$ = new TyParList($1, $2, $3, $4);}
                         | typarAttribs dottedName typarsRest   {$$ = new TyParList($1, NULL, $2, $3);}
                         ;

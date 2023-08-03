@@ -16,7 +16,7 @@ public:
     {
         m_pbsBounds = NULL;
         m_wzName = NULL;
-        m_dwType = 0;
+        m_tkType = 0;
         m_dwAttrs = 0;
     };
     ~TyParDescr()
@@ -25,10 +25,10 @@ public:
         delete [] m_wzName;
         m_lstCA.RESET(true);
     };
-    void Init(BinStr* bounds, DWORD type, LPCUTF8 name, DWORD attrs)
+    void Init(BinStr* bounds, mdToken type, LPCUTF8 name, DWORD attrs)
     {
         m_pbsBounds = bounds;
-        m_dwType = type;
+        m_tkType = type;
         ULONG               cTemp = (ULONG)strlen(name)+1;
         WCHAR *pwzName;
         m_wzName = pwzName = new WCHAR[cTemp];
@@ -40,7 +40,7 @@ public:
         m_dwAttrs = attrs;
     };
     BinStr* Bounds() { return m_pbsBounds; };
-    DWORD   Type() { return m_dwType; };
+    mdToken Type() { return m_tkType; };
     LPCWSTR Name() { return m_wzName; };
     DWORD   Attrs() { return m_dwAttrs; };
     mdToken Token() { return m_token; };
@@ -52,7 +52,7 @@ public:
 
 private:
     BinStr* m_pbsBounds;
-    DWORD   m_dwType;
+    mdToken m_tkType;
     LPCWSTR m_wzName;
     DWORD   m_dwAttrs;
     mdToken m_token;
@@ -65,17 +65,18 @@ public:
     {
         bound  = (b == NULL) ? new BinStr() : b;
         bound->appendInt32(0); // zero terminator
-        attrs = a; type = 0; name = n; next = nx;
+        attrs = a; unresolvedType = NULL; type = 0; name = n; next = nx;
     };
-    TyParList(DWORD a, DWORD t, BinStr* b, LPCUTF8 n, TyParList* nx = NULL)
+    TyParList(DWORD a, BinStr* t, BinStr* b, LPCUTF8 n, TyParList* nx = NULL)
     {
         bound  = (b == NULL) ? new BinStr() : b;
         bound->appendInt32(0); // zero terminator
-        attrs = a; type = t; name = n; next = nx;
+        attrs = a; unresolvedType = t; type = 0; name = n; next = nx;
     };
     ~TyParList()
     {
-        if( bound) delete bound;
+        if (bound) delete bound;
+        if (unresolvedType) delete unresolvedType;
 
         // To avoid excessive stack usage (especially in debug builds), we break the next chain
         // and delete as we traverse the link list
@@ -143,6 +144,7 @@ public:
                 attr[i] = tp->attrs;
             // to avoid deletion by destructor
             tp->bound = 0;
+            tp->unresolvedType = 0;
             i++;
             tp = tp->next;
         }
@@ -174,6 +176,7 @@ public:
                     pTPD[i].Init(tp->bound,tp->type,tp->name,tp->attrs);
                     // to avoid deletion by destructor
                     tp->bound = 0;
+                    tp->unresolvedType = 0;
                     i++;
                     tp = tp->next;
                 }
@@ -186,10 +189,12 @@ public:
     BinStr* Bound() { return bound; };
 private:
     BinStr* bound;
-    DWORD   type;
+    BinStr* unresolvedType;
+    mdToken type;
     LPCUTF8 name;
     TyParList* next;
     DWORD   attrs;
+    friend void ResolveTyParList(TyParList* list);
 };
 
 typedef TyParList* pTyParList;

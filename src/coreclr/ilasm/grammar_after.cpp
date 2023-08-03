@@ -1557,6 +1557,20 @@ void FixupTyPars(BinStr* pbstype)
     FixupTyPars((PCOR_SIGNATURE)(pbstype->ptr()),(ULONG)(pbstype->length()));
 }
 /**************************************************************************/
+void ResolveTyParList(TyParList* list)
+{
+    TyParList* cur = list;
+    while (cur != NULL)
+    {
+        if (cur->unresolvedType != NULL && cur->type == 0)
+        {
+            FixupTyPars(cur->unresolvedType);
+            cur->type = PASM->ResolveTypeSpec(cur->unresolvedType);
+        }
+        cur = cur->Next();
+    }
+}
+/**************************************************************************/
 static unsigned corCountArgs(BinStr* args)
 {
     unsigned __int8* ptr = args->ptr();
