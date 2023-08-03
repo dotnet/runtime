@@ -7,7 +7,7 @@ Provides high-performance and low-allocating types that serialize objects to Jav
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
-The System.Text.Json library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.
+The System.Text.Json library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use the most recent version in older target frameworks.
 
 Serialization:
 ```csharp
