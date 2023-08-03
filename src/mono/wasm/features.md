@@ -296,10 +296,10 @@ it may be better if you re/write your logic in Web native technologies like HTML
 Sometimes it makes sense to implement a mix of both.
 
 ## wasm-tools workload
-The `wasm-tools` workload contains all of the tools and libraries necessary to perform native rebuild or AOT compilation and other optimizations of your application. 
+The `wasm-tools` workload contains all of the tools and libraries necessary to perform native rebuild or AOT compilation and other optimizations of your application.
 
 Although it's optional for Blazor, we strongly recommend using it!
 
-You can install it by running `dotnet workload install wasm-tools` from the command line. 
+You can install it by running `dotnet workload install wasm-tools` from the command line.
 
 You can also install `dotnet workload install wasm-experimental` to test out new experimental features and templates.
