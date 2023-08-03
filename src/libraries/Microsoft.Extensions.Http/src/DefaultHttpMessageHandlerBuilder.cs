@@ -11,13 +11,11 @@ namespace Microsoft.Extensions.Http
 {
     internal sealed class DefaultHttpMessageHandlerBuilder : HttpMessageHandlerBuilder
     {
-        public DefaultHttpMessageHandlerBuilder(IServiceProvider services, IMeterFactory meterFactory)
+        public DefaultHttpMessageHandlerBuilder(IServiceProvider services)
         {
             Services = services;
-            _meterFactory = meterFactory;
         }
 
-        private readonly IMeterFactory _meterFactory;
         private string? _name;
 
         [DisallowNull]
@@ -44,18 +42,6 @@ namespace Microsoft.Extensions.Http
                 string message = SR.Format(SR.HttpMessageHandlerBuilder_PrimaryHandlerIsNull, nameof(PrimaryHandler));
                 throw new InvalidOperationException(message);
             }
-
-#if NET8_0_OR_GREATER
-            // The MeterFactory property is available on handlers in .NET 8 or later.
-            if (PrimaryHandler is HttpClientHandler httpClientHandler)
-            {
-                httpClientHandler.MeterFactory = _meterFactory;
-            }
-            else if (!OperatingSystem.IsBrowser() && PrimaryHandler is SocketsHttpHandler socketsHttpHandler)
-            {
-                socketsHttpHandler.MeterFactory = _meterFactory;
-            }
-#endif
 
             return CreateHandlerPipeline(PrimaryHandler, AdditionalHandlers);
         }
