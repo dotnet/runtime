@@ -193,7 +193,7 @@ public class BuildPublishTests : BlazorWasmTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{ProjectProviderBase.WebcilInWasmExtension}" : "RazorClassLibrary.dll";
+        string razorClassLibraryFileName = $"RazorClassLibrary{ProjectProviderBase.WasmAssemblyExtension}";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
             <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileName}"" />

@@ -25,16 +25,23 @@ namespace System.Net.Sockets
 
         private void AcceptCompletionCallback(IntPtr acceptedFileDescriptor, Memory<byte> socketAddress, SocketError socketError)
         {
-            CompleteAcceptOperation(acceptedFileDescriptor, socketAddress);
+            CompleteAcceptOperation(acceptedFileDescriptor, socketAddress, socketError);
 
             CompletionCallback(0, SocketFlags.None, socketError);
         }
 
-        private void CompleteAcceptOperation(IntPtr acceptedFileDescriptor, Memory<byte> socketAddress)
+        private void CompleteAcceptOperation(IntPtr acceptedFileDescriptor, Memory<byte> socketAddress, SocketError socketError)
         {
             _acceptedFileDescriptor = acceptedFileDescriptor;
-            Debug.Assert(socketAddress.Length > 0);
-            _acceptAddressBufferCount = socketAddress.Length;
+            if (socketError == SocketError.Success)
+            {
+                Debug.Assert(socketAddress.Length > 0);
+                _acceptAddressBufferCount = socketAddress.Length;
+            }
+            else
+            {
+                _acceptAddressBufferCount = 0;
+            }
         }
 
         internal unsafe SocketError DoOperationAccept(Socket _ /*socket*/, SafeSocketHandle handle, SafeSocketHandle? acceptHandle, CancellationToken cancellationToken)
@@ -53,7 +60,7 @@ namespace System.Net.Sockets
 
             if (socketError != SocketError.IOPending)
             {
-                CompleteAcceptOperation(acceptedFd, new Memory<byte>(_acceptBuffer, 0, socketAddressLen));
+                CompleteAcceptOperation(acceptedFd, new Memory<byte>(_acceptBuffer, 0, socketAddressLen), socketError);
                 FinishOperationSync(socketError, 0, SocketFlags.None);
             }
 

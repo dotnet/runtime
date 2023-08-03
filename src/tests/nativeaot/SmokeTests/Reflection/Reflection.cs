@@ -65,6 +65,8 @@ internal static class ReflectionTest
         TestIsValueTypeWithoutTypeHandle.Run();
         TestMdArrayLoad.Run();
         TestByRefTypeLoad.Run();
+        TestGenericLdtoken.Run();
+        TestAbstractGenericLdtoken.Run();
 
         //
         // Mostly functionality tests
@@ -2399,6 +2401,59 @@ internal static class ReflectionTest
             var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(typeof(Atom));
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(delegate*<ref Atom>))
                 throw new Exception();
+        }
+    }
+
+    class TestGenericLdtoken
+    {
+        class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static Base GetInstance() => new Base();
+            public virtual Type GrabType<T>() => typeof(T);
+        }
+
+        class Derived : Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static new Base GetInstance() => new Derived();
+            public override Type GrabType<T>() => typeof(T);
+        }
+
+        class Generic<T> { }
+
+        class Atom { }
+
+        public static void Run()
+        {
+            Expression<Func<Type>> grabType = () => Base.GetInstance().GrabType<Generic<Atom>>();
+            Console.WriteLine(grabType.Compile()().FullName);
+        }
+    }
+
+    class TestAbstractGenericLdtoken
+    {
+        abstract class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static Base GetInstance() => null;
+            public abstract Type GrabType<T>();
+        }
+
+        class Generic<T> { }
+
+        class Atom { }
+
+        public static void Run()
+        {
+            Expression<Func<Type>> grabType = () => Base.GetInstance().GrabType<Generic<Atom>>();
+            try
+            {
+                grabType.Compile()();
+            }
+            catch (NullReferenceException)
+            {
+            }
         }
     }
 
