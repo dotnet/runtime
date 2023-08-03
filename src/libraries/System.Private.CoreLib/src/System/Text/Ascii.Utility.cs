@@ -2472,7 +2472,7 @@ namespace System.Text
                     nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector128<byte>.Count;
 
                     Vector128<byte> asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
-                    if (asciiVector.ExtractMostSignificantBits() == 0)
+                    if (!VectorContainsNonAsciiChar(asciiVector))
                     {
                         (Vector128<ushort> utf16LowVector, Vector128<ushort> utf16HighVector) = Vector128.Widen(asciiVector);
                         utf16LowVector.Store(pCurrentWriteAddress);
@@ -2490,7 +2490,7 @@ namespace System.Text
                         {
                             asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
 
-                            if (asciiVector.ExtractMostSignificantBits() != 0)
+                            if (VectorContainsNonAsciiChar(asciiVector))
                             {
                                 break;
                             }
