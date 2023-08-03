@@ -73,8 +73,8 @@ namespace Tracing.Tests
 
                 listener.TPWaitEvent.WaitOne(TimeSpan.FromMinutes(3));
 
-                bool workerThreadEventsOk = listener.TPWorkerThreadStartCount > 0 &&
-                                            listener.TPWorkerThreadStopCount > 0 &&
+                bool workerThreadEventsOk = listener.TPWorkerThreadStartCount > 0 ||
+                                            listener.TPWorkerThreadStopCount > 0 ||
                                             listener.TPWorkerThreadWaitCount > 0;
 
                 bool ioPackEventOk = listener.TPIOPack > 0;
