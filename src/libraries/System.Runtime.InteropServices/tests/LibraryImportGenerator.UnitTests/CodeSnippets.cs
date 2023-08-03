@@ -1002,7 +1002,7 @@ namespace LibraryImportGenerator.UnitTests
             }
             """;
 
-        public string MarshalCollectionWithSizeWithModifiers(
+        public string CollectionMarshallingWithCountRefKinds(
             (string parameterType, string parameterModifiers, string[] countNames) returnType,
             params (string parameterType, string parameterModifiers, string parameterName, string[] countNames)[] parameters)
         {

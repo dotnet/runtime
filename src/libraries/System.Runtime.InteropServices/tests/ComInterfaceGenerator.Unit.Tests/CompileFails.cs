@@ -1057,7 +1057,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 (string type, string modifiers, string[] counts) returnValue,
                 params (string type, string modifiers, string name, string[] counts)[] parameters)
             {
-                return a.CollectionTypeMarshallingBasic(returnValue, parameters)
+                return a.CollectionMarshallingWithCountRefKinds(returnValue, parameters)
                     + "[NativeMarshalling(typeof(IntStructMarshaller))]"
                     + CodeSnippets.IntStructAndMarshaller;
             }

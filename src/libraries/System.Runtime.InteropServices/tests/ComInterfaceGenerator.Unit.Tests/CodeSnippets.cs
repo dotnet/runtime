@@ -268,7 +268,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
 
-        public string CollectionTypeMarshallingBasic(
+        public string CollectionMarshallingWithCountRefKinds(
             (string parameterType, string parameterModifiers, string[] countNames) returnType,
             params (string parameterType, string parameterModifiers, string parameterName, string[] countNames)[] parameters)
         {
