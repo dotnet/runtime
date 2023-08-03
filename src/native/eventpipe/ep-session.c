@@ -229,33 +229,35 @@ ep_session_remove_dangling_session_states (EventPipeSession *session)
 {
 	ep_return_void_if_nok (session != NULL);
 
-	EP_RT_DECLARE_LOCAL_THREAD_ARRAY (threads);
-	ep_rt_thread_array_init (&threads);
+	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
-	ep_thread_get_threads (&threads);
+	dn_vector_ptr_custom_init_params_t params = {0, };
+	params.allocator = (dn_allocator_t *)&allocator;
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
 
-	ep_rt_thread_array_iterator_t threads_iterator = ep_rt_thread_array_iterator_begin (&threads);
-	while (!ep_rt_thread_array_iterator_end (&threads, &threads_iterator)) {
-		EventPipeThread *thread = ep_rt_thread_array_iterator_value (&threads_iterator);
-		EP_ASSERT(thread != NULL);
-		EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1);
-			EventPipeThreadSessionState *session_state = ep_thread_get_session_state(thread, session);
-			if (session_state) {
-				// If a buffer tries to write event(s) but never gets a buffer because the maximum total buffer size
-				// has been exceeded, we can leak the EventPipeThreadSessionState* and crash later trying to access 
-				// the session from the thread session state. Whenever we terminate a session we check to make sure
-				// we haven't leaked any thread session states.
-				ep_thread_delete_session_state(thread, session);
+	dn_vector_ptr_t threads;
+
+	if (dn_vector_ptr_custom_init (&threads, &params)) {
+		ep_thread_get_threads (&threads);
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
+			if (thread) {
+				EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1);
+				EventPipeThreadSessionState *session_state = ep_thread_get_session_state(thread, session);
+				if (session_state) {
+					// If a buffer tries to write event(s) but never gets a buffer because the maximum total buffer size
+					// has been exceeded, we can leak the EventPipeThreadSessionState* and crash later trying to access 
+					// the session from the thread session state. Whenever we terminate a session we check to make sure
+					// we haven't leaked any thread session states.
+					ep_thread_delete_session_state(thread, session);
+				}
+				EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1);
+
+				ep_thread_release (thread);
 			}
-		EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1);
+		} DN_VECTOR_PTR_FOREACH_END;
 
-		// ep_thread_get_threads calls ep_thread_addref for every entry, need to release it here
-		ep_thread_release (thread);
-
-		ep_rt_thread_array_iterator_next (&threads_iterator);
+		dn_vector_ptr_dispose (&threads);
 	}
-
-	ep_rt_thread_array_fini (&threads);
 
 ep_on_exit:
 	return;
