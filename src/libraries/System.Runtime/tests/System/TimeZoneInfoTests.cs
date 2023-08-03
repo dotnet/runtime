@@ -1999,6 +1999,72 @@ namespace System.Tests
             }
         }
 
+        private static void ValidateTimeZonesSorting(ReadOnlyCollection<TimeZoneInfo> zones)
+        {
+            // validate sorting: first by base offset, then by display name
+            for (int i = 1; i < zones.Count; i++)
+            {
+                TimeZoneInfo previous = zones[i - 1];
+                TimeZoneInfo current = zones[i];
+
+                int baseOffsetsCompared = current.BaseUtcOffset.CompareTo(previous.BaseUtcOffset);
+                Assert.True(baseOffsetsCompared >= 0,
+                    string.Format($"TimeZoneInfos are out of order. {previous.Id}:{previous.BaseUtcOffset} should be before {current.Id}:{current.BaseUtcOffset}"));
+
+                if (baseOffsetsCompared == 0)
+                {
+                    Assert.True(string.CompareOrdinal(current.DisplayName, previous.DisplayName) >= 0,
+                        string.Format($"TimeZoneInfos are out of order. {previous.DisplayName} should be before {current.DisplayName}"));
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void TestGetSystemTimeZonesCollections()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                //
+                // Get sorted list first and then the unsorted list
+                //
+                var zones1 = TimeZoneInfo.GetSystemTimeZones();
+                var zones2 = TimeZoneInfo.GetSystemTimeZones(skipSorting: true);
+                var zones3 = TimeZoneInfo.GetSystemTimeZones(skipSorting: false);
+
+                Assert.Equal(zones1.Count, zones2.Count);
+                Assert.True(object.ReferenceEquals(zones1, zones3));
+                Dictionary<string, TimeZoneInfo> zones1Dict = zones1.ToDictionary(t => t.Id);
+                foreach (TimeZoneInfo zone in zones2)
+                {
+                    Assert.True(zones1Dict.TryGetValue(zone.Id, out TimeZoneInfo zone1));
+                }
+
+                ValidateTimeZonesSorting(zones1);
+
+                //
+                // Clear our caches so zone enumeration is forced to re-read the data
+                //
+                TimeZoneInfo.ClearCachedData();
+
+                //
+                // Get unsorted list first and then the sorted list
+                //
+                zones2 = TimeZoneInfo.GetSystemTimeZones(skipSorting: true);
+                zones3 = TimeZoneInfo.GetSystemTimeZones(skipSorting: false);
+                zones1 = TimeZoneInfo.GetSystemTimeZones();
+                Assert.Equal(zones1.Count, zones2.Count);
+                Assert.True(object.ReferenceEquals(zones1, zones3));
+                zones1Dict = zones1.ToDictionary(t => t.Id);
+                foreach (TimeZoneInfo zone in zones2)
+                {
+                    Assert.True(zones1Dict.TryGetValue(zone.Id, out TimeZoneInfo zone1));
+                }
+
+                ValidateTimeZonesSorting(zones1);
+
+            }).Dispose();
+        }
+
         [Fact]
         public static void DaylightTransitionsExactTime()
         {
