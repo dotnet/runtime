@@ -84,7 +84,7 @@ JsonNode forecastNode = JsonNode.Parse(jsonString)!;
 
 
 // Get value from a JsonNode.
-JsonNode temperatureNode = forecastNode!["Temperature"]!;
+JsonNode temperatureNode = forecastNode["Temperature"]!;
 Console.WriteLine($"Type={temperatureNode.GetType()}");
 Console.WriteLine($"JSON={temperatureNode.ToJsonString()}");
 //output:
@@ -92,19 +92,19 @@ Console.WriteLine($"JSON={temperatureNode.ToJsonString()}");
 //JSON = 25
 
 // Get a typed value from a JsonNode.
-int temperatureInt = (int)forecastNode!["Temperature"]!;
+int temperatureInt = (int)forecastNode["Temperature"]!;
 Console.WriteLine($"Value={temperatureInt}");
 //output:
 //Value=25
 
 // Get a typed value from a JsonNode by using GetValue<T>.
-temperatureInt = forecastNode!["Temperature"]!.GetValue<int>();
+temperatureInt = forecastNode["Temperature"]!.GetValue<int>();
 Console.WriteLine($"TemperatureInt={temperatureInt}");
 //output:
 //Value=25
 
 // Get a JSON object from a JsonNode.
-JsonNode temperatureRanges = forecastNode!["TemperatureRanges"]!;
+JsonNode temperatureRanges = forecastNode["TemperatureRanges"]!;
 Console.WriteLine($"Type={temperatureRanges.GetType()}");
 Console.WriteLine($"JSON={temperatureRanges.ToJsonString()}");
 //output:
@@ -112,7 +112,7 @@ Console.WriteLine($"JSON={temperatureRanges.ToJsonString()}");
 //JSON = { "Cold":{ "High":20,"Low":-10},"Hot":{ "High":60,"Low":20} }
 
 // Get a JSON array from a JsonNode.
-JsonNode datesAvailable = forecastNode!["DatesAvailable"]!;
+JsonNode datesAvailable = forecastNode["DatesAvailable"]!;
 Console.WriteLine($"Type={datesAvailable.GetType()}");
 Console.WriteLine($"JSON={datesAvailable.ToJsonString()}");
 //output:
@@ -134,14 +134,14 @@ Console.WriteLine($"TemperatureRanges.Cold.High={coldHighTemperature}");
 //TemperatureRanges.Cold.High = 20
 
 // Parse a JSON array
-var datesNode = JsonNode.Parse(@"[""2019-08-01T00:00:00"",""2019-08-02T00:00:00""]");
-JsonNode firstDate = datesNode![0]!.GetValue<DateTime>();
+JsonNode datesNode = JsonNode.Parse(@"[""2019-08-01T00:00:00"",""2019-08-02T00:00:00""]")!;
+JsonNode firstDate = datesNode[0]!.GetValue<DateTime>();
 Console.WriteLine($"firstDate={ firstDate}");
 //output:
 //firstDate = "2019-08-01T00:00:00"
 ```
 
-Using the reader/writer
+Using the low-level JSON reader/writer types
 ```csharp
 /*
   SharpLab tools in Run mode:
