@@ -265,16 +265,16 @@ namespace System
             //
             // Once the timezone cache is populated with the IDs, we reference tzlookup id tags
             // to determine if an id is backwards and label it as such if they are.
-            private static bool FilterBackwardIDs(string tzFileDir, out HashSet<string> tzLookupIDs)
+            private static HashSet<string>? FilterBackwardIDs(string tzFileDir)
             {
-                tzLookupIDs = new HashSet<string>();
-                string tzFilePath = Path.Combine(tzFileDir, "tzlookup.xml");
-                if (!File.Exists(tzFilePath))
-                    return false;
+                string tzLookupFilePath = Path.Combine(tzFileDir, "tzlookup.xml");
+                if (!File.Exists(tzLookupFilePath))
+                    return null;
 
+                HashSet<string>? tzLookupIDs = null;
                 try
                 {
-                    using (StreamReader sr = File.OpenText(Path.Combine(tzFileDir, "tzlookup.xml")))
+                    using (StreamReader sr = File.OpenText(tzLookupFilePath))
                     {
                         string? tzLookupLine;
                         while (sr.Peek() >= 0)
@@ -289,6 +289,9 @@ namespace System
                                 // Either the start tag <id ... > or the end tag </id> are not found
                                 continue;
                             }
+
+                            tzLookupIDs ??= new HashSet<string>();
+
                             string id = tzLookupLine.Substring(idStart, idLength);
                             tzLookupIDs.Add(id);
                         }
@@ -296,10 +299,10 @@ namespace System
                 }
                 catch
                 {
-                    return false;
+                    return null;
                 }
 
-                return true;
+                return tzLookupIDs;
             }
 
             [MemberNotNullWhen(true, nameof(_ids))]
@@ -376,7 +379,7 @@ namespace System
                 _ids = new string[entryCount];
                 _lengths = new int[entryCount];
                 _isBackwards = new bool[entryCount];
-                bool hasTzLookupFile = FilterBackwardIDs(tzFileDir, out HashSet<string> tzLookupIDs);
+                HashSet<string>? tzLookupIDs = FilterBackwardIDs(tzFileDir);
                 for (int i = 0; i < entryCount; ++i)
                 {
                     LoadEntryAt(fs, indexOffset + (entrySize*i), out string id, out int byteOffset, out int length);
@@ -384,7 +387,7 @@ namespace System
                     _byteOffsets[i] = byteOffset + dataOffset;
                     _ids[i] = id;
                     _lengths[i] = length;
-                    if (hasTzLookupFile)
+                    if (tzLookupIDs != null)
                         _isBackwards[i] = !tzLookupIDs.Contains(id);
 
                     if (length < 24) // Header Size
