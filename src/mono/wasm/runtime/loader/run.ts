@@ -10,7 +10,7 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObje
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit } from "./exit";
 import { setup_proxy_console, mono_log_info } from "./logging";
-import { resolve_single_asset_path, start_asset_download } from "./assets";
+import { prepareAssets, resolve_single_asset_path, start_asset_download } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
@@ -465,6 +465,8 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     // download config
     await mono_wasm_load_config(module);
+
+    prepareAssets();
 
     const promises = importModules();
 

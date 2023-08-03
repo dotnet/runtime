@@ -92,7 +92,7 @@ export function setLoaderGlobals(
         getPromiseController,
         assertIsControllablePromise,
         mono_download_assets,
-        resolve_asset_path: resolve_single_asset_path,
+        resolve_single_asset_path,
         setup_proxy_console,
         logDownloadStatsToConsole,
         purgeUnusedCacheEntriesAsync,

@@ -9,6 +9,7 @@ import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
+import { appendUniqueQuery } from "./assets";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
@@ -259,7 +260,7 @@ export function hasDebuggingEnabled(config: MonoConfigInternal): boolean {
 }
 
 async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
-    const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
+    const defaultConfigSrc = appendUniqueQuery(loaderHelpers.locateFile(module.configSrc!), "manifest");
 
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
         loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "", "manifest") :
