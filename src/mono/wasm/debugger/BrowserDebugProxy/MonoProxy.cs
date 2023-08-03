@@ -244,7 +244,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (JustMyCode)
                         {
-                            if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
+                            if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context) || !context.IsRuntimeReady)
                                 return false;
                             //avoid pausing when justMyCode is enabled and it's a wasm function
                             if (args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
