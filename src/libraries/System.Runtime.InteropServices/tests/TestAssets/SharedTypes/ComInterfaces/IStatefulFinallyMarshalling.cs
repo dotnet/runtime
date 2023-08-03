@@ -74,7 +74,7 @@ namespace SharedTypes.ComInterfaces
                 managed_i = managed.i;
             }
 
-            public nint ToUnmanaged()
+            public StatefulFinallyNative ToUnmanaged()
             {
                 return new StatefulFinallyNative() { i = this.managed_i };
             }
