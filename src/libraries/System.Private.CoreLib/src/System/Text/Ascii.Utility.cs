@@ -895,7 +895,7 @@ namespace System.Text
             // Only run the loop if we have at least two vectors we can pull out.
             if (Vector512.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector512<ushort>.Count)
             {
-                const uint SizeOfVector512InChars = Vector512.Size / sizeof(char);
+                const uint SizeOfVector512InChars = Vector512.Size / sizeof(ushort);
 
                 if (!VectorContainsNonAsciiChar(Vector512.Load((ushort*)pBuffer)))
                 {
@@ -931,7 +931,7 @@ namespace System.Text
             }
             else if (Vector256.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector256<ushort>.Count)
             {
-                const uint SizeOfVector256InChars = Vector256.Size / sizeof(char);
+                const uint SizeOfVector256InChars = Vector256.Size / sizeof(ushort);
 
                 if (!VectorContainsNonAsciiChar(Vector256.Load((ushort*)pBuffer)))
                 {
@@ -967,7 +967,7 @@ namespace System.Text
             }
             else if (Vector128.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector128<ushort>.Count)
             {
-                const uint SizeOfVector128InChars = Vector128.Size / sizeof(char); // JIT will make this a const
+                const uint SizeOfVector128InChars = Vector128.Size / sizeof(ushort); // JIT will make this a const
 
                 if (!VectorContainsNonAsciiChar(Vector128.Load((ushort*)pBuffer)))
                 {
