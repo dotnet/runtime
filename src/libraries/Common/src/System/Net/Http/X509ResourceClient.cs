@@ -180,6 +180,11 @@ namespace System.Net.Http
                     while (true)
                     {
                         int statusCode = (int)responseStatusCodeProp.GetValue(responseMessage)!;
+                        if (statusCode < 200 || statusCode >= 300)
+                        {
+                            return null;
+                        }
+
                         object responseHeaders = responseHeadersProp.GetValue(responseMessage)!;
                         Uri? location = (Uri?)responseHeadersLocationProp.GetValue(responseHeaders);
                         redirectUri = GetUriForRedirect((Uri)requestUriProp.GetValue(requestMessage)!, statusCode, location, out hasRedirect);
