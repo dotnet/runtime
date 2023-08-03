@@ -178,6 +178,7 @@ jobs:
       include:
       - eng/Version.Details.xml
       - eng/Versions.props
+        eng/testing/ProvisioningVersions.props
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/workloads-testing.targets
       - src/installer/pkg/sfx/Microsoft.NETCore.App/*

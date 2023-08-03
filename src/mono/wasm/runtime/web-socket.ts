@@ -102,6 +102,13 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     ws.addEventListener("open", local_on_open, { once: true });
     ws.addEventListener("close", local_on_close, { once: true });
     ws.addEventListener("error", local_on_error, { once: true });
+    ws.dispose = () => {
+        ws.removeEventListener("message", local_on_message);
+        ws.removeEventListener("open", local_on_open);
+        ws.removeEventListener("close", local_on_close);
+        ws.removeEventListener("error", local_on_error);
+        ws_wasm_abort(ws);
+    };
 
     return ws;
 }
@@ -396,6 +403,7 @@ type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_send_buffer_offset]: number
     [wasm_ws_pending_send_buffer_type]: number
     [wasm_ws_pending_send_buffer]: Uint8Array | null
+    dispose(): void
 }
 
 type ReceivePromiseControl = PromiseController<void> & {
