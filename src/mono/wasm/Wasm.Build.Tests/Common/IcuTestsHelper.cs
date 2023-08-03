@@ -12,85 +12,8 @@ using System.Collections.Generic;
 
 namespace Wasm.Build.Tests;
 
-
-
 public static class IcuTestsHelper
 {
     // custom file contains only locales "cy-GB", "is-IS", "bs-BA", "lb-LU" and fallback locale: "en-US":
     public static string CustomIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
-
-    // private const string FallbackSundayNameEnUS = "Sunday";
-
-    // public static readonly string CustomIcuTestedLocales = $@"new Locale[] {{
-    //     new Locale(""cy-GB"",  ""Dydd Sul""), new Locale(""is-IS"",  ""sunnudagur""), new Locale(""bs-BA"",  ""nedjelja""), new Locale(""lb-LU"",  ""Sonndeg""),
-    //     new Locale(""fr-FR"", null), new Locale(""hr-HR"", null), new Locale(""ko-KR"", null)
-    // }}";
-    // public static string GetEfigsTestedLocales(string fallbackSundayName=FallbackSundayNameEnUS) =>  $@"new Locale[] {{
-    //     new Locale(""en-US"", ""{SundayNames.English}""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""es-ES"", ""{SundayNames.Spanish}""),
-    //     new Locale(""pl-PL"", ""{fallbackSundayName}""), new Locale(""ko-KR"", ""{fallbackSundayName}""), new Locale(""cs-CZ"", ""{fallbackSundayName}"")
-    // }}";
-    // public static string GetCjkTestedLocales(string fallbackSundayName=FallbackSundayNameEnUS) =>  $@"new Locale[] {{
-    //     new Locale(""en-GB"", ""{SundayNames.English}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}""), new Locale(""ja-JP"", ""{SundayNames.Japanese}""),
-    //     new Locale(""fr-FR"", ""{fallbackSundayName}""), new Locale(""hr-HR"", ""{fallbackSundayName}""), new Locale(""it-IT"", ""{fallbackSundayName}"")
-    // }}";
-    // public static string GetNocjkTestedLocales(string fallbackSundayName=FallbackSundayNameEnUS) =>  $@"new Locale[] {{
-    //     new Locale(""en-AU"", ""{SundayNames.English}""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""),
-    //     new Locale(""ja-JP"", ""{fallbackSundayName}""), new Locale(""ko-KR"", ""{fallbackSundayName}""), new Locale(""zh-CN"", ""{fallbackSundayName}"")
-    // }}";
-    // public static readonly string FullIcuTestedLocales = $@"new Locale[] {{
-    //     new Locale(""en-GB"", ""{SundayNames.English}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}"")
-    // }}";
-
-    // public static string GetProgramText(string testedLocales, bool onlyPredefinedCultures=false, string fallbackSundayName=FallbackSundayNameEnUS) => $@"
-    //     #nullable enable
-
-    //     using System;
-    //     using System.Globalization;
-
-    //     Console.WriteLine($""Current culture: '{{CultureInfo.CurrentCulture.Name}}'"");
-
-    //     string fallbackSundayName = ""{fallbackSundayName}"";
-    //     bool onlyPredefinedCultures = {(onlyPredefinedCultures ? "true" : "false")};
-    //     Locale[] localesToTest = {testedLocales};
-
-    //     bool fail = false;
-    //     foreach (var testLocale in localesToTest)
-    //     {{
-    //         bool expectMissing = string.IsNullOrEmpty(testLocale.SundayName);
-    //         bool ctorShouldFail = expectMissing && onlyPredefinedCultures;
-    //         CultureInfo culture;
-
-    //         try
-    //         {{
-    //             culture = new CultureInfo(testLocale.Code);
-    //             if (ctorShouldFail)
-    //             {{
-    //                 Console.WriteLine($""CultureInfo..ctor did not throw an exception for {{testLocale.Code}} as was expected."");
-    //                 fail = true;
-    //                 continue;
-    //             }}
-    //         }}
-    //         catch(CultureNotFoundException cnfe) when (ctorShouldFail && cnfe.Message.Contains($""{{testLocale.Code}} is an invalid culture identifier.""))
-    //         {{
-    //             Console.WriteLine($""{{testLocale.Code}}: Success. .ctor failed as expected."");
-    //             continue;
-    //         }}
-
-    //         string expectedSundayName = (expectMissing && !onlyPredefinedCultures)
-    //                                         ? fallbackSundayName
-    //                                         : testLocale.SundayName;
-    //         var actualLocalizedSundayName = culture.DateTimeFormat.GetDayName(new DateTime(2000,01,02).DayOfWeek);
-    //         if (expectedSundayName != actualLocalizedSundayName)
-    //         {{
-    //             Console.WriteLine($""Error: incorrect localized value for Sunday in locale {{testLocale.Code}}. Expected '{{expectedSundayName}}' but got '{{actualLocalizedSundayName}}'."");
-    //             fail = true;
-    //             continue;
-    //         }}
-    //         Console.WriteLine($""{{testLocale.Code}}: Success. Sunday name: {{actualLocalizedSundayName}}"");
-    //     }}
-    //     return fail ? -1 : 42;
-
-    //     public record Locale(string Code, string? SundayName);
-    //     ";
-    // }
 }

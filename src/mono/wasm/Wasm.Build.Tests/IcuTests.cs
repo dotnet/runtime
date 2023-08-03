@@ -87,18 +87,27 @@ public class IcuTests : IcuTestsBase
     }
 
     [Theory]
-    [BuildAndRun(host: RunHost.None)]
-    public void NonExistingCustomFileAssertError(BuildArgs buildArgs, string id)
+    [BuildAndRun(host: RunHost.None, parameters: new object[] { "icudtNonExisting.dat", true })]
+    [BuildAndRun(host: RunHost.None, parameters: new object[] { "incorrectName.dat", false })]
+    public void NonExistingCustomFileAssertError(BuildArgs buildArgs, string customFileName, bool isFilenameCorrect, string id)
     {
         string projectName = $"invalidCustomIcu_{buildArgs.Config}_{buildArgs.AOT}";
         buildArgs = buildArgs with { ProjectName = projectName };
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>nonexisting.dat</WasmIcuDataFileName>");
+        string customIcu = Path.Combine(BuildEnvironment.TestAssetsPath, customFileName);
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{customIcu}</WasmIcuDataFileName>");
 
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
                             ExpectSuccess: false));
-        Assert.Contains("File in location $(WasmIcuDataFileName)=nonexisting.dat cannot be found neither when used as absolute path nor a relative runtime pack path.", output);
+        if (isFilenameCorrect)
+        {
+            Assert.Contains($"File in location $(WasmIcuDataFileName)={customIcu} cannot be found neither when used as absolute path nor a relative runtime pack path.", output);
+        }
+        else
+        {
+            Assert.Contains($"Custom ICU file name in path $(WasmIcuDataFileName)={customIcu} has to start with 'icudt'.", output);
+        }
     }
 }

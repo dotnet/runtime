@@ -12,9 +12,9 @@ using System.Collections.Generic;
 
 namespace Wasm.Build.Tests;
 
-public class IcuShardingTests3 : IcuTestsBase
+public class IcuShardingTests2 : IcuTestsBase
 {
-    public IcuShardingTests3(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public IcuShardingTests2(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
     public static IEnumerable<object?[]> IcuExpectedAndMissingShardFromRuntimePackTestData(bool aot, RunHost host)
