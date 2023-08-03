@@ -414,7 +414,6 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
 #define STP_RN_SP        0x3E0
 #define STP_RN_FP        0x3A0
 
-
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
     ASSERT(pNativeMethodInfo != NULL);
 
@@ -438,7 +437,11 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
         }
         else
         {
-            // TODO: Detect saving non-paired register, stack pointer adjustments
+            // JIT generates other patterns into the prolog that we currently don't
+            // recognize (saving unpaired register, stack pointer adjustments). We
+            // don't need to recognize these patterns unless a compact unwinding code
+            // is generated for them in ILC.
+            // https://github.com/dotnet/runtime/issues/76371
             return -1;
         }
     }
