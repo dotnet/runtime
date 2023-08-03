@@ -34,18 +34,14 @@
 
 BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw()
 {
-    LIMITED_METHOD_CONTRACT;
-    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
-        TRACE_LEVEL_INFORMATION,
-        CLR_GCHEAPDUMP_KEYWORD);
+    // @TODO:
+    return FALSE;
 }
 
 BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw()
 {
-    LIMITED_METHOD_CONTRACT;
-    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
-        TRACE_LEVEL_INFORMATION,
-        CLR_GCHEAPDUMP_KEYWORD);
+    // @TODO:
+    return FALSE;
 }
 
 BOOL ETW::GCLog::ShouldTrackMovementForEtw()
