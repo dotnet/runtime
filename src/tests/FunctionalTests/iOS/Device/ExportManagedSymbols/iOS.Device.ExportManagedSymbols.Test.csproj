@@ -15,7 +15,6 @@
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <MonoEnableLLVM>true</MonoEnableLLVM>
     <MainLibraryFileName>iOS.Device.ExportManagedSymbols.Test.dll</MainLibraryFileName>
-    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
   </PropertyGroup>
 
   <ItemGroup>

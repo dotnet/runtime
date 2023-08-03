@@ -15,11 +15,11 @@
     <CustomNativeMain>true</CustomNativeMain>
     <!-- Escape NativeAOT bundling targets -->
     <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
-    <IlcCompileDependsOn>Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
   </PropertyGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
+  <Import Condition="'$(PublishAotUsingRuntimePack)' != 'true'" Project="$(CoreClrProjectRoot)nativeaot\BuildIntegration\Microsoft.DotNet.ILCompiler.SingleEntry.targets" />
 
   <PropertyGroup Condition="'$(PublishAotUsingRuntimePack)' == 'true'">
     <PublishAot>true</PublishAot>
@@ -31,12 +31,10 @@
   <ItemGroup>
     <Compile Include="..\iOS\Program.cs" Link="Program.cs" />
     <DirectPInvoke Include="__Internal" />
-    <_ExcludeFromAppDir Include=".dll;.json" />
+    <_ExcludeFromAppDir Include=".dll" />
+    <_ExcludeFromAppDir Include=".json" />
+    <_ExcludeFromAppDir Include="libbootstrapper.o" />
   </ItemGroup>
-
-  <Import Condition="'$(PublishAotUsingRuntimePack)' != 'true'" Project="$(CoreClrProjectRoot)nativeaot\BuildIntegration\Microsoft.DotNet.ILCompiler.SingleEntry.targets" />
-  <UsingTask TaskName="AppleAppBuilderTask"
-             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
   <!-- Use locally built runtime and ilcompiler packages -->
   <Target Name="UpdateRuntimePackVersion" Condition="'$(PublishAotUsingRuntimePack)' == 'true'" BeforeTargets="ProcessFrameworkReferences">
@@ -58,8 +56,6 @@
         <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
     </PropertyGroup>
   </Target>
-
-  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory" DependsOnTargets="IlcCompile" />
 
   <Target Name="RunAppBundle"
           AfterTargets="BuildAppBundle"
