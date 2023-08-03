@@ -150,6 +150,7 @@ namespace System.Net.Security.Tests
         {
             using X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate();
 
+            // needs to non-default values so we can verify it was copied correctly.
             var clientOptions = new SslClientAuthenticationOptions
             {
                 AllowRenegotiation = false,
