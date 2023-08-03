@@ -404,5 +404,20 @@ namespace Microsoft.Interop
             }
             throw new UnreachableException("An element is either a return value or passed by value or by ref.");
         }
+
+        /// <summary>
+        /// Returns which stage cleanup should be performed for the parameter.
+        /// </summary>
+        public static StubCodeContext.Stage GetCleanupStage(TypePositionInfo info, StubCodeContext context)
+        {
+            if (context.Direction is MarshalDirection.UnmanagedToManaged)
+                return StubCodeContext.Stage.CleanupCallerAllocated;
+
+            if (GetMarshalDirection(info, context) is MarshalDirection.UnmanagedToManaged)
+                return StubCodeContext.Stage.CleanupCalleeAllocated;
+
+            return StubCodeContext.Stage.CleanupCallerAllocated;
+        }
+
     }
 }

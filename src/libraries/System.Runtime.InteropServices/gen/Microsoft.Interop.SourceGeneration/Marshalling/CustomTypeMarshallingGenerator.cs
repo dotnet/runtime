@@ -97,10 +97,10 @@ namespace Microsoft.Interop
                         return _nativeTypeMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
                     }
                     break;
-                case StubCodeContext.Stage.CleanupCallerAllocated when GetCleanupStage(info, context) is StubCodeContext.Stage.CleanupCallerAllocated:
-                    return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
-                case StubCodeContext.Stage.CleanupCalleeAllocated when GetCleanupStage(info, context) is StubCodeContext.Stage.CleanupCalleeAllocated:
-                    return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
+                case StubCodeContext.Stage.CleanupCallerAllocated:
+                    return _nativeTypeMarshaller.GenerateCleanupCallerAllocatedResourcesStatements(info, context);
+                case StubCodeContext.Stage.CleanupCalleeAllocated:
+                    return _nativeTypeMarshaller.GenerateCleanupCalleeAllocatedResourcesStatements(info, context);
                 default:
                     break;
             }
@@ -115,20 +115,6 @@ namespace Microsoft.Interop
                 && _byValueContentsMarshallingSupport.GetSupport(info.ByValueContentsMarshalKind, info, context, out _) == ByValueMarshalKindSupport.Supported
                 && !info.IsByRef
                 && !_isPinned;
-        }
-
-        /// <summary>
-        /// Returns which stage cleanup should be performed for the parameter.
-        /// </summary>
-        private static StubCodeContext.Stage GetCleanupStage(TypePositionInfo info, StubCodeContext context)
-        {
-            if (context.Direction is MarshalDirection.UnmanagedToManaged)
-                return StubCodeContext.Stage.CleanupCallerAllocated;
-
-            if (MarshallerHelpers.GetMarshalDirection(info, context) is MarshalDirection.UnmanagedToManaged)
-                return StubCodeContext.Stage.CleanupCalleeAllocated;
-
-            return StubCodeContext.Stage.CleanupCallerAllocated;
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
