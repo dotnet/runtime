@@ -142,6 +142,7 @@ float_cle: dest:i src1:f src2:f len:4
 float_clt: dest:i src1:f src2:f len:4
 float_clt_un: dest:i src1:f src2:f len:4
 r4_clt: dest:i src1:f src2:f len:4
+r4_cle: dest:i src1:f src2:f len:4
 
 add_imm: dest:i src1:i len:4
 int_add_imm: dest:i src1:i len:4

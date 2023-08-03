@@ -2266,6 +2266,24 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
+				} else if (ins->next->opcode == OP_FBGE || ins->next->opcode == OP_FBGE_UN){
+					// rcmp rd, rs1, rs2; fbge rd -> rcle rd, rs2, rs1; bne rd, X0
+					ins->opcode = OP_RCLE;
+					ins->dreg = mono_alloc_ireg (cfg);
+					int tmp_reg = ins->sreg1;
+					ins->sreg1 = ins->sreg2;
+					ins->sreg2 = tmp_reg;
+
+					ins->next->opcode = OP_RISCV_BNE;
+					ins->next->sreg1 = ins->dreg;
+					ins->next->sreg2 = RISCV_ZERO;
+				} else if (ins->next->opcode == OP_FBLE || ins->next->opcode == OP_FBLE_UN){
+					ins->opcode = OP_RCLE;
+					ins->dreg = mono_alloc_ireg (cfg);
+
+					ins->next->opcode = OP_RISCV_BNE;
+					ins->next->sreg1 = ins->dreg;
+					ins->next->sreg2 = RISCV_ZERO;
 				} else {
 					g_print ("Unhandaled op %s following after OP_RCOMPARE\n", mono_inst_name (ins->next->opcode));
 					NOT_IMPLEMENTED;
@@ -4452,6 +4470,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_flt_d (code, ins->dreg, ins->sreg1, ins->sreg2);
 			else
 				NOT_IMPLEMENTED;
+			break;
+		}
+		case OP_RCLE: {
+			g_assert (riscv_stdext_f);
+			riscv_fle_s (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		}
 		case OP_FCLE: {
