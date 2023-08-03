@@ -17,16 +17,7 @@ namespace HttpServer
         public int Finished { get; set; } = 0;
     }
 
-    public sealed class FileContent
-    {
-        public FileContent(byte[] buffer, string hash)
-        {
-            this.buffer = buffer;
-            this.hash = hash;
-        }        
-        public byte[] buffer;
-        public string hash;
-    }
+public sealed record FileContent(byte[] buffer, string hash);
 
     public sealed class Program
     {
