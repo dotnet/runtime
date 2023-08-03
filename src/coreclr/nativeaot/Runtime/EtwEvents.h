@@ -17,24 +17,27 @@
 #define RH_ETW_INLINE __declspec(noinline) __inline
 #endif
 
-struct RH_ETW_CONTEXT
+typedef struct _MCGEN_TRACE_CONTEXT
 {
-    TRACEHANDLE               RegistrationHandle;
-    TRACEHANDLE               Logger;
-    uint64_t                    MatchAnyKeyword;
-    uint64_t                    MatchAllKeyword;
-    EVENT_FILTER_DESCRIPTOR * FilterData;
-    uint32_t                    Flags;
-    uint32_t                    IsEnabled;
-    uint8_t                     Level;
-    uint8_t                     Reserve;
-};
+    TRACEHANDLE            RegistrationHandle;
+    TRACEHANDLE            Logger;
+    ULONGLONG              MatchAnyKeyword;
+    ULONGLONG              MatchAllKeyword;
+    ULONG                  Flags;
+    ULONG                  IsEnabled;
+    unsigned char          Level;
+    unsigned char          Reserve;
+    unsigned short         EnableBitsCount;
+    ULONG *                EnableBitMask;
+    const ULONGLONG*       EnableKeyWords;
+    const unsigned char*   EnableLevel;
+} MCGEN_TRACE_CONTEXT, *PMCGEN_TRACE_CONTEXT;
 
 __declspec(noinline) __inline void __stdcall
 EtwCallback(GUID * /*SourceId*/, uint32_t IsEnabled, uint8_t Level, uint64_t MatchAnyKeyword, uint64_t MatchAllKeyword, EVENT_FILTER_DESCRIPTOR * FilterData, void * CallbackContext);
 
 __declspec(noinline) __inline bool __stdcall
- RhEventTracingEnabled(RH_ETW_CONTEXT * EnableInfo,
+RhEventTracingEnabled(MCGEN_TRACE_CONTEXT * EnableInfo,
                        const EVENT_DESCRIPTOR * EventDescriptor)
 {
     if (!EnableInfo)
@@ -82,7 +85,7 @@ extern "C" __declspec(selectany) const EVENT_DESCRIPTOR PrvGCMarkStackRoots_V1 =
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR PrvSetGCHandle = {0xc2, 0x0, 0x10, 0x5, 0x2a, 0x1, 0x8000000000004000};
 
 extern "C" __declspec(selectany) REGHANDLE Microsoft_Windows_DotNETRuntimePrivateHandle;
-extern "C" __declspec(selectany) RH_ETW_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context;
+extern "C" __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context;
 
 #define RH_ETW_REGISTER_Microsoft_Windows_DotNETRuntimePrivate() do { PalEventRegister(&MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER, EtwCallback, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, &Microsoft_Windows_DotNETRuntimePrivateHandle); } while (false)
 #define RH_ETW_UNREGISTER_Microsoft_Windows_DotNETRuntimePrivate() do { PalEventUnregister(Microsoft_Windows_DotNETRuntimePrivateHandle); } while (false)
@@ -330,7 +333,7 @@ extern "C" __declspec(selectany) const EVENT_DESCRIPTOR ModuleLoad_V2 = {0x98, 0
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR SetGCHandle = {0x1e, 0x0, 0x10, 0x4, 0x21, 0x1, 0x8000000000000002};
 
 extern "C" __declspec(selectany) REGHANDLE Microsoft_Windows_DotNETRuntimeHandle;
-extern "C" __declspec(selectany) RH_ETW_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context;
+extern "C" __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context;
 
 #define RH_ETW_REGISTER_Microsoft_Windows_DotNETRuntime() do { PalEventRegister(&MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER, EtwCallback, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, &Microsoft_Windows_DotNETRuntimeHandle); } while (false)
 #define RH_ETW_UNREGISTER_Microsoft_Windows_DotNETRuntime() do { PalEventUnregister(Microsoft_Windows_DotNETRuntimeHandle); } while (false)

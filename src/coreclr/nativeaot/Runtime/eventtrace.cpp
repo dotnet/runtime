@@ -22,12 +22,19 @@
 #include "threadstore.inl"
 
 EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context = { W("Microsoft-Windows-DotNETRuntime"), 0, false, 0 };
-
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {
 #ifdef FEATURE_ETW
     &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
 #endif
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context
+};
+
+EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context = { W("Microsoft-Windows-DotNETRuntimePrivate"), 0, false, 0 };
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = {
+#ifdef FEATURE_ETW
+    &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context,
+#endif
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context
 };
 
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
@@ -128,24 +135,49 @@ void EtwCallbackCommon(
     }
 
     if (
-#if !defined(HOST_UNIX)
+#ifdef FEATURE_ETW
         (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
 #endif
         (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
     {
+#ifdef FEATURE_ETW
+        // Consolidate level and keywords across event pipe and ETW contexts.
+        // ETW may still want to see events that event pipe doesn't care about and vice versa
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask |
+                                                              ctxToUpdate->EtwProvider->MatchAnyKeyword);
+        GCEventLevel level = static_cast<GCEventLevel>(max(ctxToUpdate->EventPipeProvider.Level,
+                                                           ctxToUpdate->EtwProvider->Level));
+#else
         GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask);
         GCEventLevel level = static_cast<GCEventLevel>(ctxToUpdate->EventPipeProvider.Level);
+#endif
         GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
+
+// NativeAOT currently only supports forcing a GC with ManagedHeapCollectKeyword via ETW
+#ifdef FEATURE_ETW
+    // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
+    // flick this to force a full GC.
+    if (ControlCode && ProviderIndex == DotNETRuntime
+        && GCHeapUtilities::IsGCHeapInitialized()
+        && (MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0)
+    {
+        // Profilers may (optionally) specify extra data in the filter parameter
+        // to log with the GCStart event.
+        LONGLONG l64ClientSequenceNumber = 0;
+        EVENT_FILTER_DESCRIPTOR* filterDesc = (EVENT_FILTER_DESCRIPTOR*)pFilterData;
+        if ((filterDesc != NULL) &&
+            (filterDesc->Type == 1) &&
+            (filterDesc->Size == sizeof(l64ClientSequenceNumber)))
+        {
+            l64ClientSequenceNumber = *(LONGLONG *) (filterDesc->Ptr);
+        }
+        ETW::GCLog::ForceGC(l64ClientSequenceNumber);
+    }
+#endif
 }
 
 #ifdef FEATURE_ETW
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// The automatically generated part of the Redhawk ETW infrastructure (EtwEvents.h) calls the following
-// function whenever the system enables or disables tracing for this provider.
-//
 
 void EtwCallback(
     GUID * /*SourceId*/,
@@ -156,47 +188,38 @@ void EtwCallback(
     EVENT_FILTER_DESCRIPTOR * FilterData,
     void * CallbackContext)
 {
-    RH_ETW_CONTEXT * pContext = (RH_ETW_CONTEXT*)CallbackContext;
-    if (pContext == NULL)
+    MCGEN_TRACE_CONTEXT * context = (MCGEN_TRACE_CONTEXT*)CallbackContext;
+    if (context == NULL)
         return;
 
-    pContext->Level = Level;
-    pContext->MatchAnyKeyword = MatchAnyKeyword;
-    pContext->MatchAllKeyword = MatchAllKeyword;
-    pContext->FilterData = FilterData;
-    pContext->IsEnabled = IsEnabled;
+    context->Level = Level;
+    context->MatchAnyKeyword = MatchAnyKeyword;
+    context->MatchAllKeyword = MatchAllKeyword;
+    context->IsEnabled = IsEnabled;
 
-    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_DotNETRuntimeHandle),
-                                            static_cast<GCEventKeyword>(pContext->MatchAnyKeyword),
-                                            static_cast<GCEventLevel>(pContext->Level));
+    CallbackProviderIndex providerIndex = DotNETRuntime;
+    DOTNET_TRACE_CONTEXT providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
+    if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeHandle) {
+        providerIndex = DotNETRuntime;
+        providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
+    } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) {
+        providerIndex = DotNETRuntimePrivate;
+        providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
+    } else {
+        _ASSERTE(!"Unknown registration handle");
+        return;
+    }
+
+    EtwCallbackCommon(providerIndex, IsEnabled, Level, MatchAnyKeyword, FilterData, /*isEventPipeCallback*/ false);
 
     if (IsEnabled &&
-        (pContext->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) &&
+        (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) &&
         GCHeapUtilities::IsGCHeapInitialized())
     {
         FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
                           GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
                           GCHeapUtilities::IsServerHeap());
         GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
-    }
-
-    // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
-    // flick this to force a full GC.
-    if (IsEnabled &&
-        (pContext->RegistrationHandle == Microsoft_Windows_DotNETRuntimeHandle) &&
-        GCHeapUtilities::IsGCHeapInitialized() &&
-        ((pContext->MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0))
-    {
-        // Profilers may (optionally) specify extra data in the filter parameter
-        // to log with the GCStart event.
-        LONGLONG l64ClientSequenceNumber = 0;
-        if ((pContext->FilterData != NULL) &&
-            (pContext->FilterData->Type == 1) &&
-            (pContext->FilterData->Size == sizeof(l64ClientSequenceNumber)))
-        {
-            l64ClientSequenceNumber = *(LONGLONG *) (pContext->FilterData->Ptr);
-        }
-        ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
 }
 #endif // FEATURE_ETW
@@ -210,5 +233,5 @@ void EventPipeEtwCallbackDotNETRuntime(
     _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext)
 {
-    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, /*isEventPipeCallback*/ true);
 }
