@@ -10,6 +10,7 @@
  - [exploration](https://github.com/dotnet/samples/tree/main/csharp/tutorials/exploration)
  - [toll-calculator](https://github.com/dotnet/samples/tree/main/csharp/tutorials/patterns/finished/toll-calculator)
  - [mixins-with-interfaces](https://github.com/dotnet/samples/tree/main/csharp/tutorials/mixins-with-interfaces/)
+ - [datetime-parse](https://github.com/dotnet/samples/tree/main/csharp/api/datetime.parse/)
 
 ## Got Error:
  - [console-webapiclient](https://github.com/dotnet/samples/tree/main/csharp/getting-started/console-webapiclient): Crashed because Multi Thread
