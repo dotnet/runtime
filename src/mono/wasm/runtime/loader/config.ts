@@ -228,9 +228,6 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
 
         normalizeConfig();
 
-        await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
-        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
-
         if (module.onConfigLoaded) {
             try {
                 await module.onConfigLoaded(loaderHelpers.config, exportedRuntimeAPI);
@@ -241,6 +238,11 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
                 throw err;
             }
         }
+
+        await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
+        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
+        normalizeConfig();
+
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;

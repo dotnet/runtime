@@ -3,7 +3,7 @@
 
 import type { MonoConfig } from "../types";
 import type { AssetEntryInternal } from "../types/internal";
-import { loaderHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 
 const usedCacheKeys: { [key: string]: boolean } = {};
 const networkLoads: { [name: string]: LoadLogEntry } = {};
@@ -20,10 +20,14 @@ export function logDownloadStatsToConsole(): void {
         // We have no perf stats to display, likely because caching is not in use.
         return;
     }
-
-    const linkerDisabledWarning = loaderHelpers.config.linkerEnabled ? "%c" : "\n%cThis application was built with linking (tree shaking) disabled. Published applications will be significantly smaller if you install wasm-tools workload. See also https://aka.ms/dotnet-wasm-features";
+    const useStyle = ENVIRONMENT_IS_WEB ? "%c" : "";
+    const style = ENVIRONMENT_IS_WEB ? ["background: purple; color: white; padding: 1px 3px; border-radius: 3px;",
+        "font-weight: bold;",
+        "font-weight: normal;",
+    ] : [];
+    const linkerDisabledWarning = !loaderHelpers.config.linkerEnabled ? "\nThis application was built with linking (tree shaking) disabled. \nPublished applications will be significantly smaller if you install wasm-tools workload. \nSee also https://aka.ms/dotnet-wasm-features" : "";
     // eslint-disable-next-line no-console
-    console.groupCollapsed(`%cdotnet%c Loaded ${toDataSizeString(totalResponseBytes)} resources${linkerDisabledWarning}`, "background: purple; color: white; padding: 1px 3px; border-radius: 3px;", "font-weight: bold;", "font-weight: normal;");
+    console.groupCollapsed(`${useStyle}dotnet${useStyle} Loaded ${toDataSizeString(totalResponseBytes)} resources${useStyle}${linkerDisabledWarning}`, ...style);
 
     if (cacheLoadsEntries.length) {
         // eslint-disable-next-line no-console

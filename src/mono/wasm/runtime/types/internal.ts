@@ -189,8 +189,6 @@ export type RuntimeHelpers = {
     jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
 
-    runtimeModuleUrl: string
-    nativeModuleUrl: string
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     memorySnapshotSkippedOrDone: PromiseAndController<void>,

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_log_warn } from "./logging";
+import { mono_log_debug, mono_log_warn } from "./logging";
 import { appendUniqueQuery } from "./assets";
 import { loaderHelpers } from "./globals";
 import { mono_exit } from "./exit";
@@ -18,6 +18,7 @@ export async function importLibraryInitializers(libraryInitializers: ResourceLis
     async function importInitializer(path: string): Promise<void> {
         try {
             const adjustedPath = appendUniqueQuery(loaderHelpers.locateFile(path), "js-module-library-initializer");
+            mono_log_debug(`Attempting to import '${adjustedPath}' for ${path}`);
             const initializer = await import(/* webpackIgnore: true */ adjustedPath);
 
             loaderHelpers.libraryInitializers!.push({ scriptName: path, exports: initializer });
