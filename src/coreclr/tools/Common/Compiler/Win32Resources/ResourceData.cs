@@ -92,22 +92,22 @@ namespace ILCompiler.Win32Resources
         /// <summary>
         /// Add or update resource
         /// </summary>
-        public void AddResource(string name, string type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+        public void AddResource(string type, string name, ushort language, byte[] data) => AddResourceInternal(type, name, language, data);
 
         /// <summary>
         /// Add or update resource
         /// </summary>
-        public void AddResource(ushort name, string type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+        public void AddResource(ushort type, string name, ushort language, byte[] data) => AddResourceInternal(type, name, language, data);
 
         /// <summary>
         /// Add or update resource
         /// </summary>
-        public void AddResource(string name, ushort type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+        public void AddResource(string type, ushort name, ushort language, byte[] data) => AddResourceInternal(type, name, language, data);
 
         /// <summary>
         /// Add or update resource
         /// </summary>
-        public void AddResource(ushort name, ushort type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+        public void AddResource(ushort type, ushort name, ushort language, byte[] data) => AddResourceInternal(type, name, language, data);
 
         public IEnumerable<(object name, object type, ushort language, byte[] data)> GetAllResources()
         {
