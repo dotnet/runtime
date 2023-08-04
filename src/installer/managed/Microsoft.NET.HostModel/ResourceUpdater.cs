@@ -80,7 +80,8 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public ResourceUpdater AddResourcesFromPEImage(string peFile)
         {
-            if (_resourceData == null) throw ThrowExceptionForInvalidUpdate();
+            if (_resourceData == null)
+                throw ThrowExceptionForInvalidUpdate();
             using var module = new PEReader(File.Open(peFile, FileMode.Open, FileAccess.Read, FileShare.Read));
             var moduleResources = new ResourceData(module);
             _resourceData.CopyResourcesFrom(moduleResources);
@@ -106,7 +107,8 @@ namespace Microsoft.NET.HostModel
             {
                 throw new ArgumentException("AddResource can only be used with integer resource types");
             }
-            if (_resourceData == null) throw ThrowExceptionForInvalidUpdate();
+            if (_resourceData == null)
+                throw ThrowExceptionForInvalidUpdate();
 
             _resourceData.AddResource((ushort)lpType, (ushort)lpName, LangID_LangNeutral_SublangNeutral, data);
 
@@ -125,7 +127,8 @@ namespace Microsoft.NET.HostModel
             {
                 throw new ArgumentException("AddResource can only be used with integer resource names");
             }
-            if (_resourceData == null) throw ThrowExceptionForInvalidUpdate();
+            if (_resourceData == null)
+                throw ThrowExceptionForInvalidUpdate();
 
             _resourceData.AddResource(lpType, (ushort)lpName, LangID_LangNeutral_SublangNeutral, data);
 
@@ -182,7 +185,8 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public void Update()
         {
-            if (_resourceData == null) throw ThrowExceptionForInvalidUpdate();
+            if (_resourceData == null)
+                throw ThrowExceptionForInvalidUpdate();
 
             int resourceSectionIndex = _reader.PEHeaders.SectionHeaders.Length;
             for (int i = 0; i < _reader.PEHeaders.SectionHeaders.Length; i++)
