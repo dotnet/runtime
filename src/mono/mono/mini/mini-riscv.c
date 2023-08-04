@@ -1613,7 +1613,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		case ArgVtypeInIReg:
 		case ArgVtypeByRef:
-		case ArgVtypeOnStack: {
+		case ArgVtypeOnStack:
+		case ArgVtypeInMixed: {
 			MonoInst *ins;
 			guint32 align;
 			guint32 size;
@@ -1682,6 +1683,23 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_SP, ainfo->offset + i, load->dreg);
 		}
 		break;
+	case ArgVtypeInMixed: {
+		g_assert (ainfo->slot_size == sizeof(host_mgreg_t));
+
+		MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
+		load->dreg = ainfo->reg;
+		load->inst_basereg = src->dreg;
+		load->inst_offset = 0;
+		MONO_ADD_INS (cfg->cbb, load);
+
+		MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
+		load->dreg = mono_alloc_ireg (cfg);
+		load->inst_basereg = src->dreg;
+		load->inst_offset = sizeof(host_mgreg_t);
+		MONO_ADD_INS (cfg->cbb, load);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_SP, ainfo->offset, load->dreg);
+		break;
+	}
 	case ArgVtypeByRef: {
 		MonoInst *vtaddr, *arg;
 		/* Pass the vtype address in a reg/on the stack */
@@ -1988,6 +2006,12 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			if (ainfo->is_regpair)
 				offset += sizeof (host_mgreg_t);
 			offset += sizeof (host_mgreg_t);
+			ins->inst_offset = -offset;
+			break;
+		case ArgVtypeInMixed: 
+			ins->opcode = OP_REGOFFSET;
+			ins->inst_basereg = cfg->frame_reg;
+			offset += sizeof (host_mgreg_t) * 2;
 			ins->inst_offset = -offset;
 			break;
 		case ArgVtypeByRef: {
@@ -2399,6 +2423,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_CALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
+		case OP_FCALL_MEMBASE:
 		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
 			if (!RISCV_VALID_J_IMM (ins->inst_offset)) {
@@ -3563,6 +3588,12 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 					                              ins->inst_offset + sizeof (host_mgreg_t), 0);
 				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_basereg, ins->inst_offset, 0);
 				break;
+			case ArgVtypeInMixed:
+				code = mono_riscv_emit_load (code, RISCV_T0, RISCV_S0, 0, 0);
+				code = mono_riscv_emit_store (code, RISCV_T0, ins->inst_basereg,
+					                              ins->inst_offset + sizeof (host_mgreg_t), 0);
+				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_basereg, ins->inst_offset, 0);
+				break;
 			case ArgVtypeByRef:
 				// if (ainfo->gsharedvt) {
 				// 	g_assert (ins->opcode == OP_GSHAREDVT_ARG_REGOFFSET);
@@ -4597,6 +4628,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_CALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
+		case OP_FCALL_MEMBASE:
 		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
 			code = mono_riscv_emit_load (code, RISCV_T0, ins->inst_basereg, ins->inst_offset, 0);
