@@ -263,7 +263,7 @@ export function hasDebuggingEnabled(config: MonoConfigInternal): boolean {
 }
 
 async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
-    const defaultConfigSrc = appendUniqueQuery(loaderHelpers.locateFile(module.configSrc!), "manifest");
+    const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
 
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
         loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "", "manifest") :
@@ -272,7 +272,7 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     let loadConfigResponse: Response;
 
     if (!loaderResponse) {
-        loadConfigResponse = await defaultLoadBootConfig(defaultConfigSrc);
+        loadConfigResponse = await defaultLoadBootConfig(appendUniqueQuery(defaultConfigSrc, "manifest"));
     } else if (typeof loaderResponse === "string") {
         loadConfigResponse = await defaultLoadBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
     } else {
