@@ -423,8 +423,9 @@ namespace Microsoft.Interop
         public static bool ModeUsesManagedToUnmanagedShape(MarshalMode mode)
             => mode is MarshalMode.Default
                 or MarshalMode.ManagedToUnmanagedIn
-                or MarshalMode.UnmanagedToManagedOut
                 or MarshalMode.ElementIn
+                or MarshalMode.UnmanagedToManagedOut
+                or MarshalMode.ElementOut
                 or MarshalMode.ManagedToUnmanagedRef
                 or MarshalMode.UnmanagedToManagedRef
                 or MarshalMode.ElementRef;
@@ -432,8 +433,9 @@ namespace Microsoft.Interop
         public static bool ModeUsesUnmanagedToManagedShape(MarshalMode mode)
             => mode is MarshalMode.Default
                 or MarshalMode.ManagedToUnmanagedOut
-                or MarshalMode.UnmanagedToManagedIn
                 or MarshalMode.ElementOut
+                or MarshalMode.UnmanagedToManagedIn
+                or MarshalMode.ElementIn
                 or MarshalMode.ManagedToUnmanagedRef
                 or MarshalMode.UnmanagedToManagedRef
                 or MarshalMode.ElementRef;
