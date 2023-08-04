@@ -52018,14 +52018,20 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
     gcDacVars->major_version_number = 2;
     gcDacVars->minor_version_number = 0;
-    gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
-    gcDacVars->card_table_info_size = sizeof(card_table_info);
+    if (v2)
+    {
+        gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
+        gcDacVars->card_table_info_size = sizeof(card_table_info);
+    }
 
 #ifdef USE_REGIONS
     gcDacVars->minor_version_number |= 1;
-    gcDacVars->count_free_region_kinds = count_free_region_kinds;
-    gcDacVars->global_regions_to_decommit = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_regions_to_decommit);
-    gcDacVars->global_free_huge_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_free_huge_regions);
+    if (v2)
+    {
+        gcDacVars->count_free_region_kinds = count_free_region_kinds;
+        gcDacVars->global_regions_to_decommit = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_regions_to_decommit);
+        gcDacVars->global_free_huge_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_free_huge_regions);
+    }
 #endif //USE_REGIONS
 #ifndef BACKGROUND_GC
     gcDacVars->minor_version_number |= 2;
@@ -52044,7 +52050,10 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifndef MULTIPLE_HEAPS
     gcDacVars->ephemeral_heap_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::ephemeral_heap_segment);
 #ifdef USE_REGIONS
-    gcDacVars->free_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::free_regions);
+    if (v2)
+    {
+        gcDacVars->free_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::free_regions);
+    }
 #endif
 #ifdef BACKGROUND_GC
     gcDacVars->mark_array = &gc_heap::mark_array;
@@ -52067,8 +52076,11 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->mark_array = 0;
     gcDacVars->background_saved_lowest_address = 0;
     gcDacVars->background_saved_highest_address = 0;
-    gcDacVars->freeable_soh_segment = 0;
-    gcDacVars->freeable_uoh_segment = 0;
+    if (v2)
+    {
+        gcDacVars->freeable_soh_segment = 0;
+        gcDacVars->freeable_uoh_segment = 0;
+    }
     gcDacVars->next_sweep_obj = 0;
     gcDacVars->saved_sweep_ephemeral_seg = 0;
     gcDacVars->saved_sweep_ephemeral_start = 0;
