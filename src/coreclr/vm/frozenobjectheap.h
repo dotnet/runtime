@@ -21,21 +21,23 @@
 //  mov      rax, 0xD1FFAB1E ; actual string object
 //
 
-class FrozenObjectSegment;
-
 class FrozenObjectHeapManager
 {
 public:
     FrozenObjectHeapManager();
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize, bool publish = true);
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+#endif
 
 private:
     Crst m_Crst;
-    SArray<FrozenObjectSegment*> m_FrozenSegments;
-    FrozenObjectSegment* m_CurrentSegment;
+    PTR_FrozenObjectSegment m_FirstSegment;
+    PTR_FrozenObjectSegment m_CurrentSegment;
 
     friend class ProfilerObjectEnum;
     friend class ProfToEEInterfaceImpl;
+    friend class DacDbiInterfaceImpl;
 };
 
 class FrozenObjectSegment
@@ -52,14 +54,16 @@ private:
     Object* GetFirstObject() const;
     Object* GetNextObject(Object* obj) const;
 
+    PTR_FrozenObjectSegment m_NextSegment;
+
     // Start of the reserved memory, the first object starts at "m_pStart + sizeof(ObjHeader)" (its pMT)
-    uint8_t* m_pStart;
+    PTR_uint8_t m_pStart;
 
     // Pointer to the end of the current segment, ready to be used as a pMT for a new object
     // meaning that "m_pCurrent - sizeof(ObjHeader)" is the actual start of the new object (header).
     //
     // m_pCurrent <= m_SizeCommitted
-    uint8_t* m_pCurrent;
+    PTR_uint8_t m_pCurrent;
 
     // Memory committed in the current segment
     //
@@ -70,11 +74,10 @@ private:
     size_t m_Size;
 
     segment_handle m_SegmentHandle;
-    INDEBUG(size_t m_ObjectsCount);
 
     friend class ProfilerObjectEnum;
     friend class ProfToEEInterfaceImpl;
+    friend class FrozenObjectHeapManager;
 };
 
 #endif // _FROZENOBJECTHEAP_H
-

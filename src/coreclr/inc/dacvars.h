@@ -107,6 +107,7 @@ DEFINE_DACVAR(PTR_GcDacVars, dac__g_gcDacGlobals, g_gcDacGlobals)
 
 DEFINE_DACVAR(PTR_AppDomain, AppDomain__m_pTheAppDomain, AppDomain::m_pTheAppDomain)
 DEFINE_DACVAR(PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_pSystemDomain)
+DEFINE_DACVAR(PTR_FrozenObjectHeapManager, SystemDomain__m_pFrozenObjectHeapManager, SystemDomain::m_pFrozenObjectHeapManager)
 
 #ifdef FEATURE_INTEROP_DEBUGGING
 DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)

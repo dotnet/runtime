@@ -4,6 +4,7 @@
 #include "common.h"
 #include "frozenobjectheap.h"
 
+#ifndef DACCESS_COMPILE
 // Default size to reserve for a frozen segment
 #define FOH_SEGMENT_DEFAULT_SIZE (4 * 1024 * 1024)
 // Size to commit on demand in that reserved space
@@ -11,6 +12,7 @@
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
     m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC),
+    m_FirstSegment(nullptr),
     m_CurrentSegment(nullptr)
 {
 }
@@ -60,12 +62,11 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
             return nullptr;
         }
 
-        if (m_CurrentSegment == nullptr)
+        if (m_FirstSegment == nullptr)
         {
-            // Create the first segment on first allocation
-            m_CurrentSegment = new FrozenObjectSegment(FOH_SEGMENT_DEFAULT_SIZE);
-            m_FrozenSegments.Append(m_CurrentSegment);
-            _ASSERT(m_CurrentSegment != nullptr);
+            m_FirstSegment = new FrozenObjectSegment(FOH_SEGMENT_DEFAULT_SIZE);
+            m_CurrentSegment = m_FirstSegment;
+            _ASSERT(m_CurrentSegment->GetNextSegment() == nullptr);
         }
 
         obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
@@ -76,9 +77,10 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
         {
             // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
             // Use the same size in case if prevSegmentSize*2 operation overflows.
-            size_t prevSegmentSize = m_CurrentSegment->GetSize();
-            m_CurrentSegment = new FrozenObjectSegment(max(prevSegmentSize, prevSegmentSize * 2));
-            m_FrozenSegments.Append(m_CurrentSegment);
+            const size_t prevSegmentSize = m_CurrentSegment->GetSize();
+
+            m_CurrentSegment->m_NextSegment = new FrozenObjectSegment(max(prevSegmentSize, prevSegmentSize * 2));
+            m_CurrentSegment = m_CurrentSegment->m_NextSegment;
 
             // Try again
             obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
@@ -96,20 +98,49 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 #endif // !FEATURE_BASICFREEZE
 }
 
+static void* ReserveMemory(size_t size)
+{
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // We have plenty of space in-range on X86/AMD64 so we can afford keeping
+    // FOH segments there so e.g. JIT can use relocs for frozen objects.
+    return ExecutableAllocator::Instance()->Reserve(size);
+#else
+    return ClrVirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
+#endif
+}
+
+static void* CommitMemory(void* ptr, size_t size)
+{
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    return ExecutableAllocator::Instance()->Commit(ptr, size, /*isExecutable*/ false);
+#else
+    return ClrVirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
+#endif
+}
+
+static void ReleaseMemory(void* ptr)
+{
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    ExecutableAllocator::Instance()->Release(ptr);
+#else
+    ClrVirtualFree(ptr, 0, MEM_RELEASE);
+#endif
+}
+
 // Reserve sizeHint bytes of memory for the given frozen segment.
 // The requested size can be be ignored in case of memory pressure and FOH_SEGMENT_DEFAULT_SIZE is used instead.
 FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
+    m_NextSegment(nullptr),
     m_pStart(nullptr),
     m_pCurrent(nullptr),
     m_SizeCommitted(0),
     m_Size(sizeHint),
     m_SegmentHandle(nullptr)
-    COMMA_INDEBUG(m_ObjectsCount(0))
 {
     _ASSERT(m_Size > FOH_COMMIT_SIZE);
     _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
 
-    void* alloc = ClrVirtualAlloc(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE);
+    void* alloc = ReserveMemory(m_Size);
     if (alloc == nullptr)
     {
         // Try again with the default FOH size
@@ -118,7 +149,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
             m_Size = FOH_SEGMENT_DEFAULT_SIZE;
             _ASSERT(m_Size > FOH_COMMIT_SIZE);
             _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
-            alloc = ClrVirtualAlloc(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE);
+            alloc = ReserveMemory(m_Size);
         }
 
         if (alloc == nullptr)
@@ -128,15 +159,13 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     }
 
     // Commit a chunk in advance
-    void* committedAlloc = ClrVirtualAlloc(alloc, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE);
+    void* committedAlloc = CommitMemory(alloc, FOH_COMMIT_SIZE);
     if (committedAlloc == nullptr)
     {
-        ClrVirtualFree(alloc, 0, MEM_RELEASE);
+        ReleaseMemory(alloc);
         ThrowOutOfMemory();
     }
 
-    // ClrVirtualAlloc is expected to be PageSize-aligned so we can expect
-    // DATA_ALIGNMENT alignment as well
     _ASSERT(IS_ALIGNED(committedAlloc, DATA_ALIGNMENT));
 
     segment_info si;
@@ -149,14 +178,13 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
     if (m_SegmentHandle == nullptr)
     {
-        ClrVirtualFree(alloc, 0, MEM_RELEASE);
+        ReleaseMemory(alloc);
         ThrowOutOfMemory();
     }
 
     m_pStart = static_cast<uint8_t*>(committedAlloc);
     m_pCurrent = m_pStart + sizeof(ObjHeader);
     m_SizeCommitted = si.ibCommit;
-    INDEBUG(m_ObjectsCount = 0);
     return;
 }
 
@@ -186,15 +214,13 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
         // Make sure we don't go out of bounds during this commit
         _ASSERT(m_SizeCommitted + FOH_COMMIT_SIZE <= m_Size);
 
-        if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE) == nullptr)
+        if (CommitMemory(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE) == nullptr)
         {
-            ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
+            ReleaseMemory(m_pStart);
             ThrowOutOfMemory();
         }
         m_SizeCommitted += FOH_COMMIT_SIZE;
     }
-
-    INDEBUG(m_ObjectsCount++);
 
     Object* object = reinterpret_cast<Object*>(m_pCurrent);
     object->SetMethodTable(type);
@@ -233,3 +259,17 @@ Object* FrozenObjectSegment::GetNextObject(Object* obj) const
     // Current object is the last one in the segment
     return nullptr;
 }
+#else // !DACCESS_COMPILE
+void FrozenObjectHeapManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+    DAC_ENUM_DTHIS();
+
+    PTR_FrozenObjectSegment curr = m_FirstSegment;
+    while (curr != nullptr)
+    {
+        DacEnumMemoryRegion(dac_cast<TADDR>(curr->m_pStart), curr->m_pCurrent - curr->m_pStart);
+        curr = curr->m_NextSegment;
+    }
+}
+#endif // DACCESS_COMPILE

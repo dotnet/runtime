@@ -88,6 +88,7 @@ static const WCHAR DEFAULT_DOMAIN_FRIENDLY_NAME[] = W("DefaultDomain");
 
 SPTR_IMPL(AppDomain, AppDomain, m_pTheAppDomain);
 SPTR_IMPL(SystemDomain, SystemDomain, m_pSystemDomain);
+SPTR_IMPL(FrozenObjectHeapManager, SystemDomain, m_pFrozenObjectHeapManager);
 
 #ifndef DACCESS_COMPILE
 
@@ -98,7 +99,6 @@ int                 BaseDomain::m_iNumberOfProcessors = 0;
 
 // System Domain Statics
 GlobalStringLiteralMap*  SystemDomain::m_pGlobalStringLiteralMap = NULL;
-FrozenObjectHeapManager* SystemDomain::m_FrozenObjectHeapManager = NULL;
 
 DECLSPEC_ALIGN(16)
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
@@ -1208,7 +1208,7 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     CONTRACTL_END;
 
     NewHolder<FrozenObjectHeapManager> pFoh(new FrozenObjectHeapManager());
-    if (InterlockedCompareExchangeT<FrozenObjectHeapManager*>(&m_FrozenObjectHeapManager, pFoh, nullptr) == nullptr)
+    if (InterlockedCompareExchangeT<FrozenObjectHeapManager*>(&m_pFrozenObjectHeapManager, pFoh, nullptr) == nullptr)
     {
         pFoh.SuppressRelease();
     }

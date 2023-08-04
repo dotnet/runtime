@@ -7675,37 +7675,35 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
     FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
     CrstHolder ch(&foh->m_Crst);
 
-    const unsigned segmentsCount = foh->m_FrozenSegments.GetCount();
-    FrozenObjectSegment** segments = foh->m_FrozenSegments.GetElements();
-    if (segments != nullptr && segmentsCount > 0)
+    unsigned segIdx = 0;
+    PTR_FrozenObjectSegment curr = foh->m_FirstSegment;
+    while (curr != nullptr)
     {
-        const ULONG segmentsToInspect = min(cObjectRanges, (ULONG)segmentsCount);
-
-        for (unsigned segIdx = 0; segIdx < segmentsToInspect; segIdx++)
+        if (segIdx < (unsigned)cObjectRanges)
         {
-            uint8_t* firstObj = segments[segIdx]->m_pStart + sizeof(ObjHeader);
+            uint8_t* firstObj = curr->m_pStart + sizeof(ObjHeader);
 
             // Start of the segment (first object)
             ranges[segIdx].rangeStart = (ObjectID)firstObj;
 
             // Total size reserved for a segment
-            ranges[segIdx].rangeLengthReserved = (UINT_PTR)segments[segIdx]->m_Size - sizeof(ObjHeader);
+            ranges[segIdx].rangeLengthReserved = (UINT_PTR)curr->m_Size;
 
             // Size of the segment that is currently in use
-            ranges[segIdx].rangeLength = (UINT_PTR)(segments[segIdx]->m_pCurrent - firstObj);
+            ranges[segIdx].rangeLength = (UINT_PTR)(curr->m_pCurrent - firstObj);
+        }
+        else
+        {
+            // Keep counting the total number of segments
         }
 
-        if (pcObjectRanges != nullptr)
-        {
-            *pcObjectRanges = (ULONG)segmentsCount;
-        }
+        segIdx++;
+        curr = curr->m_NextSegment;
     }
-    else
+
+    if (pcObjectRanges != nullptr)
     {
-        if (pcObjectRanges != nullptr)
-        {
-            *pcObjectRanges = 0;
-        }
+        *pcObjectRanges = segIdx;
     }
     return S_OK;
 }

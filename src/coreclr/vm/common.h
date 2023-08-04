@@ -97,6 +97,8 @@
 #include <daccess.h>
 
 typedef VPTR(class LoaderAllocator)     PTR_LoaderAllocator;
+typedef DPTR(class FrozenObjectHeapManager) PTR_FrozenObjectHeapManager;
+typedef DPTR(class FrozenObjectSegment) PTR_FrozenObjectSegment;
 typedef VPTR(class AppDomain)           PTR_AppDomain;
 typedef DPTR(class ArrayBase)           PTR_ArrayBase;
 typedef DPTR(class Assembly)            PTR_Assembly;

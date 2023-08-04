@@ -76,6 +76,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     formattype.cpp
     fptrstubs.cpp
     frames.cpp
+    frozenobjectheap.cpp
     gctoclreventsink.cpp
     gcheaputilities.cpp
     gchandleutilities.cpp
@@ -320,7 +321,6 @@ set(VM_SOURCES_WKS
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
-    frozenobjectheap.cpp
     gccover.cpp
     gcenv.ee.static.cpp
     gcenv.ee.common.cpp

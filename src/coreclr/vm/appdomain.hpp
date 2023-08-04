@@ -32,6 +32,7 @@
 #endif
 
 #include "tieredcompilation.h"
+#include "frozenobjectheap.h"
 
 #include "codeversion.h"
 
@@ -2452,13 +2453,19 @@ public:
     static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_FrozenObjectHeapManager == NULL)
+        if (m_pFrozenObjectHeapManager == NULL)
         {
             LazyInitFrozenObjectsHeap();
         }
-        return m_FrozenObjectHeapManager;
+        return m_pFrozenObjectHeapManager;
     }
-#endif // DACCESS_COMPILE
+#else // DACCESS_COMPILE
+    static PTR_FrozenObjectHeapManager GetFrozenObjectHeapManager()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pFrozenObjectHeapManager;
+    }
+#endif // !DACCESS_COMPILE
 
 #if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT)
     static Thread::ApartmentState GetEntryPointThreadAptState(IMDInternalImport* pScope, mdMethodDef mdMethod);
@@ -2598,7 +2605,8 @@ private:
     {
         STANDARD_VM_CONTRACT;
 
-        m_pDelayedUnloadListOfLoaderAllocators=NULL;
+        m_pDelayedUnloadListOfLoaderAllocators = NULL;
+        m_pFrozenObjectHeapManager = NULL;
 
         m_GlobalAllocator.Init(this);
     }
@@ -2627,8 +2635,8 @@ private:
     static CrstStatic       m_SystemDomainCrst;
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
-    static FrozenObjectHeapManager *m_FrozenObjectHeapManager;
 #endif // DACCESS_COMPILE
+    SPTR_DECL(FrozenObjectHeapManager, m_pFrozenObjectHeapManager);
 
 public:
     //****************************************************************************************

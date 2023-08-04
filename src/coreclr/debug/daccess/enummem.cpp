@@ -18,6 +18,7 @@
 #include "typestring.h"
 #include "daccess.h"
 #include "binder.h"
+#include "frozenobjectheap.h"
 #include "runtimeinfo.h"
 
 #ifdef FEATURE_COMWRAPPERS
@@ -347,6 +348,13 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerHeap(IN CLRDataEnumMemoryFlags fla
 
     // now dump the memory get dragged in by using DAC API implicitly.
     m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
+
+    // Dump all frozen segments used by FrozenObjectHeapManager
+    PTR_FrozenObjectHeapManager fohManager = SystemDomain::GetFrozenObjectHeapManager();
+    if (fohManager != NULL)
+    {
+        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED(fohManager->EnumMemoryRegions(flags); )
+    }
 
     // Do not let any remaining implicitly enumerated memory leak out.
     Flush();
