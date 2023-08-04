@@ -207,9 +207,22 @@ See also [link rel preload on MDN](https://developer.mozilla.org/en-US/docs/Web/
 
 | file extension  | Content-Type |
 |---|---|
-|.wasm|application/wasm|
-|.json|application/json|
+|.html|text/html|
 |.js|text/javascript|
+|.json|application/json|
+|.wasm|application/wasm|
+|.bin|application/octet-stream|
+|.dat|application/octet-stream|
+
+Optionally also 
+
+| file extension  | Content-Type |
+|---|---|
+|.map|application/json|
+|.symbols|text/plain|
+|.pdb|application/octet-stream|
+|.dll|application/octet-stream|
+|.webcil|application/octet-stream|
 
 See also [Content-Type on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type)
 
