@@ -491,7 +491,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     await runtimeHelpers.dotnetReady.promise;
 
-    await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
+    await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterRuntimeReady);
     await invokeLibraryInitializers("onRuntimeReady", [globalObjectsRoot.api]);
 
     return exportedRuntimeAPI;
