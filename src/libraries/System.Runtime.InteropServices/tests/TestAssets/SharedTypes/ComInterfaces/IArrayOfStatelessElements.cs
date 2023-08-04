@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Serialization;
 
 namespace SharedTypes.ComInterfaces
 {
