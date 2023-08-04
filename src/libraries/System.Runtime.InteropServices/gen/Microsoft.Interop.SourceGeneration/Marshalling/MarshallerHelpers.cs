@@ -457,6 +457,5 @@ namespace Microsoft.Interop
                 // If the parameter is multidimensional and a higher indirection level parameter is ByValue [Out], then we should warn.
             }
         }
-
     }
 }
