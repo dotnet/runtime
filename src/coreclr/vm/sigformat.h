@@ -35,6 +35,7 @@ protected:
     size_t      _pos;
 
     void AddString(LPCUTF8 s);
+    void AddConstValueTypeString(CorElementType constValueType, uint64_t constValue);
     void AddTypeString(Module* pModule, SigPointer sig, const SigTypeContext *pTypeContext);
 
 };

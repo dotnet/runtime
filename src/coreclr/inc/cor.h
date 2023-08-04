@@ -1808,10 +1808,14 @@ FORCEINLINE ULONG CorSigUncompressData(
 }
 
 inline ULONG CorSigUncompressConstTypeArgData(
-    PCCOR_SIGNATURE & pData)    // [IN,OUT] compressed const type argument data
+    PCCOR_SIGNATURE & pData,      // [IN,OUT] compressed const type argument data
+    CorElementType* pType = NULL) // [OUT] const type argument type
 {
     ULONG size = 1;
-    switch (*pData++)
+    CorElementType type = (CorElementType)*pData++;
+    if (pType)
+        *pType = type;
+    switch (type)
     {
         case ELEMENT_TYPE_BOOLEAN      :
         case ELEMENT_TYPE_I1           :

@@ -338,11 +338,84 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
             AddString(")");
             break;
         }
-
+    case ELEMENT_TYPE_CTARG:
+        {
+            CorElementType constValueType;
+            uint32_t cbSig;
+            PCCOR_SIGNATURE pSig;
+            IfFailThrow(sig.GetConstTypeArg(&constValueType, &cbSig, &pSig));
+            uint64_t constValue = 0;
+            memcpy(&constValue, pSig, cbSig);
+            AddConstValueTypeString(constValueType, constValue);
+            break;
+        }
     default:
         AddString("**UNKNOWN TYPE**");
 
     }
+}
+
+void SigFormat::AddConstValueTypeString(CorElementType constValueType, uint64_t constValue)
+{
+    AddString("const ");
+    char buffer[42];
+    switch (constValueType)
+    {
+        case ELEMENT_TYPE_BOOLEAN:
+            AddString("Boolean (");
+            sprintf_s(buffer, sizeof(buffer), *(uint8_t*)&constValue == 1 ? "true" : "false");
+            break;
+        case ELEMENT_TYPE_I1:
+            AddString("SByte (");
+            sprintf_s(buffer, sizeof(buffer), "%hhd", *(int8_t*)&constValue);
+            break;
+        case ELEMENT_TYPE_U1:
+            AddString("Byte (");
+            sprintf_s(buffer, sizeof(buffer), "%hhu", *(uint8_t*)&constValue);
+            break;
+        case ELEMENT_TYPE_I2:
+            AddString("Int16 (");
+            sprintf_s(buffer, sizeof(buffer), "%hd", *(int16_t*)&constValue);
+            break;
+        case ELEMENT_TYPE_U2:
+            AddString("UInt16 (");
+            sprintf_s(buffer, sizeof(buffer), "%hu", *(uint16_t*)&constValue);
+            break;
+        case ELEMENT_TYPE_CHAR:
+            AddString("Char (");
+            sprintf_s(buffer, sizeof(buffer), "0x%04hX", *(uint16_t*)&constValue);
+            break;
+        case ELEMENT_TYPE_I4:
+            AddString("Int32 (");
+            sprintf_s(buffer, sizeof(buffer), "%d", *(int32_t*)&constValue);
+            break;
+        case ELEMENT_TYPE_U4:
+            AddString("UInt32 (");
+            sprintf_s(buffer, sizeof(buffer), "%u", *(uint32_t*)&constValue);
+            break;
+        case ELEMENT_TYPE_I8:
+            AddString("Int64 (");
+            sprintf_s(buffer, sizeof(buffer), "%lld", *(int64_t*)&constValue);
+            break;
+        case ELEMENT_TYPE_U8:
+            AddString("UInt64 (");
+            sprintf_s(buffer, sizeof(buffer), "%llu", *(uint64_t*)&constValue);
+            break;
+        case ELEMENT_TYPE_R4:
+            AddString("Single (");
+            sprintf_s(buffer, sizeof(buffer), "%f", *(float*)&constValue);
+            break;
+        case ELEMENT_TYPE_R8:
+            AddString("Double (");
+            sprintf_s(buffer, sizeof(buffer), "%lf", *(double*)&constValue);
+            break;
+        default:
+            AddString("**UNKNOWN CONST VALUE TYPE** (");
+            sprintf_s(buffer, sizeof(buffer), "**UNKNOWN CONST VALUE**");
+            break;
+    }
+    AddString(buffer);
+    AddString(")");
 }
 
 void SigFormat::FormatSig(MetaSig &sig, LPCUTF8 szMemberName, LPCUTF8 szClassName, LPCUTF8 szNameSpace)
@@ -568,7 +641,13 @@ void SigFormat::AddType(TypeHandle th)
 
             break;
         }
-
+    case ELEMENT_TYPE_CTARG:
+        {
+            _ASSERTE(th.IsConstValue());
+            AddConstValueTypeString(th.AsConstValue()->GetConstValueType().GetInternalCorElementType(),
+                                    th.AsConstValue()->GetConstValue());
+            break;
+        }
     default:
         AddString("**UNKNOWN TYPE**");
     }
