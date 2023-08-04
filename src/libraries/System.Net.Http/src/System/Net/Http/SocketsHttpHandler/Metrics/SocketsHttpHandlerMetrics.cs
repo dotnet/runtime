@@ -10,6 +10,7 @@ namespace System.Net.Http.Metrics
     {
         public readonly UpDownCounter<long> OpenConnections = meter.CreateUpDownCounter<long>(
             name: "http.client.open_connections",
+            unit: "{connection}",
             description: "Number of outbound HTTP connections that are currently active or idle on the client.");
 
         public readonly Histogram<double> ConnectionDuration = meter.CreateHistogram<double>(
