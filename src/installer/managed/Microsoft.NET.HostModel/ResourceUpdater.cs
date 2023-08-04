@@ -110,7 +110,7 @@ namespace Microsoft.NET.HostModel
             if (_resourceData == null)
                 throw ThrowExceptionForInvalidUpdate();
 
-            _resourceData.AddResource((ushort)lpType, (ushort)lpName, LangID_LangNeutral_SublangNeutral, data);
+            _resourceData.AddResource((ushort)lpName, (ushort)lpType, LangID_LangNeutral_SublangNeutral, data);
 
             return this;
         }
@@ -130,7 +130,7 @@ namespace Microsoft.NET.HostModel
             if (_resourceData == null)
                 throw ThrowExceptionForInvalidUpdate();
 
-            _resourceData.AddResource(lpType, (ushort)lpName, LangID_LangNeutral_SublangNeutral, data);
+            _resourceData.AddResource((ushort)lpName, lpType, LangID_LangNeutral_SublangNeutral, data);
 
             return this;
         }

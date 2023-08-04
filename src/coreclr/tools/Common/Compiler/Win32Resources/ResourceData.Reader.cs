@@ -55,7 +55,7 @@ namespace ILCompiler.Win32Resources
                             if (!resourceFilter(typeName, name, (ushort)languageName))
                                 return;
                         }
-                        AddResourceInternal(typeName, name, (ushort)languageName, data);
+                        AddResourceInternal(name, typeName, (ushort)languageName, data);
                     }
                 }
             }
