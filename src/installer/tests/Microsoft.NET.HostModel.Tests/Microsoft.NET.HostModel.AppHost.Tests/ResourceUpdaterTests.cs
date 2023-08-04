@@ -148,7 +148,7 @@ public class ResourceUpdaterTests
     [Fact]
     void AddResourcesFromPEImage()
     {
-        using var tempFile = GetCurrentAssemblyMemoryStream();
+        using var tempFile = CreateTestPEFileWithoutRsrc();
 
         using (var updater = new ResourceUpdater(tempFile.Stream, true))
         {
