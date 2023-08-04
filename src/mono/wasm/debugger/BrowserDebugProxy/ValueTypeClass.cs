@@ -24,13 +24,14 @@ namespace BrowserDebugProxy
         private bool fieldsExpanded;
         private readonly string className;
         private JArray fields;
+        private List<JObject> inlineArray;
 
         public DotnetObjectId Id { get; init; }
         public byte[] Buffer { get; init; }
         public int TypeId { get; init; }
         public bool IsEnum { get; init; }
 
-        public ValueTypeClass(byte[] buffer, string className, JArray fields, int typeId, bool isEnum)
+        public ValueTypeClass(byte[] buffer, string className, JArray fields, int typeId, bool isEnum, List<JObject> inlineArray = null)
         {
             var valueTypeId = MonoSDBHelper.GetNewObjectId();
             var objectId = new DotnetObjectId("valuetype", valueTypeId);
@@ -42,10 +43,12 @@ namespace BrowserDebugProxy
             autoExpand = ShouldAutoExpand(className);
             Id = objectId;
             IsEnum = isEnum;
+            this.inlineArray = inlineArray;
         }
 
         public override string ToString() => $"{{ ValueTypeClass: typeId: {TypeId}, Id: {Id}, Id: {Id}, fields: {fields} }}";
 
+        public List<JObject> GetInlineArrayValues() => inlineArray;
         public static async Task<ValueTypeClass> CreateFromReader(
                                                 MonoSDBHelper sdbAgent,
                                                 MonoBinaryReader cmdReader,
@@ -63,6 +66,7 @@ namespace BrowserDebugProxy
             IReadOnlyList<FieldTypeClass> fieldTypes = await sdbAgent.GetTypeFields(typeId, token);
 
             JArray fields = new();
+            List<JObject> inlineArray = null;
             if (includeStatic)
             {
                 IEnumerable<FieldTypeClass> staticFields =
@@ -82,6 +86,21 @@ namespace BrowserDebugProxy
             {
                 var fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
                 fields.Add(GetFieldWithMetadata(field, fieldValue, isStatic: false));
+                (int MajorVersion, int MinorVersion) = await sdbAgent.GetVMVersion(token);
+                if (MajorVersion == 2 && MinorVersion >= 65)
+                {
+                    var inlineArraySize = cmdReader.ReadInt32();
+                    if (inlineArraySize > 0)
+                    {
+                        inlineArray = new();
+                        inlineArray.Add(fieldValue);
+                    }
+                    for (int i = 1; i < inlineArraySize; i++)
+                    {
+                        fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, $"{i}", token, true, field.TypeId, false);
+                        inlineArray.Add(fieldValue);
+                    }
+                }
             }
 
             long endPos = cmdReader.BaseStream.Position;
@@ -90,7 +109,7 @@ namespace BrowserDebugProxy
             cmdReader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));
             cmdReader.BaseStream.Position = endPos;
 
-            return new ValueTypeClass(valueTypeBuffer, className, fields, typeId, isEnum);
+            return new ValueTypeClass(valueTypeBuffer, className, fields, typeId, isEnum, inlineArray);
 
             JObject GetFieldWithMetadata(FieldTypeClass field, JObject fieldValue, bool isStatic)
             {

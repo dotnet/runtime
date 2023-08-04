@@ -5290,6 +5290,16 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 			}
 
 			buffer_add_value_full (buf, f->type, mono_vtype_get_field_addr (addr, f), domain, FALSE, parent_vtypes, len_fixed_array != 1 ? len_fixed_array : isFixedSizeArray(f));
+			if (CHECK_PROTOCOL_VERSION(2, 65)) {
+				if (m_class_is_inlinearray (klass) && nfields == 1)	{
+					buffer_add_int (buf, m_class_inlinearray_value (klass));
+					int size = mono_class_instance_size (mono_class_from_mono_type_internal (f->type)) - MONO_ABI_SIZEOF (MonoObject);
+					for (int i = 1; i < m_class_inlinearray_value (klass); i++)
+						buffer_add_value_full (buf, f->type, ((char*)mono_vtype_get_field_addr (addr, f)) + (i*size), domain, FALSE, parent_vtypes, len_fixed_array != 1 ? len_fixed_array : isFixedSizeArray(f));
+				} else {
+					buffer_add_int (buf, -1);
+				}
+			}
 		}
 
 		if (boxed_vtype) {
@@ -6457,8 +6467,8 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 				g_assert (res);
 
 				if (m_type_is_byref (sig->ret)) {
-					MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
-					buffer_add_value (buf, ret_byval, mono_object_unbox_internal (res), domain);
+						MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
+						buffer_add_value (buf, ret_byval, mono_object_unbox_internal (res), domain);
 				} else {
 					buffer_add_value (buf, sig->ret, mono_object_unbox_internal (res), domain);
 				}

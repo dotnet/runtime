@@ -345,4 +345,51 @@ namespace DebuggerTests
             Console.WriteLine($"int_arr: {int_arr_3.Length}");
         }
     }
+
+    public class InlineArray
+    {
+        class One {}
+        class Two {}
+        class Three {}
+        class Four {}
+        struct E
+        {
+            public int x;
+            public int y;
+            public object o;
+        }
+
+        [System.Runtime.CompilerServices.InlineArray(Length)]
+        struct Arr1
+        {
+            public const int Length = 42;
+            public E e;
+        }
+        
+        private static unsafe Arr1 Initialize(Arr1 s)
+        {
+            s[0].o = new One();
+            s[0].x = 1;
+            s[0].y = 2;
+            s[1].o = new Two();
+            s[1].x = 3;
+            s[1].y = 4;
+            s[2].o = new Three();
+            s[2].x = 5;
+            s[2].y = 6;
+            s[3].o = new Four();
+            s[3].x = 7;
+            s[3].y = 8;
+            return s;
+        }
+        public static void run()
+        {
+            int a = 0;
+            int b = 1;
+            Arr1 s = default;
+            s = Initialize(s);
+            System.Diagnostics.Debugger.Break();
+            Console.WriteLine(s[0].o.GetType().Name);
+        }
+    }
 }

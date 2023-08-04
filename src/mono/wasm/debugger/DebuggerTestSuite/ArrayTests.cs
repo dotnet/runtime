@@ -670,5 +670,45 @@ namespace DebuggerTests
             CheckNumber(int_arr_3, "1, 2, 1", 121);
             CheckNumber(int_arr_3, "1, 2, 2", 122);
         }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task InspectInlineArray()
+        {
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
+
+            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+                $"'[debugger-test] DebuggerTests.InlineArray:run'" +
+                "); }, 1);";
+
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 390, 12, "DebuggerTests.InlineArray.run");
+            var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            await EvaluateOnCallFrameAndCheck(id,
+                   ("s[0]", TObject("DebuggerTests.InlineArray.E")),
+                   ("s[a]", TObject("DebuggerTests.InlineArray.E")),
+                   ("s[b]", TObject("DebuggerTests.InlineArray.E")),
+                   ("s[1]", TObject("DebuggerTests.InlineArray.E")));
+            var (_, res) = await EvaluateOnCallFrame(id,"s[43]", expect_ok: false);
+            Assert.Equal("Unable to evaluate element access 's[43]': Index is outside the bounds of the inline array", res.Error["result"]?["description"]?.Value<string>());
+
+            var (s_zero, _) = await EvaluateOnCallFrame(id, "s[0]");
+            await CheckValue(s_zero, TObject("DebuggerTests.InlineArray.E"), nameof(s_zero));
+            var s_zero_props = await GetProperties(s_zero["objectId"]?.Value<string>());
+            await CheckProps(s_zero_props, new
+            {
+                x = TNumber(1),
+                y = TNumber(2),
+                o = TObject("DebuggerTests.InlineArray.One")
+            }, "s_zero_props#1");
+
+            var (s_one, _) = await EvaluateOnCallFrame(id, "s[1]");
+            await CheckValue(s_one, TObject("DebuggerTests.InlineArray.E"), nameof(s_one));
+            var ss_one_props = await GetProperties(s_one["objectId"]?.Value<string>());
+            await CheckProps(ss_one_props, new
+            {
+                x = TNumber(3),
+                y = TNumber(4),
+                o = TObject("DebuggerTests.InlineArray.Two")
+            }, "s_zero_props#1");
+        }
     }
 }
