@@ -4,7 +4,6 @@
 
   <PropertyGroup>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
-    <ArchiveName>dotnet-runtime-internal</ArchiveName>
     <InstallerName Condition="'$(TargetOS)' != 'osx'">dotnet-runtime</InstallerName>
     <InstallerName Condition="'$(TargetOS)' == 'osx'">dotnet-runtime-internal</InstallerName>
     <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</OverridePackageId>
@@ -12,11 +11,11 @@
     <SymbolsArchiveName>dotnet-runtime-symbols</SymbolsArchiveName>
     <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <SkipArchivesBuild>true</SkipArchivesBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
     <SkipInstallerBuild>true</SkipInstallerBuild>
-    <SkipArchivesBuild>true</SkipArchivesBuild>
   </PropertyGroup>
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
