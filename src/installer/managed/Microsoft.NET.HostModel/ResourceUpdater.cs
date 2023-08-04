@@ -60,6 +60,7 @@ namespace Microsoft.NET.HostModel
             this.leaveOpen = leaveOpen;
             try
             {
+                this.stream.Seek(0, SeekOrigin.Begin);
                 _reader = new PEReader(this.stream, PEStreamOptions.LeaveOpen);
                 _resourceData = new ResourceData(_reader);
             }
