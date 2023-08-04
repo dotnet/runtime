@@ -6467,8 +6467,8 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 				g_assert (res);
 
 				if (m_type_is_byref (sig->ret)) {
-						MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
-						buffer_add_value (buf, ret_byval, mono_object_unbox_internal (res), domain);
+					MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
+					buffer_add_value (buf, ret_byval, mono_object_unbox_internal (res), domain);
 				} else {
 					buffer_add_value (buf, sig->ret, mono_object_unbox_internal (res), domain);
 				}
