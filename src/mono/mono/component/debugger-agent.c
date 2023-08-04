@@ -3851,7 +3851,7 @@ static void
 runtime_initialized (MonoProfiler *prof)
 {
 	process_profiler_event (EVENT_KIND_VM_START, mono_thread_current ());
-	if (CHECK_PROTOCOL_VERSION (2, 59))
+	if (CHECK_ICORDBG (TRUE))
 		process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, (mono_get_corlib ()->assembly));
 	if (agent_config.defer) {
 		ERROR_DECL (error);
@@ -6269,7 +6269,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 		return ERR_INVALID_ARGUMENT;
 	} else if (m_class_is_valuetype (m->klass) && (m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		/* Should be null */
-		if (!CHECK_PROTOCOL_VERSION (2, 59)) { //on icordbg I couldn't find type information when invoking a static method maybe I can change this later
+		if (!CHECK_ICORDBG (TRUE)) { //on icordbg I couldn't find type information when invoking a static method maybe I can change this later
 			int type = decode_byte (p, &p, end);
 			if (type != VALUE_TYPE_ID_NULL) {
 				PRINT_DEBUG_MSG (1, "[%p] Error: Static vtype method invoked with this argument.\n", (gpointer) (gsize) mono_native_thread_id_get ());
@@ -6291,7 +6291,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 					return err;
 			}
 	} else {
-		if (!(m->flags & METHOD_ATTRIBUTE_STATIC) || (m->flags & METHOD_ATTRIBUTE_STATIC && !CHECK_PROTOCOL_VERSION (2, 59))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
+		if (!(m->flags & METHOD_ATTRIBUTE_STATIC) || (m->flags & METHOD_ATTRIBUTE_STATIC && !CHECK_ICORDBG (TRUE))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
 			GET_EXTRA_SPACE_FOR_REF_FIELDS (m->klass);
 			err = decode_value (m_class_get_byval_arg (m->klass), domain, this_buf, p, &p, end, FALSE, &extra_space, FALSE);
 			if (err != ERR_NONE)
@@ -6299,7 +6299,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 		}
 	}
 
-	if (!m_class_is_valuetype (m->klass) && !(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (2, 59))) //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
+	if (!m_class_is_valuetype (m->klass) && !(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_ICORDBG (TRUE))) //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
 		this_arg = *(MonoObject**)this_buf;
 	else
 		this_arg = NULL;
@@ -9924,7 +9924,8 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				pos = - pos - 1;
 				cmd_stack_frame_get_parameter (frame, sig, pos, buf, jit);
 			} else {
-				if (!CHECK_PROTOCOL_VERSION (2, 59)) { //from newer protocol versions it's sent the pdb index
+#ifndef TARGET_WASM			
+				if (!CHECK_ICORDBG (TRUE)) { //from older protocol versions it's sent the pdb index
 					MonoDebugLocalsInfo *locals;
 					locals = mono_debug_lookup_locals (frame->de.method);
 					if (locals) {
@@ -9933,6 +9934,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 						mono_debug_free_locals (locals);
 					}
 				}
+#endif				
 
 				PRINT_DEBUG_MSG (4, "[dbg]   send local %d.\n", pos);
 
@@ -9980,7 +9982,8 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				var = &jit->params [pos];
 				is_arg = TRUE;
 			} else {
-				if (!CHECK_PROTOCOL_VERSION (2, 59)) { //from newer protocol versions it's sent the pdb index
+#ifndef TARGET_WASM			
+				if (!CHECK_ICORDBG (TRUE)) { //from older protocol versions it's sent the pdb index
 					MonoDebugLocalsInfo *locals;
 					locals = mono_debug_lookup_locals (frame->de.method);
 					if (locals) {
@@ -9989,6 +9992,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 						mono_debug_free_locals (locals);
 					}
 				}
+#endif
 				g_assert (pos >= 0 && GINT_TO_UINT32(pos) < jit->num_locals);
 
 				t = header->locals [pos];
