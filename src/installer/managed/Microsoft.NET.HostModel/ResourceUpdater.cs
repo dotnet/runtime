@@ -250,9 +250,7 @@ namespace Microsoft.NET.HostModel
             using (var mmap = MemoryMappedFile.CreateFromFile(stream, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
             using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor(0, finalImageSize, MemoryMappedFileAccess.ReadWrite))
             {
-                var buffer = accessor;
-
-                int peSignatureOffset = ReadI32(buffer, Offsets.DosStub.PESignatureOffset);
+                int peSignatureOffset = ReadI32(accessor, Offsets.DosStub.PESignatureOffset);
                 int sectionBase = peSignatureOffset + Offsets.PEHeaderSize +
                                   (ushort)_reader.PEHeaders.CoffHeader.SizeOfOptionalHeader;
 
@@ -264,42 +262,42 @@ namespace Microsoft.NET.HostModel
                         _reader.PEHeaders.SectionHeaders[0].PointerToRawData)
                         throw new InvalidOperationException("Cannot add section header");
 
-                    WriteI32(buffer, peSignatureOffset + Offsets.PEHeader.NumberOfSections, resourceSectionIndex + 1);
+                    WriteI32(accessor, peSignatureOffset + Offsets.PEHeader.NumberOfSections, resourceSectionIndex + 1);
 
                     // section name ".rsrc\0\0\0" = 2E 72 73 72 63 00 00 00
-                    buffer.Write(resourceSectionBase + 0, (byte)0x2E);
-                    buffer.Write(resourceSectionBase + 1, (byte)0x72);
-                    buffer.Write(resourceSectionBase + 2, (byte)0x73);
-                    buffer.Write(resourceSectionBase + 3, (byte)0x72);
-                    buffer.Write(resourceSectionBase + 4, (byte)0x63);
-                    buffer.Write(resourceSectionBase + 5, (byte)0x00);
-                    buffer.Write(resourceSectionBase + 6, (byte)0x00);
-                    buffer.Write(resourceSectionBase + 7, (byte)0x00);
-                    WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
-                    WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.VirtualAddress, rsrcVirtualAddress);
-                    WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.RawSize, newSectionSize);
-                    WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.RawPointer, rsrcPointerToRawData);
-                    WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.RelocationsPointer, 0);
-                    WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.LineNumbersPointer, 0);
-                    WriteI16(buffer, resourceSectionBase + Offsets.SectionHeader.NumberOfRelocations, 0);
-                    WriteI16(buffer, resourceSectionBase + Offsets.SectionHeader.NumberOfLineNumbers, 0);
-                    WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.SectionCharacteristics,
+                    accessor.Write(resourceSectionBase + 0, (byte)0x2E);
+                    accessor.Write(resourceSectionBase + 1, (byte)0x72);
+                    accessor.Write(resourceSectionBase + 2, (byte)0x73);
+                    accessor.Write(resourceSectionBase + 3, (byte)0x72);
+                    accessor.Write(resourceSectionBase + 4, (byte)0x63);
+                    accessor.Write(resourceSectionBase + 5, (byte)0x00);
+                    accessor.Write(resourceSectionBase + 6, (byte)0x00);
+                    accessor.Write(resourceSectionBase + 7, (byte)0x00);
+                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
+                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.VirtualAddress, rsrcVirtualAddress);
+                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.RawSize, newSectionSize);
+                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.RawPointer, rsrcPointerToRawData);
+                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.RelocationsPointer, 0);
+                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.LineNumbersPointer, 0);
+                    WriteI16(accessor, resourceSectionBase + Offsets.SectionHeader.NumberOfRelocations, 0);
+                    WriteI16(accessor, resourceSectionBase + Offsets.SectionHeader.NumberOfLineNumbers, 0);
+                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.SectionCharacteristics,
                         (int)(SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
                 }
 
                 if (needsMoveTrailingSections)
                 {
                     byte[] moveTrailingSectionBuffer = new byte[trailingSectionLength];
-                    buffer.ReadArray(trailingSectionStart, moveTrailingSectionBuffer, 0, trailingSectionLength);
-                    buffer.WriteArray(trailingSectionStart + delta, moveTrailingSectionBuffer, 0, trailingSectionLength);
+                    accessor.ReadArray(trailingSectionStart, moveTrailingSectionBuffer, 0, trailingSectionLength);
+                    accessor.WriteArray(trailingSectionStart + delta, moveTrailingSectionBuffer, 0, trailingSectionLength);
 
                     for (int i = resourceSectionIndex + 1; i < _reader.PEHeaders.SectionHeaders.Length; i++)
                     {
                         int currentSectionBase = sectionBase + Offsets.OneSectionHeaderSize * i;
 
-                        ModifyI32(buffer, currentSectionBase + Offsets.SectionHeader.VirtualAddress,
+                        ModifyI32(accessor, currentSectionBase + Offsets.SectionHeader.VirtualAddress,
                             pointer => pointer + virtualDelta);
-                        ModifyI32(buffer, currentSectionBase + Offsets.SectionHeader.RawPointer,
+                        ModifyI32(accessor, currentSectionBase + Offsets.SectionHeader.RawPointer,
                             pointer => pointer + delta);
                     }
                 }
@@ -308,21 +306,21 @@ namespace Microsoft.NET.HostModel
                 {
                     // update size of .rsrc section
                     int resourceSectionBase = sectionBase + Offsets.OneSectionHeaderSize * resourceSectionIndex;
-                    WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
-                    WriteI32(buffer, resourceSectionBase + Offsets.SectionHeader.RawSize, newSectionSize);
+                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
+                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.RawSize, newSectionSize);
 
                     void PatchRVA(int offset)
                     {
-                        ModifyI32(buffer, offset,
+                        ModifyI32(accessor, offset,
                             pointer => pointer >= trailingSectionVirtualStart ? pointer + virtualDelta : pointer);
                     }
 
                     // fix header
                     if (_reader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus)
                     {
-                        ModifyI32(buffer, peSignatureOffset + Offsets.PEHeader.PE64InitializedDataSize,
+                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.PE64InitializedDataSize,
                             size => size + delta);
-                        ModifyI32(buffer, peSignatureOffset + Offsets.PEHeader.PE64SizeOfImage,
+                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.PE64SizeOfImage,
                             size => size + virtualDelta);
 
                         if (needsMoveTrailingSections)
@@ -333,16 +331,16 @@ namespace Microsoft.NET.HostModel
                         }
 
                         // index of ResourceTable is 2 in DataDirectories
-                        WriteI32(buffer, peSignatureOffset + Offsets.PEHeader.PE64DataDirectories + 2 * 8,
+                        WriteI32(accessor, peSignatureOffset + Offsets.PEHeader.PE64DataDirectories + 2 * 8,
                             rsrcVirtualAddress);
-                        WriteI32(buffer, peSignatureOffset + Offsets.PEHeader.PE64DataDirectories + 2 * 8 + 4,
+                        WriteI32(accessor, peSignatureOffset + Offsets.PEHeader.PE64DataDirectories + 2 * 8 + 4,
                             rsrcSectionDataSize);
                     }
                     else
                     {
-                        ModifyI32(buffer, peSignatureOffset + Offsets.PEHeader.PE32InitializedDataSize,
+                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.PE32InitializedDataSize,
                             size => size + delta);
-                        ModifyI32(buffer, peSignatureOffset + Offsets.PEHeader.PE32SizeOfImage,
+                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.PE32SizeOfImage,
                             size => size + virtualDelta);
 
                         if (needsMoveTrailingSections)
@@ -353,19 +351,19 @@ namespace Microsoft.NET.HostModel
                         }
 
                         // index of ResourceTable is 2 in DataDirectories
-                        WriteI32(buffer, peSignatureOffset + Offsets.PEHeader.PE32DataDirectories + 2 * 8,
+                        WriteI32(accessor, peSignatureOffset + Offsets.PEHeader.PE32DataDirectories + 2 * 8,
                             rsrcVirtualAddress);
-                        WriteI32(buffer, peSignatureOffset + Offsets.PEHeader.PE32DataDirectories + 2 * 8 + 4,
+                        WriteI32(accessor, peSignatureOffset + Offsets.PEHeader.PE32DataDirectories + 2 * 8 + 4,
                             rsrcSectionDataSize);
                     }
                 }
 
-                buffer.WriteArray(rsrcPointerToRawData, rsrcSectionData, 0, rsrcSectionDataSize);
+                accessor.WriteArray(rsrcPointerToRawData, rsrcSectionData, 0, rsrcSectionDataSize);
 
                 // clear rest
                 //Array.Fill is standard 2.1
                 for (int i = rsrcSectionDataSize; i < newSectionSize; i++)
-                    buffer.Write(rsrcPointerToRawData + i, (byte)0);
+                    accessor.Write(rsrcPointerToRawData + i, (byte)0);
 
                 _resourceData = null;
             }
