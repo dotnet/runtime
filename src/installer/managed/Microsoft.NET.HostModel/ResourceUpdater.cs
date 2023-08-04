@@ -397,7 +397,7 @@ namespace Microsoft.NET.HostModel
 
         private static InvalidOperationException ThrowExceptionForInvalidUpdate()
         {
-            return new InvalidOperationException(
+            throw new InvalidOperationException(
                 "Update handle is invalid. This instance may not be used for further updates");
         }
 
