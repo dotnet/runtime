@@ -142,6 +142,9 @@ namespace Microsoft.NET.HostModel
             private const int CoffHeaderSize = 20;
             public const int PEHeaderSize = PESignatureSize + CoffHeaderSize;
             public const int OneSectionHeaderSize = 40;
+            public const int DataDirectoryEntrySize = 8;
+
+            public const int ResourceTableDataDirectoryIndex = 2;
 
             public static class DosStub
             {
@@ -172,6 +175,12 @@ namespace Microsoft.NET.HostModel
                 public const int NumberOfRelocations = 32;
                 public const int NumberOfLineNumbers = 34;
                 public const int SectionCharacteristics = 36;
+            }
+
+            public static class DataDirectoryEntry
+            {
+                public const int VirtualAddressOffset = 0;
+                public const int SizeOffset = 4;
             }
         }
 
@@ -339,12 +348,14 @@ namespace Microsoft.NET.HostModel
                     {
                         // fix RVA in DataDirectory
                         for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
-                            PatchRVA(dataDirectoriesOffset + i * 8);
+                            PatchRVA(dataDirectoriesOffset + i * Offsets.DataDirectoryEntrySize +
+                                     Offsets.DataDirectoryEntry.VirtualAddressOffset);
                     }
 
                     // index of ResourceTable is 2 in DataDirectories
-                    WriteI32(accessor, dataDirectoriesOffset + 2 * 8, rsrcVirtualAddress);
-                    WriteI32(accessor, dataDirectoriesOffset + 2 * 8 + 4, rsrcSectionDataSize);
+                    int resourceTableOffset = dataDirectoriesOffset + Offsets.ResourceTableDataDirectoryIndex * Offsets.DataDirectoryEntrySize;
+                    WriteI32(accessor, resourceTableOffset + Offsets.DataDirectoryEntry.VirtualAddressOffset, rsrcVirtualAddress);
+                    WriteI32(accessor, resourceTableOffset + Offsets.DataDirectoryEntry.SizeOffset, rsrcSectionDataSize);
                 }
 
                 accessor.WriteArray(rsrcPointerToRawData, rsrcSectionData, 0, rsrcSectionDataSize);
