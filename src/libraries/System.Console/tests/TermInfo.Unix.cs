@@ -104,6 +104,16 @@ public class TermInfoTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests TermInfo
+    public void TermInfoClearIncludesE3WhenExpected()
+    {
+        // XTerm defines E3 for clearing scrollback buffer and tmux does not.
+        // This can't be added to TermInfoVerification because xterm-256color sometimes has E3 defined (e.g. on Ubuntu but not macOS)
+        Assert.Equal("\u001B[H\u001B[2J\u001B[3J", new XTermData().TerminalDb.Clear);
+        Assert.Equal("\u001B[H\u001B[J", new TmuxData().TerminalDb.Clear);
+    }
+
+    [Fact]
     [PlatformSpecific(TestPlatforms.OSX)]  // The file being tested is available by default only on OSX
     public void EmuTermInfoDoesntBreakParser()
     {
