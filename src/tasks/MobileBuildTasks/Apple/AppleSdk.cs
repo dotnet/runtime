@@ -85,46 +85,44 @@ namespace Microsoft.Apple.Build
             return sdkRoot;
         }
 
-        private static string GetXCodeDevRoot()
+        private string GetXCodeDevRoot()
         {
             string path = "";
+            string output;
 
             if (!File.Exists ("/usr/bin/xcode-select"))
             {
-                return path;
+                throw new Exception("Unable to locate XCode via xcode-select. Please make sure Xcode is properly installed");
             }
 
             try
             {
-                Process process = new Process ();
-                process.StartInfo.FileName = "/usr/bin/xcode-select";
-                process.StartInfo.Arguments = "--print-path";
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.UseShellExecute = false;
-                process.Start();
+                (int exitCode, output) = Utils.TryRunProcess(logger,
+                                                                "/usr/bin/xcode-select",
+                                                                "--print-path",
+                                                                silent: true,
+                                                                debugMessageImportance: MessageImportance.Low,
+                                                                label: "xcode-select");
 
-                string stdout = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
-
-                stdout = stdout.Trim();
-                if (Directory.Exists(stdout))
+                output.Trim();
+                if (Directory.Exists(output))
                 {
-                    if (stdout.EndsWith("/Contents/Developer", StringComparison.Ordinal))
+                    if (output.EndsWith("/Contents/Developer", StringComparison.Ordinal))
                     {
-                        stdout = stdout.Substring(0, stdout.Length - "/Contents/Developer".Length);
+                        output = output.Substring(0, output.Length - "/Contents/Developer".Length);
                     }
 
-                    path = stdout;
+                    path = output;
+
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        throw new ArgumentException("Could not find the path to Xcode via xcode-select. Please make sure Xcode is properly installed.");
+                    }
                 }
             }
             catch (Exception e)
             {
-                throw new Exception("Could not get installed xcode location", e);
-            }
-
-            if (string.IsNullOrEmpty(path))
-            {
-                throw new Exception("Could not get installed xcode location");
+                throw new Exception("Could not get installed Xcode location", e);
             }
 
             return path;
