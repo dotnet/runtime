@@ -181,7 +181,9 @@ public class ResourceUpdaterTests
                         found = modifiedReader.FindResource(name, type, language);
                         break;
                     default:
-                        throw new InvalidOperationException();
+                        found = null;
+                        Assert.Fail("name or type is not string nor ushort.");
+                        break;
                 }
                 Assert.Equal(data, found);
             }
