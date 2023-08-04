@@ -63,6 +63,9 @@ namespace System.IO.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FileShareOpen_Inheritable()
         {
+            RemoteInvokeOptions remoteInvokeOptions = new();
+            remoteInvokeOptions.TimeOut = 300 * 1000;
+
             RemoteExecutor.Invoke(() =>
             {
                 int i = 0;
@@ -75,7 +78,7 @@ namespace System.IO.Tests
                         CreateFileStream(fileName, FileMode.Open, access, share | FileShare.Inheritable).Dispose();
                     }
                 }
-            }).Dispose();
+            }, remoteInvokeOptions).Dispose();
         }
 
         [Fact]
