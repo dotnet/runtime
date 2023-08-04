@@ -17,6 +17,7 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Interop.UnitTests;
 using Xunit;
+using GeneratorDiagnostics = Microsoft.Interop.GeneratorDiagnostics;
 using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
 
 namespace LibraryImportGenerator.UnitTests
@@ -752,7 +753,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}, {|#11:Out|}"), new DiagnosticResult[] { } };
 
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}"), new DiagnosticResult[] {
-                VerifyCS.Diagnostic(Microsoft.Interop.GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
                     .WithLocation(0)
                     .WithLocation(10)
                     .WithArguments("[In] and [Out] attributes", "p", SR.InAttributeOnlyIsDefault)

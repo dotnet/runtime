@@ -31,7 +31,7 @@ namespace Microsoft.Interop
             InOutSupport: ByValueMarshalKindSupport.Supported, InOutSupportDetails: null);
 
         /// <summary>
-        /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for pinned by value parameters. [In] is not allowed. [In, Out] is the default and unnecessary. [Out] is allowed.
+        /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for pinned parameters. [In] is allowed, but unnecessary. Out is allowed.
         /// </summary>
         public static readonly ByValueMarshalKindSupportDescriptor PinnedParameter = new ByValueMarshalKindSupportDescriptor(
             InSupport: ByValueMarshalKindSupport.Unnecessary, InSupportDetails: SR.InAttributeOnlyIsDefault,
