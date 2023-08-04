@@ -494,9 +494,6 @@ namespace System.IO
                     }
                     break;
                 case 1:
-                    // Need to find a good threshold for calling ReadByte() repeatedly
-                    // vs. calling Read(byte[], int, int) for both buffered & unbuffered
-                    // streams.
                     n = _stream.ReadByte();
                     if (n == -1)
                     {
