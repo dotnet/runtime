@@ -631,7 +631,32 @@ PCODE EEDbgInterfaceImpl::GetFunctionAddress(MethodDesc *pFD)
     }
     CONTRACTL_END;
 
-    return pFD->GetNativeCode();
+    //return pFD->GetNativeCode();
+        WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+
+    PCODE pDefaultCode = pFD->GetNativeCode();
+    if (pDefaultCode != NULL)
+    {
+        return pDefaultCode;
+    }
+
+    {
+        Module *pModule = pFD->GetModule();
+        CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(pFD));
+        if (!ilVersion.IsDefaultVersion())
+        {
+            NativeCodeVersion activeNativeCodeVersion = ilVersion.GetActiveNativeCodeVersion(PTR_MethodDesc(pFD));
+            if (!activeNativeCodeVersion.IsNull())
+            {
+                return activeNativeCodeVersion.GetNativeCode();
+            }
+        }
+
+        return NULL;
+    }
 }
 
 #ifndef DACCESS_COMPILE

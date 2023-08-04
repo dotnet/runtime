@@ -2841,6 +2841,8 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
     }
     CONTRACTL_END;
 
+    _ASSERTE(pNativeCodeStartAddress != NULL);
+
 #ifdef PROFILING_SUPPORTED
     // At this point, we're pulling in the debugger.
     if (!HasLazyData())
@@ -3007,6 +3009,7 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     _ASSERTE(pcMap != NULL);
     _ASSERTE(prguiILOffset != NULL);
     _ASSERTE(prguiNativeOffset != NULL);
+    _ASSERTE(pNativeCodeStartAddress != NULL);
 
     // Any caller of GetILToNativeMappingIntoArrays had better call
     // InitializeLazyDataIfNecessary first!
@@ -5411,28 +5414,6 @@ void Debugger::ReleaseAllRuntimeThreads(AppDomain *pAppDomain)
     g_pEEInterface->ResumeFromDebug(pAppDomain);
 }
 
-// Given a method, get's its EnC version number. 1 if the method is not EnCed.
-// Note that MethodDescs are reused between versions so this will give us
-// the most recent EnC number.
-int Debugger::GetMethodEncNumber(MethodDesc * pMethod)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    DebuggerJitInfo * dji = GetLatestJitInfoFromMethodDesc(pMethod);
-    if (dji == NULL)
-    {
-        // If there's no DJI, couldn't have been EnCed.
-        return 1;
-    }
-    return (int) dji->m_encVersion;
-}
-
-
 bool Debugger::IsJMCMethod(Module* pModule, mdMethodDef tkMethod)
 {
     CONTRACTL
@@ -6219,25 +6200,6 @@ void Debugger::LockAndSendEnCRemapCompleteEvent(MethodDesc *pMD)
     Thread *thread = g_pEEInterface->GetThread();
     // Note that the debugger lock is reentrant, so we may or may not hold it already.
     SENDIPCEVENT_BEGIN(this, thread);
-
-    EX_TRY
-    {
-        // Ensure the DJI for the latest version of this method has been pre-created.
-        // It's not clear whether this is necessary or not, but it shouldn't hurt since
-        // we're going to need to create it anyway since we'll be debugging inside it.
-        DebuggerJitInfo *dji = g_pDebugger->GetLatestJitInfoFromMethodDesc(pMD);
-        (void)dji; //prevent "unused variable" error from GCC
-        _ASSERTE( dji != NULL );
-    }
-    EX_CATCH
-    {
-        // GetLatestJitInfo could throw on OOM, but the debugger isn't resiliant to OOM.
-        // I'm not aware of any other legitimate reason why it may throw, so we'll ASSERT
-        // if it fails.
-        _ASSERTE(!"Unexpected exception from Debugger::GetLatestJitInfoFromMethodDesc on EnC remap complete");
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
     // Send an EnC remap complete event to the Right Side.
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
     InitIPCEvent(ipce,
@@ -7865,6 +7827,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
     // Implements DebugInterface
     // Call by EE/exception. Must be on managed thread
     _ASSERTE(GetThreadNULLOk() != NULL);
+    _ASSERTE(pMethodAddr != NULL);
 
     // Quick check.
     if (!CORDebuggerAttached())
@@ -12625,7 +12588,7 @@ DWORD Debugger::GetThreadIdHelper(Thread *pThread)
 // does not own the memory provided via vars outparameter.
 //-----------------------------------------------------------------------------
 void Debugger::GetVarInfo(MethodDesc *       fd,   // [IN] method of interest
-                    void *DebuggerVersionToken,    // [IN] which edit version
+                    CORDB_ADDRESS nativeCodeAddress,    // [IN] which edit version
                     SIZE_T *           cVars,      // [OUT] size of 'vars'
                     const ICorDebugInfo::NativeVarInfo **vars     // [OUT] map telling where local vars are stored
                     )
@@ -12637,7 +12600,7 @@ void Debugger::GetVarInfo(MethodDesc *       fd,   // [IN] method of interest
     }
     CONTRACTL_END;
 
-    DebuggerJitInfo * ji = (DebuggerJitInfo *)DebuggerVersionToken;
+    DebuggerJitInfo * ji = g_pDebugger->GetJitInfo(fd, (const BYTE *)nativeCodeAddress);
 
     // If we didn't supply a DJI, then we're asking for the most recent version.
     if (ji == NULL)
