@@ -1,26 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Globalization;
 using System.Net.Sockets;
-using System.Text;
 
-#if SYSTEM_NET_PRIMITIVES_DLL
 namespace System.Net
-#else
-namespace System.Net.Internals
-#endif
 {
     // This class is used when subclassing EndPoint, and provides indication
     // on how to format the memory buffers that the platform uses for network addresses.
-#if SYSTEM_NET_PRIMITIVES_DLL
-    public
-#else
-    internal sealed
-#endif
-    class SocketAddress : System.IEquatable<SocketAddress>
+    public class SocketAddress : System.IEquatable<SocketAddress>
     {
 #pragma warning disable CA1802 // these could be const on Windows but need to be static readonly for Unix
         internal static readonly int IPv6AddressSize = SocketAddressPal.IPv6AddressSize;
@@ -176,11 +164,7 @@ namespace System.Net.Internals
             }
             else
             {
-#if SYSTEM_NET_PRIMITIVES_DLL
                 throw new SocketException(SocketError.AddressFamilyNotSupported);
-#else
-                throw new SocketException((int)SocketError.AddressFamilyNotSupported);
-#endif
             }
         }
 

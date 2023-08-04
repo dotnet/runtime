@@ -65,7 +65,7 @@ namespace System.Net.Sockets
         private int _acceptAddressBufferCount;
 
         // Internal SocketAddress buffer.
-        internal Internals.SocketAddress? _socketAddress;
+        internal SocketAddress? _socketAddress;
 
         // Misc state variables.
         private readonly bool _flowExecutionContext;
@@ -866,7 +866,7 @@ namespace System.Net.Sockets
             {
                 case SocketAsyncOperation.Accept:
                     // Get the endpoint.
-                    Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_currentSocket!._rightEndPoint!);
+                    SocketAddress remoteSocketAddress = _currentSocket!._rightEndPoint!.Serialize();
 
                     socketError = FinishOperationAccept(remoteSocketAddress);
 
@@ -923,7 +923,8 @@ namespace System.Net.Sockets
                 case SocketAsyncOperation.ReceiveFrom:
                     // Deal with incoming address.
                     UpdateReceivedSocketAddress(_socketAddress!);
-                    Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
+                    //SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
+                    SocketAddress socketAddressOriginal = _remoteEndPoint!.Serialize();
                     if (!socketAddressOriginal.Equals(_socketAddress))
                     {
                         try
@@ -946,7 +947,8 @@ namespace System.Net.Sockets
                 case SocketAsyncOperation.ReceiveMessageFrom:
                     // Deal with incoming address.
                     UpdateReceivedSocketAddress(_socketAddress!);
-                    socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
+                    //socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
+                    socketAddressOriginal = _remoteEndPoint!.Serialize();
                     if (!socketAddressOriginal.Equals(_socketAddress))
                     {
                         try

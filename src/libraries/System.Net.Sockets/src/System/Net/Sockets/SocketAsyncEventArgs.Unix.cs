@@ -336,7 +336,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
+        private SocketError FinishOperationAccept(SocketAddress remoteSocketAddress)
         {
             new ReadOnlySpan<byte>(_acceptBuffer, 0, _acceptAddressBufferCount).CopyTo(remoteSocketAddress.Buffer.Span);
             remoteSocketAddress.Size = _acceptAddressBufferCount;
@@ -366,7 +366,7 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        private void UpdateReceivedSocketAddress(Internals.SocketAddress socketAddress)
+        private void UpdateReceivedSocketAddress(SocketAddress socketAddress)
         {
             if (_socketAddressSize > 0)
             {

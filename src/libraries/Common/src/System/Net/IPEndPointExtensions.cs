@@ -8,6 +8,18 @@ namespace System.Net.Sockets
 {
     internal static partial class IPEndPointExtensions
     {
+        public static IPAddress GetIPAddress(this SocketAddress socketAddress) => GetIPAddress(socketAddress.Buffer.Span);
+        public static int GetPort(this SocketAddress socketAddress)
+        {
+            Debug.Assert(socketAddress.Family == AddressFamily.InterNetwork || socketAddress.Family == AddressFamily.InterNetworkV6);
+            return (int)SocketAddressPal.GetPort(socketAddress.Buffer.Span);
+        }
+
+        public static IPEndPoint GetIPEndPoint(this SocketAddress socketAddress)
+        {
+            return new IPEndPoint(socketAddress.GetIPAddress(), socketAddress.GetPort());
+        }
+
         public static IPAddress GetIPAddress(ReadOnlySpan<byte> socketAddressBuffer)
         {
             AddressFamily  family = SocketAddressPal.GetAddressFamily(socketAddressBuffer);
