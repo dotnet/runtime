@@ -24,7 +24,7 @@ public class IcuTests : IcuTestsBase
                 new object[] { true, true, "Array.Empty<Locale>()" },
                 new object[] { true, false, "Array.Empty<Locale>()" },
                 new object[] { false, false, GetEfigsTestedLocales() },
-                new object[] { false, true,  FullIcuTestedLocales})
+                new object[] { false, true,  s_fullIcuTestedLocales})
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
@@ -68,9 +68,9 @@ public class IcuTests : IcuTestsBase
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName };
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{IcuTestsHelper.CustomIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{IcuTestsBase.s_customIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
-        string testedLocales = fullIcu ? FullIcuTestedLocales : CustomIcuTestedLocales;
+        string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
         string programText = GetProgramText(testedLocales);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
         (_, string output) = BuildProject(buildArgs,
@@ -79,7 +79,7 @@ public class IcuTests : IcuTestsBase
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                             GlobalizationMode: fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.PredefinedIcu,
-                            PredefinedIcudt: fullIcu ? "" : IcuTestsHelper.CustomIcuPath));
+                            PredefinedIcudt: fullIcu ? "" : IcuTestsBase.s_customIcuPath));
         if (fullIcu)
             Assert.Contains("$(WasmIcuDataFileName) has no effect when $(WasmIncludeFullIcuData) is set to true.", output);
 
