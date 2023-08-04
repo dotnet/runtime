@@ -2234,6 +2234,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_ADD_I4:
 		case OP_ATOMIC_STORE_U1:
 		case OP_ATOMIC_STORE_I4:
+		case OP_ATOMIC_STORE_I8:
 		case OP_ATOMIC_STORE_U8:
 		case OP_ATOMIC_LOAD_U1:
 		case OP_ATOMIC_LOAD_I4:
@@ -4433,6 +4434,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 #ifdef TARGET_RISCV64
+		case OP_ATOMIC_STORE_I8:
 		case OP_ATOMIC_STORE_U8: {
 			// TODO: Check This
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
