@@ -67,7 +67,7 @@ typedef enum
 } CalendarDataType;
 
 // the function pointer definition for the callback used in EnumCalendarInfo
-typedef void (*EnumCalendarInfoCallback)(const UChar*, const void*);
+typedef void (PAL_CALLBACK_CALLTYPE *EnumCalendarInfoCallback)(const UChar*, const void*);
 
 PALEXPORT int32_t GlobalizationNative_GetCalendars(const UChar* localeName,
                                                    CalendarId* calendars,

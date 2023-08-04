@@ -431,7 +431,7 @@ namespace System.Collections.Frozen
         /// <summary>Gets either a reference to a <typeparamref name="TValue"/> in the dictionary or a null reference if the key does not exist in the dictionary.</summary>
         /// <param name="key">The key used for lookup.</param>
         /// <returns>A reference to a <typeparamref name="TValue"/> in the dictionary or a null reference if the key does not exist in the dictionary.</returns>
-        /// <remarks>The null reference can be detected by calling <see cref="Unsafe.IsNullRef{T}(ref T)"/>.</remarks>
+        /// <remarks>The null reference can be detected by calling <see cref="Unsafe.IsNullRef"/>.</remarks>
         public ref readonly TValue GetValueRefOrNullRef(TKey key)
         {
             if (key is null)

@@ -438,7 +438,7 @@ namespace Microsoft.Interop
                 yield return elementsSetup;
             }
             // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
-            // The value will never be used unless it has been initialized, so this is safe.
+            // The value may be used in cleanup before it has been initialized, so this is not safe.
             yield return MarshallerHelpers.SkipInitOrDefaultInit(
                 new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
                 {

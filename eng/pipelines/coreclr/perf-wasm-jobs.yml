@@ -38,6 +38,7 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
+        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: wasm
@@ -64,6 +65,7 @@ jobs:
       platforms:
       - linux_x64
       jobparameters:
+        timeoutInMinutes: 1260
         testgroup: perf
         livelibrariesbuildconfig: Release
         skipLiveLibrariesDownload: true
@@ -105,6 +107,7 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
+        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         skipLiveLibrariesDownload: true
@@ -132,6 +135,7 @@ jobs:
       platforms:
       - linux_x64
       jobparameters:
+        timeoutInMinutes: 1260
         testgroup: perf
         livelibrariesbuildconfig: Release
         skipLiveLibrariesDownload: true
@@ -159,6 +163,7 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
+        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         skipLiveLibrariesDownload: true

@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop27"] is string value22)
             {
-                obj.Prop27 = ParseDayOfWeek(value22, () => configuration.GetSection("Prop27").Path);
+                obj.Prop27 = ParseEnum<DayOfWeek>(value22, () => configuration.GetSection("Prop27").Path);
             }
 
             if (configuration["Prop7"] is string value23)
@@ -430,15 +430,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static DayOfWeek ParseDayOfWeek(string value, Func<string?> getPath)
+        public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
         {
             try
             {
-                return (DayOfWeek)Enum.Parse(typeof(DayOfWeek), value, ignoreCase: true);
+                #if NETFRAMEWORK || NETSTANDARD2_0
+                    return (T)Enum.Parse(typeof(T), value, ignoreCase: true);
+                #else
+                    return Enum.Parse<T>(value, ignoreCase: true);
+                #endif
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(DayOfWeek)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(T)}'.", exception);
             }
         }
 

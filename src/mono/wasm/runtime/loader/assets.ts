@@ -9,6 +9,8 @@ import { mono_log_debug } from "./logging";
 import { mono_exit } from "./exit";
 import { addCachedReponse, findCachedResponse, isCacheAvailable } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
+import { mono_log_warn } from "./logging";
+import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -20,6 +22,7 @@ const jsModulesAssetTypes: {
 } = {
     "js-module-threads": true,
     "js-module-runtime": true,
+    "js-module-dotnet": true,
     "js-module-native": true,
 };
 
@@ -78,10 +81,10 @@ function getSingleAssetWithResolvedUrl(resources: ResourceList | undefined, beha
 
     const customSrc = invokeLoadBootResource(asset);
     if (typeof (customSrc) === "string") {
-        asset.resolvedUrl = customSrc;
+        asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customSrc);
     } else if (customSrc) {
-        // Since we must load this via a import, it's only valid to supply a URI (and not a Request, say)
-        throw new Error(`For a ${behavior} resource, custom loaders must supply a URI string.`);
+        mono_log_warn(`For ${behavior} resource: ${name}, custom loaders must supply a URI string.`);
+        // we apply a default URL
     }
 
     return asset;
@@ -164,8 +167,9 @@ export async function mono_download_assets(): Promise<void> {
                 const asset = await downloadPromise;
                 if (asset.buffer) {
                     if (!skipInstantiateByAssetTypes[asset.behavior]) {
-                        const url = asset.pendingDownloadInternal!.url;
                         mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
+                        mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
+                        const url = asset.resolvedUrl!;
                         const data = new Uint8Array(asset.buffer!);
                         cleanupAsset(asset);
 
@@ -220,8 +224,25 @@ export async function mono_download_assets(): Promise<void> {
 
 function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLoadedAssets: AssetEntryInternal[]) {
     const config = loaderHelpers.config;
-    const resources = loaderHelpers.config.resources;
-    if (resources) {
+
+    // if assets exits, we will assume Net7 legacy and not process resources object
+    if (config.assets) {
+        for (const a of config.assets) {
+            const asset: AssetEntryInternal = a;
+            mono_assert(typeof asset === "object", () => `asset must be object, it was ${typeof asset} : ${asset}`);
+            mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
+            mono_assert(typeof asset.name === "string", "asset name must be string");
+            mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
+            if (containedInSnapshotByAssetTypes[asset.behavior]) {
+                containedInSnapshotAssets.push(asset);
+            } else {
+                alwaysLoadedAssets.push(asset);
+            }
+        }
+    } else if (config.resources) {
+        const resources = config.resources;
         if (resources.assembly) {
             for (const name in resources.assembly) {
                 containedInSnapshotAssets.push({
@@ -282,11 +303,11 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
             }
         }
 
-        if (resources.jsSymbols) {
-            for (const name in resources.jsSymbols) {
+        if (resources.wasmSymbols) {
+            for (const name in resources.wasmSymbols) {
                 alwaysLoadedAssets.push({
                     name,
-                    hash: resources.jsSymbols[name],
+                    hash: resources.wasmSymbols[name],
                     behavior: "symbols"
                 });
             }
@@ -307,31 +328,7 @@ function prepareAssets(containedInSnapshotAssets: AssetEntryInternal[], alwaysLo
         }
     }
 
-    const newAssets = [...containedInSnapshotAssets, ...alwaysLoadedAssets];
-
-    if (loaderHelpers.config.assets) {
-        for (const a of loaderHelpers.config.assets) {
-            const asset: AssetEntryInternal = a;
-            mono_assert(typeof asset === "object", "asset must be object");
-            mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
-            mono_assert(typeof asset.name === "string", "asset name must be string");
-            mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
-            mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
-            mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (containedInSnapshotByAssetTypes[asset.behavior]) {
-                containedInSnapshotAssets.push(asset);
-            } else {
-                alwaysLoadedAssets.push(asset);
-            }
-        }
-    }
-
-    if (!loaderHelpers.config.assets) {
-        loaderHelpers.config.assets = [];
-    }
-
-    loaderHelpers.config.assets = [...loaderHelpers.config.assets, ...newAssets];
-
+    config.assets = [...containedInSnapshotAssets, ...alwaysLoadedAssets];
 }
 
 export function delay(ms: number): Promise<void> {
@@ -431,12 +428,17 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
     }
     if (asset.buffer) {
         const buffer = asset.buffer;
-        asset.buffer = null as any; // GC
+        if (!asset.resolvedUrl) {
+            asset.resolvedUrl = "undefined://" + asset.name;
+        }
         asset.pendingDownloadInternal = {
-            url: "undefined://" + asset.name,
+            url: asset.resolvedUrl,
             name: asset.name,
             response: Promise.resolve({
+                ok: true,
                 arrayBuffer: () => buffer,
+                json: () => JSON.parse(new TextDecoder("utf-8").decode(buffer)),
+                text: () => { throw new Error("NotImplementedException"); },
                 headers: {
                     get: () => undefined,
                 }
@@ -585,8 +587,7 @@ function fetchResource(request: ResourceRequest): Promise<Response> {
             // They are supplying an entire custom response, so just use that
             return customLoadResult;
         } else if (typeof customLoadResult === "string") {
-            // They are supplying a custom URL, so use that with the default fetch behavior
-            url = customLoadResult;
+            url = makeURLAbsoluteWithApplicationBase(customLoadResult);
         }
     }
 
@@ -614,7 +615,9 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "pdb": "pdb",
     "icu": "globalization",
     "vfs": "configuration",
+    "manifest": "manifest",
     "dotnetwasm": "dotnetwasm",
+    "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
     "js-module-runtime": "dotnetjs",
     "js-module-threads": "dotnetjs"
@@ -625,17 +628,10 @@ function invokeLoadBootResource(request: ResourceRequest): string | Promise<Resp
         const requestHash = request.hash ?? "";
         const url = request.resolvedUrl!;
 
-        // Try to send with AssetBehaviors
-        let customLoadResult = loaderHelpers.loadBootResource(request.behavior, request.name, url, requestHash);
-        if (!customLoadResult) {
-            // If we don't get result, try to send with WebAssemblyBootResourceType
-            const resourceType = monoToBlazorAssetTypeMap[request.behavior];
-            if (resourceType) {
-                customLoadResult = loaderHelpers.loadBootResource(resourceType as AssetBehaviors, request.name, url, requestHash);
-            }
+        const resourceType = monoToBlazorAssetTypeMap[request.behavior];
+        if (resourceType) {
+            return loaderHelpers.loadBootResource(resourceType, request.name, url, requestHash, request.behavior);
         }
-
-        return customLoadResult;
     }
 
     return undefined;

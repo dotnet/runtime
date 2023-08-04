@@ -8741,7 +8741,10 @@ private:
         }
         else
         {
-            return 0;
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+
+            return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
         if (compExactlyDependsOn(InstructionSet_VectorT128))
@@ -8750,7 +8753,10 @@ private:
         }
         else
         {
-            return 0;
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+
+            return FP_REGSIZE_BYTES;
         }
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");

@@ -27,14 +27,14 @@ public class BuildPublishTests : BlazorWasmTestBase
     [InlineData("Release")]
     public async Task DefaultTemplate_WithoutWorkload(string config)
     {
-        string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
+        string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config));
-        await BlazorRunForBuildWithDotnetRun(config);
+        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
 
         BlazorPublish(new BlazorBuildOptions(id, config));
-        await BlazorRunForPublishWithWebServer(config);
+        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
     }
 
     [Theory]
@@ -45,8 +45,8 @@ public class BuildPublishTests : BlazorWasmTestBase
         // disable relinking tests for Unicode: github.com/emscripten-core/emscripten/issues/17817
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
         string id = config == "Release" ?
-            $"blz_no_aot_{config}_{Path.GetRandomFileName()}" :
-            $"blz_no_aot_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
+            $"blz_no_aot_{config}_{GetRandomId()}" :
+            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
@@ -68,7 +68,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [InlineData("Release", true)]
     public void DefaultTemplate_CheckFingerprinting(string config, bool expectFingerprintOnDotnetJs)
     {
-        string id = $"blz_checkfingerprinting_{config}_{Path.GetRandomFileName()}";
+        string id = $"blz_checkfingerprinting_{config}_{GetRandomId()}";
 
         CreateBlazorWasmTemplateProject(id);
 
@@ -155,10 +155,11 @@ public class BuildPublishTests : BlazorWasmTestBase
         if (publish)
             BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: build));
 
+        BlazorRunOptions runOptions = new() { Config = config, Test = TestDllImport };
         if (publish)
-            await BlazorRunForPublishWithWebServer(config, TestDllImport);
+            await BlazorRunForPublishWithWebServer(runOptions);
         else
-            await BlazorRunForBuildWithDotnetRun(config, TestDllImport);
+            await BlazorRunForBuildWithDotnetRun(runOptions);
 
         async Task TestDllImport(IPage page)
         {
@@ -171,7 +172,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Fact]
     public void BugRegression_60479_WithRazorClassLib()
     {
-        string id = $"blz_razor_lib_top_{Path.GetRandomFileName()}";
+        string id = $"blz_razor_lib_top_{GetRandomId()}";
         InitBlazorWasmProjectDir(id);
 
         string wasmProjectDir = Path.Combine(_projectDir!, "wasm");
@@ -192,7 +193,7 @@ public class BuildPublishTests : BlazorWasmTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{ProjectProviderBase.WebcilInWasmExtension}" : "RazorClassLibrary.dll";
+        string razorClassLibraryFileName = $"RazorClassLibrary{ProjectProviderBase.WasmAssemblyExtension}";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
             <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileName}"" />
@@ -226,11 +227,11 @@ public class BuildPublishTests : BlazorWasmTestBase
     [InlineData("Release")]
     public async Task BlazorBuildRunTest(string config)
     {
-        string id = $"blazor_{config}_{Path.GetRandomFileName()}";
+        string id = $"blazor_{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
-        await BlazorRunForBuildWithDotnetRun(config);
+        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
@@ -240,7 +241,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [InlineData("Release", true)]
     public async Task BlazorPublishRunTest(string config, bool aot)
     {
-        string id = $"blazor_{config}_{Path.GetRandomFileName()}";
+        string id = $"blazor_{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
         if (aot)
             AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
@@ -250,7 +251,7 @@ public class BuildPublishTests : BlazorWasmTestBase
             config,
             aot ? NativeFilesType.AOT
                 : (config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack)));
-        await BlazorRunForPublishWithWebServer(config);
+        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
     }
 
     private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Pages/Counter.razor")

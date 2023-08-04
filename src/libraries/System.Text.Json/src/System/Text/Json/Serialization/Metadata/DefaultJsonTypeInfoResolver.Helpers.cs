@@ -85,20 +85,17 @@ namespace System.Text.Json.Serialization.Metadata
             // Walk the type hierarchy starting from the current type up to the base type(s)
             foreach (Type currentType in typeInfo.Type.GetSortedTypeHierarchy())
             {
-                if (currentType == JsonTypeInfo.ObjectType)
+                if (currentType == JsonTypeInfo.ObjectType ||
+                    currentType == typeof(ValueType))
                 {
-                    // Don't process any members for typeof(object)
+                    // Don't process any members for typeof(object) or System.ValueType
                     break;
                 }
-
-                // Compiler adds RequiredMemberAttribute to type if any of the members are marked with 'required' keyword.
-                bool shouldCheckMembersForRequiredMemberAttribute =
-                    !constructorHasSetsRequiredMembersAttribute && currentType.HasRequiredMemberAttribute();
 
                 AddMembersDeclaredBySuperType(
                     typeInfo,
                     currentType,
-                    shouldCheckMembersForRequiredMemberAttribute,
+                    constructorHasSetsRequiredMembersAttribute,
                     ref state);
             }
 
@@ -113,7 +110,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static void AddMembersDeclaredBySuperType(
             JsonTypeInfo typeInfo,
             Type currentType,
-            bool shouldCheckMembersForRequiredMemberAttribute,
+            bool constructorHasSetsRequiredMembersAttribute,
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
             Debug.Assert(!typeInfo.IsReadOnly);
@@ -124,6 +121,10 @@ namespace System.Text.Json.Serialization.Metadata
                 BindingFlags.Public |
                 BindingFlags.NonPublic |
                 BindingFlags.DeclaredOnly;
+
+            // Compiler adds RequiredMemberAttribute to type if any of the members are marked with 'required' keyword.
+            bool shouldCheckMembersForRequiredMemberAttribute =
+                !constructorHasSetsRequiredMembersAttribute && currentType.HasRequiredMemberAttribute();
 
             foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags))
             {
