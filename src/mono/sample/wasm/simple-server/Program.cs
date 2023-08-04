@@ -253,8 +253,16 @@ namespace HttpServer
                     }
                 }
             }
-            catch (Exception)
+            catch (System.IO.DirectoryNotFoundException)
             {
+                if (Verbose)
+                    Console.WriteLine($"Not found: {path}");
+                fc = null;
+            }
+            catch (Exception ex)
+            {
+                if (Verbose)
+                    Console.WriteLine($"Exception: {ex}");
                 fc = null;
             }
 
