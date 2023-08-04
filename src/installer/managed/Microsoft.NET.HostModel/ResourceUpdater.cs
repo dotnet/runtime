@@ -140,7 +140,7 @@ namespace Microsoft.NET.HostModel
             public const int PEHeaderSize = PESignatureSize + CoffHeaderSize;
             public const int OneSectionHeaderSize = 40;
 
-            public static class DosStab
+            public static class DosStub
             {
                 public const int PESignatureOffset = 0x3c;
             }
@@ -247,7 +247,7 @@ namespace Microsoft.NET.HostModel
             using var accessor = mmap.CreateViewAccessor(0, finalImageSize, MemoryMappedFileAccess.ReadWrite);
             var buffer = accessor;
 
-            int peSignatureOffset = ReadI32(buffer, Offsets.DosStab.PESignatureOffset);
+            int peSignatureOffset = ReadI32(buffer, Offsets.DosStub.PESignatureOffset);
             int sectionBase = peSignatureOffset + Offsets.PEHeaderSize +
                               (ushort)_reader.PEHeaders.CoffHeader.SizeOfOptionalHeader;
 
