@@ -322,27 +322,15 @@ namespace Microsoft.NET.HostModel
                             pointer => pointer >= trailingSectionVirtualStart ? pointer + virtualDelta : pointer);
                     }
 
-                    int dataDirectoriesOffset;
+                    int dataDirectoriesOffset = _reader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus
+                        ? peSignatureOffset + Offsets.PEHeader.PE64DataDirectories
+                        : peSignatureOffset + Offsets.PEHeader.PE32DataDirectories;
 
                     // fix header
-                    if (_reader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus)
-                    {
-                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.InitializedDataSize,
-                            size => size + delta);
-                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.SizeOfImage,
-                            size => size + virtualDelta);
-
-                        dataDirectoriesOffset = peSignatureOffset + Offsets.PEHeader.PE64DataDirectories;
-                    }
-                    else
-                    {
-                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.InitializedDataSize,
-                            size => size + delta);
-                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.SizeOfImage,
-                            size => size + virtualDelta);
-
-                        dataDirectoriesOffset = peSignatureOffset + Offsets.PEHeader.PE32DataDirectories;
-                    }
+                    ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.InitializedDataSize,
+                        size => size + delta);
+                    ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.SizeOfImage,
+                        size => size + virtualDelta);
 
                     if (needsMoveTrailingSections)
                     {
