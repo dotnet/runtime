@@ -727,8 +727,8 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_aot_start_session_or_sampling_thread)
     ep_rt_thread_params_t* thread_params = reinterpret_cast<ep_rt_thread_params_t *>(data);
 
     // We will create a new thread. cannot call ep_rt_aot_thread_get_handle since that will return null
-    extern ep_rt_thread_handle_t ep_rt_aot_thread_get_handle_for_streaming (void);
-    thread_params->thread = ep_rt_aot_thread_get_handle_for_streaming ();
+    extern ep_rt_thread_handle_t ep_rt_aot_setup_thread (void);
+    thread_params->thread = ep_rt_aot_setup_thread ();
 
     size_t result = thread_params->thread_func (thread_params);
     delete thread_params;

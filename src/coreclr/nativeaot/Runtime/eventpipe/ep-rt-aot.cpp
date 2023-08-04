@@ -834,7 +834,7 @@ ep_rt_thread_handle_t ep_rt_aot_thread_get_handle (void)
     return ThreadStore::GetCurrentThreadIfAvailable();
 }
 
-ep_rt_thread_handle_t ep_rt_aot_thread_get_handle_for_streaming (void)
+ep_rt_thread_handle_t ep_rt_aot_setup_thread (void)
 {
     // This is expensive but need a valid thread that will only be used by EventPipe
     ThreadStore::AttachCurrentThread();
@@ -848,7 +848,7 @@ ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)
 
 bool ep_rt_aot_thread_has_started (ep_rt_thread_handle_t thread_handle)
 {
-    return thread_handle != NULL && thread_handle->IsInitialized ();
+    return thread_handle != NULL;
 }
 
 #ifdef EP_CHECKED_BUILD
