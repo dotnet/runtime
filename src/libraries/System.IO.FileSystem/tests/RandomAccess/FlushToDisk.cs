@@ -98,5 +98,26 @@ namespace System.IO.Tests
                 RandomAccess.FlushToDisk(handle);
             }
         }
+
+        [Fact]
+        public void CanFlushFileOpenedForReading()
+        {
+            string testFilePath = GetTestFilePath();
+
+            const int FileByteCount = 100;
+            File.WriteAllBytes(testFilePath, RandomNumberGenerator.GetBytes(FileByteCount));
+
+            using (SafeFileHandle handle = File.OpenHandle(testFilePath, FileMode.Open, FileAccess.Read))
+            {
+                // On non-Windows platforms (notably Unix), flushing a file opened for reading should succeed.
+                // On Windows, the FlushFileBuffers() function does not work with files opened for reading and
+                // would return an error. However, we ignore that error to harmonize the behavior across platforms
+                // so ultimately, flushing a file opened for reading should not throw an exception on any platform.
+                RandomAccess.FlushToDisk(handle);
+
+                // The file length should be unchanged after flushing (we did not write anything else to the file).
+                Assert.Equal(FileByteCount, RandomAccess.GetLength(handle));
+            }
+        }
     }
 }

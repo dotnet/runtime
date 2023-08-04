@@ -87,7 +87,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="FileStream\ctor_options.Unix.cs" />
     <Compile Include="Directory\CreateDirectory_UnixFileMode.Unix.cs" />
-    <Compile Include="RandomAccess\FlushToDisk.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="Directory\Delete.Windows.cs" />
@@ -97,7 +96,6 @@
     <Compile Include="FileStream\ctor_options.Windows.cs" />
     <Compile Include="FileStream\FileStreamConformanceTests.Windows.cs" />
     <Compile Include="Junctions.Windows.cs" />
-    <Compile Include="RandomAccess\FlushToDisk.Windows.cs" />
     <Compile Include="RandomAccess\Mixed.Windows.cs" />
     <Compile Include="RandomAccess\NoBuffering.Windows.cs" />
     <Compile Include="RandomAccess\SectorAlignedMemory.Windows.cs" />

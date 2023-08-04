@@ -258,9 +258,6 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
-        /// <exception cref="T:System.UnauthorizedAccessException">
-        /// <paramref name="handle" /> was not opened for writing (on Windows).
-        /// </exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>
         /// <para>
