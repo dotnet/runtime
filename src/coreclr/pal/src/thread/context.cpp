@@ -495,7 +495,7 @@ CONTEXT_GetThreadContext(
             ERROR("GetThreadContext on a thread other than the current "
                   "thread is returning TRUE\n");
             flags = lpContext->ContextFlags;
-            memset(lpContext, 0, sizeof(*lpContext));
+            new (lpContext) CONTEXT();
             lpContext->ContextFlags = flags;
             ret = TRUE;
             goto EXIT;
