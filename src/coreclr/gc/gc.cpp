@@ -16692,6 +16692,41 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
     // - ephemeral_heap_segment may change due to other threads allocating
     heap_segment* gen0_segment = ephemeral_heap_segment;
 
+#ifdef BACKGROUND_GC
+    {
+        if (uoh_p && gc_heap::background_running_p())
+        {
+            uint8_t* obj = acontext->alloc_ptr;
+            uint8_t* result = obj;
+            uint8_t* current_lowest_address = background_saved_lowest_address;
+            uint8_t* current_highest_address = background_saved_highest_address;
+
+            if (current_c_gc_state == c_gc_state_planning)
+            {
+                dprintf (3, ("Concurrent allocation of a large object %zx",
+                            (size_t)obj));
+                //mark the new block specially so we know it is a new object
+                if ((result < current_highest_address) && (result >= current_lowest_address))
+                {
+#ifdef DOUBLY_LINKED_FL
+                    heap_segment* seg = seg_mapping_table_segment_of (result);
+                    // if bgc_allocated is 0 it means it was allocated during bgc sweep,
+                    // and since sweep does not look at this seg we cannot set the mark array bit.
+                    uint8_t* background_allocated = heap_segment_background_allocated(seg);
+                    if (background_allocated != 0)
+#endif //DOUBLY_LINKED_FL
+                    {
+                        dprintf(3, ("Setting mark bit at address %zx",
+                            (size_t)(&mark_array[mark_word_of(result)])));
+
+                        mark_array_set_marked(result);
+                    }
+                }
+            }
+        }
+    }
+#endif //BACKGROUND_GC
+
     // check if space to clear is all dirty from prior use or only partially
     if ((seg == 0) || (clear_limit <= heap_segment_used (seg)))
     {
@@ -44558,37 +44593,6 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
     alloc_bytes += size;
 
     CObjectHeader* obj = (CObjectHeader*)result;
-
-#ifdef BACKGROUND_GC
-    if (gc_heap::background_running_p())
-    {
-        uint8_t* current_lowest_address = background_saved_lowest_address;
-        uint8_t* current_highest_address = background_saved_highest_address;
-
-        if (current_c_gc_state == c_gc_state_planning)
-        {
-            dprintf (3, ("Concurrent allocation of a large object %zx",
-                        (size_t)obj));
-            //mark the new block specially so we know it is a new object
-            if ((result < current_highest_address) && (result >= current_lowest_address))
-            {
-#ifdef DOUBLY_LINKED_FL
-                heap_segment* seg = seg_mapping_table_segment_of (result);
-                // if bgc_allocated is 0 it means it was allocated during bgc sweep,
-                // and since sweep does not look at this seg we cannot set the mark array bit.
-                uint8_t* background_allocated = heap_segment_background_allocated(seg);
-                if (background_allocated != 0)
-#endif //DOUBLY_LINKED_FL
-                {
-                    dprintf(3, ("Setting mark bit at address %zx",
-                        (size_t)(&mark_array[mark_word_of(result)])));
-
-                    mark_array_set_marked(result);
-                }
-            }
-        }
-    }
-#endif //BACKGROUND_GC
 
     assert (obj != 0);
     assert ((size_t)obj == Align ((size_t)obj, align_const));
