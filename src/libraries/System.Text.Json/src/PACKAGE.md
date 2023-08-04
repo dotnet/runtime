@@ -4,6 +4,14 @@
 
 Provides high-performance and low-allocating types that serialize objects to JavaScript Object Notation (JSON) text and deserialize JSON text to objects, with UTF-8 support built-in. Also provides types to read and write JSON text encoded as UTF-8, and to create an in-memory document object model (DOM), that is read-only, for random access of the JSON elements within a structured view of the data.
 
+## Key Features
+
+* High-performance reader and writer types for UTF-8 encoded JSON.
+* A fully-featured JSON serializer for .NET types using reflection or source generated contracts.
+* A high-performance read-only JSON DOM (JsonDocument) and a mutable DOM that interoperates with the serializer (JsonNode).
+* Built-in support for async serialization, including IAsyncEnumerable support.
+* Fully customizable contract model for serializable types.
+
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
@@ -212,10 +220,6 @@ while (reader.Read())
 // EndObject
 ```
 
-## Key Features
-
-<!-- The key features of this package -->
-
 TODO
 
 ## Main Types
@@ -224,12 +228,13 @@ TODO
 
 The main types provided by this library are:
 
-* `System.Text.Json.JsonSerializer`
-* `System.Text.Json.JsonDocument`
-* `System.Text.Json.JsonElement`
-* `System.Text.Json.Nodes.JsonNode`
 * `System.Text.Json.Utf8JsonWriter`
 * `System.Text.Json.Utf8JsonReader`
+* `System.Text.Json.JsonSerializer`
+* `System.Text.Json.JsonConverter`
+* `System.Text.Json.JsonDocument`
+* `System.Text.Json.Nodes.JsonNode`
+* `System.Text.Json.Serialization.Metadata.JsonTypeInfo`
 
 ## Addtional Documentation
 
