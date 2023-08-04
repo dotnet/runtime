@@ -58,10 +58,10 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
 {
     NSString *locName = [NSString stringWithFormat:@"%s", localeName];
     NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-    const char* resultString = NULL;
 
     NSString *calendarIdentifier = GetCalendarIdentifier(calendarId);
     NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:calendarIdentifier];
+
     NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
     dateFormat.locale = currentLocale;
     dateFormat.calendar = calendar;
@@ -143,7 +143,7 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
         }
         default:
             assert(false);
-            return resultString;
+            return NULL;
     }
 }
 #endif
