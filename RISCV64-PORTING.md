@@ -14,6 +14,11 @@
  - [branches-quickstart](https://github.com/dotnet/samples/tree/main/csharp/branches-quickstart)
  - [delegates-and-events](https://github.com/dotnet/samples/tree/main/csharp/delegates-and-events)
  - [events](https://github.com/dotnet/samples/tree/main/csharp/events)
+ - [expression-trees](https://github.com/dotnet/samples/tree/main/csharp/expression-trees)
+ - [indexers](https://github.com/dotnet/samples/tree/main/csharp/indexers)
+ - [iterators](https://github.com/dotnet/samples/tree/main/csharp/iterators)
+ - [list-quickstart](https://github.com/dotnet/samples/tree/main/csharp/list-quickstart)
+ - [NullableIntroduction](https://github.com/dotnet/samples/tree/main/csharp/NullableIntroduction)
 
 ## Got Error:
  - [console-webapiclient](https://github.com/dotnet/samples/tree/main/csharp/getting-started/console-webapiclient): Crashed because Multi Thread
