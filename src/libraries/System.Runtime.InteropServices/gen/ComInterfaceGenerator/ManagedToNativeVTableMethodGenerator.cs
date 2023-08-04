@@ -171,6 +171,8 @@ namespace Microsoft.Interop
             }
             tryStatements.Add(statements.Pin.CastArray<FixedStatementSyntax>().NestFixedStatements(fixedBlock));
 
+            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+
             // <invokeSucceeded> = true;
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
@@ -178,8 +180,6 @@ namespace Microsoft.Interop
                     IdentifierName(InvokeSucceededIdentifier),
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))));
             }
-
-            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
 
             // Keep the this object alive across the native call, similar to how we handle marshalling managed delegates.
             // We do this right after the NotifyForSuccessfulInvoke phase as that phase is where the delegate objects are kept alive.

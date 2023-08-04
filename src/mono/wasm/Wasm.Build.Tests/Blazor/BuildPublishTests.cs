@@ -94,7 +94,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Fact]
     public void BugRegression_60479_WithRazorClassLib()
     {
-        string id = $"blz_razor_lib_top_{Path.GetRandomFileName()}";
+        string id = $"blz_razor_lib_top_{GetRandomId()}";
         InitBlazorWasmProjectDir(id);
 
         string wasmProjectDir = Path.Combine(_projectDir!, "wasm");
@@ -115,7 +115,7 @@ public class BuildPublishTests : BlazorWasmTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{ProjectProviderBase.WebcilInWasmExtension}" : "RazorClassLibrary.dll";
+        string razorClassLibraryFileName = $"RazorClassLibrary{ProjectProviderBase.WasmAssemblyExtension}";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
             <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileName}"" />

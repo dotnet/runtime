@@ -21,6 +21,8 @@ namespace ComInterfaceGenerator.Tests
             return ifaceObject;
         }
 
+        static bool SystemFindsComCalleeException() => PlatformDetection.IsWindows && PlatformDetection.IsNotNativeAot;
+
         [Fact]
         public void IInt()
         {
@@ -186,6 +188,7 @@ namespace ComInterfaceGenerator.Tests
         public void IStringArrayMarshallingFails()
         {
             var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
+            var hrException = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
 
             var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
 
@@ -206,35 +209,11 @@ namespace ComInterfaceGenerator.Tests
             {
                 obj.ByValueInOutParam(strings);
             });
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
-        public void IStringArrayMarshallingFailsOutWindows()
-        {
-            var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
-            var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
-            // This will fail in the native side and throw for HR on the managed to unmanaged stub. In Windows environments, this is will unwrap the exception.
-            Assert.Throws<MarshallingFailureException>(() =>
+            Assert.Throws(hrException, () =>
             {
                 obj.OutParam(out strings);
             });
-            Assert.Throws<MarshallingFailureException>(() =>
-            {
-                _ = obj.ReturnValue();
-            });
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
-        public void IStringArrayMarshallingFailsOutNonWindows()
-        {
-            var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
-            var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
-            // This will fail in the native side and throw for HR on the managed to unmanaged stub. In non-Windows environments, this is a plain Exception.
-            Assert.Throws<Exception>(() =>
-            {
-                obj.OutParam(out strings);
-            });
-            Assert.Throws<Exception>(() =>
+            Assert.Throws(hrException, () =>
             {
                 _ = obj.ReturnValue();
             });

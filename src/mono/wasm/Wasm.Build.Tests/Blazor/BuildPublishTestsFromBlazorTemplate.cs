@@ -27,7 +27,7 @@ public class BuildPublishTestsFromBlazorTemplate : BlazorWasmTestBase
     [InlineData("Release")]
     public async Task DefaultTemplate_WithoutWorkload(string config)
     {
-        string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
+        string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config));
@@ -45,8 +45,8 @@ public class BuildPublishTestsFromBlazorTemplate : BlazorWasmTestBase
         // disable relinking tests for Unicode: github.com/emscripten-core/emscripten/issues/17817
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
         string id = config == "Release" ?
-            $"blz_no_aot_{config}_{Path.GetRandomFileName()}" :
-            $"blz_no_aot_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
+            $"blz_no_aot_{config}_{GetRandomId()}" :
+            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
@@ -68,7 +68,7 @@ public class BuildPublishTestsFromBlazorTemplate : BlazorWasmTestBase
     [InlineData("Release", true)]
     public void DefaultTemplate_CheckFingerprinting(string config, bool expectFingerprintOnDotnetJs)
     {
-        string id = $"blz_checkfingerprinting_{config}_{Path.GetRandomFileName()}";
+        string id = $"blz_checkfingerprinting_{config}_{GetRandomId()}";
 
         CreateBlazorWasmTemplateProject(id);
 

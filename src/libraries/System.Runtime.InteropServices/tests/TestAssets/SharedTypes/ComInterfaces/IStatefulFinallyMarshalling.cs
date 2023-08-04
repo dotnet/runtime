@@ -56,33 +56,79 @@ namespace SharedTypes.ComInterfaces
         public int i;
     }
 
-    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.Default, typeof(StatefulFinallyTypeMarshaller))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.UnmanagedToManagedOut, typeof(ManagedToUnmanaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.ManagedToUnmanagedOut, typeof(UnmanagedToManaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.UnmanagedToManagedIn, typeof(UnmanagedToManaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.UnmanagedToManagedRef, typeof(Bidirectional))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.ManagedToUnmanagedRef, typeof(Bidirectional))]
     internal struct StatefulFinallyTypeMarshaller
     {
-        int managed_i;
-        int unmanaged_i;
-        public void FromManaged(StatefulFinallyType managed)
+        internal struct Bidirectional
         {
-            managed_i = managed.i;
+            int managed_i;
+            int unmanaged_i;
+
+            public void FromManaged(StatefulFinallyType managed)
+            {
+                managed_i = managed.i;
+            }
+
+            public StatefulFinallyNative ToUnmanaged()
+            {
+                return new StatefulFinallyNative() { i = this.managed_i };
+            }
+
+            public void FromUnmanaged(StatefulFinallyNative unmanaged)
+            {
+                unmanaged_i = unmanaged.i;
+            }
+
+            public StatefulFinallyType ToManagedFinally()
+            {
+                return new StatefulFinallyType() { i = unmanaged_i };
+            }
+
+            public void Free() { }
+
+            public void OnInvoked() { }
         }
 
-        public StatefulFinallyNative ToUnmanaged()
+        internal struct ManagedToUnmanaged
         {
-            return new StatefulFinallyNative() { i = this.managed_i };
+            int managed_i;
+
+            public void FromManaged(StatefulFinallyType managed)
+            {
+                managed_i = managed.i;
+            }
+
+            public StatefulFinallyNative ToUnmanaged()
+            {
+                return new StatefulFinallyNative() { i = this.managed_i };
+            }
+
+            public void Free() { }
+
+            public void OnInvoked() { }
         }
 
-        public void FromUnmanaged(StatefulFinallyNative unmanaged)
+        internal struct UnmanagedToManaged
         {
-            unmanaged_i = unmanaged.i;
-        }
+            int unmanaged_i;
 
-        public StatefulFinallyType ToManagedFinally()
-        {
-            return new StatefulFinallyType() { i = unmanaged_i };
-        }
+            public void FromUnmanaged(StatefulFinallyNative unmanaged)
+            {
+                unmanaged_i = unmanaged.i;
+            }
+            public StatefulFinallyType ToManagedFinally()
+            {
+                return new StatefulFinallyType() { i = unmanaged_i };
+            }
 
-        public void Free()
-        {
+            public void Free() { }
+
+            public void OnInvoked() { }
         }
     }
 }

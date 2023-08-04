@@ -2205,7 +2205,7 @@ namespace System.Net.Http
 
         [DoesNotReturn]
         private static void ThrowRetry(string message, Exception? innerException = null) =>
-            throw new HttpRequestException(HttpRequestError.Unknown, message, innerException, RequestRetryType.RetryOnConnectionFailure);
+            throw new HttpRequestException((innerException as HttpIOException)?.HttpRequestError ?? HttpRequestError.Unknown, message, innerException, RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
             innerException as HttpIOException ?? new IOException(SR.net_http_request_aborted, innerException);
