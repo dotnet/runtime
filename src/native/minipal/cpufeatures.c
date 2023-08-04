@@ -28,7 +28,7 @@
 #ifndef HWCAP_LRCPC
 #define HWCAP_LRCPC     (1 << 15)
 #endif
-#ifdef HWCAP_ASIMDDP
+#ifndef HWCAP_ASIMDDP
 #define HWCAP_ASIMDDP   (1 << 20)
 #endif
 
