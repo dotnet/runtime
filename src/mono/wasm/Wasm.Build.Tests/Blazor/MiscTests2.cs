@@ -51,7 +51,7 @@ public class MiscTests2 : BlazorWasmTestBase
 
     private CommandResult PublishForRequiresWorkloadTest(string config, string extraItems="", string extraProperties="")
     {
-        string id = $"needs_workload_{config}_{Path.GetRandomFileName()}";
+        string id = $"needs_workload_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
         AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
