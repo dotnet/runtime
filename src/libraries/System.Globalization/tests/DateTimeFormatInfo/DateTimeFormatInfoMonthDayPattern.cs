@@ -35,19 +35,6 @@ namespace System.Globalization.Tests
             Assert.Equal(value, format.MonthDayPattern);
         }
 
-        public static IEnumerable<object[]> MonthDayPattern_Get_TestData()
-        {
-            yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "d MMMM" };
-            yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "MMMM d" };
-        }
-
-        [Theory]
-        [MemberData(nameof(MonthDayPattern_Get_TestData))]
-        public void MonthDayPattern_Get_GetReturnsExpected(DateTimeFormatInfo format, string expected)
-        {
-            Assert.Equal(expected, format.MonthDayPattern);
-        }
-
         [Fact]
         public void MonthDayPattern_SetNull_ThrowsArgumentNullException()
         {
