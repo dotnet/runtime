@@ -101,7 +101,7 @@ namespace System.Buffers
                     int offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default>(
                         ref Unsafe.As<char, short>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), i)),
                         remainingLength,
-                        ref Unsafe.AsRef(_startingCharsAsciiBitmap));
+                        ref Unsafe.AsRef(in _startingCharsAsciiBitmap));
 
                     if (offset < 0)
                     {
@@ -210,7 +210,7 @@ namespace System.Buffers
                     int offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default>(
                         ref Unsafe.As<char, short>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), i)),
                         remainingLength,
-                        ref Unsafe.AsRef(_startingCharsAsciiBitmap));
+                        ref Unsafe.AsRef(in _startingCharsAsciiBitmap));
 
                     if (offset < 0)
                     {

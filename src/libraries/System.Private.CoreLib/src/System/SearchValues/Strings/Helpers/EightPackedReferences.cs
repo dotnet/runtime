@@ -7,10 +7,10 @@ using System.Runtime.CompilerServices;
 namespace System.Buffers
 {
     [InlineArray(8)]
-    internal readonly struct EightPackedReferences
+    internal struct EightPackedReferences
     {
 #pragma warning disable CA1823 // Unused field -- https://github.com/dotnet/roslyn-analyzers/issues/6788
-        private readonly object? _ref0;
+        private object? _ref0;
 #pragma warning restore CA1823
 
         public EightPackedReferences(ReadOnlySpan<object> values)

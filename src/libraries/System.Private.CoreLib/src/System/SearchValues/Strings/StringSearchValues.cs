@@ -34,7 +34,7 @@ namespace System.Buffers
                 ArgumentNullException.ThrowIfNull(value, nameof(values));
                 string normalizedValue = NormalizeIfNeeded(value, ignoreCase);
 
-                AnalyzeValues(new ReadOnlySpan<string>(normalizedValue), ref ignoreCase, out bool ascii, out bool asciiLettersOnly, out _, out _);
+                AnalyzeValues(new ReadOnlySpan<string>(ref normalizedValue), ref ignoreCase, out bool ascii, out bool asciiLettersOnly, out _, out _);
                 return CreateForSingleValue(normalizedValue, uniqueValues: null, ignoreCase, ascii, asciiLettersOnly);
             }
 
