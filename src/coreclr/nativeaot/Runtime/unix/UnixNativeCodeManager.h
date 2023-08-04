@@ -63,8 +63,6 @@ public:
 
     bool IsUnwindable(PTR_VOID pvAddress);
 
-    int IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
-
     int TrailingEpilogueInstructionsCount(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
