@@ -2346,11 +2346,19 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 	MonoClass *klass = cmethod->klass;
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
-	gboolean supported = TRUE;
+	gboolean is_primitive_element_type = MONO_TYPE_IS_VECTOR_PRIMITIVE (etype);
 
-	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+	// special case SN_get_IsSupported intrinsic which verifies whether a type parameter T is supported for a generic vector
+	if (id == SN_get_IsSupported) {
+		MonoInst *ins = NULL;
+		EMIT_NEW_ICONST (cfg, ins, is_primitive_element_type ? 1 : 0);
+		return ins;
+	}
+
+	if (!is_primitive_element_type)
 		return NULL;
 
+	gboolean supported = TRUE;
 	int size = mono_class_value_size (klass, NULL);
 	int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 	g_assert (size > 0);
@@ -2382,16 +2390,6 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		supported = FALSE;
 #endif
 #endif
-
-	switch (id) {
-	case SN_get_IsSupported: {
-		MonoInst *ins = NULL;
-		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
-		return ins;
-	}
-	default:
-		break;
-	}
 
 	if (!supported)
 		return NULL;
