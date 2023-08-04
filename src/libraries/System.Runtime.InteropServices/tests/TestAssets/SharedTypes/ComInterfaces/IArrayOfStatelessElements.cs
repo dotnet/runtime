@@ -17,7 +17,7 @@ namespace SharedTypes.ComInterfaces
         void MethodOut([MarshalUsing(CountElementName = nameof(size))] out StatelessType[] param, int size);
         void MethodRef([MarshalUsing(CountElementName = nameof(size))] ref StatelessType[] param, int size);
         void MethodContentsIn([MarshalUsing(CountElementName = nameof(size))][In] StatelessType[] param, int size);
-        void MethodContentsOut([MarshalUsing(CountElementName = nameof(size))][Out] StatelessType[] paramya, int size);
+        void MethodContentsOut([MarshalUsing(CountElementName = nameof(size))][Out] StatelessType[] param, int size);
         void MethodContentsInOut([MarshalUsing(CountElementName = nameof(size))][In, Out] StatelessType[] param, int size);
     }
 
@@ -80,7 +80,7 @@ namespace SharedTypes.ComInterfaces
         public void Method(StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
         public void MethodContentsIn(StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
         public void MethodContentsInOut(StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
-        public void MethodContentsOut(StatelessType[] paramya, int size) => throw new ManagedComMethodFailureException();
+        public void MethodContentsOut(StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
         public void MethodIn(in StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
         public void MethodOut(out StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
         public void MethodRef(ref StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
