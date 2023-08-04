@@ -17,8 +17,8 @@ namespace System.Globalization
 
             this.sNativeName = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.NativeName);
             this.sMonthDay = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.MonthDay);
-            this.saShortDates = new string [] { GetCalendarInfoNative(localeName, calendarId, CalendarDataType.ShortDates) };
-            this.saLongDates = new string [] { GetCalendarInfoNative(localeName, calendarId, CalendarDataType.LongDates) };
+            this.saShortDates = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.ShortDates).Split("||");
+            this.saLongDates = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.LongDates).Split("||");
             this.saYearMonths = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.YearMonths).Split("||");
             this.saDayNames = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.DayNames).Split("||");
             this.saAbbrevDayNames = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.AbbrevDayNames).Split("||");

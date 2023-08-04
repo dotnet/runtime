@@ -77,15 +77,24 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
         }
         case CalendarData_ShortDates:
         {
-            [dateFormat setDateStyle:NSDateFormatterShortStyle]; // also NSDateFormatterMediumStyle ? and 'y', 'M', 'd'
+            [dateFormat setDateStyle:NSDateFormatterShortStyle];
             NSString *shortFormatString = [dateFormat dateFormat];
-            return shortFormatString ? strdup([shortFormatString UTF8String]) : NULL;
+            [dateFormat setDateStyle:NSDateFormatterMediumStyle];
+            NSString *mediumFormatString = [dateFormat dateFormat];
+            NSString *yearMonthDayFormat = [NSDateFormatter dateFormatFromTemplate:@"yMd" options:0 locale:currentLocale];
+            NSArray *shortDates = @[shortFormatString, mediumFormatString, yearMonthDayFormat];
+            NSString *shortDatesString = [[shortDates valueForKey:@"description"] componentsJoinedByString:@"||"];
+            return shortDatesString ? strdup([shortDatesString UTF8String]) : NULL;
         }
         case CalendarData_LongDates:
         {
-            [dateFormat setDateStyle:NSDateFormatterLongStyle]; // also NSDateFormatterFullStyle ?
+            [dateFormat setDateStyle:NSDateFormatterLongStyle];
             NSString *longFormatString = [dateFormat dateFormat];
-            return longFormatString ? strdup([longFormatString UTF8String]) : NULL;
+            [dateFormat setDateStyle:NSDateFormatterFullStyle];
+            NSString *fullFormatString = [dateFormat dateFormat];
+            NSArray *longDates = @[longFormatString, fullFormatString];
+            NSString *longDatesString = [[longDates valueForKey:@"description"] componentsJoinedByString:@"||"];
+            return longDatesString ? strdup([longDatesString UTF8String]) : NULL;
         }
         case CalendarData_YearMonths:
         {
