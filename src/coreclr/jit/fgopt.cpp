@@ -7039,3 +7039,310 @@ PhaseStatus Compiler::fgTailMerge()
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
+
+//------------------------------------------------------------------------
+// fgTailDuplicate: duplicate sequences of statements in block predecessors
+//
+// Returns:
+//   Suitable phase status.
+//
+// Notes:
+//   Looks for cases where moving statements from a block to its predecessor
+//   is likely to result in greatly simplified computations.
+//
+//   Similar in spirit to fgOptimizeUncondBranchToSimpleCond but more general
+//   as it considers a wider set of computations (not just relops feeding branches).
+//
+//   Ideally we'd do this with SSA available, but our inability to handle
+//   side effects and to update SSA makes that too challenging.
+//
+PhaseStatus Compiler::fgTailDuplicate()
+{
+    bool madeChanges = false;
+
+    const bool isEnabled = JitConfig.JitEnableTailDuplication() > 0;
+    if (!isEnabled)
+    {
+        JITDUMP("Tail duplication disabled by JitEnableTailDuplication\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Must be run when local threading is enabled...
+    //
+    assert(fgNodeThreading == NodeThreading::AllLocals);
+
+    // Visit each block
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        madeChanges |= fgTailDuplicateBlock(block);
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+bool Compiler::fgTailDuplicateBlock(BasicBlock* const block)
+{
+    // We only consider blocks with muliple preds without
+    // any critical edges.
+    //
+    // We could handle critical edges by splitting.
+    //
+    unsigned numPreds = 0;
+
+    for (BasicBlock* const predBlock : block->PredBlocks())
+    {
+        if (predBlock->GetUniqueSucc() != block)
+        {
+            // critical edge
+            return false;
+        }
+
+        numPreds++;
+    }
+
+    if (numPreds < 2)
+    {
+        return false;
+    }
+
+    if (block->bbJumpKind == BBJ_RETURN)
+    {
+        if (!compMethodHasRetVal())
+        {
+            return false;
+        }
+
+        if (compMethodReturnsRetBufAddr())
+        {
+            return false;
+        }
+
+        if (genActualType(info.compRetType) == TYP_STRUCT)
+        {
+            return false;
+        }
+    }
+
+    JITDUMP("Considering tail dup in " FMT_BB ": has %u preds\n", block->bbNum, numPreds);
+
+    bool madeChanges = false;
+
+    // Walk statements from first.
+    //
+    Statement* const lastStmt = block->lastStmt();
+    for (Statement* stmt : block->Statements())
+    {
+        unsigned numLocal        = 0;
+        unsigned numAllConstant  = 0;
+        unsigned numSomeConstant = 0;
+        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+        {
+            if (lcl->OperIsLocalStore())
+            {
+                continue;
+            }
+
+            JITDUMP("\nchecking [%06u]\n", dspTreeID(lcl));
+            numLocal++;
+            unsigned numConstantThisLocal = 0;
+            for (BasicBlock* const predBlock : block->PredBlocks())
+            {
+                // todo: possibly memoize this if we have repeated uses
+                // of the same local in this or across statements.
+                //
+                if (fgLocalIsConstantOut(lcl, predBlock))
+                {
+                    numConstantThisLocal++;
+                }
+            }
+
+            if (numConstantThisLocal == numPreds)
+            {
+                numAllConstant++;
+            }
+            else if (numConstantThisLocal > 0)
+            {
+                numSomeConstant++;
+            }
+        }
+
+        if (numLocal == 0)
+        {
+            // Todo: consider allowing reordering stmts...
+            break;
+        }
+
+        if (numAllConstant == numLocal)
+        {
+            // todo: cost checks... (heuristic)
+            JITDUMP("All %u locals are constant in all preds, duplicating " FMT_STMT "\n", numLocal, stmt->GetID());
+
+            // If stmt is GT_RETURN, we need to spill to a new temp, and then dup the spill.
+            //
+            bool deleteStmt = true;
+
+            if (stmt->GetRootNode()->OperIs(GT_RETURN))
+            {
+                assert(compMethodHasRetVal());
+                GenTree* const  retNode    = stmt->GetRootNode();
+                GenTree* const  retVal     = retNode->AsOp()->gtOp1;
+                unsigned const  retLclNum  = lvaGrabTemp(true DEBUGARG("Tail dup return value temp"));
+                var_types const retLclType = info.compRetType;
+
+                lvaGetDesc(retLclNum)->lvType = retLclType;
+                GenTree* const retTemp        = gtNewLclvNode(retLclNum, retLclType);
+                retTemp->gtFlags |= GTF_DONT_CSE;
+                retNode->AsOp()->gtOp1 = retTemp;
+                fgSequenceLocals(stmt);
+                gtUpdateStmtSideEffects(stmt);
+
+                GenTree* const retStore = gtNewTempStore(retLclNum, retVal);
+                stmt                    = gtNewStmt(retStore);
+                fgSequenceLocals(stmt);
+                deleteStmt = false;
+            }
+
+            for (BasicBlock* const predBlock : block->PredBlocks())
+            {
+                GenTree* const clone = gtCloneExpr(stmt->GetRootNode());
+                noway_assert(clone);
+                Statement* const cloneStmt = gtNewStmt(clone);
+                fgInsertStmtAtEnd(predBlock, cloneStmt);
+                fgSequenceLocals(cloneStmt);
+                madeChanges = true;
+
+                for (GenTreeLclVarCommon* clonedLcl : cloneStmt->LocalsTreeList())
+                {
+                    LclVarDsc* const clonedLclVarDsc = lvaGetDesc(clonedLcl);
+                    clonedLclVarDsc->incLvRefCntSaturating(1, RCS_EARLY);
+                }
+            }
+
+            if (deleteStmt)
+            {
+                for (GenTreeLclVarCommon* origLcl : stmt->LocalsTreeList())
+                {
+                    LclVarDsc* const origLclVarDsc = lvaGetDesc(origLcl);
+                    unsigned short   refCnt        = origLclVarDsc->lvRefCnt(RCS_EARLY);
+                    assert(refCnt > 0);
+                    origLclVarDsc->setLvRefCnt(refCnt - 1, RCS_EARLY);
+                }
+
+                fgRemoveStmt(block, stmt);
+            }
+            else
+            {
+                break;
+            }
+        }
+        else if (numAllConstant > 0)
+        {
+            // Could handle this case with a more stringent cost check
+            JITDUMP("%u of the %u locals are constant in all preds\n", numAllConstant, numLocal);
+            break;
+        }
+        else if (numSomeConstant > 0)
+        {
+            // Could handle this case with an even more stringent cost check
+            JITDUMP("%u of the %u locals are constant in some preds\n", numSomeConstant, numLocal);
+            break;
+        }
+
+        if (stmt == lastStmt)
+        {
+            break;
+        }
+    }
+
+    return madeChanges;
+}
+
+// very similar to fgBlockEndFavorsTailDuplication
+bool Compiler::fgLocalIsConstantOut(GenTreeLclVarCommon* lcl, BasicBlock* const block)
+{
+    // const unsigned lclNum = lcl->GetLclNum();
+
+    // If the local is address exposed, we currently can't optimize....?
+    //
+    // LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+
+    // if (lclDsc->IsAddressExposed())
+    //{
+    // return false;
+    // }
+
+    Statement* const lastStmt  = block->lastStmt();
+    Statement* const firstStmt = block->FirstNonPhiDef();
+
+    if (lastStmt != nullptr)
+    {
+        // Check up to N statements...
+        //
+        const int  limit = 10;
+        int        count = 0;
+        Statement* stmt  = lastStmt;
+
+        while (count < limit)
+        {
+            count++;
+
+            if ((stmt->GetRootNode()->gtFlags & GTF_ASG) != 0)
+            {
+                JITDUMP("Checking " FMT_STMT " for constant def of V%02u\n", stmt->GetID(), lcl->GetLclNum());
+
+                for (GenTreeLclVarCommon* tree : stmt->LocalsTreeList())
+                {
+                    if (tree->OperIsLocalStore() && !tree->OperIsBlkOp() && (tree->GetLclNum() == lcl->GetLclNum()))
+                    {
+                        GenTree* const data = tree->Data();
+                        if (data->OperIsConst() || data->OperIs(GT_LCL_ADDR))
+                        {
+                            JITDUMP("[%06u] constant\n", dspTreeID(data));
+                            return true;
+                        }
+                        else if (data->OperIsLocal())
+                        {
+                            lcl = data->AsLclVarCommon();
+                            JITDUMP("Chaining to new local V%02u\n", lcl->GetLclNum());
+                        }
+                        else
+                        {
+                            JITDUMP("[%06u] not constant or local\n", dspTreeID(data));
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            Statement* const prevStmt = stmt->GetPrevStmt();
+
+            // The statement list prev links wrap from first->last, so exit
+            // when we see lastStmt again, as we've now seen all statements.
+            //
+            if (prevStmt == lastStmt)
+            {
+                break;
+            }
+
+            stmt = prevStmt;
+        }
+
+        if (count == limit)
+        {
+            return false;
+        }
+    }
+
+    BasicBlock* const pred = block->GetUniquePred(this);
+
+    // Walk back in flow...(maybe pass count back...?)
+    //
+    if (pred != nullptr)
+    {
+        JITDUMP("Chaining back to " FMT_BB "\n", pred->bbNum);
+        return fgLocalIsConstantOut(lcl, pred);
+    }
+
+    return false;
+}

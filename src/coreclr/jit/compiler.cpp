@@ -4746,6 +4746,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
+    // Tail duplication
+    DoPhase(this, PHASE_TAIL_DUP, &Compiler::fgTailDuplicate);
+
     // Do an early pass of liveness for forward sub and morph. This data is
     // valid until after morph.
     //

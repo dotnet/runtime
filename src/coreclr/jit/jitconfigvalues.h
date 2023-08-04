@@ -624,6 +624,9 @@ CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
 // Enable tail merging
 CONFIG_INTEGER(JitEnableTailMerge, W("JitEnableTailMerge"), 1)
 
+// Enable tail duplication
+CONFIG_INTEGER(JitEnableTailDuplication, W("JitEnableTailDuplication"), 1)
+
 // Enable physical promotion
 CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 

@@ -5521,6 +5521,10 @@ public:
 
     PhaseStatus fgTailMerge();
 
+    PhaseStatus fgTailDuplicate();
+    bool fgTailDuplicateBlock(BasicBlock* const block);
+    bool fgLocalIsConstantOut(GenTreeLclVarCommon* lcl, BasicBlock* const block);
+
     enum FG_RELOCATE_TYPE
     {
         FG_RELOCATE_TRY,    // relocate the 'try' region
