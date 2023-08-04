@@ -939,7 +939,7 @@ RaiseException(IN DWORD dwExceptionCode,
     }
 
     // Capture the context of RaiseException.
-    ZeroMemory(contextRecord, sizeof(CONTEXT));
+    new (contextRecord) CONTEXT();
     contextRecord->ContextFlags = CONTEXT_FULL;
     CONTEXT_CaptureContext(contextRecord);
 

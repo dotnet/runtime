@@ -1898,7 +1898,7 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
     }
     else
     {
-        copySize = offsetof(CONTEXT, Ymm0H);
+        copySize = offsetof(CONTEXT, XStateFeaturesMask);
     }
 
     memcpy(this, &ctx, copySize);
