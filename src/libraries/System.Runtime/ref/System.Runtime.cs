@@ -13395,6 +13395,7 @@ namespace System.Runtime.InteropServices
         LoongArch64 = 6,
         Armv6 = 7,
         Ppc64le = 8,
+        RiscV64 = 9,
     }
     public enum CharSet
     {
