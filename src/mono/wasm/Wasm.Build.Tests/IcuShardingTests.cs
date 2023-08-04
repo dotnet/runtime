@@ -20,8 +20,8 @@ public class IcuShardingTests : IcuTestsBase
     public static IEnumerable<object?[]> IcuExpectedAndMissingCustomShardTestData(bool aot, RunHost host)
         => ConfigWithAOTData(aot)
             .Multiply(
-                new object[] { IcuTestsHelper.CustomIcuPath, CustomIcuTestedLocales, false },
-                new object[] { IcuTestsHelper.CustomIcuPath, CustomIcuTestedLocales, true })
+                new object[] { CustomIcuPath, CustomIcuTestedLocales, false },
+                new object[] { CustomIcuPath, CustomIcuTestedLocales, true })
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 

@@ -13,7 +13,7 @@ public abstract class IcuTestsBase : TestMainJsTestBase
     public IcuTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
-    public record SundayNames 
+    protected record SundayNames 
     {
         public static string English = "Sunday";
         public static string French = "dimanche";
@@ -23,31 +23,33 @@ public abstract class IcuTestsBase : TestMainJsTestBase
         public static string Slovak = "nedeľa";
     }
 
-    public readonly string CustomIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
+    protected string GetRandomNameWithoutDots => Path.GetRandomFileName().Replace(".", "");
 
-    private const string FallbackSundayNameEnUS = "Sunday";
+    public static readonly string CustomIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
 
-    public static readonly string CustomIcuTestedLocales = $@"new Locale[] {{
+    private const string _fallbackSundayNameEnUS = "Sunday";
+
+    protected static readonly string CustomIcuTestedLocales = $@"new Locale[] {{
         new Locale(""cy-GB"",  ""Dydd Sul""), new Locale(""is-IS"",  ""sunnudagur""), new Locale(""bs-BA"",  ""nedjelja""), new Locale(""lb-LU"",  ""Sonndeg""),
         new Locale(""fr-FR"", null), new Locale(""hr-HR"", null), new Locale(""ko-KR"", null)
     }}";
-    public static string GetEfigsTestedLocales(string fallbackSundayName=FallbackSundayNameEnUS) =>  $@"new Locale[] {{
+    protected static string GetEfigsTestedLocales(string fallbackSundayName=_fallbackSundayNameEnUS) =>  $@"new Locale[] {{
         new Locale(""en-US"", ""{SundayNames.English}""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""es-ES"", ""{SundayNames.Spanish}""),
         new Locale(""pl-PL"", ""{fallbackSundayName}""), new Locale(""ko-KR"", ""{fallbackSundayName}""), new Locale(""cs-CZ"", ""{fallbackSundayName}"")
     }}";
-    public static string GetCjkTestedLocales(string fallbackSundayName=FallbackSundayNameEnUS) =>  $@"new Locale[] {{
+    protected static string GetCjkTestedLocales(string fallbackSundayName=_fallbackSundayNameEnUS) =>  $@"new Locale[] {{
         new Locale(""en-GB"", ""{SundayNames.English}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}""), new Locale(""ja-JP"", ""{SundayNames.Japanese}""),
         new Locale(""fr-FR"", ""{fallbackSundayName}""), new Locale(""hr-HR"", ""{fallbackSundayName}""), new Locale(""it-IT"", ""{fallbackSundayName}"")
     }}";
-    public static string GetNocjkTestedLocales(string fallbackSundayName=FallbackSundayNameEnUS) =>  $@"new Locale[] {{
+    protected static string GetNocjkTestedLocales(string fallbackSundayName=_fallbackSundayNameEnUS) =>  $@"new Locale[] {{
         new Locale(""en-AU"", ""{SundayNames.English}""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""),
         new Locale(""ja-JP"", ""{fallbackSundayName}""), new Locale(""ko-KR"", ""{fallbackSundayName}""), new Locale(""zh-CN"", ""{fallbackSundayName}"")
     }}";
-    public static readonly string FullIcuTestedLocales = $@"new Locale[] {{
+    protected static readonly string s_fullIcuTestedLocales = $@"new Locale[] {{
         new Locale(""en-GB"", ""{SundayNames.English}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}"")
     }}";
 
-    public string GetProgramText(string testedLocales, bool onlyPredefinedCultures=false, string fallbackSundayName=FallbackSundayNameEnUS) => $@"
+    protected string GetProgramText(string testedLocales, bool onlyPredefinedCultures=false, string fallbackSundayName=_fallbackSundayNameEnUS) => $@"
         #nullable enable
 
         using System;
@@ -99,7 +101,7 @@ public abstract class IcuTestsBase : TestMainJsTestBase
         public record Locale(string Code, string? SundayName);
         ";
 
-    public void TestIcuShards(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id, bool onlyPredefinedCultures=false)
+    protected void TestIcuShards(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id, bool onlyPredefinedCultures=false)
     {
         string projectName = $"shard_{Path.GetFileName(shardName)}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");

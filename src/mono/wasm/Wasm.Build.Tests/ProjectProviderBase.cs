@@ -55,8 +55,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         // icu
         if (assertOptions.AssertIcuAssets)
         {
-            _testOutput.WriteLine("Starting icu assets assert");
             AssertIcuAssets(assertOptions);
+        }
+        else
+        {
+            _testOutput.WriteLine("Skipping asserting icu assets");
         }
 
         // symbols

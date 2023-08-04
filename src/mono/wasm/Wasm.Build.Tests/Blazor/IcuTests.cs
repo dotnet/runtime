@@ -18,8 +18,6 @@ public class IcuTests : BlazorWasmTestBase
     public IcuTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) {}
 
-    string getRandomNameWithoutDots => Path.GetRandomFileName().Replace(".", "");
-
     [Theory]
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
@@ -27,7 +25,7 @@ public class IcuTests : BlazorWasmTestBase
     [InlineData("Release", true)]
     public void HybridWithInvariant(string config, bool invariant)
     {
-        string id = $"blz_hybrid_{config}_{getRandomNameWithoutDots}";
+        string id = $"blz_hybrid_{config}_{GetRandomNameWithoutDots()}";
         string projectFile = CreateProjectWithNativeReference(id);
         AddItemsPropertiesToProject(
             projectFile,
@@ -53,7 +51,7 @@ public class IcuTests : BlazorWasmTestBase
     [InlineData("Release", true)]
     public void HybridWithFullIcuFromRuntimePack(string config, bool fullIcu)
     {
-        string id = $"blz_hybrid_{config}_{getRandomNameWithoutDots}";
+        string id = $"blz_hybrid_{config}_{GetRandomNameWithoutDots()}";
         string projectFile = CreateProjectWithNativeReference(id);
         AddItemsPropertiesToProject(projectFile, extraProperties: 
              $"<HybridGlobalization>true</HybridGlobalization><BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData>");
@@ -78,7 +76,7 @@ public class IcuTests : BlazorWasmTestBase
     [InlineData("Release", true)]
     public void FullIcuFromRuntimePackWithInvariant(string config, bool invariant)
     {
-        string id = $"blz_hybrid_{config}_{getRandomNameWithoutDots}";
+        string id = $"blz_hybrid_{config}_{GetRandomNameWithoutDots()}";
         string projectFile = CreateProjectWithNativeReference(id);
         AddItemsPropertiesToProject(projectFile, extraProperties: 
             $"<BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData><InvariantGlobalization>{invariant}</InvariantGlobalization>");
