@@ -154,7 +154,7 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
-            JsonDocument document = await JsonDocument.ParseAsync(utf8Json, documentOptions, cancellationToken).ConfigureAwait(false);
+            JsonDocument document = await JsonDocument.ParseAsyncCoreUnrented(utf8Json, documentOptions, cancellationToken).ConfigureAwait(false);
             return JsonNodeConverter.Create(document.RootElement, nodeOptions);
         }
     }
