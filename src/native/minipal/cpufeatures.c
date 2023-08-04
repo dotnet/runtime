@@ -355,6 +355,8 @@ int minipal_getcpufeatures(void)
 #ifdef HWCAP_LRCPC
       if (hwCap & HWCAP_LRCPC)
           result |= ARM64IntrinsicConstants_Rcpc;
+#else
+#error No HWCAP_LRCPC
 #endif
 #ifdef HWCAP_PMULL
 //    if (hwCap & HWCAP_PMULL)
@@ -444,6 +446,8 @@ int minipal_getcpufeatures(void)
 #endif // AT_HWCAP2
 
 #else // !HAVE_AUXV_HWCAP_H
+
+#error No HAVE_AUXV_HWCAP_H
 
 #if HAVE_SYSCTLBYNAME
     int64_t valueFromSysctl = 0;
