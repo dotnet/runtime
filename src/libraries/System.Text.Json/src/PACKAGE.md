@@ -6,6 +6,8 @@ Provides high-performance and low-allocating types that serialize objects to Jav
 
 ## Key Features
 
+<!-- The key features of this package -->
+
 * High-performance reader and writer types for UTF-8 encoded JSON.
 * A fully-featured JSON serializer for .NET types using reflection or source generated contracts.
 * A high-performance read-only JSON DOM (JsonDocument) and a mutable DOM that interoperates with the serializer (JsonNode).
@@ -15,6 +17,7 @@ Provides high-performance and low-allocating types that serialize objects to Jav
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+
 The System.Text.Json library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use the most recent version in older target frameworks.
 
 Serialization:
