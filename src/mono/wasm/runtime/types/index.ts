@@ -64,11 +64,11 @@ export type MonoConfig = {
      */
     cacheBootResources?: boolean,
     /**
-     * Configures use of the hash for integrity checks while fetching assets
+     * Configures use of the `integrity` directive for fetching assets
      */
     disableIntegrityCheck?: boolean,
     /**
-     * Configures use of the hash for integrity checks while fetching assets
+     * Configures use of the `no-cache` directive for fetching assets
      */
     disableNoCacheFetch?: boolean,
     /**

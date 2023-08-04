@@ -17,7 +17,7 @@ namespace HttpServer
         public int Finished { get; set; } = 0;
     }
 
-public sealed record FileContent(byte[] buffer, string hash);
+    public sealed record FileContent(byte[] buffer, string hash);
 
     public sealed class Program
     {
@@ -289,7 +289,7 @@ public sealed record FileContent(byte[] buffer, string hash);
                 // context.Response.AppendHeader("cache-control", "public, max-age=31536000");
                 context.Response.AppendHeader("Cross-Origin-Embedder-Policy", "require-corp");
                 context.Response.AppendHeader("Cross-Origin-Opener-Policy", "same-origin");
-                context.Response.AppendHeader("Etag", fc.hash);
+                context.Response.AppendHeader("ETag", fc.hash);
 
                 // test download re-try
                 if (url.Query.Contains("testAbort"))
