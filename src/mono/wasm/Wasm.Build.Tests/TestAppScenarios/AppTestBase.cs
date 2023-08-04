@@ -25,7 +25,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
     protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null)
     {
-        Id = $"{generatedProjectNamePrefix ?? assetName}_{Path.GetRandomFileName()}";
+        Id = $"{generatedProjectNamePrefix ?? assetName}_{GetRandomId()}";
         InitBlazorWasmProjectDir(Id);
 
         LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);

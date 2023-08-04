@@ -63,6 +63,13 @@ namespace System.Net.Http.Functional.Tests
             VerifyTag(tags, "server.port", uri.Port);
         }
 
+        private static string? GetVersionString(Version? version) => version == null ? null : version.Major switch
+        {
+            1 => "1.1",
+            2 => "2",
+            _ => "3"
+        };
+
         protected static void VerifyRequestDuration(Measurement<double> measurement,
             Uri uri,
             Version? protocolVersion,
@@ -75,7 +82,7 @@ namespace System.Net.Http.Functional.Tests
             double measurement,
             KeyValuePair<string, object?>[] tags,
             Uri uri,
-            Version? protocol,
+            Version? protocolVersion,
             int? statusCode,
             string method = "GET",
             string[] acceptedErrorReasons = null)
@@ -84,7 +91,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.InRange(measurement, double.Epsilon, 60);
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "http.request.method", method);
-            VerifyTag(tags, "network.protocol.version", protocol?.ToString());
+            VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.response.status_code", statusCode);
             if (acceptedErrorReasons == null)
             {
@@ -113,7 +120,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(InstrumentNames.OpenConnections, actualName);
             Assert.Equal(expectedValue, Assert.IsType<long>(measurement));
             VerifySchemeHostPortTags(tags, uri);
-            VerifyTag(tags, "network.protocol.version", protocolVersion.ToString());
+            VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.connection.state", state);
             VerifySocketAddress(tags);
         }
@@ -124,7 +131,7 @@ namespace System.Net.Http.Functional.Tests
             double value = Assert.IsType<double>(measurement);
             Assert.InRange(value, double.Epsilon, 60);
             VerifySchemeHostPortTags(tags, uri);
-            VerifyTag(tags, "network.protocol.version", protocolVersion.ToString());
+            VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifySocketAddress(tags);
         }
 
@@ -134,7 +141,7 @@ namespace System.Net.Http.Functional.Tests
             double value = Assert.IsType<double>(measurement);
             Assert.InRange(value, double.Epsilon, 60);
             VerifySchemeHostPortTags(tags, uri);
-            VerifyTag(tags, "network.protocol.version", protocolVersion.ToString());
+            VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.request.method", method);
         }
 

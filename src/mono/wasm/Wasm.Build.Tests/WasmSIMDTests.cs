@@ -107,7 +107,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release", /*aot*/false, /*publish*/true)]
         public void BuildWithSIMDNeedsWorkload(string config, bool aot, bool publish)
         {
-            string id = Path.GetRandomFileName();
+            string id = GetRandomId();
             string projectName = $"simd_no_workload_{config}_aot_{aot}";
             BuildArgs buildArgs = new
             (
