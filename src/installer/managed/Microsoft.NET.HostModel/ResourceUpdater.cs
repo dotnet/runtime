@@ -313,6 +313,8 @@ namespace Microsoft.NET.HostModel
                             pointer => pointer >= trailingSectionVirtualStart ? pointer + virtualDelta : pointer);
                     }
 
+                    int dataDirectoriesOffset;
+
                     // fix header
                     if (_reader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus)
                     {
@@ -321,18 +323,7 @@ namespace Microsoft.NET.HostModel
                         ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.SizeOfImage,
                             size => size + virtualDelta);
 
-                        if (needsMoveTrailingSections)
-                        {
-                            // fix RVA in DataDirectory
-                            for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
-                                PatchRVA(peSignatureOffset + Offsets.PEHeader.PE64DataDirectories + i * 8);
-                        }
-
-                        // index of ResourceTable is 2 in DataDirectories
-                        WriteI32(accessor, peSignatureOffset + Offsets.PEHeader.PE64DataDirectories + 2 * 8,
-                            rsrcVirtualAddress);
-                        WriteI32(accessor, peSignatureOffset + Offsets.PEHeader.PE64DataDirectories + 2 * 8 + 4,
-                            rsrcSectionDataSize);
+                        dataDirectoriesOffset = peSignatureOffset + Offsets.PEHeader.PE64DataDirectories;
                     }
                     else
                     {
@@ -341,19 +332,19 @@ namespace Microsoft.NET.HostModel
                         ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.SizeOfImage,
                             size => size + virtualDelta);
 
-                        if (needsMoveTrailingSections)
-                        {
-                            // fix RVA in DataDirectory
-                            for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
-                                PatchRVA(peSignatureOffset + Offsets.PEHeader.PE32DataDirectories + i * 8);
-                        }
-
-                        // index of ResourceTable is 2 in DataDirectories
-                        WriteI32(accessor, peSignatureOffset + Offsets.PEHeader.PE32DataDirectories + 2 * 8,
-                            rsrcVirtualAddress);
-                        WriteI32(accessor, peSignatureOffset + Offsets.PEHeader.PE32DataDirectories + 2 * 8 + 4,
-                            rsrcSectionDataSize);
+                        dataDirectoriesOffset = peSignatureOffset + Offsets.PEHeader.PE32DataDirectories;
                     }
+
+                    if (needsMoveTrailingSections)
+                    {
+                        // fix RVA in DataDirectory
+                        for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
+                            PatchRVA(dataDirectoriesOffset + i * 8);
+                    }
+
+                    // index of ResourceTable is 2 in DataDirectories
+                    WriteI32(accessor, dataDirectoriesOffset + 2 * 8, rsrcVirtualAddress);
+                    WriteI32(accessor, dataDirectoriesOffset + 2 * 8 + 4, rsrcSectionDataSize);
                 }
 
                 accessor.WriteArray(rsrcPointerToRawData, rsrcSectionData, 0, rsrcSectionDataSize);
