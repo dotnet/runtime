@@ -119,7 +119,7 @@ When you want to call JavaScript functions from C# or managed code from JavaScri
 
 * [Introductory Blog Post](https://devblogs.microsoft.com/dotnet/use-net-7-from-any-javascript-app-in-net-7/)
 * [Todo-MVC sample](https://github.com/pavelsavara/dotnet-wasm-todo-mvc)
-* or [the documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/javascript-interoperability/import-export-interop).
+* or [the documentation](https://learn.microsoft.com/aspnet/core/client-side/dotnet-interop).
 
 ### Embedding dotnet in existing JavaScript applications
 To embed the .NET runtime inside of a JavaScript application, you will need to use both the MSBuild toolchain (to build and publish your managed code) and your existing web build toolchain.
@@ -207,9 +207,22 @@ See also [link rel preload on MDN](https://developer.mozilla.org/en-US/docs/Web/
 
 | file extension  | Content-Type |
 |---|---|
-|.wasm|application/wasm|
-|.json|application/json|
+|.html|text/html|
 |.js|text/javascript|
+|.json|application/json|
+|.wasm|application/wasm|
+|.bin|application/octet-stream|
+|.dat|application/octet-stream|
+
+Optionally also
+
+| file extension  | Content-Type |
+|---|---|
+|.map|application/json|
+|.symbols|text/plain|
+|.pdb|application/octet-stream|
+|.dll|application/octet-stream|
+|.webcil|application/octet-stream|
 
 See also [Content-Type on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type)
 
@@ -286,6 +299,7 @@ Typical trade-offs of any web application are:
 When compared .NET WebAssembly with native JavaScript applications:
 - if your business logic is complex
 - you already have existing C# codebase and skill-set
+
 running the same code dotnet on wasm is probably the right choice.
 
 If your application:
@@ -293,6 +307,7 @@ If your application:
 - you have JavaScript skills on your team
 - require very small download and fast start time
 - you need to support legacy devices or browsers
+
 it may be better if you re/write your logic in Web native technologies like HTML/CSS and typescript/webpack stack.
 
 Sometimes it makes sense to implement a mix of both.
