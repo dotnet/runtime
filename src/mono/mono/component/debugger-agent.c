@@ -9165,6 +9165,11 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 					buffer_add_int (buf, header->code_size);
 				}
 			}
+			if (CHECK_PROTOCOL_VERSION (2, 65)) {
+				for (int i = 0; i < num_locals; ++i) {
+					buffer_add_int (buf, locals->locals [i].index);
+				}
+			}
 		}
 		mono_metadata_free_mh (header);
 
