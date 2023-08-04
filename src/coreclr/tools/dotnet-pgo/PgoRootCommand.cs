@@ -45,10 +45,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             new("--exclude-events-before") { DefaultValueFactory = _ => Double.MinValue, Description = "Exclude data from events before specified time. Time is specified as milliseconds from the start of the trace" };
         public CliOption<double> ExcludeEventsAfter { get; } =
             new("--exclude-events-after") { DefaultValueFactory = _ => Double.MaxValue, Description = "Exclude data from events after specified time. Time is specified as milliseconds from the start of the trace" };
-        public CliOption<string> ExcludeEventsBeforeMethod { get; } =
-            new("--exclude-events-before-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events before observing a specific method. Method is matched using a regular expression" };
-        public CliOption<string> ExcludeEventsAfterMethod { get; } =
-            new("--exclude-events-after-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events after observing a specific method. Method is matched using a regular expression" };
+        public CliOption<string> ExcludeEventsBeforeJittingMethod { get; } =
+            new("--exclude-events-before-jitting-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events before observing a specific method getting jitted. Method is matched using a regular expression" };
+        public CliOption<string> ExcludeEventsAfterJittingMethod { get; } =
+            new("--exclude-events-after-jitting-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events after observing a specific method getting jitted. Method is matched using a regular expression" };
         public CliOption<string> IncludeMethods { get; } =
             new("--include-methods") { DefaultValueFactory = _ => string.Empty, Description = "Include methods matching regular expression" };
         public CliOption<string> ExcludeMethods { get; } =
@@ -107,8 +107,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 ClrInstanceId,
                 ExcludeEventsBefore,
                 ExcludeEventsAfter,
-                ExcludeEventsBeforeMethod,
-                ExcludeEventsAfterMethod,
+                ExcludeEventsBeforeJittingMethod,
+                ExcludeEventsAfterJittingMethod,
                 IncludeMethods,
                 ExcludeMethods,
                 AutomaticReferences,
