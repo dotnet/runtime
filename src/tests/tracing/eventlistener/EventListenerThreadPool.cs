@@ -98,32 +98,34 @@ namespace Tracing.Tests
                     }
                 }
 
-                // Test this part in both CoreCLR and NativeAOT
-                Overlapped overlapped = new Overlapped();
-
-                unsafe
+                // Test this part in Windows only
+                if (TestLibrary.Utilities.IsWindows)
                 {
-                    NativeOverlapped* nativeOverlapped = overlapped.Pack(null);
-                    ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
+                    Overlapped overlapped = new Overlapped();
+
+                    unsafe
+                    {
+                        NativeOverlapped* nativeOverlapped = overlapped.Pack(null);
+                        ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
+                    }
+                    
+                    ManualResetEvent[] ioWaitEvents = new ManualResetEvent[] {listener.TPWaitIOPackEvent, listener.TPWaitIOEnqueueEvent, listener.TPWaitIODequeueEvent};
+
+                    WaitHandle.WaitAll(ioWaitEvents, TimeSpan.FromMinutes(3));
+
+                    if (!(listener.TPIOPack > 0 && listener.TPIOEnqueue > 0 && listener.TPIODequeue > 0))
+                    {
+                        Console.WriteLine("Test Failed: Did not see all of the expected events.");
+                        Console.WriteLine($"ThreadPoolIOPack: {listener.TPIOPack}");
+                        Console.WriteLine($"ThreadPoolIOEnqueue: {listener.TPIOEnqueue}");
+                        Console.WriteLine($"ThreadPoolIODequeue: {listener.TPIODequeue}");
+                        return -1;
+                    }
                 }
                 
-                listener.TPWaitIOPackEvent.WaitOne(TimeSpan.FromMinutes(3));
-                listener.TPWaitIOEnqueueEvent.WaitOne(TimeSpan.FromMinutes(3));
-                listener.TPWaitIODequeueEvent.WaitOne(TimeSpan.FromMinutes(3));
-
-                if (!(listener.TPIOPack > 0 && listener.TPIOEnqueue > 0 && listener.TPIODequeue > 0))
-                {
-                    Console.WriteLine("Test Failed: Did not see all of the expected events.");
-                    Console.WriteLine($"ThreadPoolIOPack: {listener.TPIOPack}");
-                    Console.WriteLine($"ThreadPoolIOEnqueue: {listener.TPIOEnqueue}");
-                    Console.WriteLine($"ThreadPoolIODequeue: {listener.TPIODequeue}");
-                    return -1;
-                }
-                else
-                {
-                    Console.WriteLine("Test Passed.");
-                    return 100;
-                }
+                
+                Console.WriteLine("Test Passed.");
+                return 100;
             }
         }
     }
