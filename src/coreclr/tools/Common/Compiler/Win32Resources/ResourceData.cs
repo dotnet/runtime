@@ -111,17 +111,17 @@ namespace ILCompiler.Win32Resources
 
         public IEnumerable<(object name, object type, ushort language, byte[] data)> GetAllResources()
         {
-            return _resTypeHeadID.SelectMany(typeIdPair => CopyResType(typeIdPair.Key, typeIdPair.Value))
-                .Concat(_resTypeHeadName.SelectMany(typeNamePair => CopyResType(typeNamePair.Key, typeNamePair.Value)));
+            return _resTypeHeadID.SelectMany(typeIdPair => SelectResType(typeIdPair.Key, typeIdPair.Value))
+                .Concat(_resTypeHeadName.SelectMany(typeNamePair => SelectResType(typeNamePair.Key, typeNamePair.Value)));
 
-            IEnumerable<(object name, object type, ushort language, byte[] data)> CopyResType(object type, ResType resType)
+            IEnumerable<(object name, object type, ushort language, byte[] data)> SelectResType(object type, ResType resType)
             {
-                return resType.NameHeadID.SelectMany(nameIdPair => CopyResName(type, nameIdPair.Key, nameIdPair.Value))
+                return resType.NameHeadID.SelectMany(nameIdPair => SelectResName(type, nameIdPair.Key, nameIdPair.Value))
                     .Concat(resType.NameHeadName.SelectMany(nameNamePair =>
-                        CopyResName(type, nameNamePair.Key, nameNamePair.Value)));
+                        SelectResName(type, nameNamePair.Key, nameNamePair.Value)));
             }
 
-            IEnumerable<(object name, object type, ushort language, byte[] data)> CopyResName(object type, object name, ResName resType)
+            IEnumerable<(object name, object type, ushort language, byte[] data)> SelectResName(object type, object name, ResName resType)
             {
                 return resType.Languages.Select((lang) => (name, type, lang.Key, lang.Value.DataEntry));
             }
