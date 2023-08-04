@@ -206,7 +206,7 @@ namespace Microsoft.Interop.Analyzers
             String
         }
 
-        private sealed record TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation TrackingAnnotation, MarshallingInfo InnerInfo): MarshallingInfo;
+        private sealed record TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation TrackingAnnotation, MarshallingInfo InnerInfo) : MarshallingInfo;
 
         private sealed class TrackingStringMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
         {

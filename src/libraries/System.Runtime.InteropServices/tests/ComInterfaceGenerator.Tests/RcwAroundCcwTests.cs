@@ -82,7 +82,6 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/89265")]
         public void IIntArray_Failing()
         {
             var obj = CreateWrapper<IIntArrayImpl, IIntArray>();
