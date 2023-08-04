@@ -214,7 +214,7 @@ See also [link rel preload on MDN](https://developer.mozilla.org/en-US/docs/Web/
 |.bin|application/octet-stream|
 |.dat|application/octet-stream|
 
-Optionally also 
+Optionally also
 
 | file extension  | Content-Type |
 |---|---|
