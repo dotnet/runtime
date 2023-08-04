@@ -122,7 +122,7 @@ public class ResourceUpdaterTests
     }
 
     [Fact]
-    void ResourceUpdaterAddResourceTwo()
+    void ResourceUpdaterAddResourceTwoSameStringTypeWithDifferName()
     {
         using var tempFile = GetCurrentAssemblyMemoryStream();
 
@@ -140,6 +140,30 @@ public class ResourceUpdaterTests
             var resourceReader = new ResourceData(reader);
             byte[]? name0 = resourceReader.FindResource(0, "testType", 0);
             byte[]? name1 = resourceReader.FindResource(1, "testType", 0);
+            Assert.Equal("Test Resource"u8.ToArray(), name0);
+            Assert.Equal("Other Resource"u8.ToArray(), name1);
+        }
+    }
+
+    [Fact]
+    void ResourceUpdaterAddResourceTwoSameUShortTypeWithDifferName()
+    {
+        using var tempFile = GetCurrentAssemblyMemoryStream();
+
+        using (var updater = new ResourceUpdater(tempFile.Stream, true))
+        {
+            updater.AddResource("Test Resource"u8.ToArray(), 11, 0);
+            updater.AddResource("Other Resource"u8.ToArray(), 11, 1);
+            updater.Update();
+        }
+
+        tempFile.Stream.Seek(0, SeekOrigin.Begin);
+
+        using (var reader = new PEReader(tempFile.Stream, PEStreamOptions.LeaveOpen))
+        {
+            var resourceReader = new ResourceData(reader);
+            byte[]? name0 = resourceReader.FindResource(0, 11, 0);
+            byte[]? name1 = resourceReader.FindResource(1, 11, 0);
             Assert.Equal("Test Resource"u8.ToArray(), name0);
             Assert.Equal("Other Resource"u8.ToArray(), name1);
         }
