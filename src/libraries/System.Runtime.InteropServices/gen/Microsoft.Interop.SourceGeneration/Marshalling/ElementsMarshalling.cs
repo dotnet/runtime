@@ -441,8 +441,6 @@ namespace Microsoft.Interop
                 _elementInfo,
                 _elementMarshaller,
                 context.CurrentStage);
-            //StubCodeContext.Stage.CleanupCallerAllocated,
-            //StubCodeContext.Stage.CleanupCalleeAllocated);
 
             if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
             {
