@@ -21,6 +21,7 @@
 #include "threadstore.inl"
 
 #include "eventtrace_etw.h"
+#include "eventtracebase.h"
 #include "eventtracepriv.h"
 #include "profheapwalkhelper.h"
 
