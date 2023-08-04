@@ -154,11 +154,9 @@ namespace Microsoft.NET.HostModel
                 public const int NumberOfSections = PESignatureSize + 2;
 
                 private const int OptionalHeaderBase = PESignatureSize + CoffHeaderSize;
-                public const int PE64InitializedDataSize = OptionalHeaderBase + 8;
-                public const int PE64SizeOfImage = OptionalHeaderBase + 56;
+                public const int InitializedDataSize = OptionalHeaderBase + 8;
+                public const int SizeOfImage = OptionalHeaderBase + 56;
                 public const int PE64DataDirectories = OptionalHeaderBase + 112;
-                public const int PE32InitializedDataSize = OptionalHeaderBase + 8;
-                public const int PE32SizeOfImage = OptionalHeaderBase + 56;
                 public const int PE32DataDirectories = OptionalHeaderBase + 96;
             }
 
@@ -318,9 +316,9 @@ namespace Microsoft.NET.HostModel
                     // fix header
                     if (_reader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus)
                     {
-                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.PE64InitializedDataSize,
+                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.InitializedDataSize,
                             size => size + delta);
-                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.PE64SizeOfImage,
+                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.SizeOfImage,
                             size => size + virtualDelta);
 
                         if (needsMoveTrailingSections)
@@ -338,9 +336,9 @@ namespace Microsoft.NET.HostModel
                     }
                     else
                     {
-                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.PE32InitializedDataSize,
+                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.InitializedDataSize,
                             size => size + delta);
-                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.PE32SizeOfImage,
+                        ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.SizeOfImage,
                             size => size + virtualDelta);
 
                         if (needsMoveTrailingSections)
