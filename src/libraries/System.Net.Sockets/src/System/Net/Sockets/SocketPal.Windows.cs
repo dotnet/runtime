@@ -164,9 +164,9 @@ namespace System.Net.Sockets
             }
         }
 
-        public static SocketError Bind(SafeSocketHandle handle, ProtocolType _ /*socketProtocolType*/, byte[] buffer, int nameLen)
+        public static SocketError Bind(SafeSocketHandle handle, ProtocolType _ /*socketProtocolType*/, ReadOnlySpan<byte> buffer)
         {
-            SocketError errorCode = Interop.Winsock.bind(handle, buffer, nameLen);
+            SocketError errorCode = Interop.Winsock.bind(handle, buffer);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
