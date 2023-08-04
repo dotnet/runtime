@@ -365,7 +365,7 @@ namespace System.Collections.Generic
         public void TrimExcess(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _array.Length);
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
 
             if (capacity == _array.Length)
                 return;
