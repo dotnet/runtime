@@ -27,7 +27,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     [InlineData("Release")]
     public async Task BlazorBuildRunTest(string config)
     {
-        string id = $"blazor_{config}_{Path.GetRandomFileName()}";
+        string id = $"blazor_{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
@@ -41,7 +41,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     [InlineData("Release", true)]
     public async Task BlazorPublishRunTest(string config, bool aot)
     {
-        string id = $"blazor_{config}_{Path.GetRandomFileName()}";
+        string id = $"blazor_{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
         if (aot)
             AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
