@@ -889,14 +889,14 @@ namespace System
         /// </summary>
         /// <param name="skipSorting">If true, The collection returned may not necessarily be sorted.</param>
         /// <remarks>By setting the skipSorting parameter to true, the method will attempt to avoid sorting the returned collection.
-        /// This option can be beneficial when the method user does not require a sorted list and aims to enhance the performance. </remarks>
+        /// This option can be beneficial when the caller does not require a sorted list and aims to enhance the performance. </remarks>
         public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones(bool skipSorting)
         {
             CachedData cachedData = s_cachedData;
 
             lock (cachedData)
             {
-                if ((cachedData._readOnlySystemTimeZones == null && !skipSorting) || (cachedData._readOnlyUnsortedSystemTimeZones == null && skipSorting))
+                if ((skipSorting ? cachedData._readOnlyUnsortedSystemTimeZones : cachedData._readOnlySystemTimeZones) is null)
                 {
                     if (!cachedData._allSystemTimeZonesRead)
                     {
@@ -920,17 +920,18 @@ namespace System
                                 return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
                             });
 
-                            cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
+                            // Always reset _readOnlyUnsortedSystemTimeZones even if it was initialized before. This prevents the need to maintain two separate cache lists in memory
+                            // and guarantees that if _readOnlySystemTimeZones is initialized, _readOnlyUnsortedSystemTimeZones is also initialized.
+                            cachedData._readOnlySystemTimeZones = cachedData._readOnlyUnsortedSystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
                         }
                         else
                         {
-                            cachedData._readOnlyUnsortedSystemTimeZones = cachedData._readOnlySystemTimeZones ?? new ReadOnlyCollection<TimeZoneInfo>(array);
+                            cachedData._readOnlyUnsortedSystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
                         }
                     }
                     else
                     {
-                        cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
-                        cachedData._readOnlyUnsortedSystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
+                        cachedData._readOnlySystemTimeZones = cachedData._readOnlyUnsortedSystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
                     }
                 }
             }

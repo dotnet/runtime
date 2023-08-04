@@ -2019,8 +2019,24 @@ namespace System.Tests
             }
         }
 
+        private static void ValidateDifferentTimeZoneLists(ReadOnlyCollection<TimeZoneInfo> defaultList, ReadOnlyCollection<TimeZoneInfo> nonSortedList, ReadOnlyCollection<TimeZoneInfo> sortedList)
+        {
+            Assert.Equal(defaultList.Count, nonSortedList.Count);
+            Assert.Equal(defaultList.Count, sortedList.Count);
+
+            Assert.Equal(defaultList.Count, nonSortedList.Count);
+            Assert.True(object.ReferenceEquals(defaultList, sortedList));
+            Dictionary<string, TimeZoneInfo> zones1Dict = defaultList.ToDictionary(t => t.Id);
+            foreach (TimeZoneInfo zone in nonSortedList)
+            {
+                Assert.True(zones1Dict.TryGetValue(zone.Id, out TimeZoneInfo zone1));
+            }
+
+            ValidateTimeZonesSorting(defaultList);
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void TestGetSystemTimeZonesCollections()
+        public static void TestGetSystemTimeZonesCollectionsCallsOrder()
         {
             RemoteExecutor.Invoke(() =>
             {
@@ -2031,15 +2047,7 @@ namespace System.Tests
                 var zones2 = TimeZoneInfo.GetSystemTimeZones(skipSorting: true);
                 var zones3 = TimeZoneInfo.GetSystemTimeZones(skipSorting: false);
 
-                Assert.Equal(zones1.Count, zones2.Count);
-                Assert.True(object.ReferenceEquals(zones1, zones3));
-                Dictionary<string, TimeZoneInfo> zones1Dict = zones1.ToDictionary(t => t.Id);
-                foreach (TimeZoneInfo zone in zones2)
-                {
-                    Assert.True(zones1Dict.TryGetValue(zone.Id, out TimeZoneInfo zone1));
-                }
-
-                ValidateTimeZonesSorting(zones1);
+                ValidateDifferentTimeZoneLists(zones1, zones2, zones3);
 
                 //
                 // Clear our caches so zone enumeration is forced to re-read the data
@@ -2052,17 +2060,21 @@ namespace System.Tests
                 zones2 = TimeZoneInfo.GetSystemTimeZones(skipSorting: true);
                 zones3 = TimeZoneInfo.GetSystemTimeZones(skipSorting: false);
                 zones1 = TimeZoneInfo.GetSystemTimeZones();
-                Assert.Equal(zones1.Count, zones2.Count);
-                Assert.True(object.ReferenceEquals(zones1, zones3));
-                zones1Dict = zones1.ToDictionary(t => t.Id);
-                foreach (TimeZoneInfo zone in zones2)
-                {
-                    Assert.True(zones1Dict.TryGetValue(zone.Id, out TimeZoneInfo zone1));
-                }
-
-                ValidateTimeZonesSorting(zones1);
+                ValidateDifferentTimeZoneLists(zones1, zones2, zones3);
 
             }).Dispose();
+        }
+
+        [Fact]
+        public static void TestGetSystemTimeZonesCollections()
+        {
+            // This test doing similar checks as TestGetSystemTimeZonesCollectionsCallsOrder does except we need to
+            // run this test without the RemoteExecutor to ensure testing on platforms like Android.
+
+            ReadOnlyCollection<TimeZoneInfo> unsortedList = TimeZoneInfo.GetSystemTimeZones(skipSorting: true);
+            ReadOnlyCollection<TimeZoneInfo> sortedList = TimeZoneInfo.GetSystemTimeZones(skipSorting: false);
+            ReadOnlyCollection<TimeZoneInfo> defaultList = TimeZoneInfo.GetSystemTimeZones();
+            ValidateDifferentTimeZoneLists(defaultList, unsortedList, sortedList);
         }
 
         [Fact]
