@@ -1576,16 +1576,17 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
 
     if (startAddr == NULL)
     {
-        // This will grab the start address for the current code version.
+        //Not any longer!!!!// This will grab the start address for the current code version.
         startAddr = g_pEEInterface->GetFunctionAddress(fd);
-        if (startAddr == NULL)
-        {
-            startAddr = fd->GetNativeCodeReJITAware();
-            if (startAddr == NULL)
-            {
-                return NULL;
-            }
-        }
+        // startAddr = g_pEEInterface->GetNativeCodeReJITAware(fd);
+        // if (startAddr == NULL)
+        // {
+        //     // startAddr = fd->GetFunctionAddress();
+        //     // if (startAddr == NULL)
+        //     // {
+        //     //     return NULL;
+        //     // }
+        // }
     }
     else
     {

@@ -1249,6 +1249,7 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
         }
         if (startAddr == NULL)
         {
+            _ASSERTE(startAddr == NULL);
             // Should not be trying to place patches on MethodDecs's for stubs.
             // These stubs will never get jitted.
             CONSISTENCY_CHECK_MSGF(!pMD->IsWrapperStub(), ("Can't place patch at stub md %p, %s::%s",

@@ -935,33 +935,33 @@ PCODE MethodDesc::GetNativeCode()
     return GetStableEntryPoint();
 }
 
-PCODE MethodDesc::GetNativeCodeReJITAware()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
+// PCODE MethodDesc::GetNativeCodeReJITAware()
+// {
+//     WRAPPER_NO_CONTRACT;
+//     SUPPORTS_DAC;
 
-    PCODE pDefaultCode = GetNativeCode();
-    if (pDefaultCode != NULL)
-    {
-        return pDefaultCode;
-    }
+//     PCODE pDefaultCode = GetNativeCode();
+//     if (pDefaultCode != NULL)
+//     {
+//         return pDefaultCode;
+//     }
 
-    {
-        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
-        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
-        if (!ilVersion.IsDefaultVersion())
-        {
-            NativeCodeVersion activeNativeCodeVersion = ilVersion.GetActiveNativeCodeVersion(PTR_MethodDesc(this));
-            if (!activeNativeCodeVersion.IsNull())
-            {
-                return activeNativeCodeVersion.GetNativeCode();
-            }
-        }
+//     {
+//         CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+//         CodeVersionManager::LockHolder codeVersioningLockHolder;
+//         ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
+//         if (!ilVersion.IsDefaultVersion())
+//         {
+//             NativeCodeVersion activeNativeCodeVersion = ilVersion.GetActiveNativeCodeVersion(PTR_MethodDesc(this));
+//             if (!activeNativeCodeVersion.IsNull())
+//             {
+//                 return activeNativeCodeVersion.GetNativeCode();
+//             }
+//         }
 
-        return NULL;
-    }
-}
+//         return NULL;
+//     }
+// }
 
 //*******************************************************************************
 PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()

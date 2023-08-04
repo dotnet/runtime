@@ -1253,17 +1253,6 @@ public:
         /* [out] */ union STUB_BUF* outBuffer,
         /* [out] */ ULONG32* outFlags);
 
-    DebuggerJitInfo* GetDebuggerJitInfo(MethodDesc* methodDesc,
-                                        TADDR addr)
-    {
-        if (g_pDebugger)
-        {
-            return g_pDebugger->GetJitInfo(methodDesc, (PBYTE)addr, NULL);
-        }
-
-        return NULL;
-    }
-
     HRESULT GetMethodExtents(MethodDesc* methodDesc,
                              METH_EXTENTS** extents);
     HRESULT GetMethodVarInfo(MethodDesc* methodDesc,

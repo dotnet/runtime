@@ -5225,7 +5225,7 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
         }
     }
 
-    if (!m_methodIter.Current()->HasNativeCodeReJITAware())
+    if (!(g_pEEInterface->GetFunctionAddress(m_methodIter.Current()) != NULL))
     {
         goto NextMethod;
     }
@@ -5243,7 +5243,7 @@ EnumMethodInstances::CdStart(MethodDesc* methodDesc,
                              CLRDATA_ENUM* handle)
 {
     if (!methodDesc->HasClassOrMethodInstantiation() &&
-        !methodDesc->HasNativeCodeReJITAware())
+        !(g_pEEInterface->GetFunctionAddress(methodDesc) != NULL))
     {
         *handle = 0;
         return S_FALSE;
