@@ -31,7 +31,7 @@ namespace BrowserDebugProxy
         public int TypeId { get; init; }
         public bool IsEnum { get; init; }
 
-        public ValueTypeClass(byte[] buffer, string className, JArray fields, int typeId, bool isEnum, List<JObject> inlineArray = null)
+        public ValueTypeClass(byte[] buffer, string className, JArray fields, int typeId, bool isEnum, List<JObject> inlineArraySize = null)
         {
             var valueTypeId = MonoSDBHelper.GetNewObjectId();
             var objectId = new DotnetObjectId("valuetype", valueTypeId);
@@ -57,6 +57,7 @@ namespace BrowserDebugProxy
                                                 int typeId,
                                                 bool isEnum,
                                                 bool includeStatic,
+                                                int inlineArray,
                                                 CancellationToken token)
         {
             var typeInfo = await sdbAgent.GetTypeInfo(typeId, token);
@@ -81,27 +82,22 @@ namespace BrowserDebugProxy
             IEnumerable<FieldTypeClass> writableFields = fieldTypes
                 .Where(f => !f.Attributes.HasFlag(FieldAttributes.Literal)
                     && !f.Attributes.HasFlag(FieldAttributes.Static));
-
+            JObject fieldValue = new();
             foreach (var field in writableFields)
             {
-                var fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
+                fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
                 fields.Add(GetFieldWithMetadata(field, fieldValue, isStatic: false));
-                (int MajorVersion, int MinorVersion) = await sdbAgent.GetVMVersion(token);
-                if (MajorVersion == 2 && MinorVersion >= 65)
-                {
-                    var inlineArraySize = cmdReader.ReadInt32();
-                    if (inlineArraySize > 0)
-                    {
-                        inlineArray = new();
-                        inlineArray.Add(fieldValue);
-                    }
-                    for (int i = 1; i < inlineArraySize; i++)
-                    {
-                        fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, $"{i}", token, true, field.TypeId, false);
-                        inlineArray.Add(fieldValue);
-                    }
-                }
             }
+            if (inlineArraySize > 0)
+            {
+                inlineArray = new();
+                inlineArray.Add(fieldValue);
+                for (int i = 1; i < inlineArraySize; i++)
+                {
+                    fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, $"{i}", token, true, field.TypeId, false);
+                    inlineArray.Add(fieldValue);
+                }
+            }            
 
             long endPos = cmdReader.BaseStream.Position;
             cmdReader.BaseStream.Position = initialPos;
