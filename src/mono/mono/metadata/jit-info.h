@@ -106,8 +106,8 @@ typedef struct
 	MonoDwarfLocListEntry *locations;
 	gint32 this_offset;
 	guint8 this_reg;
-	gboolean has_this:1;
-	gboolean this_in_reg:1;
+	guint32 has_this:1;
+	guint32 this_in_reg:1;
 } MonoGenericJitInfo;
 
 /*
@@ -197,26 +197,26 @@ struct _MonoJitInfo {
 	guint32     unwind_info;
 	int         code_size;
 	guint32     num_clauses:15;
-	gboolean    has_generic_jit_info:1;
-	gboolean    has_try_block_holes:1;
-	gboolean    has_arch_eh_info:1;
-	gboolean    has_thunk_info:1;
-	gboolean    has_unwind_info:1;
-	gboolean    from_aot:1;
-	gboolean    from_llvm:1;
-	gboolean    dbg_attrs_inited:1;
-	gboolean    dbg_hidden:1;
+	guint32    has_generic_jit_info:1;
+	guint32    has_try_block_holes:1;
+	guint32    has_arch_eh_info:1;
+	guint32    has_thunk_info:1;
+	guint32    has_unwind_info:1;
+	guint32    from_aot:1;
+	guint32    from_llvm:1;
+	guint32    dbg_attrs_inited:1;
+	guint32    dbg_hidden:1;
 	/* Whenever this jit info was loaded in async context */
-	gboolean    async:1;
-	gboolean    dbg_step_through:1;
-	gboolean    dbg_non_user_code:1;
+	guint32    async:1;
+	guint32    dbg_step_through:1;
+	guint32    dbg_non_user_code:1;
 	/*
 	 * Whenever this jit info refers to a trampoline.
 	 * d.tramp_info contains additional data in this case.
 	 */
-	gboolean    is_trampoline:1;
+	guint32    is_trampoline:1;
 	/* Whenever this jit info refers to an interpreter method */
-	gboolean    is_interp:1;
+	guint32    is_interp:1;
 
 	/* FIXME: Embed this after the structure later*/
 	gpointer    gc_info; /* Currently only used by SGen */
