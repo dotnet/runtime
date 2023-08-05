@@ -119,7 +119,7 @@ namespace System.Text.Json
 
             if (_name is null)
             {
-                writer.WritePropertyName(Value.GetPropertyNameAsUtf8Span());
+                writer.WriteRawPropertyName(Value.GetRawPropertyNameAsUtf8Span());
             }
             else
             {

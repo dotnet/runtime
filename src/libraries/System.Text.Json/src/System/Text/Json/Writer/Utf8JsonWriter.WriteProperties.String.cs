@@ -259,6 +259,17 @@ namespace System.Text.Json
             _commentAfterNoneOrPropertyName = false;
         }
 
+        internal void WriteRawPropertyName(ReadOnlySpan<byte> utf8PropertyName)
+        {
+            JsonWriterHelper.ValidateProperty(utf8PropertyName);
+
+            WriteStringByOptionsPropertyName(utf8PropertyName);
+
+            _currentDepth &= JsonConstants.RemoveFlagsBitMask;
+            _tokenType = JsonTokenType.PropertyName;
+            _commentAfterNoneOrPropertyName = false;
+        }
+
         private void WritePropertyNameUnescaped(ReadOnlySpan<byte> utf8PropertyName)
         {
             JsonWriterHelper.ValidateProperty(utf8PropertyName);

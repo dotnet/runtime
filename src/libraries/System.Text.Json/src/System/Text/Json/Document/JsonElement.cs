@@ -1163,11 +1163,11 @@ namespace System.Text.Json
             return _parent.GetNameOfPropertyValue(_idx);
         }
 
-        internal ReadOnlySpan<byte> GetPropertyNameAsUtf8Span()
+        internal ReadOnlySpan<byte> GetRawPropertyNameAsUtf8Span()
         {
             CheckValidInstance();
 
-            return _parent.GetNameOfPropertyValueAsUtf8Span(_idx);
+            return _parent.GetRawNameOfPropertyValueAsUtf8Span(_idx);
         }
 
         /// <summary>

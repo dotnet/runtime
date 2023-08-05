@@ -283,7 +283,7 @@ namespace System.Text.Json
                 : JsonReaderHelper.TranscodeHelper(segment);
         }
 
-        internal ReadOnlySpan<byte> GetUtf8Span(int index, JsonTokenType expectedType)
+        internal ReadOnlySpan<byte> GetRawUtf8Span(int index, JsonTokenType expectedType)
         {
             CheckNotDisposed();
 
@@ -301,9 +301,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            return row.HasComplexChildren
-                ? JsonReaderHelper.GetUnescapedSpan(segment)
-                : segment;
+            return segment;
         }
 
         internal bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
@@ -386,10 +384,10 @@ namespace System.Text.Json
             return GetString(index - DbRow.Size, JsonTokenType.PropertyName)!;
         }
 
-        internal ReadOnlySpan<byte> GetNameOfPropertyValueAsUtf8Span(int index)
+        internal ReadOnlySpan<byte> GetRawNameOfPropertyValueAsUtf8Span(int index)
         {
             // The property name is one row before the property value
-            return GetUtf8Span(index - DbRow.Size, JsonTokenType.PropertyName)!;
+            return GetRawUtf8Span(index - DbRow.Size, JsonTokenType.PropertyName)!;
         }
 
         internal bool TryGetValue(int index, [NotNullWhen(true)] out byte[]? value)
