@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -x
 source="${BASH_SOURCE[0]}"
 # resolve $SOURCE until the file is no longer a symlink
 while [[ -h $source ]]; do

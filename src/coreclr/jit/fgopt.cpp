@@ -7058,7 +7058,10 @@ PhaseStatus Compiler::fgTailMerge()
 //
 PhaseStatus Compiler::fgTailDuplicate()
 {
-    bool madeChanges = false;
+    if (!opts.OptimizationEnabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
     const bool isEnabled = JitConfig.JitEnableTailDuplication() > 0;
     if (!isEnabled)
@@ -7070,6 +7073,8 @@ PhaseStatus Compiler::fgTailDuplicate()
     // Must be run when local threading is enabled...
     //
     assert(fgNodeThreading == NodeThreading::AllLocals);
+
+    bool madeChanges = false;
 
     // Visit each block
     //
@@ -7173,6 +7178,20 @@ bool Compiler::fgTailDuplicateBlock(BasicBlock* const block)
             break;
         }
 
+        // leave last statement alone for branches and such.
+        //
+        if (stmt == lastStmt)
+        {
+            if ((block->bbJumpKind != BBJ_ALWAYS) && (block->bbJumpKind != BBJ_NONE))
+            {
+                // if there are constants here we could split the computation off and hoist it like
+                // we do for returns... not clear if this is better or not.
+                //
+                JITDUMP(FMT_STMT " has control flow impact\n", stmt->GetID());
+                break;
+            }
+        }
+
         if (numAllConstant == numLocal)
         {
             // todo: cost checks... (heuristic)
@@ -7239,13 +7258,15 @@ bool Compiler::fgTailDuplicateBlock(BasicBlock* const block)
         else if (numAllConstant > 0)
         {
             // Could handle this case with a more stringent cost check
-            JITDUMP("%u of the %u locals are constant in all preds\n", numAllConstant, numLocal);
+            JITDUMP(FMT_STMT " %u of the %u locals are constant in all preds\n", stmt->GetID(), numAllConstant,
+                    numLocal);
             break;
         }
         else if (numSomeConstant > 0)
         {
             // Could handle this case with an even more stringent cost check
-            JITDUMP("%u of the %u locals are constant in some preds\n", numSomeConstant, numLocal);
+            JITDUMP(FMT_STMT " %u of the %u locals are constant in some preds\n", stmt->GetID(), numSomeConstant,
+                    numLocal);
             break;
         }
 
