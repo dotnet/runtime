@@ -444,6 +444,26 @@ namespace Microsoft.Interop
                     WellKnownDiagnosticTags.Unnecessary
                 });
 
+        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam"/>
+        public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallOutParam =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue"/>
+        public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallReturnValue =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
         /// <inheritdoc cref="SR.ComMethodReturningIntWillBeOutParameterMessage"/>
         public static readonly DiagnosticDescriptor ComMethodManagedReturnWillBeOutVariable =
             new DiagnosticDescriptor(
