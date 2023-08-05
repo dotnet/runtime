@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
+using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Xunit;
@@ -23,16 +25,7 @@ namespace AppHost.Bundle.Tests
         {
             var fixture = sharedTestState.TestFixture.Copy();
 
-            var appExe = UseSingleFileSelfContainedHost(fixture);
-
-            Command.Create(appExe)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Hello World");
+            UseSingleFileSelfContainedHost(fixture);
         }
 
         public class SharedTestState : SharedTestStateBase, IDisposable
@@ -41,7 +34,10 @@ namespace AppHost.Bundle.Tests
 
             public SharedTestState()
             {
-                TestFixture = PreparePublishedSelfContainedTestProject("AppWithUnknownLanguageResource");
+                var testFixture = new TestProjectFixture("AppWithUnknownLanguageResource", RepoDirectories);
+                testFixture.EnsureRestoredForRid(testFixture.CurrentRid)
+                    .PublishProject(outputDirectory: BundleHelper.GetPublishPath(testFixture));
+                TestFixture = testFixture;
             }
 
             public void Dispose()

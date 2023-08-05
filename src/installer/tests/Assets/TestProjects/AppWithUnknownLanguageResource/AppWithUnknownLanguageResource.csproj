@@ -5,8 +5,9 @@
     <OutputType>Exe</OutputType>
     <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
-    <SelfContained>true</SelfContained>
     <Win32Resource>test.res</Win32Resource>
+    <!-- Current .NET SDK can't run CreateAppHost so disable creating AppHost on build -->
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
 </Project>
