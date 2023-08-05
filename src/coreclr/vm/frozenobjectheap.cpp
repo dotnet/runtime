@@ -66,7 +66,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
         {
             m_FirstSegment = new FrozenObjectSegment(FOH_SEGMENT_DEFAULT_SIZE);
             m_CurrentSegment = m_FirstSegment;
-            _ASSERT(m_CurrentSegment->GetNextSegment() == nullptr);
+            _ASSERT(m_CurrentSegment->m_NextSegment == nullptr);
         }
 
         obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
