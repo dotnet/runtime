@@ -11,9 +11,7 @@ using Microsoft.NET.HostModel.Win32Resources;
 namespace Microsoft.NET.HostModel
 {
     /// <summary>
-    /// Provides methods for modifying the embedded native resources
-    /// in a PE image. It currently only works on Windows, because it
-    /// requires various kernel32 APIs.
+    /// Provides methods for modifying the embedded native resources in a PE image.
     /// </summary>
     public class ResourceUpdater : IDisposable
     {
@@ -32,13 +30,10 @@ namespace Microsoft.NET.HostModel
         }
 
         /// <summary>
-        /// Create a resource updater for the given PE file. This will
-        /// acquire a native resource update handle for the file,
-        /// preparing it for updates. Resources can be added to this
-        /// updater, which will queue them for update. The target PE
-        /// file will not be modified until Update() is called, after
-        /// which the ResourceUpdater can not be used for further
-        /// updates.
+        /// Create a resource updater for the given PE file.
+        /// Resources can be added to this updater, which will queue them for update.
+        /// The target PE file will not be modified until Update() is called, after
+        /// which the ResourceUpdater can not be used for further updates.
         /// </summary>
         public ResourceUpdater(string peFile)
             : this(new FileStream(peFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
@@ -46,13 +41,10 @@ namespace Microsoft.NET.HostModel
         }
 
         /// <summary>
-        /// Create a resource updater for the given PE file. This will
-        /// acquire a native resource update handle for the file,
-        /// preparing it for updates. Resources can be added to this
-        /// updater, which will queue them for update. The target PE
-        /// file will not be modified until Update() is called, after
-        /// which the ResourceUpdater can not be used for further
-        /// updates.
+        /// Create a resource updater for the given PE file. This
+        /// Resources can be added to this updater, which will queue them for update.
+        /// The target PE file will not be modified until Update() is called, after
+        /// which the ResourceUpdater can not be used for further updates.
         /// </summary>
         public ResourceUpdater(FileStream stream, bool leaveOpen = false)
         {
