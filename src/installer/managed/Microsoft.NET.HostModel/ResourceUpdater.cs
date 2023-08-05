@@ -82,7 +82,7 @@ namespace Microsoft.NET.HostModel
         public ResourceUpdater AddResourcesFromPEImage(string peFile)
         {
             if (_resourceData == null)
-                throw ThrowExceptionForInvalidUpdate();
+                ThrowExceptionForInvalidUpdate();
 
             using var module = new PEReader(File.Open(peFile, FileMode.Open, FileAccess.Read, FileShare.Read));
             var moduleResources = new ResourceData(module);
@@ -110,7 +110,7 @@ namespace Microsoft.NET.HostModel
                 throw new ArgumentException("AddResource can only be used with integer resource types");
             }
             if (_resourceData == null)
-                throw ThrowExceptionForInvalidUpdate();
+                ThrowExceptionForInvalidUpdate();
 
             _resourceData.AddResource((ushort)lpName, (ushort)lpType, LangID_LangNeutral_SublangNeutral, data);
 
@@ -130,7 +130,7 @@ namespace Microsoft.NET.HostModel
                 throw new ArgumentException("AddResource can only be used with integer resource names");
             }
             if (_resourceData == null)
-                throw ThrowExceptionForInvalidUpdate();
+                ThrowExceptionForInvalidUpdate();
 
             _resourceData.AddResource((ushort)lpName, lpType, LangID_LangNeutral_SublangNeutral, data);
 
@@ -195,7 +195,7 @@ namespace Microsoft.NET.HostModel
         public void Update()
         {
             if (_resourceData == null)
-                throw ThrowExceptionForInvalidUpdate();
+                ThrowExceptionForInvalidUpdate();
 
             int resourceSectionIndex = _reader.PEHeaders.SectionHeaders.Length;
             for (int i = 0; i < _reader.PEHeaders.SectionHeaders.Length; i++)
@@ -385,7 +385,7 @@ namespace Microsoft.NET.HostModel
 
         public static int GetAligned(int integer, int alignWith) => (integer + alignWith - 1) & ~(alignWith - 1);
 
-        private static InvalidOperationException ThrowExceptionForInvalidUpdate()
+        private static void ThrowExceptionForInvalidUpdate()
         {
             throw new InvalidOperationException(
                 "Update handle is invalid. This instance may not be used for further updates");
