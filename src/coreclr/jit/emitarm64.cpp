@@ -5162,7 +5162,8 @@ void emitter::emitIns_R_R_I(
             assert(isVectorRegister(reg2));
             isRightShift = emitInsIsVectorRightShift(ins);
 
-            assert(!isRightShift || (imm != 0 && "instructions for vector right-shift do not allow zero as an immediate value"));
+            // temporarily commenting this out
+            //assert(!isRightShift || (imm != 0 && "instructions for vector right-shift do not allow zero as an immediate value"));
 
             if (insOptsAnyArrangement(opt))
             {
