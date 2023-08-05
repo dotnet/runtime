@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -42,6 +43,9 @@ namespace System.Threading
             _gcHandle = GCHandle.Alloc(this);
 
             _tpWait = Interop.Kernel32.CreateThreadpoolWait(&RegisteredWaitCallback, (IntPtr)_gcHandle, IntPtr.Zero);
+
+            if (NativeRuntimeEventSource.Log.IsEnabled())
+                NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(this);
 
             if (_tpWait == IntPtr.Zero)
             {
@@ -90,6 +94,9 @@ namespace System.Threading
                     }
                 }
             }
+
+            if (NativeRuntimeEventSource.Log.IsEnabled())
+                NativeRuntimeEventSource.Log.ThreadPoolIODequeue(this);
 
             _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(_callbackHelper!, timedOut);
         }

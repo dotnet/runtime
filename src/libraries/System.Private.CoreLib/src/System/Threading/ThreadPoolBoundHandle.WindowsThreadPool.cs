@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -53,6 +54,9 @@ namespace System.Threading
             {
                 Win32ThreadPoolNativeOverlapped* overlapped = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, preAllocated: null, flowExecutionContext);
                 overlapped->Data._boundHandle = this;
+
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                    NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue((NativeOverlapped*)overlapped);
 
                 Interop.Kernel32.StartThreadpoolIo(_threadPoolHandle!);
 
@@ -156,6 +160,9 @@ namespace System.Threading
 
             Win32ThreadPoolNativeOverlapped.CompleteWithCallback(ioResult, (uint)numberOfBytesTransferred, overlapped);
             ThreadPool.IncrementCompletedWorkItemCount();
+
+            if (NativeRuntimeEventSource.Log.IsEnabled())
+                NativeRuntimeEventSource.Log.ThreadPoolIODequeue((NativeOverlapped*)overlappedPtr);
 
             wrapper.Exit();
         }
