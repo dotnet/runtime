@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
@@ -541,10 +542,12 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var expectedValue = TypeDescriptor.GetConverter(type).ConvertFromInvariantString(value);
 
             // act
+#pragma warning disable SYSLIB1104
             config.Bind(options);
             var optionsValue = options.GetType().GetProperty("Value").GetValue(options);
             var getValueValue = config.GetValue(type, "Value");
             var getValue = config.GetSection("Value").Get(type);
+#pragma warning restore SYSLIB1104
 
             // assert
             Assert.Equal(expectedValue, optionsValue);
@@ -588,6 +591,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var options = Activator.CreateInstance(optionsType);
 
             // act
+#pragma warning disable SYSLIB1104
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(options));
 
@@ -596,6 +600,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             var getException = Assert.Throws<InvalidOperationException>(
                 () => config.GetSection("Value").Get(type));
+#pragma warning restore SYSLIB1104
 
             // assert
             Assert.NotNull(exception.InnerException);
@@ -953,8 +958,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
 
-            var exception = Assert.Throws<InvalidOperationException>(
-                () => config.Bind(new TestOptions()));
+            var exception = Assert.Throws<InvalidOperationException>(() => config.Bind(new TestOptions()));
             Assert.Equal(
                 SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ISomeInterface)),
                 exception.Message);
@@ -1938,7 +1942,9 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 """);
 
             StructWithNestedStructs.DeeplyNested obj = new();
+#pragma warning disable SYSLIB1103
             configuration.Bind(obj);
+#pragma warning restore SYSLIB1103
             Assert.Equal(0, obj.Int32);
             Assert.False(obj.Boolean);
         }
@@ -2055,6 +2061,64 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         {
             Assert.Equal(3, location.Latitude);
             Assert.Equal(4, location.Longitude);
+        }
+
+        [Fact]
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Investigate Build browser-wasm linux Release LibraryTests_EAT CI failure for reflection impl", TestPlatforms.Browser)]
+#endif
+        public void TestGraphWithUnsupportedMember()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""{ "WriterOptions": { "Indented": "true" } }""");
+            var obj = new GraphWithUnsupportedMember();
+            configuration.Bind(obj);
+            Assert.True(obj.WriterOptions.Indented);
+
+            // Encoder prop not supported; throw if there's config data.
+            configuration = TestHelpers.GetConfigurationFromJsonString("""{ "WriterOptions": { "Indented": "true", "Encoder": { "Random": "" } } }""");
+            Assert.Throws<InvalidOperationException>(() => configuration.Bind(obj));
+        }
+
+        [Fact]
+        public void CanBindToObjectMembers()
+        {
+            var config = TestHelpers.GetConfigurationFromJsonString("""{ "Local": { "Authority": "Auth1" } }""");
+
+            // Regression tests for https://github.com/dotnet/runtime/issues/89273 and https://github.com/dotnet/runtime/issues/89732.
+            TestBind(options => config.Bind("Local", options.GenericProp), obj => obj.GenericProp);
+            TestBind(options => config.GetSection("Local").Bind(options.NonGenericProp), obj => obj.NonGenericProp);
+            TestBind(options => config.GetSection("Local").Bind(options._genericField, _ => { }), obj => obj._genericField);
+            TestBind(options => config.Bind("Local", options._nonGenericField), obj => obj._nonGenericField);
+
+            // Check statics.
+            TestBind(options => config.GetSection("Local").Bind(RemoteAuthenticationOptions<OidcProviderOptions>.StaticGenericProp), obj => RemoteAuthenticationOptions<OidcProviderOptions>.StaticGenericProp);
+            TestBind(options => config.GetSection("Local").Bind(RemoteAuthenticationOptions<OidcProviderOptions>.StaticNonGenericProp, _ => { }), obj => RemoteAuthenticationOptions<OidcProviderOptions>.StaticNonGenericProp);
+            TestBind(options => config.Bind("Local", RemoteAuthenticationOptions<OidcProviderOptions>.s_GenericField), obj => RemoteAuthenticationOptions<OidcProviderOptions>.s_GenericField);
+            TestBind(options => config.GetSection("Local").Bind(RemoteAuthenticationOptions<OidcProviderOptions>.s_NonGenericField), obj => RemoteAuthenticationOptions<OidcProviderOptions>.s_NonGenericField);
+
+            // No null refs.
+#if BUILDING_SOURCE_GENERATOR_TESTS
+
+            Assert.Throws<ArgumentNullException>(() => config.GetSection("Local").Bind(new RemoteAuthenticationOptions<OidcProviderOptions>().NullGenericProp));
+            Assert.Throws<ArgumentNullException>(() => config.GetSection("Local").Bind(RemoteAuthenticationOptions<OidcProviderOptions>.s_NullNonGenericField));
+#else
+            config.GetSection("Local").Bind(new RemoteAuthenticationOptions<OidcProviderOptions>().NullGenericProp);
+            config.GetSection("Local").Bind(RemoteAuthenticationOptions<OidcProviderOptions>.s_NullNonGenericField);
+#endif
+            static void TestBind(Action<RemoteAuthenticationOptions<OidcProviderOptions>> configure, Func<RemoteAuthenticationOptions<OidcProviderOptions>, OidcProviderOptions> getBindedProp)
+            {
+                var obj = new RemoteAuthenticationOptions<OidcProviderOptions>();
+                configure(obj);
+                Assert.Equal("Auth1", getBindedProp(obj).Authority);
+            }
+        }
+
+        [Fact]
+        public void BinderSupportsObjCreationInput()
+        {
+            var configuration = new ConfigurationBuilder().Build();
+            // No diagnostic warning SYSLIB1104.
+            configuration.Bind(new GraphWithUnsupportedMember());
         }
     }
 }

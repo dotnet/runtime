@@ -9130,11 +9130,19 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     // * TYP_SIMD16: 0x10
                                     // * TYP_SIMD32: 0x20
                                     // * TYP_SIMD64: 0x40
-                                    toggleBit = 0x4040404040404040 >> ((elemSize / 2) + (simdSize / 32));
-
-                                    assert(((simdSize == 16) && (toggleBit == 0x1010101010101010)) ||
-                                           ((simdSize == 32) && (toggleBit == 0x2020202020202020)) ||
-                                           ((simdSize == 64) && (toggleBit == 0x4040404040404040)));
+                                    switch (simdSize)
+                                    {
+                                        case 16:
+                                            toggleBit = 0x1010101010101010;
+                                            break;
+                                        case 32:
+                                            toggleBit = 0x2020202020202020;
+                                            break;
+                                        default:
+                                            assert(simdSize == 64);
+                                            toggleBit = 0x4040404040404040;
+                                            break;
+                                    }
                                     break;
                                 }
 
@@ -9144,11 +9152,19 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     // * TYP_SIMD16: 0x08
                                     // * TYP_SIMD32: 0x10
                                     // * TYP_SIMD64: 0x20
-                                    toggleBit = 0x0020002000200020 >> ((elemSize / 2) + (simdSize / 32));
-
-                                    assert(((simdSize == 16) && (toggleBit == 0x0008000800080008)) ||
-                                           ((simdSize == 32) && (toggleBit == 0x0010001000100010)) ||
-                                           ((simdSize == 64) && (toggleBit == 0x0020002000200020)));
+                                    switch (simdSize)
+                                    {
+                                        case 16:
+                                            toggleBit = 0x0008000800080008;
+                                            break;
+                                        case 32:
+                                            toggleBit = 0x0010001000100010;
+                                            break;
+                                        default:
+                                            assert(simdSize == 64);
+                                            toggleBit = 0x0020002000200020;
+                                            break;
+                                    }
                                     break;
                                 }
 
@@ -9158,11 +9174,19 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     // * TYP_SIMD16: 0x04
                                     // * TYP_SIMD32: 0x08
                                     // * TYP_SIMD64: 0x10
-                                    toggleBit = 0x0000001000000010 >> ((elemSize / 2) + (simdSize / 32));
-
-                                    assert(((simdSize == 16) && (toggleBit == 0x0000000400000004)) ||
-                                           ((simdSize == 32) && (toggleBit == 0x0000000800000008)) ||
-                                           ((simdSize == 64) && (toggleBit == 0x0000001000000010)));
+                                    switch (simdSize)
+                                    {
+                                        case 16:
+                                            toggleBit = 0x0000000400000004;
+                                            break;
+                                        case 32:
+                                            toggleBit = 0x0000000800000008;
+                                            break;
+                                        default:
+                                            assert(simdSize == 64);
+                                            toggleBit = 0x0000001000000010;
+                                            break;
+                                    }
                                     break;
                                 }
 
@@ -9172,11 +9196,19 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     // * TYP_SIMD16: 0x02
                                     // * TYP_SIMD32: 0x04
                                     // * TYP_SIMD64: 0x08
-                                    toggleBit = 0x0000000000000008 >> ((elemSize / 2) + (simdSize / 32));
-
-                                    assert(((simdSize == 16) && (toggleBit == 0x0000000000000002)) ||
-                                           ((simdSize == 32) && (toggleBit == 0x0000000000000004)) ||
-                                           ((simdSize == 64) && (toggleBit == 0x0000000000000008)));
+                                    switch (simdSize)
+                                    {
+                                        case 16:
+                                            toggleBit = 0x0000000000000002;
+                                            break;
+                                        case 32:
+                                            toggleBit = 0x0000000000000004;
+                                            break;
+                                        default:
+                                            assert(simdSize == 64);
+                                            toggleBit = 0x0000000000000008;
+                                            break;
+                                    }
                                     break;
                                 }
 

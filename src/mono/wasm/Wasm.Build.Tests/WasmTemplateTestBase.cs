@@ -22,7 +22,6 @@ public abstract class WasmTemplateTestBase : BuildTestBase
     public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true)
     {
         InitPaths(id);
-        _testOutput.WriteLine($"after initpaths: {_provider.ProjectDir}");
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
 
         File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
