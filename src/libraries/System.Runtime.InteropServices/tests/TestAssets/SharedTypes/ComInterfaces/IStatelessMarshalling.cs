@@ -23,10 +23,10 @@ namespace SharedTypes.ComInterfaces
     [GeneratedComClass]
     internal partial class StatelessMarshalling : IStatelessMarshalling
     {
-        public void Method([MarshalUsing(CountElementName = "size")] StatelessType param, int size) { }
-        public void MethodIn([MarshalUsing(CountElementName = "size")] in StatelessType param, int size) { }
-        public void MethodOut([MarshalUsing(CountElementName = "size")] out StatelessType param, int size) { param = new StatelessType { I = 42 }; }
-        public void MethodRef([MarshalUsing(CountElementName = "size")] ref StatelessType param, int size) { param = new StatelessType { I = 200 }; }
+        public void Method(StatelessType param, int size) { }
+        public void MethodIn(in StatelessType param, int size) { }
+        public void MethodOut(out StatelessType param, int size) { param = new StatelessType { I = 42 }; }
+        public void MethodRef(ref StatelessType param, int size) { param = new StatelessType { I = 200 }; }
         public StatelessType Return() => throw new NotImplementedException();
         public StatelessType ReturnPreserveSig() => throw new NotImplementedException();
     }
@@ -37,14 +37,39 @@ namespace SharedTypes.ComInterfaces
         public int I;
     }
 
-    [CustomMarshaller(typeof(StatelessType), MarshalMode.Default, typeof(StatelessTypeMarshaller))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanaged))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.UnmanagedToManagedOut, typeof(ManagedToUnmanaged))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.ElementIn, typeof(ManagedToUnmanaged))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.ManagedToUnmanagedOut, typeof(UnmanagedToManaged))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.UnmanagedToManagedIn, typeof(UnmanagedToManaged))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.ElementOut, typeof(UnmanagedToManaged))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.UnmanagedToManagedRef, typeof(Bidirectional))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.ManagedToUnmanagedRef, typeof(Bidirectional))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.ElementRef, typeof(Bidirectional))]
     internal static class StatelessTypeMarshaller
     {
-        public static int FreeCount { get; private set; }
-        public static nint ConvertToUnmanaged(StatelessType managed) => managed.I;
+        internal static class Bidirectional
+        {
+            public static int FreeCount { get; private set; }
+            public static nint ConvertToUnmanaged(StatelessType managed) => managed.I;
 
-        public static StatelessType ConvertToManaged(nint unmanaged) => new StatelessType { I = (int)unmanaged };
+            public static StatelessType ConvertToManaged(nint unmanaged) => new StatelessType { I = (int)unmanaged };
 
-        public static void Free(nint unmanaged) => FreeCount++;
+            public static void Free(nint unmanaged) => FreeCount++;
+        }
+
+        internal static class ManagedToUnmanaged
+        {
+            public static int FreeCount { get; private set; }
+            public static void Free(nint unmanaged) => FreeCount++;
+            public static nint ConvertToUnmanaged(StatelessType managed) => managed.I;
+        }
+
+        internal static class UnmanagedToManaged
+        {
+            public static int FreeCount { get; private set; }
+            public static void Free(nint unmanaged) => FreeCount++;
+            public static StatelessType ConvertToManaged(nint unmanaged) => new StatelessType { I = (int)unmanaged };
+        }
     }
 }

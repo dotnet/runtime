@@ -1106,7 +1106,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 {
                     writer.WriteLine($"extern void *{symbol};");
                 }
-                writer.WriteLine("void register_aot_modules ()");
+                writer.WriteLine("void register_aot_modules (void);");
+                writer.WriteLine("void register_aot_modules (void)");
                 writer.WriteLine("{");
                 foreach (var symbol in symbols)
                 {
@@ -1142,6 +1143,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     writer.WriteLine($"extern void *{symbol};");
                 }
 
+                writer.WriteLine("void register_aot_modules (void);");
                 writer.WriteLine("void register_aot_modules (void)");
                 writer.WriteLine("{");
                 foreach (var symbol in symbols)

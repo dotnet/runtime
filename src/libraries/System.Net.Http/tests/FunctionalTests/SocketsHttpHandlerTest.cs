@@ -4365,7 +4365,8 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        [Fact]
+        // On Windows7 DNS may return SocketError.NoData (WSANO_DATA), which we currently don't map to NameResolutionError.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         public async Task NameResolutionError()
         {
             using HttpClient client = CreateHttpClient();
@@ -4376,10 +4377,8 @@ namespace System.Net.Http.Functional.Tests
             };
 
             HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
-
-            // TODO: Some platforms fail to detect NameResolutionError reliably, we should investigate this.
-            // Also, System.Net.Quic does not report DNS resolution errors yet.
-            Assert.True(ex.HttpRequestError is HttpRequestError.NameResolutionError or HttpRequestError.ConnectionError);
+            Assert.Equal(HttpRequestError.NameResolutionError, ex.HttpRequestError);
+            Assert.IsType<SocketException>(ex.InnerException);
         }
 
         [Fact]

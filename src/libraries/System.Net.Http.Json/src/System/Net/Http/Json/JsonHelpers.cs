@@ -23,9 +23,18 @@ namespace System.Net.Http.Json
             // Resolves JsonTypeInfo metadata using the appropriate JsonSerializerOptions configuration,
             // following the semantics of the JsonSerializer reflection methods.
             options ??= s_defaultSerializerOptions;
-            options.TypeInfoResolver ??= JsonSerializerOptions.Default.TypeInfoResolver;
-            options.MakeReadOnly();
 
+            if (options.TypeInfoResolver is null)
+            {
+                // Public STJ APIs have no way of configuring TypeInfoResolver
+                // instances in a thread-safe manner. Let STJ do it for us by
+                // running a simple reflection-based serialization operation.
+                // TODO remove once https://github.com/dotnet/runtime/issues/89934 is implemented.
+                JsonSerializer.Deserialize<int>("0"u8, options);
+            }
+
+            Debug.Assert(options.TypeInfoResolver != null);
+            Debug.Assert(options.IsReadOnly);
             return options.GetTypeInfo(type);
         }
 

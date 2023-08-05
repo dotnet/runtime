@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
     <Description>Abstractions for modifying .NET webcil binary images</Description>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <Nullable>enable</Nullable>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
-    <!-- This library can't use the live targeting / runtime pack as it builds before the shared framework (as part of a task). -->
-    <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
+    <IsShipping>true</IsShipping>
+    <!-- this assembly should not produce a public package, rather it's meant to be shipped by the
+          WasmAppBuilder task and the BrowserDebugProxy -->
+    <IsShippingPackage>false</IsShippingPackage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,11 +20,9 @@
     <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="Webcil\**\*.cs" />
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+    <Compile Include="..\Common\IsExternalInit.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Compile Include="Common\IsExternalInit.cs" />
-  </ItemGroup>
 </Project>

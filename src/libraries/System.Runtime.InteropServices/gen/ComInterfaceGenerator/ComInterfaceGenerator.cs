@@ -310,6 +310,20 @@ namespace Microsoft.Interop
                         })
                 };
             }
+            var direction = GetDirectionFromOptions(generatedComInterfaceAttributeData.Options);
+
+            // Ensure the size of collections are known at marshal / unmarshal in time.
+            // A collection that is marshalled in cannot have a size that is an 'out' parameter.
+            foreach (TypePositionInfo parameter in signatureContext.ManagedParameters)
+            {
+                MarshallerHelpers.ValidateCountInfoAvailableAtCall(
+                    direction,
+                    parameter,
+                    generatorDiagnostics,
+                    symbol,
+                    GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam,
+                    GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue);
+            }
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 
@@ -322,7 +336,7 @@ namespace Microsoft.Interop
 
             var declaringType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 
-            var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, GetDirectionFromOptions(generatedComInterfaceAttributeData.Options), true, ExceptionMarshalling.Com);
+            var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com);
 
             return new IncrementalMethodStubGenerationContext(
                 signatureContext,

@@ -5687,6 +5687,7 @@ namespace System
         public System.TimeSpan[] GetAmbiguousTimeOffsets(System.DateTimeOffset dateTimeOffset) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<System.TimeZoneInfo> GetSystemTimeZones() { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<System.TimeZoneInfo> GetSystemTimeZones(bool skipSorting) { throw null; }
         public System.TimeSpan GetUtcOffset(System.DateTime dateTime) { throw null; }
         public System.TimeSpan GetUtcOffset(System.DateTimeOffset dateTimeOffset) { throw null; }
         public bool HasSameRules(System.TimeZoneInfo other) { throw null; }
@@ -11576,8 +11577,10 @@ namespace System.Reflection
         public System.Reflection.MethodInfo[] TargetMethods;
         public System.Type TargetType;
     }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class IntrospectionExtensions
     {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Reflection.TypeInfo GetTypeInfo(this System.Type type) { throw null; }
     }
     public partial class InvalidFilterCriteriaException : System.ApplicationException
