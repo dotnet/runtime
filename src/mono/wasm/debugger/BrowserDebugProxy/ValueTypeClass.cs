@@ -31,7 +31,7 @@ namespace BrowserDebugProxy
         public int TypeId { get; init; }
         public bool IsEnum { get; init; }
 
-        public ValueTypeClass(byte[] buffer, string className, JArray fields, int typeId, bool isEnum, List<JObject> inlineArraySize = null)
+        public ValueTypeClass(byte[] buffer, string className, JArray fields, int typeId, bool isEnum, List<JObject> inlineArray = null)
         {
             var valueTypeId = MonoSDBHelper.GetNewObjectId();
             var objectId = new DotnetObjectId("valuetype", valueTypeId);
@@ -57,7 +57,7 @@ namespace BrowserDebugProxy
                                                 int typeId,
                                                 bool isEnum,
                                                 bool includeStatic,
-                                                int inlineArray,
+                                                int inlineArraySize,
                                                 CancellationToken token)
         {
             var typeInfo = await sdbAgent.GetTypeInfo(typeId, token);
@@ -68,13 +68,14 @@ namespace BrowserDebugProxy
 
             JArray fields = new();
             List<JObject> inlineArray = null;
+            JObject fieldValue = null;
             if (includeStatic)
             {
                 IEnumerable<FieldTypeClass> staticFields =
                     fieldTypes.Where(f => f.Attributes.HasFlag(FieldAttributes.Static));
                 foreach (var field in staticFields)
                 {
-                    var fieldValue = await sdbAgent.GetFieldValue(typeId, field.Id, token);
+                    fieldValue = await sdbAgent.GetFieldValue(typeId, field.Id, token);
                     fields.Add(GetFieldWithMetadata(field, fieldValue, isStatic: true));
                 }
             }
@@ -82,7 +83,6 @@ namespace BrowserDebugProxy
             IEnumerable<FieldTypeClass> writableFields = fieldTypes
                 .Where(f => !f.Attributes.HasFlag(FieldAttributes.Literal)
                     && !f.Attributes.HasFlag(FieldAttributes.Static));
-            JObject fieldValue = new();
             foreach (var field in writableFields)
             {
                 fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
@@ -94,10 +94,10 @@ namespace BrowserDebugProxy
                 inlineArray.Add(fieldValue);
                 for (int i = 1; i < inlineArraySize; i++)
                 {
-                    fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, $"{i}", token, true, field.TypeId, false);
+                    fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, $"{i}", token, true, writableFields.First().TypeId, false);
                     inlineArray.Add(fieldValue);
                 }
-            }            
+            }
 
             long endPos = cmdReader.BaseStream.Position;
             cmdReader.BaseStream.Position = initialPos;

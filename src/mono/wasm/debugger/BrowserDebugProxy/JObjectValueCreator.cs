@@ -318,6 +318,7 @@ internal sealed class JObjectValueCreator
         var typeId = retDebuggerCmdReader.ReadInt32();
         var className = await _sdbAgent.GetTypeName(typeId, token);
         var inlineArray = -1;
+        (int MajorVersion, int MinorVersion) = await _sdbAgent.GetVMVersion(token);
         if (MajorVersion == 2 && MinorVersion >= 65)
             inlineArray = retDebuggerCmdReader.ReadInt32();
         var numValues = retDebuggerCmdReader.ReadInt32();
