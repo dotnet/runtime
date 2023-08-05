@@ -342,7 +342,7 @@ namespace Microsoft.NET.HostModel
                                      Offsets.DataDirectoryEntry.VirtualAddressOffset);
                     }
 
-                    // index of ResourceTable is 2 in DataDirectories
+                    // update the ResourceTable in DataDirectories
                     int resourceTableOffset = dataDirectoriesOffset + Offsets.ResourceTableDataDirectoryIndex * Offsets.DataDirectoryEntrySize;
                     WriteI32(accessor, resourceTableOffset + Offsets.DataDirectoryEntry.VirtualAddressOffset, rsrcVirtualAddress);
                     WriteI32(accessor, resourceTableOffset + Offsets.DataDirectoryEntry.SizeOffset, rsrcSectionDataSize);
