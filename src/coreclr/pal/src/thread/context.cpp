@@ -29,6 +29,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #endif
 #include <errno.h>
 #include <unistd.h>
+#include <new>
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
