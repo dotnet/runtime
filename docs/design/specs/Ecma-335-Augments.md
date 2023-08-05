@@ -1059,7 +1059,7 @@ Instead, note is added to sections "III.3.39 ldarga" and "III.3.44 ldloca": The 
 
 ## Creating arrays using newobj
 
-Note about creating zero-based, one-dimensional arrays in section III.4.21 "newobj – create a new object" is replaced with "All zero-based, one-dimensional arrays *should* be created using newarr, not newobj". Rationale: All arrays have runtime provided constructors. It does not make sense to disallow one specific constructors just because there is more efficient alternative. 
+Note about creating zero-based, one-dimensional arrays in section III.4.21 "newobj – create a new object" is replaced with "All zero-based, one-dimensional arrays *should* be created using newarr, not newobj". Rationale: All arrays have runtime provided constructors. It does not make sense to disallow one specific constructor just because there is more efficient alternative.
 
 ## API documentation
 
