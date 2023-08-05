@@ -29,7 +29,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #endif
 #include <errno.h>
 #include <unistd.h>
-#include <new>
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
@@ -496,7 +495,7 @@ CONTEXT_GetThreadContext(
             ERROR("GetThreadContext on a thread other than the current "
                   "thread is returning TRUE\n");
             flags = lpContext->ContextFlags;
-            new (lpContext) CONTEXT();
+            memset(lpContext, 0, sizeof(*lpContext));
             lpContext->ContextFlags = flags;
             ret = TRUE;
             goto EXIT;
