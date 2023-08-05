@@ -1163,6 +1163,13 @@ namespace System.Text.Json
             return _parent.GetNameOfPropertyValue(_idx);
         }
 
+        internal ReadOnlySpan<byte> GetPropertyNameAsUtf8Span()
+        {
+            CheckValidInstance();
+
+            return _parent.GetNameOfPropertyValueAsUtf8Span(_idx);
+        }
+
         /// <summary>
         ///   Gets the original input data backing this value, returning it as a <see cref="string"/>.
         /// </summary>
