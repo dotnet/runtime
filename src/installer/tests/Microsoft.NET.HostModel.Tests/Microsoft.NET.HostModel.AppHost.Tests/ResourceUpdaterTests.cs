@@ -58,7 +58,7 @@ public class ResourceUpdaterTests
     }
 
     [Fact]
-    void ResourceUpdaterAddResourceToPEWithoutRsrc()
+    void AddResource_AddToPEWithoutRsrc()
     {
         using var tempFile = CreateTestPEFileWithoutRsrc();
 
@@ -79,7 +79,7 @@ public class ResourceUpdaterTests
     }
 
     [Fact]
-    void ResourceUpdaterAddResourceToExistingRsrc()
+    void AddResource_AddToExistingRsrc()
     {
         using var tempFile = GetCurrentAssemblyMemoryStream();
 
@@ -100,7 +100,7 @@ public class ResourceUpdaterTests
     }
 
     [Fact]
-    void ResourceUpdaterAddResourceIdType()
+    void AddResource_AddResourceWithIdType()
     {
         using var tempFile = GetCurrentAssemblyMemoryStream();
         const ushort IdTestType = 100;
@@ -122,7 +122,7 @@ public class ResourceUpdaterTests
     }
 
     [Fact]
-    void ResourceUpdaterAddResourceTwoSameStringTypeWithDifferName()
+    void AddResource_AddTwoSameStringTypeWithDifferName()
     {
         using var tempFile = GetCurrentAssemblyMemoryStream();
 
@@ -146,7 +146,7 @@ public class ResourceUpdaterTests
     }
 
     [Fact]
-    void ResourceUpdaterAddResourceTwoSameUShortTypeWithDifferName()
+    void AddResource_AddTwoSameUShortTypeWithDifferName()
     {
         using var tempFile = GetCurrentAssemblyMemoryStream();
 
