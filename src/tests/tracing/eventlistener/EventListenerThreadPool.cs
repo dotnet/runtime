@@ -17,6 +17,10 @@ namespace Tracing.Tests
         public volatile int TPIOEnqueue = 0;
         public volatile int TPIODequeue = 0;
 
+        public int TPIOPackGoal = 0;
+        public int TPIOEnqueueGoal = 1;
+        public int TPIODequeueGoal = 1;
+
         public ManualResetEvent TPWaitWorkerThreadEvent = new ManualResetEvent(false);
         public ManualResetEvent TPWaitIOPackEvent = new ManualResetEvent(false);
         public ManualResetEvent TPWaitIOEnqueueEvent = new ManualResetEvent(false);
@@ -50,17 +54,20 @@ namespace Tracing.Tests
             else if (eventData.EventName.Equals("ThreadPoolIOPack"))
             {
                 Interlocked.Increment(ref TPIOPack);
-                TPWaitIOPackEvent.Set();
+                if (TPIOPack == TPIOPackGoal)
+                    TPWaitIOPackEvent.Set();
             }
             else if (eventData.EventName.Equals("ThreadPoolIOEnqueue"))
             {
                 Interlocked.Increment(ref TPIOEnqueue);
-                TPWaitIOEnqueueEvent.Set();
+                if (TPIOEnqueue == TPIOEnqueueGoal)
+                    TPWaitIOEnqueueEvent.Set();
             }
             else if (eventData.EventName.Equals("ThreadPoolIODequeue"))
             {
                 Interlocked.Increment(ref TPIODequeue);
-                TPWaitIODequeueEvent.Set();
+                if (TPIODequeue == TPIODequeueGoal)
+                    TPWaitIODequeueEvent.Set();
             }
         }
     }
@@ -71,24 +78,47 @@ namespace Tracing.Tests
         {
             using (RuntimeEventListener listener = new RuntimeEventListener())
             {
-
-                // Test this part in CoreCLR only
-                if (!TestLibrary.Utilities.IsNativeAot)
+                // This should fire either of TPWorkerThreadStartCount, TPWorkerThreadStopCount or TPWorkerThreadWaitCount
+                int someNumber = 0;
+                Task[] tasks = new Task[100];
+                for (int i = 0; i < tasks.Length; i++) 
                 {
-                    int someNumber = 0;
-                    Task[] tasks = new Task[100];
-                    for (int i = 0; i < tasks.Length; i++)
+                    tasks[i] = Task.Run(() => { someNumber += 1; });
+                }
+
+                if (TestLibrary.Utilities.IsWindows)
+                {
+                    // This part is Windows-specific, it should fire an IOPack, IOEnqueue and IODequeue event
+                    listener.TPIOPackGoal += 1;
+                    listener.TPIOEnqueueGoal += 1;
+                    listener.TPIODequeueGoal += 1;
+                
+                    Overlapped overlapped = new Overlapped();
+                    unsafe
                     {
-                        tasks[i] = Task.Run(() => { someNumber += 1; });
+                        NativeOverlapped* nativeOverlapped = overlapped.Pack(null);
+                        ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
                     }
+                }
 
-                    listener.TPWaitWorkerThreadEvent.WaitOne(TimeSpan.FromMinutes(3));
+                // RegisterWaitForSingleObject should fire an IOEnqueue and IODequeue event
+                ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+                WaitOrTimerCallback work = (x, timedOut) => { int y = (int)x; };
+                ThreadPool.RegisterWaitForSingleObject(manualResetEvent, work, 1, 100, true);
+                manualResetEvent.Set();
 
-                    bool workerThreadEventsOk = listener.TPWorkerThreadStartCount > 0 ||
-                                                listener.TPWorkerThreadStopCount > 0 ||
-                                                listener.TPWorkerThreadWaitCount > 0;
+                ManualResetEvent[] waitEvents = new ManualResetEvent[] {listener.TPWaitIOPackEvent,
+                                                                        listener.TPWaitIOEnqueueEvent,
+                                                                        listener.TPWaitIODequeueEvent};
 
-                    if (!workerThreadEventsOk)
+                WaitHandle.WaitAll(waitEvents, TimeSpan.FromMinutes(1));
+
+                if (!TestLibrary.Utilities.IsNativeAot) // This test works in CoreCLR only, don't know why yet
+                {
+                    listener.TPWaitWorkerThreadEvent.WaitOne(TimeSpan.FromMinutes(1));
+                    if (listener.TPWorkerThreadStartCount == 0 &&
+                        listener.TPWorkerThreadStopCount == 0 &&
+                        listener.TPWorkerThreadWaitCount == 0)
                     {
                         Console.WriteLine("Test Failed: Did not see any of the expected events.");
                         Console.WriteLine($"ThreadPoolWorkerThreadStartCount: {listener.TPWorkerThreadStartCount}");
@@ -98,32 +128,17 @@ namespace Tracing.Tests
                     }
                 }
 
-                // Test this part in Windows only
-                if (TestLibrary.Utilities.IsWindows)
+                if (listener.TPIOPack != listener.TPIOPackGoal &&
+                    listener.TPIOEnqueue != listener.TPIOEnqueueGoal &&
+                    listener.TPIODequeue != listener.TPIODequeueGoal)
                 {
-                    Overlapped overlapped = new Overlapped();
-
-                    unsafe
-                    {
-                        NativeOverlapped* nativeOverlapped = overlapped.Pack(null);
-                        ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
-                    }
-                    
-                    ManualResetEvent[] ioWaitEvents = new ManualResetEvent[] {listener.TPWaitIOPackEvent, listener.TPWaitIOEnqueueEvent, listener.TPWaitIODequeueEvent};
-
-                    WaitHandle.WaitAll(ioWaitEvents, TimeSpan.FromMinutes(3));
-
-                    if (!(listener.TPIOPack > 0 && listener.TPIOEnqueue > 0 && listener.TPIODequeue > 0))
-                    {
-                        Console.WriteLine("Test Failed: Did not see all of the expected events.");
-                        Console.WriteLine($"ThreadPoolIOPack: {listener.TPIOPack}");
-                        Console.WriteLine($"ThreadPoolIOEnqueue: {listener.TPIOEnqueue}");
-                        Console.WriteLine($"ThreadPoolIODequeue: {listener.TPIODequeue}");
-                        return -1;
-                    }
+                    Console.WriteLine("Test Failed: Did not see all of the expected events.");
+                    Console.WriteLine($"ThreadPoolIOPack: {listener.TPIOPack}");
+                    Console.WriteLine($"ThreadPoolIOEnqueue: {listener.TPIOEnqueue}");
+                    Console.WriteLine($"ThreadPoolIODequeue: {listener.TPIODequeue}");
+                    return -1;
                 }
-                
-                
+
                 Console.WriteLine("Test Passed.");
                 return 100;
             }
