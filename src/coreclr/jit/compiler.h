@@ -5523,7 +5523,7 @@ public:
 
     PhaseStatus fgTailDuplicate();
     bool fgTailDuplicateBlock(BasicBlock* const block);
-    bool fgLocalIsConstantOut(GenTreeLclVarCommon* lcl, BasicBlock* const block);
+    bool fgLocalIsConstantOut(GenTreeLclVarCommon* lcl, BasicBlock* const block, unsigned limit = 10);
 
     enum FG_RELOCATE_TYPE
     {

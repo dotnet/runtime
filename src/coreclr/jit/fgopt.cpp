@@ -7103,6 +7103,12 @@ bool Compiler::fgTailDuplicateBlock(BasicBlock* const block)
             return false;
         }
 
+        if (predBlock->isBBCallAlwaysPairTail())
+        {
+            // this block must remain empty
+            return false;
+        }
+
         numPreds++;
     }
 
@@ -7129,7 +7135,7 @@ bool Compiler::fgTailDuplicateBlock(BasicBlock* const block)
         }
     }
 
-    JITDUMP("Considering tail dup in " FMT_BB ": has %u preds\n", block->bbNum, numPreds);
+    JITDUMP("\nConsidering tail dup in " FMT_BB ": has %u preds\n", block->bbNum, numPreds);
 
     bool madeChanges = false;
 
@@ -7138,6 +7144,7 @@ bool Compiler::fgTailDuplicateBlock(BasicBlock* const block)
     Statement* const lastStmt = block->lastStmt();
     for (Statement* stmt : block->Statements())
     {
+        JITDUMP("\nScanning " FMT_STMT "\n", stmt->GetID());
         unsigned numLocal        = 0;
         unsigned numAllConstant  = 0;
         unsigned numSomeConstant = 0;
@@ -7148,7 +7155,7 @@ bool Compiler::fgTailDuplicateBlock(BasicBlock* const block)
                 continue;
             }
 
-            JITDUMP("\nchecking [%06u]\n", dspTreeID(lcl));
+            JITDUMP("... checking [%06u] V%02u\n", dspTreeID(lcl), lcl->GetLclNum());
             numLocal++;
             unsigned numConstantThisLocal = 0;
             for (BasicBlock* const predBlock : block->PredBlocks())
@@ -7178,25 +7185,47 @@ bool Compiler::fgTailDuplicateBlock(BasicBlock* const block)
             break;
         }
 
-        // leave last statement alone for branches and such.
-        //
-        if (stmt == lastStmt)
-        {
-            if ((block->bbJumpKind != BBJ_ALWAYS) && (block->bbJumpKind != BBJ_NONE))
-            {
-                // if there are constants here we could split the computation off and hoist it like
-                // we do for returns... not clear if this is better or not.
-                //
-                JITDUMP(FMT_STMT " has control flow impact\n", stmt->GetID());
-                break;
-            }
-        }
+        bool tailDuplicate = false;
 
         if (numAllConstant == numLocal)
         {
             // todo: cost checks... (heuristic)
             JITDUMP("All %u locals are constant in all preds, duplicating " FMT_STMT "\n", numLocal, stmt->GetID());
+            tailDuplicate = true;
+        }
+        else if (numAllConstant > 0)
+        {
+            // Could handle this case with a more stringent cost check
+            JITDUMP(FMT_STMT " %u of the %u locals are constant in all preds\n", stmt->GetID(), numAllConstant,
+                    numLocal);
+        }
+        else if (numSomeConstant > 0)
+        {
+            // Could handle this case with an even more stringent cost check
+            JITDUMP(FMT_STMT " %u of the %u locals are constant in some preds\n", stmt->GetID(), numSomeConstant,
+                    numLocal);
+        }
 
+        // leave last statement alone for branches and such.
+        //
+        if ((stmt == lastStmt) && !(block->KindIs(BBJ_ALWAYS, BBJ_NONE, BBJ_RETURN)))
+        {
+            // if there are constants here we could split the computation off and hoist it like
+            // we do for returns... not clear if this is better or not.
+            //
+            JITDUMP(FMT_STMT " has control flow impact\n", stmt->GetID());
+            tailDuplicate = false;
+        }
+
+        if (!tailDuplicate)
+        {
+            // We didn't duplicate this statement, so we can't duplicate any of the ones that follow.
+            break;
+        }
+
+        if (tailDuplicate)
+        {
+            JITDUMP(" ...duplicating " FMT_STMT "\n", numLocal, stmt->GetID());
             // If stmt is GT_RETURN, we need to spill to a new temp, and then dup the spill.
             //
             bool deleteStmt = true;
@@ -7252,22 +7281,10 @@ bool Compiler::fgTailDuplicateBlock(BasicBlock* const block)
             }
             else
             {
+                // Next statement is now the modified return, leave it as is.
+                //
                 break;
             }
-        }
-        else if (numAllConstant > 0)
-        {
-            // Could handle this case with a more stringent cost check
-            JITDUMP(FMT_STMT " %u of the %u locals are constant in all preds\n", stmt->GetID(), numAllConstant,
-                    numLocal);
-            break;
-        }
-        else if (numSomeConstant > 0)
-        {
-            // Could handle this case with an even more stringent cost check
-            JITDUMP(FMT_STMT " %u of the %u locals are constant in some preds\n", stmt->GetID(), numSomeConstant,
-                    numLocal);
-            break;
         }
 
         if (stmt == lastStmt)
@@ -7280,29 +7297,18 @@ bool Compiler::fgTailDuplicateBlock(BasicBlock* const block)
 }
 
 // very similar to fgBlockEndFavorsTailDuplication
-bool Compiler::fgLocalIsConstantOut(GenTreeLclVarCommon* lcl, BasicBlock* const block)
+bool Compiler::fgLocalIsConstantOut(GenTreeLclVarCommon* lcl, BasicBlock* const block, unsigned limit)
 {
-    // const unsigned lclNum = lcl->GetLclNum();
-
-    // If the local is address exposed, we currently can't optimize....?
-    //
-    // LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
-
-    // if (lclDsc->IsAddressExposed())
-    //{
-    // return false;
-    // }
-
     Statement* const lastStmt  = block->lastStmt();
     Statement* const firstStmt = block->FirstNonPhiDef();
 
+    // Check up to limit statements...
+    //
+    unsigned count = 0;
+
     if (lastStmt != nullptr)
     {
-        // Check up to N statements...
-        //
-        const int  limit = 10;
-        int        count = 0;
-        Statement* stmt  = lastStmt;
+        Statement* stmt = lastStmt;
 
         while (count < limit)
         {
@@ -7357,12 +7363,12 @@ bool Compiler::fgLocalIsConstantOut(GenTreeLclVarCommon* lcl, BasicBlock* const 
 
     BasicBlock* const pred = block->GetUniquePred(this);
 
-    // Walk back in flow...(maybe pass count back...?)
+    // Walk back in flow
     //
     if (pred != nullptr)
     {
-        JITDUMP("Chaining back to " FMT_BB "\n", pred->bbNum);
-        return fgLocalIsConstantOut(lcl, pred);
+        JITDUMP("Chaining back to " FMT_BB " remaining limit %u\n", pred->bbNum, limit - count);
+        return fgLocalIsConstantOut(lcl, pred, limit - count);
     }
 
     return false;
