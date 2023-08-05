@@ -24,6 +24,7 @@ namespace ILCompiler.Win32Resources
     /// </summary>
     public unsafe partial class ResourceData
     {
+#if HOST_MODEL
         /// <summary>
         /// Initialize a ResourceData instance from a PE file
         /// </summary>
@@ -37,8 +38,7 @@ namespace ILCompiler.Win32Resources
                 ReadResourceData(resourceDataBlob, peFile, null);
             }
         }
-
-#if !HOST_MODEL
+#else
         /// <summary>
         /// Initialize a ResourceData instance from a PE file
         /// </summary>
