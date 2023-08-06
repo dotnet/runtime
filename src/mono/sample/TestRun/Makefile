@@ -8,7 +8,7 @@ TARGET_OS=linux
 AOT?=false
 QEMU=qemu-riscv64-static
 SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
-ANY_PATH= /home/wuxinlong/workspace/samples/csharp/versioning/override/bin/Debug/net8.0/override.dll
+ANY_PATH= /home/wuxinlong/workspace/samples/core/getting-started/golden/app/bin/Debug/net8.0/app.dll
 
 GitHubKey=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
 
@@ -108,79 +108,92 @@ clean:
 
 # ROOTFS_DIR="" ./build.sh clr.hosts -c Debug
 
-TEST_PATH=/home/wuxinlong/workspace/samples/csharp/
+TEST_PATH=/home/wuxinlong/workspace/samples/
 
 customer-relationship:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)tutorials/default-interface-members-versions/finished/customer-relationship/bin/Debug/net8.0/customer-relationship.dll
+	$(TEST_PATH)csharp/tutorials/default-interface-members-versions/finished/customer-relationship/bin/Debug/net8.0/customer-relationship.dll
 
 exploration:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)tutorials/exploration/csharp6-finished/bin/Debug/net8.0/csharp6-finished.dll
+	$(TEST_PATH)csharp/tutorials/exploration/csharp6-finished/bin/Debug/net8.0/csharp6-finished.dll
 
 toll-calculator:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)tutorials/patterns/finished/toll-calculator/bin/Debug/net8.0/toll-calculator.dll
+	$(TEST_PATH)csharp/tutorials/patterns/finished/toll-calculator/bin/Debug/net8.0/toll-calculator.dll
 
 mixins-with-interfaces:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)tutorials/mixins-with-interfaces/bin/Debug/net8.0/mixins-with-interfaces.dll
+	$(TEST_PATH)csharp/tutorials/mixins-with-interfaces/bin/Debug/net8.0/mixins-with-interfaces.dll
 
 datetime-parse:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)api/datetime.parse/bin/Debug/net8.0/datetime.parse.dll
+	$(TEST_PATH)csharp/api/datetime.parse/bin/Debug/net8.0/datetime.parse.dll
 
 delegates-and-events:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)delegates-and-events/bin/Debug/net8.0/delegates-and-events.dll
+	$(TEST_PATH)csharp/delegates-and-events/bin/Debug/net8.0/delegates-and-events.dll
 
 branches-quickstart:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)branches-quickstart/bin/Debug/net8.0/BranchesAndLoops.dll
+	$(TEST_PATH)csharp/branches-quickstart/bin/Debug/net8.0/BranchesAndLoops.dll
 
 events:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)events/bin/Debug/net8.0/events.dll
+	$(TEST_PATH)csharp/events/bin/Debug/net8.0/events.dll
 
 expression-trees:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)expression-trees/bin/Debug/net8.0/expression-trees.dll
+	$(TEST_PATH)csharp/expression-trees/bin/Debug/net8.0/expression-trees.dll
 
 indexers:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)indexers/bin/Debug/net8.0/indexers.dll
+	$(TEST_PATH)csharp/indexers/bin/Debug/net8.0/indexers.dll
 
 iterators:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)iterators/bin/Debug/net8.0/iterators.dll
+	$(TEST_PATH)csharp/iterators/bin/Debug/net8.0/iterators.dll
 
 list-quickstart:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)list-quickstart/bin/Debug/net8.0/list-quickstart.dll
+	$(TEST_PATH)csharp/list-quickstart/bin/Debug/net8.0/list-quickstart.dll
 
 NullableIntroduction:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)NullableIntroduction/NullableIntroduction/bin/Debug/net8.0/NullableIntroduction.dll
+	$(TEST_PATH)csharp/NullableIntroduction/NullableIntroduction/bin/Debug/net8.0/NullableIntroduction.dll
 
 numbers-quickstart:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)/numbers-quickstart/bin/Debug/net8.0/NumbersInCSharp.dll
+	$(TEST_PATH)csharp/numbers-quickstart/bin/Debug/net8.0/NumbersInCSharp.dll
 
 PatternMatching:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)PatternMatching/bin/Debug/net8.0/PatternMatching.dll
+	$(TEST_PATH)csharp/PatternMatching/bin/Debug/net8.0/PatternMatching.dll
 
 ref-tutorial:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)/ref-tutorial/IntruderAlert-finished/bin/Debug/net8.0/IntruderAlert.dll
+	$(TEST_PATH)csharp/ref-tutorial/IntruderAlert-finished/bin/Debug/net8.0/IntruderAlert.dll
 
 versioning-new:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)/versioning/new/bin/Debug/net8.0/new.dll
+	$(TEST_PATH)csharp/versioning/new/bin/Debug/net8.0/new.dll
 
 versioning-override:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)/versioning/override/bin/Debug/net8.0/override.dll
+	$(TEST_PATH)csharp/versioning/override/bin/Debug/net8.0/override.dll
+
+fibonacci-msbuild:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/console-apps/fibonacci-msbuild/bin/Debug/net8.0/Hello.dll
+
+FibonacciBetterMsBuild:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/console-apps/FibonacciBetterMsBuild/bin/Debug/net8.0/Fibonacci.dll
+
+fibonacci-msbuild:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/console-apps/fibonacci-msbuild/bin/Debug/net8.0/Hello.dll
+
 
 test: customer-relationship exploration toll-calculator mixins-with-interfaces delegates-and-events branches-quickstart \
-events expression-trees indexers list-quickstart NullableIntroduction numbers-quickstart PatternMatching versioning-new versioning-override
+events expression-trees indexers list-quickstart NullableIntroduction numbers-quickstart PatternMatching versioning-new versioning-override fibonacci-msbuild
