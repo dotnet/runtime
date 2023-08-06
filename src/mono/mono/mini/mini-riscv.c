@@ -867,8 +867,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 			ainfo->storage = ArgVtypeOnStack;
 			cinfo->stack_usage += sizeof (host_mgreg_t);
 			ainfo->slot_size = sizeof (host_mgreg_t);
-		}
-		else {
+		} else {
 			ainfo->storage = ArgVtypeInIReg;
 			ainfo->reg = cinfo->next_arg;
 			ainfo->size = sizeof (host_mgreg_t);
@@ -1685,7 +1684,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		}
 		break;
 	case ArgVtypeInMixed: {
-		g_assert (ainfo->slot_size == sizeof(host_mgreg_t));
+		g_assert (ainfo->slot_size == sizeof (host_mgreg_t));
 
 		MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
 		load->dreg = ainfo->reg;
@@ -1696,7 +1695,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
 		load->dreg = mono_alloc_ireg (cfg);
 		load->inst_basereg = src->dreg;
-		load->inst_offset = sizeof(host_mgreg_t);
+		load->inst_offset = sizeof (host_mgreg_t);
 		MONO_ADD_INS (cfg->cbb, load);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_SP, ainfo->offset, load->dreg);
 		break;
@@ -2010,7 +2009,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += sizeof (host_mgreg_t);
 			ins->inst_offset = -offset;
 			break;
-		case ArgVtypeInMixed: 
+		case ArgVtypeInMixed:
 			ins->opcode = OP_REGOFFSET;
 			ins->inst_basereg = cfg->frame_reg;
 			offset += sizeof (host_mgreg_t) * 2;
@@ -2270,19 +2269,19 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_R4CONST:
 		case OP_ICONV_TO_R4:
 			break;
-		case OP_FCONV_TO_I2: 
+		case OP_FCONV_TO_I2:
 		case OP_RCONV_TO_I2: {
 			// fconv_to_i2 rd, fs1 => fconv_to_i{4|8} rs1, fs1; {i|l}conv_to_i2 rd, rs1
 #ifdef TARGET_RISCV64
 			if (ins->opcode == OP_FCONV_TO_I2)
-				NEW_INS_BEFORE(cfg, ins, temp, OP_FCONV_TO_I8);
+				NEW_INS_BEFORE (cfg, ins, temp, OP_FCONV_TO_I8);
 			else
-				NEW_INS_BEFORE(cfg, ins, temp, OP_RCONV_TO_I8);
+				NEW_INS_BEFORE (cfg, ins, temp, OP_RCONV_TO_I8);
 #else
 			if (ins->opcode == OP_FCONV_TO_I2)
-				NEW_INS_BEFORE(cfg, ins, temp, OP_FCONV_TO_I4);
+				NEW_INS_BEFORE (cfg, ins, temp, OP_FCONV_TO_I4);
 			else
-				NEW_INS_BEFORE(cfg, ins, temp, OP_RCONV_TO_I4);
+				NEW_INS_BEFORE (cfg, ins, temp, OP_RCONV_TO_I4);
 #endif
 			temp->dreg = mono_alloc_ireg (cfg);
 			temp->sreg1 = ins->sreg1;
@@ -2334,7 +2333,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBGE || ins->next->opcode == OP_FBGE_UN){
+				} else if (ins->next->opcode == OP_FBGE || ins->next->opcode == OP_FBGE_UN) {
 					// rcmp rd, rs1, rs2; fbge rd -> rcle rd, rs2, rs1; bne rd, X0
 					ins->opcode = OP_RCLE;
 					ins->dreg = mono_alloc_ireg (cfg);
@@ -2345,7 +2344,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBLE || ins->next->opcode == OP_FBLE_UN){
+				} else if (ins->next->opcode == OP_FBLE || ins->next->opcode == OP_FBLE_UN) {
 					ins->opcode = OP_RCLE;
 					ins->dreg = mono_alloc_ireg (cfg);
 
@@ -3604,7 +3603,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 			case ArgVtypeInMixed:
 				code = mono_riscv_emit_load (code, RISCV_T0, RISCV_S0, 0, 0);
 				code = mono_riscv_emit_store (code, RISCV_T0, ins->inst_basereg,
-					                              ins->inst_offset + sizeof (host_mgreg_t), 0);
+				                              ins->inst_offset + sizeof (host_mgreg_t), 0);
 				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_basereg, ins->inst_offset, 0);
 				break;
 			case ArgVtypeByRef:
