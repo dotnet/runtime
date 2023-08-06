@@ -392,22 +392,18 @@ namespace System.Runtime
                         return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFast;
 
                 case RuntimeHelperKind.IsInst:
-                    if (pEEType->IsArray || pEEType->HasGenericVariance)
+                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
                         return (IntPtr)(delegate*<MethodTable*, object, object?>)&TypeCast.IsInstanceOfAny;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfInterface;
-                    else if (pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
-                        return (IntPtr)(delegate*<MethodTable*, object, object?>)&TypeCast.IsInstanceOfAny; // Array handled above; pointers and byrefs handled here
                     else
                         return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfClass;
 
                 case RuntimeHelperKind.CastClass:
-                    if (pEEType->IsArray || pEEType->HasGenericVariance)
+                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastAny;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastInterface;
-                    else if (pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
-                        return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastAny; // Array handled above; pointers and byrefs handled here
                     else
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastClass;
 
