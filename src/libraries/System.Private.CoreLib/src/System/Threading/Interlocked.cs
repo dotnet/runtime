@@ -228,8 +228,8 @@ namespace System.Threading
         /// <returns>The loaded value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static ulong Read(ref ulong location) =>
-            CompareExchange(ref location, 0, 0);
+        public static ulong Read(ref readonly ulong location) =>
+            CompareExchange(ref Unsafe.AsRef(in location), 0, 0);
         #endregion
 
         #region And

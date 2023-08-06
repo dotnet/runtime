@@ -13,6 +13,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// This marshaller will always pass the <see cref="CreateObjectFlags.Unwrap"/> and <see cref="CreateObjectFlags.UniqueInstance"/> flags
     /// to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/>.
     /// </remarks>
+    /// <typeparam name="T">The managed type that represents a COM interface type</typeparam>
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]

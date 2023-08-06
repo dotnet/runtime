@@ -985,9 +985,6 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
         public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
-            // We track reflectability at canonical method body level
-            method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
             return _reflectedMethods.GetOrAdd(method);
         }
 

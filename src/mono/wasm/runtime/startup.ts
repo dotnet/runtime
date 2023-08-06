@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert } from "./globals";
+import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH } from "./globals";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -165,7 +165,6 @@ function preInit(userPreInit: (() => void)[]) {
     (async () => {
         try {
             // - init the rest of the polyfills
-            // - download Module.config from configSrc
             await mono_wasm_pre_init_essential_async();
 
             // - start download assets like DLLs
@@ -270,12 +269,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
-        if (INTERNAL.resourceLoader) {
-            if (INTERNAL.resourceLoader.bootConfig.debugBuild && INTERNAL.resourceLoader.bootConfig.cacheBootResources) {
-                INTERNAL.resourceLoader.logToConsole();
-            }
-            INTERNAL.resourceLoader.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        if (loaderHelpers.config.debugLevel !== 0 && loaderHelpers.config.cacheBootResources) {
+            loaderHelpers.logDownloadStatsToConsole();
         }
+        loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
 
         // call user code
         try {
@@ -345,7 +342,12 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
 
     init_c_exports();
     runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
-    runtimeHelpers.mono_wasm_abort = cwraps.mono_wasm_abort;
+    runtimeHelpers.abort = (reason: any) => {
+        if (!loaderHelpers.is_exited()) {
+            cwraps.mono_wasm_abort();
+        }
+        throw reason;
+    };
     cwraps_internal(INTERNAL);
     if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         cwraps_mono_api(MONO);
@@ -363,6 +365,13 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
 async function mono_wasm_pre_init_essential_async(): Promise<void> {
     mono_log_debug("mono_wasm_pre_init_essential_async");
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
+
+    if (linkerWasmEnableSIMD) {
+        mono_assert(await loaderHelpers.simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    }
+    if (linkerWasmEnableEH) {
+        mono_assert(await loaderHelpers.exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    }
 
     await init_polyfills_async();
 
@@ -448,7 +457,13 @@ function replace_linker_placeholders(
 ) {
     // the output from emcc contains wrappers for these linker imports which add overhead,
     //  but now we have what we need to replace them with the actual functions
-    const env = imports.env;
+    // By default the imports all live inside of 'env', but emscripten minification could rename it to 'a'.
+    // See https://github.com/emscripten-core/emscripten/blob/c5d1a856592b788619be11bbdc1dd119dec4e24c/src/preamble.js#L933-L936
+    const env = imports.env || imports.a;
+    if (!env) {
+        mono_log_warn("WARNING: Neither imports.env or imports.a were present when instantiating the wasm module. This likely indicates an emscripten configuration issue.");
+        return;
+    }
     for (const k in realFunctions) {
         const v = realFunctions[k];
         if (typeof (v) !== "function")

@@ -286,7 +286,7 @@ if [[ "$internal" == true ]]; then
         if [[ "$logical_machine" == "perfowl" ]]; then
             queue=Ubuntu.1804.Amd64.Owl.Perf
         else
-            queue=Ubuntu.1804.Amd64.Tiger.Perf
+            queue=Ubuntu.2204.Amd64.Tiger.Perf
         fi
     fi
 
@@ -403,7 +403,7 @@ if [[ -n "$wasm_bundle_directory" ]]; then
     wasm_bundle_directory_path=$payload_directory
     mv $wasm_bundle_directory/* $wasm_bundle_directory_path
     find $wasm_bundle_directory_path -type d
-    wasm_args="--expose_wasm"
+    wasm_args="--experimental-wasm-eh --expose_wasm"
     if [ "$javascript_engine" == "v8" ]; then
         # for es6 module support
         wasm_args="$wasm_args --module"

@@ -700,6 +700,15 @@
   <data name="RuntimeComApisDoNotSupportSourceGeneratedComTitle" xml:space="preserve">
     <value>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</value>
   </data>
+  <data name="SizeOfCollectionMustBeKnownAtMarshalTimeTitle" xml:space="preserve">
+    <value>The size of a collection that is marshalled to the callee must be defined when the method is called.</value>
+  </data>
+  <data name="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam" xml:space="preserve">
+    <value>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</value>
+  </data>
+  <data name="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue" xml:space="preserve">
+    <value>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</value>
+  </data>
   <data name="StatefulMarshallerRequiresFreeDescription" xml:space="preserve">
     <value>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</value>
   </data>
@@ -879,5 +888,11 @@
   </data>
   <data name="OutAttributeNotSupportedOnByValueParameters" xml:space="preserve">
     <value>The `[Out]` attribute is only supported on array parameters and parameters marshalled by pinning. Consider using 'out' or 'ref' keywords to make the parameter mutable.</value>
+  </data>
+  <data name="ComMethodReturningIntWillBeOutParameterMessage" xml:space="preserve">
+    <value>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</value>
+  </data>
+  <data name="ComMethodReturningIntWillBeOutParameterTitle" xml:space="preserve">
+    <value>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</value>
   </data>
 </root>

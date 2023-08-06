@@ -44,6 +44,16 @@
     <Message Importance="High" Text="Path: $(PublishDir)" />
     <Message Importance="High" Text="SourceDir: $(OutputPath)" />
 
+    <!-- Make sure marshal-ilgen is included in the components list. -->
+    <ItemGroup>
+      <_RuntimeComponentList Include="$(RuntimeComponents)" />
+      <_RuntimeComponentList Include="marshal-ilgen" KeepDuplicates="false"/>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <RuntimeComponents>@(_RuntimeComponentList)</RuntimeComponents>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' == 'true'">
       <_AotOutputType>Library</_AotOutputType>
       <_AotLibraryFormat>So</_AotLibraryFormat>

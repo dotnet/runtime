@@ -434,7 +434,7 @@ namespace System.Collections.Immutable.Tests
             }.ToImmutableSortedDictionary();
 
             ref readonly int safeRef = ref dictionary.ValueRef("a");
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(1, dictionary.ValueRef("a"));
 

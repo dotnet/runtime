@@ -396,7 +396,6 @@ public:
     enum FrameAttribs {
         FRAME_ATTR_NONE = 0,
         FRAME_ATTR_EXCEPTION = 1,           // This frame caused an exception
-        FRAME_ATTR_OUT_OF_LINE = 2,         // The exception out of line (IP of the frame is not correct)
         FRAME_ATTR_FAULTED = 4,             // Exception caused by Win32 fault
         FRAME_ATTR_RESUMABLE = 8,           // We may resume from this frame
         FRAME_ATTR_CAPTURE_DEPTH_2 = 0x10,  // This is a helperMethodFrame and the capture occurred at depth 2

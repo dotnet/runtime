@@ -789,8 +789,8 @@ DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
 
     DEBUG_REP(dmpGetMethodAttribs(key, value));
 
-    if (cr->repSetMethodAttribs(methodHandle) == CORINFO_FLG_BAD_INLINEE)
-        value ^= CORINFO_FLG_DONT_INLINE;
+    if ((cr->repSetMethodAttribs(methodHandle) & CORINFO_FLG_BAD_INLINEE) != 0)
+        value |= CORINFO_FLG_DONT_INLINE;
     return value;
 }
 
@@ -1014,12 +1014,6 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.field   = CastHandle(field);
     key.method  = CastHandle(method);
     key.context = CastHandle(context);
-
-    if ((InitClass == nullptr) || (InitClass->GetIndex(key) == -1))
-    {
-        // We could try additional inlines with stress modes, just reject them.
-        return CORINFO_INITCLASS_DONT_INLINE;
-    }
 
     DWORD value = InitClass->Get(key);
     DEBUG_REP(dmpInitClass(key, value));
@@ -1542,6 +1536,19 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     {
         pResult->hMethod = (CORINFO_METHOD_HANDLE)value.hMethod;
         pResult->methodFlags = (unsigned)value.methodFlags;
+        // We could have stored getCallInfo from a previous call in this
+        // context without the CORINFO_FLG_DONT_INLINE bit. If the JIT later
+        // realized that this will be an always no-inline then it would call
+        // setMethodAttribs with that information, but a later getCallInfo call
+        // would not update the recorded SPMI entry. In that case let's mimic
+        // the behavior on the runtime side by calculating this particular
+        // dynamic flag here (the same logic is present in getMethodAttribs).
+        //
+        // This doesn't handle all cases (e.g. parallelism could still cause
+        // us to record these flags without CORINFO_FLG_DONT_INLINE).
+        if ((cr->repSetMethodAttribs(pResult->hMethod) & CORINFO_FLG_BAD_INLINEE) != 0)
+            pResult->methodFlags |= CORINFO_FLG_DONT_INLINE;
+
         pResult->classFlags = (unsigned)value.classFlags;
         pResult->sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap);
         pResult->accessAllowed = (CorInfoIsAccessAllowedResult)value.accessAllowed;
@@ -1558,18 +1565,8 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pResult->nullInstanceCheck = (bool)value.nullInstanceCheck;
         pResult->contextHandle = (CORINFO_CONTEXT_HANDLE)value.contextHandle;
         pResult->exactContextNeedsRuntimeLookup = (bool)value.exactContextNeedsRuntimeLookup;
-        pResult->stubLookup.lookupKind.needsRuntimeLookup = value.stubLookup.lookupKind.needsRuntimeLookup != 0;
-        pResult->stubLookup.lookupKind.runtimeLookupKind =
-            (CORINFO_RUNTIME_LOOKUP_KIND)value.stubLookup.lookupKind.runtimeLookupKind;
-        if (pResult->stubLookup.lookupKind.needsRuntimeLookup)
-        {
-            pResult->stubLookup.runtimeLookup = SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(value.stubLookup.runtimeLookup);
-        }
-        else
-        {
-            pResult->stubLookup.constLookup.accessType = (InfoAccessType)value.stubLookup.constLookup.accessType;
-            pResult->stubLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)value.stubLookup.constLookup.handle;
-        }
+        pResult->stubLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.stubLookup);
+
         if (pResult->kind == CORINFO_VIRTUALCALL_STUB)
         {
             cr->CallTargetTypes->Add(CastPointer(pResult->codePointerLookup.constLookup.addr),
