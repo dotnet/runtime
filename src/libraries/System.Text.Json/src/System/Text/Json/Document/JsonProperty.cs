@@ -119,7 +119,13 @@ namespace System.Text.Json
 
             if (_name is null)
             {
-                writer.WriteRawPropertyName(Value.GetRawPropertyNameAsUtf8Span());
+                ReadOnlySpan<byte> rawName = Value.GetRawPropertyNameAsUtf8Span();
+                if (rawName.IndexOf(JsonConstants.BackSlash) >= 0)
+                {
+                    rawName = JsonReaderHelper.GetUnescapedSpan(rawName);
+                }
+
+                writer.WritePropertyName(rawName);
             }
             else
             {
